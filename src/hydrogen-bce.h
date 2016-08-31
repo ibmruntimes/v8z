@@ -29,7 +29,7 @@ class BoundsCheckTable : private ZoneHashMap {
 class HBoundsCheckEliminationPhase : public HPhase {
  public:
   explicit HBoundsCheckEliminationPhase(HGraph* graph)
-      : HPhase("H_Bounds checks elimination", graph), table_(zone()) { }
+      : HPhase("\x48\x5f\x42\x6f\x75\x6e\x64\x73\x20\x63\x68\x65\x63\x6b\x73\x20\x65\x6c\x69\x6d\x69\x6e\x61\x74\x69\x6f\x6e", graph), table_(zone()) { }
 
   void Run() {
     EliminateRedundantBoundsChecks(graph()->entry_block());

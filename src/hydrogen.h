@@ -1635,7 +1635,7 @@ class HGraphBuilder {
     HControlInstruction* AddCompare(HControlInstruction* compare);
 
     HGraphBuilder* builder() const {
-      DCHECK(builder_ != NULL);  // Have you called "Initialize"?
+      DCHECK(builder_ != NULL);  // Have you called "\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65"?
       return builder_;
     }
 
@@ -2812,7 +2812,7 @@ class HTracer V8_FINAL : public Malloced {
       : trace_(&string_allocator_), indent_(0) {
     if (FLAG_trace_hydrogen_file == NULL) {
       SNPrintF(filename_,
-               "hydrogen-%d-%d.cfg",
+               "\x68\x79\x64\x72\x6f\x67\x65\x6e\x2d\x6c\x84\x2d\x6c\x84\x2e\x63\x66\x67",
                base::OS::GetCurrentProcessId(),
                isolate_id);
     } else {
@@ -2833,14 +2833,14 @@ class HTracer V8_FINAL : public Malloced {
       name_ = name;
       tracer_ = tracer;
       tracer->PrintIndent();
-      tracer->trace_.Add("begin_%s\n", name);
+      tracer->trace_.Add("\x62\x65\x67\x69\x6e\x5f\x6c\xa2\xa", name);
       tracer->indent_++;
     }
 
     ~Tag() {
       tracer_->indent_--;
       tracer_->PrintIndent();
-      tracer_->trace_.Add("end_%s\n", name_);
+      tracer_->trace_.Add("\x65\x6e\x64\x5f\x6c\xa2\xa", name_);
       DCHECK(tracer_->indent_ >= 0);
       tracer_->FlushToFile();
     }
@@ -2856,32 +2856,32 @@ class HTracer V8_FINAL : public Malloced {
 
   void PrintEmptyProperty(const char* name) {
     PrintIndent();
-    trace_.Add("%s\n", name);
+    trace_.Add("\x6c\xa2\xa", name);
   }
 
   void PrintStringProperty(const char* name, const char* value) {
     PrintIndent();
-    trace_.Add("%s \"%s\"\n", name, value);
+    trace_.Add("\x6c\xa2\x20\x22\x6c\xa2\x22\xa", name, value);
   }
 
   void PrintLongProperty(const char* name, int64_t value) {
     PrintIndent();
-    trace_.Add("%s %d000\n", name, static_cast<int>(value / 1000));
+    trace_.Add("\x6c\xa2\x20\x6c\x84\x30\x30\x30\xa", name, static_cast<int>(value / 1000));
   }
 
   void PrintBlockProperty(const char* name, int block_id) {
     PrintIndent();
-    trace_.Add("%s \"B%d\"\n", name, block_id);
+    trace_.Add("\x6c\xa2\x20\x22\x42\x6c\x84\x22\xa", name, block_id);
   }
 
   void PrintIntProperty(const char* name, int value) {
     PrintIndent();
-    trace_.Add("%s %d\n", name, value);
+    trace_.Add("\x6c\xa2\x20\x6c\x84\xa", name, value);
   }
 
   void PrintIndent() {
     for (int i = 0; i < indent_; i++) {
-      trace_.Add("  ");
+      trace_.Add("\x20\x20");
     }
   }
 

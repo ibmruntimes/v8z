@@ -142,7 +142,7 @@ static bool HasKey(Handle<FixedArray> array, Handle<Object> key_handle) {
 MUST_USE_RESULT
 static MaybeHandle<Object> ThrowArrayLengthRangeError(Isolate* isolate) {
   return isolate->Throw<Object>(
-      isolate->factory()->NewRangeError("invalid_array_length",
+      isolate->factory()->NewRangeError("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x61\x72\x72\x61\x79\x5f\x6c\x65\x6e\x67\x74\x68",
                                         HandleVector<Object>(NULL, 0)));
 }
 
@@ -470,7 +470,7 @@ static void CopyDictionaryToDoubleElements(FixedArrayBase* from_base,
 static void TraceTopFrame(Isolate* isolate) {
   StackFrameIterator it(isolate);
   if (it.done()) {
-    PrintF("unknown location (no JavaScript frames present)");
+    PrintF("\x75\x6e\x6b\x6e\x6f\x77\x6e\x20\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x28\x6e\x6f\x20\x4a\x61\x76\x61\x53\x63\x72\x69\x70\x74\x20\x66\x72\x61\x6d\x65\x73\x20\x70\x72\x65\x73\x65\x6e\x74\x29");
     return;
   }
   StackFrame* raw_frame = it.frame();
@@ -478,7 +478,7 @@ static void TraceTopFrame(Isolate* isolate) {
     Code* apply_builtin = isolate->builtins()->builtin(
         Builtins::kFunctionApply);
     if (raw_frame->unchecked_code() == apply_builtin) {
-      PrintF("apply from ");
+      PrintF("\x61\x70\x70\x6c\x79\x20\x66\x72\x6f\x6d\x20");
       it.Advance();
       raw_frame = it.frame();
     }
@@ -491,13 +491,13 @@ void CheckArrayAbuse(Handle<JSObject> obj, const char* op, uint32_t key,
                      bool allow_appending) {
   DisallowHeapAllocation no_allocation;
   Object* raw_length = NULL;
-  const char* elements_type = "array";
+  const char* elements_type = "\x61\x72\x72\x61\x79";
   if (obj->IsJSArray()) {
     JSArray* array = JSArray::cast(*obj);
     raw_length = array->length();
   } else {
     raw_length = Smi::FromInt(obj->elements()->length());
-    elements_type = "object";
+    elements_type = "\x6f\x62\x6a\x65\x63\x74";
   }
 
   if (raw_length->IsNumber()) {
@@ -507,22 +507,22 @@ void CheckArrayAbuse(Handle<JSObject> obj, const char* op, uint32_t key,
       uint32_t compare_length = static_cast<uint32_t>(int32_length);
       if (allow_appending) compare_length++;
       if (key >= compare_length) {
-        PrintF("[OOB %s %s (%s length = %d, element accessed = %d) in ",
+        PrintF("\x5b\x4f\x4f\x42\x20\x6c\xa2\x20\x6c\xa2\x20\x28\x6c\xa2\x20\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20\x6c\x84\x2c\x20\x65\x6c\x65\x6d\x65\x6e\x74\x20\x61\x63\x63\x65\x73\x73\x65\x64\x20\x3d\x20\x6c\x84\x29\x20\x69\x6e\x20",
                elements_type, op, elements_type,
                static_cast<int>(int32_length),
                static_cast<int>(key));
         TraceTopFrame(obj->GetIsolate());
-        PrintF("]\n");
+        PrintF("\x5d\xa");
       }
     } else {
-      PrintF("[%s elements length not integer value in ", elements_type);
+      PrintF("\x5b\x6c\xa2\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x6c\x65\x6e\x67\x74\x68\x20\x6e\x6f\x74\x20\x69\x6e\x74\x65\x67\x65\x72\x20\x76\x61\x6c\x75\x65\x20\x69\x6e\x20", elements_type);
       TraceTopFrame(obj->GetIsolate());
-      PrintF("]\n");
+      PrintF("\x5d\xa");
     }
   } else {
-    PrintF("[%s elements length not a number in ", elements_type);
+    PrintF("\x5b\x6c\xa2\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x6c\x65\x6e\x67\x74\x68\x20\x6e\x6f\x74\x20\x61\x20\x6e\x75\x6d\x62\x65\x72\x20\x69\x6e\x20", elements_type);
     TraceTopFrame(obj->GetIsolate());
-    PrintF("]\n");
+    PrintF("\x5d\xa");
   }
 }
 
@@ -607,12 +607,12 @@ class ElementsAccessorBase : public ElementsAccessor {
       Handle<FixedArrayBase> backing_store) V8_FINAL V8_OVERRIDE {
     if (!IsExternalArrayElementsKind(ElementsTraits::Kind) &&
         FLAG_trace_js_array_abuse) {
-      CheckArrayAbuse(holder, "elements read", key);
+      CheckArrayAbuse(holder, "\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x72\x65\x61\x64", key);
     }
 
     if (IsExternalArrayElementsKind(ElementsTraits::Kind) &&
         FLAG_trace_external_array_abuse) {
-      CheckArrayAbuse(holder, "external elements read", key);
+      CheckArrayAbuse(holder, "\x65\x78\x74\x65\x72\x6e\x61\x6c\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x72\x65\x61\x64", key);
     }
 
     return ElementsAccessorSubclass::GetImpl(
@@ -1454,7 +1454,7 @@ class DictionaryElementsAccessor
           Handle<Object> name = isolate->factory()->NewNumberFromUint(key);
           Handle<Object> args[2] = { name, obj };
           Handle<Object> error =
-              isolate->factory()->NewTypeError("strict_delete_property",
+              isolate->factory()->NewTypeError("\x73\x74\x72\x69\x63\x74\x5f\x64\x65\x6c\x65\x74\x65\x5f\x70\x72\x6f\x70\x65\x72\x74\x79",
                                                HandleVector(args, 2));
           return isolate->Throw<Object>(error);
         }

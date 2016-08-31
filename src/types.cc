@@ -843,7 +843,7 @@ typename TypeImpl<Config>::TypeHandle TypeImpl<Config>::Convert(
 template<class Config>
 const char* TypeImpl<Config>::BitsetType::Name(int bitset) {
   switch (bitset) {
-    case REPRESENTATION(kAny): return "Any";
+    case REPRESENTATION(kAny): return "\x41\x6e\x79";
     #define RETURN_NAMED_REPRESENTATION_TYPE(type, value) \
     case REPRESENTATION(k##type): return #type;
     REPRESENTATION_BITSET_TYPE_LIST(RETURN_NAMED_REPRESENTATION_TYPE)
@@ -881,18 +881,18 @@ void TypeImpl<Config>::BitsetType::Print(OStream& os,  // NOLINT
   };
 
   bool is_first = true;
-  os << "(";
+  os << "\x28";
   for (int i(ARRAY_SIZE(named_bitsets) - 1); bitset != 0 && i >= 0; --i) {
     int subset = named_bitsets[i];
     if ((bitset & subset) == subset) {
-      if (!is_first) os << " | ";
+      if (!is_first) os << "\x20\x7c\x20";
       is_first = false;
       os << Name(subset);
       bitset -= subset;
     }
   }
   DCHECK(bitset == 0);
-  os << ")";
+  os << "\x29";
 }
 
 
@@ -903,53 +903,53 @@ void TypeImpl<Config>::PrintTo(OStream& os, PrintDimension dim) {  // NOLINT
     if (this->IsBitset()) {
       BitsetType::Print(os, SEMANTIC(this->AsBitset()));
     } else if (this->IsClass()) {
-      os << "Class(" << static_cast<void*>(*this->AsClass()->Map()) << " < ";
+      os << "\x43\x6c\x61\x73\x73\x28" << static_cast<void*>(*this->AsClass()->Map()) << "\x20\x3c\x20";
       BitsetType::New(BitsetType::Lub(this))->PrintTo(os, dim);
-      os << ")";
+      os << "\x29";
     } else if (this->IsConstant()) {
-      os << "Constant(" << static_cast<void*>(*this->AsConstant()->Value())
-         << " : ";
+      os << "\x43\x6f\x6e\x73\x74\x61\x6e\x74\x28" << static_cast<void*>(*this->AsConstant()->Value())
+         << "\x20\x3a\x20";
       BitsetType::New(BitsetType::Lub(this))->PrintTo(os, dim);
-      os << ")";
+      os << "\x29";
     } else if (this->IsRange()) {
-      os << "Range(" << this->AsRange()->Min()
-         << ".." << this->AsRange()->Max() << " : ";
+      os << "\x52\x61\x6e\x67\x65\x28" << this->AsRange()->Min()
+         << "\x2e\x2e" << this->AsRange()->Max() << "\x20\x3a\x20";
       BitsetType::New(BitsetType::Lub(this))->PrintTo(os, dim);
-      os << ")";
+      os << "\x29";
     } else if (this->IsContext()) {
-      os << "Context(";
+      os << "\x43\x6f\x6e\x74\x65\x78\x74\x28";
       this->AsContext()->Outer()->PrintTo(os, dim);
-      os << ")";
+      os << "\x29";
     } else if (this->IsUnion()) {
-      os << "(";
+      os << "\x28";
       UnionHandle unioned = handle(this->AsUnion());
       for (int i = 0; i < unioned->Length(); ++i) {
         TypeHandle type_i = unioned->Get(i);
-        if (i > 0) os << " | ";
+        if (i > 0) os << "\x20\x7c\x20";
         type_i->PrintTo(os, dim);
       }
-      os << ")";
+      os << "\x29";
     } else if (this->IsArray()) {
-      os << "Array(";
+      os << "\x41\x72\x72\x61\x79\x28";
       AsArray()->Element()->PrintTo(os, dim);
-      os << ")";
+      os << "\x29";
     } else if (this->IsFunction()) {
       if (!this->AsFunction()->Receiver()->IsAny()) {
         this->AsFunction()->Receiver()->PrintTo(os, dim);
-        os << ".";
+        os << "\x2e";
       }
-      os << "(";
+      os << "\x28";
       for (int i = 0; i < this->AsFunction()->Arity(); ++i) {
-        if (i > 0) os << ", ";
+        if (i > 0) os << "\x2c\x20";
         this->AsFunction()->Parameter(i)->PrintTo(os, dim);
       }
-      os << ")->";
+      os << "\x29\x2d\x3e";
       this->AsFunction()->Result()->PrintTo(os, dim);
     } else {
       UNREACHABLE();
     }
   }
-  if (dim == BOTH_DIMS) os << "/";
+  if (dim == BOTH_DIMS) os << "\x2f";
   if (dim != SEMANTIC_DIM) {
     BitsetType::Print(os, REPRESENTATION(this->BitsetLub()));
   }

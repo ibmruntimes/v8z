@@ -65,13 +65,13 @@ static JSRegExp::Flags RegExpFlagsFromString(Handle<String> str) {
   int flags = JSRegExp::NONE;
   for (int i = 0; i < str->length(); i++) {
     switch (str->Get(i)) {
-      case 'i':
+      case '\x69':
         flags |= JSRegExp::IGNORE_CASE;
         break;
-      case 'g':
+      case '\x67':
         flags |= JSRegExp::GLOBAL;
         break;
-      case 'm':
+      case '\x6d':
         flags |= JSRegExp::MULTILINE;
         break;
     }
@@ -182,7 +182,7 @@ MaybeHandle<Object> RegExpImpl::Compile(Handle<JSRegExp> re,
     return ThrowRegExpException(re,
                                 pattern,
                                 parse_result.error,
-                                "malformed_regexp");
+                                "\x6d\x61\x6c\x66\x6f\x72\x6d\x65\x64\x5f\x72\x65\x67\x65\x78\x70");
   }
 
   bool has_been_compiled = false;
@@ -386,7 +386,7 @@ static bool CreateRegExpErrorObjectAndThrow(Handle<JSRegExp> re,
   elements->set(1, *error_message);
   Handle<JSArray> array = factory->NewJSArrayWithElements(elements);
   Handle<Object> regexp_err =
-      factory->NewSyntaxError("malformed_regexp", array);
+      factory->NewSyntaxError("\x6d\x61\x6c\x66\x6f\x72\x6d\x65\x64\x5f\x72\x65\x67\x65\x78\x70", array);
   isolate->Throw(*regexp_err);
   return false;
 }
@@ -436,7 +436,7 @@ bool RegExpImpl::CompileIrregexp(Handle<JSRegExp> re,
     USE(ThrowRegExpException(re,
                              pattern,
                              compile_data.error,
-                             "malformed_regexp"));
+                             "\x6d\x61\x6c\x66\x6f\x72\x6d\x65\x64\x5f\x72\x65\x67\x65\x78\x70"));
     return false;
   }
   RegExpEngine::CompilationResult result =
@@ -632,8 +632,8 @@ MaybeHandle<Object> RegExpImpl::IrregexpExec(Handle<JSRegExp> regexp,
 #if defined(V8_INTERPRETED_REGEXP) && defined(DEBUG)
   if (FLAG_trace_regexp_bytecodes) {
     String* pattern = regexp->Pattern();
-    PrintF("\n\nRegexp match:   /%s/\n\n", pattern->ToCString().get());
-    PrintF("\n\nSubject string: '%s'\n\n", subject->ToCString().get());
+    PrintF("\xa\xa\x52\x65\x67\x65\x78\x70\x20\x6d\x61\x74\x63\x68\x3a\x20\x20\x20\x2f\x6c\xa2\x2f\xa\xa", pattern->ToCString().get());
+    PrintF("\xa\xa\x53\x75\x62\x6a\x65\x63\x74\x20\x73\x74\x72\x69\x6e\x67\x3a\x20\x27\x6c\xa2\x27\xa\xa", subject->ToCString().get());
   }
 #endif
   int required_registers = RegExpImpl::IrregexpPrepare(regexp, subject);
@@ -1074,7 +1074,7 @@ class RecursionCheck {
 
 
 static RegExpEngine::CompilationResult IrregexpRegExpTooBig(Isolate* isolate) {
-  return RegExpEngine::CompilationResult(isolate, "RegExp too big");
+  return RegExpEngine::CompilationResult(isolate, "\x52\x65\x67\x45\x78\x70\x20\x74\x6f\x6f\x20\x62\x69\x67");
 }
 
 
@@ -1602,7 +1602,7 @@ static int GetCaseIndependentLetters(Isolate* isolate,
                                      bool ascii_subject,
                                      unibrow::uchar* letters) {
   int length =
-      isolate->jsregexp_uncanonicalize()->get(character, '\0', letters);
+      isolate->jsregexp_uncanonicalize()->get(character, '\x0', letters);
   // Unibrow returns 0 or 1 for characters where case independence is
   // trivial.
   if (length == 0) {
@@ -2997,21 +2997,21 @@ static void EmitWordCheck(RegExpMacroAssembler* assembler,
                           Label* non_word,
                           bool fall_through_on_word) {
   if (assembler->CheckSpecialCharacterClass(
-          fall_through_on_word ? 'w' : 'W',
+          fall_through_on_word ? '\x77' : '\x57',
           fall_through_on_word ? non_word : word)) {
     // Optimized implementation available.
     return;
   }
-  assembler->CheckCharacterGT('z', non_word);
-  assembler->CheckCharacterLT('0', non_word);
-  assembler->CheckCharacterGT('a' - 1, word);
-  assembler->CheckCharacterLT('9' + 1, word);
-  assembler->CheckCharacterLT('A', non_word);
-  assembler->CheckCharacterLT('Z' + 1, word);
+  assembler->CheckCharacterGT('\x7a', non_word);
+  assembler->CheckCharacterLT('\x30', non_word);
+  assembler->CheckCharacterGT('\x61' - 1, word);
+  assembler->CheckCharacterLT('\x39' + 1, word);
+  assembler->CheckCharacterLT('\x41', non_word);
+  assembler->CheckCharacterLT('\x5a' + 1, word);
   if (fall_through_on_word) {
-    assembler->CheckNotCharacter('_', non_word);
+    assembler->CheckNotCharacter('\x5f', non_word);
   } else {
-    assembler->CheckCharacter('_', word);
+    assembler->CheckCharacter('\x5f', word);
   }
 }
 
@@ -3038,14 +3038,14 @@ static void EmitHat(RegExpCompiler* compiler,
   assembler->LoadCurrentCharacter(new_trace.cp_offset() -1,
                                   new_trace.backtrack(),
                                   false);
-  if (!assembler->CheckSpecialCharacterClass('n',
+  if (!assembler->CheckSpecialCharacterClass('\x6e',
                                              new_trace.backtrack())) {
     // Newline means \n, \r, 0x2028 or 0x2029.
     if (!compiler->ascii()) {
       assembler->CheckCharacterAfterAnd(0x2028, 0xfffe, &ok);
     }
-    assembler->CheckCharacter('\n', &ok);
-    assembler->CheckNotCharacter('\r', new_trace.backtrack());
+    assembler->CheckCharacter('\xa', &ok);
+    assembler->CheckNotCharacter('\xd', new_trace.backtrack());
   }
   assembler->Bind(&ok);
   on_success->Emit(compiler, &new_trace);
@@ -3588,16 +3588,16 @@ class AlternativeGenerationList {
 // The '2' variant is has inclusive from and exclusive to.
 // This covers \s as defined in ECMA-262 5.1, 15.10.2.12,
 // which include WhiteSpace (7.2) or LineTerminator (7.3) values.
-static const int kSpaceRanges[] = { '\t', '\r' + 1, ' ', ' ' + 1,
+static const int kSpaceRanges[] = { '\x9', '\xd' + 1, '\x20', '\x20' + 1,
     0x00A0, 0x00A1, 0x1680, 0x1681, 0x180E, 0x180F, 0x2000, 0x200B,
     0x2028, 0x202A, 0x202F, 0x2030, 0x205F, 0x2060, 0x3000, 0x3001,
     0xFEFF, 0xFF00, 0x10000 };
 static const int kSpaceRangeCount = ARRAY_SIZE(kSpaceRanges);
 
 static const int kWordRanges[] = {
-    '0', '9' + 1, 'A', 'Z' + 1, '_', '_' + 1, 'a', 'z' + 1, 0x10000 };
+    '\x30', '\x39' + 1, '\x41', '\x5a' + 1, '\x5f', '\x5f' + 1, '\x61', '\x7a' + 1, 0x10000 };
 static const int kWordRangeCount = ARRAY_SIZE(kWordRanges);
-static const int kDigitRanges[] = { '0', '9' + 1, 0x10000 };
+static const int kDigitRanges[] = { '\x30', '\x39' + 1, 0x10000 };
 static const int kDigitRangeCount = ARRAY_SIZE(kDigitRanges);
 static const int kSurrogateRanges[] = { 0xd800, 0xe000, 0x10000 };
 static const int kSurrogateRangeCount = ARRAY_SIZE(kSurrogateRanges);
@@ -4347,23 +4347,23 @@ FOR_EACH_NODE_TYPE(DECLARE_VISIT)
 
 
 void DotPrinter::PrintNode(const char* label, RegExpNode* node) {
-  os_ << "digraph G {\n  graph [label=\"";
+  os_ << "\x64\x69\x67\x72\x61\x70\x68\x20\x47\x20\x7b\xa\x20\x20\x67\x72\x61\x70\x68\x20\x5b\x6c\x61\x62\x65\x6c\x3d\x22";
   for (int i = 0; label[i]; i++) {
     switch (label[i]) {
-      case '\\':
+      case '\x5c':
         os_ << "\\\\";
         break;
-      case '"':
-        os_ << "\"";
+      case '\x22':
+        os_ << "\x22";
         break;
       default:
         os_ << label[i];
         break;
     }
   }
-  os_ << "\"];\n";
+  os_ << "\x22\x5d\x3b\xa";
   Visit(node);
-  os_ << "}" << endl;
+  os_ << "\x7d" << endl;
 }
 
 
@@ -4375,7 +4375,7 @@ void DotPrinter::Visit(RegExpNode* node) {
 
 
 void DotPrinter::PrintOnFailure(RegExpNode* from, RegExpNode* on_failure) {
-  os_ << "  n" << from << " -> n" << on_failure << " [style=dotted];\n";
+  os_ << "\x20\x20\x6e" << from << "\x20\x2d\x3e\x20\x6e" << on_failure << "\x20\x5b\x73\x74\x79\x6c\x65\x3d\x64\x6f\x74\x74\x65\x64\x5d\x3b\xa";
   Visit(on_failure);
 }
 
@@ -4389,8 +4389,8 @@ class TableEntryBodyPrinter {
     OutSet* out_set = entry.out_set();
     for (unsigned i = 0; i < OutSet::kFirstLimit; i++) {
       if (out_set->Get(i)) {
-        os_ << "    n" << choice() << ":s" << from << "o" << i << " -> n"
-            << choice()->alternatives()->at(i).node() << ";\n";
+        os_ << "\x20\x20\x20\x20\x6e" << choice() << "\x3a\x73" << from << "\x6f" << i << "\x20\x2d\x3e\x20\x6e"
+            << choice()->alternatives()->at(i).node() << "\x3b\xa";
       }
     }
   }
@@ -4410,19 +4410,19 @@ class TableEntryHeaderPrinter {
     if (first_) {
       first_ = false;
     } else {
-      os_ << "|";
+      os_ << "\x7c";
     }
-    os_ << "{\\" << AsUC16(from) << "-\\" << AsUC16(entry.to()) << "|{";
+    os_ << "\x7b\x5c\x20" << AsUC16(from) << "\x2d\x5c\x20" << AsUC16(entry.to()) << "\x7c\x7b";
     OutSet* out_set = entry.out_set();
     int priority = 0;
     for (unsigned i = 0; i < OutSet::kFirstLimit; i++) {
       if (out_set->Get(i)) {
-        if (priority > 0) os_ << "|";
-        os_ << "<s" << from << "o" << i << "> " << priority;
+        if (priority > 0) os_ << "\x7c";
+        os_ << "\x3c\x73" << from << "\x6f" << i << "\x3e\x20" << priority;
         priority++;
       }
     }
-    os_ << "}}";
+    os_ << "\x7d\x7d";
   }
 
  private:
@@ -4440,18 +4440,18 @@ class AttributePrinter {
     if (first_) {
       first_ = false;
     } else {
-      os_ << "|";
+      os_ << "\x7c";
     }
   }
   void PrintBit(const char* name, bool value) {
     if (!value) return;
     PrintSeparator();
-    os_ << "{" << name << "}";
+    os_ << "\x7b" << name << "\x7d";
   }
   void PrintPositive(const char* name, int value) {
     if (value < 0) return;
     PrintSeparator();
-    os_ << "{" << name << "|" << value << "}";
+    os_ << "\x7b" << name << "\x7c" << value << "\x7d";
   }
 
  private:
@@ -4461,37 +4461,37 @@ class AttributePrinter {
 
 
 void DotPrinter::PrintAttributes(RegExpNode* that) {
-  os_ << "  a" << that << " [shape=Mrecord, color=grey, fontcolor=grey, "
-      << "margin=0.1, fontsize=10, label=\"{";
+  os_ << "\x20\x20\x61" << that << "\x20\x5b\x73\x68\x61\x70\x65\x3d\x4d\x72\x65\x63\x6f\x72\x64\x2c\x20\x63\x6f\x6c\x6f\x72\x3d\x67\x72\x65\x79\x2c\x20\x66\x6f\x6e\x74\x63\x6f\x6c\x6f\x72\x3d\x67\x72\x65\x79\x2c\x20"
+      << "\x6d\x61\x72\x67\x69\x6e\x3d\x30\x2e\x31\x2c\x20\x66\x6f\x6e\x74\x73\x69\x7a\x65\x3d\x31\x30\x2c\x20\x6c\x61\x62\x65\x6c\x3d\x22\x7b";
   AttributePrinter printer(os_);
   NodeInfo* info = that->info();
-  printer.PrintBit("NI", info->follows_newline_interest);
-  printer.PrintBit("WI", info->follows_word_interest);
-  printer.PrintBit("SI", info->follows_start_interest);
+  printer.PrintBit("\x4e\x49", info->follows_newline_interest);
+  printer.PrintBit("\x57\x49", info->follows_word_interest);
+  printer.PrintBit("\x53\x49", info->follows_start_interest);
   Label* label = that->label();
   if (label->is_bound())
-    printer.PrintPositive("@", label->pos());
-  os_ << "}\"];\n"
-      << "  a" << that << " -> n" << that
-      << " [style=dashed, color=grey, arrowhead=none];\n";
+    printer.PrintPositive("\x40", label->pos());
+  os_ << "\x7d\x22\x5d\x3b\xa"
+      << "\x20\x20\x61" << that << "\x20\x2d\x3e\x20\x6e" << that
+      << "\x20\x5b\x73\x74\x79\x6c\x65\x3d\x64\x61\x73\x68\x65\x64\x2c\x20\x63\x6f\x6c\x6f\x72\x3d\x67\x72\x65\x79\x2c\x20\x61\x72\x72\x6f\x77\x68\x65\x61\x64\x3d\x6e\x6f\x6e\x65\x5d\x3b\xa";
 }
 
 
 static const bool kPrintDispatchTable = false;
 void DotPrinter::VisitChoice(ChoiceNode* that) {
   if (kPrintDispatchTable) {
-    os_ << "  n" << that << " [shape=Mrecord, label=\"";
+    os_ << "\x20\x20\x6e" << that << "\x20\x5b\x73\x68\x61\x70\x65\x3d\x4d\x72\x65\x63\x6f\x72\x64\x2c\x20\x6c\x61\x62\x65\x6c\x3d\x22";
     TableEntryHeaderPrinter header_printer(os_);
     that->GetTable(ignore_case_)->ForEach(&header_printer);
-    os_ << "\"]\n";
+    os_ << "\x22\x5d\xa";
     PrintAttributes(that);
     TableEntryBodyPrinter body_printer(os_, that);
     that->GetTable(ignore_case_)->ForEach(&body_printer);
   } else {
-    os_ << "  n" << that << " [shape=Mrecord, label=\"?\"];\n";
+    os_ << "\x20\x20\x6e" << that << "\x20\x5b\x73\x68\x61\x70\x65\x3d\x4d\x72\x65\x63\x6f\x72\x64\x2c\x20\x6c\x61\x62\x65\x6c\x3d\x22\x3f\x22\x5d\x3b\xa";
     for (int i = 0; i < that->alternatives()->length(); i++) {
       GuardedAlternative alt = that->alternatives()->at(i);
-      os_ << "  n" << that << " -> n" << alt.node();
+      os_ << "\x20\x20\x6e" << that << "\x20\x2d\x3e\x20\x6e" << alt.node();
     }
   }
   for (int i = 0; i < that->alternatives()->length(); i++) {
@@ -4503,9 +4503,9 @@ void DotPrinter::VisitChoice(ChoiceNode* that) {
 
 void DotPrinter::VisitText(TextNode* that) {
   Zone* zone = that->zone();
-  os_ << "  n" << that << " [label=\"";
+  os_ << "\x20\x20\x6e" << that << "\x20\x5b\x6c\x61\x62\x65\x6c\x3d\x22";
   for (int i = 0; i < that->elements()->length(); i++) {
-    if (i > 0) os_ << " ";
+    if (i > 0) os_ << "\x20";
     TextElement elm = that->elements()->at(i);
     switch (elm.text_type()) {
       case TextElement::ATOM: {
@@ -4517,107 +4517,107 @@ void DotPrinter::VisitText(TextNode* that) {
       }
       case TextElement::CHAR_CLASS: {
         RegExpCharacterClass* node = elm.char_class();
-        os_ << "[";
-        if (node->is_negated()) os_ << "^";
+        os_ << "\x5b";
+        if (node->is_negated()) os_ << "\x5e";
         for (int j = 0; j < node->ranges(zone)->length(); j++) {
           CharacterRange range = node->ranges(zone)->at(j);
-          os_ << AsUC16(range.from()) << "-" << AsUC16(range.to());
+          os_ << AsUC16(range.from()) << "\x2d" << AsUC16(range.to());
         }
-        os_ << "]";
+        os_ << "\x5d";
         break;
       }
       default:
         UNREACHABLE();
     }
   }
-  os_ << "\", shape=box, peripheries=2];\n";
+  os_ << "\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x62\x6f\x78\x2c\x20\x70\x65\x72\x69\x70\x68\x65\x72\x69\x65\x73\x3d\x32\x5d\x3b\xa";
   PrintAttributes(that);
-  os_ << "  n" << that << " -> n" << that->on_success() << ";\n";
+  os_ << "\x20\x20\x6e" << that << "\x20\x2d\x3e\x20\x6e" << that->on_success() << "\x3b\xa";
   Visit(that->on_success());
 }
 
 
 void DotPrinter::VisitBackReference(BackReferenceNode* that) {
-  os_ << "  n" << that << " [label=\"$" << that->start_register() << "..$"
-      << that->end_register() << "\", shape=doubleoctagon];\n";
+  os_ << "\x20\x20\x6e" << that << "\x20\x5b\x6c\x61\x62\x65\x6c\x3d\x22\x24" << that->start_register() << "\x2e\x2e\x24"
+      << that->end_register() << "\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x64\x6f\x75\x62\x6c\x65\x6f\x63\x74\x61\x67\x6f\x6e\x5d\x3b\xa";
   PrintAttributes(that);
-  os_ << "  n" << that << " -> n" << that->on_success() << ";\n";
+  os_ << "\x20\x20\x6e" << that << "\x20\x2d\x3e\x20\x6e" << that->on_success() << "\x3b\xa";
   Visit(that->on_success());
 }
 
 
 void DotPrinter::VisitEnd(EndNode* that) {
-  os_ << "  n" << that << " [style=bold, shape=point];\n";
+  os_ << "\x20\x20\x6e" << that << "\x20\x5b\x73\x74\x79\x6c\x65\x3d\x62\x6f\x6c\x64\x2c\x20\x73\x68\x61\x70\x65\x3d\x70\x6f\x69\x6e\x74\x5d\x3b\xa";
   PrintAttributes(that);
 }
 
 
 void DotPrinter::VisitAssertion(AssertionNode* that) {
-  os_ << "  n" << that << " [";
+  os_ << "\x20\x20\x6e" << that << "\x20\x5b";
   switch (that->assertion_type()) {
     case AssertionNode::AT_END:
-      os_ << "label=\"$\", shape=septagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x24\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x73\x65\x70\x74\x61\x67\x6f\x6e";
       break;
     case AssertionNode::AT_START:
-      os_ << "label=\"^\", shape=septagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x5e\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x73\x65\x70\x74\x61\x67\x6f\x6e";
       break;
     case AssertionNode::AT_BOUNDARY:
-      os_ << "label=\"\\b\", shape=septagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x5c\x62\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x73\x65\x70\x74\x61\x67\x6f\x6e";
       break;
     case AssertionNode::AT_NON_BOUNDARY:
-      os_ << "label=\"\\B\", shape=septagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x5c\x42\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x73\x65\x70\x74\x61\x67\x6f\x6e";
       break;
     case AssertionNode::AFTER_NEWLINE:
-      os_ << "label=\"(?<=\\n)\", shape=septagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x28\x3f\x3c\x3d\x5c\x6e\x29\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x73\x65\x70\x74\x61\x67\x6f\x6e";
       break;
   }
-  os_ << "];\n";
+  os_ << "\x5d\x3b\xa";
   PrintAttributes(that);
   RegExpNode* successor = that->on_success();
-  os_ << "  n" << that << " -> n" << successor << ";\n";
+  os_ << "\x20\x20\x6e" << that << "\x20\x2d\x3e\x20\x6e" << successor << "\x3b\xa";
   Visit(successor);
 }
 
 
 void DotPrinter::VisitAction(ActionNode* that) {
-  os_ << "  n" << that << " [";
+  os_ << "\x20\x20\x6e" << that << "\x20\x5b";
   switch (that->action_type_) {
     case ActionNode::SET_REGISTER:
-      os_ << "label=\"$" << that->data_.u_store_register.reg
-          << ":=" << that->data_.u_store_register.value << "\", shape=octagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x24" << that->data_.u_store_register.reg
+          << "\x3a\x3d" << that->data_.u_store_register.value << "\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x6f\x63\x74\x61\x67\x6f\x6e";
       break;
     case ActionNode::INCREMENT_REGISTER:
-      os_ << "label=\"$" << that->data_.u_increment_register.reg
-          << "++\", shape=octagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x24" << that->data_.u_increment_register.reg
+          << "\x2b\x2b\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x6f\x63\x74\x61\x67\x6f\x6e";
       break;
     case ActionNode::STORE_POSITION:
-      os_ << "label=\"$" << that->data_.u_position_register.reg
-          << ":=$pos\", shape=octagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x24" << that->data_.u_position_register.reg
+          << "\x3a\x3d\x24\x70\x6f\x73\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x6f\x63\x74\x61\x67\x6f\x6e";
       break;
     case ActionNode::BEGIN_SUBMATCH:
-      os_ << "label=\"$" << that->data_.u_submatch.current_position_register
-          << ":=$pos,begin\", shape=septagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x24" << that->data_.u_submatch.current_position_register
+          << "\x3a\x3d\x24\x70\x6f\x73\x2c\x62\x65\x67\x69\x6e\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x73\x65\x70\x74\x61\x67\x6f\x6e";
       break;
     case ActionNode::POSITIVE_SUBMATCH_SUCCESS:
-      os_ << "label=\"escape\", shape=septagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x65\x73\x63\x61\x70\x65\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x73\x65\x70\x74\x61\x67\x6f\x6e";
       break;
     case ActionNode::EMPTY_MATCH_CHECK:
-      os_ << "label=\"$" << that->data_.u_empty_match_check.start_register
-          << "=$pos?,$" << that->data_.u_empty_match_check.repetition_register
-          << "<" << that->data_.u_empty_match_check.repetition_limit
-          << "?\", shape=septagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x24" << that->data_.u_empty_match_check.start_register
+          << "\x3d\x24\x70\x6f\x73\x3f\x2c\x24" << that->data_.u_empty_match_check.repetition_register
+          << "\x3c" << that->data_.u_empty_match_check.repetition_limit
+          << "\x3f\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x73\x65\x70\x74\x61\x67\x6f\x6e";
       break;
     case ActionNode::CLEAR_CAPTURES: {
-      os_ << "label=\"clear $" << that->data_.u_clear_captures.range_from
-          << " to $" << that->data_.u_clear_captures.range_to
-          << "\", shape=septagon";
+      os_ << "\x6c\x61\x62\x65\x6c\x3d\x22\x63\x6c\x65\x61\x72\x20\x24" << that->data_.u_clear_captures.range_from
+          << "\x20\x74\x6f\x20\x24" << that->data_.u_clear_captures.range_to
+          << "\x22\x2c\x20\x73\x68\x61\x70\x65\x3d\x73\x65\x70\x74\x61\x67\x6f\x6e";
       break;
     }
   }
-  os_ << "];\n";
+  os_ << "\x5d\x3b\xa";
   PrintAttributes(that);
   RegExpNode* successor = that->on_success();
-  os_ << "  n" << that << " -> n" << successor << ";\n";
+  os_ << "\x20\x20\x6e" << that << "\x20\x2d\x3e\x20\x6e" << successor << "\x3b\xa";
   Visit(successor);
 }
 
@@ -4632,7 +4632,7 @@ class DispatchTableDumper {
 
 
 void DispatchTableDumper::Call(uc16 key, DispatchTable::Entry entry) {
-  os_ << "[" << AsUC16(key) << "-" << AsUC16(entry.to()) << "]: {";
+  os_ << "\x5b" << AsUC16(key) << "\x2d" << AsUC16(entry.to()) << "\x5d\x3a\x20\x7b";
   OutSet* set = entry.out_set();
   bool first = true;
   for (unsigned i = 0; i < OutSet::kFirstLimit; i++) {
@@ -4640,12 +4640,12 @@ void DispatchTableDumper::Call(uc16 key, DispatchTable::Entry entry) {
       if (first) {
         first = false;
       } else {
-        os_ << ", ";
+        os_ << "\x2c\x20";
       }
       os_ << i;
     }
   }
-  os_ << "}\n";
+  os_ << "\x7d\xa";
 }
 
 
@@ -4746,31 +4746,31 @@ bool RegExpCharacterClass::is_standard(Zone* zone) {
     return true;
   }
   if (CompareRanges(set_.ranges(zone), kSpaceRanges, kSpaceRangeCount)) {
-    set_.set_standard_set_type('s');
+    set_.set_standard_set_type('\x73');
     return true;
   }
   if (CompareInverseRanges(set_.ranges(zone), kSpaceRanges, kSpaceRangeCount)) {
-    set_.set_standard_set_type('S');
+    set_.set_standard_set_type('\x53');
     return true;
   }
   if (CompareInverseRanges(set_.ranges(zone),
                            kLineTerminatorRanges,
                            kLineTerminatorRangeCount)) {
-    set_.set_standard_set_type('.');
+    set_.set_standard_set_type('\x2e');
     return true;
   }
   if (CompareRanges(set_.ranges(zone),
                     kLineTerminatorRanges,
                     kLineTerminatorRangeCount)) {
-    set_.set_standard_set_type('n');
+    set_.set_standard_set_type('\x6e');
     return true;
   }
   if (CompareRanges(set_.ranges(zone), kWordRanges, kWordRangeCount)) {
-    set_.set_standard_set_type('w');
+    set_.set_standard_set_type('\x77');
     return true;
   }
   if (CompareInverseRanges(set_.ranges(zone), kWordRanges, kWordRangeCount)) {
-    set_.set_standard_set_type('W');
+    set_.set_standard_set_type('\x57');
     return true;
   }
   return false;
@@ -4907,7 +4907,7 @@ RegExpNode* RegExpQuantifier::ToNode(int min,
       }
     }
     if (max <= kMaxUnrolledMaxMatches && min == 0) {
-      DCHECK(max > 0);  // Due to the 'if' above.
+      DCHECK(max > 0);  // Due to the '\x69\x66' above.
       RegExpExpansionLimiter limiter(compiler, max);
       if (limiter.ok_to_expand()) {
         // Unroll the optional matches up to max.
@@ -5013,8 +5013,8 @@ RegExpNode* RegExpAssertion::ToNode(RegExpCompiler* compiler,
       // Create a newline atom.
       ZoneList<CharacterRange>* newline_ranges =
           new(zone) ZoneList<CharacterRange>(3, zone);
-      CharacterRange::AddClassEscape('n', newline_ranges, zone);
-      RegExpCharacterClass* newline_atom = new(zone) RegExpCharacterClass('n');
+      CharacterRange::AddClassEscape('\x6e', newline_ranges, zone);
+      RegExpCharacterClass* newline_atom = new(zone) RegExpCharacterClass('\x6e');
       TextNode* newline_matcher = new(zone) TextNode(
          newline_atom,
          ActionNode::PositiveSubmatchSuccess(stack_pointer_register,
@@ -5177,25 +5177,25 @@ void CharacterRange::AddClassEscape(uc16 type,
                                     ZoneList<CharacterRange>* ranges,
                                     Zone* zone) {
   switch (type) {
-    case 's':
+    case '\x73':
       AddClass(kSpaceRanges, kSpaceRangeCount, ranges, zone);
       break;
-    case 'S':
+    case '\x53':
       AddClassNegated(kSpaceRanges, kSpaceRangeCount, ranges, zone);
       break;
-    case 'w':
+    case '\x77':
       AddClass(kWordRanges, kWordRangeCount, ranges, zone);
       break;
-    case 'W':
+    case '\x57':
       AddClassNegated(kWordRanges, kWordRangeCount, ranges, zone);
       break;
-    case 'd':
+    case '\x64':
       AddClass(kDigitRanges, kDigitRangeCount, ranges, zone);
       break;
-    case 'D':
+    case '\x44':
       AddClassNegated(kDigitRanges, kDigitRangeCount, ranges, zone);
       break;
-    case '.':
+    case '\x2e':
       AddClassNegated(kLineTerminatorRanges,
                       kLineTerminatorRangeCount,
                       ranges,
@@ -5204,12 +5204,12 @@ void CharacterRange::AddClassEscape(uc16 type,
     // This is not a character range as defined by the spec but a
     // convenient shorthand for a character class that matches any
     // character.
-    case '*':
+    case '\x2a':
       ranges->Add(CharacterRange::Everything(), zone);
       break;
     // This is the set of characters matched by the $ and ^ symbols
     // in multiline mode.
-    case 'n':
+    case '\x6e':
       AddClass(kLineTerminatorRanges,
                kLineTerminatorRangeCount,
                ranges,
@@ -5288,7 +5288,7 @@ void CharacterRange::AddCaseEquivalents(ZoneList<CharacterRange>* ranges,
   unibrow::uchar chars[unibrow::Ecma262UnCanonicalize::kMaxWidth];
   if (top == bottom) {
     // If this is a singleton we just expand the one character.
-    int length = isolate->jsregexp_uncanonicalize()->get(bottom, '\0', chars);
+    int length = isolate->jsregexp_uncanonicalize()->get(bottom, '\x0', chars);
     for (int i = 0; i < length; i++) {
       uc32 chr = chars[i];
       if (chr != bottom) {
@@ -5317,7 +5317,7 @@ void CharacterRange::AddCaseEquivalents(ZoneList<CharacterRange>* ranges,
     unibrow::uchar range[unibrow::Ecma262UnCanonicalize::kMaxWidth];
     int pos = bottom;
     while (pos <= top) {
-      int length = isolate->jsregexp_canonrange()->get(pos, '\0', range);
+      int length = isolate->jsregexp_canonrange()->get(pos, '\x0', range);
       uc16 block_end;
       if (length == 0) {
         block_end = pos;
@@ -5326,7 +5326,7 @@ void CharacterRange::AddCaseEquivalents(ZoneList<CharacterRange>* ranges,
         block_end = range[0];
       }
       int end = (block_end > top) ? top : block_end;
-      length = isolate->jsregexp_uncanonicalize()->get(block_end, '\0', range);
+      length = isolate->jsregexp_uncanonicalize()->get(block_end, '\x0', range);
       for (int i = 0; i < length; i++) {
         uc32 c = range[i];
         uc16 range_from = c - (block_end - pos);
@@ -5668,7 +5668,7 @@ OutSet* DispatchTable::Get(uc16 value) {
 void Analysis::EnsureAnalyzed(RegExpNode* that) {
   StackLimitCheck check(that->zone()->isolate());
   if (check.HasOverflowed()) {
-    fail("Stack overflow");
+    fail("\x53\x74\x61\x63\x6b\x20\x6f\x76\x65\x72\x66\x6c\x6f\x77");
     return;
   }
   if (that->info()->been_analyzed || that->info()->being_analyzed)
@@ -6017,7 +6017,7 @@ RegExpEngine::CompilationResult RegExpEngine::Compile(
         RegExpQuantifier::ToNode(0,
                                  RegExpTree::kInfinity,
                                  false,
-                                 new(zone) RegExpCharacterClass('*'),
+                                 new(zone) RegExpCharacterClass('\x2a'),
                                  &compiler,
                                  captured_body,
                                  data->contains_anchor);
@@ -6028,7 +6028,7 @@ RegExpEngine::CompilationResult RegExpEngine::Compile(
       ChoiceNode* first_step_node = new(zone) ChoiceNode(2, zone);
       first_step_node->AddAlternative(GuardedAlternative(captured_body));
       first_step_node->AddAlternative(GuardedAlternative(
-          new(zone) TextNode(new(zone) RegExpCharacterClass('*'), loop_node)));
+          new(zone) TextNode(new(zone) RegExpCharacterClass('\x2a'), loop_node)));
       node = first_step_node;
     } else {
       node = loop_node;
@@ -6088,7 +6088,7 @@ RegExpEngine::CompilationResult RegExpEngine::Compile(
   RegExpMacroAssemblerX87 macro_assembler(mode, (data->capture_count + 1) * 2,
                                           zone);
 #else
-#error "Unsupported architecture"
+#error "\x55\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65"
 #endif
 
 #else  // V8_INTERPRETED_REGEXP

@@ -91,15 +91,15 @@ class Marking {
   static const char* ColorName(ObjectColor color) {
     switch (color) {
       case BLACK_OBJECT:
-        return "black";
+        return "\x62\x6c\x61\x63\x6b";
       case WHITE_OBJECT:
-        return "white";
+        return "\x77\x68\x69\x74\x65";
       case GREY_OBJECT:
-        return "grey";
+        return "\x67\x72\x65\x79";
       case IMPOSSIBLE_COLOR:
-        return "impossible";
+        return "\x69\x6d\x70\x6f\x73\x73\x69\x62\x6c\x65";
     }
-    return "error";
+    return "\x65\x72\x72\x6f\x72";
   }
 
   static ObjectColor Color(HeapObject* obj) {
@@ -276,21 +276,21 @@ class SlotsBuffer {
   static const char* SlotTypeToString(SlotType type) {
     switch (type) {
       case EMBEDDED_OBJECT_SLOT:
-        return "EMBEDDED_OBJECT_SLOT";
+        return "\x45\x4d\x42\x45\x44\x44\x45\x44\x5f\x4f\x42\x4a\x45\x43\x54\x5f\x53\x4c\x4f\x54";
       case RELOCATED_CODE_OBJECT:
-        return "RELOCATED_CODE_OBJECT";
+        return "\x52\x45\x4c\x4f\x43\x41\x54\x45\x44\x5f\x43\x4f\x44\x45\x5f\x4f\x42\x4a\x45\x43\x54";
       case CODE_TARGET_SLOT:
-        return "CODE_TARGET_SLOT";
+        return "\x43\x4f\x44\x45\x5f\x54\x41\x52\x47\x45\x54\x5f\x53\x4c\x4f\x54";
       case CODE_ENTRY_SLOT:
-        return "CODE_ENTRY_SLOT";
+        return "\x43\x4f\x44\x45\x5f\x45\x4e\x54\x52\x59\x5f\x53\x4c\x4f\x54";
       case DEBUG_TARGET_SLOT:
-        return "DEBUG_TARGET_SLOT";
+        return "\x44\x45\x42\x55\x47\x5f\x54\x41\x52\x47\x45\x54\x5f\x53\x4c\x4f\x54";
       case JS_RETURN_SLOT:
-        return "JS_RETURN_SLOT";
+        return "\x4a\x53\x5f\x52\x45\x54\x55\x52\x4e\x5f\x53\x4c\x4f\x54";
       case NUMBER_OF_SLOT_TYPES:
-        return "NUMBER_OF_SLOT_TYPES";
+        return "\x4e\x55\x4d\x42\x45\x52\x5f\x4f\x46\x5f\x53\x4c\x4f\x54\x5f\x54\x59\x50\x45\x53";
     }
-    return "UNKNOWN SlotType";
+    return "\x55\x4e\x4b\x4e\x4f\x57\x4e\x20\x53\x6c\x6f\x74\x54\x79\x70\x65";
   }
 
   void UpdateSlots(Heap* heap);
@@ -585,7 +585,7 @@ class MarkCompactCollector {
 
   INLINE(void EvictEvacuationCandidate(Page* page)) {
     if (FLAG_trace_fragmentation) {
-      PrintF("Page %p is too popular. Disabling evacuation.\n",
+      PrintF("\x50\x61\x67\x65\x20\x6c\x97\x20\x69\x73\x20\x74\x6f\x6f\x20\x70\x6f\x70\x75\x6c\x61\x72\x2e\x20\x44\x69\x73\x61\x62\x6c\x69\x6e\x67\x20\x65\x76\x61\x63\x75\x61\x74\x69\x6f\x6e\x2e\xa",
              reinterpret_cast<void*>(page));
     }
 

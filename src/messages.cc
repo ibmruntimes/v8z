@@ -20,14 +20,14 @@ void MessageHandler::DefaultMessageReport(Isolate* isolate,
                                           Handle<Object> message_obj) {
   SmartArrayPointer<char> str = GetLocalizedMessage(isolate, message_obj);
   if (loc == NULL) {
-    PrintF("%s\n", str.get());
+    PrintF("\x6c\xa2\xa", str.get());
   } else {
     HandleScope scope(isolate);
     Handle<Object> data(loc->script()->name(), isolate);
     SmartArrayPointer<char> data_str;
     if (data->IsString())
       data_str = Handle<String>::cast(data)->ToCString(DISALLOW_NULLS);
-    PrintF("%s:%i: %s\n", data_str.get() ? data_str.get() : "<unknown>",
+    PrintF("\x6c\xa2\x3a\x6c\x89\x3a\x20\x6c\xa2\xa", data_str.get() ? data_str.get() : "\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e",
            loc->start_pos(), str.get());
   }
 }
@@ -130,7 +130,7 @@ Handle<String> MessageHandler::GetMessage(Isolate* isolate,
                                           Handle<Object> data) {
   Factory* factory = isolate->factory();
   Handle<String> fmt_str =
-      factory->InternalizeOneByteString(STATIC_ASCII_VECTOR("FormatMessage"));
+      factory->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x46\x6f\x72\x6d\x61\x74\x4d\x65\x73\x73\x61\x67\x65"));
   Handle<JSFunction> fun = Handle<JSFunction>::cast(Object::GetProperty(
           isolate->js_builtins_object(), fmt_str).ToHandleChecked());
   Handle<JSMessageObject> message = Handle<JSMessageObject>::cast(data);
@@ -141,7 +141,7 @@ Handle<String> MessageHandler::GetMessage(Isolate* isolate,
       fun, isolate->js_builtins_object(), ARRAY_SIZE(argv), argv);
   Handle<Object> result;
   if (!maybe_result.ToHandle(&result) || !result->IsString()) {
-    return factory->InternalizeOneByteString(STATIC_ASCII_VECTOR("<error>"));
+    return factory->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x3c\x65\x72\x72\x6f\x72\x3e"));
   }
   Handle<String> result_string = Handle<String>::cast(result);
   // A string that has been obtained from JS code in this way is

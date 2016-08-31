@@ -219,7 +219,7 @@ class Schedule : public GenericGraph<BasicBlock> {
   // doesn't actually add the node to the block.
   inline void PlanNode(BasicBlock* block, Node* node) {
     if (FLAG_trace_turbo_scheduler) {
-      PrintF("Planning node %d for future add to block %d\n", node->id(),
+      PrintF("\x50\x6c\x61\x6e\x6e\x69\x6e\x67\x20\x6e\x6f\x64\x65\x20\x6c\x84\x20\x66\x6f\x72\x20\x66\x75\x74\x75\x72\x65\x20\x61\x64\x64\x20\x74\x6f\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\xa", node->id(),
              block->id());
     }
     DCHECK(this->block(node) == NULL);
@@ -229,7 +229,7 @@ class Schedule : public GenericGraph<BasicBlock> {
   // BasicBlock building: add a node to the end of the block.
   inline void AddNode(BasicBlock* block, Node* node) {
     if (FLAG_trace_turbo_scheduler) {
-      PrintF("Adding node %d to block %d\n", node->id(), block->id());
+      PrintF("\x41\x64\x64\x69\x6e\x67\x20\x6e\x6f\x64\x65\x20\x6c\x84\x20\x74\x6f\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\xa", node->id(), block->id());
     }
     DCHECK(this->block(node) == NULL || this->block(node) == block);
     block->nodes_.push_back(node);

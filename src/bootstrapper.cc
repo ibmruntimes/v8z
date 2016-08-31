@@ -72,7 +72,7 @@ void Bootstrapper::Initialize(bool create_heap_objects) {
 
 static const char* GCFunctionName() {
   bool flag_given = FLAG_expose_gc_as != NULL && strlen(FLAG_expose_gc_as) != 0;
-  return flag_given ? FLAG_expose_gc_as : "gc";
+  return flag_given ? FLAG_expose_gc_as : "\x67\x63";
 }
 
 
@@ -506,7 +506,7 @@ Handle<JSFunction> Genesis::CreateEmptyFunction(Isolate* isolate) {
   // Allocate the empty function as the prototype for function ECMAScript
   // 262 15.3.4.
   Handle<String> empty_string =
-      factory->InternalizeOneByteString(STATIC_ASCII_VECTOR("Empty"));
+      factory->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x45\x6d\x70\x74\x79"));
   Handle<Code> code(isolate->builtins()->builtin(Builtins::kEmptyFunction));
   Handle<JSFunction> empty_function = factory->NewFunctionWithoutPrototype(
       empty_string, code);
@@ -521,7 +521,7 @@ Handle<JSFunction> Genesis::CreateEmptyFunction(Isolate* isolate) {
   empty_function->set_map(*empty_function_map);
 
   // --- E m p t y ---
-  Handle<String> source = factory->NewStringFromStaticAscii("() {}");
+  Handle<String> source = factory->NewStringFromStaticAscii("\x28\x29\x20\x7b\x7d");
   Handle<Script> script = factory->NewScript(source);
   script->set_type(Smi::FromInt(Script::TYPE_NATIVE));
   empty_function->shared()->set_script(*script);
@@ -599,7 +599,7 @@ void Genesis::SetStrictFunctionInstanceDescriptor(
 Handle<JSFunction> Genesis::GetStrictPoisonFunction() {
   if (strict_poison_function.is_null()) {
     Handle<String> name = factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("ThrowTypeError"));
+        STATIC_ASCII_VECTOR("\x54\x68\x72\x6f\x77\x54\x79\x70\x65\x45\x72\x72\x6f\x72"));
     Handle<Code> code(isolate()->builtins()->builtin(
         Builtins::kStrictModePoisonPill));
     strict_poison_function = factory()->NewFunctionWithoutPrototype(name, code);
@@ -615,7 +615,7 @@ Handle<JSFunction> Genesis::GetStrictPoisonFunction() {
 Handle<JSFunction> Genesis::GetGeneratorPoisonFunction() {
   if (generator_poison_function.is_null()) {
     Handle<String> name = factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("ThrowTypeError"));
+        STATIC_ASCII_VECTOR("\x54\x68\x72\x6f\x77\x54\x79\x70\x65\x45\x72\x72\x6f\x72"));
     Handle<Code> code(isolate()->builtins()->builtin(
         Builtins::kGeneratorPoisonPill));
     generator_poison_function = factory()->NewFunctionWithoutPrototype(
@@ -822,7 +822,7 @@ Handle<JSGlobalProxy> Genesis::CreateNewGlobals(
   }
 
   Handle<String> global_name = factory()->InternalizeOneByteString(
-      STATIC_ASCII_VECTOR("global"));
+      STATIC_ASCII_VECTOR("\x67\x6c\x6f\x62\x61\x6c"));
   global_proxy_function->shared()->set_instance_class_name(*global_name);
   global_proxy_function->initial_map()->set_is_access_check_needed(true);
 
@@ -863,7 +863,7 @@ void Genesis::HookUpGlobalObject(Handle<GlobalObject> global_object) {
       static_cast<PropertyAttributes>(READ_ONLY | DONT_DELETE);
   Runtime::DefineObjectProperty(builtins_global,
                                 factory()->InternalizeOneByteString(
-                                    STATIC_ASCII_VECTOR("global")),
+                                    STATIC_ASCII_VECTOR("\x67\x6c\x6f\x62\x61\x6c")),
                                 global_object,
                                 attributes).Assert();
   // Set up the reference from the global object to the builtins object.
@@ -900,12 +900,12 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
   Handle<JSObject> global(native_context()->global_object());
 
   // Install global Function object
-  InstallFunction(global, "Function", JS_FUNCTION_TYPE, JSFunction::kSize,
+  InstallFunction(global, "\x46\x75\x6e\x63\x74\x69\x6f\x6e", JS_FUNCTION_TYPE, JSFunction::kSize,
                   empty_function, Builtins::kIllegal);
 
   {  // --- A r r a y ---
     Handle<JSFunction> array_function =
-        InstallFunction(global, "Array", JS_ARRAY_TYPE, JSArray::kSize,
+        InstallFunction(global, "\x41\x72\x72\x61\x79", JS_ARRAY_TYPE, JSArray::kSize,
                         isolate->initial_object_prototype(),
                         Builtins::kArrayCode);
     array_function->shared()->DontAdaptArguments();
@@ -949,7 +949,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
 
   {  // --- N u m b e r ---
     Handle<JSFunction> number_fun =
-        InstallFunction(global, "Number", JS_VALUE_TYPE, JSValue::kSize,
+        InstallFunction(global, "\x4e\x75\x6d\x62\x65\x72", JS_VALUE_TYPE, JSValue::kSize,
                         isolate->initial_object_prototype(),
                         Builtins::kIllegal);
     native_context()->set_number_function(*number_fun);
@@ -957,7 +957,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
 
   {  // --- B o o l e a n ---
     Handle<JSFunction> boolean_fun =
-        InstallFunction(global, "Boolean", JS_VALUE_TYPE, JSValue::kSize,
+        InstallFunction(global, "\x42\x6f\x6f\x6c\x65\x61\x6e", JS_VALUE_TYPE, JSValue::kSize,
                         isolate->initial_object_prototype(),
                         Builtins::kIllegal);
     native_context()->set_boolean_function(*boolean_fun);
@@ -965,7 +965,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
 
   {  // --- S t r i n g ---
     Handle<JSFunction> string_fun =
-        InstallFunction(global, "String", JS_VALUE_TYPE, JSValue::kSize,
+        InstallFunction(global, "\x53\x74\x72\x69\x6e\x67", JS_VALUE_TYPE, JSValue::kSize,
                         isolate->initial_object_prototype(),
                         Builtins::kIllegal);
     string_fun->shared()->set_construct_stub(
@@ -990,7 +990,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
   {
     // --- S y m b o l ---
     Handle<JSFunction> symbol_fun = InstallFunction(
-        global, "Symbol", JS_VALUE_TYPE, JSValue::kSize,
+        global, "\x53\x79\x6d\x62\x6f\x6c", JS_VALUE_TYPE, JSValue::kSize,
         isolate->initial_object_prototype(), Builtins::kIllegal);
     native_context()->set_symbol_function(*symbol_fun);
   }
@@ -998,7 +998,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
   {  // --- D a t e ---
     // Builtin functions for Date.prototype.
     Handle<JSFunction> date_fun =
-        InstallFunction(global, "Date", JS_DATE_TYPE, JSDate::kSize,
+        InstallFunction(global, "\x44\x61\x74\x65", JS_DATE_TYPE, JSDate::kSize,
                         isolate->initial_object_prototype(),
                         Builtins::kIllegal);
 
@@ -1009,7 +1009,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
   {  // -- R e g E x p
     // Builtin functions for RegExp.prototype.
     Handle<JSFunction> regexp_fun =
-        InstallFunction(global, "RegExp", JS_REGEXP_TYPE, JSRegExp::kSize,
+        InstallFunction(global, "\x52\x65\x67\x45\x78\x70", JS_REGEXP_TYPE, JSRegExp::kSize,
                         isolate->initial_object_prototype(),
                         Builtins::kIllegal);
     native_context()->set_regexp_function(*regexp_fun);
@@ -1096,7 +1096,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
   }
 
   {  // -- J S O N
-    Handle<String> name = factory->InternalizeUtf8String("JSON");
+    Handle<String> name = factory->InternalizeUtf8String("\x4a\x53\x4f\x4e");
     Handle<JSFunction> cons = factory->NewFunction(name);
     JSFunction::SetInstancePrototype(cons,
         Handle<Object>(native_context()->initial_object_prototype(), isolate));
@@ -1110,7 +1110,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
   {  // -- A r r a y B u f f e r
     Handle<JSFunction> array_buffer_fun =
         InstallFunction(
-            global, "ArrayBuffer", JS_ARRAY_BUFFER_TYPE,
+            global, "\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72", JS_ARRAY_BUFFER_TYPE,
             JSArrayBuffer::kSizeWithInternalFields,
             isolate->initial_object_prototype(),
             Builtins::kIllegal);
@@ -1122,7 +1122,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
     {                                                                         \
       Handle<JSFunction> fun;                                                 \
       Handle<Map> external_map;                                               \
-      InstallTypedArray(#Type "Array",                                        \
+      InstallTypedArray(#Type "\x41\x72\x72\x61\x79",                                        \
           TYPE##_ELEMENTS,                                                    \
           &fun,                                                               \
           &external_map);                                                     \
@@ -1134,7 +1134,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
 
     Handle<JSFunction> data_view_fun =
         InstallFunction(
-            global, "DataView", JS_DATA_VIEW_TYPE,
+            global, "\x44\x61\x74\x61\x56\x69\x65\x77", JS_DATA_VIEW_TYPE,
             JSDataView::kSizeWithInternalFields,
             isolate->initial_object_prototype(),
             Builtins::kIllegal);
@@ -1142,11 +1142,11 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
   }
 
   // -- M a p
-  InstallFunction(global, "Map", JS_MAP_TYPE, JSMap::kSize,
+  InstallFunction(global, "\x4d\x61\x70", JS_MAP_TYPE, JSMap::kSize,
                   isolate->initial_object_prototype(), Builtins::kIllegal);
 
   // -- S e t
-  InstallFunction(global, "Set", JS_SET_TYPE, JSSet::kSize,
+  InstallFunction(global, "\x53\x65\x74", JS_SET_TYPE, JSSet::kSize,
                   isolate->initial_object_prototype(), Builtins::kIllegal);
 
   {  // Set up the iterator result object
@@ -1177,10 +1177,10 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
   }
 
   // -- W e a k M a p
-  InstallFunction(global, "WeakMap", JS_WEAK_MAP_TYPE, JSWeakMap::kSize,
+  InstallFunction(global, "\x57\x65\x61\x6b\x4d\x61\x70", JS_WEAK_MAP_TYPE, JSWeakMap::kSize,
                   isolate->initial_object_prototype(), Builtins::kIllegal);
   // -- W e a k S e t
-  InstallFunction(global, "WeakSet", JS_WEAK_SET_TYPE, JSWeakSet::kSize,
+  InstallFunction(global, "\x57\x65\x61\x6b\x53\x65\x74", JS_WEAK_SET_TYPE, JSWeakSet::kSize,
                   isolate->initial_object_prototype(), Builtins::kIllegal);
 
   {  // --- sloppy arguments map
@@ -1188,7 +1188,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
     // This is done by introducing an anonymous function with
     // class_name equals 'Arguments'.
     Handle<String> arguments_string = factory->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("Arguments"));
+        STATIC_ASCII_VECTOR("\x41\x72\x67\x75\x6d\x65\x6e\x74\x73"));
     Handle<Code> code(isolate->builtins()->builtin(Builtins::kIllegal));
     Handle<JSFunction> function = factory->NewFunctionWithoutPrototype(
         arguments_string, code);
@@ -1293,7 +1293,7 @@ void Genesis::InitializeGlobal(Handle<GlobalObject> global_object,
         JSObject::kHeaderSize);
 
     Handle<String> name = factory->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("context_extension"));
+        STATIC_ASCII_VECTOR("\x63\x6f\x6e\x74\x65\x78\x74\x5f\x65\x78\x74\x65\x6e\x73\x69\x6f\x6e"));
     context_extension_fun->shared()->set_instance_class_name(*name);
     native_context()->set_context_extension_function(*context_extension_fun);
   }
@@ -1360,10 +1360,10 @@ void Genesis::InitializeExperimentalGlobal() {
     Handle<JSObject> generator_object_prototype =
         factory()->NewJSObject(isolate()->object_function(), TENURED);
     Handle<JSFunction> generator_function_prototype = InstallFunction(
-        builtins, "GeneratorFunctionPrototype", JS_FUNCTION_TYPE,
+        builtins, "\x47\x65\x6e\x65\x72\x61\x74\x6f\x72\x46\x75\x6e\x63\x74\x69\x6f\x6e\x50\x72\x6f\x74\x6f\x74\x79\x70\x65", JS_FUNCTION_TYPE,
         JSFunction::kHeaderSize, generator_object_prototype,
         Builtins::kIllegal);
-    InstallFunction(builtins, "GeneratorFunction",
+    InstallFunction(builtins, "\x47\x65\x6e\x65\x72\x61\x74\x6f\x72\x46\x75\x6e\x63\x74\x69\x6f\x6e",
                     JS_FUNCTION_TYPE, JSFunction::kSize,
                     generator_function_prototype, Builtins::kIllegal);
 
@@ -1516,7 +1516,7 @@ static Handle<JSObject> ResolveBuiltinIdHolder(Handle<Context> native_context,
   Isolate* isolate = native_context->GetIsolate();
   Factory* factory = isolate->factory();
   Handle<GlobalObject> global(native_context->global_object());
-  const char* period_pos = strchr(holder_expr, '.');
+  const char* period_pos = strchr(holder_expr, '\x2e');
   if (period_pos == NULL) {
     return Handle<JSObject>::cast(
         Object::GetPropertyOrElement(
@@ -1524,14 +1524,14 @@ static Handle<JSObject> ResolveBuiltinIdHolder(Handle<Context> native_context,
             .ToHandleChecked());
   }
   const char* inner = period_pos + 1;
-  DCHECK_EQ(NULL, strchr(inner, '.'));
+  DCHECK_EQ(NULL, strchr(inner, '\x2e'));
   Vector<const char> property(holder_expr,
                               static_cast<int>(period_pos - holder_expr));
   Handle<String> property_string = factory->InternalizeUtf8String(property);
   DCHECK(!property_string.is_null());
   Handle<JSObject> object = Handle<JSObject>::cast(
       Object::GetProperty(global, property_string).ToHandleChecked());
-  if (strcmp("prototype", inner) == 0) {
+  if (strcmp("\x70\x72\x6f\x74\x6f\x74\x79\x70\x65", inner) == 0) {
     Handle<JSFunction> function = Handle<JSFunction>::cast(object);
     return Handle<JSObject>(JSObject::cast(function->prototype()));
   }
@@ -1553,54 +1553,54 @@ static Handle<JSObject> ResolveBuiltinIdHolder(Handle<Context> native_context,
 #define INSTALL_NATIVE_MATH(name)                                    \
   {                                                                  \
     Handle<Object> fun =                                             \
-        ResolveBuiltinIdHolder(native_context(), "Math." #name);     \
+        ResolveBuiltinIdHolder(native_context(), "\x4d\x61\x74\x68\x2e" #name);     \
     native_context()->set_math_##name##_fun(JSFunction::cast(*fun)); \
   }
 
 void Genesis::InstallNativeFunctions() {
   HandleScope scope(isolate());
-  INSTALL_NATIVE(JSFunction, "CreateDate", create_date_fun);
+  INSTALL_NATIVE(JSFunction, "\x43\x72\x65\x61\x74\x65\x44\x61\x74\x65", create_date_fun);
 
-  INSTALL_NATIVE(JSFunction, "ToNumber", to_number_fun);
-  INSTALL_NATIVE(JSFunction, "ToString", to_string_fun);
-  INSTALL_NATIVE(JSFunction, "ToDetailString", to_detail_string_fun);
-  INSTALL_NATIVE(JSFunction, "ToObject", to_object_fun);
-  INSTALL_NATIVE(JSFunction, "ToInteger", to_integer_fun);
-  INSTALL_NATIVE(JSFunction, "ToUint32", to_uint32_fun);
-  INSTALL_NATIVE(JSFunction, "ToInt32", to_int32_fun);
+  INSTALL_NATIVE(JSFunction, "\x54\x6f\x4e\x75\x6d\x62\x65\x72", to_number_fun);
+  INSTALL_NATIVE(JSFunction, "\x54\x6f\x53\x74\x72\x69\x6e\x67", to_string_fun);
+  INSTALL_NATIVE(JSFunction, "\x54\x6f\x44\x65\x74\x61\x69\x6c\x53\x74\x72\x69\x6e\x67", to_detail_string_fun);
+  INSTALL_NATIVE(JSFunction, "\x54\x6f\x4f\x62\x6a\x65\x63\x74", to_object_fun);
+  INSTALL_NATIVE(JSFunction, "\x54\x6f\x49\x6e\x74\x65\x67\x65\x72", to_integer_fun);
+  INSTALL_NATIVE(JSFunction, "\x54\x6f\x55\x69\x6e\x74\x33\x32", to_uint32_fun);
+  INSTALL_NATIVE(JSFunction, "\x54\x6f\x49\x6e\x74\x33\x32", to_int32_fun);
 
-  INSTALL_NATIVE(JSFunction, "GlobalEval", global_eval_fun);
-  INSTALL_NATIVE(JSFunction, "Instantiate", instantiate_fun);
-  INSTALL_NATIVE(JSFunction, "ConfigureTemplateInstance",
+  INSTALL_NATIVE(JSFunction, "\x47\x6c\x6f\x62\x61\x6c\x45\x76\x61\x6c", global_eval_fun);
+  INSTALL_NATIVE(JSFunction, "\x49\x6e\x73\x74\x61\x6e\x74\x69\x61\x74\x65", instantiate_fun);
+  INSTALL_NATIVE(JSFunction, "\x43\x6f\x6e\x66\x69\x67\x75\x72\x65\x54\x65\x6d\x70\x6c\x61\x74\x65\x49\x6e\x73\x74\x61\x6e\x63\x65",
                  configure_instance_fun);
-  INSTALL_NATIVE(JSFunction, "GetStackTraceLine", get_stack_trace_line_fun);
-  INSTALL_NATIVE(JSObject, "functionCache", function_cache);
-  INSTALL_NATIVE(JSFunction, "ToCompletePropertyDescriptor",
+  INSTALL_NATIVE(JSFunction, "\x47\x65\x74\x53\x74\x61\x63\x6b\x54\x72\x61\x63\x65\x4c\x69\x6e\x65", get_stack_trace_line_fun);
+  INSTALL_NATIVE(JSObject, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x43\x61\x63\x68\x65", function_cache);
+  INSTALL_NATIVE(JSFunction, "\x54\x6f\x43\x6f\x6d\x70\x6c\x65\x74\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72",
                  to_complete_property_descriptor);
 
-  INSTALL_NATIVE(JSFunction, "IsPromise", is_promise);
-  INSTALL_NATIVE(JSFunction, "PromiseCreate", promise_create);
-  INSTALL_NATIVE(JSFunction, "PromiseResolve", promise_resolve);
-  INSTALL_NATIVE(JSFunction, "PromiseReject", promise_reject);
-  INSTALL_NATIVE(JSFunction, "PromiseChain", promise_chain);
-  INSTALL_NATIVE(JSFunction, "PromiseCatch", promise_catch);
-  INSTALL_NATIVE(JSFunction, "PromiseThen", promise_then);
+  INSTALL_NATIVE(JSFunction, "\x49\x73\x50\x72\x6f\x6d\x69\x73\x65", is_promise);
+  INSTALL_NATIVE(JSFunction, "\x50\x72\x6f\x6d\x69\x73\x65\x43\x72\x65\x61\x74\x65", promise_create);
+  INSTALL_NATIVE(JSFunction, "\x50\x72\x6f\x6d\x69\x73\x65\x52\x65\x73\x6f\x6c\x76\x65", promise_resolve);
+  INSTALL_NATIVE(JSFunction, "\x50\x72\x6f\x6d\x69\x73\x65\x52\x65\x6a\x65\x63\x74", promise_reject);
+  INSTALL_NATIVE(JSFunction, "\x50\x72\x6f\x6d\x69\x73\x65\x43\x68\x61\x69\x6e", promise_chain);
+  INSTALL_NATIVE(JSFunction, "\x50\x72\x6f\x6d\x69\x73\x65\x43\x61\x74\x63\x68", promise_catch);
+  INSTALL_NATIVE(JSFunction, "\x50\x72\x6f\x6d\x69\x73\x65\x54\x68\x65\x6e", promise_then);
 
-  INSTALL_NATIVE(JSFunction, "NotifyChange", observers_notify_change);
-  INSTALL_NATIVE(JSFunction, "EnqueueSpliceRecord", observers_enqueue_splice);
-  INSTALL_NATIVE(JSFunction, "BeginPerformSplice",
+  INSTALL_NATIVE(JSFunction, "\x4e\x6f\x74\x69\x66\x79\x43\x68\x61\x6e\x67\x65", observers_notify_change);
+  INSTALL_NATIVE(JSFunction, "\x45\x6e\x71\x75\x65\x75\x65\x53\x70\x6c\x69\x63\x65\x52\x65\x63\x6f\x72\x64", observers_enqueue_splice);
+  INSTALL_NATIVE(JSFunction, "\x42\x65\x67\x69\x6e\x50\x65\x72\x66\x6f\x72\x6d\x53\x70\x6c\x69\x63\x65",
                  observers_begin_perform_splice);
-  INSTALL_NATIVE(JSFunction, "EndPerformSplice",
+  INSTALL_NATIVE(JSFunction, "\x45\x6e\x64\x50\x65\x72\x66\x6f\x72\x6d\x53\x70\x6c\x69\x63\x65",
                  observers_end_perform_splice);
-  INSTALL_NATIVE(JSFunction, "NativeObjectObserve",
+  INSTALL_NATIVE(JSFunction, "\x4e\x61\x74\x69\x76\x65\x4f\x62\x6a\x65\x63\x74\x4f\x62\x73\x65\x72\x76\x65",
                  native_object_observe);
-  INSTALL_NATIVE(JSFunction, "NativeObjectGetNotifier",
+  INSTALL_NATIVE(JSFunction, "\x4e\x61\x74\x69\x76\x65\x4f\x62\x6a\x65\x63\x74\x47\x65\x74\x4e\x6f\x74\x69\x66\x69\x65\x72",
                  native_object_get_notifier);
-  INSTALL_NATIVE(JSFunction, "NativeObjectNotifierPerformChange",
+  INSTALL_NATIVE(JSFunction, "\x4e\x61\x74\x69\x76\x65\x4f\x62\x6a\x65\x63\x74\x4e\x6f\x74\x69\x66\x69\x65\x72\x50\x65\x72\x66\x6f\x72\x6d\x43\x68\x61\x6e\x67\x65",
                  native_object_notifier_perform_change);
 
-  INSTALL_NATIVE(Symbol, "symbolIterator", iterator_symbol);
-  INSTALL_NATIVE(Symbol, "symbolUnscopables", unscopables_symbol);
+  INSTALL_NATIVE(Symbol, "\x73\x79\x6d\x62\x6f\x6c\x49\x74\x65\x72\x61\x74\x6f\x72", iterator_symbol);
+  INSTALL_NATIVE(Symbol, "\x73\x79\x6d\x62\x6f\x6c\x55\x6e\x73\x63\x6f\x70\x61\x62\x6c\x65\x73", unscopables_symbol);
 
   INSTALL_NATIVE_MATH(abs)
   INSTALL_NATIVE_MATH(acos)
@@ -1626,10 +1626,10 @@ void Genesis::InstallNativeFunctions() {
 
 void Genesis::InstallExperimentalNativeFunctions() {
   if (FLAG_harmony_proxies) {
-    INSTALL_NATIVE(JSFunction, "DerivedHasTrap", derived_has_trap);
-    INSTALL_NATIVE(JSFunction, "DerivedGetTrap", derived_get_trap);
-    INSTALL_NATIVE(JSFunction, "DerivedSetTrap", derived_set_trap);
-    INSTALL_NATIVE(JSFunction, "ProxyEnumerate", proxy_enumerate);
+    INSTALL_NATIVE(JSFunction, "\x44\x65\x72\x69\x76\x65\x64\x48\x61\x73\x54\x72\x61\x70", derived_has_trap);
+    INSTALL_NATIVE(JSFunction, "\x44\x65\x72\x69\x76\x65\x64\x47\x65\x74\x54\x72\x61\x70", derived_get_trap);
+    INSTALL_NATIVE(JSFunction, "\x44\x65\x72\x69\x76\x65\x64\x53\x65\x74\x54\x72\x61\x70", derived_set_trap);
+    INSTALL_NATIVE(JSFunction, "\x50\x72\x6f\x78\x79\x45\x6e\x75\x6d\x65\x72\x61\x74\x65", proxy_enumerate);
   }
 }
 
@@ -1693,7 +1693,7 @@ bool Genesis::InstallNatives() {
       JSBuiltinsObject::kSize);
 
   Handle<String> name =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("builtins"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x62\x75\x69\x6c\x74\x69\x6e\x73"));
   builtins_fun->shared()->set_instance_class_name(*name);
   builtins_fun->initial_map()->set_dictionary_map(true);
   builtins_fun->initial_map()->set_prototype(heap()->null_value());
@@ -1714,11 +1714,11 @@ bool Genesis::InstallNatives() {
   static const PropertyAttributes attributes =
       static_cast<PropertyAttributes>(READ_ONLY | DONT_DELETE);
   Handle<String> global_string =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("global"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x67\x6c\x6f\x62\x61\x6c"));
   Handle<Object> global_obj(native_context()->global_object(), isolate());
   JSObject::AddProperty(builtins, global_string, global_obj, attributes);
   Handle<String> builtins_string =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("builtins"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x62\x75\x69\x6c\x74\x69\x6e\x73"));
   JSObject::AddProperty(builtins, builtins_string, builtins, attributes);
 
   // Set up the reference from the global object to the builtins object.
@@ -1739,7 +1739,7 @@ bool Genesis::InstallNatives() {
   {  // -- S c r i p t
     // Builtin functions for Script.
     Handle<JSFunction> script_fun = InstallFunction(
-        builtins, "Script", JS_VALUE_TYPE, JSValue::kSize,
+        builtins, "\x53\x63\x72\x69\x70\x74", JS_VALUE_TYPE, JSValue::kSize,
         isolate()->initial_object_prototype(), Builtins::kIllegal);
     Handle<JSObject> prototype =
         factory()->NewJSObject(isolate()->object_function(), TENURED);
@@ -1881,7 +1881,7 @@ bool Genesis::InstallNatives() {
     // that keeps its field isolated from JavaScript code. It may store
     // objects, that JavaScript code may not access.
     Handle<JSFunction> opaque_reference_fun = InstallFunction(
-        builtins, "OpaqueReference", JS_VALUE_TYPE, JSValue::kSize,
+        builtins, "\x4f\x70\x61\x71\x75\x65\x52\x65\x66\x65\x72\x65\x6e\x63\x65", JS_VALUE_TYPE, JSValue::kSize,
         isolate()->initial_object_prototype(), Builtins::kIllegal);
     Handle<JSObject> prototype =
         factory()->NewJSObject(isolate()->object_function(), TENURED);
@@ -1896,17 +1896,17 @@ bool Genesis::InstallNatives() {
   // transition easy to trap. Moreover, they rarely are smi-only.
   {
     Handle<JSFunction> array_function =
-        InstallInternalArray(builtins, "InternalArray", FAST_HOLEY_ELEMENTS);
+        InstallInternalArray(builtins, "\x49\x6e\x74\x65\x72\x6e\x61\x6c\x41\x72\x72\x61\x79", FAST_HOLEY_ELEMENTS);
     native_context()->set_internal_array_function(*array_function);
   }
 
   {
-    InstallInternalArray(builtins, "InternalPackedArray", FAST_ELEMENTS);
+    InstallInternalArray(builtins, "\x49\x6e\x74\x65\x72\x6e\x61\x6c\x50\x61\x63\x6b\x65\x64\x41\x72\x72\x61\x79", FAST_ELEMENTS);
   }
 
   {  // -- S e t I t e r a t o r
     Handle<JSFunction> set_iterator_function = InstallFunction(
-        builtins, "SetIterator", JS_SET_ITERATOR_TYPE, JSSetIterator::kSize,
+        builtins, "\x53\x65\x74\x49\x74\x65\x72\x61\x74\x6f\x72", JS_SET_ITERATOR_TYPE, JSSetIterator::kSize,
         isolate()->initial_object_prototype(), Builtins::kIllegal);
     native_context()->set_set_iterator_map(
         set_iterator_function->initial_map());
@@ -1914,14 +1914,14 @@ bool Genesis::InstallNatives() {
 
   {  // -- M a p I t e r a t o r
     Handle<JSFunction> map_iterator_function = InstallFunction(
-        builtins, "MapIterator", JS_MAP_ITERATOR_TYPE, JSMapIterator::kSize,
+        builtins, "\x4d\x61\x70\x49\x74\x65\x72\x61\x74\x6f\x72", JS_MAP_ITERATOR_TYPE, JSMapIterator::kSize,
         isolate()->initial_object_prototype(), Builtins::kIllegal);
     native_context()->set_map_iterator_map(
         map_iterator_function->initial_map());
   }
 
   if (FLAG_disable_native_files) {
-    PrintF("Warning: Running without installed natives!\n");
+    PrintF("\x57\x61\x72\x6e\x69\x6e\x67\x3a\x20\x52\x75\x6e\x6e\x69\x6e\x67\x20\x77\x69\x74\x68\x6f\x75\x74\x20\x69\x6e\x73\x74\x61\x6c\x6c\x65\x64\x20\x6e\x61\x74\x69\x76\x65\x73\x21\xa");
     return true;
   }
 
@@ -1956,10 +1956,10 @@ bool Genesis::InstallNatives() {
 
     // Install the call and the apply functions.
     Handle<JSFunction> call =
-        InstallFunction(proto, "call", JS_OBJECT_TYPE, JSObject::kHeaderSize,
+        InstallFunction(proto, "\x63\x61\x6c\x6c", JS_OBJECT_TYPE, JSObject::kHeaderSize,
                         MaybeHandle<JSObject>(), Builtins::kFunctionCall);
     Handle<JSFunction> apply =
-        InstallFunction(proto, "apply", JS_OBJECT_TYPE, JSObject::kHeaderSize,
+        InstallFunction(proto, "\x61\x70\x70\x6c\x79", JS_OBJECT_TYPE, JSObject::kHeaderSize,
                         MaybeHandle<JSObject>(), Builtins::kFunctionApply);
     if (FLAG_vector_ics) {
       // Apply embeds an IC, so we need a type vector of size 1 in the shared
@@ -2054,7 +2054,7 @@ bool Genesis::InstallNatives() {
 #define INSTALL_EXPERIMENTAL_NATIVE(i, flag, file)                \
   if (FLAG_harmony_##flag &&                                      \
       strcmp(ExperimentalNatives::GetScriptName(i).start(),       \
-          "native " file) == 0) {                                 \
+          "\x6e\x61\x74\x69\x76\x65\x20" file) == 0) {                                 \
     if (!CompileExperimentalBuiltin(isolate(), i)) return false;  \
   }
 
@@ -2063,10 +2063,10 @@ bool Genesis::InstallExperimentalNatives() {
   for (int i = ExperimentalNatives::GetDebuggerCount();
        i < ExperimentalNatives::GetBuiltinsCount();
        i++) {
-    INSTALL_EXPERIMENTAL_NATIVE(i, proxies, "proxy.js")
-    INSTALL_EXPERIMENTAL_NATIVE(i, generators, "generator.js")
-    INSTALL_EXPERIMENTAL_NATIVE(i, strings, "harmony-string.js")
-    INSTALL_EXPERIMENTAL_NATIVE(i, arrays, "harmony-array.js")
+    INSTALL_EXPERIMENTAL_NATIVE(i, proxies, "\x70\x72\x6f\x78\x79\x2e\x6a\x73")
+    INSTALL_EXPERIMENTAL_NATIVE(i, generators, "\x67\x65\x6e\x65\x72\x61\x74\x6f\x72\x2e\x6a\x73")
+    INSTALL_EXPERIMENTAL_NATIVE(i, strings, "\x68\x61\x72\x6d\x6f\x6e\x79\x2d\x73\x74\x72\x69\x6e\x67\x2e\x6a\x73")
+    INSTALL_EXPERIMENTAL_NATIVE(i, arrays, "\x68\x61\x72\x6d\x6f\x6e\x79\x2d\x61\x72\x72\x61\x79\x2e\x6a\x73")
   }
 
   InstallExperimentalNativeFunctions();
@@ -2170,9 +2170,9 @@ bool Genesis::InstallSpecialObjects(Handle<Context> native_context) {
       native_context->global_object()));
 
   Handle<JSObject> Error = Handle<JSObject>::cast(
-      Object::GetProperty(isolate, global, "Error").ToHandleChecked());
+      Object::GetProperty(isolate, global, "\x45\x72\x72\x6f\x72").ToHandleChecked());
   Handle<String> name =
-      factory->InternalizeOneByteString(STATIC_ASCII_VECTOR("stackTraceLimit"));
+      factory->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x73\x74\x61\x63\x6b\x54\x72\x61\x63\x65\x4c\x69\x6d\x69\x74"));
   Handle<Smi> stack_trace_limit(Smi::FromInt(FLAG_stack_trace_limit), isolate);
   JSObject::AddProperty(Error, name, stack_trace_limit, NONE);
 
@@ -2190,7 +2190,7 @@ bool Genesis::InstallSpecialObjects(Handle<Context> native_context) {
       JSObject::SetOwnPropertyIgnoreAttributes(
           handle(native_context->builtins(), isolate),
           factory->InternalizeOneByteString(
-              STATIC_ASCII_VECTOR("stack_trace_symbol")),
+              STATIC_ASCII_VECTOR("\x73\x74\x61\x63\x6b\x5f\x74\x72\x61\x63\x65\x5f\x73\x79\x6d\x62\x6f\x6c")),
           factory->stack_trace_symbol(),
           NONE),
       false);
@@ -2245,15 +2245,15 @@ bool Genesis::InstallExtensions(Handle<Context> native_context,
   ExtensionStates extension_states;  // All extensions have state UNVISITED.
   return InstallAutoExtensions(isolate, &extension_states) &&
       (!FLAG_expose_free_buffer ||
-       InstallExtension(isolate, "v8/free-buffer", &extension_states)) &&
+       InstallExtension(isolate, "\x76\x38\x2f\x66\x72\x65\x65\x2d\x62\x75\x66\x66\x65\x72", &extension_states)) &&
       (!FLAG_expose_gc ||
-       InstallExtension(isolate, "v8/gc", &extension_states)) &&
+       InstallExtension(isolate, "\x76\x38\x2f\x67\x63", &extension_states)) &&
       (!FLAG_expose_externalize_string ||
-       InstallExtension(isolate, "v8/externalize", &extension_states)) &&
+       InstallExtension(isolate, "\x76\x38\x2f\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65", &extension_states)) &&
       (!FLAG_track_gc_object_stats ||
-       InstallExtension(isolate, "v8/statistics", &extension_states)) &&
+       InstallExtension(isolate, "\x76\x38\x2f\x73\x74\x61\x74\x69\x73\x74\x69\x63\x73", &extension_states)) &&
       (!FLAG_expose_trigger_failure ||
-       InstallExtension(isolate, "v8/trigger-failure", &extension_states)) &&
+       InstallExtension(isolate, "\x76\x38\x2f\x74\x72\x69\x67\x67\x65\x72\x2d\x66\x61\x69\x6c\x75\x72\x65", &extension_states)) &&
       InstallRequestedExtensions(isolate, extensions, &extension_states);
 }
 
@@ -2295,8 +2295,8 @@ bool Genesis::InstallExtension(Isolate* isolate,
     }
   }
   return Utils::ApiCheck(false,
-                         "v8::Context::New()",
-                         "Cannot find required extension");
+                         "\x76\x38\x3a\x3a\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x4e\x65\x77\x28\x29",
+                         "\x43\x61\x6e\x6e\x6f\x74\x20\x66\x69\x6e\x64\x20\x72\x65\x71\x75\x69\x72\x65\x64\x20\x65\x78\x74\x65\x6e\x73\x69\x6f\x6e");
 }
 
 
@@ -2309,8 +2309,8 @@ bool Genesis::InstallExtension(Isolate* isolate,
   // The current node has already been visited so there must be a
   // cycle in the dependency graph; fail.
   if (!Utils::ApiCheck(extension_states->get_state(current) != VISITED,
-                       "v8::Context::New()",
-                       "Circular extension dependency")) {
+                       "\x76\x38\x3a\x3a\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x4e\x65\x77\x28\x29",
+                       "\x43\x69\x72\x63\x75\x6c\x61\x72\x20\x65\x78\x74\x65\x6e\x73\x69\x6f\x6e\x20\x64\x65\x70\x65\x6e\x64\x65\x6e\x63\x79")) {
     return false;
   }
   DCHECK(extension_states->get_state(current) == UNVISITED);
@@ -2341,7 +2341,7 @@ bool Genesis::InstallExtension(Isolate* isolate,
     // When an error is thrown during bootstrapping we automatically print
     // the line number at which this happened to the console in the isolate
     // error throwing functionality.
-    base::OS::PrintError("Error installing extension '%s'.\n",
+    base::OS::PrintError("\x45\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6c\x6c\x69\x6e\x67\x20\x65\x78\x74\x65\x6e\x73\x69\x6f\x6e\x20\x27\x6c\xa2\x27\x2e\xa",
                          current->extension()->name());
     isolate->clear_pending_exception();
   }
@@ -2650,7 +2650,7 @@ Genesis::Genesis(Isolate* isolate,
     Handle<JSBuiltinsObject> builtins(native_context()->builtins());
     Runtime::DefineObjectProperty(builtins,
                                   factory()->InternalizeOneByteString(
-                                      STATIC_ASCII_VECTOR("rngstate")),
+                                      STATIC_ASCII_VECTOR("\x72\x6e\x67\x73\x74\x61\x74\x65")),
                                   Utils::OpenHandle(*ta),
                                   NONE).Assert();
 
@@ -2667,7 +2667,7 @@ Genesis::Genesis(Isolate* isolate,
 
     Runtime::DefineObjectProperty(
         builtins,
-        factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("kTrig")),
+        factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x6b\x54\x72\x69\x67")),
         Utils::OpenHandle(*trig_table), NONE).Assert();
   }
 

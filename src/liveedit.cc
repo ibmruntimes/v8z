@@ -875,11 +875,11 @@ MaybeHandle<JSArray> LiveEdit::GatherCompileInfo(Handle<Script> script,
 
       Factory* factory = isolate->factory();
       Handle<String> start_pos_key = factory->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("startPosition"));
+          STATIC_ASCII_VECTOR("\x73\x74\x61\x72\x74\x50\x6f\x73\x69\x74\x69\x6f\x6e"));
       Handle<String> end_pos_key = factory->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("endPosition"));
+          STATIC_ASCII_VECTOR("\x65\x6e\x64\x50\x6f\x73\x69\x74\x69\x6f\x6e"));
       Handle<String> script_obj_key = factory->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("scriptObject"));
+          STATIC_ASCII_VECTOR("\x73\x63\x72\x69\x70\x74\x4f\x62\x6a\x65\x63\x74"));
       Handle<Smi> start_pos(
           Smi::FromInt(message_location.start_pos()), isolate);
       Handle<Smi> end_pos(Smi::FromInt(message_location.end_pos()), isolate);
@@ -1337,7 +1337,7 @@ class RelocInfoBuffer {
     // Some internal data structures overflow for very large buffers,
     // they must ensure that kMaximalBufferSize is not too large.
     if (new_buffer_size > kMaximalBufferSize) {
-      V8::FatalProcessOutOfMemory("RelocInfoBuffer::GrowBuffer");
+      V8::FatalProcessOutOfMemory("\x52\x65\x6c\x6f\x63\x49\x6e\x66\x6f\x42\x75\x66\x66\x65\x72\x3a\x3a\x47\x72\x6f\x77\x42\x75\x66\x66\x65\x72");
     }
 
     // Set up new buffer.
@@ -1606,7 +1606,7 @@ static const char* DropFrames(Vector<StackFrame*> frames,
                               LiveEdit::FrameDropMode* mode,
                               Object*** restarter_frame_function_pointer) {
   if (!LiveEdit::kFrameDropperSupported) {
-    return "Stack manipulations are not supported in this architecture.";
+    return "\x53\x74\x61\x63\x6b\x20\x6d\x61\x6e\x69\x70\x75\x6c\x61\x74\x69\x6f\x6e\x73\x20\x61\x72\x65\x20\x6e\x6f\x74\x20\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x69\x6e\x20\x74\x68\x69\x73\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65\x2e";
   }
 
   StackFrame* pre_top_frame = frames[top_frame_index - 1];
@@ -1656,7 +1656,7 @@ static const char* DropFrames(Vector<StackFrame*> frames,
     *mode = LiveEdit::CURRENTLY_SET_MODE;
     frame_has_padding = false;
   } else {
-    return "Unknown structure of stack above changing function";
+    return "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x73\x74\x72\x75\x63\x74\x75\x72\x65\x20\x6f\x66\x20\x73\x74\x61\x63\x6b\x20\x61\x62\x6f\x76\x65\x20\x63\x68\x61\x6e\x67\x69\x6e\x67\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e";
   }
 
   Address unused_stack_top = top_frame->sp();
@@ -1685,8 +1685,8 @@ static const char* DropFrames(Vector<StackFrame*> frames,
       int padding_counter =
           Smi::cast(Memory::Object_at(padding_pointer))->value();
       if (padding_counter * kPointerSize < shortage_bytes) {
-        return "Not enough space for frame dropper frame "
-            "(even with padding frame)";
+        return "\x4e\x6f\x74\x20\x65\x6e\x6f\x75\x67\x68\x20\x73\x70\x61\x63\x65\x20\x66\x6f\x72\x20\x66\x72\x61\x6d\x65\x20\x64\x72\x6f\x70\x70\x65\x72\x20\x66\x72\x61\x6d\x65\x20"
+            "\x28\x65\x76\x65\x6e\x20\x77\x69\x74\x68\x20\x70\x61\x64\x64\x69\x6e\x67\x20\x66\x72\x61\x6d\x65\x29";
       }
       Memory::Object_at(padding_pointer) =
           Smi::FromInt(padding_counter - shortage_bytes / kPointerSize);
@@ -1704,7 +1704,7 @@ static const char* DropFrames(Vector<StackFrame*> frames,
       STATIC_ASSERT(sizeof(Address) == kPointerSize);
       top_frame_pc_address -= shortage_bytes / kPointerSize;
     } else {
-      return "Not enough space for frame dropper frame";
+      return "\x4e\x6f\x74\x20\x65\x6e\x6f\x75\x67\x68\x20\x73\x70\x61\x63\x65\x20\x66\x6f\x72\x20\x66\x72\x61\x6d\x65\x20\x64\x72\x6f\x70\x70\x65\x72\x20\x66\x72\x61\x6d\x65";
     }
   }
 
@@ -1777,7 +1777,7 @@ static const char* DropActivationsInActiveThreadImpl(
             frame, LiveEdit::FUNCTION_BLOCKED_UNDER_NATIVE_CODE)) {
       // We are still above break_frame. It is not a target frame,
       // it is a problem.
-      return "Debugger mark-up on stack is not found";
+      return "\x44\x65\x62\x75\x67\x67\x65\x72\x20\x6d\x61\x72\x6b\x2d\x75\x70\x20\x6f\x6e\x20\x73\x74\x61\x63\x6b\x20\x69\x73\x20\x6e\x6f\x74\x20\x66\x6f\x75\x6e\x64";
     }
   }
 
@@ -2018,7 +2018,7 @@ class SingleFrameTarget {
     return false;
   }
   const char* GetNotFoundMessage() const {
-    return "Failed to found requested frame";
+    return "\x46\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x66\x6f\x75\x6e\x64\x20\x72\x65\x71\x75\x65\x73\x74\x65\x64\x20\x66\x72\x61\x6d\x65";
   }
   LiveEdit::FunctionPatchabilityStatus saved_status() {
     return m_saved_status;
@@ -2040,10 +2040,10 @@ const char* LiveEdit::RestartFrame(JavaScriptFrame* frame) {
     return result;
   }
   if (target.saved_status() == LiveEdit::FUNCTION_BLOCKED_UNDER_NATIVE_CODE) {
-    return "Function is blocked under native code";
+    return "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x73\x20\x62\x6c\x6f\x63\x6b\x65\x64\x20\x75\x6e\x64\x65\x72\x20\x6e\x61\x74\x69\x76\x65\x20\x63\x6f\x64\x65";
   }
   if (target.saved_status() == LiveEdit::FUNCTION_BLOCKED_UNDER_GENERATOR) {
-    return "Function is blocked under a generator activation";
+    return "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x73\x20\x62\x6c\x6f\x63\x6b\x65\x64\x20\x75\x6e\x64\x65\x72\x20\x61\x20\x67\x65\x6e\x65\x72\x61\x74\x6f\x72\x20\x61\x63\x74\x69\x76\x61\x74\x69\x6f\x6e";
   }
   return NULL;
 }

@@ -76,7 +76,7 @@ static const int kMaxSignificantDecimalDigits = 780;
 
 static Vector<const char> TrimLeadingZeros(Vector<const char> buffer) {
   for (int i = 0; i < buffer.length(); i++) {
-    if (GET_ASCII_CODE(buffer[i]) != GET_ASCII_CODE('0')) {
+    if (GET_ASCII_CODE(buffer[i]) != GET_ASCII_CODE('\x30')) {
       return buffer.SubVector(i, buffer.length());
     }
   }
@@ -86,7 +86,7 @@ static Vector<const char> TrimLeadingZeros(Vector<const char> buffer) {
 
 static Vector<const char> TrimTrailingZeros(Vector<const char> buffer) {
   for (int i = buffer.length() - 1; i >= 0; --i) {
-    if (GET_ASCII_CODE(buffer[i]) != GET_ASCII_CODE('0')) {
+    if (GET_ASCII_CODE(buffer[i]) != GET_ASCII_CODE('\x30')) {
       return buffer.SubVector(0, i + 1);
     }
   }
@@ -103,10 +103,10 @@ static void TrimToMaxSignificantDigits(Vector<const char> buffer,
   }
   // The input buffer has been trimmed. Therefore the last digit must be
   // different from '0'.
-  DCHECK(GET_ASCII_CODE(buffer[buffer.length() - 1]) != GET_ASCII_CODE('0'));
+  DCHECK(GET_ASCII_CODE(buffer[buffer.length() - 1]) != GET_ASCII_CODE('\x30'));
   // Set the last digit to be non-zero. This is sufficient to guarantee
   // correct rounding.
-  significant_buffer[kMaxSignificantDecimalDigits - 1] = '1';
+  significant_buffer[kMaxSignificantDecimalDigits - 1] = '\x31';
   *significant_exponent =
       exponent + (buffer.length() - kMaxSignificantDecimalDigits);
 }
@@ -122,7 +122,7 @@ static uint64_t ReadUint64(Vector<const char> buffer,
   uint64_t result = 0;
   int i = 0;
   while (i < buffer.length() && result <= (kMaxUint64 / 10 - 1)) {
-    int digit = GET_ASCII_CODE(buffer[i++]) - GET_ASCII_CODE('0');
+    int digit = GET_ASCII_CODE(buffer[i++]) - GET_ASCII_CODE('\x30');
     DCHECK(0 <= digit && digit <= 9);
     result = 10 * result + digit;
   }
@@ -145,7 +145,7 @@ static void ReadDiyFp(Vector<const char> buffer,
     *remaining_decimals = 0;
   } else {
     // Round the significand.
-    if (GET_ASCII_CODE(buffer[read_digits]) >= GET_ASCII_CODE('5')) {
+    if (GET_ASCII_CODE(buffer[read_digits]) >= GET_ASCII_CODE('\x35')) {
       significand++;
     }
     // Compute the binary exponent.

@@ -32,7 +32,7 @@ void CheckEqualsHelper(const char* file, int line, const char* expected_source,
   *val = value;
   if (!CheckEqualsStrict(exp, val)) {
     V8_Fatal(file, line,
-             "CHECK_EQ(%s, %s) failed\n#   Expected: %f\n#   Found: %f",
+             "\x43\x48\x45\x43\x4b\x5f\x45\x51\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x6c\x86\xa\x23\x20\x20\x20\x46\x6f\x75\x6e\x64\x3a\x20\x6c\x86",
              expected_source, value_source, *exp, *val);
   }
   delete[] exp;
@@ -50,7 +50,7 @@ void CheckNonEqualsHelper(const char* file, int line,
   *val = value;
   if (CheckEqualsStrict(exp, val)) {
     V8_Fatal(file, line,
-             "CHECK_EQ(%s, %s) failed\n#   Expected: %f\n#   Found: %f",
+             "\x43\x48\x45\x43\x4b\x5f\x45\x51\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x6c\x86\xa\x23\x20\x20\x20\x46\x6f\x75\x6e\x64\x3a\x20\x6c\x86",
              expected_source, value_source, *exp, *val);
   }
   delete[] exp;
@@ -68,7 +68,7 @@ void CheckEqualsHelper(const char* file,
     v8::String::Utf8Value value_str(value);
     v8::String::Utf8Value expected_str(expected);
     V8_Fatal(file, line,
-             "CHECK_EQ(%s, %s) failed\n#   Expected: %s\n#   Found: %s",
+             "\x43\x48\x45\x43\x4b\x5f\x45\x51\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x6c\xa2\xa\x23\x20\x20\x20\x46\x6f\x75\x6e\x64\x3a\x20\x6c\xa2",
              expected_source, value_source, *expected_str, *value_str);
   }
 }
@@ -82,7 +82,7 @@ void CheckNonEqualsHelper(const char* file,
                           v8::Handle<v8::Value> value) {
   if (unexpected->Equals(value)) {
     v8::String::Utf8Value value_str(value);
-    V8_Fatal(file, line, "CHECK_NE(%s, %s) failed\n#   Value: %s",
+    V8_Fatal(file, line, "\x43\x48\x45\x43\x4b\x5f\x4e\x45\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x56\x61\x6c\x75\x65\x3a\x20\x6c\xa2",
              unexpected_source, value_source, *value_str);
   }
 }

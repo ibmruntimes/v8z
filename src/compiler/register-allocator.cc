@@ -349,7 +349,7 @@ bool LiveRange::ShouldBeAllocatedBefore(const LiveRange* other) const {
 
 
 void LiveRange::ShortenTo(LifetimePosition start) {
-  RegisterAllocator::TraceAlloc("Shorten live range %d to [%d\n", id_,
+  RegisterAllocator::TraceAlloc("\x53\x68\x6f\x72\x74\x65\x6e\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x74\x6f\x20\x5b\x6c\x84\xa", id_,
                                 start.Value());
   DCHECK(first_interval_ != NULL);
   DCHECK(first_interval_->start().Value() <= start.Value());
@@ -360,7 +360,7 @@ void LiveRange::ShortenTo(LifetimePosition start) {
 
 void LiveRange::EnsureInterval(LifetimePosition start, LifetimePosition end,
                                Zone* zone) {
-  RegisterAllocator::TraceAlloc("Ensure live range %d in interval [%d %d[\n",
+  RegisterAllocator::TraceAlloc("\x45\x6e\x73\x75\x72\x65\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x69\x6e\x20\x69\x6e\x74\x65\x72\x76\x61\x6c\x20\x5b\x6c\x84\x20\x6c\x84\x5b\xa",
                                 id_, start.Value(), end.Value());
   LifetimePosition new_end = end;
   while (first_interval_ != NULL &&
@@ -382,7 +382,7 @@ void LiveRange::EnsureInterval(LifetimePosition start, LifetimePosition end,
 
 void LiveRange::AddUseInterval(LifetimePosition start, LifetimePosition end,
                                Zone* zone) {
-  RegisterAllocator::TraceAlloc("Add to live range %d interval [%d %d[\n", id_,
+  RegisterAllocator::TraceAlloc("\x41\x64\x64\x20\x74\x6f\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x69\x6e\x74\x65\x72\x76\x61\x6c\x20\x5b\x6c\x84\x20\x6c\x84\x5b\xa", id_,
                                 start.Value(), end.Value());
   if (first_interval_ == NULL) {
     UseInterval* interval = new (zone) UseInterval(start, end);
@@ -410,7 +410,7 @@ void LiveRange::AddUseInterval(LifetimePosition start, LifetimePosition end,
 void LiveRange::AddUsePosition(LifetimePosition pos,
                                InstructionOperand* operand,
                                InstructionOperand* hint, Zone* zone) {
-  RegisterAllocator::TraceAlloc("Add to live range %d use position %d\n", id_,
+  RegisterAllocator::TraceAlloc("\x41\x64\x64\x20\x74\x6f\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x75\x73\x65\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x6c\x84\xa", id_,
                                 pos.Value());
   UsePosition* use_pos = new (zone) UsePosition(pos, operand, hint);
   UsePosition* prev_hint = NULL;
@@ -582,7 +582,7 @@ int RegisterAllocator::FixedDoubleLiveRangeID(int index) {
 
 InstructionOperand* RegisterAllocator::AllocateFixed(
     UnallocatedOperand* operand, int pos, bool is_tagged) {
-  TraceAlloc("Allocating fixed reg for op %d\n", operand->virtual_register());
+  TraceAlloc("\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6e\x67\x20\x66\x69\x78\x65\x64\x20\x72\x65\x67\x20\x66\x6f\x72\x20\x6f\x70\x20\x6c\x84\xa", operand->virtual_register());
   DCHECK(operand->HasFixedPolicy());
   if (operand->HasFixedSlotPolicy()) {
     operand->ConvertTo(InstructionOperand::STACK_SLOT,
@@ -597,7 +597,7 @@ InstructionOperand* RegisterAllocator::AllocateFixed(
     UNREACHABLE();
   }
   if (is_tagged) {
-    TraceAlloc("Fixed reg is tagged at %d\n", pos);
+    TraceAlloc("\x46\x69\x78\x65\x64\x20\x72\x65\x67\x20\x69\x73\x20\x74\x61\x67\x67\x65\x64\x20\x61\x74\x20\x6c\x84\xa", pos);
     Instruction* instr = InstructionAt(pos);
     if (instr->HasPointerMap()) {
       instr->pointer_map()->RecordPointer(operand, code_zone());
@@ -1129,7 +1129,7 @@ bool RegisterAllocator::Allocate() {
 
 
 void RegisterAllocator::MeetRegisterConstraints() {
-  RegisterAllocatorPhase phase("L_Register constraints", this);
+  RegisterAllocatorPhase phase("\x4c\x5f\x52\x65\x67\x69\x73\x74\x65\x72\x20\x63\x6f\x6e\x73\x74\x72\x61\x69\x6e\x74\x73", this);
   for (int i = 0; i < code()->BasicBlockCount(); ++i) {
     MeetRegisterConstraints(code()->BlockAt(i));
     if (!AllocationOk()) return;
@@ -1138,7 +1138,7 @@ void RegisterAllocator::MeetRegisterConstraints() {
 
 
 void RegisterAllocator::ResolvePhis() {
-  RegisterAllocatorPhase phase("L_Resolve phis", this);
+  RegisterAllocatorPhase phase("\x4c\x5f\x52\x65\x73\x6f\x6c\x76\x65\x20\x70\x68\x69\x73", this);
 
   // Process the blocks in reverse order.
   for (int i = code()->BasicBlockCount() - 1; i >= 0; --i) {
@@ -1215,7 +1215,7 @@ BasicBlock* RegisterAllocator::GetBlock(LifetimePosition pos) {
 
 
 void RegisterAllocator::ConnectRanges() {
-  RegisterAllocatorPhase phase("L_Connect ranges", this);
+  RegisterAllocatorPhase phase("\x4c\x5f\x43\x6f\x6e\x6e\x65\x63\x74\x20\x72\x61\x6e\x67\x65\x73", this);
   for (int i = 0; i < live_ranges()->length(); ++i) {
     LiveRange* first_range = live_ranges()->at(i);
     if (first_range == NULL || first_range->parent() != NULL) continue;
@@ -1257,7 +1257,7 @@ bool RegisterAllocator::CanEagerlyResolveControlFlow(BasicBlock* block) const {
 
 
 void RegisterAllocator::ResolveControlFlow() {
-  RegisterAllocatorPhase phase("L_Resolve control flow", this);
+  RegisterAllocatorPhase phase("\x4c\x5f\x52\x65\x73\x6f\x6c\x76\x65\x20\x63\x6f\x6e\x74\x72\x6f\x6c\x20\x66\x6c\x6f\x77", this);
   for (int block_id = 1; block_id < code()->BasicBlockCount(); ++block_id) {
     BasicBlock* block = code()->BlockAt(block_id);
     if (CanEagerlyResolveControlFlow(block)) continue;
@@ -1279,7 +1279,7 @@ void RegisterAllocator::ResolveControlFlow() {
 
 
 void RegisterAllocator::BuildLiveRanges() {
-  RegisterAllocatorPhase phase("L_Build live ranges", this);
+  RegisterAllocatorPhase phase("\x4c\x5f\x42\x75\x69\x6c\x64\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x73", this);
   InitializeLivenessAnalysis();
   // Process the blocks in reverse order.
   for (int block_id = code()->BasicBlockCount() - 1; block_id >= 0;
@@ -1360,22 +1360,22 @@ void RegisterAllocator::BuildLiveRanges() {
       while (!iterator.Done()) {
         found = true;
         int operand_index = iterator.Current();
-        PrintF("Register allocator error: live v%d reached first block.\n",
+        PrintF("\x52\x65\x67\x69\x73\x74\x65\x72\x20\x61\x6c\x6c\x6f\x63\x61\x74\x6f\x72\x20\x65\x72\x72\x6f\x72\x3a\x20\x6c\x69\x76\x65\x20\x76\x6c\x84\x20\x72\x65\x61\x63\x68\x65\x64\x20\x66\x69\x72\x73\x74\x20\x62\x6c\x6f\x63\x6b\x2e\xa",
                operand_index);
         LiveRange* range = LiveRangeFor(operand_index);
-        PrintF("  (first use is at %d)\n", range->first_pos()->pos().Value());
+        PrintF("\x20\x20\x28\x66\x69\x72\x73\x74\x20\x75\x73\x65\x20\x69\x73\x20\x61\x74\x20\x6c\x84\x29\xa", range->first_pos()->pos().Value());
         CompilationInfo* info = code()->linkage()->info();
         if (info->IsStub()) {
           if (info->code_stub() == NULL) {
-            PrintF("\n");
+            PrintF("\xa");
           } else {
             CodeStub::Major major_key = info->code_stub()->MajorKey();
-            PrintF("  (function: %s)\n", CodeStub::MajorName(major_key, false));
+            PrintF("\x20\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20\x6c\xa2\x29\xa", CodeStub::MajorName(major_key, false));
           }
         } else {
           DCHECK(info->IsOptimizing());
           AllowHandleDereference allow_deref;
-          PrintF("  (function: %s)\n",
+          PrintF("\x20\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20\x6c\xa2\x29\xa",
                  info->function()->debug_name()->ToCString().get());
         }
         iterator.Advance();
@@ -1421,7 +1421,7 @@ bool RegisterAllocator::SafePointsAreInOrder() const {
 
 
 void RegisterAllocator::PopulatePointerMaps() {
-  RegisterAllocatorPhase phase("L_Populate pointer maps", this);
+  RegisterAllocatorPhase phase("\x4c\x5f\x50\x6f\x70\x75\x6c\x61\x74\x65\x20\x70\x6f\x69\x6e\x74\x65\x72\x20\x6d\x61\x70\x73", this);
 
   DCHECK(SafePointsAreInOrder());
 
@@ -1485,15 +1485,15 @@ void RegisterAllocator::PopulatePointerMaps() {
       if (range->HasAllocatedSpillOperand() &&
           safe_point >= range->spill_start_index() &&
           !range->GetSpillOperand()->IsConstant()) {
-        TraceAlloc("Pointer for range %d (spilled at %d) at safe point %d\n",
+        TraceAlloc("\x50\x6f\x69\x6e\x74\x65\x72\x20\x66\x6f\x72\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x28\x73\x70\x69\x6c\x6c\x65\x64\x20\x61\x74\x20\x6c\x84\x29\x20\x61\x74\x20\x73\x61\x66\x65\x20\x70\x6f\x69\x6e\x74\x20\x6c\x84\xa",
                    range->id(), range->spill_start_index(), safe_point);
         map->RecordPointer(range->GetSpillOperand(), code_zone());
       }
 
       if (!cur->IsSpilled()) {
         TraceAlloc(
-            "Pointer in register for range %d (start at %d) "
-            "at safe point %d\n",
+            "\x50\x6f\x69\x6e\x74\x65\x72\x20\x69\x6e\x20\x72\x65\x67\x69\x73\x74\x65\x72\x20\x66\x6f\x72\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x28\x73\x74\x61\x72\x74\x20\x61\x74\x20\x6c\x84\x29\x20"
+            "\x61\x74\x20\x73\x61\x66\x65\x20\x70\x6f\x69\x6e\x74\x20\x6c\x84\xa",
             cur->id(), cur->Start().Value(), safe_point);
         InstructionOperand* operand = cur->CreateAssignedOperand(code_zone());
         DCHECK(!operand->IsStackSlot());
@@ -1505,7 +1505,7 @@ void RegisterAllocator::PopulatePointerMaps() {
 
 
 void RegisterAllocator::AllocateGeneralRegisters() {
-  RegisterAllocatorPhase phase("L_Allocate general registers", this);
+  RegisterAllocatorPhase phase("\x4c\x5f\x41\x6c\x6c\x6f\x63\x61\x74\x65\x20\x67\x65\x6e\x65\x72\x61\x6c\x20\x72\x65\x67\x69\x73\x74\x65\x72\x73", this);
   num_registers_ = Register::NumAllocatableRegisters();
   mode_ = GENERAL_REGISTERS;
   AllocateRegisters();
@@ -1513,7 +1513,7 @@ void RegisterAllocator::AllocateGeneralRegisters() {
 
 
 void RegisterAllocator::AllocateDoubleRegisters() {
-  RegisterAllocatorPhase phase("L_Allocate double registers", this);
+  RegisterAllocatorPhase phase("\x4c\x5f\x41\x6c\x6c\x6f\x63\x61\x74\x65\x20\x64\x6f\x75\x62\x6c\x65\x20\x72\x65\x67\x69\x73\x74\x65\x72\x73", this);
   num_registers_ = DoubleRegister::NumAllocatableRegisters();
   mode_ = DOUBLE_REGISTERS;
   AllocateRegisters();
@@ -1562,11 +1562,11 @@ void RegisterAllocator::AllocateRegisters() {
 #ifdef DEBUG
     allocation_finger_ = position;
 #endif
-    TraceAlloc("Processing interval %d start=%d\n", current->id(),
+    TraceAlloc("\x50\x72\x6f\x63\x65\x73\x73\x69\x6e\x67\x20\x69\x6e\x74\x65\x72\x76\x61\x6c\x20\x6c\x84\x20\x73\x74\x61\x72\x74\x3d\x6c\x84\xa", current->id(),
                position.Value());
 
     if (current->HasAllocatedSpillOperand()) {
-      TraceAlloc("Live range %d already has a spill operand\n", current->id());
+      TraceAlloc("\x4c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x61\x6c\x72\x65\x61\x64\x79\x20\x68\x61\x73\x20\x61\x20\x73\x70\x69\x6c\x6c\x20\x6f\x70\x65\x72\x61\x6e\x64\xa", current->id());
       LifetimePosition next_pos = position;
       if (code()->IsGapAt(next_pos.InstructionIndex())) {
         next_pos = next_pos.NextInstruction();
@@ -1661,13 +1661,13 @@ RegisterKind RegisterAllocator::RequiredRegisterKind(
 
 
 void RegisterAllocator::AddToActive(LiveRange* range) {
-  TraceAlloc("Add live range %d to active\n", range->id());
+  TraceAlloc("\x41\x64\x64\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x74\x6f\x20\x61\x63\x74\x69\x76\x65\xa", range->id());
   active_live_ranges_.Add(range, zone());
 }
 
 
 void RegisterAllocator::AddToInactive(LiveRange* range) {
-  TraceAlloc("Add live range %d to inactive\n", range->id());
+  TraceAlloc("\x41\x64\x64\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x74\x6f\x20\x69\x6e\x61\x63\x74\x69\x76\x65\xa", range->id());
   inactive_live_ranges_.Add(range, zone());
 }
 
@@ -1679,13 +1679,13 @@ void RegisterAllocator::AddToUnhandledSorted(LiveRange* range) {
   for (int i = unhandled_live_ranges_.length() - 1; i >= 0; --i) {
     LiveRange* cur_range = unhandled_live_ranges_.at(i);
     if (range->ShouldBeAllocatedBefore(cur_range)) {
-      TraceAlloc("Add live range %d to unhandled at %d\n", range->id(), i + 1);
+      TraceAlloc("\x41\x64\x64\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x74\x6f\x20\x75\x6e\x68\x61\x6e\x64\x6c\x65\x64\x20\x61\x74\x20\x6c\x84\xa", range->id(), i + 1);
       unhandled_live_ranges_.InsertAt(i + 1, range, zone());
       DCHECK(UnhandledIsSorted());
       return;
     }
   }
-  TraceAlloc("Add live range %d to unhandled at start\n", range->id());
+  TraceAlloc("\x41\x64\x64\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x74\x6f\x20\x75\x6e\x68\x61\x6e\x64\x6c\x65\x64\x20\x61\x74\x20\x73\x74\x61\x72\x74\xa", range->id());
   unhandled_live_ranges_.InsertAt(0, range, zone());
   DCHECK(UnhandledIsSorted());
 }
@@ -1694,7 +1694,7 @@ void RegisterAllocator::AddToUnhandledSorted(LiveRange* range) {
 void RegisterAllocator::AddToUnhandledUnsorted(LiveRange* range) {
   if (range == NULL || range->IsEmpty()) return;
   DCHECK(!range->HasRegisterAssigned() && !range->IsSpilled());
-  TraceAlloc("Add live range %d to unhandled unsorted at end\n", range->id());
+  TraceAlloc("\x41\x64\x64\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x74\x6f\x20\x75\x6e\x68\x61\x6e\x64\x6c\x65\x64\x20\x75\x6e\x73\x6f\x72\x74\x65\x64\x20\x61\x74\x20\x65\x6e\x64\xa", range->id());
   unhandled_live_ranges_.Add(range, zone());
 }
 
@@ -1712,7 +1712,7 @@ static int UnhandledSortHelper(LiveRange* const* a, LiveRange* const* b) {
 // at the end of the array list.  This is convenient for the register allocation
 // algorithm because it is efficient to remove elements from the end.
 void RegisterAllocator::SortUnhandled() {
-  TraceAlloc("Sort unhandled\n");
+  TraceAlloc("\x53\x6f\x72\x74\x20\x75\x6e\x68\x61\x6e\x64\x6c\x65\x64\xa");
   unhandled_live_ranges_.Sort(&UnhandledSortHelper);
 }
 
@@ -1758,7 +1758,7 @@ InstructionOperand* RegisterAllocator::TryReuseSpillSlot(LiveRange* range) {
 void RegisterAllocator::ActiveToHandled(LiveRange* range) {
   DCHECK(active_live_ranges_.Contains(range));
   active_live_ranges_.RemoveElement(range);
-  TraceAlloc("Moving live range %d from active to handled\n", range->id());
+  TraceAlloc("\x4d\x6f\x76\x69\x6e\x67\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x66\x72\x6f\x6d\x20\x61\x63\x74\x69\x76\x65\x20\x74\x6f\x20\x68\x61\x6e\x64\x6c\x65\x64\xa", range->id());
   FreeSpillSlot(range);
 }
 
@@ -1767,14 +1767,14 @@ void RegisterAllocator::ActiveToInactive(LiveRange* range) {
   DCHECK(active_live_ranges_.Contains(range));
   active_live_ranges_.RemoveElement(range);
   inactive_live_ranges_.Add(range, zone());
-  TraceAlloc("Moving live range %d from active to inactive\n", range->id());
+  TraceAlloc("\x4d\x6f\x76\x69\x6e\x67\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x66\x72\x6f\x6d\x20\x61\x63\x74\x69\x76\x65\x20\x74\x6f\x20\x69\x6e\x61\x63\x74\x69\x76\x65\xa", range->id());
 }
 
 
 void RegisterAllocator::InactiveToHandled(LiveRange* range) {
   DCHECK(inactive_live_ranges_.Contains(range));
   inactive_live_ranges_.RemoveElement(range);
-  TraceAlloc("Moving live range %d from inactive to handled\n", range->id());
+  TraceAlloc("\x4d\x6f\x76\x69\x6e\x67\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x66\x72\x6f\x6d\x20\x69\x6e\x61\x63\x74\x69\x76\x65\x20\x74\x6f\x20\x68\x61\x6e\x64\x6c\x65\x64\xa", range->id());
   FreeSpillSlot(range);
 }
 
@@ -1783,7 +1783,7 @@ void RegisterAllocator::InactiveToActive(LiveRange* range) {
   DCHECK(inactive_live_ranges_.Contains(range));
   inactive_live_ranges_.RemoveElement(range);
   active_live_ranges_.Add(range, zone());
-  TraceAlloc("Moving live range %d from inactive to active\n", range->id());
+  TraceAlloc("\x4d\x6f\x76\x69\x6e\x67\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x66\x72\x6f\x6d\x20\x69\x6e\x61\x63\x74\x69\x76\x65\x20\x74\x6f\x20\x61\x63\x74\x69\x76\x65\xa", range->id());
 }
 
 
@@ -1820,13 +1820,13 @@ bool RegisterAllocator::TryAllocateFreeReg(LiveRange* current) {
   if (hint != NULL && (hint->IsRegister() || hint->IsDoubleRegister())) {
     int register_index = hint->index();
     TraceAlloc(
-        "Found reg hint %s (free until [%d) for live range %d (end %d[).\n",
+        "\x46\x6f\x75\x6e\x64\x20\x72\x65\x67\x20\x68\x69\x6e\x74\x20\x6c\xa2\x20\x28\x66\x72\x65\x65\x20\x75\x6e\x74\x69\x6c\x20\x5b\x6c\x84\x29\x20\x66\x6f\x72\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x28\x65\x6e\x64\x20\x6c\x84\x5b\x29\x2e\xa",
         RegisterName(register_index), free_until_pos[register_index].Value(),
         current->id(), current->End().Value());
 
     // The desired register is free until the end of the current live range.
     if (free_until_pos[register_index].Value() >= current->End().Value()) {
-      TraceAlloc("Assigning preferred reg %s to live range %d\n",
+      TraceAlloc("\x41\x73\x73\x69\x67\x6e\x69\x6e\x67\x20\x70\x72\x65\x66\x65\x72\x72\x65\x64\x20\x72\x65\x67\x20\x6c\xa2\x20\x74\x6f\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\xa",
                  RegisterName(register_index), current->id());
       SetLiveRangeAssignedRegister(current, register_index);
       return true;
@@ -1860,7 +1860,7 @@ bool RegisterAllocator::TryAllocateFreeReg(LiveRange* current) {
   // Register reg is available at the range start and is free until
   // the range end.
   DCHECK(pos.Value() >= current->End().Value());
-  TraceAlloc("Assigning free reg %s to live range %d\n", RegisterName(reg),
+  TraceAlloc("\x41\x73\x73\x69\x67\x6e\x69\x6e\x67\x20\x66\x72\x65\x65\x20\x72\x65\x67\x20\x6c\xa2\x20\x74\x6f\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\xa", RegisterName(reg),
              current->id());
   SetLiveRangeAssignedRegister(current, reg);
 
@@ -1943,7 +1943,7 @@ void RegisterAllocator::AllocateBlockedReg(LiveRange* current) {
 
   // Register reg is not blocked for the whole range.
   DCHECK(block_pos[reg].Value() >= current->End().Value());
-  TraceAlloc("Assigning blocked reg %s to live range %d\n", RegisterName(reg),
+  TraceAlloc("\x41\x73\x73\x69\x67\x6e\x69\x6e\x67\x20\x62\x6c\x6f\x63\x6b\x65\x64\x20\x72\x65\x67\x20\x6c\xa2\x20\x74\x6f\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\xa", RegisterName(reg),
              current->id());
   SetLiveRangeAssignedRegister(current, reg);
 
@@ -2045,7 +2045,7 @@ bool RegisterAllocator::IsBlockBoundary(LifetimePosition pos) {
 LiveRange* RegisterAllocator::SplitRangeAt(LiveRange* range,
                                            LifetimePosition pos) {
   DCHECK(!range->IsFixed());
-  TraceAlloc("Splitting live range %d at %d\n", range->id(), pos.Value());
+  TraceAlloc("\x53\x70\x6c\x69\x74\x74\x69\x6e\x67\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x61\x74\x20\x6c\x84\xa", range->id(), pos.Value());
 
   if (pos.Value() <= range->Start().Value()) return range;
 
@@ -2066,7 +2066,7 @@ LiveRange* RegisterAllocator::SplitBetween(LiveRange* range,
                                            LifetimePosition start,
                                            LifetimePosition end) {
   DCHECK(!range->IsFixed());
-  TraceAlloc("Splitting live range %d in position between [%d, %d]\n",
+  TraceAlloc("\x53\x70\x6c\x69\x74\x74\x69\x6e\x67\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\x20\x69\x6e\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x62\x65\x74\x77\x65\x65\x6e\x20\x5b\x6c\x84\x2c\x20\x6c\x84\x5d\xa",
              range->id(), start.Value(), end.Value());
 
   LifetimePosition split_pos = FindOptimalSplitPos(start, end);
@@ -2155,7 +2155,7 @@ void RegisterAllocator::SpillBetweenUntil(LiveRange* range,
 
 void RegisterAllocator::Spill(LiveRange* range) {
   DCHECK(!range->IsSpilled());
-  TraceAlloc("Spilling live range %d\n", range->id());
+  TraceAlloc("\x53\x70\x69\x6c\x6c\x69\x6e\x67\x20\x6c\x69\x76\x65\x20\x72\x61\x6e\x67\x65\x20\x6c\x84\xa", range->id());
   LiveRange* first = range->TopLevel();
 
   if (!first->HasAllocatedSpillOperand()) {

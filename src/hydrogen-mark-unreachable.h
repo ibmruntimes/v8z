@@ -14,7 +14,7 @@ namespace internal {
 class HMarkUnreachableBlocksPhase : public HPhase {
  public:
   explicit HMarkUnreachableBlocksPhase(HGraph* graph)
-      : HPhase("H_Mark unreachable blocks", graph) { }
+      : HPhase("\x48\x5f\x4d\x61\x72\x6b\x20\x75\x6e\x72\x65\x61\x63\x68\x61\x62\x6c\x65\x20\x62\x6c\x6f\x63\x6b\x73", graph) { }
 
   void Run();
 

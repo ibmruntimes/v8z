@@ -114,140 +114,140 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
 
   // Miscellaneous
   Add(ExternalReference::roots_array_start(isolate).address(),
-      "Heap::roots_array_start()");
+      "\x48\x65\x61\x70\x3a\x3a\x72\x6f\x6f\x74\x73\x5f\x61\x72\x72\x61\x79\x5f\x73\x74\x61\x72\x74\x28\x29");
   Add(ExternalReference::address_of_stack_limit(isolate).address(),
-      "StackGuard::address_of_jslimit()");
+      "\x53\x74\x61\x63\x6b\x47\x75\x61\x72\x64\x3a\x3a\x61\x64\x64\x72\x65\x73\x73\x5f\x6f\x66\x5f\x6a\x73\x6c\x69\x6d\x69\x74\x28\x29");
   Add(ExternalReference::address_of_real_stack_limit(isolate).address(),
-      "StackGuard::address_of_real_jslimit()");
+      "\x53\x74\x61\x63\x6b\x47\x75\x61\x72\x64\x3a\x3a\x61\x64\x64\x72\x65\x73\x73\x5f\x6f\x66\x5f\x72\x65\x61\x6c\x5f\x6a\x73\x6c\x69\x6d\x69\x74\x28\x29");
   Add(ExternalReference::new_space_start(isolate).address(),
-      "Heap::NewSpaceStart()");
+      "\x48\x65\x61\x70\x3a\x3a\x4e\x65\x77\x53\x70\x61\x63\x65\x53\x74\x61\x72\x74\x28\x29");
   Add(ExternalReference::new_space_mask(isolate).address(),
-      "Heap::NewSpaceMask()");
+      "\x48\x65\x61\x70\x3a\x3a\x4e\x65\x77\x53\x70\x61\x63\x65\x4d\x61\x73\x6b\x28\x29");
   Add(ExternalReference::new_space_allocation_limit_address(isolate).address(),
-      "Heap::NewSpaceAllocationLimitAddress()");
+      "\x48\x65\x61\x70\x3a\x3a\x4e\x65\x77\x53\x70\x61\x63\x65\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x4c\x69\x6d\x69\x74\x41\x64\x64\x72\x65\x73\x73\x28\x29");
   Add(ExternalReference::new_space_allocation_top_address(isolate).address(),
-      "Heap::NewSpaceAllocationTopAddress()");
-  Add(ExternalReference::debug_break(isolate).address(), "Debug::Break()");
+      "\x48\x65\x61\x70\x3a\x3a\x4e\x65\x77\x53\x70\x61\x63\x65\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x54\x6f\x70\x41\x64\x64\x72\x65\x73\x73\x28\x29");
+  Add(ExternalReference::debug_break(isolate).address(), "\x44\x65\x62\x75\x67\x3a\x3a\x42\x72\x65\x61\x6b\x28\x29");
   Add(ExternalReference::debug_step_in_fp_address(isolate).address(),
-      "Debug::step_in_fp_addr()");
+      "\x44\x65\x62\x75\x67\x3a\x3a\x73\x74\x65\x70\x5f\x69\x6e\x5f\x66\x70\x5f\x61\x64\x64\x72\x28\x29");
   Add(ExternalReference::mod_two_doubles_operation(isolate).address(),
-      "mod_two_doubles");
+      "\x6d\x6f\x64\x5f\x74\x77\x6f\x5f\x64\x6f\x75\x62\x6c\x65\x73");
   // Keyed lookup cache.
   Add(ExternalReference::keyed_lookup_cache_keys(isolate).address(),
-      "KeyedLookupCache::keys()");
+      "\x4b\x65\x79\x65\x64\x4c\x6f\x6f\x6b\x75\x70\x43\x61\x63\x68\x65\x3a\x3a\x6b\x65\x79\x73\x28\x29");
   Add(ExternalReference::keyed_lookup_cache_field_offsets(isolate).address(),
-      "KeyedLookupCache::field_offsets()");
+      "\x4b\x65\x79\x65\x64\x4c\x6f\x6f\x6b\x75\x70\x43\x61\x63\x68\x65\x3a\x3a\x66\x69\x65\x6c\x64\x5f\x6f\x66\x66\x73\x65\x74\x73\x28\x29");
   Add(ExternalReference::handle_scope_next_address(isolate).address(),
-      "HandleScope::next");
+      "\x48\x61\x6e\x64\x6c\x65\x53\x63\x6f\x70\x65\x3a\x3a\x6e\x65\x78\x74");
   Add(ExternalReference::handle_scope_limit_address(isolate).address(),
-      "HandleScope::limit");
+      "\x48\x61\x6e\x64\x6c\x65\x53\x63\x6f\x70\x65\x3a\x3a\x6c\x69\x6d\x69\x74");
   Add(ExternalReference::handle_scope_level_address(isolate).address(),
-      "HandleScope::level");
+      "\x48\x61\x6e\x64\x6c\x65\x53\x63\x6f\x70\x65\x3a\x3a\x6c\x65\x76\x65\x6c");
   Add(ExternalReference::new_deoptimizer_function(isolate).address(),
-      "Deoptimizer::New()");
+      "\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x72\x3a\x3a\x4e\x65\x77\x28\x29");
   Add(ExternalReference::compute_output_frames_function(isolate).address(),
-      "Deoptimizer::ComputeOutputFrames()");
+      "\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x72\x3a\x3a\x43\x6f\x6d\x70\x75\x74\x65\x4f\x75\x74\x70\x75\x74\x46\x72\x61\x6d\x65\x73\x28\x29");
   Add(ExternalReference::address_of_min_int().address(),
-      "LDoubleConstant::min_int");
+      "\x4c\x44\x6f\x75\x62\x6c\x65\x43\x6f\x6e\x73\x74\x61\x6e\x74\x3a\x3a\x6d\x69\x6e\x5f\x69\x6e\x74");
   Add(ExternalReference::address_of_one_half().address(),
-      "LDoubleConstant::one_half");
-  Add(ExternalReference::isolate_address(isolate).address(), "isolate");
+      "\x4c\x44\x6f\x75\x62\x6c\x65\x43\x6f\x6e\x73\x74\x61\x6e\x74\x3a\x3a\x6f\x6e\x65\x5f\x68\x61\x6c\x66");
+  Add(ExternalReference::isolate_address(isolate).address(), "\x69\x73\x6f\x6c\x61\x74\x65");
   Add(ExternalReference::address_of_negative_infinity().address(),
-      "LDoubleConstant::negative_infinity");
+      "\x4c\x44\x6f\x75\x62\x6c\x65\x43\x6f\x6e\x73\x74\x61\x6e\x74\x3a\x3a\x6e\x65\x67\x61\x74\x69\x76\x65\x5f\x69\x6e\x66\x69\x6e\x69\x74\x79");
   Add(ExternalReference::power_double_double_function(isolate).address(),
-      "power_double_double_function");
+      "\x70\x6f\x77\x65\x72\x5f\x64\x6f\x75\x62\x6c\x65\x5f\x64\x6f\x75\x62\x6c\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e");
   Add(ExternalReference::power_double_int_function(isolate).address(),
-      "power_double_int_function");
+      "\x70\x6f\x77\x65\x72\x5f\x64\x6f\x75\x62\x6c\x65\x5f\x69\x6e\x74\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e");
   Add(ExternalReference::math_log_double_function(isolate).address(),
-      "std::log");
+      "\x73\x74\x64\x3a\x3a\x6c\x6f\x67");
   Add(ExternalReference::store_buffer_top(isolate).address(),
-      "store_buffer_top");
+      "\x73\x74\x6f\x72\x65\x5f\x62\x75\x66\x66\x65\x72\x5f\x74\x6f\x70");
   Add(ExternalReference::address_of_canonical_non_hole_nan().address(),
-      "canonical_nan");
-  Add(ExternalReference::address_of_the_hole_nan().address(), "the_hole_nan");
+      "\x63\x61\x6e\x6f\x6e\x69\x63\x61\x6c\x5f\x6e\x61\x6e");
+  Add(ExternalReference::address_of_the_hole_nan().address(), "\x74\x68\x65\x5f\x68\x6f\x6c\x65\x5f\x6e\x61\x6e");
   Add(ExternalReference::get_date_field_function(isolate).address(),
-      "JSDate::GetField");
+      "\x4a\x53\x44\x61\x74\x65\x3a\x3a\x47\x65\x74\x46\x69\x65\x6c\x64");
   Add(ExternalReference::date_cache_stamp(isolate).address(),
-      "date_cache_stamp");
+      "\x64\x61\x74\x65\x5f\x63\x61\x63\x68\x65\x5f\x73\x74\x61\x6d\x70");
   Add(ExternalReference::address_of_pending_message_obj(isolate).address(),
-      "address_of_pending_message_obj");
+      "\x61\x64\x64\x72\x65\x73\x73\x5f\x6f\x66\x5f\x70\x65\x6e\x64\x69\x6e\x67\x5f\x6d\x65\x73\x73\x61\x67\x65\x5f\x6f\x62\x6a");
   Add(ExternalReference::address_of_has_pending_message(isolate).address(),
-      "address_of_has_pending_message");
+      "\x61\x64\x64\x72\x65\x73\x73\x5f\x6f\x66\x5f\x68\x61\x73\x5f\x70\x65\x6e\x64\x69\x6e\x67\x5f\x6d\x65\x73\x73\x61\x67\x65");
   Add(ExternalReference::address_of_pending_message_script(isolate).address(),
-      "pending_message_script");
+      "\x70\x65\x6e\x64\x69\x6e\x67\x5f\x6d\x65\x73\x73\x61\x67\x65\x5f\x73\x63\x72\x69\x70\x74");
   Add(ExternalReference::get_make_code_young_function(isolate).address(),
-      "Code::MakeCodeYoung");
-  Add(ExternalReference::cpu_features().address(), "cpu_features");
+      "\x43\x6f\x64\x65\x3a\x3a\x4d\x61\x6b\x65\x43\x6f\x64\x65\x59\x6f\x75\x6e\x67");
+  Add(ExternalReference::cpu_features().address(), "\x63\x70\x75\x5f\x66\x65\x61\x74\x75\x72\x65\x73");
   Add(ExternalReference(Runtime::kAllocateInNewSpace, isolate).address(),
-      "Runtime::AllocateInNewSpace");
+      "\x52\x75\x6e\x74\x69\x6d\x65\x3a\x3a\x41\x6c\x6c\x6f\x63\x61\x74\x65\x49\x6e\x4e\x65\x77\x53\x70\x61\x63\x65");
   Add(ExternalReference(Runtime::kAllocateInTargetSpace, isolate).address(),
-      "Runtime::AllocateInTargetSpace");
+      "\x52\x75\x6e\x74\x69\x6d\x65\x3a\x3a\x41\x6c\x6c\x6f\x63\x61\x74\x65\x49\x6e\x54\x61\x72\x67\x65\x74\x53\x70\x61\x63\x65");
   Add(ExternalReference::old_pointer_space_allocation_top_address(isolate)
           .address(),
-      "Heap::OldPointerSpaceAllocationTopAddress");
+      "\x48\x65\x61\x70\x3a\x3a\x4f\x6c\x64\x50\x6f\x69\x6e\x74\x65\x72\x53\x70\x61\x63\x65\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x54\x6f\x70\x41\x64\x64\x72\x65\x73\x73");
   Add(ExternalReference::old_pointer_space_allocation_limit_address(isolate)
           .address(),
-      "Heap::OldPointerSpaceAllocationLimitAddress");
+      "\x48\x65\x61\x70\x3a\x3a\x4f\x6c\x64\x50\x6f\x69\x6e\x74\x65\x72\x53\x70\x61\x63\x65\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x4c\x69\x6d\x69\x74\x41\x64\x64\x72\x65\x73\x73");
   Add(ExternalReference::old_data_space_allocation_top_address(isolate)
           .address(),
-      "Heap::OldDataSpaceAllocationTopAddress");
+      "\x48\x65\x61\x70\x3a\x3a\x4f\x6c\x64\x44\x61\x74\x61\x53\x70\x61\x63\x65\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x54\x6f\x70\x41\x64\x64\x72\x65\x73\x73");
   Add(ExternalReference::old_data_space_allocation_limit_address(isolate)
           .address(),
-      "Heap::OldDataSpaceAllocationLimitAddress");
+      "\x48\x65\x61\x70\x3a\x3a\x4f\x6c\x64\x44\x61\x74\x61\x53\x70\x61\x63\x65\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x4c\x69\x6d\x69\x74\x41\x64\x64\x72\x65\x73\x73");
   Add(ExternalReference::allocation_sites_list_address(isolate).address(),
-      "Heap::allocation_sites_list_address()");
-  Add(ExternalReference::address_of_uint32_bias().address(), "uint32_bias");
+      "\x48\x65\x61\x70\x3a\x3a\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x5f\x73\x69\x74\x65\x73\x5f\x6c\x69\x73\x74\x5f\x61\x64\x64\x72\x65\x73\x73\x28\x29");
+  Add(ExternalReference::address_of_uint32_bias().address(), "\x75\x69\x6e\x74\x33\x32\x5f\x62\x69\x61\x73");
   Add(ExternalReference::get_mark_code_as_executed_function(isolate).address(),
-      "Code::MarkCodeAsExecuted");
+      "\x43\x6f\x64\x65\x3a\x3a\x4d\x61\x72\x6b\x43\x6f\x64\x65\x41\x73\x45\x78\x65\x63\x75\x74\x65\x64");
   Add(ExternalReference::is_profiling_address(isolate).address(),
-      "CpuProfiler::is_profiling");
+      "\x43\x70\x75\x50\x72\x6f\x66\x69\x6c\x65\x72\x3a\x3a\x69\x73\x5f\x70\x72\x6f\x66\x69\x6c\x69\x6e\x67");
   Add(ExternalReference::scheduled_exception_address(isolate).address(),
-      "Isolate::scheduled_exception");
+      "\x49\x73\x6f\x6c\x61\x74\x65\x3a\x3a\x73\x63\x68\x65\x64\x75\x6c\x65\x64\x5f\x65\x78\x63\x65\x70\x74\x69\x6f\x6e");
   Add(ExternalReference::invoke_function_callback(isolate).address(),
-      "InvokeFunctionCallback");
+      "\x49\x6e\x76\x6f\x6b\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x43\x61\x6c\x6c\x62\x61\x63\x6b");
   Add(ExternalReference::invoke_accessor_getter_callback(isolate).address(),
-      "InvokeAccessorGetterCallback");
+      "\x49\x6e\x76\x6f\x6b\x65\x41\x63\x63\x65\x73\x73\x6f\x72\x47\x65\x74\x74\x65\x72\x43\x61\x6c\x6c\x62\x61\x63\x6b");
   Add(ExternalReference::flush_icache_function(isolate).address(),
-      "CpuFeatures::FlushICache");
+      "\x43\x70\x75\x46\x65\x61\x74\x75\x72\x65\x73\x3a\x3a\x46\x6c\x75\x73\x68\x49\x43\x61\x63\x68\x65");
   Add(ExternalReference::log_enter_external_function(isolate).address(),
-      "Logger::EnterExternal");
+      "\x4c\x6f\x67\x67\x65\x72\x3a\x3a\x45\x6e\x74\x65\x72\x45\x78\x74\x65\x72\x6e\x61\x6c");
   Add(ExternalReference::log_leave_external_function(isolate).address(),
-      "Logger::LeaveExternal");
+      "\x4c\x6f\x67\x67\x65\x72\x3a\x3a\x4c\x65\x61\x76\x65\x45\x78\x74\x65\x72\x6e\x61\x6c");
   Add(ExternalReference::address_of_minus_one_half().address(),
-      "double_constants.minus_one_half");
+      "\x64\x6f\x75\x62\x6c\x65\x5f\x63\x6f\x6e\x73\x74\x61\x6e\x74\x73\x2e\x6d\x69\x6e\x75\x73\x5f\x6f\x6e\x65\x5f\x68\x61\x6c\x66");
   Add(ExternalReference::stress_deopt_count(isolate).address(),
-      "Isolate::stress_deopt_count_address()");
+      "\x49\x73\x6f\x6c\x61\x74\x65\x3a\x3a\x73\x74\x72\x65\x73\x73\x5f\x64\x65\x6f\x70\x74\x5f\x63\x6f\x75\x6e\x74\x5f\x61\x64\x64\x72\x65\x73\x73\x28\x29");
   Add(ExternalReference::incremental_marking_record_write_function(isolate)
           .address(),
-      "IncrementalMarking::RecordWriteFromCode");
+      "\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x3a\x3a\x52\x65\x63\x6f\x72\x64\x57\x72\x69\x74\x65\x46\x72\x6f\x6d\x43\x6f\x64\x65");
 
   // Debug addresses
   Add(ExternalReference::debug_after_break_target_address(isolate).address(),
-      "Debug::after_break_target_address()");
+      "\x44\x65\x62\x75\x67\x3a\x3a\x61\x66\x74\x65\x72\x5f\x62\x72\x65\x61\x6b\x5f\x74\x61\x72\x67\x65\x74\x5f\x61\x64\x64\x72\x65\x73\x73\x28\x29");
   Add(ExternalReference::debug_restarter_frame_function_pointer_address(isolate)
           .address(),
-      "Debug::restarter_frame_function_pointer_address()");
+      "\x44\x65\x62\x75\x67\x3a\x3a\x72\x65\x73\x74\x61\x72\x74\x65\x72\x5f\x66\x72\x61\x6d\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x70\x6f\x69\x6e\x74\x65\x72\x5f\x61\x64\x64\x72\x65\x73\x73\x28\x29");
   Add(ExternalReference::debug_is_active_address(isolate).address(),
-      "Debug::is_active_address()");
+      "\x44\x65\x62\x75\x67\x3a\x3a\x69\x73\x5f\x61\x63\x74\x69\x76\x65\x5f\x61\x64\x64\x72\x65\x73\x73\x28\x29");
 
 #ifndef V8_INTERPRETED_REGEXP
   Add(ExternalReference::re_case_insensitive_compare_uc16(isolate).address(),
-      "NativeRegExpMacroAssembler::CaseInsensitiveCompareUC16()");
+      "\x4e\x61\x74\x69\x76\x65\x52\x65\x67\x45\x78\x70\x4d\x61\x63\x72\x6f\x41\x73\x73\x65\x6d\x62\x6c\x65\x72\x3a\x3a\x43\x61\x73\x65\x49\x6e\x73\x65\x6e\x73\x69\x74\x69\x76\x65\x43\x6f\x6d\x70\x61\x72\x65\x55\x43\x31\x36\x28\x29");
   Add(ExternalReference::re_check_stack_guard_state(isolate).address(),
-      "RegExpMacroAssembler*::CheckStackGuardState()");
+      "\x52\x65\x67\x45\x78\x70\x4d\x61\x63\x72\x6f\x41\x73\x73\x65\x6d\x62\x6c\x65\x72\x2a\x3a\x3a\x43\x68\x65\x63\x6b\x53\x74\x61\x63\x6b\x47\x75\x61\x72\x64\x53\x74\x61\x74\x65\x28\x29");
   Add(ExternalReference::re_grow_stack(isolate).address(),
-      "NativeRegExpMacroAssembler::GrowStack()");
+      "\x4e\x61\x74\x69\x76\x65\x52\x65\x67\x45\x78\x70\x4d\x61\x63\x72\x6f\x41\x73\x73\x65\x6d\x62\x6c\x65\x72\x3a\x3a\x47\x72\x6f\x77\x53\x74\x61\x63\x6b\x28\x29");
   Add(ExternalReference::re_word_character_map().address(),
-      "NativeRegExpMacroAssembler::word_character_map");
+      "\x4e\x61\x74\x69\x76\x65\x52\x65\x67\x45\x78\x70\x4d\x61\x63\x72\x6f\x41\x73\x73\x65\x6d\x62\x6c\x65\x72\x3a\x3a\x77\x6f\x72\x64\x5f\x63\x68\x61\x72\x61\x63\x74\x65\x72\x5f\x6d\x61\x70");
   Add(ExternalReference::address_of_regexp_stack_limit(isolate).address(),
-      "RegExpStack::limit_address()");
+      "\x52\x65\x67\x45\x78\x70\x53\x74\x61\x63\x6b\x3a\x3a\x6c\x69\x6d\x69\x74\x5f\x61\x64\x64\x72\x65\x73\x73\x28\x29");
   Add(ExternalReference::address_of_regexp_stack_memory_address(isolate)
           .address(),
-      "RegExpStack::memory_address()");
+      "\x52\x65\x67\x45\x78\x70\x53\x74\x61\x63\x6b\x3a\x3a\x6d\x65\x6d\x6f\x72\x79\x5f\x61\x64\x64\x72\x65\x73\x73\x28\x29");
   Add(ExternalReference::address_of_regexp_stack_memory_size(isolate).address(),
-      "RegExpStack::memory_size()");
+      "\x52\x65\x67\x45\x78\x70\x53\x74\x61\x63\x6b\x3a\x3a\x6d\x65\x6d\x6f\x72\x79\x5f\x73\x69\x7a\x65\x28\x29");
   Add(ExternalReference::address_of_static_offsets_vector(isolate).address(),
-      "OffsetsVector::static_offsets_vector");
+      "\x4f\x66\x66\x73\x65\x74\x73\x56\x65\x63\x74\x6f\x72\x3a\x3a\x73\x74\x61\x74\x69\x63\x5f\x6f\x66\x66\x73\x65\x74\x73\x5f\x76\x65\x63\x74\x6f\x72");
 #endif  // V8_INTERPRETED_REGEXP
 
   // The following populates all of the different type of external references
@@ -269,7 +269,7 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
 #define DEF_ENTRY_C(name, ignored) \
   { C_BUILTIN, \
     Builtins::c_##name, \
-    "Builtins::" #name },
+    "\x42\x75\x69\x6c\x74\x69\x6e\x73\x3a\x3a" #name },
 
   BUILTIN_LIST_C(DEF_ENTRY_C)
 #undef DEF_ENTRY_C
@@ -277,7 +277,7 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
 #define DEF_ENTRY_C(name, ignored) \
   { BUILTIN, \
     Builtins::k##name, \
-    "Builtins::" #name },
+    "\x42\x75\x69\x6c\x74\x69\x6e\x73\x3a\x3a" #name },
 #define DEF_ENTRY_A(name, kind, state, extra) DEF_ENTRY_C(name, ignored)
 
   BUILTIN_LIST_C(DEF_ENTRY_C)
@@ -290,7 +290,7 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
 #define RUNTIME_ENTRY(name, nargs, ressize) \
   { RUNTIME_FUNCTION, \
     Runtime::k##name, \
-    "Runtime::" #name },
+    "\x52\x75\x6e\x74\x69\x6d\x65\x3a\x3a" #name },
 
   RUNTIME_FUNCTION_LIST(RUNTIME_ENTRY)
   INLINE_OPTIMIZED_FUNCTION_LIST(RUNTIME_ENTRY)
@@ -299,7 +299,7 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
 #define INLINE_OPTIMIZED_ENTRY(name, nargs, ressize) \
   { RUNTIME_FUNCTION, \
     Runtime::kInlineOptimized##name, \
-    "Runtime::" #name },
+    "\x52\x75\x6e\x74\x69\x6d\x65\x3a\x3a" #name },
 
   INLINE_OPTIMIZED_FUNCTION_LIST(INLINE_OPTIMIZED_ENTRY)
 #undef INLINE_OPTIMIZED_ENTRY
@@ -308,7 +308,7 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
 #define IC_ENTRY(name) \
   { IC_UTILITY, \
     IC::k##name, \
-    "IC::" #name },
+    "\x49\x43\x3a\x3a" #name },
 
   IC_UTIL_LIST(IC_ENTRY)
 #undef IC_ENTRY
@@ -332,7 +332,7 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
 #define COUNTER_ENTRY(name, caption) \
   { &Counters::name,    \
     Counters::k_##name, \
-    "Counters::" #name },
+    "\x43\x6f\x75\x6e\x74\x65\x72\x73\x3a\x3a" #name },
 
   STATS_COUNTER_LIST_1(COUNTER_ENTRY)
   STATS_COUNTER_LIST_2(COUNTER_ENTRY)
@@ -352,7 +352,7 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
 
   const char* AddressNames[] = {
 #define BUILD_NAME_LITERAL(CamelName, hacker_name)      \
-    "Isolate::" #hacker_name "_address",
+    "\x49\x73\x6f\x6c\x61\x74\x65\x3a\x3a" #hacker_name "\x5f\x61\x64\x64\x72\x65\x73\x73",
     FOR_EACH_ISOLATE_ADDRESS_NAME(BUILD_NAME_LITERAL)
     NULL
 #undef BUILD_NAME_LITERAL
@@ -368,11 +368,11 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
   Add(FUNCTION_ADDR(&Accessors::name##Getter), \
       ACCESSOR, \
       Accessors::k##name##Getter, \
-      "Accessors::" #name "Getter"); \
+      "\x41\x63\x63\x65\x73\x73\x6f\x72\x73\x3a\x3a" #name "\x47\x65\x74\x74\x65\x72"); \
   Add(FUNCTION_ADDR(&Accessors::name##Setter), \
       ACCESSOR, \
       Accessors::k##name##Setter, \
-      "Accessors::" #name "Setter");
+      "\x41\x63\x63\x65\x73\x73\x6f\x72\x73\x3a\x3a" #name "\x53\x65\x74\x74\x65\x72");
   ACCESSOR_INFO_LIST(ACCESSOR_INFO_DECLARATION)
 #undef ACCESSOR_INFO_DECLARATION
 
@@ -380,26 +380,26 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
 
   // Stub cache tables
   Add(stub_cache->key_reference(StubCache::kPrimary).address(),
-      STUB_CACHE_TABLE, 1, "StubCache::primary_->key");
+      STUB_CACHE_TABLE, 1, "\x53\x74\x75\x62\x43\x61\x63\x68\x65\x3a\x3a\x70\x72\x69\x6d\x61\x72\x79\x5f\x2d\x3e\x6b\x65\x79");
   Add(stub_cache->value_reference(StubCache::kPrimary).address(),
-      STUB_CACHE_TABLE, 2, "StubCache::primary_->value");
+      STUB_CACHE_TABLE, 2, "\x53\x74\x75\x62\x43\x61\x63\x68\x65\x3a\x3a\x70\x72\x69\x6d\x61\x72\x79\x5f\x2d\x3e\x76\x61\x6c\x75\x65");
   Add(stub_cache->map_reference(StubCache::kPrimary).address(),
-      STUB_CACHE_TABLE, 3, "StubCache::primary_->map");
+      STUB_CACHE_TABLE, 3, "\x53\x74\x75\x62\x43\x61\x63\x68\x65\x3a\x3a\x70\x72\x69\x6d\x61\x72\x79\x5f\x2d\x3e\x6d\x61\x70");
   Add(stub_cache->key_reference(StubCache::kSecondary).address(),
-      STUB_CACHE_TABLE, 4, "StubCache::secondary_->key");
+      STUB_CACHE_TABLE, 4, "\x53\x74\x75\x62\x43\x61\x63\x68\x65\x3a\x3a\x73\x65\x63\x6f\x6e\x64\x61\x72\x79\x5f\x2d\x3e\x6b\x65\x79");
   Add(stub_cache->value_reference(StubCache::kSecondary).address(),
-      STUB_CACHE_TABLE, 5, "StubCache::secondary_->value");
+      STUB_CACHE_TABLE, 5, "\x53\x74\x75\x62\x43\x61\x63\x68\x65\x3a\x3a\x73\x65\x63\x6f\x6e\x64\x61\x72\x79\x5f\x2d\x3e\x76\x61\x6c\x75\x65");
   Add(stub_cache->map_reference(StubCache::kSecondary).address(),
-      STUB_CACHE_TABLE, 6, "StubCache::secondary_->map");
+      STUB_CACHE_TABLE, 6, "\x53\x74\x75\x62\x43\x61\x63\x68\x65\x3a\x3a\x73\x65\x63\x6f\x6e\x64\x61\x72\x79\x5f\x2d\x3e\x6d\x61\x70");
 
   // Runtime entries
   Add(ExternalReference::delete_handle_scope_extensions(isolate).address(),
-      RUNTIME_ENTRY, 1, "HandleScope::DeleteExtensions");
+      RUNTIME_ENTRY, 1, "\x48\x61\x6e\x64\x6c\x65\x53\x63\x6f\x70\x65\x3a\x3a\x44\x65\x6c\x65\x74\x65\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x73");
   Add(ExternalReference::incremental_marking_record_write_function(isolate)
           .address(),
-      RUNTIME_ENTRY, 2, "IncrementalMarking::RecordWrite");
+      RUNTIME_ENTRY, 2, "\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x3a\x3a\x52\x65\x63\x6f\x72\x64\x57\x72\x69\x74\x65");
   Add(ExternalReference::store_buffer_overflow_function(isolate).address(),
-      RUNTIME_ENTRY, 3, "StoreBuffer::StoreBufferOverflow");
+      RUNTIME_ENTRY, 3, "\x53\x74\x6f\x72\x65\x42\x75\x66\x66\x65\x72\x3a\x3a\x53\x74\x6f\x72\x65\x42\x75\x66\x66\x65\x72\x4f\x76\x65\x72\x66\x6c\x6f\x77");
 
   // Add a small set of deopt entry addresses to encoder without generating the
   // deopt table code, which isn't possible at deserialization time.
@@ -410,7 +410,7 @@ void ExternalReferenceTable::PopulateTable(Isolate* isolate) {
         entry,
         Deoptimizer::LAZY,
         Deoptimizer::CALCULATE_ENTRY_ADDRESS);
-    Add(address, LAZY_DEOPTIMIZATION, entry, "lazy_deopt");
+    Add(address, LAZY_DEOPTIMIZATION, entry, "\x6c\x61\x7a\x79\x5f\x64\x65\x6f\x70\x74");
   }
 }
 
@@ -437,7 +437,7 @@ uint32_t ExternalReferenceEncoder::Encode(Address key) const {
 const char* ExternalReferenceEncoder::NameOfAddress(Address key) const {
   int index = IndexOf(key);
   return index >= 0 ? ExternalReferenceTable::instance(isolate_)->name(index)
-                    : "<unknown>";
+                    : "\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e";
 }
 
 
@@ -553,10 +553,10 @@ class CodeAddressMap: public CodeEventLogger {
       char* result = NewArray<char>(name_size + 1);
       for (int i = 0; i < name_size; ++i) {
         char c = name[i];
-        if (c == '\0') c = ' ';
+        if (c == '\x0') c = '\x20';
         result[i] = c;
       }
-      result[name_size] = '\0';
+      result[name_size] = '\x0';
       return result;
     }
 
@@ -1252,12 +1252,12 @@ void Serializer::VisitPointers(Object** start, Object** end) {
           Max(root_index_wave_front_, static_cast<intptr_t>(current - start));
     }
     if (ShouldBeSkipped(current)) {
-      sink_->Put(kSkip, "Skip");
-      sink_->PutInt(kPointerSize, "SkipOneWord");
+      sink_->Put(kSkip, "\x53\x6b\x69\x70");
+      sink_->PutInt(kPointerSize, "\x53\x6b\x69\x70\x4f\x6e\x65\x57\x6f\x72\x64");
     } else if ((*current)->IsSmi()) {
-      sink_->Put(kRawData + 1, "Smi");
+      sink_->Put(kRawData + 1, "\x53\x6d\x69");
       for (int i = 0; i < kPointerSize; i++) {
-        sink_->Put(reinterpret_cast<byte*>(current)[i], "Byte");
+        sink_->Put(reinterpret_cast<byte*>(current)[i], "\x42\x79\x74\x65");
       }
     } else {
       SerializeObject(*current, kPlain, kStartOfObject, 0);
@@ -1344,13 +1344,13 @@ void Serializer::SerializeReferenceToPreviousObject(
   // Shift out the bits that are always 0.
   offset >>= kObjectAlignmentBits;
   if (skip == 0) {
-    sink_->Put(kBackref + how_to_code + where_to_point + space, "BackRefSer");
+    sink_->Put(kBackref + how_to_code + where_to_point + space, "\x42\x61\x63\x6b\x52\x65\x66\x53\x65\x72");
   } else {
     sink_->Put(kBackrefWithSkip + how_to_code + where_to_point + space,
-               "BackRefSerWithSkip");
-    sink_->PutInt(skip, "BackRefSkipDistance");
+               "\x42\x61\x63\x6b\x52\x65\x66\x53\x65\x72\x57\x69\x74\x68\x53\x6b\x69\x70");
+    sink_->PutInt(skip, "\x42\x61\x63\x6b\x52\x65\x66\x53\x6b\x69\x70\x44\x69\x73\x74\x61\x6e\x63\x65");
   }
-  sink_->PutInt(offset, "offset");
+  sink_->PutInt(offset, "\x6f\x66\x66\x73\x65\x74");
 }
 
 
@@ -1379,8 +1379,8 @@ void StartupSerializer::SerializeObject(
                                        skip);
   } else {
     if (skip != 0) {
-      sink_->Put(kSkip, "FlushPendingSkip");
-      sink_->PutInt(skip, "SkipDistance");
+      sink_->Put(kSkip, "\x46\x6c\x75\x73\x68\x50\x65\x6e\x64\x69\x6e\x67\x53\x6b\x69\x70");
+      sink_->PutInt(skip, "\x53\x6b\x69\x70\x44\x69\x73\x74\x61\x6e\x63\x65");
     }
 
     // Object has not yet been serialized.  Serialize it here.
@@ -1418,19 +1418,19 @@ void Serializer::PutRoot(int root_index,
       !isolate()->heap()->InNewSpace(object)) {
     if (skip == 0) {
       sink_->Put(kRootArrayConstants + kNoSkipDistance + root_index,
-                 "RootConstant");
+                 "\x52\x6f\x6f\x74\x43\x6f\x6e\x73\x74\x61\x6e\x74");
     } else {
       sink_->Put(kRootArrayConstants + kHasSkipDistance + root_index,
-                 "RootConstant");
-      sink_->PutInt(skip, "SkipInPutRoot");
+                 "\x52\x6f\x6f\x74\x43\x6f\x6e\x73\x74\x61\x6e\x74");
+      sink_->PutInt(skip, "\x53\x6b\x69\x70\x49\x6e\x50\x75\x74\x52\x6f\x6f\x74");
     }
   } else {
     if (skip != 0) {
-      sink_->Put(kSkip, "SkipFromPutRoot");
-      sink_->PutInt(skip, "SkipFromPutRootDistance");
+      sink_->Put(kSkip, "\x53\x6b\x69\x70\x46\x72\x6f\x6d\x50\x75\x74\x52\x6f\x6f\x74");
+      sink_->PutInt(skip, "\x53\x6b\x69\x70\x46\x72\x6f\x6d\x50\x75\x74\x52\x6f\x6f\x74\x44\x69\x73\x74\x61\x6e\x63\x65");
     }
-    sink_->Put(kRootArray + how_to_code + where_to_point, "RootSerialization");
-    sink_->PutInt(root_index, "root_index");
+    sink_->Put(kRootArray + how_to_code + where_to_point, "\x52\x6f\x6f\x74\x53\x65\x72\x69\x61\x6c\x69\x7a\x61\x74\x69\x6f\x6e");
+    sink_->PutInt(root_index, "\x72\x6f\x6f\x74\x5f\x69\x6e\x64\x65\x78");
   }
 }
 
@@ -1458,14 +1458,14 @@ void PartialSerializer::SerializeObject(
 
   if (ShouldBeInThePartialSnapshotCache(heap_object)) {
     if (skip != 0) {
-      sink_->Put(kSkip, "SkipFromSerializeObject");
-      sink_->PutInt(skip, "SkipDistanceFromSerializeObject");
+      sink_->Put(kSkip, "\x53\x6b\x69\x70\x46\x72\x6f\x6d\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x4f\x62\x6a\x65\x63\x74");
+      sink_->PutInt(skip, "\x53\x6b\x69\x70\x44\x69\x73\x74\x61\x6e\x63\x65\x46\x72\x6f\x6d\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x4f\x62\x6a\x65\x63\x74");
     }
 
     int cache_index = PartialSnapshotCacheIndex(heap_object);
     sink_->Put(kPartialSnapshotCache + how_to_code + where_to_point,
-               "PartialSnapshotCache");
-    sink_->PutInt(cache_index, "partial_snapshot_cache_index");
+               "\x50\x61\x72\x74\x69\x61\x6c\x53\x6e\x61\x70\x73\x68\x6f\x74\x43\x61\x63\x68\x65");
+    sink_->PutInt(cache_index, "\x70\x61\x72\x74\x69\x61\x6c\x5f\x73\x6e\x61\x70\x73\x68\x6f\x74\x5f\x63\x61\x63\x68\x65\x5f\x69\x6e\x64\x65\x78");
     return;
   }
 
@@ -1487,8 +1487,8 @@ void PartialSerializer::SerializeObject(
                                        skip);
   } else {
     if (skip != 0) {
-      sink_->Put(kSkip, "SkipFromSerializeObject");
-      sink_->PutInt(skip, "SkipDistanceFromSerializeObject");
+      sink_->Put(kSkip, "\x53\x6b\x69\x70\x46\x72\x6f\x6d\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x4f\x62\x6a\x65\x63\x74");
+      sink_->PutInt(skip, "\x53\x6b\x69\x70\x44\x69\x73\x74\x61\x6e\x63\x65\x46\x72\x6f\x6d\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x4f\x62\x6a\x65\x63\x74");
     }
     // Object has not yet been serialized.  Serialize it here.
     ObjectSerializer serializer(this,
@@ -1506,8 +1506,8 @@ void Serializer::ObjectSerializer::Serialize() {
   int size = object_->Size();
 
   sink_->Put(kNewObject + reference_representation_ + space,
-             "ObjectSerialization");
-  sink_->PutInt(size >> kObjectAlignmentBits, "Size in words");
+             "\x4f\x62\x6a\x65\x63\x74\x53\x65\x72\x69\x61\x6c\x69\x7a\x61\x74\x69\x6f\x6e");
+  sink_->PutInt(size >> kObjectAlignmentBits, "\x53\x69\x7a\x65\x20\x69\x6e\x20\x77\x6f\x72\x64\x73");
 
   if (serializer_->code_address_map_) {
     const char* code_name =
@@ -1558,10 +1558,10 @@ void Serializer::ObjectSerializer::VisitPointers(Object** start,
         current += repeat_count;
         bytes_processed_so_far_ += repeat_count * kPointerSize;
         if (repeat_count > kMaxRepeats) {
-          sink_->Put(kRepeat, "SerializeRepeats");
-          sink_->PutInt(repeat_count, "SerializeRepeats");
+          sink_->Put(kRepeat, "\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x52\x65\x70\x65\x61\x74\x73");
+          sink_->PutInt(repeat_count, "\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x52\x65\x70\x65\x61\x74\x73");
         } else {
-          sink_->Put(CodeForRepeats(repeat_count), "SerializeRepeats");
+          sink_->Put(CodeForRepeats(repeat_count), "\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x52\x65\x70\x65\x61\x74\x73");
         }
       } else {
         serializer_->SerializeObject(
@@ -1591,10 +1591,10 @@ void Serializer::ObjectSerializer::VisitEmbeddedPointer(RelocInfo* rinfo) {
 void Serializer::ObjectSerializer::VisitExternalReference(Address* p) {
   int skip = OutputRawData(reinterpret_cast<Address>(p),
                            kCanReturnSkipInsteadOfSkipping);
-  sink_->Put(kExternalReference + kPlain + kStartOfObject, "ExternalRef");
-  sink_->PutInt(skip, "SkipB4ExternalRef");
+  sink_->Put(kExternalReference + kPlain + kStartOfObject, "\x45\x78\x74\x65\x72\x6e\x61\x6c\x52\x65\x66");
+  sink_->PutInt(skip, "\x53\x6b\x69\x70\x42\x34\x45\x78\x74\x65\x72\x6e\x61\x6c\x52\x65\x66");
   Address target = *p;
-  sink_->PutInt(serializer_->EncodeExternalReference(target), "reference id");
+  sink_->PutInt(serializer_->EncodeExternalReference(target), "\x72\x65\x66\x65\x72\x65\x6e\x63\x65\x20\x69\x64");
   bytes_processed_so_far_ += kPointerSize;
 }
 
@@ -1603,10 +1603,10 @@ void Serializer::ObjectSerializer::VisitExternalReference(RelocInfo* rinfo) {
   int skip = OutputRawData(rinfo->target_address_address(),
                            kCanReturnSkipInsteadOfSkipping);
   HowToCode how_to_code = rinfo->IsCodedSpecially() ? kFromCode : kPlain;
-  sink_->Put(kExternalReference + how_to_code + kStartOfObject, "ExternalRef");
-  sink_->PutInt(skip, "SkipB4ExternalRef");
+  sink_->Put(kExternalReference + how_to_code + kStartOfObject, "\x45\x78\x74\x65\x72\x6e\x61\x6c\x52\x65\x66");
+  sink_->PutInt(skip, "\x53\x6b\x69\x70\x42\x34\x45\x78\x74\x65\x72\x6e\x61\x6c\x52\x65\x66");
   Address target = rinfo->target_reference();
-  sink_->PutInt(serializer_->EncodeExternalReference(target), "reference id");
+  sink_->PutInt(serializer_->EncodeExternalReference(target), "\x72\x65\x66\x65\x72\x65\x6e\x63\x65\x20\x69\x64");
   bytes_processed_so_far_ += rinfo->target_address_size();
 }
 
@@ -1615,10 +1615,10 @@ void Serializer::ObjectSerializer::VisitRuntimeEntry(RelocInfo* rinfo) {
   int skip = OutputRawData(rinfo->target_address_address(),
                            kCanReturnSkipInsteadOfSkipping);
   HowToCode how_to_code = rinfo->IsCodedSpecially() ? kFromCode : kPlain;
-  sink_->Put(kExternalReference + how_to_code + kStartOfObject, "ExternalRef");
-  sink_->PutInt(skip, "SkipB4ExternalRef");
+  sink_->Put(kExternalReference + how_to_code + kStartOfObject, "\x45\x78\x74\x65\x72\x6e\x61\x6c\x52\x65\x66");
+  sink_->PutInt(skip, "\x53\x6b\x69\x70\x42\x34\x45\x78\x74\x65\x72\x6e\x61\x6c\x52\x65\x66");
   Address target = rinfo->target_address();
-  sink_->PutInt(serializer_->EncodeExternalReference(target), "reference id");
+  sink_->PutInt(serializer_->EncodeExternalReference(target), "\x72\x65\x66\x65\x72\x65\x6e\x63\x65\x20\x69\x64");
   bytes_processed_so_far_ += rinfo->target_address_size();
 }
 
@@ -1667,8 +1667,8 @@ void Serializer::ObjectSerializer::VisitExternalAsciiString(
       typedef v8::String::ExternalAsciiStringResource Resource;
       const Resource* resource = string->resource();
       if (resource == *resource_pointer) {
-        sink_->Put(kNativesStringResource, "NativesStringResource");
-        sink_->PutSection(i, "NativesStringResourceEnd");
+        sink_->Put(kNativesStringResource, "\x4e\x61\x74\x69\x76\x65\x73\x53\x74\x72\x69\x6e\x67\x52\x65\x73\x6f\x75\x72\x63\x65");
+        sink_->PutSection(i, "\x4e\x61\x74\x69\x76\x65\x73\x53\x74\x72\x69\x6e\x67\x52\x65\x73\x6f\x75\x72\x63\x65\x45\x6e\x64");
         bytes_processed_so_far_ += sizeof(resource);
         return;
       }
@@ -1725,15 +1725,15 @@ int Serializer::ObjectSerializer::OutputRawData(
 #define RAW_CASE(index)                                                        \
     if (!outputting_code && bytes_to_output == index * kPointerSize &&         \
         index * kPointerSize == to_skip) {                                     \
-      sink_->PutSection(kRawData + index, "RawDataFixed");                     \
+      sink_->PutSection(kRawData + index, "\x52\x61\x77\x44\x61\x74\x61\x46\x69\x78\x65\x64");                     \
       to_skip = 0;  /* This insn already skips. */                             \
     } else  /* NOLINT */
     COMMON_RAW_LENGTHS(RAW_CASE)
 #undef RAW_CASE
     {  /* NOLINT */
       // We always end up here if we are outputting the code of a code object.
-      sink_->Put(kRawData, "RawData");
-      sink_->PutInt(bytes_to_output, "length");
+      sink_->Put(kRawData, "\x52\x61\x77\x44\x61\x74\x61");
+      sink_->PutInt(bytes_to_output, "\x6c\x65\x6e\x67\x74\x68");
     }
 
     // To make snapshots reproducible, we need to wipe out all pointers in code.
@@ -1746,15 +1746,15 @@ int Serializer::ObjectSerializer::OutputRawData(
       object_start = code->address();
     }
 
-    const char* description = code_object_ ? "Code" : "Byte";
+    const char* description = code_object_ ? "\x43\x6f\x64\x65" : "\x42\x79\x74\x65";
     for (int i = 0; i < bytes_to_output; i++) {
       sink_->PutSection(object_start[base + i], description);
     }
     if (code_object_) delete[] object_start;
   }
   if (to_skip != 0 && return_skip == kIgnoringReturn) {
-    sink_->Put(kSkip, "Skip");
-    sink_->PutInt(to_skip, "SkipDistance");
+    sink_->Put(kSkip, "\x53\x6b\x69\x70");
+    sink_->PutInt(to_skip, "\x53\x6b\x69\x70\x44\x69\x73\x74\x61\x6e\x63\x65");
     to_skip = 0;
   }
   return to_skip;
@@ -1795,7 +1795,7 @@ void Serializer::Pad() {
   // The non-branching GetInt will read up to 3 bytes too far, so we need
   // to pad the snapshot to make sure we don't read over the end.
   for (unsigned i = 0; i < sizeof(int32_t) - 1; i++) {
-    sink_->Put(kNop, "Padding");
+    sink_->Put(kNop, "\x50\x61\x64\x64\x69\x6e\x67");
   }
 }
 
@@ -1877,8 +1877,8 @@ void CodeSerializer::SerializeObject(Object* o, HowToCode how_to_code,
   }
 
   if (skip != 0) {
-    sink_->Put(kSkip, "SkipFromSerializeObject");
-    sink_->PutInt(skip, "SkipDistanceFromSerializeObject");
+    sink_->Put(kSkip, "\x53\x6b\x69\x70\x46\x72\x6f\x6d\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x4f\x62\x6a\x65\x63\x74");
+    sink_->PutInt(skip, "\x53\x6b\x69\x70\x44\x69\x73\x74\x61\x6e\x63\x65\x46\x72\x6f\x6d\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x4f\x62\x6a\x65\x63\x74");
   }
   // Object has not yet been serialized.  Serialize it here.
   ObjectSerializer serializer(this, heap_object, sink_, how_to_code,
@@ -1890,8 +1890,8 @@ void CodeSerializer::SerializeObject(Object* o, HowToCode how_to_code,
 void CodeSerializer::SerializeBuiltin(Code* builtin, HowToCode how_to_code,
                                       WhereToPoint where_to_point, int skip) {
   if (skip != 0) {
-    sink_->Put(kSkip, "SkipFromSerializeBuiltin");
-    sink_->PutInt(skip, "SkipDistanceFromSerializeBuiltin");
+    sink_->Put(kSkip, "\x53\x6b\x69\x70\x46\x72\x6f\x6d\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x42\x75\x69\x6c\x74\x69\x6e");
+    sink_->PutInt(skip, "\x53\x6b\x69\x70\x44\x69\x73\x74\x61\x6e\x63\x65\x46\x72\x6f\x6d\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x42\x75\x69\x6c\x74\x69\x6e");
   }
 
   DCHECK((how_to_code == kPlain && where_to_point == kStartOfObject) ||
@@ -1900,8 +1900,8 @@ void CodeSerializer::SerializeBuiltin(Code* builtin, HowToCode how_to_code,
   int builtin_index = builtin->builtin_index();
   DCHECK_LT(builtin_index, Builtins::builtin_count);
   DCHECK_LE(0, builtin_index);
-  sink_->Put(kBuiltin + how_to_code + where_to_point, "Builtin");
-  sink_->PutInt(builtin_index, "builtin_index");
+  sink_->Put(kBuiltin + how_to_code + where_to_point, "\x42\x75\x69\x6c\x74\x69\x6e");
+  sink_->PutInt(builtin_index, "\x62\x75\x69\x6c\x74\x69\x6e\x5f\x69\x6e\x64\x65\x78");
 }
 
 
@@ -1909,13 +1909,13 @@ void CodeSerializer::SerializeSourceObject(HowToCode how_to_code,
                                            WhereToPoint where_to_point,
                                            int skip) {
   if (skip != 0) {
-    sink_->Put(kSkip, "SkipFromSerializeSourceObject");
-    sink_->PutInt(skip, "SkipDistanceFromSerializeSourceObject");
+    sink_->Put(kSkip, "\x53\x6b\x69\x70\x46\x72\x6f\x6d\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x53\x6f\x75\x72\x63\x65\x4f\x62\x6a\x65\x63\x74");
+    sink_->PutInt(skip, "\x53\x6b\x69\x70\x44\x69\x73\x74\x61\x6e\x63\x65\x46\x72\x6f\x6d\x53\x65\x72\x69\x61\x6c\x69\x7a\x65\x53\x6f\x75\x72\x63\x65\x4f\x62\x6a\x65\x63\x74");
   }
 
   DCHECK(how_to_code == kPlain && where_to_point == kStartOfObject);
-  sink_->Put(kAttachedReference + how_to_code + where_to_point, "Source");
-  sink_->PutInt(kSourceObjectIndex, "kSourceObjectIndex");
+  sink_->Put(kAttachedReference + how_to_code + where_to_point, "\x53\x6f\x75\x72\x63\x65");
+  sink_->PutInt(kSourceObjectIndex, "\x6b\x53\x6f\x75\x72\x63\x65\x4f\x62\x6a\x65\x63\x74\x49\x6e\x64\x65\x78");
 }
 
 
@@ -1943,7 +1943,7 @@ Handle<SharedFunctionInfo> CodeSerializer::Deserialize(Isolate* isolate,
   if (FLAG_profile_deserialization) {
     double ms = timer.Elapsed().InMillisecondsF();
     int length = data->length();
-    PrintF("[Deserializing from %d bytes took %0.3f ms]\n", length, ms);
+    PrintF("\x5b\x44\x65\x73\x65\x72\x69\x61\x6c\x69\x7a\x69\x6e\x67\x20\x66\x72\x6f\x6d\x20\x6c\x84\x20\x62\x79\x74\x65\x73\x20\x74\x6f\x6f\x6b\x20\x6c\xf0\x4b\xf3\x86\x20\x6d\x73\x5d\xa", length, ms);
   }
   return Handle<SharedFunctionInfo>(SharedFunctionInfo::cast(root), isolate);
 }

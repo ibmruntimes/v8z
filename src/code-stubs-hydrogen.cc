@@ -114,8 +114,8 @@ bool CodeStubGraphBuilderBase::BuildGraph() {
 
   if (FLAG_trace_hydrogen_stubs) {
     const char* name = CodeStub::MajorName(stub()->MajorKey(), false);
-    PrintF("-----------------------------------------------------------\n");
-    PrintF("Compiling stub %s using hydrogen\n", name);
+    PrintF("\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
+    PrintF("\x43\x6f\x6d\x70\x69\x6c\x69\x6e\x67\x20\x73\x74\x75\x62\x20\x6c\xa2\x20\x75\x73\x69\x6e\x67\x20\x68\x79\x64\x72\x6f\x67\x65\x6e\xa", name);
     isolate()->GetHTracer()->TraceCompilation(&info_);
   }
 
@@ -208,7 +208,7 @@ class CodeStubGraphBuilder: public CodeStubGraphBuilderBase {
     IfBuilder builder(this);
     builder.IfNot<HCompareObjectEqAndBranch, HValue*>(undefined, undefined);
     builder.Then();
-    builder.ElseDeopt("Forced deopt to runtime");
+    builder.ElseDeopt("\x46\x6f\x72\x63\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x74\x6f\x20\x72\x75\x6e\x74\x69\x6d\x65");
     return undefined;
   }
 
@@ -276,8 +276,8 @@ static Handle<Code> DoGenerateCode(Stub* stub) {
   Handle<Code> code = chunk->Codegen();
   if (FLAG_profile_hydrogen_code_stub_compilation) {
     OFStream os(stdout);
-    os << "[Lazy compilation of " << stub << " took "
-       << timer.Elapsed().InMillisecondsF() << " ms]" << endl;
+    os << "\x5b\x4c\x61\x7a\x79\x20\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x6f\x66\x20" << stub << "\x20\x74\x6f\x6f\x6b\x20"
+       << timer.Elapsed().InMillisecondsF() << "\x20\x6d\x73\x5d" << endl;
   }
   return code;
 }
@@ -385,7 +385,7 @@ HValue* CodeStubGraphBuilder<FastCloneShallowArrayStub>::BuildCodeStub() {
   if_fixed_cow.End();
   zero_capacity.End();
 
-  checker.ElseDeopt("Uninitialized boilerplate literals");
+  checker.ElseDeopt("\x55\x6e\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64\x20\x62\x6f\x69\x6c\x65\x72\x70\x6c\x61\x74\x65\x20\x6c\x69\x74\x65\x72\x61\x6c\x73");
   checker.End();
 
   return environment()->Pop();
@@ -452,7 +452,7 @@ HValue* CodeStubGraphBuilder<FastCloneShallowObjectStub>::BuildCodeStub() {
   }
 
   environment()->Push(object);
-  checker.ElseDeopt("Uninitialized boilerplate in fast clone");
+  checker.ElseDeopt("\x55\x6e\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64\x20\x62\x6f\x69\x6c\x65\x72\x70\x6c\x61\x74\x65\x20\x69\x6e\x20\x66\x61\x73\x74\x20\x63\x6c\x6f\x6e\x65");
   checker.End();
 
   return environment()->Pop();
@@ -1125,7 +1125,7 @@ HValue* CodeStubGraphBuilder<StoreGlobalStub>::BuildCodeInitializedStub() {
     IfBuilder builder(this);
     builder.If<HCompareObjectEqAndBranch>(cell_contents, value);
     builder.Then();
-    builder.ElseDeopt("Unexpected cell contents in constant global store");
+    builder.ElseDeopt("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x63\x65\x6c\x6c\x20\x63\x6f\x6e\x74\x65\x6e\x74\x73\x20\x69\x6e\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x20\x67\x6c\x6f\x62\x61\x6c\x20\x73\x74\x6f\x72\x65");
     builder.End();
   } else {
     // Load the payload of the global parameter cell. A hole indicates that the
@@ -1135,7 +1135,7 @@ HValue* CodeStubGraphBuilder<StoreGlobalStub>::BuildCodeInitializedStub() {
     HValue* hole_value = Add<HConstant>(hole);
     builder.If<HCompareObjectEqAndBranch>(cell_contents, hole_value);
     builder.Then();
-    builder.Deopt("Unexpected cell contents in global store");
+    builder.Deopt("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x63\x65\x6c\x6c\x20\x63\x6f\x6e\x74\x65\x6e\x74\x73\x20\x69\x6e\x20\x67\x6c\x6f\x62\x61\x6c\x20\x73\x74\x6f\x72\x65");
     builder.Else();
     Add<HStoreNamedField>(cell, access, value);
     builder.End();
@@ -1159,7 +1159,7 @@ HValue* CodeStubGraphBuilder<ElementsTransitionAndStoreStub>::BuildCodeStub() {
 
   if (FLAG_trace_elements_transitions) {
     // Tracing elements transitions is the job of the runtime.
-    Add<HDeoptimize>("Tracing elements transitions", Deoptimizer::EAGER);
+    Add<HDeoptimize>("\x54\x72\x61\x63\x69\x6e\x67\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x73", Deoptimizer::EAGER);
   } else {
     info()->MarkAsSavesCallerDoubles();
 
@@ -1628,7 +1628,7 @@ HValue* CodeStubGraphBuilder<KeyedLoadGenericStub>::BuildCodeStub() {
     BuildElementsKindLimitCheck(&kind_if, bit_field2,
                                 SLOPPY_ARGUMENTS_ELEMENTS);
     // Non-strict elements are not handled.
-    Add<HDeoptimize>("non-strict elements in KeyedLoadGenericStub",
+    Add<HDeoptimize>("\x6e\x6f\x6e\x2d\x73\x74\x72\x69\x63\x74\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x69\x6e\x20\x4b\x65\x79\x65\x64\x4c\x6f\x61\x64\x47\x65\x6e\x65\x72\x69\x63\x53\x74\x75\x62",
                      Deoptimizer::EAGER);
     Push(graph()->GetConstant0());
 
@@ -1668,7 +1668,7 @@ HValue* CodeStubGraphBuilder<KeyedLoadGenericStub>::BuildCodeStub() {
     BuildExternalElementLoad(&kind_if, receiver, key, instance_type, bit_field2,
                              EXTERNAL_UINT8_CLAMPED_ELEMENTS);
 
-    kind_if.ElseDeopt("ElementsKind unhandled in KeyedLoadGenericStub");
+    kind_if.ElseDeopt("\x45\x6c\x65\x6d\x65\x6e\x74\x73\x4b\x69\x6e\x64\x20\x75\x6e\x68\x61\x6e\x64\x6c\x65\x64\x20\x69\x6e\x20\x4b\x65\x79\x65\x64\x4c\x6f\x61\x64\x47\x65\x6e\x65\x72\x69\x63\x53\x74\x75\x62");
 
     kind_if.End();
   }

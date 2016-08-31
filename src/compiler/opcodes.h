@@ -248,7 +248,7 @@ class IrOpcode {
       ALL_OP_LIST(RETURN_NAME)
 #undef RETURN_NAME
       default:
-        return "UnknownOpcode";
+        return "\x55\x6e\x6b\x6e\x6f\x77\x6e\x4f\x70\x63\x6f\x64\x65";
     }
   }
 

@@ -13,7 +13,7 @@ namespace internal {
 class HLoadEliminationPhase : public HPhase {
  public:
   explicit HLoadEliminationPhase(HGraph* graph)
-      : HPhase("H_Load elimination", graph) { }
+      : HPhase("\x48\x5f\x4c\x6f\x61\x64\x20\x65\x6c\x69\x6d\x69\x6e\x61\x74\x69\x6f\x6e", graph) { }
 
   void Run();
 

@@ -66,10 +66,10 @@ PreParserIdentifier PreParserTraits::GetSymbol(Scanner* scanner) {
   } else if (scanner->current_token() == Token::YIELD) {
     return PreParserIdentifier::Yield();
   }
-  if (scanner->UnescapedLiteralMatches("eval", 4)) {
+  if (scanner->UnescapedLiteralMatches("\x65\x76\x61\x6c", 4)) {
     return PreParserIdentifier::Eval();
   }
-  if (scanner->UnescapedLiteralMatches("arguments", 9)) {
+  if (scanner->UnescapedLiteralMatches("\x61\x72\x67\x75\x6d\x65\x6e\x74\x73", 9)) {
     return PreParserIdentifier::Arguments();
   }
   return PreParserIdentifier::Default();
@@ -78,7 +78,7 @@ PreParserIdentifier PreParserTraits::GetSymbol(Scanner* scanner) {
 
 PreParserExpression PreParserTraits::ExpressionFromString(
     int pos, Scanner* scanner, PreParserFactory* factory) {
-  if (scanner->UnescapedLiteralMatches("use strict", 10)) {
+  if (scanner->UnescapedLiteralMatches("\x75\x73\x65\x20\x73\x74\x72\x69\x63\x74", 10)) {
     return PreParserExpression::UseStrictStringLiteral();
   }
   return PreParserExpression::StringLiteral();
@@ -290,7 +290,7 @@ PreParser::Statement PreParser::ParseStatement(bool* ok) {
       if (strict_mode() == STRICT) {
         PreParserTraits::ReportMessageAt(start_location.beg_pos,
                                          end_location.end_pos,
-                                         "strict_function");
+                                         "\x73\x74\x72\x69\x63\x74\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e");
         *ok = false;
         return Statement::Default();
       } else {
@@ -417,14 +417,14 @@ PreParser::Statement PreParser::ParseVariableDeclarations(
     if (strict_mode() == STRICT) {
       if (allow_harmony_scoping()) {
         if (var_context != kSourceElement && var_context != kForStatement) {
-          ReportMessageAt(scanner()->peek_location(), "unprotected_const");
+          ReportMessageAt(scanner()->peek_location(), "\x75\x6e\x70\x72\x6f\x74\x65\x63\x74\x65\x64\x5f\x63\x6f\x6e\x73\x74");
           *ok = false;
           return Statement::Default();
         }
         require_initializer = true;
       } else {
         Scanner::Location location = scanner()->peek_location();
-        ReportMessageAt(location, "strict_const");
+        ReportMessageAt(location, "\x73\x74\x72\x69\x63\x74\x5f\x63\x6f\x6e\x73\x74");
         *ok = false;
         return Statement::Default();
       }
@@ -432,7 +432,7 @@ PreParser::Statement PreParser::ParseVariableDeclarations(
   } else if (peek() == Token::LET && strict_mode() == STRICT) {
     Consume(Token::LET);
     if (var_context != kSourceElement && var_context != kForStatement) {
-      ReportMessageAt(scanner()->peek_location(), "unprotected_let");
+      ReportMessageAt(scanner()->peek_location(), "\x75\x6e\x70\x72\x6f\x74\x65\x63\x74\x65\x64\x5f\x6c\x65\x74");
       *ok = false;
       return Statement::Default();
     }
@@ -576,7 +576,7 @@ PreParser::Statement PreParser::ParseWithStatement(bool* ok) {
   //   'with' '(' Expression ')' Statement
   Expect(Token::WITH, CHECK_OK);
   if (strict_mode() == STRICT) {
-    ReportMessageAt(scanner()->location(), "strict_mode_with");
+    ReportMessageAt(scanner()->location(), "\x73\x74\x72\x69\x63\x74\x5f\x6d\x6f\x64\x65\x5f\x77\x69\x74\x68");
     *ok = false;
     return Statement::Default();
   }
@@ -653,7 +653,7 @@ PreParser::Statement PreParser::ParseWhileStatement(bool* ok) {
 
 bool PreParser::CheckInOrOf(bool accept_OF) {
   if (Check(Token::IN) ||
-      (accept_OF && CheckContextualKeyword(CStrVector("of")))) {
+      (accept_OF && CheckContextualKeyword(CStrVector("\x6f\x66")))) {
     return true;
   }
   return false;
@@ -720,7 +720,7 @@ PreParser::Statement PreParser::ParseThrowStatement(bool* ok) {
 
   Expect(Token::THROW, CHECK_OK);
   if (scanner()->HasAnyLineTerminatorBeforeNext()) {
-    ReportMessageAt(scanner()->location(), "newline_after_throw");
+    ReportMessageAt(scanner()->location(), "\x6e\x65\x77\x6c\x69\x6e\x65\x5f\x61\x66\x74\x65\x72\x5f\x74\x68\x72\x6f\x77");
     *ok = false;
     return Statement::Default();
   }
@@ -748,7 +748,7 @@ PreParser::Statement PreParser::ParseTryStatement(bool* ok) {
 
   Token::Value tok = peek();
   if (tok != Token::CATCH && tok != Token::FINALLY) {
-    ReportMessageAt(scanner()->location(), "no_catch_or_finally");
+    ReportMessageAt(scanner()->location(), "\x6e\x6f\x5f\x63\x61\x74\x63\x68\x5f\x6f\x72\x5f\x66\x69\x6e\x61\x6c\x6c\x79");
     *ok = false;
     return Statement::Default();
   }
@@ -867,27 +867,27 @@ PreParser::Expression PreParser::ParseFunctionLiteral(
   // since the function can declare itself strict.
   if (strict_mode() == STRICT) {
     if (function_name.IsEvalOrArguments()) {
-      ReportMessageAt(function_name_location, "strict_eval_arguments");
+      ReportMessageAt(function_name_location, "\x73\x74\x72\x69\x63\x74\x5f\x65\x76\x61\x6c\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x73");
       *ok = false;
       return Expression::Default();
     }
     if (name_is_strict_reserved) {
-      ReportMessageAt(function_name_location, "unexpected_strict_reserved");
+      ReportMessageAt(function_name_location, "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x73\x74\x72\x69\x63\x74\x5f\x72\x65\x73\x65\x72\x76\x65\x64");
       *ok = false;
       return Expression::Default();
     }
     if (eval_args_error_loc.IsValid()) {
-      ReportMessageAt(eval_args_error_loc, "strict_eval_arguments");
+      ReportMessageAt(eval_args_error_loc, "\x73\x74\x72\x69\x63\x74\x5f\x65\x76\x61\x6c\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x73");
       *ok = false;
       return Expression::Default();
     }
     if (dupe_error_loc.IsValid()) {
-      ReportMessageAt(dupe_error_loc, "strict_param_dupe");
+      ReportMessageAt(dupe_error_loc, "\x73\x74\x72\x69\x63\x74\x5f\x70\x61\x72\x61\x6d\x5f\x64\x75\x70\x65");
       *ok = false;
       return Expression::Default();
     }
     if (reserved_error_loc.IsValid()) {
-      ReportMessageAt(reserved_error_loc, "unexpected_strict_reserved");
+      ReportMessageAt(reserved_error_loc, "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x73\x74\x72\x69\x63\x74\x5f\x72\x65\x73\x65\x72\x76\x65\x64");
       *ok = false;
       return Expression::Default();
     }

@@ -132,7 +132,7 @@ void HRepresentationChangesPhase::Run() {
       int_worklist.Add(phi, zone());
       phi->ClearFlag(HValue::kTruncatingToInt32);
       if (FLAG_trace_representation) {
-        PrintF("#%d Phi is not truncating Int32 because of #%d %s\n",
+        PrintF("\x23\x6c\x84\x20\x50\x68\x69\x20\x69\x73\x20\x6e\x6f\x74\x20\x74\x72\x75\x6e\x63\x61\x74\x69\x6e\x67\x20\x49\x6e\x74\x33\x32\x20\x62\x65\x63\x61\x75\x73\x65\x20\x6f\x66\x20\x23\x6c\x84\x20\x6c\xa2\xa",
                phi->id(), value->id(), value->Mnemonic());
       }
     }
@@ -142,7 +142,7 @@ void HRepresentationChangesPhase::Run() {
       smi_worklist.Add(phi, zone());
       phi->ClearFlag(HValue::kTruncatingToSmi);
       if (FLAG_trace_representation) {
-        PrintF("#%d Phi is not truncating Smi because of #%d %s\n",
+        PrintF("\x23\x6c\x84\x20\x50\x68\x69\x20\x69\x73\x20\x6e\x6f\x74\x20\x74\x72\x75\x6e\x63\x61\x74\x69\x6e\x67\x20\x53\x6d\x69\x20\x62\x65\x63\x61\x75\x73\x65\x20\x6f\x66\x20\x23\x6c\x84\x20\x6c\xa2\xa",
                phi->id(), value->id(), value->Mnemonic());
       }
     }
@@ -156,7 +156,7 @@ void HRepresentationChangesPhase::Run() {
           input->representation().IsSmiOrInteger32() &&
           input->CheckFlag(HValue::kTruncatingToInt32)) {
         if (FLAG_trace_representation) {
-          PrintF("#%d Phi is not truncating Int32 because of #%d %s\n",
+          PrintF("\x23\x6c\x84\x20\x50\x68\x69\x20\x69\x73\x20\x6e\x6f\x74\x20\x74\x72\x75\x6e\x63\x61\x74\x69\x6e\x67\x20\x49\x6e\x74\x33\x32\x20\x62\x65\x63\x61\x75\x73\x65\x20\x6f\x66\x20\x23\x6c\x84\x20\x6c\xa2\xa",
                  input->id(), current->id(), current->Mnemonic());
         }
         input->ClearFlag(HValue::kTruncatingToInt32);
@@ -173,7 +173,7 @@ void HRepresentationChangesPhase::Run() {
           input->representation().IsSmi() &&
           input->CheckFlag(HValue::kTruncatingToSmi)) {
         if (FLAG_trace_representation) {
-          PrintF("#%d Phi is not truncating Smi because of #%d %s\n",
+          PrintF("\x23\x6c\x84\x20\x50\x68\x69\x20\x69\x73\x20\x6e\x6f\x74\x20\x74\x72\x75\x6e\x63\x61\x74\x69\x6e\x67\x20\x53\x6d\x69\x20\x62\x65\x63\x61\x75\x73\x65\x20\x6f\x66\x20\x23\x6c\x84\x20\x6c\xa2\xa",
                  input->id(), current->id(), current->Mnemonic());
         }
         input->ClearFlag(HValue::kTruncatingToSmi);

@@ -504,7 +504,7 @@ void IncrementalMarking::UncommitMarkingDeque() {
 
 void IncrementalMarking::Start(CompactionFlag flag) {
   if (FLAG_trace_incremental_marking) {
-    PrintF("[IncrementalMarking] Start\n");
+    PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x53\x74\x61\x72\x74\xa");
   }
   DCHECK(FLAG_incremental_marking);
   DCHECK(FLAG_incremental_marking_steps);
@@ -519,7 +519,7 @@ void IncrementalMarking::Start(CompactionFlag flag) {
     StartMarking(flag);
   } else {
     if (FLAG_trace_incremental_marking) {
-      PrintF("[IncrementalMarking] Start sweeping.\n");
+      PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x53\x74\x61\x72\x74\x20\x73\x77\x65\x65\x70\x69\x6e\x67\x2e\xa");
     }
     state_ = SWEEPING;
   }
@@ -530,7 +530,7 @@ void IncrementalMarking::Start(CompactionFlag flag) {
 
 void IncrementalMarking::StartMarking(CompactionFlag flag) {
   if (FLAG_trace_incremental_marking) {
-    PrintF("[IncrementalMarking] Start marking\n");
+    PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x53\x74\x61\x72\x74\x20\x6d\x61\x72\x6b\x69\x6e\x67\xa");
   }
 
   is_compacting_ = !FLAG_never_compact && (flag == ALLOW_COMPACTION) &&
@@ -579,7 +579,7 @@ void IncrementalMarking::StartMarking(CompactionFlag flag) {
 
   // Ready to start incremental marking.
   if (FLAG_trace_incremental_marking) {
-    PrintF("[IncrementalMarking] Running\n");
+    PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x52\x75\x6e\x6e\x69\x6e\x67\xa");
   }
 }
 
@@ -706,7 +706,7 @@ void IncrementalMarking::Hurry() {
     if (FLAG_trace_incremental_marking || FLAG_print_cumulative_gc_stat) {
       start = base::OS::TimeCurrentMillis();
       if (FLAG_trace_incremental_marking) {
-        PrintF("[IncrementalMarking] Hurry\n");
+        PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x48\x75\x72\x72\x79\xa");
       }
     }
     // TODO(gc) hurry can mark objects it encounters black as mutator
@@ -718,7 +718,7 @@ void IncrementalMarking::Hurry() {
       double delta = end - start;
       heap_->tracer()->AddMarkingTime(delta);
       if (FLAG_trace_incremental_marking) {
-        PrintF("[IncrementalMarking] Complete (hurry), spent %d ms.\n",
+        PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x43\x6f\x6d\x70\x6c\x65\x74\x65\x20\x28\x68\x75\x72\x72\x79\x29\x2c\x20\x73\x70\x65\x6e\x74\x20\x6c\x84\x20\x6d\x73\x2e\xa",
                static_cast<int>(delta));
       }
     }
@@ -752,7 +752,7 @@ void IncrementalMarking::Hurry() {
 void IncrementalMarking::Abort() {
   if (IsStopped()) return;
   if (FLAG_trace_incremental_marking) {
-    PrintF("[IncrementalMarking] Aborting.\n");
+    PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x41\x62\x6f\x72\x74\x69\x6e\x67\x2e\xa");
   }
   heap_->new_space()->LowerInlineAllocationLimit(0);
   IncrementalMarking::set_should_hurry(false);
@@ -802,7 +802,7 @@ void IncrementalMarking::MarkingComplete(CompletionAction action) {
   // the should-hurry flag to indicate that there can't be much work left to do.
   set_should_hurry(true);
   if (FLAG_trace_incremental_marking) {
-    PrintF("[IncrementalMarking] Complete (normal).\n");
+    PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x43\x6f\x6d\x70\x6c\x65\x74\x65\x20\x28\x6e\x6f\x72\x6d\x61\x6c\x29\x2e\xa");
   }
   if (action == GC_VIA_STACK_GUARD) {
     heap_->isolate()->stack_guard()->RequestGC();
@@ -881,7 +881,7 @@ void IncrementalMarking::Step(intptr_t allocated_bytes, CompletionAction action,
 
     if ((steps_count_ % kMarkingSpeedAccellerationInterval) == 0) {
       if (FLAG_trace_gc) {
-        PrintPID("Speed up marking after %d steps\n",
+        PrintPID("\x53\x70\x65\x65\x64\x20\x75\x70\x20\x6d\x61\x72\x6b\x69\x6e\x67\x20\x61\x66\x74\x65\x72\x20\x6c\x84\x20\x73\x74\x65\x70\x73\xa",
                  static_cast<int>(kMarkingSpeedAccellerationInterval));
       }
       speed_up = true;
@@ -897,7 +897,7 @@ void IncrementalMarking::Step(intptr_t allocated_bytes, CompletionAction action,
     if (space_left_is_very_small ||
         only_1_nth_of_space_that_was_available_still_left) {
       if (FLAG_trace_gc)
-        PrintPID("Speed up marking because of low space left\n");
+        PrintPID("\x53\x70\x65\x65\x64\x20\x75\x70\x20\x6d\x61\x72\x6b\x69\x6e\x67\x20\x62\x65\x63\x61\x75\x73\x65\x20\x6f\x66\x20\x6c\x6f\x77\x20\x73\x70\x61\x63\x65\x20\x6c\x65\x66\x74\xa");
       speed_up = true;
     }
 
@@ -908,7 +908,7 @@ void IncrementalMarking::Step(intptr_t allocated_bytes, CompletionAction action,
     if (size_of_old_space_multiplied_by_n_during_marking) {
       speed_up = true;
       if (FLAG_trace_gc) {
-        PrintPID("Speed up marking because of heap size increase\n");
+        PrintPID("\x53\x70\x65\x65\x64\x20\x75\x70\x20\x6d\x61\x72\x6b\x69\x6e\x67\x20\x62\x65\x63\x61\x75\x73\x65\x20\x6f\x66\x20\x68\x65\x61\x70\x20\x73\x69\x7a\x65\x20\x69\x6e\x63\x72\x65\x61\x73\x65\xa");
       }
     }
 
@@ -921,7 +921,7 @@ void IncrementalMarking::Step(intptr_t allocated_bytes, CompletionAction action,
     // We try to scan at at least twice the speed that we are allocating.
     if (promoted_during_marking > bytes_scanned_ / 2 + scavenge_slack + delay) {
       if (FLAG_trace_gc) {
-        PrintPID("Speed up marking because marker was not keeping up\n");
+        PrintPID("\x53\x70\x65\x65\x64\x20\x75\x70\x20\x6d\x61\x72\x6b\x69\x6e\x67\x20\x62\x65\x63\x61\x75\x73\x65\x20\x6d\x61\x72\x6b\x65\x72\x20\x77\x61\x73\x20\x6e\x6f\x74\x20\x6b\x65\x65\x70\x69\x6e\x67\x20\x75\x70\xa");
       }
       speed_up = true;
     }
@@ -929,14 +929,14 @@ void IncrementalMarking::Step(intptr_t allocated_bytes, CompletionAction action,
     if (speed_up) {
       if (state_ != MARKING) {
         if (FLAG_trace_gc) {
-          PrintPID("Postponing speeding up marking until marking starts\n");
+          PrintPID("\x50\x6f\x73\x74\x70\x6f\x6e\x69\x6e\x67\x20\x73\x70\x65\x65\x64\x69\x6e\x67\x20\x75\x70\x20\x6d\x61\x72\x6b\x69\x6e\x67\x20\x75\x6e\x74\x69\x6c\x20\x6d\x61\x72\x6b\x69\x6e\x67\x20\x73\x74\x61\x72\x74\x73\xa");
         }
       } else {
         marking_speed_ += kMarkingSpeedAccelleration;
         marking_speed_ = static_cast<int>(
             Min(kMaxMarkingSpeed, static_cast<intptr_t>(marking_speed_ * 1.3)));
         if (FLAG_trace_gc) {
-          PrintPID("Marking speed increased to %d\n", marking_speed_);
+          PrintPID("\x4d\x61\x72\x6b\x69\x6e\x67\x20\x73\x70\x65\x65\x64\x20\x69\x6e\x63\x72\x65\x61\x73\x65\x64\x20\x74\x6f\x20\x6c\x84\xa", marking_speed_);
         }
       }
     }

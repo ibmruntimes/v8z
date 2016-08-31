@@ -14,7 +14,7 @@ namespace internal {
 class HCanonicalizePhase : public HPhase {
  public:
   explicit HCanonicalizePhase(HGraph* graph)
-      : HPhase("H_Canonicalize", graph) { }
+      : HPhase("\x48\x5f\x43\x61\x6e\x6f\x6e\x69\x63\x61\x6c\x69\x7a\x65", graph) { }
 
   void Run();
 

@@ -1547,7 +1547,7 @@ class JSConstructEntryStub : public JSEntryStub {
   int MinorKey() const { return 1; }
 
   virtual void PrintName(OStream& os) const V8_OVERRIDE {  // NOLINT
-    os << "JSConstructEntryStub";
+    os << "\x4a\x53\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x45\x6e\x74\x72\x79\x53\x74\x75\x62";
   }
 };
 
@@ -2166,7 +2166,7 @@ class ArrayNoArgumentConstructorStub : public ArrayConstructorStubBase {
   Major MajorKey() const { return ArrayNoArgumentConstructor; }
 
   virtual void PrintName(OStream& os) const V8_OVERRIDE {  // NOLINT
-    BasePrintName(os, "ArrayNoArgumentConstructorStub");
+    BasePrintName(os, "\x41\x72\x72\x61\x79\x4e\x6f\x41\x72\x67\x75\x6d\x65\x6e\x74\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x53\x74\x75\x62");
   }
 
   DISALLOW_COPY_AND_ASSIGN(ArrayNoArgumentConstructorStub);
@@ -2191,7 +2191,7 @@ class ArraySingleArgumentConstructorStub : public ArrayConstructorStubBase {
   Major MajorKey() const { return ArraySingleArgumentConstructor; }
 
   virtual void PrintName(OStream& os) const {  // NOLINT
-    BasePrintName(os, "ArraySingleArgumentConstructorStub");
+    BasePrintName(os, "\x41\x72\x72\x61\x79\x53\x69\x6e\x67\x6c\x65\x41\x72\x67\x75\x6d\x65\x6e\x74\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x53\x74\x75\x62");
   }
 
   DISALLOW_COPY_AND_ASSIGN(ArraySingleArgumentConstructorStub);
@@ -2216,7 +2216,7 @@ class ArrayNArgumentsConstructorStub : public ArrayConstructorStubBase {
   Major MajorKey() const { return ArrayNArgumentsConstructor; }
 
   virtual void PrintName(OStream& os) const {  // NOLINT
-    BasePrintName(os, "ArrayNArgumentsConstructorStub");
+    BasePrintName(os, "\x41\x72\x72\x61\x79\x4e\x41\x72\x67\x75\x6d\x65\x6e\x74\x73\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x53\x74\x75\x62");
   }
 
   DISALLOW_COPY_AND_ASSIGN(ArrayNArgumentsConstructorStub);

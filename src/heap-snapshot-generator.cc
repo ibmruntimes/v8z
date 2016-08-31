@@ -83,21 +83,21 @@ void HeapEntry::SetIndexedReference(HeapGraphEdge::Type type,
 void HeapEntry::Print(
     const char* prefix, const char* edge_name, int max_depth, int indent) {
   STATIC_ASSERT(sizeof(unsigned) == sizeof(id()));
-  base::OS::Print("%6" V8PRIuPTR " @%6u %*c %s%s: ", self_size(), id(), indent,
-                  ' ', prefix, edge_name);
+  base::OS::Print("\x25\x36" V8PRIuPTR "\x20\x40\x6c\xf6\xa4\x20\x25\x2a\x63\x20\x6c\xa2\x6c\xa2\x3a\x20", self_size(), id(), indent,
+                  '\x20', prefix, edge_name);
   if (type() != kString) {
-    base::OS::Print("%s %.40s\n", TypeAsString(), name_);
+    base::OS::Print("\x6c\xa2\x20\x6c\x4b\xf4\xf0\xa2\xa", TypeAsString(), name_);
   } else {
-    base::OS::Print("\"");
+    base::OS::Print("\x22");
     const char* c = name_;
     while (*c && (c - name_) <= 40) {
-      if (*c != '\n')
-        base::OS::Print("%c", *c);
+      if (*c != '\xa')
+        base::OS::Print("\x6c\x83", *c);
       else
-        base::OS::Print("\\n");
+        base::OS::Print("\x5c\x6e");
       ++c;
     }
-    base::OS::Print("\"\n");
+    base::OS::Print("\x22\xa");
   }
   if (--max_depth == 0) return;
   Vector<HeapGraphEdge*> ch = children();
@@ -108,33 +108,33 @@ void HeapEntry::Print(
     const char* edge_name = index.start();
     switch (edge.type()) {
       case HeapGraphEdge::kContextVariable:
-        edge_prefix = "#";
+        edge_prefix = "\x23";
         edge_name = edge.name();
         break;
       case HeapGraphEdge::kElement:
-        SNPrintF(index, "%d", edge.index());
+        SNPrintF(index, "\x6c\x84", edge.index());
         break;
       case HeapGraphEdge::kInternal:
-        edge_prefix = "$";
+        edge_prefix = "\x24";
         edge_name = edge.name();
         break;
       case HeapGraphEdge::kProperty:
         edge_name = edge.name();
         break;
       case HeapGraphEdge::kHidden:
-        edge_prefix = "$";
-        SNPrintF(index, "%d", edge.index());
+        edge_prefix = "\x24";
+        SNPrintF(index, "\x6c\x84", edge.index());
         break;
       case HeapGraphEdge::kShortcut:
-        edge_prefix = "^";
+        edge_prefix = "\x5e";
         edge_name = edge.name();
         break;
       case HeapGraphEdge::kWeak:
-        edge_prefix = "w";
+        edge_prefix = "\x77";
         edge_name = edge.name();
         break;
       default:
-        SNPrintF(index, "!!! unknown edge type: %d ", edge.type());
+        SNPrintF(index, "\x21\x21\x21\x20\x75\x6e\x6b\x6e\x6f\x77\x6e\x20\x65\x64\x67\x65\x20\x74\x79\x70\x65\x3a\x20\x6c\x84\x20", edge.type());
     }
     edge.to()->Print(edge_prefix, edge_name, max_depth, indent + 2);
   }
@@ -143,20 +143,20 @@ void HeapEntry::Print(
 
 const char* HeapEntry::TypeAsString() {
   switch (type()) {
-    case kHidden: return "/hidden/";
-    case kObject: return "/object/";
-    case kClosure: return "/closure/";
-    case kString: return "/string/";
-    case kCode: return "/code/";
-    case kArray: return "/array/";
-    case kRegExp: return "/regexp/";
-    case kHeapNumber: return "/number/";
-    case kNative: return "/native/";
-    case kSynthetic: return "/synthetic/";
-    case kConsString: return "/concatenated string/";
-    case kSlicedString: return "/sliced string/";
-    case kSymbol: return "/symbol/";
-    default: return "???";
+    case kHidden: return "\x2f\x68\x69\x64\x64\x65\x6e\x2f";
+    case kObject: return "\x2f\x6f\x62\x6a\x65\x63\x74\x2f";
+    case kClosure: return "\x2f\x63\x6c\x6f\x73\x75\x72\x65\x2f";
+    case kString: return "\x2f\x73\x74\x72\x69\x6e\x67\x2f";
+    case kCode: return "\x2f\x63\x6f\x64\x65\x2f";
+    case kArray: return "\x2f\x61\x72\x72\x61\x79\x2f";
+    case kRegExp: return "\x2f\x72\x65\x67\x65\x78\x70\x2f";
+    case kHeapNumber: return "\x2f\x6e\x75\x6d\x62\x65\x72\x2f";
+    case kNative: return "\x2f\x6e\x61\x74\x69\x76\x65\x2f";
+    case kSynthetic: return "\x2f\x73\x79\x6e\x74\x68\x65\x74\x69\x63\x2f";
+    case kConsString: return "\x2f\x63\x6f\x6e\x63\x61\x74\x65\x6e\x61\x74\x65\x64\x20\x73\x74\x72\x69\x6e\x67\x2f";
+    case kSlicedString: return "\x2f\x73\x6c\x69\x63\x65\x64\x20\x73\x74\x72\x69\x6e\x67\x2f";
+    case kSymbol: return "\x2f\x73\x79\x6d\x62\x6f\x6c\x2f";
+    default: return "\x3f\x3f\x3f";
   }
 }
 
@@ -234,7 +234,7 @@ HeapEntry* HeapSnapshot::AddRootEntry() {
 HeapEntry* HeapSnapshot::AddGcRootsEntry() {
   DCHECK(gc_roots_index_ == HeapEntry::kNoEntry);
   HeapEntry* entry = AddEntry(HeapEntry::kSynthetic,
-                              "(GC roots)",
+                              "\x28\x47\x43\x20\x72\x6f\x6f\x74\x73\x29",
                               HeapObjectsMap::kGcRootsObjectId,
                               0,
                               0);
@@ -409,7 +409,7 @@ bool HeapObjectsMap::MoveObject(Address from, Address to, int object_size) {
     // about the object in entries_ consistent, we have to adjust size when the
     // object is migrated.
     if (FLAG_heap_profiler_trace_objects) {
-      PrintF("Move object from %p to %p old size %6d new size %6d\n",
+      PrintF("\x4d\x6f\x76\x65\x20\x6f\x62\x6a\x65\x63\x74\x20\x66\x72\x6f\x6d\x20\x6c\x97\x20\x74\x6f\x20\x6c\x97\x20\x6f\x6c\x64\x20\x73\x69\x7a\x65\x20\x6c\xf6\x84\x20\x6e\x65\x77\x20\x73\x69\x7a\x65\x20\x6c\xf6\x84\xa",
              from,
              to,
              entries_.at(from_entry_info_index).size,
@@ -450,7 +450,7 @@ SnapshotObjectId HeapObjectsMap::FindOrAddEntry(Address addr,
     EntryInfo& entry_info = entries_.at(entry_index);
     entry_info.accessed = accessed;
     if (FLAG_heap_profiler_trace_objects) {
-      PrintF("Update object size : %p with old size %d and new size %d\n",
+      PrintF("\x55\x70\x64\x61\x74\x65\x20\x6f\x62\x6a\x65\x63\x74\x20\x73\x69\x7a\x65\x20\x3a\x20\x6c\x97\x20\x77\x69\x74\x68\x20\x6f\x6c\x64\x20\x73\x69\x7a\x65\x20\x6c\x84\x20\x61\x6e\x64\x20\x6e\x65\x77\x20\x73\x69\x7a\x65\x20\x6c\x84\xa",
              addr,
              entry_info.size,
              size);
@@ -474,18 +474,18 @@ void HeapObjectsMap::StopHeapObjectsTracking() {
 
 void HeapObjectsMap::UpdateHeapObjectsMap() {
   if (FLAG_heap_profiler_trace_objects) {
-    PrintF("Begin HeapObjectsMap::UpdateHeapObjectsMap. map has %d entries.\n",
+    PrintF("\x42\x65\x67\x69\x6e\x20\x48\x65\x61\x70\x4f\x62\x6a\x65\x63\x74\x73\x4d\x61\x70\x3a\x3a\x55\x70\x64\x61\x74\x65\x48\x65\x61\x70\x4f\x62\x6a\x65\x63\x74\x73\x4d\x61\x70\x2e\x20\x6d\x61\x70\x20\x68\x61\x73\x20\x6c\x84\x20\x65\x6e\x74\x72\x69\x65\x73\x2e\xa",
            entries_map_.occupancy());
   }
   heap_->CollectAllGarbage(Heap::kMakeHeapIterableMask,
-                          "HeapObjectsMap::UpdateHeapObjectsMap");
+                          "\x48\x65\x61\x70\x4f\x62\x6a\x65\x63\x74\x73\x4d\x61\x70\x3a\x3a\x55\x70\x64\x61\x74\x65\x48\x65\x61\x70\x4f\x62\x6a\x65\x63\x74\x73\x4d\x61\x70");
   HeapIterator iterator(heap_);
   for (HeapObject* obj = iterator.next();
        obj != NULL;
        obj = iterator.next()) {
     FindOrAddEntry(obj->address(), obj->Size());
     if (FLAG_heap_profiler_trace_objects) {
-      PrintF("Update object      : %p %6d. Next address is %p\n",
+      PrintF("\x55\x70\x64\x61\x74\x65\x20\x6f\x62\x6a\x65\x63\x74\x20\x20\x20\x20\x20\x20\x3a\x20\x6c\x97\x20\x6c\xf6\x84\x2e\x20\x4e\x65\x78\x74\x20\x61\x64\x64\x72\x65\x73\x73\x20\x69\x73\x20\x6c\x97\xa",
              obj->address(),
              obj->Size(),
              obj->address() + obj->Size());
@@ -493,7 +493,7 @@ void HeapObjectsMap::UpdateHeapObjectsMap() {
   }
   RemoveDeadEntries();
   if (FLAG_heap_profiler_trace_objects) {
-    PrintF("End HeapObjectsMap::UpdateHeapObjectsMap. map has %d entries.\n",
+    PrintF("\x45\x6e\x64\x20\x48\x65\x61\x70\x4f\x62\x6a\x65\x63\x74\x73\x4d\x61\x70\x3a\x3a\x55\x70\x64\x61\x74\x65\x48\x65\x61\x70\x4f\x62\x6a\x65\x63\x74\x73\x4d\x61\x70\x2e\x20\x6d\x61\x70\x20\x68\x61\x73\x20\x6c\x84\x20\x65\x6e\x74\x72\x69\x65\x73\x2e\xa",
            entries_map_.occupancy());
   }
 }
@@ -515,18 +515,18 @@ struct HeapObjectInfo {
 
   void Print() const {
     if (expected_size == 0) {
-      PrintF("Untracked object   : %p %6d. Next address is %p\n",
+      PrintF("\x55\x6e\x74\x72\x61\x63\x6b\x65\x64\x20\x6f\x62\x6a\x65\x63\x74\x20\x20\x20\x3a\x20\x6c\x97\x20\x6c\xf6\x84\x2e\x20\x4e\x65\x78\x74\x20\x61\x64\x64\x72\x65\x73\x73\x20\x69\x73\x20\x6c\x97\xa",
              obj->address(),
              obj->Size(),
              obj->address() + obj->Size());
     } else if (obj->Size() != expected_size) {
-      PrintF("Wrong size %6d: %p %6d. Next address is %p\n",
+      PrintF("\x57\x72\x6f\x6e\x67\x20\x73\x69\x7a\x65\x20\x6c\xf6\x84\x3a\x20\x6c\x97\x20\x6c\xf6\x84\x2e\x20\x4e\x65\x78\x74\x20\x61\x64\x64\x72\x65\x73\x73\x20\x69\x73\x20\x6c\x97\xa",
              expected_size,
              obj->address(),
              obj->Size(),
              obj->address() + obj->Size());
     } else {
-      PrintF("Good object      : %p %6d. Next address is %p\n",
+      PrintF("\x47\x6f\x6f\x64\x20\x6f\x62\x6a\x65\x63\x74\x20\x20\x20\x20\x20\x20\x3a\x20\x6c\x97\x20\x6c\xf6\x84\x2e\x20\x4e\x65\x78\x74\x20\x61\x64\x64\x72\x65\x73\x73\x20\x69\x73\x20\x6c\x97\xa",
              obj->address(),
              expected_size,
              obj->address() + obj->Size());
@@ -575,7 +575,7 @@ int HeapObjectsMap::FindUntrackedObjects() {
     }
   }
   if (FLAG_heap_profiler_trace_objects) {
-    PrintF("\nBegin HeapObjectsMap::FindUntrackedObjects. %d entries in map.\n",
+    PrintF("\xaB\x65\x67\x69\x6e\x20\x48\x65\x61\x70\x4f\x62\x6a\x65\x63\x74\x73\x4d\x61\x70\x3a\x3a\x46\x69\x6e\x64\x55\x6e\x74\x72\x61\x63\x6b\x65\x64\x4f\x62\x6a\x65\x63\x74\x73\x2e\x20\x6c\x84\x20\x65\x6e\x74\x72\x69\x65\x73\x20\x69\x6e\x20\x6d\x61\x70\x2e\xa",
            entries_map_.occupancy());
     heap_objects.Sort(comparator);
     int last_printed_object = -1;
@@ -586,7 +586,7 @@ int HeapObjectsMap::FindUntrackedObjects() {
         ++untracked;
         if (last_printed_object != i - 1) {
           if (i > 0) {
-            PrintF("%d objects were skipped\n", i - 1 - last_printed_object);
+            PrintF("\x6c\x84\x20\x6f\x62\x6a\x65\x63\x74\x73\x20\x77\x65\x72\x65\x20\x73\x6b\x69\x70\x70\x65\x64\xa", i - 1 - last_printed_object);
             heap_objects[i - 1].Print();
           }
         }
@@ -600,10 +600,10 @@ int HeapObjectsMap::FindUntrackedObjects() {
       }
     }
     if (last_printed_object < heap_objects.length() - 1) {
-      PrintF("Last %d objects were skipped\n",
+      PrintF("\x4c\x61\x73\x74\x20\x6c\x84\x20\x6f\x62\x6a\x65\x63\x74\x73\x20\x77\x65\x72\x65\x20\x73\x6b\x69\x70\x70\x65\x64\xa",
              heap_objects.length() - 1 - last_printed_object);
     }
-    PrintF("End HeapObjectsMap::FindUntrackedObjects. %d entries in map.\n\n",
+    PrintF("\x45\x6e\x64\x20\x48\x65\x61\x70\x4f\x62\x6a\x65\x63\x74\x73\x4d\x61\x70\x3a\x3a\x46\x69\x6e\x64\x55\x6e\x74\x72\x61\x63\x6b\x65\x64\x4f\x62\x6a\x65\x63\x74\x73\x2e\x20\x6c\x84\x20\x65\x6e\x74\x72\x69\x65\x73\x20\x69\x6e\x20\x6d\x61\x70\x2e\xa\xa",
            entries_map_.occupancy());
   }
   return untracked;
@@ -821,7 +821,7 @@ HeapEntry* V8HeapExplorer::AddEntry(HeapObject* object) {
   } else if (object->IsJSFunction()) {
     JSFunction* func = JSFunction::cast(object);
     SharedFunctionInfo* shared = func->shared();
-    const char* name = shared->bound() ? "native_bind" :
+    const char* name = shared->bound() ? "\x6e\x61\x74\x69\x76\x65\x5f\x62\x69\x6e\x64" :
         names_->GetName(String::cast(shared->name()));
     return AddEntry(object, HeapEntry::kClosure, name);
   } else if (object->IsJSRegExp()) {
@@ -835,7 +835,7 @@ HeapEntry* V8HeapExplorer::AddEntry(HeapObject* object) {
     if (object->IsJSGlobalObject()) {
       const char* tag = objects_tags_.GetTag(object);
       if (tag != NULL) {
-        name = names_->GetFormatted("%s / %s", name, tag);
+        name = names_->GetFormatted("\x6c\xa2\x20\x2f\x20\x6c\xa2", name, tag);
       }
     }
     return AddEntry(object, HeapEntry::kObject, name);
@@ -844,16 +844,16 @@ HeapEntry* V8HeapExplorer::AddEntry(HeapObject* object) {
     if (string->IsConsString())
       return AddEntry(object,
                       HeapEntry::kConsString,
-                      "(concatenated string)");
+                      "\x28\x63\x6f\x6e\x63\x61\x74\x65\x6e\x61\x74\x65\x64\x20\x73\x74\x72\x69\x6e\x67\x29");
     if (string->IsSlicedString())
       return AddEntry(object,
                       HeapEntry::kSlicedString,
-                      "(sliced string)");
+                      "\x28\x73\x6c\x69\x63\x65\x64\x20\x73\x74\x72\x69\x6e\x67\x29");
     return AddEntry(object,
                     HeapEntry::kString,
                     names_->GetName(String::cast(object)));
   } else if (object->IsSymbol()) {
-    return AddEntry(object, HeapEntry::kSymbol, "symbol");
+    return AddEntry(object, HeapEntry::kSymbol, "\x73\x79\x6d\x62\x6f\x6c");
   } else if (object->IsCode()) {
     return AddEntry(object, HeapEntry::kCode, "");
   } else if (object->IsSharedFunctionInfo()) {
@@ -869,16 +869,16 @@ HeapEntry* V8HeapExplorer::AddEntry(HeapObject* object) {
                         ? names_->GetName(String::cast(name))
                         : "");
   } else if (object->IsNativeContext()) {
-    return AddEntry(object, HeapEntry::kHidden, "system / NativeContext");
+    return AddEntry(object, HeapEntry::kHidden, "\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x4e\x61\x74\x69\x76\x65\x43\x6f\x6e\x74\x65\x78\x74");
   } else if (object->IsContext()) {
-    return AddEntry(object, HeapEntry::kObject, "system / Context");
+    return AddEntry(object, HeapEntry::kObject, "\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x43\x6f\x6e\x74\x65\x78\x74");
   } else if (object->IsFixedArray() ||
              object->IsFixedDoubleArray() ||
              object->IsByteArray() ||
              object->IsExternalArray()) {
     return AddEntry(object, HeapEntry::kArray, "");
   } else if (object->IsHeapNumber()) {
-    return AddEntry(object, HeapEntry::kHeapNumber, "number");
+    return AddEntry(object, HeapEntry::kHeapNumber, "\x6e\x75\x6d\x62\x65\x72");
   }
   return AddEntry(object, HeapEntry::kHidden, GetSystemEntryName(object));
 }
@@ -1005,20 +1005,20 @@ const char* V8HeapExplorer::GetSystemEntryName(HeapObject* object) {
     case MAP_TYPE:
       switch (Map::cast(object)->instance_type()) {
 #define MAKE_STRING_MAP_CASE(instance_type, size, name, Name) \
-        case instance_type: return "system / Map (" #Name ")";
+        case instance_type: return "\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x4d\x61\x70\x20\x28" #Name "\x29";
       STRING_TYPE_LIST(MAKE_STRING_MAP_CASE)
 #undef MAKE_STRING_MAP_CASE
-        default: return "system / Map";
+        default: return "\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x4d\x61\x70";
       }
-    case CELL_TYPE: return "system / Cell";
-    case PROPERTY_CELL_TYPE: return "system / PropertyCell";
-    case FOREIGN_TYPE: return "system / Foreign";
-    case ODDBALL_TYPE: return "system / Oddball";
+    case CELL_TYPE: return "\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x43\x65\x6c\x6c";
+    case PROPERTY_CELL_TYPE: return "\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x50\x72\x6f\x70\x65\x72\x74\x79\x43\x65\x6c\x6c";
+    case FOREIGN_TYPE: return "\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x46\x6f\x72\x65\x69\x67\x6e";
+    case ODDBALL_TYPE: return "\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x4f\x64\x64\x62\x61\x6c\x6c";
 #define MAKE_STRUCT_CASE(NAME, Name, name) \
-    case NAME##_TYPE: return "system / "#Name;
+    case NAME##_TYPE: return "\x73\x79\x73\x74\x65\x6d\x20\x2f\x20"#Name;
   STRUCT_LIST(MAKE_STRUCT_CASE)
 #undef MAKE_STRUCT_CASE
-    default: return "system";
+    default: return "\x73\x79\x73\x74\x65\x6d";
   }
 }
 
@@ -1046,7 +1046,7 @@ class IndexedReferencesExtractor : public ObjectVisitor {
   }
   void VisitCodeEntry(Address entry_address) {
      Code* code = Code::cast(Code::GetObjectFromEntryAddress(entry_address));
-     generator_->SetInternalReference(parent_obj_, parent_, "code", code);
+     generator_->SetInternalReference(parent_obj_, parent_, "\x63\x6f\x64\x65", code);
      generator_->TagCodeObject(code);
   }
   void VisitPointers(Object** start, Object** end) {
@@ -1152,7 +1152,7 @@ bool V8HeapExplorer::ExtractReferencesPass2(int entry, HeapObject* obj) {
 void V8HeapExplorer::ExtractJSGlobalProxyReferences(
     int entry, JSGlobalProxy* proxy) {
   SetInternalReference(proxy, entry,
-                       "native_context", proxy->native_context(),
+                       "\x6e\x61\x74\x69\x76\x65\x5f\x63\x6f\x6e\x74\x65\x78\x74", proxy->native_context(),
                        JSGlobalProxy::kNativeContextOffset);
 }
 
@@ -1181,7 +1181,7 @@ void V8HeapExplorer::ExtractJSObjectReferences(
             obj, entry,
             heap_->prototype_string(), js_fun->prototype());
         SetInternalReference(
-            obj, entry, "initial_map", proto_or_map,
+            obj, entry, "\x69\x6e\x69\x74\x69\x61\x6c\x5f\x6d\x61\x70", proto_or_map,
             JSFunction::kPrototypeOrInitialMapOffset);
       }
     }
@@ -1189,21 +1189,21 @@ void V8HeapExplorer::ExtractJSObjectReferences(
     // JSFunction has either bindings or literals and never both.
     bool bound = shared_info->bound();
     TagObject(js_fun->literals_or_bindings(),
-              bound ? "(function bindings)" : "(function literals)");
+              bound ? "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x69\x6e\x64\x69\x6e\x67\x73\x29" : "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x69\x74\x65\x72\x61\x6c\x73\x29");
     SetInternalReference(js_fun, entry,
-                         bound ? "bindings" : "literals",
+                         bound ? "\x62\x69\x6e\x64\x69\x6e\x67\x73" : "\x6c\x69\x74\x65\x72\x61\x6c\x73",
                          js_fun->literals_or_bindings(),
                          JSFunction::kLiteralsOffset);
-    TagObject(shared_info, "(shared function info)");
+    TagObject(shared_info, "\x28\x73\x68\x61\x72\x65\x64\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x66\x6f\x29");
     SetInternalReference(js_fun, entry,
-                         "shared", shared_info,
+                         "\x73\x68\x61\x72\x65\x64", shared_info,
                          JSFunction::kSharedFunctionInfoOffset);
-    TagObject(js_fun->context(), "(context)");
+    TagObject(js_fun->context(), "\x28\x63\x6f\x6e\x74\x65\x78\x74\x29");
     SetInternalReference(js_fun, entry,
-                         "context", js_fun->context(),
+                         "\x63\x6f\x6e\x74\x65\x78\x74", js_fun->context(),
                          JSFunction::kContextOffset);
     SetWeakReference(js_fun, entry,
-                     "next_function_link", js_fun->next_function_link(),
+                     "\x6e\x65\x78\x74\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6c\x69\x6e\x6b", js_fun->next_function_link(),
                      JSFunction::kNextFunctionLinkOffset);
     STATIC_ASSERT(JSFunction::kNextFunctionLinkOffset
                  == JSFunction::kNonWeakFieldsEndOffset);
@@ -1212,33 +1212,33 @@ void V8HeapExplorer::ExtractJSObjectReferences(
   } else if (obj->IsGlobalObject()) {
     GlobalObject* global_obj = GlobalObject::cast(obj);
     SetInternalReference(global_obj, entry,
-                         "builtins", global_obj->builtins(),
+                         "\x62\x75\x69\x6c\x74\x69\x6e\x73", global_obj->builtins(),
                          GlobalObject::kBuiltinsOffset);
     SetInternalReference(global_obj, entry,
-                         "native_context", global_obj->native_context(),
+                         "\x6e\x61\x74\x69\x76\x65\x5f\x63\x6f\x6e\x74\x65\x78\x74", global_obj->native_context(),
                          GlobalObject::kNativeContextOffset);
     SetInternalReference(global_obj, entry,
-                         "global_context", global_obj->global_context(),
+                         "\x67\x6c\x6f\x62\x61\x6c\x5f\x63\x6f\x6e\x74\x65\x78\x74", global_obj->global_context(),
                          GlobalObject::kGlobalContextOffset);
     SetInternalReference(global_obj, entry,
-                         "global_proxy", global_obj->global_proxy(),
+                         "\x67\x6c\x6f\x62\x61\x6c\x5f\x70\x72\x6f\x78\x79", global_obj->global_proxy(),
                          GlobalObject::kGlobalProxyOffset);
     STATIC_ASSERT(GlobalObject::kHeaderSize - JSObject::kHeaderSize ==
                  4 * kPointerSize);
   } else if (obj->IsJSArrayBufferView()) {
     JSArrayBufferView* view = JSArrayBufferView::cast(obj);
-    SetInternalReference(view, entry, "buffer", view->buffer(),
+    SetInternalReference(view, entry, "\x62\x75\x66\x66\x65\x72", view->buffer(),
                          JSArrayBufferView::kBufferOffset);
-    SetWeakReference(view, entry, "weak_next", view->weak_next(),
+    SetWeakReference(view, entry, "\x77\x65\x61\x6b\x5f\x6e\x65\x78\x74", view->weak_next(),
                      JSArrayBufferView::kWeakNextOffset);
   }
-  TagObject(js_obj->properties(), "(object properties)");
+  TagObject(js_obj->properties(), "\x28\x6f\x62\x6a\x65\x63\x74\x20\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x29");
   SetInternalReference(obj, entry,
-                       "properties", js_obj->properties(),
+                       "\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73", js_obj->properties(),
                        JSObject::kPropertiesOffset);
-  TagObject(js_obj->elements(), "(object elements)");
+  TagObject(js_obj->elements(), "\x28\x6f\x62\x6a\x65\x63\x74\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x29");
   SetInternalReference(obj, entry,
-                       "elements", js_obj->elements(),
+                       "\x65\x6c\x65\x6d\x65\x6e\x74\x73", js_obj->elements(),
                        JSObject::kElementsOffset);
 }
 
@@ -1246,13 +1246,13 @@ void V8HeapExplorer::ExtractJSObjectReferences(
 void V8HeapExplorer::ExtractStringReferences(int entry, String* string) {
   if (string->IsConsString()) {
     ConsString* cs = ConsString::cast(string);
-    SetInternalReference(cs, entry, "first", cs->first(),
+    SetInternalReference(cs, entry, "\x66\x69\x72\x73\x74", cs->first(),
                          ConsString::kFirstOffset);
-    SetInternalReference(cs, entry, "second", cs->second(),
+    SetInternalReference(cs, entry, "\x73\x65\x63\x6f\x6e\x64", cs->second(),
                          ConsString::kSecondOffset);
   } else if (string->IsSlicedString()) {
     SlicedString* ss = SlicedString::cast(string);
-    SetInternalReference(ss, entry, "parent", ss->parent(),
+    SetInternalReference(ss, entry, "\x70\x61\x72\x65\x6e\x74", ss->parent(),
                          SlicedString::kParentOffset);
   }
 }
@@ -1260,14 +1260,14 @@ void V8HeapExplorer::ExtractStringReferences(int entry, String* string) {
 
 void V8HeapExplorer::ExtractSymbolReferences(int entry, Symbol* symbol) {
   SetInternalReference(symbol, entry,
-                       "name", symbol->name(),
+                       "\x6e\x61\x6d\x65", symbol->name(),
                        Symbol::kNameOffset);
 }
 
 
 void V8HeapExplorer::ExtractJSCollectionReferences(int entry,
                                                    JSCollection* collection) {
-  SetInternalReference(collection, entry, "table", collection->table(),
+  SetInternalReference(collection, entry, "\x74\x61\x62\x6c\x65", collection->table(),
                        JSCollection::kTableOffset);
 }
 
@@ -1276,7 +1276,7 @@ void V8HeapExplorer::ExtractJSWeakCollectionReferences(
     int entry, JSWeakCollection* collection) {
   MarkAsWeakContainer(collection->table());
   SetInternalReference(collection, entry,
-                       "table", collection->table(),
+                       "\x74\x61\x62\x6c\x65", collection->table(),
                        JSWeakCollection::kTableOffset);
 }
 
@@ -1318,10 +1318,10 @@ void V8HeapExplorer::ExtractContextReferences(int entry, Context* context) {
   EXTRACT_CONTEXT_FIELD(GLOBAL_OBJECT_INDEX, GlobalObject, global);
   if (context->IsNativeContext()) {
     TagObject(context->jsfunction_result_caches(),
-              "(context func. result caches)");
-    TagObject(context->normalized_map_cache(), "(context norm. map cache)");
-    TagObject(context->runtime_context(), "(runtime context)");
-    TagObject(context->embedder_data(), "(context data)");
+              "\x28\x63\x6f\x6e\x74\x65\x78\x74\x20\x66\x75\x6e\x63\x2e\x20\x72\x65\x73\x75\x6c\x74\x20\x63\x61\x63\x68\x65\x73\x29");
+    TagObject(context->normalized_map_cache(), "\x28\x63\x6f\x6e\x74\x65\x78\x74\x20\x6e\x6f\x72\x6d\x2e\x20\x6d\x61\x70\x20\x63\x61\x63\x68\x65\x29");
+    TagObject(context->runtime_context(), "\x28\x72\x75\x6e\x74\x69\x6d\x65\x20\x63\x6f\x6e\x74\x65\x78\x74\x29");
+    TagObject(context->embedder_data(), "\x28\x63\x6f\x6e\x74\x65\x78\x74\x20\x64\x61\x74\x61\x29");
     NATIVE_CONTEXT_FIELDS(EXTRACT_CONTEXT_FIELD);
     EXTRACT_CONTEXT_FIELD(OPTIMIZED_FUNCTIONS_LIST, unused,
                           optimized_functions_list);
@@ -1344,9 +1344,9 @@ void V8HeapExplorer::ExtractMapReferences(int entry, Map* map) {
     TransitionArray* transitions = map->transitions();
     int transitions_entry = GetEntry(transitions)->index();
     Object* back_pointer = transitions->back_pointer_storage();
-    TagObject(back_pointer, "(back pointer)");
+    TagObject(back_pointer, "\x28\x62\x61\x63\x6b\x20\x70\x6f\x69\x6e\x74\x65\x72\x29");
     SetInternalReference(transitions, transitions_entry,
-                         "back_pointer", back_pointer);
+                         "\x62\x61\x63\x6b\x5f\x70\x6f\x69\x6e\x74\x65\x72", back_pointer);
 
     if (FLAG_collect_maps && map->CanTransition()) {
       if (!transitions->IsSimpleTransition()) {
@@ -1354,45 +1354,45 @@ void V8HeapExplorer::ExtractMapReferences(int entry, Map* map) {
           FixedArray* prototype_transitions =
               transitions->GetPrototypeTransitions();
           MarkAsWeakContainer(prototype_transitions);
-          TagObject(prototype_transitions, "(prototype transitions");
+          TagObject(prototype_transitions, "\x28\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x73");
           SetInternalReference(transitions, transitions_entry,
-                               "prototype_transitions", prototype_transitions);
+                               "\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x5f\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x73", prototype_transitions);
         }
         // TODO(alph): transitions keys are strong links.
         MarkAsWeakContainer(transitions);
       }
     }
 
-    TagObject(transitions, "(transition array)");
+    TagObject(transitions, "\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x61\x72\x72\x61\x79\x29");
     SetInternalReference(map, entry,
-                         "transitions", transitions,
+                         "\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x73", transitions,
                          Map::kTransitionsOrBackPointerOffset);
   } else {
     Object* back_pointer = map->GetBackPointer();
-    TagObject(back_pointer, "(back pointer)");
+    TagObject(back_pointer, "\x28\x62\x61\x63\x6b\x20\x70\x6f\x69\x6e\x74\x65\x72\x29");
     SetInternalReference(map, entry,
-                         "back_pointer", back_pointer,
+                         "\x62\x61\x63\x6b\x5f\x70\x6f\x69\x6e\x74\x65\x72", back_pointer,
                          Map::kTransitionsOrBackPointerOffset);
   }
   DescriptorArray* descriptors = map->instance_descriptors();
-  TagObject(descriptors, "(map descriptors)");
+  TagObject(descriptors, "\x28\x6d\x61\x70\x20\x64\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x73\x29");
   SetInternalReference(map, entry,
-                       "descriptors", descriptors,
+                       "\x64\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x73", descriptors,
                        Map::kDescriptorsOffset);
 
   MarkAsWeakContainer(map->code_cache());
   SetInternalReference(map, entry,
-                       "code_cache", map->code_cache(),
+                       "\x63\x6f\x64\x65\x5f\x63\x61\x63\x68\x65", map->code_cache(),
                        Map::kCodeCacheOffset);
   SetInternalReference(map, entry,
-                       "prototype", map->prototype(), Map::kPrototypeOffset);
+                       "\x70\x72\x6f\x74\x6f\x74\x79\x70\x65", map->prototype(), Map::kPrototypeOffset);
   SetInternalReference(map, entry,
-                       "constructor", map->constructor(),
+                       "\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72", map->constructor(),
                        Map::kConstructorOffset);
-  TagObject(map->dependent_code(), "(dependent code)");
+  TagObject(map->dependent_code(), "\x28\x64\x65\x70\x65\x6e\x64\x65\x6e\x74\x20\x63\x6f\x64\x65\x29");
   MarkAsWeakContainer(map->dependent_code());
   SetInternalReference(map, entry,
-                       "dependent_code", map->dependent_code(),
+                       "\x64\x65\x70\x65\x6e\x64\x65\x6e\x74\x5f\x63\x6f\x64\x65", map->dependent_code(),
                        Map::kDependentCodeOffset);
 }
 
@@ -1404,49 +1404,49 @@ void V8HeapExplorer::ExtractSharedFunctionInfoReferences(
   const char* name = NULL;
   if (shared_name != *heap_->isolate()->factory()->empty_string()) {
     name = names_->GetName(shared_name);
-    TagObject(shared->code(), names_->GetFormatted("(code for %s)", name));
+    TagObject(shared->code(), names_->GetFormatted("\x28\x63\x6f\x64\x65\x20\x66\x6f\x72\x20\x6c\xa2\x29", name));
   } else {
-    TagObject(shared->code(), names_->GetFormatted("(%s code)",
+    TagObject(shared->code(), names_->GetFormatted("\x28\x6c\xa2\x20\x63\x6f\x64\x65\x29",
         Code::Kind2String(shared->code()->kind())));
   }
 
   SetInternalReference(obj, entry,
-                       "name", shared->name(),
+                       "\x6e\x61\x6d\x65", shared->name(),
                        SharedFunctionInfo::kNameOffset);
   SetInternalReference(obj, entry,
-                       "code", shared->code(),
+                       "\x63\x6f\x64\x65", shared->code(),
                        SharedFunctionInfo::kCodeOffset);
-  TagObject(shared->scope_info(), "(function scope info)");
+  TagObject(shared->scope_info(), "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x63\x6f\x70\x65\x20\x69\x6e\x66\x6f\x29");
   SetInternalReference(obj, entry,
-                       "scope_info", shared->scope_info(),
+                       "\x73\x63\x6f\x70\x65\x5f\x69\x6e\x66\x6f", shared->scope_info(),
                        SharedFunctionInfo::kScopeInfoOffset);
   SetInternalReference(obj, entry,
-                       "instance_class_name", shared->instance_class_name(),
+                       "\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x63\x6c\x61\x73\x73\x5f\x6e\x61\x6d\x65", shared->instance_class_name(),
                        SharedFunctionInfo::kInstanceClassNameOffset);
   SetInternalReference(obj, entry,
-                       "script", shared->script(),
+                       "\x73\x63\x72\x69\x70\x74", shared->script(),
                        SharedFunctionInfo::kScriptOffset);
   const char* construct_stub_name = name ?
-      names_->GetFormatted("(construct stub code for %s)", name) :
-      "(construct stub code)";
+      names_->GetFormatted("\x28\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x20\x73\x74\x75\x62\x20\x63\x6f\x64\x65\x20\x66\x6f\x72\x20\x6c\xa2\x29", name) :
+      "\x28\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x20\x73\x74\x75\x62\x20\x63\x6f\x64\x65\x29";
   TagObject(shared->construct_stub(), construct_stub_name);
   SetInternalReference(obj, entry,
-                       "construct_stub", shared->construct_stub(),
+                       "\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x5f\x73\x74\x75\x62", shared->construct_stub(),
                        SharedFunctionInfo::kConstructStubOffset);
   SetInternalReference(obj, entry,
-                       "function_data", shared->function_data(),
+                       "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x64\x61\x74\x61", shared->function_data(),
                        SharedFunctionInfo::kFunctionDataOffset);
   SetInternalReference(obj, entry,
-                       "debug_info", shared->debug_info(),
+                       "\x64\x65\x62\x75\x67\x5f\x69\x6e\x66\x6f", shared->debug_info(),
                        SharedFunctionInfo::kDebugInfoOffset);
   SetInternalReference(obj, entry,
-                       "inferred_name", shared->inferred_name(),
+                       "\x69\x6e\x66\x65\x72\x72\x65\x64\x5f\x6e\x61\x6d\x65", shared->inferred_name(),
                        SharedFunctionInfo::kInferredNameOffset);
   SetInternalReference(obj, entry,
-                       "optimized_code_map", shared->optimized_code_map(),
+                       "\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x5f\x63\x6f\x64\x65\x5f\x6d\x61\x70", shared->optimized_code_map(),
                        SharedFunctionInfo::kOptimizedCodeMapOffset);
   SetInternalReference(obj, entry,
-                       "feedback_vector", shared->feedback_vector(),
+                       "\x66\x65\x65\x64\x62\x61\x63\x6b\x5f\x76\x65\x63\x74\x6f\x72", shared->feedback_vector(),
                        SharedFunctionInfo::kFeedbackVectorOffset);
 }
 
@@ -1454,52 +1454,52 @@ void V8HeapExplorer::ExtractSharedFunctionInfoReferences(
 void V8HeapExplorer::ExtractScriptReferences(int entry, Script* script) {
   HeapObject* obj = script;
   SetInternalReference(obj, entry,
-                       "source", script->source(),
+                       "\x73\x6f\x75\x72\x63\x65", script->source(),
                        Script::kSourceOffset);
   SetInternalReference(obj, entry,
-                       "name", script->name(),
+                       "\x6e\x61\x6d\x65", script->name(),
                        Script::kNameOffset);
   SetInternalReference(obj, entry,
-                       "context_data", script->context_data(),
+                       "\x63\x6f\x6e\x74\x65\x78\x74\x5f\x64\x61\x74\x61", script->context_data(),
                        Script::kContextOffset);
-  TagObject(script->line_ends(), "(script line ends)");
+  TagObject(script->line_ends(), "\x28\x73\x63\x72\x69\x70\x74\x20\x6c\x69\x6e\x65\x20\x65\x6e\x64\x73\x29");
   SetInternalReference(obj, entry,
-                       "line_ends", script->line_ends(),
+                       "\x6c\x69\x6e\x65\x5f\x65\x6e\x64\x73", script->line_ends(),
                        Script::kLineEndsOffset);
 }
 
 
 void V8HeapExplorer::ExtractAccessorPairReferences(
     int entry, AccessorPair* accessors) {
-  SetInternalReference(accessors, entry, "getter", accessors->getter(),
+  SetInternalReference(accessors, entry, "\x67\x65\x74\x74\x65\x72", accessors->getter(),
                        AccessorPair::kGetterOffset);
-  SetInternalReference(accessors, entry, "setter", accessors->setter(),
+  SetInternalReference(accessors, entry, "\x73\x65\x74\x74\x65\x72", accessors->setter(),
                        AccessorPair::kSetterOffset);
 }
 
 
 void V8HeapExplorer::ExtractCodeCacheReferences(
     int entry, CodeCache* code_cache) {
-  TagObject(code_cache->default_cache(), "(default code cache)");
+  TagObject(code_cache->default_cache(), "\x28\x64\x65\x66\x61\x75\x6c\x74\x20\x63\x6f\x64\x65\x20\x63\x61\x63\x68\x65\x29");
   SetInternalReference(code_cache, entry,
-                       "default_cache", code_cache->default_cache(),
+                       "\x64\x65\x66\x61\x75\x6c\x74\x5f\x63\x61\x63\x68\x65", code_cache->default_cache(),
                        CodeCache::kDefaultCacheOffset);
-  TagObject(code_cache->normal_type_cache(), "(code type cache)");
+  TagObject(code_cache->normal_type_cache(), "\x28\x63\x6f\x64\x65\x20\x74\x79\x70\x65\x20\x63\x61\x63\x68\x65\x29");
   SetInternalReference(code_cache, entry,
-                       "type_cache", code_cache->normal_type_cache(),
+                       "\x74\x79\x70\x65\x5f\x63\x61\x63\x68\x65", code_cache->normal_type_cache(),
                        CodeCache::kNormalTypeCacheOffset);
 }
 
 
 void V8HeapExplorer::TagBuiltinCodeObject(Code* code, const char* name) {
-  TagObject(code, names_->GetFormatted("(%s builtin)", name));
+  TagObject(code, names_->GetFormatted("\x28\x6c\xa2\x20\x62\x75\x69\x6c\x74\x69\x6e\x29", name));
 }
 
 
 void V8HeapExplorer::TagCodeObject(Code* code) {
   if (code->kind() == Code::STUB) {
     TagObject(code, names_->GetFormatted(
-                        "(%s code)", CodeStub::MajorName(
+                        "\x28\x6c\xa2\x20\x63\x6f\x64\x65\x29", CodeStub::MajorName(
                                          CodeStub::GetMajorKey(code), true)));
   }
 }
@@ -1507,68 +1507,68 @@ void V8HeapExplorer::TagCodeObject(Code* code) {
 
 void V8HeapExplorer::ExtractCodeReferences(int entry, Code* code) {
   TagCodeObject(code);
-  TagObject(code->relocation_info(), "(code relocation info)");
+  TagObject(code->relocation_info(), "\x28\x63\x6f\x64\x65\x20\x72\x65\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x69\x6e\x66\x6f\x29");
   SetInternalReference(code, entry,
-                       "relocation_info", code->relocation_info(),
+                       "\x72\x65\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x5f\x69\x6e\x66\x6f", code->relocation_info(),
                        Code::kRelocationInfoOffset);
   SetInternalReference(code, entry,
-                       "handler_table", code->handler_table(),
+                       "\x68\x61\x6e\x64\x6c\x65\x72\x5f\x74\x61\x62\x6c\x65", code->handler_table(),
                        Code::kHandlerTableOffset);
-  TagObject(code->deoptimization_data(), "(code deopt data)");
+  TagObject(code->deoptimization_data(), "\x28\x63\x6f\x64\x65\x20\x64\x65\x6f\x70\x74\x20\x64\x61\x74\x61\x29");
   SetInternalReference(code, entry,
-                       "deoptimization_data", code->deoptimization_data(),
+                       "\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x5f\x64\x61\x74\x61", code->deoptimization_data(),
                        Code::kDeoptimizationDataOffset);
   if (code->kind() == Code::FUNCTION) {
     SetInternalReference(code, entry,
-                         "type_feedback_info", code->type_feedback_info(),
+                         "\x74\x79\x70\x65\x5f\x66\x65\x65\x64\x62\x61\x63\x6b\x5f\x69\x6e\x66\x6f", code->type_feedback_info(),
                          Code::kTypeFeedbackInfoOffset);
   }
   SetInternalReference(code, entry,
-                       "gc_metadata", code->gc_metadata(),
+                       "\x67\x63\x5f\x6d\x65\x74\x61\x64\x61\x74\x61", code->gc_metadata(),
                        Code::kGCMetadataOffset);
   if (FLAG_enable_ool_constant_pool_in_heapobject) {
     SetInternalReference(code, entry,
-                         "constant_pool",
+                         "\x63\x6f\x6e\x73\x74\x61\x6e\x74\x5f\x70\x6f\x6f\x6c",
                          reinterpret_cast<Object*>(code->constant_pool()),
                          Code::kConstantPoolOffset);
   }
   if (code->kind() == Code::OPTIMIZED_FUNCTION) {
     SetWeakReference(code, entry,
-                     "next_code_link", code->next_code_link(),
+                     "\x6e\x65\x78\x74\x5f\x63\x6f\x64\x65\x5f\x6c\x69\x6e\x6b", code->next_code_link(),
                      Code::kNextCodeLinkOffset);
   }
 }
 
 
 void V8HeapExplorer::ExtractBoxReferences(int entry, Box* box) {
-  SetInternalReference(box, entry, "value", box->value(), Box::kValueOffset);
+  SetInternalReference(box, entry, "\x76\x61\x6c\x75\x65", box->value(), Box::kValueOffset);
 }
 
 
 void V8HeapExplorer::ExtractCellReferences(int entry, Cell* cell) {
-  SetInternalReference(cell, entry, "value", cell->value(), Cell::kValueOffset);
+  SetInternalReference(cell, entry, "\x76\x61\x6c\x75\x65", cell->value(), Cell::kValueOffset);
 }
 
 
 void V8HeapExplorer::ExtractPropertyCellReferences(int entry,
                                                    PropertyCell* cell) {
   ExtractCellReferences(entry, cell);
-  SetInternalReference(cell, entry, "type", cell->type(),
+  SetInternalReference(cell, entry, "\x74\x79\x70\x65", cell->type(),
                        PropertyCell::kTypeOffset);
   MarkAsWeakContainer(cell->dependent_code());
-  SetInternalReference(cell, entry, "dependent_code", cell->dependent_code(),
+  SetInternalReference(cell, entry, "\x64\x65\x70\x65\x6e\x64\x65\x6e\x74\x5f\x63\x6f\x64\x65", cell->dependent_code(),
                        PropertyCell::kDependentCodeOffset);
 }
 
 
 void V8HeapExplorer::ExtractAllocationSiteReferences(int entry,
                                                      AllocationSite* site) {
-  SetInternalReference(site, entry, "transition_info", site->transition_info(),
+  SetInternalReference(site, entry, "\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x5f\x69\x6e\x66\x6f", site->transition_info(),
                        AllocationSite::kTransitionInfoOffset);
-  SetInternalReference(site, entry, "nested_site", site->nested_site(),
+  SetInternalReference(site, entry, "\x6e\x65\x73\x74\x65\x64\x5f\x73\x69\x74\x65", site->nested_site(),
                        AllocationSite::kNestedSiteOffset);
   MarkAsWeakContainer(site->dependent_code());
-  SetInternalReference(site, entry, "dependent_code", site->dependent_code(),
+  SetInternalReference(site, entry, "\x64\x65\x70\x65\x6e\x64\x65\x6e\x74\x5f\x63\x6f\x64\x65", site->dependent_code(),
                        AllocationSite::kDependentCodeOffset);
   // Do not visit weak_next as it is not visited by the StaticVisitor,
   // and we're not very interested in weak_next field here.
@@ -1586,7 +1586,7 @@ class JSArrayBufferDataEntryAllocator : public HeapEntriesAllocator {
   virtual HeapEntry* AllocateEntry(HeapThing ptr) {
     return explorer_->AddEntry(
         static_cast<Address>(ptr),
-        HeapEntry::kNative, "system / JSArrayBufferData", size_);
+        HeapEntry::kNative, "\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x4a\x53\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x44\x61\x74\x61", size_);
   }
  private:
   size_t size_;
@@ -1596,10 +1596,10 @@ class JSArrayBufferDataEntryAllocator : public HeapEntriesAllocator {
 
 void V8HeapExplorer::ExtractJSArrayBufferReferences(
     int entry, JSArrayBuffer* buffer) {
-  SetWeakReference(buffer, entry, "weak_next", buffer->weak_next(),
+  SetWeakReference(buffer, entry, "\x77\x65\x61\x6b\x5f\x6e\x65\x78\x74", buffer->weak_next(),
                    JSArrayBuffer::kWeakNextOffset);
   SetWeakReference(buffer, entry,
-                   "weak_first_view", buffer->weak_first_view(),
+                   "\x77\x65\x61\x6b\x5f\x66\x69\x72\x73\x74\x5f\x76\x69\x65\x77", buffer->weak_first_view(),
                    JSArrayBuffer::kWeakFirstViewOffset);
   // Setup a reference to a native memory backing_store object.
   if (!buffer->backing_store())
@@ -1609,7 +1609,7 @@ void V8HeapExplorer::ExtractJSArrayBufferReferences(
   HeapEntry* data_entry =
       filler_->FindOrAddEntry(buffer->backing_store(), &allocator);
   filler_->SetNamedReference(HeapGraphEdge::kInternal,
-                             entry, "backing_store", data_entry);
+                             entry, "\x62\x61\x63\x6b\x69\x6e\x67\x5f\x73\x74\x6f\x72\x65", data_entry);
 }
 
 
@@ -1633,14 +1633,14 @@ void V8HeapExplorer::ExtractClosureReferences(JSObject* js_obj, int entry) {
   JSFunction* func = JSFunction::cast(js_obj);
   if (func->shared()->bound()) {
     FixedArray* bindings = func->function_bindings();
-    SetNativeBindReference(js_obj, entry, "bound_this",
+    SetNativeBindReference(js_obj, entry, "\x62\x6f\x75\x6e\x64\x5f\x74\x68\x69\x73",
                            bindings->get(JSFunction::kBoundThisIndex));
-    SetNativeBindReference(js_obj, entry, "bound_function",
+    SetNativeBindReference(js_obj, entry, "\x62\x6f\x75\x6e\x64\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e",
                            bindings->get(JSFunction::kBoundFunctionIndex));
     for (int i = JSFunction::kBoundArgumentsStartIndex;
          i < bindings->length(); i++) {
       const char* reference_name = names_->GetFormatted(
-          "bound_argument_%d",
+          "\x62\x6f\x75\x6e\x64\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x5f\x6c\x84",
           i - JSFunction::kBoundArgumentsStartIndex);
       SetNativeBindReference(js_obj, entry, reference_name,
                              bindings->get(i));
@@ -1670,10 +1670,10 @@ void V8HeapExplorer::ExtractPropertyReferences(JSObject* js_obj, int entry) {
                   NULL,
                   js_obj->GetInObjectPropertyOffset(index));
             } else {
-              TagObject(value, "(hidden properties)");
+              TagObject(value, "\x28\x68\x69\x64\x64\x65\x6e\x20\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x29");
               SetInternalReference(
                   js_obj, entry,
-                  "hidden_properties", value,
+                  "\x68\x69\x64\x64\x65\x6e\x5f\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73", value,
                   js_obj->GetInObjectPropertyOffset(index));
             }
           } else {
@@ -1683,8 +1683,8 @@ void V8HeapExplorer::ExtractPropertyReferences(JSObject* js_obj, int entry) {
             if (k != heap_->hidden_string()) {
               SetPropertyReference(js_obj, entry, k, value);
             } else {
-              TagObject(value, "(hidden properties)");
-              SetInternalReference(js_obj, entry, "hidden_properties", value);
+              TagObject(value, "\x28\x68\x69\x64\x64\x65\x6e\x20\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x29");
+              SetInternalReference(js_obj, entry, "\x68\x69\x64\x64\x65\x6e\x5f\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73", value);
             }
           }
           break;
@@ -1720,8 +1720,8 @@ void V8HeapExplorer::ExtractPropertyReferences(JSObject* js_obj, int entry) {
             ? PropertyCell::cast(target)->value()
             : target;
         if (k == heap_->hidden_string()) {
-          TagObject(value, "(hidden properties)");
-          SetInternalReference(js_obj, entry, "hidden_properties", value);
+          TagObject(value, "\x28\x68\x69\x64\x64\x65\x6e\x20\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x29");
+          SetInternalReference(js_obj, entry, "\x68\x69\x64\x64\x65\x6e\x5f\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73", value);
           continue;
         }
         if (ExtractAccessorPairProperty(js_obj, entry, k, value)) continue;
@@ -1738,11 +1738,11 @@ bool V8HeapExplorer::ExtractAccessorPairProperty(
   AccessorPair* accessors = AccessorPair::cast(callback_obj);
   Object* getter = accessors->getter();
   if (!getter->IsOddball()) {
-    SetPropertyReference(js_obj, entry, String::cast(key), getter, "get %s");
+    SetPropertyReference(js_obj, entry, String::cast(key), getter, "\x67\x65\x74\x20\x6c\xa2");
   }
   Object* setter = accessors->setter();
   if (!setter->IsOddball()) {
-    SetPropertyReference(js_obj, entry, String::cast(key), setter, "set %s");
+    SetPropertyReference(js_obj, entry, String::cast(key), setter, "\x73\x65\x74\x20\x6c\xa2");
   }
   return true;
 }
@@ -1935,7 +1935,7 @@ bool V8HeapExplorer::IterateAndExtractSinglePass() {
     int entry = heap_entry->index();
     if ((this->*extractor)(entry, obj)) {
       SetInternalReference(obj, entry,
-                           "map", obj->map(), HeapObject::kMapOffset);
+                           "\x6d\x61\x70", obj->map(), HeapObject::kMapOffset);
       // Extract unvisited fields as hidden references and restore tags
       // of visited fields.
       IndexedReferencesExtractor refs_extractor(this, obj, entry);
@@ -2091,7 +2091,7 @@ void V8HeapExplorer::SetWeakReference(HeapObject* parent_obj,
   if (IsEssentialObject(child_obj)) {
     filler_->SetNamedReference(HeapGraphEdge::kWeak,
                                parent_entry,
-                               names_->GetFormatted("%d", index),
+                               names_->GetFormatted("\x6c\x84", index),
                                child_entry);
   }
   IndexedReferencesExtractor::MarkVisitedField(parent_obj, field_offset);
@@ -2216,7 +2216,7 @@ const char* V8HeapExplorer::GetStrongGcSubrootName(Object* object) {
 void V8HeapExplorer::TagObject(Object* obj, const char* tag) {
   if (IsEssentialObject(obj)) {
     HeapEntry* entry = GetEntry(obj);
-    if (entry->name()[0] == '\0') {
+    if (entry->name()[0] == '\x0') {
       entry->set_name(tag);
     }
   }
@@ -2322,7 +2322,7 @@ HeapEntry* BasicHeapEntriesAllocator::AllocateEntry(HeapThing ptr) {
   intptr_t size = info->GetSizeInBytes();
   const char* name = elements != -1
       ? names_->GetFormatted(
-            "%s / %" V8_PTR_PREFIX "d entries", info->GetLabel(), elements)
+            "\x6c\xa2\x20\x2f\x20\x25" V8_PTR_PREFIX "\x64\x20\x65\x6e\x74\x72\x69\x65\x73", info->GetLabel(), elements)
       : names_->GetCopy(info->GetLabel());
   return snapshot_->AddEntry(
       entries_type_,
@@ -2426,7 +2426,7 @@ void NativeObjectsExplorer::FillImplicitReferences() {
       filler_->SetNamedReference(
           HeapGraphEdge::kInternal,
           parent_entry,
-          "native",
+          "\x6e\x61\x74\x69\x76\x65",
           child_entry);
     }
   }
@@ -2539,7 +2539,7 @@ void NativeObjectsExplorer::SetWrapperNativeReferences(
   DCHECK(info_entry != NULL);
   filler_->SetNamedReference(HeapGraphEdge::kInternal,
                              wrapper_entry->index(),
-                             "native",
+                             "\x6e\x61\x74\x69\x76\x65",
                              info_entry);
   filler_->SetIndexedAutoIndexReference(HeapGraphEdge::kElement,
                                         info_entry->index(),
@@ -2596,10 +2596,10 @@ bool HeapSnapshotGenerator::GenerateSnapshot() {
   // As a temporary solution we call GC twice.
   heap_->CollectAllGarbage(
       Heap::kMakeHeapIterableMask,
-      "HeapSnapshotGenerator::GenerateSnapshot");
+      "\x48\x65\x61\x70\x53\x6e\x61\x70\x73\x68\x6f\x74\x47\x65\x6e\x65\x72\x61\x74\x6f\x72\x3a\x3a\x47\x65\x6e\x65\x72\x61\x74\x65\x53\x6e\x61\x70\x73\x68\x6f\x74");
   heap_->CollectAllGarbage(
       Heap::kMakeHeapIterableMask,
-      "HeapSnapshotGenerator::GenerateSnapshot");
+      "\x48\x65\x61\x70\x53\x6e\x61\x70\x73\x68\x6f\x74\x47\x65\x6e\x65\x72\x61\x74\x6f\x72\x3a\x3a\x47\x65\x6e\x65\x72\x61\x74\x65\x53\x6e\x61\x70\x73\x68\x6f\x74");
 
 #ifdef VERIFY_HEAP
   Heap* debug_heap = heap_;
@@ -2690,7 +2690,7 @@ class OutputStreamWriter {
   }
   bool aborted() { return aborted_; }
   void AddCharacter(char c) {
-    DCHECK(c != '\0');
+    DCHECK(c != '\x0');
     DCHECK(chunk_pos_ < chunk_size_);
     chunk_[chunk_pos_++] = c;
     MaybeWriteChunk();
@@ -2712,7 +2712,7 @@ class OutputStreamWriter {
       MaybeWriteChunk();
     }
   }
-  void AddNumber(unsigned n) { AddNumberImpl<unsigned>(n, "%u"); }
+  void AddNumber(unsigned n) { AddNumberImpl<unsigned>(n, "\x6c\xa4"); }
   void Finalize() {
     if (aborted_) return;
     DCHECK(chunk_pos_ < chunk_size_);
@@ -2783,34 +2783,34 @@ void HeapSnapshotJSONSerializer::Serialize(v8::OutputStream* stream) {
 
 void HeapSnapshotJSONSerializer::SerializeImpl() {
   DCHECK(0 == snapshot_->root()->index());
-  writer_->AddCharacter('{');
-  writer_->AddString("\"snapshot\":{");
+  writer_->AddCharacter('\x7b');
+  writer_->AddString("\x22\x73\x6e\x61\x70\x73\x68\x6f\x74\x22\x3a\x7b");
   SerializeSnapshot();
   if (writer_->aborted()) return;
-  writer_->AddString("},\n");
-  writer_->AddString("\"nodes\":[");
+  writer_->AddString("\x7d\x2c\xa");
+  writer_->AddString("\x22\x6e\x6f\x64\x65\x73\x22\x3a\x5b");
   SerializeNodes();
   if (writer_->aborted()) return;
-  writer_->AddString("],\n");
-  writer_->AddString("\"edges\":[");
+  writer_->AddString("\x5d\x2c\xa");
+  writer_->AddString("\x22\x65\x64\x67\x65\x73\x22\x3a\x5b");
   SerializeEdges();
   if (writer_->aborted()) return;
-  writer_->AddString("],\n");
+  writer_->AddString("\x5d\x2c\xa");
 
-  writer_->AddString("\"trace_function_infos\":[");
+  writer_->AddString("\x22\x74\x72\x61\x63\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x69\x6e\x66\x6f\x73\x22\x3a\x5b");
   SerializeTraceNodeInfos();
   if (writer_->aborted()) return;
-  writer_->AddString("],\n");
-  writer_->AddString("\"trace_tree\":[");
+  writer_->AddString("\x5d\x2c\xa");
+  writer_->AddString("\x22\x74\x72\x61\x63\x65\x5f\x74\x72\x65\x65\x22\x3a\x5b");
   SerializeTraceTree();
   if (writer_->aborted()) return;
-  writer_->AddString("],\n");
+  writer_->AddString("\x5d\x2c\xa");
 
-  writer_->AddString("\"strings\":[");
+  writer_->AddString("\x22\x73\x74\x72\x69\x6e\x67\x73\x22\x3a\x5b");
   SerializeStrings();
   if (writer_->aborted()) return;
-  writer_->AddCharacter(']');
-  writer_->AddCharacter('}');
+  writer_->AddCharacter('\x5d');
+  writer_->AddCharacter('\x7d');
   writer_->Finalize();
 }
 
@@ -2853,7 +2853,7 @@ static int utoa_impl(T value, const Vector<char>& buffer, int buffer_pos) {
   int result = buffer_pos;
   do {
     int last_digit = static_cast<int>(value % 10);
-    buffer[--buffer_pos] = '0' + last_digit;
+    buffer[--buffer_pos] = '\x30' + last_digit;
     value /= 10;
   } while (value);
   return result;
@@ -2879,15 +2879,15 @@ void HeapSnapshotJSONSerializer::SerializeEdge(HeapGraphEdge* edge,
       ? edge->index() : GetStringId(edge->name());
   int buffer_pos = 0;
   if (!first_edge) {
-    buffer[buffer_pos++] = ',';
+    buffer[buffer_pos++] = '\x2c';
   }
   buffer_pos = utoa(edge->type(), buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
+  buffer[buffer_pos++] = '\x2c';
   buffer_pos = utoa(edge_name_or_index, buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
+  buffer[buffer_pos++] = '\x2c';
   buffer_pos = utoa(entry_index(edge->to()), buffer, buffer_pos);
-  buffer[buffer_pos++] = '\n';
-  buffer[buffer_pos++] = '\0';
+  buffer[buffer_pos++] = '\xa';
+  buffer[buffer_pos++] = '\x0';
   writer_->AddString(buffer.start());
 }
 
@@ -2912,21 +2912,21 @@ void HeapSnapshotJSONSerializer::SerializeNode(HeapEntry* entry) {
   EmbeddedVector<char, kBufferSize> buffer;
   int buffer_pos = 0;
   if (entry_index(entry) != 0) {
-    buffer[buffer_pos++] = ',';
+    buffer[buffer_pos++] = '\x2c';
   }
   buffer_pos = utoa(entry->type(), buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
+  buffer[buffer_pos++] = '\x2c';
   buffer_pos = utoa(GetStringId(entry->name()), buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
+  buffer[buffer_pos++] = '\x2c';
   buffer_pos = utoa(entry->id(), buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
+  buffer[buffer_pos++] = '\x2c';
   buffer_pos = utoa(entry->self_size(), buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
+  buffer[buffer_pos++] = '\x2c';
   buffer_pos = utoa(entry->children_count(), buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
+  buffer[buffer_pos++] = '\x2c';
   buffer_pos = utoa(entry->trace_node_id(), buffer, buffer_pos);
-  buffer[buffer_pos++] = '\n';
-  buffer[buffer_pos++] = '\0';
+  buffer[buffer_pos++] = '\xa';
+  buffer[buffer_pos++] = '\x0';
   writer_->AddString(buffer.start());
 }
 
@@ -2941,81 +2941,81 @@ void HeapSnapshotJSONSerializer::SerializeNodes() {
 
 
 void HeapSnapshotJSONSerializer::SerializeSnapshot() {
-  writer_->AddString("\"title\":\"");
+  writer_->AddString("\x22\x74\x69\x74\x6c\x65\x22\x3a\x22");
   writer_->AddString(snapshot_->title());
-  writer_->AddString("\"");
-  writer_->AddString(",\"uid\":");
+  writer_->AddString("\x22");
+  writer_->AddString("\x2c\x22\x75\x69\x64\x22\x3a");
   writer_->AddNumber(snapshot_->uid());
-  writer_->AddString(",\"meta\":");
+  writer_->AddString("\x2c\x22\x6d\x65\x74\x61\x22\x3a");
   // The object describing node serialization layout.
   // We use a set of macros to improve readability.
-#define JSON_A(s) "[" s "]"
-#define JSON_O(s) "{" s "}"
-#define JSON_S(s) "\"" s "\""
+#define JSON_A(s) "\x5b" s "\x5d"
+#define JSON_O(s) "\x7b" s "\x7d"
+#define JSON_S(s) "\x22" s "\x22"
   writer_->AddString(JSON_O(
-    JSON_S("node_fields") ":" JSON_A(
-        JSON_S("type") ","
-        JSON_S("name") ","
-        JSON_S("id") ","
-        JSON_S("self_size") ","
-        JSON_S("edge_count") ","
-        JSON_S("trace_node_id")) ","
-    JSON_S("node_types") ":" JSON_A(
+    JSON_S("\x6e\x6f\x64\x65\x5f\x66\x69\x65\x6c\x64\x73") "\x3a" JSON_A(
+        JSON_S("\x74\x79\x70\x65") "\x2c"
+        JSON_S("\x6e\x61\x6d\x65") "\x2c"
+        JSON_S("\x69\x64") "\x2c"
+        JSON_S("\x73\x65\x6c\x66\x5f\x73\x69\x7a\x65") "\x2c"
+        JSON_S("\x65\x64\x67\x65\x5f\x63\x6f\x75\x6e\x74") "\x2c"
+        JSON_S("\x74\x72\x61\x63\x65\x5f\x6e\x6f\x64\x65\x5f\x69\x64")) "\x2c"
+    JSON_S("\x6e\x6f\x64\x65\x5f\x74\x79\x70\x65\x73") "\x3a" JSON_A(
         JSON_A(
-            JSON_S("hidden") ","
-            JSON_S("array") ","
-            JSON_S("string") ","
-            JSON_S("object") ","
-            JSON_S("code") ","
-            JSON_S("closure") ","
-            JSON_S("regexp") ","
-            JSON_S("number") ","
-            JSON_S("native") ","
-            JSON_S("synthetic") ","
-            JSON_S("concatenated string") ","
-            JSON_S("sliced string")) ","
-        JSON_S("string") ","
-        JSON_S("number") ","
-        JSON_S("number") ","
-        JSON_S("number") ","
-        JSON_S("number") ","
-        JSON_S("number")) ","
-    JSON_S("edge_fields") ":" JSON_A(
-        JSON_S("type") ","
-        JSON_S("name_or_index") ","
-        JSON_S("to_node")) ","
-    JSON_S("edge_types") ":" JSON_A(
+            JSON_S("\x68\x69\x64\x64\x65\x6e") "\x2c"
+            JSON_S("\x61\x72\x72\x61\x79") "\x2c"
+            JSON_S("\x73\x74\x72\x69\x6e\x67") "\x2c"
+            JSON_S("\x6f\x62\x6a\x65\x63\x74") "\x2c"
+            JSON_S("\x63\x6f\x64\x65") "\x2c"
+            JSON_S("\x63\x6c\x6f\x73\x75\x72\x65") "\x2c"
+            JSON_S("\x72\x65\x67\x65\x78\x70") "\x2c"
+            JSON_S("\x6e\x75\x6d\x62\x65\x72") "\x2c"
+            JSON_S("\x6e\x61\x74\x69\x76\x65") "\x2c"
+            JSON_S("\x73\x79\x6e\x74\x68\x65\x74\x69\x63") "\x2c"
+            JSON_S("\x63\x6f\x6e\x63\x61\x74\x65\x6e\x61\x74\x65\x64\x20\x73\x74\x72\x69\x6e\x67") "\x2c"
+            JSON_S("\x73\x6c\x69\x63\x65\x64\x20\x73\x74\x72\x69\x6e\x67")) "\x2c"
+        JSON_S("\x73\x74\x72\x69\x6e\x67") "\x2c"
+        JSON_S("\x6e\x75\x6d\x62\x65\x72") "\x2c"
+        JSON_S("\x6e\x75\x6d\x62\x65\x72") "\x2c"
+        JSON_S("\x6e\x75\x6d\x62\x65\x72") "\x2c"
+        JSON_S("\x6e\x75\x6d\x62\x65\x72") "\x2c"
+        JSON_S("\x6e\x75\x6d\x62\x65\x72")) "\x2c"
+    JSON_S("\x65\x64\x67\x65\x5f\x66\x69\x65\x6c\x64\x73") "\x3a" JSON_A(
+        JSON_S("\x74\x79\x70\x65") "\x2c"
+        JSON_S("\x6e\x61\x6d\x65\x5f\x6f\x72\x5f\x69\x6e\x64\x65\x78") "\x2c"
+        JSON_S("\x74\x6f\x5f\x6e\x6f\x64\x65")) "\x2c"
+    JSON_S("\x65\x64\x67\x65\x5f\x74\x79\x70\x65\x73") "\x3a" JSON_A(
         JSON_A(
-            JSON_S("context") ","
-            JSON_S("element") ","
-            JSON_S("property") ","
-            JSON_S("internal") ","
-            JSON_S("hidden") ","
-            JSON_S("shortcut") ","
-            JSON_S("weak")) ","
-        JSON_S("string_or_number") ","
-        JSON_S("node")) ","
-    JSON_S("trace_function_info_fields") ":" JSON_A(
-        JSON_S("function_id") ","
-        JSON_S("name") ","
-        JSON_S("script_name") ","
-        JSON_S("script_id") ","
-        JSON_S("line") ","
-        JSON_S("column")) ","
-    JSON_S("trace_node_fields") ":" JSON_A(
-        JSON_S("id") ","
-        JSON_S("function_info_index") ","
-        JSON_S("count") ","
-        JSON_S("size") ","
-        JSON_S("children"))));
+            JSON_S("\x63\x6f\x6e\x74\x65\x78\x74") "\x2c"
+            JSON_S("\x65\x6c\x65\x6d\x65\x6e\x74") "\x2c"
+            JSON_S("\x70\x72\x6f\x70\x65\x72\x74\x79") "\x2c"
+            JSON_S("\x69\x6e\x74\x65\x72\x6e\x61\x6c") "\x2c"
+            JSON_S("\x68\x69\x64\x64\x65\x6e") "\x2c"
+            JSON_S("\x73\x68\x6f\x72\x74\x63\x75\x74") "\x2c"
+            JSON_S("\x77\x65\x61\x6b")) "\x2c"
+        JSON_S("\x73\x74\x72\x69\x6e\x67\x5f\x6f\x72\x5f\x6e\x75\x6d\x62\x65\x72") "\x2c"
+        JSON_S("\x6e\x6f\x64\x65")) "\x2c"
+    JSON_S("\x74\x72\x61\x63\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x69\x6e\x66\x6f\x5f\x66\x69\x65\x6c\x64\x73") "\x3a" JSON_A(
+        JSON_S("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x69\x64") "\x2c"
+        JSON_S("\x6e\x61\x6d\x65") "\x2c"
+        JSON_S("\x73\x63\x72\x69\x70\x74\x5f\x6e\x61\x6d\x65") "\x2c"
+        JSON_S("\x73\x63\x72\x69\x70\x74\x5f\x69\x64") "\x2c"
+        JSON_S("\x6c\x69\x6e\x65") "\x2c"
+        JSON_S("\x63\x6f\x6c\x75\x6d\x6e")) "\x2c"
+    JSON_S("\x74\x72\x61\x63\x65\x5f\x6e\x6f\x64\x65\x5f\x66\x69\x65\x6c\x64\x73") "\x3a" JSON_A(
+        JSON_S("\x69\x64") "\x2c"
+        JSON_S("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x69\x6e\x66\x6f\x5f\x69\x6e\x64\x65\x78") "\x2c"
+        JSON_S("\x63\x6f\x75\x6e\x74") "\x2c"
+        JSON_S("\x73\x69\x7a\x65") "\x2c"
+        JSON_S("\x63\x68\x69\x6c\x64\x72\x65\x6e"))));
 #undef JSON_S
 #undef JSON_O
 #undef JSON_A
-  writer_->AddString(",\"node_count\":");
+  writer_->AddString("\x2c\x22\x6e\x6f\x64\x65\x5f\x63\x6f\x75\x6e\x74\x22\x3a");
   writer_->AddNumber(snapshot_->entries().length());
-  writer_->AddString(",\"edge_count\":");
+  writer_->AddString("\x2c\x22\x65\x64\x67\x65\x5f\x63\x6f\x75\x6e\x74\x22\x3a");
   writer_->AddNumber(snapshot_->edges().length());
-  writer_->AddString(",\"trace_function_count\":");
+  writer_->AddString("\x2c\x22\x74\x72\x61\x63\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x63\x6f\x75\x6e\x74\x22\x3a");
   uint32_t count = 0;
   AllocationTracker* tracker = snapshot_->profiler()->allocation_tracker();
   if (tracker) {
@@ -3026,8 +3026,8 @@ void HeapSnapshotJSONSerializer::SerializeSnapshot() {
 
 
 static void WriteUChar(OutputStreamWriter* w, unibrow::uchar u) {
-  static const char hex_chars[] = "0123456789ABCDEF";
-  w->AddString("\\u");
+  static const char hex_chars[] = "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x41\x42\x43\x44\x45\x46";
+  w->AddString("\x5c\x75");
   w->AddCharacter(hex_chars[(u >> 12) & 0xf]);
   w->AddCharacter(hex_chars[(u >> 8) & 0xf]);
   w->AddCharacter(hex_chars[(u >> 4) & 0xf]);
@@ -3051,25 +3051,25 @@ void HeapSnapshotJSONSerializer::SerializeTraceNode(AllocationTraceNode* node) {
   EmbeddedVector<char, kBufferSize> buffer;
   int buffer_pos = 0;
   buffer_pos = utoa(node->id(), buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
+  buffer[buffer_pos++] = '\x2c';
   buffer_pos = utoa(node->function_info_index(), buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
+  buffer[buffer_pos++] = '\x2c';
   buffer_pos = utoa(node->allocation_count(), buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
+  buffer[buffer_pos++] = '\x2c';
   buffer_pos = utoa(node->allocation_size(), buffer, buffer_pos);
-  buffer[buffer_pos++] = ',';
-  buffer[buffer_pos++] = '[';
-  buffer[buffer_pos++] = '\0';
+  buffer[buffer_pos++] = '\x2c';
+  buffer[buffer_pos++] = '\x5b';
+  buffer[buffer_pos++] = '\x0';
   writer_->AddString(buffer.start());
 
   Vector<AllocationTraceNode*> children = node->children();
   for (int i = 0; i < children.length(); i++) {
     if (i > 0) {
-      writer_->AddCharacter(',');
+      writer_->AddCharacter('\x2c');
     }
     SerializeTraceNode(children[i]);
   }
-  writer_->AddCharacter(']');
+  writer_->AddCharacter('\x5d');
 }
 
 
@@ -3077,7 +3077,7 @@ void HeapSnapshotJSONSerializer::SerializeTraceNode(AllocationTraceNode* node) {
 static int SerializePosition(int position, const Vector<char>& buffer,
                              int buffer_pos) {
   if (position == -1) {
-    buffer[buffer_pos++] = '0';
+    buffer[buffer_pos++] = '\x30';
   } else {
     DCHECK(position >= 0);
     buffer_pos = utoa(static_cast<unsigned>(position + 1), buffer, buffer_pos);
@@ -3103,51 +3103,51 @@ void HeapSnapshotJSONSerializer::SerializeTraceNodeInfos() {
     if (first_entry) {
       first_entry = false;
     } else {
-      buffer[buffer_pos++] = ',';
+      buffer[buffer_pos++] = '\x2c';
     }
     buffer_pos = utoa(info->function_id, buffer, buffer_pos);
-    buffer[buffer_pos++] = ',';
+    buffer[buffer_pos++] = '\x2c';
     buffer_pos = utoa(GetStringId(info->name), buffer, buffer_pos);
-    buffer[buffer_pos++] = ',';
+    buffer[buffer_pos++] = '\x2c';
     buffer_pos = utoa(GetStringId(info->script_name), buffer, buffer_pos);
-    buffer[buffer_pos++] = ',';
+    buffer[buffer_pos++] = '\x2c';
     // The cast is safe because script id is a non-negative Smi.
     buffer_pos = utoa(static_cast<unsigned>(info->script_id), buffer,
         buffer_pos);
-    buffer[buffer_pos++] = ',';
+    buffer[buffer_pos++] = '\x2c';
     buffer_pos = SerializePosition(info->line, buffer, buffer_pos);
-    buffer[buffer_pos++] = ',';
+    buffer[buffer_pos++] = '\x2c';
     buffer_pos = SerializePosition(info->column, buffer, buffer_pos);
-    buffer[buffer_pos++] = '\n';
-    buffer[buffer_pos++] = '\0';
+    buffer[buffer_pos++] = '\xa';
+    buffer[buffer_pos++] = '\x0';
     writer_->AddString(buffer.start());
   }
 }
 
 
 void HeapSnapshotJSONSerializer::SerializeString(const unsigned char* s) {
-  writer_->AddCharacter('\n');
-  writer_->AddCharacter('\"');
-  for ( ; *s != '\0'; ++s) {
+  writer_->AddCharacter('\xa');
+  writer_->AddCharacter('\x22');
+  for ( ; *s != '\x0'; ++s) {
     switch (*s) {
-      case '\b':
-        writer_->AddString("\\b");
+      case '\x8':
+        writer_->AddString("\x5c\x62");
         continue;
-      case '\f':
-        writer_->AddString("\\f");
+      case '\xc':
+        writer_->AddString("\x5c\x66");
         continue;
-      case '\n':
-        writer_->AddString("\\n");
+      case '\xa':
+        writer_->AddString("\x5c\x6e");
         continue;
-      case '\r':
-        writer_->AddString("\\r");
+      case '\xd':
+        writer_->AddString("\x5c\x72");
         continue;
-      case '\t':
-        writer_->AddString("\\t");
+      case '\x9':
+        writer_->AddString("\x5c\x74");
         continue;
-      case '\"':
-      case '\\':
-        writer_->AddCharacter('\\');
+      case '\x22':
+      case '\x5c':
+        writer_->AddCharacter('\x5c');
         writer_->AddCharacter(*s);
         continue;
       default:
@@ -3159,19 +3159,19 @@ void HeapSnapshotJSONSerializer::SerializeString(const unsigned char* s) {
         } else {
           // Convert UTF-8 into \u UTF-16 literal.
           unsigned length = 1, cursor = 0;
-          for ( ; length <= 4 && *(s + length) != '\0'; ++length) { }
+          for ( ; length <= 4 && *(s + length) != '\x0'; ++length) { }
           unibrow::uchar c = unibrow::Utf8::CalculateValue(s, length, &cursor);
           if (c != unibrow::Utf8::kBadChar) {
             WriteUChar(writer_, c);
             DCHECK(cursor != 0);
             s += cursor - 1;
           } else {
-            writer_->AddCharacter('?');
+            writer_->AddCharacter('\x3f');
           }
         }
     }
   }
-  writer_->AddCharacter('\"');
+  writer_->AddCharacter('\x22');
 }
 
 
@@ -3184,9 +3184,9 @@ void HeapSnapshotJSONSerializer::SerializeStrings() {
     int index = static_cast<int>(reinterpret_cast<uintptr_t>(entry->value));
     sorted_strings[index] = reinterpret_cast<const unsigned char*>(entry->key);
   }
-  writer_->AddString("\"<dummy>\"");
+  writer_->AddString("\x22\x3c\x64\x75\x6d\x6d\x79\x3e\x22");
   for (int i = 1; i < sorted_strings.length(); ++i) {
-    writer_->AddCharacter(',');
+    writer_->AddCharacter('\x2c');
     SerializeString(sorted_strings[i]);
     if (writer_->aborted()) return;
   }

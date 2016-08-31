@@ -14,7 +14,7 @@ namespace internal {
 class HDehoistIndexComputationsPhase : public HPhase {
  public:
   explicit HDehoistIndexComputationsPhase(HGraph* graph)
-      : HPhase("H_Dehoist index computations", graph) { }
+      : HPhase("\x48\x5f\x44\x65\x68\x6f\x69\x73\x74\x20\x69\x6e\x64\x65\x78\x20\x63\x6f\x6d\x70\x75\x74\x61\x74\x69\x6f\x6e\x73", graph) { }
 
   void Run();
 

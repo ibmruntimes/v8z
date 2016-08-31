@@ -158,20 +158,20 @@ static char* GetFunctionNameFromMixedName(const char* str, int length) {
   int count = 0;
   char* start_ptr = NULL;
 
-  while (str[index++] != ':' && (index < length)) {}
+  while (str[index++] != '\x3a' && (index < length)) {}
 
-  if (str[index] == '*' || str[index] == '~' ) index++;
+  if (str[index] == '\x2a' || str[index] == '\x7e' ) index++;
   if (index >= length) return NULL;
 
   start_ptr = const_cast<char*>(str + index);
 
-  while (index < length && str[index++] != ' ') {
+  while (index < length && str[index++] != '\x20') {
     count++;
   }
 
   char* result = new char[count + 1];
   memcpy(result, start_ptr, count);
-  result[count] = '\0';
+  result[count] = '\x0';
 
   return result;
 }
@@ -273,8 +273,8 @@ void VTUNEJITInterface::event_handler(const v8::JitCodeEvent* event) {
 
 void InitializeVtuneForV8() {
   if (v8::V8::Initialize()) {
-    v8::V8::SetFlagsFromString("--nocompact_code_space",
-                              (int)strlen("--nocompact_code_space"));
+    v8::V8::SetFlagsFromString("\x2d\x2d\x6e\x6f\x63\x6f\x6d\x70\x61\x63\x74\x5f\x63\x6f\x64\x65\x5f\x73\x70\x61\x63\x65",
+                              (int)strlen("\x2d\x2d\x6e\x6f\x63\x6f\x6d\x70\x61\x63\x74\x5f\x63\x6f\x64\x65\x5f\x73\x70\x61\x63\x65"));
     v8::V8::SetJitCodeEventHandler(v8::kJitCodeEventDefault,
         vTune::internal::VTUNEJITInterface::event_handler);
   }

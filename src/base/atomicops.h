@@ -159,7 +159,7 @@ Atomic64 Release_Load(volatile const Atomic64* ptr);
 #elif defined(__GNUC__) && V8_HOST_ARCH_MIPS64
 #include "src/base/atomicops_internals_mips64_gcc.h"
 #else
-#error "Atomic operations are not supported on your platform"
+#error "\x41\x74\x6f\x6d\x69\x63\x20\x6f\x70\x65\x72\x61\x74\x69\x6f\x6e\x73\x20\x61\x72\x65\x20\x6e\x6f\x74\x20\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x6f\x6e\x20\x79\x6f\x75\x72\x20\x70\x6c\x61\x74\x66\x6f\x72\x6d"
 #endif
 
 // On some platforms we need additional declarations to make

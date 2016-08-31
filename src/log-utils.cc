@@ -11,8 +11,8 @@ namespace v8 {
 namespace internal {
 
 
-const char* const Log::kLogToTemporaryFile = "&";
-const char* const Log::kLogToConsole = "-";
+const char* const Log::kLogToTemporaryFile = "\x26";
+const char* const Log::kLogToConsole = "\x2d";
 
 
 Log::Log(Logger* logger)
@@ -133,14 +133,14 @@ void Log::MessageBuilder::Append(const char c) {
 
 
 void Log::MessageBuilder::AppendDoubleQuotedString(const char* string) {
-  Append('"');
-  for (const char* p = string; *p != '\0'; p++) {
-    if (*p == '"') {
-      Append('\\');
+  Append('\x22');
+  for (const char* p = string; *p != '\x0'; p++) {
+    if (*p == '\x22') {
+      Append('\x5c');
     }
     Append(*p);
   }
-  Append('"');
+  Append('\x22');
 }
 
 
@@ -154,19 +154,19 @@ void Log::MessageBuilder::Append(String* str) {
 
 
 void Log::MessageBuilder::AppendAddress(Address addr) {
-  Append("0x%" V8PRIxPTR, addr);
+  Append("\x30\x78\x25" V8PRIxPTR, addr);
 }
 
 
 void Log::MessageBuilder::AppendSymbolName(Symbol* symbol) {
   DCHECK(symbol);
-  Append("symbol(");
+  Append("\x73\x79\x6d\x62\x6f\x6c\x28");
   if (!symbol->name()->IsUndefined()) {
-    Append("\"");
+    Append("\x22");
     AppendDetailed(String::cast(symbol->name()), false);
-    Append("\" ");
+    Append("\x22\x20");
   }
-  Append("hash %x)", symbol->Hash());
+  Append("\x68\x61\x73\x68\x20\x6c\xa7\x29", symbol->Hash());
 }
 
 
@@ -177,27 +177,27 @@ void Log::MessageBuilder::AppendDetailed(String* str, bool show_impl_info) {
   if (len > 0x1000)
     len = 0x1000;
   if (show_impl_info) {
-    Append(str->IsOneByteRepresentation() ? 'a' : '2');
+    Append(str->IsOneByteRepresentation() ? '\x61' : '\x32');
     if (StringShape(str).IsExternal())
-      Append('e');
+      Append('\x65');
     if (StringShape(str).IsInternalized())
-      Append('#');
-    Append(":%i:", str->length());
+      Append('\x23');
+    Append("\x3a\x6c\x89\x3a", str->length());
   }
   for (int i = 0; i < len; i++) {
     uc32 c = str->Get(i);
     if (GET_ASCII_CODE(c) > 0xff) {
-      Append("\\u%04x", c);
+      Append("\x5c\x75\x6c\xf0\xf4\xa7", c);
     } else if (GET_ASCII_CODE(c) < 32 || GET_ASCII_CODE(c) > 126) {
-      Append("\\x%02x", c);
-    } else if (c == ',') {
-      Append("\\,");
-    } else if (c == '\\') {
+      Append("\x5c\x78\x6c\xf0\xf2\xa7", c);
+    } else if (c == '\x2c') {
+      Append("\x5c\x2c");
+    } else if (c == '\x5c') {
       Append("\\\\");
-    } else if (c == '\"') {
-      Append("\"\"");
+    } else if (c == '\x22') {
+      Append("\x22\x22");
     } else {
-      Append("%lc", c);
+      Append("\x6c\x93\x83", c);
     }
   }
 }
@@ -220,9 +220,9 @@ void Log::MessageBuilder::AppendStringPart(const char* str, int len) {
 void Log::MessageBuilder::WriteToLogFile() {
   DCHECK(pos_ <= Log::kMessageBufferSize);
   // Assert that we do not already have a new line at the end.
-  DCHECK(pos_ == 0 || log_->message_buffer_[pos_ - 1] != '\n');
+  DCHECK(pos_ == 0 || log_->message_buffer_[pos_ - 1] != '\xa');
   if (pos_ == Log::kMessageBufferSize) pos_--;
-  log_->message_buffer_[pos_++] = '\n';
+  log_->message_buffer_[pos_++] = '\xa';
   const int written = log_->WriteToFile(log_->message_buffer_, pos_);
   if (written != pos_) {
     log_->stop();

@@ -262,7 +262,7 @@ void TemplateHashMapImpl<AllocationPolicy>::Initialize(
   DCHECK(IsPowerOf2(capacity));
   map_ = reinterpret_cast<Entry*>(allocator.New(capacity * sizeof(Entry)));
   if (map_ == NULL) {
-    v8::internal::FatalProcessOutOfMemory("HashMap::Initialize");
+    v8::internal::FatalProcessOutOfMemory("\x48\x61\x73\x68\x4d\x61\x70\x3a\x3a\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65");
     return;
   }
   capacity_ = capacity;

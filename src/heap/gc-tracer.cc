@@ -51,24 +51,24 @@ const char* GCTracer::Event::TypeName(bool short_name) const {
   switch (type) {
     case SCAVENGER:
       if (short_name) {
-        return "s";
+        return "\x73";
       } else {
-        return "Scavenge";
+        return "\x53\x63\x61\x76\x65\x6e\x67\x65";
       }
     case MARK_COMPACTOR:
       if (short_name) {
-        return "ms";
+        return "\x6d\x73";
       } else {
-        return "Mark-sweep";
+        return "\x4d\x61\x72\x6b\x2d\x73\x77\x65\x65\x70";
       }
     case START:
       if (short_name) {
-        return "st";
+        return "\x73\x74";
       } else {
-        return "Start";
+        return "\x53\x74\x61\x72\x74";
       }
   }
-  return "Unknown Event Type";
+  return "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x45\x76\x65\x6e\x74\x20\x54\x79\x70\x65";
 }
 
 
@@ -196,30 +196,30 @@ void GCTracer::AddIncrementalMarkingStep(double duration, intptr_t bytes) {
 
 
 void GCTracer::Print() const {
-  PrintPID("%8.0f ms: ", heap_->isolate()->time_millis_since_init());
+  PrintPID("\x6c\xf8\x4b\xf0\x86\x20\x6d\x73\x3a\x20", heap_->isolate()->time_millis_since_init());
 
-  PrintF("%s %.1f (%.1f) -> %.1f (%.1f) MB, ", current_.TypeName(false),
+  PrintF("\x6c\xa2\x20\x6c\x4b\xf1\x86\x20\x28\x6c\x4b\xf1\x86\x29\x20\x2d\x3e\x20\x6c\x4b\xf1\x86\x20\x28\x6c\x4b\xf1\x86\x29\x20\x4d\x42\x2c\x20", current_.TypeName(false),
          static_cast<double>(current_.start_object_size) / MB,
          static_cast<double>(current_.start_memory_size) / MB,
          static_cast<double>(current_.end_object_size) / MB,
          static_cast<double>(current_.end_memory_size) / MB);
 
   int external_time = static_cast<int>(current_.scopes[Scope::EXTERNAL]);
-  if (external_time > 0) PrintF("%d / ", external_time);
+  if (external_time > 0) PrintF("\x6c\x84\x20\x2f\x20", external_time);
 
   double duration = current_.end_time - current_.start_time;
-  PrintF("%.1f ms", duration);
+  PrintF("\x6c\x4b\xf1\x86\x20\x6d\x73", duration);
   if (current_.type == Event::SCAVENGER) {
     if (current_.incremental_marking_steps > 0) {
-      PrintF(" (+ %.1f ms in %d steps since last GC)",
+      PrintF("\x20\x28\x2b\x20\x6c\x4b\xf1\x86\x20\x6d\x73\x20\x69\x6e\x20\x6c\x84\x20\x73\x74\x65\x70\x73\x20\x73\x69\x6e\x63\x65\x20\x6c\x61\x73\x74\x20\x47\x43\x29",
              current_.incremental_marking_duration,
              current_.incremental_marking_steps);
     }
   } else {
     if (current_.incremental_marking_steps > 0) {
       PrintF(
-          " (+ %.1f ms in %d steps since start of marking, "
-          "biggest step %.1f ms)",
+          "\x20\x28\x2b\x20\x6c\x4b\xf1\x86\x20\x6d\x73\x20\x69\x6e\x20\x6c\x84\x20\x73\x74\x65\x70\x73\x20\x73\x69\x6e\x63\x65\x20\x73\x74\x61\x72\x74\x20\x6f\x66\x20\x6d\x61\x72\x6b\x69\x6e\x67\x2c\x20"
+          "\x62\x69\x67\x67\x65\x73\x74\x20\x73\x74\x65\x70\x20\x6c\x4b\xf1\x86\x20\x6d\x73\x29",
           current_.incremental_marking_duration,
           current_.incremental_marking_steps,
           current_.longest_incremental_marking_step);
@@ -227,84 +227,84 @@ void GCTracer::Print() const {
   }
 
   if (current_.gc_reason != NULL) {
-    PrintF(" [%s]", current_.gc_reason);
+    PrintF("\x20\x5b\x6c\xa2\x5d", current_.gc_reason);
   }
 
   if (current_.collector_reason != NULL) {
-    PrintF(" [%s]", current_.collector_reason);
+    PrintF("\x20\x5b\x6c\xa2\x5d", current_.collector_reason);
   }
 
-  PrintF(".\n");
+  PrintF("\x2e\xa");
 }
 
 
 void GCTracer::PrintNVP() const {
-  PrintPID("%8.0f ms: ", heap_->isolate()->time_millis_since_init());
+  PrintPID("\x6c\xf8\x4b\xf0\x86\x20\x6d\x73\x3a\x20", heap_->isolate()->time_millis_since_init());
 
   double duration = current_.end_time - current_.start_time;
   double spent_in_mutator = current_.start_time - previous_.end_time;
 
-  PrintF("pause=%.1f ", duration);
-  PrintF("mutator=%.1f ", spent_in_mutator);
-  PrintF("gc=%s ", current_.TypeName(true));
+  PrintF("\x70\x61\x75\x73\x65\x3d\x6c\x4b\xf1\x86\x20", duration);
+  PrintF("\x6d\x75\x74\x61\x74\x6f\x72\x3d\x6c\x4b\xf1\x86\x20", spent_in_mutator);
+  PrintF("\x67\x63\x3d\x6c\xa2\x20", current_.TypeName(true));
 
-  PrintF("external=%.1f ", current_.scopes[Scope::EXTERNAL]);
-  PrintF("mark=%.1f ", current_.scopes[Scope::MC_MARK]);
-  PrintF("sweep=%.2f ", current_.scopes[Scope::MC_SWEEP]);
-  PrintF("sweepns=%.2f ", current_.scopes[Scope::MC_SWEEP_NEWSPACE]);
-  PrintF("sweepos=%.2f ", current_.scopes[Scope::MC_SWEEP_OLDSPACE]);
-  PrintF("sweepcode=%.2f ", current_.scopes[Scope::MC_SWEEP_CODE]);
-  PrintF("sweepcell=%.2f ", current_.scopes[Scope::MC_SWEEP_CELL]);
-  PrintF("sweepmap=%.2f ", current_.scopes[Scope::MC_SWEEP_MAP]);
-  PrintF("evacuate=%.1f ", current_.scopes[Scope::MC_EVACUATE_PAGES]);
-  PrintF("new_new=%.1f ",
+  PrintF("\x65\x78\x74\x65\x72\x6e\x61\x6c\x3d\x6c\x4b\xf1\x86\x20", current_.scopes[Scope::EXTERNAL]);
+  PrintF("\x6d\x61\x72\x6b\x3d\x6c\x4b\xf1\x86\x20", current_.scopes[Scope::MC_MARK]);
+  PrintF("\x73\x77\x65\x65\x70\x3d\x6c\x4b\xf2\x86\x20", current_.scopes[Scope::MC_SWEEP]);
+  PrintF("\x73\x77\x65\x65\x70\x6e\x73\x3d\x6c\x4b\xf2\x86\x20", current_.scopes[Scope::MC_SWEEP_NEWSPACE]);
+  PrintF("\x73\x77\x65\x65\x70\x6f\x73\x3d\x6c\x4b\xf2\x86\x20", current_.scopes[Scope::MC_SWEEP_OLDSPACE]);
+  PrintF("\x73\x77\x65\x65\x70\x63\x6f\x64\x65\x3d\x6c\x4b\xf2\x86\x20", current_.scopes[Scope::MC_SWEEP_CODE]);
+  PrintF("\x73\x77\x65\x65\x70\x63\x65\x6c\x6c\x3d\x6c\x4b\xf2\x86\x20", current_.scopes[Scope::MC_SWEEP_CELL]);
+  PrintF("\x73\x77\x65\x65\x70\x6d\x61\x70\x3d\x6c\x4b\xf2\x86\x20", current_.scopes[Scope::MC_SWEEP_MAP]);
+  PrintF("\x65\x76\x61\x63\x75\x61\x74\x65\x3d\x6c\x4b\xf1\x86\x20", current_.scopes[Scope::MC_EVACUATE_PAGES]);
+  PrintF("\x6e\x65\x77\x5f\x6e\x65\x77\x3d\x6c\x4b\xf1\x86\x20",
          current_.scopes[Scope::MC_UPDATE_NEW_TO_NEW_POINTERS]);
-  PrintF("root_new=%.1f ",
+  PrintF("\x72\x6f\x6f\x74\x5f\x6e\x65\x77\x3d\x6c\x4b\xf1\x86\x20",
          current_.scopes[Scope::MC_UPDATE_ROOT_TO_NEW_POINTERS]);
-  PrintF("old_new=%.1f ",
+  PrintF("\x6f\x6c\x64\x5f\x6e\x65\x77\x3d\x6c\x4b\xf1\x86\x20",
          current_.scopes[Scope::MC_UPDATE_OLD_TO_NEW_POINTERS]);
-  PrintF("compaction_ptrs=%.1f ",
+  PrintF("\x63\x6f\x6d\x70\x61\x63\x74\x69\x6f\x6e\x5f\x70\x74\x72\x73\x3d\x6c\x4b\xf1\x86\x20",
          current_.scopes[Scope::MC_UPDATE_POINTERS_TO_EVACUATED]);
-  PrintF("intracompaction_ptrs=%.1f ",
+  PrintF("\x69\x6e\x74\x72\x61\x63\x6f\x6d\x70\x61\x63\x74\x69\x6f\x6e\x5f\x70\x74\x72\x73\x3d\x6c\x4b\xf1\x86\x20",
          current_.scopes[Scope::MC_UPDATE_POINTERS_BETWEEN_EVACUATED]);
-  PrintF("misc_compaction=%.1f ",
+  PrintF("\x6d\x69\x73\x63\x5f\x63\x6f\x6d\x70\x61\x63\x74\x69\x6f\x6e\x3d\x6c\x4b\xf1\x86\x20",
          current_.scopes[Scope::MC_UPDATE_MISC_POINTERS]);
-  PrintF("weakcollection_process=%.1f ",
+  PrintF("\x77\x65\x61\x6b\x63\x6f\x6c\x6c\x65\x63\x74\x69\x6f\x6e\x5f\x70\x72\x6f\x63\x65\x73\x73\x3d\x6c\x4b\xf1\x86\x20",
          current_.scopes[Scope::MC_WEAKCOLLECTION_PROCESS]);
-  PrintF("weakcollection_clear=%.1f ",
+  PrintF("\x77\x65\x61\x6b\x63\x6f\x6c\x6c\x65\x63\x74\x69\x6f\x6e\x5f\x63\x6c\x65\x61\x72\x3d\x6c\x4b\xf1\x86\x20",
          current_.scopes[Scope::MC_WEAKCOLLECTION_CLEAR]);
-  PrintF("weakcollection_abort=%.1f ",
+  PrintF("\x77\x65\x61\x6b\x63\x6f\x6c\x6c\x65\x63\x74\x69\x6f\x6e\x5f\x61\x62\x6f\x72\x74\x3d\x6c\x4b\xf1\x86\x20",
          current_.scopes[Scope::MC_WEAKCOLLECTION_ABORT]);
 
-  PrintF("total_size_before=%" V8_PTR_PREFIX "d ", current_.start_object_size);
-  PrintF("total_size_after=%" V8_PTR_PREFIX "d ", current_.end_object_size);
-  PrintF("holes_size_before=%" V8_PTR_PREFIX "d ", current_.start_holes_size);
-  PrintF("holes_size_after=%" V8_PTR_PREFIX "d ", current_.end_holes_size);
+  PrintF("\x74\x6f\x74\x61\x6c\x5f\x73\x69\x7a\x65\x5f\x62\x65\x66\x6f\x72\x65\x3d\x25" V8_PTR_PREFIX "\x64\x20", current_.start_object_size);
+  PrintF("\x74\x6f\x74\x61\x6c\x5f\x73\x69\x7a\x65\x5f\x61\x66\x74\x65\x72\x3d\x25" V8_PTR_PREFIX "\x64\x20", current_.end_object_size);
+  PrintF("\x68\x6f\x6c\x65\x73\x5f\x73\x69\x7a\x65\x5f\x62\x65\x66\x6f\x72\x65\x3d\x25" V8_PTR_PREFIX "\x64\x20", current_.start_holes_size);
+  PrintF("\x68\x6f\x6c\x65\x73\x5f\x73\x69\x7a\x65\x5f\x61\x66\x74\x65\x72\x3d\x25" V8_PTR_PREFIX "\x64\x20", current_.end_holes_size);
 
   intptr_t allocated_since_last_gc =
       current_.start_object_size - previous_.end_object_size;
-  PrintF("allocated=%" V8_PTR_PREFIX "d ", allocated_since_last_gc);
-  PrintF("promoted=%" V8_PTR_PREFIX "d ", heap_->promoted_objects_size_);
-  PrintF("semi_space_copied=%" V8_PTR_PREFIX "d ",
+  PrintF("\x61\x6c\x6c\x6f\x63\x61\x74\x65\x64\x3d\x25" V8_PTR_PREFIX "\x64\x20", allocated_since_last_gc);
+  PrintF("\x70\x72\x6f\x6d\x6f\x74\x65\x64\x3d\x25" V8_PTR_PREFIX "\x64\x20", heap_->promoted_objects_size_);
+  PrintF("\x73\x65\x6d\x69\x5f\x73\x70\x61\x63\x65\x5f\x63\x6f\x70\x69\x65\x64\x3d\x25" V8_PTR_PREFIX "\x64\x20",
          heap_->semi_space_copied_object_size_);
-  PrintF("nodes_died_in_new=%d ", heap_->nodes_died_in_new_space_);
-  PrintF("nodes_copied_in_new=%d ", heap_->nodes_copied_in_new_space_);
-  PrintF("nodes_promoted=%d ", heap_->nodes_promoted_);
-  PrintF("promotion_rate=%.1f%% ", heap_->promotion_rate_);
-  PrintF("semi_space_copy_rate=%.1f%% ", heap_->semi_space_copied_rate_);
+  PrintF("\x6e\x6f\x64\x65\x73\x5f\x64\x69\x65\x64\x5f\x69\x6e\x5f\x6e\x65\x77\x3d\x6c\x84\x20", heap_->nodes_died_in_new_space_);
+  PrintF("\x6e\x6f\x64\x65\x73\x5f\x63\x6f\x70\x69\x65\x64\x5f\x69\x6e\x5f\x6e\x65\x77\x3d\x6c\x84\x20", heap_->nodes_copied_in_new_space_);
+  PrintF("\x6e\x6f\x64\x65\x73\x5f\x70\x72\x6f\x6d\x6f\x74\x65\x64\x3d\x6c\x84\x20", heap_->nodes_promoted_);
+  PrintF("\x70\x72\x6f\x6d\x6f\x74\x69\x6f\x6e\x5f\x72\x61\x74\x65\x3d\x6c\x4b\xf1\x86\x25\x25\x20", heap_->promotion_rate_);
+  PrintF("\x73\x65\x6d\x69\x5f\x73\x70\x61\x63\x65\x5f\x63\x6f\x70\x79\x5f\x72\x61\x74\x65\x3d\x6c\x4b\xf1\x86\x25\x25\x20", heap_->semi_space_copied_rate_);
 
   if (current_.type == Event::SCAVENGER) {
-    PrintF("steps_count=%d ", current_.incremental_marking_steps);
-    PrintF("steps_took=%.1f ", current_.incremental_marking_duration);
+    PrintF("\x73\x74\x65\x70\x73\x5f\x63\x6f\x75\x6e\x74\x3d\x6c\x84\x20", current_.incremental_marking_steps);
+    PrintF("\x73\x74\x65\x70\x73\x5f\x74\x6f\x6f\x6b\x3d\x6c\x4b\xf1\x86\x20", current_.incremental_marking_duration);
   } else {
-    PrintF("steps_count=%d ", current_.incremental_marking_steps);
-    PrintF("steps_took=%.1f ", current_.incremental_marking_duration);
-    PrintF("longest_step=%.1f ", current_.longest_incremental_marking_step);
-    PrintF("incremental_marking_throughput=%" V8_PTR_PREFIX "d ",
+    PrintF("\x73\x74\x65\x70\x73\x5f\x63\x6f\x75\x6e\x74\x3d\x6c\x84\x20", current_.incremental_marking_steps);
+    PrintF("\x73\x74\x65\x70\x73\x5f\x74\x6f\x6f\x6b\x3d\x6c\x4b\xf1\x86\x20", current_.incremental_marking_duration);
+    PrintF("\x6c\x6f\x6e\x67\x65\x73\x74\x5f\x73\x74\x65\x70\x3d\x6c\x4b\xf1\x86\x20", current_.longest_incremental_marking_step);
+    PrintF("\x69\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x5f\x6d\x61\x72\x6b\x69\x6e\x67\x5f\x74\x68\x72\x6f\x75\x67\x68\x70\x75\x74\x3d\x25" V8_PTR_PREFIX "\x64\x20",
            IncrementalMarkingSpeedInBytesPerMillisecond());
   }
 
-  PrintF("\n");
+  PrintF("\xa");
 }
 
 

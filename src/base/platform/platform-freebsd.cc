@@ -83,7 +83,7 @@ class PosixMemoryMappedFile : public OS::MemoryMappedFile {
 
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
-  FILE* file = fopen(name, "r+");
+  FILE* file = fopen(name, "\x72\x2b");
   if (file == NULL) return NULL;
 
   fseek(file, 0, SEEK_END);
@@ -97,7 +97,7 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name, int size,
     void* initial) {
-  FILE* file = fopen(name, "w+");
+  FILE* file = fopen(name, "\x77\x2b");
   if (file == NULL) return NULL;
   int result = fwrite(initial, size, 1, file);
   if (result < 1) {
@@ -124,19 +124,19 @@ static unsigned StringToLong(char* buffer) {
 std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
   std::vector<SharedLibraryAddress> result;
   static const int MAP_LENGTH = 1024;
-  int fd = open("/proc/self/maps", O_RDONLY);
+  int fd = open("\x2f\x70\x72\x6f\x63\x2f\x73\x65\x6c\x66\x2f\x6d\x61\x70\x73", O_RDONLY);
   if (fd < 0) return result;
   while (true) {
     char addr_buffer[11];
-    addr_buffer[0] = '0';
-    addr_buffer[1] = 'x';
+    addr_buffer[0] = '\x30';
+    addr_buffer[1] = '\x78';
     addr_buffer[10] = 0;
     int result = read(fd, addr_buffer + 2, 8);
     if (result < 8) break;
     unsigned start = StringToLong(addr_buffer);
     result = read(fd, addr_buffer + 2, 1);
     if (result < 1) break;
-    if (addr_buffer[2] != '-') break;
+    if (addr_buffer[2] != '\x2d') break;
     result = read(fd, addr_buffer + 2, 8);
     if (result < 8) break;
     unsigned end = StringToLong(addr_buffer);
@@ -148,11 +148,11 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
         break;
       result = read(fd, buffer + bytes_read, 1);
       if (result < 1) break;
-    } while (buffer[bytes_read] != '\n');
+    } while (buffer[bytes_read] != '\xa');
     buffer[bytes_read] = 0;
     // Ignore mappings that are not executable.
-    if (buffer[3] != 'x') continue;
-    char* start_of_path = index(buffer, '/');
+    if (buffer[3] != '\x78') continue;
+    char* start_of_path = index(buffer, '\x2f');
     // There may be no filename in this line.  Skip to next.
     if (start_of_path == NULL) continue;
     buffer[bytes_read] = 0;

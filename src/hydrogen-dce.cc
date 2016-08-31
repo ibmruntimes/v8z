@@ -33,13 +33,13 @@ void HDeadCodeEliminationPhase::MarkLive(
 
 void HDeadCodeEliminationPhase::PrintLive(HValue* ref, HValue* instr) {
   OFStream os(stdout);
-  os << "[MarkLive ";
+  os << "\x5b\x4d\x61\x72\x6b\x4c\x69\x76\x65\x20";
   if (ref != NULL) {
     os << *ref;
   } else {
-    os << "root ";
+    os << "\x72\x6f\x6f\x74\x20";
   }
-  os << " -> " << *instr << "]" << endl;
+  os << "\x20\x2d\x3e\x20" << *instr << "\x5d" << endl;
 }
 
 

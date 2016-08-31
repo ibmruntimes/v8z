@@ -25,54 +25,54 @@ OStream& OStream::print(const char* format, T x) {
 
 
 OStream& OStream::operator<<(short x) {  // NOLINT(runtime/int)
-  return print(hex_ ? "%hx" : "%hd", x);
+  return print(hex_ ? "\x6c\x88\xa7" : "\x6c\x88\x84", x);
 }
 
 
 OStream& OStream::operator<<(unsigned short x) {  // NOLINT(runtime/int)
-  return print(hex_ ? "%hx" : "%hu", x);
+  return print(hex_ ? "\x6c\x88\xa7" : "\x6c\x88\xa4", x);
 }
 
 
 OStream& OStream::operator<<(int x) {
-  return print(hex_ ? "%x" : "%d", x);
+  return print(hex_ ? "\x6c\xa7" : "\x6c\x84", x);
 }
 
 
 OStream& OStream::operator<<(unsigned int x) {
-  return print(hex_ ? "%x" : "%u", x);
+  return print(hex_ ? "\x6c\xa7" : "\x6c\xa4", x);
 }
 
 
 OStream& OStream::operator<<(long x) {  // NOLINT(runtime/int)
-  return print(hex_ ? "%lx" : "%ld", x);
+  return print(hex_ ? "\x6c\x93\xa7" : "\x6c\x93\x84", x);
 }
 
 
 OStream& OStream::operator<<(unsigned long x) {  // NOLINT(runtime/int)
-  return print(hex_ ? "%lx" : "%lu", x);
+  return print(hex_ ? "\x6c\x93\xa7" : "\x6c\x93\xa4", x);
 }
 
 
 OStream& OStream::operator<<(long long x) {  // NOLINT(runtime/int)
-  return print(hex_ ? "%llx" : "%lld", x);
+  return print(hex_ ? "\x6c\x93\x93\xa7" : "\x6c\x93\x93\x84", x);
 }
 
 
 OStream& OStream::operator<<(unsigned long long x) {  // NOLINT(runtime/int)
-  return print(hex_ ? "%llx" : "%llu", x);
+  return print(hex_ ? "\x6c\x93\x93\xa7" : "\x6c\x93\x93\xa4", x);
 }
 
 
 OStream& OStream::operator<<(double x) {
-  if (isinf(x)) return *this << (x < 0 ? "-inf" : "inf");
-  if (isnan(x)) return *this << "nan";
-  return print("%g", x);
+  if (isinf(x)) return *this << (x < 0 ? "\x2d\x69\x6e\x66" : "\x69\x6e\x66");
+  if (isnan(x)) return *this << "\x6e\x61\x6e";
+  return print("\x6c\x87", x);
 }
 
 
 OStream& OStream::operator<<(void* x) {
-  return print("%p", x);
+  return print("\x6c\x97", x);
 }
 
 
@@ -109,7 +109,7 @@ OStream& flush(OStream& os) {  // NOLINT(runtime/references)
 
 
 OStream& endl(OStream& os) {  // NOLINT(runtime/references)
-  return flush(os.put('\n'));
+  return flush(os.put('\xa'));
 }
 
 
@@ -129,7 +129,7 @@ OStringStream& OStringStream::write(const char* s, size_t n) {
   reserve(new_size + 1);
   memcpy(data_ + size_, s, n);
   size_ = new_size;
-  data_[size_] = '\0';
+  data_[size_] = '\x0';
   return *this;
 }
 
@@ -166,8 +166,8 @@ OFStream& OFStream::flush() {
 OStream& operator<<(OStream& os, const AsUC16& c) {
   char buf[10];
   const char* format = (0x20 <= c.value && c.value <= 0x7F)
-                           ? "%c"
-                           : (c.value <= 0xff) ? "\\x%02x" : "\\u%04x";
+                           ? "\x6c\x83"
+                           : (c.value <= 0xff) ? "\x5c\x78\x6c\xf0\xf2\xa7" : "\x5c\x75\x6c\xf0\xf4\xa7";
   snprintf(buf, sizeof(buf), format, c.value);
   return os << buf;
 }

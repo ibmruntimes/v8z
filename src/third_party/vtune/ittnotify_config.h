@@ -184,7 +184,7 @@
 #endif
 
 #ifdef __cplusplus
-#  define ITT_EXTERN_C extern "C"
+#  define ITT_EXTERN_C extern "\x43"
 #else
 #  define ITT_EXTERN_C /* nothing */
 #endif /* __cplusplus */
@@ -205,7 +205,7 @@
 #define API_VERSION_NUM 0.0.0
 #endif /* API_VERSION_NUM */
 
-#define API_VERSION "ITT-API-Version " ITT_TO_STR(API_VERSION_NUM) " (" ITT_TO_STR(API_VERSION_BUILD) ")"
+#define API_VERSION "\x49\x54\x54\x2d\x41\x50\x49\x2d\x56\x65\x72\x73\x69\x6f\x6e\x20" ITT_TO_STR(API_VERSION_NUM) "\x20\x28" ITT_TO_STR(API_VERSION_BUILD) "\x29"
 
 /* OS communication functions */
 #if ITT_PLATFORM==ITT_PLATFORM_WIN
@@ -260,16 +260,16 @@ ITT_INLINE int __itt_interlocked_increment(volatile long* ptr)
         pthread_mutexattr_t mutex_attr;                                                      \
         int error_code = pthread_mutexattr_init(&mutex_attr);                                \
         if (error_code)                                                                      \
-            __itt_report_error(__itt_error_system, "pthread_mutexattr_init", error_code);    \
+            __itt_report_error(__itt_error_system, "\x70\x74\x68\x72\x65\x61\x64\x5f\x6d\x75\x74\x65\x78\x61\x74\x74\x72\x5f\x69\x6e\x69\x74", error_code);    \
         error_code = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);        \
         if (error_code)                                                                      \
-            __itt_report_error(__itt_error_system, "pthread_mutexattr_settype", error_code); \
+            __itt_report_error(__itt_error_system, "\x70\x74\x68\x72\x65\x61\x64\x5f\x6d\x75\x74\x65\x78\x61\x74\x74\x72\x5f\x73\x65\x74\x74\x79\x70\x65", error_code); \
         error_code = pthread_mutex_init(mutex, &mutex_attr);                                 \
         if (error_code)                                                                      \
-            __itt_report_error(__itt_error_system, "pthread_mutex_init", error_code);        \
+            __itt_report_error(__itt_error_system, "\x70\x74\x68\x72\x65\x61\x64\x5f\x6d\x75\x74\x65\x78\x5f\x69\x6e\x69\x74", error_code);        \
         error_code = pthread_mutexattr_destroy(&mutex_attr);                                 \
         if (error_code)                                                                      \
-            __itt_report_error(__itt_error_system, "pthread_mutexattr_destroy", error_code); \
+            __itt_report_error(__itt_error_system, "\x70\x74\x68\x72\x65\x61\x64\x5f\x6d\x75\x74\x65\x78\x61\x74\x74\x72\x5f\x64\x65\x73\x74\x72\x6f\x79", error_code); \
     }
 #define __itt_mutex_lock(mutex)   pthread_mutex_lock(mutex)
 #define __itt_mutex_unlock(mutex) pthread_mutex_unlock(mutex)
@@ -293,10 +293,10 @@ ITT_INLINE int __itt_interlocked_increment(volatile long* ptr)
 ITT_INLINE int __TBB_machine_fetchadd4(volatile void* ptr, long addend)
 {
     int result;
-    __asm__ __volatile__("lock\nxaddl %0,%1"
-                          : "=r"(result),"=m"(*(long*)ptr)
-                          : "0"(addend), "m"(*(long*)ptr)
-                          : "memory");
+    __asm__ __volatile__("\x6c\x6f\x63\x6b\xa\x78\x61\x64\x64\x6c\x20\x25\x30\x2c\x25\x31"
+                          : "\x3d\x72"(result),"\x3d\x6d"(*(long*)ptr)
+                          : "\x30"(addend), "\x6d"(*(long*)ptr)
+                          : "\x6d\x65\x6d\x6f\x72\x79");
     return result;
 }
 */

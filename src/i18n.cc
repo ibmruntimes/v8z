@@ -82,7 +82,7 @@ icu::SimpleDateFormat* CreateICUDateFormat(
   // since calendar takes ownership.
   icu::TimeZone* tz = NULL;
   icu::UnicodeString timezone;
-  if (ExtractStringSetting(isolate, options, "timeZone", &timezone)) {
+  if (ExtractStringSetting(isolate, options, "\x74\x69\x6d\x65\x5a\x6f\x6e\x65", &timezone)) {
     tz = icu::TimeZone::createTimeZone(timezone);
   } else {
     tz = icu::TimeZone::createDefault();
@@ -97,7 +97,7 @@ icu::SimpleDateFormat* CreateICUDateFormat(
   // to the locale as Unicode extension (if they were specified at all).
   icu::SimpleDateFormat* date_format = NULL;
   icu::UnicodeString skeleton;
-  if (ExtractStringSetting(isolate, options, "skeleton", &skeleton)) {
+  if (ExtractStringSetting(isolate, options, "\x73\x6b\x65\x6c\x65\x74\x6f\x6e", &skeleton)) {
     icu::DateTimePatternGenerator* generator =
         icu::DateTimePatternGenerator::createInstance(icu_locale, status);
     icu::UnicodeString pattern;
@@ -132,7 +132,7 @@ void SetResolvedDateSettings(Isolate* isolate,
   date_format->toPattern(pattern);
   JSObject::SetProperty(
       resolved,
-      factory->NewStringFromStaticAscii("pattern"),
+      factory->NewStringFromStaticAscii("\x70\x61\x74\x74\x65\x72\x6e"),
       factory->NewStringFromTwoByte(
         Vector<const uint16_t>(
             reinterpret_cast<const uint16_t*>(pattern.getBuffer()),
@@ -144,7 +144,7 @@ void SetResolvedDateSettings(Isolate* isolate,
   const char* calendar_name = calendar->getType();
   JSObject::SetProperty(
       resolved,
-      factory->NewStringFromStaticAscii("calendar"),
+      factory->NewStringFromStaticAscii("\x63\x61\x6c\x65\x6e\x64\x61\x72"),
       factory->NewStringFromAsciiChecked(calendar_name),
       SLOPPY).Assert();
 
@@ -155,16 +155,16 @@ void SetResolvedDateSettings(Isolate* isolate,
   icu::UnicodeString canonical_time_zone;
   icu::TimeZone::getCanonicalID(time_zone, canonical_time_zone, status);
   if (U_SUCCESS(status)) {
-    if (canonical_time_zone == UNICODE_STRING_SIMPLE("Etc/GMT")) {
+    if (canonical_time_zone == UNICODE_STRING_SIMPLE("\x45\x74\x63\x2f\x47\x4d\x54")) {
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("timeZone"),
-          factory->NewStringFromStaticAscii("UTC"),
+          factory->NewStringFromStaticAscii("\x74\x69\x6d\x65\x5a\x6f\x6e\x65"),
+          factory->NewStringFromStaticAscii("\x55\x54\x43"),
           SLOPPY).Assert();
     } else {
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("timeZone"),
+          factory->NewStringFromStaticAscii("\x74\x69\x6d\x65\x5a\x6f\x6e\x65"),
           factory->NewStringFromTwoByte(
             Vector<const uint16_t>(
                 reinterpret_cast<const uint16_t*>(
@@ -184,13 +184,13 @@ void SetResolvedDateSettings(Isolate* isolate,
     const char* ns = numbering_system->getName();
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("numberingSystem"),
+        factory->NewStringFromStaticAscii("\x6e\x75\x6d\x62\x65\x72\x69\x6e\x67\x53\x79\x73\x74\x65\x6d"),
         factory->NewStringFromAsciiChecked(ns),
         SLOPPY).Assert();
   } else {
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("numberingSystem"),
+        factory->NewStringFromStaticAscii("\x6e\x75\x6d\x62\x65\x72\x69\x6e\x67\x53\x79\x73\x74\x65\x6d"),
         factory->undefined_value(),
         SLOPPY).Assert();
   }
@@ -204,15 +204,15 @@ void SetResolvedDateSettings(Isolate* isolate,
   if (U_SUCCESS(status)) {
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("locale"),
+        factory->NewStringFromStaticAscii("\x6c\x6f\x63\x61\x6c\x65"),
         factory->NewStringFromAsciiChecked(result),
         SLOPPY).Assert();
   } else {
     // This would never happen, since we got the locale from ICU.
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("locale"),
-        factory->NewStringFromStaticAscii("und"),
+        factory->NewStringFromStaticAscii("\x6c\x6f\x63\x61\x6c\x65"),
+        factory->NewStringFromStaticAscii("\x75\x6e\x64"),
         SLOPPY).Assert();
   }
 }
@@ -245,26 +245,26 @@ icu::DecimalFormat* CreateICUNumberFormat(
   icu::DecimalFormat* number_format = NULL;
   icu::UnicodeString style;
   icu::UnicodeString currency;
-  if (ExtractStringSetting(isolate, options, "style", &style)) {
-    if (style == UNICODE_STRING_SIMPLE("currency")) {
+  if (ExtractStringSetting(isolate, options, "\x73\x74\x79\x6c\x65", &style)) {
+    if (style == UNICODE_STRING_SIMPLE("\x63\x75\x72\x72\x65\x6e\x63\x79")) {
       icu::UnicodeString display;
-      ExtractStringSetting(isolate, options, "currency", &currency);
-      ExtractStringSetting(isolate, options, "currencyDisplay", &display);
+      ExtractStringSetting(isolate, options, "\x63\x75\x72\x72\x65\x6e\x63\x79", &currency);
+      ExtractStringSetting(isolate, options, "\x63\x75\x72\x72\x65\x6e\x63\x79\x44\x69\x73\x70\x6c\x61\x79", &display);
 
 #if (U_ICU_VERSION_MAJOR_NUM == 4) && (U_ICU_VERSION_MINOR_NUM <= 6)
       icu::NumberFormat::EStyles format_style;
-      if (display == UNICODE_STRING_SIMPLE("code")) {
+      if (display == UNICODE_STRING_SIMPLE("\x63\x6f\x64\x65")) {
         format_style = icu::NumberFormat::kIsoCurrencyStyle;
-      } else if (display == UNICODE_STRING_SIMPLE("name")) {
+      } else if (display == UNICODE_STRING_SIMPLE("\x6e\x61\x6d\x65")) {
         format_style = icu::NumberFormat::kPluralCurrencyStyle;
       } else {
         format_style = icu::NumberFormat::kCurrencyStyle;
       }
 #else  // ICU version is 4.8 or above (we ignore versions below 4.0).
       UNumberFormatStyle format_style;
-      if (display == UNICODE_STRING_SIMPLE("code")) {
+      if (display == UNICODE_STRING_SIMPLE("\x63\x6f\x64\x65")) {
         format_style = UNUM_CURRENCY_ISO;
-      } else if (display == UNICODE_STRING_SIMPLE("name")) {
+      } else if (display == UNICODE_STRING_SIMPLE("\x6e\x61\x6d\x65")) {
         format_style = UNUM_CURRENCY_PLURAL;
       } else {
         format_style = UNUM_CURRENCY;
@@ -273,7 +273,7 @@ icu::DecimalFormat* CreateICUNumberFormat(
 
       number_format = static_cast<icu::DecimalFormat*>(
           icu::NumberFormat::createInstance(icu_locale, format_style,  status));
-    } else if (style == UNICODE_STRING_SIMPLE("percent")) {
+    } else if (style == UNICODE_STRING_SIMPLE("\x70\x65\x72\x63\x65\x6e\x74")) {
       number_format = static_cast<icu::DecimalFormat*>(
           icu::NumberFormat::createPercentInstance(icu_locale, status));
       if (U_FAILURE(status)) {
@@ -301,29 +301,29 @@ icu::DecimalFormat* CreateICUNumberFormat(
 
   int32_t digits;
   if (ExtractIntegerSetting(
-          isolate, options, "minimumIntegerDigits", &digits)) {
+          isolate, options, "\x6d\x69\x6e\x69\x6d\x75\x6d\x49\x6e\x74\x65\x67\x65\x72\x44\x69\x67\x69\x74\x73", &digits)) {
     number_format->setMinimumIntegerDigits(digits);
   }
 
   if (ExtractIntegerSetting(
-          isolate, options, "minimumFractionDigits", &digits)) {
+          isolate, options, "\x6d\x69\x6e\x69\x6d\x75\x6d\x46\x72\x61\x63\x74\x69\x6f\x6e\x44\x69\x67\x69\x74\x73", &digits)) {
     number_format->setMinimumFractionDigits(digits);
   }
 
   if (ExtractIntegerSetting(
-          isolate, options, "maximumFractionDigits", &digits)) {
+          isolate, options, "\x6d\x61\x78\x69\x6d\x75\x6d\x46\x72\x61\x63\x74\x69\x6f\x6e\x44\x69\x67\x69\x74\x73", &digits)) {
     number_format->setMaximumFractionDigits(digits);
   }
 
   bool significant_digits_used = false;
   if (ExtractIntegerSetting(
-          isolate, options, "minimumSignificantDigits", &digits)) {
+          isolate, options, "\x6d\x69\x6e\x69\x6d\x75\x6d\x53\x69\x67\x6e\x69\x66\x69\x63\x61\x6e\x74\x44\x69\x67\x69\x74\x73", &digits)) {
     number_format->setMinimumSignificantDigits(digits);
     significant_digits_used = true;
   }
 
   if (ExtractIntegerSetting(
-          isolate, options, "maximumSignificantDigits", &digits)) {
+          isolate, options, "\x6d\x61\x78\x69\x6d\x75\x6d\x53\x69\x67\x6e\x69\x66\x69\x63\x61\x6e\x74\x44\x69\x67\x69\x74\x73", &digits)) {
     number_format->setMaximumSignificantDigits(digits);
     significant_digits_used = true;
   }
@@ -331,7 +331,7 @@ icu::DecimalFormat* CreateICUNumberFormat(
   number_format->setSignificantDigitsUsed(significant_digits_used);
 
   bool grouping;
-  if (ExtractBooleanSetting(isolate, options, "useGrouping", &grouping)) {
+  if (ExtractBooleanSetting(isolate, options, "\x75\x73\x65\x47\x72\x6f\x75\x70\x69\x6e\x67", &grouping)) {
     number_format->setGroupingUsed(grouping);
   }
 
@@ -351,7 +351,7 @@ void SetResolvedNumberSettings(Isolate* isolate,
   number_format->toPattern(pattern);
   JSObject::SetProperty(
       resolved,
-      factory->NewStringFromStaticAscii("pattern"),
+      factory->NewStringFromStaticAscii("\x70\x61\x74\x74\x65\x72\x6e"),
       factory->NewStringFromTwoByte(
         Vector<const uint16_t>(
             reinterpret_cast<const uint16_t*>(pattern.getBuffer()),
@@ -363,7 +363,7 @@ void SetResolvedNumberSettings(Isolate* isolate,
   if (!currency.isEmpty()) {
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("currency"),
+        factory->NewStringFromStaticAscii("\x63\x75\x72\x72\x65\x6e\x63\x79"),
         factory->NewStringFromTwoByte(
           Vector<const uint16_t>(
               reinterpret_cast<const uint16_t*>(currency.getBuffer()),
@@ -381,13 +381,13 @@ void SetResolvedNumberSettings(Isolate* isolate,
     const char* ns = numbering_system->getName();
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("numberingSystem"),
+        factory->NewStringFromStaticAscii("\x6e\x75\x6d\x62\x65\x72\x69\x6e\x67\x53\x79\x73\x74\x65\x6d"),
         factory->NewStringFromAsciiChecked(ns),
         SLOPPY).Assert();
   } else {
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("numberingSystem"),
+        factory->NewStringFromStaticAscii("\x6e\x75\x6d\x62\x65\x72\x69\x6e\x67\x53\x79\x73\x74\x65\x6d"),
         factory->undefined_value(),
         SLOPPY).Assert();
   }
@@ -395,47 +395,47 @@ void SetResolvedNumberSettings(Isolate* isolate,
 
   JSObject::SetProperty(
       resolved,
-      factory->NewStringFromStaticAscii("useGrouping"),
+      factory->NewStringFromStaticAscii("\x75\x73\x65\x47\x72\x6f\x75\x70\x69\x6e\x67"),
       factory->ToBoolean(number_format->isGroupingUsed()),
       SLOPPY).Assert();
 
   JSObject::SetProperty(
       resolved,
-      factory->NewStringFromStaticAscii("minimumIntegerDigits"),
+      factory->NewStringFromStaticAscii("\x6d\x69\x6e\x69\x6d\x75\x6d\x49\x6e\x74\x65\x67\x65\x72\x44\x69\x67\x69\x74\x73"),
       factory->NewNumberFromInt(number_format->getMinimumIntegerDigits()),
       SLOPPY).Assert();
 
   JSObject::SetProperty(
       resolved,
-      factory->NewStringFromStaticAscii("minimumFractionDigits"),
+      factory->NewStringFromStaticAscii("\x6d\x69\x6e\x69\x6d\x75\x6d\x46\x72\x61\x63\x74\x69\x6f\x6e\x44\x69\x67\x69\x74\x73"),
       factory->NewNumberFromInt(number_format->getMinimumFractionDigits()),
       SLOPPY).Assert();
 
   JSObject::SetProperty(
       resolved,
-      factory->NewStringFromStaticAscii("maximumFractionDigits"),
+      factory->NewStringFromStaticAscii("\x6d\x61\x78\x69\x6d\x75\x6d\x46\x72\x61\x63\x74\x69\x6f\x6e\x44\x69\x67\x69\x74\x73"),
       factory->NewNumberFromInt(number_format->getMaximumFractionDigits()),
       SLOPPY).Assert();
 
   Handle<String> key =
-      factory->NewStringFromStaticAscii("minimumSignificantDigits");
+      factory->NewStringFromStaticAscii("\x6d\x69\x6e\x69\x6d\x75\x6d\x53\x69\x67\x6e\x69\x66\x69\x63\x61\x6e\x74\x44\x69\x67\x69\x74\x73");
   Maybe<bool> maybe = JSReceiver::HasOwnProperty(resolved, key);
   CHECK(maybe.has_value);
   if (maybe.value) {
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("minimumSignificantDigits"),
+        factory->NewStringFromStaticAscii("\x6d\x69\x6e\x69\x6d\x75\x6d\x53\x69\x67\x6e\x69\x66\x69\x63\x61\x6e\x74\x44\x69\x67\x69\x74\x73"),
         factory->NewNumberFromInt(number_format->getMinimumSignificantDigits()),
         SLOPPY).Assert();
   }
 
-  key = factory->NewStringFromStaticAscii("maximumSignificantDigits");
+  key = factory->NewStringFromStaticAscii("\x6d\x61\x78\x69\x6d\x75\x6d\x53\x69\x67\x6e\x69\x66\x69\x63\x61\x6e\x74\x44\x69\x67\x69\x74\x73");
   maybe = JSReceiver::HasOwnProperty(resolved, key);
   CHECK(maybe.has_value);
   if (maybe.value) {
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("maximumSignificantDigits"),
+        factory->NewStringFromStaticAscii("\x6d\x61\x78\x69\x6d\x75\x6d\x53\x69\x67\x6e\x69\x66\x69\x63\x61\x6e\x74\x44\x69\x67\x69\x74\x73"),
         factory->NewNumberFromInt(number_format->getMaximumSignificantDigits()),
         SLOPPY).Assert();
   }
@@ -448,15 +448,15 @@ void SetResolvedNumberSettings(Isolate* isolate,
   if (U_SUCCESS(status)) {
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("locale"),
+        factory->NewStringFromStaticAscii("\x6c\x6f\x63\x61\x6c\x65"),
         factory->NewStringFromAsciiChecked(result),
         SLOPPY).Assert();
   } else {
     // This would never happen, since we got the locale from ICU.
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("locale"),
-        factory->NewStringFromStaticAscii("und"),
+        factory->NewStringFromStaticAscii("\x6c\x6f\x63\x61\x6c\x65"),
+        factory->NewStringFromStaticAscii("\x75\x6e\x64"),
         SLOPPY).Assert();
   }
 }
@@ -478,7 +478,7 @@ icu::Collator* CreateICUCollator(
 
   // Set flags first, and then override them with sensitivity if necessary.
   bool numeric;
-  if (ExtractBooleanSetting(isolate, options, "numeric", &numeric)) {
+  if (ExtractBooleanSetting(isolate, options, "\x6e\x75\x6d\x65\x72\x69\x63", &numeric)) {
     collator->setAttribute(
         UCOL_NUMERIC_COLLATION, numeric ? UCOL_ON : UCOL_OFF, status);
   }
@@ -489,10 +489,10 @@ icu::Collator* CreateICUCollator(
   collator->setAttribute(UCOL_NORMALIZATION_MODE, UCOL_ON, status);
 
   icu::UnicodeString case_first;
-  if (ExtractStringSetting(isolate, options, "caseFirst", &case_first)) {
-    if (case_first == UNICODE_STRING_SIMPLE("upper")) {
+  if (ExtractStringSetting(isolate, options, "\x63\x61\x73\x65\x46\x69\x72\x73\x74", &case_first)) {
+    if (case_first == UNICODE_STRING_SIMPLE("\x75\x70\x70\x65\x72")) {
       collator->setAttribute(UCOL_CASE_FIRST, UCOL_UPPER_FIRST, status);
-    } else if (case_first == UNICODE_STRING_SIMPLE("lower")) {
+    } else if (case_first == UNICODE_STRING_SIMPLE("\x6c\x6f\x77\x65\x72")) {
       collator->setAttribute(UCOL_CASE_FIRST, UCOL_LOWER_FIRST, status);
     } else {
       // Default (false/off).
@@ -501,12 +501,12 @@ icu::Collator* CreateICUCollator(
   }
 
   icu::UnicodeString sensitivity;
-  if (ExtractStringSetting(isolate, options, "sensitivity", &sensitivity)) {
-    if (sensitivity == UNICODE_STRING_SIMPLE("base")) {
+  if (ExtractStringSetting(isolate, options, "\x73\x65\x6e\x73\x69\x74\x69\x76\x69\x74\x79", &sensitivity)) {
+    if (sensitivity == UNICODE_STRING_SIMPLE("\x62\x61\x73\x65")) {
       collator->setStrength(icu::Collator::PRIMARY);
-    } else if (sensitivity == UNICODE_STRING_SIMPLE("accent")) {
+    } else if (sensitivity == UNICODE_STRING_SIMPLE("\x61\x63\x63\x65\x6e\x74")) {
       collator->setStrength(icu::Collator::SECONDARY);
-    } else if (sensitivity == UNICODE_STRING_SIMPLE("case")) {
+    } else if (sensitivity == UNICODE_STRING_SIMPLE("\x63\x61\x73\x65")) {
       collator->setStrength(icu::Collator::PRIMARY);
       collator->setAttribute(UCOL_CASE_LEVEL, UCOL_ON, status);
     } else {
@@ -516,7 +516,7 @@ icu::Collator* CreateICUCollator(
   }
 
   bool ignore;
-  if (ExtractBooleanSetting(isolate, options, "ignorePunctuation", &ignore)) {
+  if (ExtractBooleanSetting(isolate, options, "\x69\x67\x6e\x6f\x72\x65\x50\x75\x6e\x63\x74\x75\x61\x74\x69\x6f\x6e", &ignore)) {
     if (ignore) {
       collator->setAttribute(UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, status);
     }
@@ -535,7 +535,7 @@ void SetResolvedCollatorSettings(Isolate* isolate,
 
   JSObject::SetProperty(
       resolved,
-      factory->NewStringFromStaticAscii("numeric"),
+      factory->NewStringFromStaticAscii("\x6e\x75\x6d\x65\x72\x69\x63"),
       factory->ToBoolean(
           collator->getAttribute(UCOL_NUMERIC_COLLATION, status) == UCOL_ON),
       SLOPPY).Assert();
@@ -544,22 +544,22 @@ void SetResolvedCollatorSettings(Isolate* isolate,
     case UCOL_LOWER_FIRST:
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("caseFirst"),
-          factory->NewStringFromStaticAscii("lower"),
+          factory->NewStringFromStaticAscii("\x63\x61\x73\x65\x46\x69\x72\x73\x74"),
+          factory->NewStringFromStaticAscii("\x6c\x6f\x77\x65\x72"),
           SLOPPY).Assert();
       break;
     case UCOL_UPPER_FIRST:
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("caseFirst"),
-          factory->NewStringFromStaticAscii("upper"),
+          factory->NewStringFromStaticAscii("\x63\x61\x73\x65\x46\x69\x72\x73\x74"),
+          factory->NewStringFromStaticAscii("\x75\x70\x70\x65\x72"),
           SLOPPY).Assert();
       break;
     default:
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("caseFirst"),
-          factory->NewStringFromStaticAscii("false"),
+          factory->NewStringFromStaticAscii("\x63\x61\x73\x65\x46\x69\x72\x73\x74"),
+          factory->NewStringFromStaticAscii("\x66\x61\x6c\x73\x65"),
           SLOPPY).Assert();
   }
 
@@ -567,22 +567,22 @@ void SetResolvedCollatorSettings(Isolate* isolate,
     case UCOL_PRIMARY: {
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("strength"),
-          factory->NewStringFromStaticAscii("primary"),
+          factory->NewStringFromStaticAscii("\x73\x74\x72\x65\x6e\x67\x74\x68"),
+          factory->NewStringFromStaticAscii("\x70\x72\x69\x6d\x61\x72\x79"),
           SLOPPY).Assert();
 
       // case level: true + s1 -> case, s1 -> base.
       if (UCOL_ON == collator->getAttribute(UCOL_CASE_LEVEL, status)) {
         JSObject::SetProperty(
             resolved,
-            factory->NewStringFromStaticAscii("sensitivity"),
-            factory->NewStringFromStaticAscii("case"),
+            factory->NewStringFromStaticAscii("\x73\x65\x6e\x73\x69\x74\x69\x76\x69\x74\x79"),
+            factory->NewStringFromStaticAscii("\x63\x61\x73\x65"),
             SLOPPY).Assert();
       } else {
         JSObject::SetProperty(
             resolved,
-            factory->NewStringFromStaticAscii("sensitivity"),
-            factory->NewStringFromStaticAscii("base"),
+            factory->NewStringFromStaticAscii("\x73\x65\x6e\x73\x69\x74\x69\x76\x69\x74\x79"),
+            factory->NewStringFromStaticAscii("\x62\x61\x73\x65"),
             SLOPPY).Assert();
       }
       break;
@@ -590,25 +590,25 @@ void SetResolvedCollatorSettings(Isolate* isolate,
     case UCOL_SECONDARY:
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("strength"),
-          factory->NewStringFromStaticAscii("secondary"),
+          factory->NewStringFromStaticAscii("\x73\x74\x72\x65\x6e\x67\x74\x68"),
+          factory->NewStringFromStaticAscii("\x73\x65\x63\x6f\x6e\x64\x61\x72\x79"),
           SLOPPY).Assert();
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("sensitivity"),
-          factory->NewStringFromStaticAscii("accent"),
+          factory->NewStringFromStaticAscii("\x73\x65\x6e\x73\x69\x74\x69\x76\x69\x74\x79"),
+          factory->NewStringFromStaticAscii("\x61\x63\x63\x65\x6e\x74"),
           SLOPPY).Assert();
       break;
     case UCOL_TERTIARY:
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("strength"),
-          factory->NewStringFromStaticAscii("tertiary"),
+          factory->NewStringFromStaticAscii("\x73\x74\x72\x65\x6e\x67\x74\x68"),
+          factory->NewStringFromStaticAscii("\x74\x65\x72\x74\x69\x61\x72\x79"),
           SLOPPY).Assert();
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("sensitivity"),
-          factory->NewStringFromStaticAscii("variant"),
+          factory->NewStringFromStaticAscii("\x73\x65\x6e\x73\x69\x74\x69\x76\x69\x74\x79"),
+          factory->NewStringFromStaticAscii("\x76\x61\x72\x69\x61\x6e\x74"),
           SLOPPY).Assert();
       break;
     case UCOL_QUATERNARY:
@@ -616,31 +616,31 @@ void SetResolvedCollatorSettings(Isolate* isolate,
       // put them into variant.
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("strength"),
-          factory->NewStringFromStaticAscii("quaternary"),
+          factory->NewStringFromStaticAscii("\x73\x74\x72\x65\x6e\x67\x74\x68"),
+          factory->NewStringFromStaticAscii("\x71\x75\x61\x74\x65\x72\x6e\x61\x72\x79"),
           SLOPPY).Assert();
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("sensitivity"),
-          factory->NewStringFromStaticAscii("variant"),
+          factory->NewStringFromStaticAscii("\x73\x65\x6e\x73\x69\x74\x69\x76\x69\x74\x79"),
+          factory->NewStringFromStaticAscii("\x76\x61\x72\x69\x61\x6e\x74"),
           SLOPPY).Assert();
       break;
     default:
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("strength"),
-          factory->NewStringFromStaticAscii("identical"),
+          factory->NewStringFromStaticAscii("\x73\x74\x72\x65\x6e\x67\x74\x68"),
+          factory->NewStringFromStaticAscii("\x69\x64\x65\x6e\x74\x69\x63\x61\x6c"),
           SLOPPY).Assert();
       JSObject::SetProperty(
           resolved,
-          factory->NewStringFromStaticAscii("sensitivity"),
-          factory->NewStringFromStaticAscii("variant"),
+          factory->NewStringFromStaticAscii("\x73\x65\x6e\x73\x69\x74\x69\x76\x69\x74\x79"),
+          factory->NewStringFromStaticAscii("\x76\x61\x72\x69\x61\x6e\x74"),
           SLOPPY).Assert();
   }
 
   JSObject::SetProperty(
       resolved,
-      factory->NewStringFromStaticAscii("ignorePunctuation"),
+      factory->NewStringFromStaticAscii("\x69\x67\x6e\x6f\x72\x65\x50\x75\x6e\x63\x74\x75\x61\x74\x69\x6f\x6e"),
       factory->ToBoolean(collator->getAttribute(
           UCOL_ALTERNATE_HANDLING, status) == UCOL_SHIFTED),
       SLOPPY).Assert();
@@ -653,15 +653,15 @@ void SetResolvedCollatorSettings(Isolate* isolate,
   if (U_SUCCESS(status)) {
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("locale"),
+        factory->NewStringFromStaticAscii("\x6c\x6f\x63\x61\x6c\x65"),
         factory->NewStringFromAsciiChecked(result),
         SLOPPY).Assert();
   } else {
     // This would never happen, since we got the locale from ICU.
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("locale"),
-        factory->NewStringFromStaticAscii("und"),
+        factory->NewStringFromStaticAscii("\x6c\x6f\x63\x61\x6c\x65"),
+        factory->NewStringFromStaticAscii("\x75\x6e\x64"),
         SLOPPY).Assert();
   }
 }
@@ -674,15 +674,15 @@ icu::BreakIterator* CreateICUBreakIterator(
   UErrorCode status = U_ZERO_ERROR;
   icu::BreakIterator* break_iterator = NULL;
   icu::UnicodeString type;
-  if (!ExtractStringSetting(isolate, options, "type", &type)) return NULL;
+  if (!ExtractStringSetting(isolate, options, "\x74\x79\x70\x65", &type)) return NULL;
 
-  if (type == UNICODE_STRING_SIMPLE("character")) {
+  if (type == UNICODE_STRING_SIMPLE("\x63\x68\x61\x72\x61\x63\x74\x65\x72")) {
     break_iterator =
       icu::BreakIterator::createCharacterInstance(icu_locale, status);
-  } else if (type == UNICODE_STRING_SIMPLE("sentence")) {
+  } else if (type == UNICODE_STRING_SIMPLE("\x73\x65\x6e\x74\x65\x6e\x63\x65")) {
     break_iterator =
       icu::BreakIterator::createSentenceInstance(icu_locale, status);
-  } else if (type == UNICODE_STRING_SIMPLE("line")) {
+  } else if (type == UNICODE_STRING_SIMPLE("\x6c\x69\x6e\x65")) {
     break_iterator =
       icu::BreakIterator::createLineInstance(icu_locale, status);
   } else {
@@ -715,15 +715,15 @@ void SetResolvedBreakIteratorSettings(Isolate* isolate,
   if (U_SUCCESS(status)) {
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("locale"),
+        factory->NewStringFromStaticAscii("\x6c\x6f\x63\x61\x6c\x65"),
         factory->NewStringFromAsciiChecked(result),
         SLOPPY).Assert();
   } else {
     // This would never happen, since we got the locale from ICU.
     JSObject::SetProperty(
         resolved,
-        factory->NewStringFromStaticAscii("locale"),
-        factory->NewStringFromStaticAscii("und"),
+        factory->NewStringFromStaticAscii("\x6c\x6f\x63\x61\x6c\x65"),
+        factory->NewStringFromStaticAscii("\x75\x6e\x64"),
         SLOPPY).Assert();
   }
 }
@@ -786,7 +786,7 @@ icu::SimpleDateFormat* DateFormat::UnpackDateFormat(
     Isolate* isolate,
     Handle<JSObject> obj) {
   Handle<String> key =
-      isolate->factory()->NewStringFromStaticAscii("dateFormat");
+      isolate->factory()->NewStringFromStaticAscii("\x64\x61\x74\x65\x46\x6f\x72\x6d\x61\x74");
   Maybe<bool> maybe = JSReceiver::HasOwnProperty(obj, key);
   CHECK(maybe.has_value);
   if (maybe.value) {
@@ -862,7 +862,7 @@ icu::DecimalFormat* NumberFormat::UnpackNumberFormat(
     Isolate* isolate,
     Handle<JSObject> obj) {
   Handle<String> key =
-      isolate->factory()->NewStringFromStaticAscii("numberFormat");
+      isolate->factory()->NewStringFromStaticAscii("\x6e\x75\x6d\x62\x65\x72\x46\x6f\x72\x6d\x61\x74");
   Maybe<bool> maybe = JSReceiver::HasOwnProperty(obj, key);
   CHECK(maybe.has_value);
   if (maybe.value) {
@@ -919,7 +919,7 @@ icu::Collator* Collator::InitializeCollator(
 
 icu::Collator* Collator::UnpackCollator(Isolate* isolate,
                                         Handle<JSObject> obj) {
-  Handle<String> key = isolate->factory()->NewStringFromStaticAscii("collator");
+  Handle<String> key = isolate->factory()->NewStringFromStaticAscii("\x63\x6f\x6c\x6c\x61\x74\x6f\x72");
   Maybe<bool> maybe = JSReceiver::HasOwnProperty(obj, key);
   CHECK(maybe.has_value);
   if (maybe.value) {
@@ -980,7 +980,7 @@ icu::BreakIterator* BreakIterator::InitializeBreakIterator(
 icu::BreakIterator* BreakIterator::UnpackBreakIterator(Isolate* isolate,
                                                        Handle<JSObject> obj) {
   Handle<String> key =
-      isolate->factory()->NewStringFromStaticAscii("breakIterator");
+      isolate->factory()->NewStringFromStaticAscii("\x62\x72\x65\x61\x6b\x49\x74\x65\x72\x61\x74\x6f\x72");
   Maybe<bool> maybe = JSReceiver::HasOwnProperty(obj, key);
   CHECK(maybe.has_value);
   if (maybe.value) {

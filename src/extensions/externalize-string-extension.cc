@@ -34,17 +34,17 @@ typedef SimpleStringResource<uc16, v8::String::ExternalStringResource>
 
 
 const char* const ExternalizeStringExtension::kSource =
-    "native function externalizeString();"
-    "native function isAsciiString();";
+    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x3b"
+    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x73\x41\x73\x63\x69\x69\x53\x74\x72\x69\x6e\x67\x28\x29\x3b";
 
 v8::Handle<v8::FunctionTemplate>
 ExternalizeStringExtension::GetNativeFunctionTemplate(
     v8::Isolate* isolate, v8::Handle<v8::String> str) {
-  if (strcmp(*v8::String::Utf8Value(str), "externalizeString") == 0) {
+  if (strcmp(*v8::String::Utf8Value(str), "\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67") == 0) {
     return v8::FunctionTemplate::New(isolate,
                                      ExternalizeStringExtension::Externalize);
   } else {
-    DCHECK(strcmp(*v8::String::Utf8Value(str), "isAsciiString") == 0);
+    DCHECK(strcmp(*v8::String::Utf8Value(str), "\x69\x73\x41\x73\x63\x69\x69\x53\x74\x72\x69\x6e\x67") == 0);
     return v8::FunctionTemplate::New(isolate,
                                      ExternalizeStringExtension::IsAscii);
   }
@@ -56,7 +56,7 @@ void ExternalizeStringExtension::Externalize(
   if (args.Length() < 1 || !args[0]->IsString()) {
     args.GetIsolate()->ThrowException(v8::String::NewFromUtf8(
         args.GetIsolate(),
-        "First parameter to externalizeString() must be a string."));
+        "\x46\x69\x72\x73\x74\x20\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x20\x74\x6f\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x6d\x75\x73\x74\x20\x62\x65\x20\x61\x20\x73\x74\x72\x69\x6e\x67\x2e"));
     return;
   }
   bool force_two_byte = false;
@@ -66,7 +66,7 @@ void ExternalizeStringExtension::Externalize(
     } else {
       args.GetIsolate()->ThrowException(v8::String::NewFromUtf8(
         args.GetIsolate(),
-        "Second parameter to externalizeString() must be a boolean."));
+        "\x53\x65\x63\x6f\x6e\x64\x20\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x20\x74\x6f\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x6d\x75\x73\x74\x20\x62\x65\x20\x61\x20\x62\x6f\x6f\x6c\x65\x61\x6e\x2e"));
       return;
     }
   }
@@ -75,7 +75,7 @@ void ExternalizeStringExtension::Externalize(
   if (string->IsExternalString()) {
     args.GetIsolate()->ThrowException(v8::String::NewFromUtf8(
         args.GetIsolate(),
-        "externalizeString() can't externalize twice."));
+        "\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x63\x61\x6e\x27\x74\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x20\x74\x77\x69\x63\x65\x2e"));
     return;
   }
   if (string->IsOneByteRepresentation() && !force_two_byte) {
@@ -103,7 +103,7 @@ void ExternalizeStringExtension::Externalize(
   }
   if (!result) {
     args.GetIsolate()->ThrowException(v8::String::NewFromUtf8(
-        args.GetIsolate(), "externalizeString() failed."));
+        args.GetIsolate(), "\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x66\x61\x69\x6c\x65\x64\x2e"));
     return;
   }
 }
@@ -114,7 +114,7 @@ void ExternalizeStringExtension::IsAscii(
   if (args.Length() != 1 || !args[0]->IsString()) {
     args.GetIsolate()->ThrowException(v8::String::NewFromUtf8(
         args.GetIsolate(),
-        "isAsciiString() requires a single string argument."));
+        "\x69\x73\x41\x73\x63\x69\x69\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x72\x65\x71\x75\x69\x72\x65\x73\x20\x61\x20\x73\x69\x6e\x67\x6c\x65\x20\x73\x74\x72\x69\x6e\x67\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x2e"));
     return;
   }
   bool is_one_byte =

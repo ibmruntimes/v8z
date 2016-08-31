@@ -1175,7 +1175,7 @@ void HGraphBuilder::LoopBuilder::EndBody() {
 HGraph* HGraphBuilder::CreateGraph() {
   graph_ = new(zone()) HGraph(info_);
   if (FLAG_hydrogen_stats) isolate()->GetHStatistics()->Initialize(info_);
-  CompilationPhase phase("H_Block building", info_);
+  CompilationPhase phase("\x48\x5f\x42\x6c\x6f\x63\x6b\x20\x62\x75\x69\x6c\x64\x69\x6e\x67", info_);
   set_current_block(graph()->entry_block());
   if (!BuildGraph()) return NULL;
   graph()->FinalizeUniqueness();
@@ -1589,7 +1589,7 @@ void HGraphBuilder::BuildNonGlobalObjectCheck(HValue* receiver) {
   if_global_object.If<HCompareNumericAndBranch>(instance_type,
                                                 min_global_type,
                                                 Token::GTE);
-  if_global_object.ThenDeopt("receiver was a global object");
+  if_global_object.ThenDeopt("\x72\x65\x63\x65\x69\x76\x65\x72\x20\x77\x61\x73\x20\x61\x20\x67\x6c\x6f\x62\x61\x6c\x20\x6f\x62\x6a\x65\x63\x74");
   if_global_object.End();
 }
 
@@ -1926,7 +1926,7 @@ HValue* HGraphBuilder::BuildNumberToString(HValue* object, Type* type) {
   if_objectissmi.Else();
   {
     if (type->Is(Type::SignedSmall())) {
-      if_objectissmi.Deopt("Expected smi");
+      if_objectissmi.Deopt("\x45\x78\x70\x65\x63\x74\x65\x64\x20\x73\x6d\x69");
     } else {
       // Check if the object is a heap number.
       IfBuilder if_objectisnumber(this);
@@ -1982,7 +1982,7 @@ HValue* HGraphBuilder::BuildNumberToString(HValue* object, Type* type) {
       if_objectisnumber.Else();
       {
         if (type->Is(Type::Number())) {
-          if_objectisnumber.Deopt("Expected heap number");
+          if_objectisnumber.Deopt("\x45\x78\x70\x65\x63\x74\x65\x64\x20\x68\x65\x61\x70\x20\x6e\x75\x6d\x62\x65\x72");
         }
       }
       if_objectisnumber.JoinContinuation(&found);
@@ -2457,7 +2457,7 @@ HInstruction* HGraphBuilder::BuildUncheckedMonomorphicElementAccess(
       negative_checker.Then();
       HInstruction* result = AddElementAccess(
           backing_store, key, val, bounds_check, elements_kind, access_type);
-      negative_checker.ElseDeopt("Negative key encountered");
+      negative_checker.ElseDeopt("\x4e\x65\x67\x61\x74\x69\x76\x65\x20\x6b\x65\x79\x20\x65\x6e\x63\x6f\x75\x6e\x74\x65\x72\x65\x64");
       negative_checker.End();
       length_checker.End();
       return result;
@@ -2542,7 +2542,7 @@ HValue* HGraphBuilder::BuildAllocateArrayFromLength(
   if (!(top_info()->IsStub()) &&
       IsFastPackedElementsKind(array_builder->kind())) {
     // We'll come back later with better (holey) feedback.
-    if_builder.Deopt("Holey array despite packed elements_kind feedback");
+    if_builder.Deopt("\x48\x6f\x6c\x65\x79\x20\x61\x72\x72\x61\x79\x20\x64\x65\x73\x70\x69\x74\x65\x20\x70\x61\x63\x6b\x65\x64\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5f\x6b\x69\x6e\x64\x20\x66\x65\x65\x64\x62\x61\x63\x6b");
   } else {
     Push(checked_length);         // capacity
     Push(checked_length);         // length
@@ -3063,7 +3063,7 @@ void HGraphBuilder::BuildCompareNil(
       // emitted below is the actual monomorphic map.
       Add<HCheckMaps>(value, type->Classes().Current());
     } else {
-      if_nil.Deopt("Too many undetectable types");
+      if_nil.Deopt("\x54\x6f\x6f\x20\x6d\x61\x6e\x79\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x20\x74\x79\x70\x65\x73");
     }
   }
 
@@ -3409,7 +3409,7 @@ void HBasicBlock::FinishExit(HControlInstruction* instruction,
 
 
 OStream& operator<<(OStream& os, const HBasicBlock& b) {
-  return os << "B" << b.block_id();
+  return os << "\x42" << b.block_id();
 }
 
 
@@ -3489,8 +3489,8 @@ int HGraph::TraceInlinedFunction(
       if (!script->source()->IsUndefined()) {
         CodeTracer::Scope tracing_scopex(isolate()->GetCodeTracer());
         OFStream os(tracing_scopex.file());
-        os << "--- FUNCTION SOURCE (" << shared->DebugName()->ToCString().get()
-           << ") id{" << info()->optimization_id() << "," << id << "} ---\n";
+        os << "\x2d\x2d\x2d\x20\x46\x55\x4e\x43\x54\x49\x4f\x4e\x20\x53\x4f\x55\x52\x43\x45\x20\x28" << shared->DebugName()->ToCString().get()
+           << "\x29\x20\x69\x64\x7b" << info()->optimization_id() << "\x2c" << id << "\x7d\x20\x2d\x2d\x2d\xa";
         {
           ConsStringIteratorOp op;
           StringCharacterStream stream(String::cast(script->source()),
@@ -3507,7 +3507,7 @@ int HGraph::TraceInlinedFunction(
           }
         }
 
-        os << "\n--- END ---\n";
+        os << "\xa\x2d\x2d\x2d\x20\x45\x4e\x44\x20\x2d\x2d\x2d\xa";
       }
     }
   }
@@ -3517,9 +3517,9 @@ int HGraph::TraceInlinedFunction(
   if (inline_id != 0) {
     CodeTracer::Scope tracing_scope(isolate()->GetCodeTracer());
     OFStream os(tracing_scope.file());
-    os << "INLINE (" << shared->DebugName()->ToCString().get() << ") id{"
-       << info()->optimization_id() << "," << id << "} AS " << inline_id
-       << " AT " << position << endl;
+    os << "\x49\x4e\x4c\x49\x4e\x45\x20\x28" << shared->DebugName()->ToCString().get() << "\x29\x20\x69\x64\x7b"
+       << info()->optimization_id() << "\x2c" << id << "\x7d\x20\x41\x53\x20" << inline_id
+       << "\x20\x41\x54\x20" << position << endl;
   }
 
   return inline_id;
@@ -3823,7 +3823,7 @@ class PostorderProcessor : public ZoneObject {
 
 
 void HGraph::OrderBlocks() {
-  CompilationPhase phase("H_Block ordering", info());
+  CompilationPhase phase("\x48\x5f\x42\x6c\x6f\x63\x6b\x20\x6f\x72\x64\x65\x72\x69\x6e\x67", info());
 
 #ifdef DEBUG
   // Initially the blocks must not be ordered.
@@ -3859,7 +3859,7 @@ void HGraph::OrderBlocks() {
 
 
 void HGraph::AssignDominators() {
-  HPhase phase("H_Assign dominators", this);
+  HPhase phase("\x48\x5f\x41\x73\x73\x69\x67\x6e\x20\x64\x6f\x6d\x69\x6e\x61\x74\x6f\x72\x73", this);
   for (int i = 0; i < blocks_.length(); ++i) {
     HBasicBlock* block = blocks_[i];
     if (block->IsLoopHeader()) {
@@ -4417,7 +4417,7 @@ bool HGraph::Optimize(BailoutReason* bailout_reason) {
 
 
 void HGraph::RestoreActualValues() {
-  HPhase phase("H_Restore actual values", this);
+  HPhase phase("\x48\x5f\x52\x65\x73\x74\x6f\x72\x65\x20\x61\x63\x74\x75\x61\x6c\x20\x76\x61\x6c\x75\x65\x73", this);
 
   for (int block_index = 0; block_index < blocks()->length(); block_index++) {
     HBasicBlock* block = blocks()->at(block_index);
@@ -6349,7 +6349,7 @@ void HOptimizedGraphBuilder::HandlePolymorphicNamedFieldAccess(
   // know about and do not want to handle ones we've never seen.  Otherwise
   // use a generic IC.
   if (count == types->length() && FLAG_deoptimize_uncommon_cases) {
-    FinishExitWithHardDeoptimization("Uknown map in polymorphic access");
+    FinishExitWithHardDeoptimization("\x55\x6b\x6e\x6f\x77\x6e\x20\x6d\x61\x70\x20\x69\x6e\x20\x70\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x69\x63\x20\x61\x63\x63\x65\x73\x73");
   } else {
     HInstruction* instr = BuildNamedGeneric(access_type, expr, object, name,
                                             value);
@@ -6472,7 +6472,7 @@ void HOptimizedGraphBuilder::HandleGlobalVariableAssignment(
       if (value->IsConstant()) {
         HConstant* c_value = HConstant::cast(value);
         if (!constant.is_identical_to(c_value->handle(isolate()))) {
-          Add<HDeoptimize>("Constant global variable assignment",
+          Add<HDeoptimize>("\x43\x6f\x6e\x73\x74\x61\x6e\x74\x20\x67\x6c\x6f\x62\x61\x6c\x20\x76\x61\x72\x69\x61\x62\x6c\x65\x20\x61\x73\x73\x69\x67\x6e\x6d\x65\x6e\x74",
                            Deoptimizer::EAGER);
         }
       } else {
@@ -6485,7 +6485,7 @@ void HOptimizedGraphBuilder::HandleGlobalVariableAssignment(
         }
         builder.Then();
         builder.Else();
-        Add<HDeoptimize>("Constant global variable assignment",
+        Add<HDeoptimize>("\x43\x6f\x6e\x73\x74\x61\x6e\x74\x20\x67\x6c\x6f\x62\x61\x6c\x20\x76\x61\x72\x69\x61\x62\x6c\x65\x20\x61\x73\x73\x69\x67\x6e\x6d\x65\x6e\x74",
                          Deoptimizer::EAGER);
         builder.End();
       }
@@ -6804,7 +6804,7 @@ HInstruction* HOptimizedGraphBuilder::BuildNamedGeneric(
     HValue* value,
     bool is_uninitialized) {
   if (is_uninitialized) {
-    Add<HDeoptimize>("Insufficient type feedback for generic named access",
+    Add<HDeoptimize>("\x49\x6e\x73\x75\x66\x66\x69\x63\x69\x65\x6e\x74\x20\x74\x79\x70\x65\x20\x66\x65\x65\x64\x62\x61\x63\x6b\x20\x66\x6f\x72\x20\x67\x65\x6e\x65\x72\x69\x63\x20\x6e\x61\x6d\x65\x64\x20\x61\x63\x63\x65\x73\x73",
                      Deoptimizer::SOFT);
   }
   if (access_type == LOAD) {
@@ -7096,7 +7096,7 @@ HValue* HOptimizedGraphBuilder::HandlePolymorphicElementAccess(
   DCHECK(join->predecessors()->length() > 0);
   // Deopt if none of the cases matched.
   NoObservableSideEffectsScope scope(this);
-  FinishExitWithHardDeoptimization("Unknown map in polymorphic element access");
+  FinishExitWithHardDeoptimization("\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x6d\x61\x70\x20\x69\x6e\x20\x70\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x69\x63\x20\x65\x6c\x65\x6d\x65\x6e\x74\x20\x61\x63\x63\x65\x73\x73");
   set_current_block(join);
   return access_type == STORE ? NULL : Pop();
 }
@@ -7150,12 +7150,12 @@ HValue* HOptimizedGraphBuilder::HandleKeyedElementAccess(
     if (access_type == STORE) {
       if (expr->IsAssignment() &&
           expr->AsAssignment()->HasNoTypeInformation()) {
-        Add<HDeoptimize>("Insufficient type feedback for keyed store",
+        Add<HDeoptimize>("\x49\x6e\x73\x75\x66\x66\x69\x63\x69\x65\x6e\x74\x20\x74\x79\x70\x65\x20\x66\x65\x65\x64\x62\x61\x63\x6b\x20\x66\x6f\x72\x20\x6b\x65\x79\x65\x64\x20\x73\x74\x6f\x72\x65",
                          Deoptimizer::SOFT);
       }
     } else {
       if (expr->AsProperty()->HasNoTypeInformation()) {
-        Add<HDeoptimize>("Insufficient type feedback for keyed load",
+        Add<HDeoptimize>("\x49\x6e\x73\x75\x66\x66\x69\x63\x69\x65\x6e\x74\x20\x74\x79\x70\x65\x20\x66\x65\x65\x64\x62\x61\x63\x6b\x20\x66\x6f\x72\x20\x6b\x65\x79\x65\x64\x20\x6c\x6f\x61\x64",
                          Deoptimizer::SOFT);
       }
     }
@@ -7205,7 +7205,7 @@ bool HOptimizedGraphBuilder::TryArgumentsAccess(Property* expr) {
   HInstruction* result = NULL;
   if (expr->key()->IsPropertyName()) {
     Handle<String> name = expr->key()->AsLiteral()->AsPropertyName();
-    if (!name->IsOneByteEqualTo(STATIC_ASCII_VECTOR("length"))) return false;
+    if (!name->IsOneByteEqualTo(STATIC_ASCII_VECTOR("\x6c\x65\x6e\x67\x74\x68"))) return false;
 
     if (function_state()->outer() == NULL) {
       HInstruction* elements = Add<HArgumentsElements>(false);
@@ -7569,7 +7569,7 @@ void HOptimizedGraphBuilder::HandlePolymorphicCallNamed(
       Handle<JSFunction> caller = current_info()->closure();
       SmartArrayPointer<char> caller_name =
           caller->shared()->DebugName()->ToCString();
-      PrintF("Trying to inline the polymorphic call to %s from %s\n",
+      PrintF("\x54\x72\x79\x69\x6e\x67\x20\x74\x6f\x20\x69\x6e\x6c\x69\x6e\x65\x20\x74\x68\x65\x20\x70\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x69\x63\x20\x63\x61\x6c\x6c\x20\x74\x6f\x20\x6c\xa2\x20\x66\x72\x6f\x6d\x20\x6c\xa2\xa",
              name->ToCString().get(),
              caller_name.get());
     }
@@ -7600,7 +7600,7 @@ void HOptimizedGraphBuilder::HandlePolymorphicCallNamed(
   // know about and do not want to handle ones we've never seen.  Otherwise
   // use a generic IC.
   if (ordered_functions == types->length() && FLAG_deoptimize_uncommon_cases) {
-    FinishExitWithHardDeoptimization("Unknown map in polymorphic call");
+    FinishExitWithHardDeoptimization("\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x6d\x61\x70\x20\x69\x6e\x20\x70\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x69\x63\x20\x63\x61\x6c\x6c");
   } else {
     Property* prop = expr->expression()->AsProperty();
     HInstruction* function = BuildNamedGeneric(
@@ -7654,10 +7654,10 @@ void HOptimizedGraphBuilder::TraceInline(Handle<JSFunction> target,
     SmartArrayPointer<char> caller_name =
         caller->shared()->DebugName()->ToCString();
     if (reason == NULL) {
-      PrintF("Inlined %s called from %s.\n", target_name.get(),
+      PrintF("\x49\x6e\x6c\x69\x6e\x65\x64\x20\x6c\xa2\x20\x63\x61\x6c\x6c\x65\x64\x20\x66\x72\x6f\x6d\x20\x6c\xa2\x2e\xa", target_name.get(),
              caller_name.get());
     } else {
-      PrintF("Did not inline %s called from %s (%s).\n",
+      PrintF("\x44\x69\x64\x20\x6e\x6f\x74\x20\x69\x6e\x6c\x69\x6e\x65\x20\x6c\xa2\x20\x63\x61\x6c\x6c\x65\x64\x20\x66\x72\x6f\x6d\x20\x6c\xa2\x20\x28\x6c\xa2\x29\x2e\xa",
              target_name.get(), caller_name.get(), reason);
     }
   }
@@ -7681,7 +7681,7 @@ int HOptimizedGraphBuilder::InliningAstSize(Handle<JSFunction> target) {
   }
 
   if (target_shared->IsApiFunction()) {
-    TraceInline(target, caller, "target is api function");
+    TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x69\x73\x20\x61\x70\x69\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e");
     return kNotInlinable;
   }
 
@@ -7689,17 +7689,17 @@ int HOptimizedGraphBuilder::InliningAstSize(Handle<JSFunction> target) {
   // inlining candidates.
   if (target_shared->SourceSize() >
       Min(FLAG_max_inlined_source_size, kUnlimitedMaxInlinedSourceSize)) {
-    TraceInline(target, caller, "target text too big");
+    TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x74\x65\x78\x74\x20\x74\x6f\x6f\x20\x62\x69\x67");
     return kNotInlinable;
   }
 
   // Target must be inlineable.
   if (!target_shared->IsInlineable()) {
-    TraceInline(target, caller, "target not inlineable");
+    TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x6e\x6f\x74\x20\x69\x6e\x6c\x69\x6e\x65\x61\x62\x6c\x65");
     return kNotInlinable;
   }
   if (target_shared->DisableOptimizationReason() != kNoReason) {
-    TraceInline(target, caller, "target contains unsupported syntax [early]");
+    TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x63\x6f\x6e\x74\x61\x69\x6e\x73\x20\x75\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x73\x79\x6e\x74\x61\x78\x20\x5b\x65\x61\x72\x6c\x79\x5d");
     return kNotInlinable;
   }
 
@@ -7721,7 +7721,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
   Handle<JSFunction> caller = current_info()->closure();
 
   if (nodes_added > Min(FLAG_max_inlined_nodes, kUnlimitedMaxInlinedNodes)) {
-    TraceInline(target, caller, "target AST is too large [early]");
+    TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x41\x53\x54\x20\x69\x73\x20\x74\x6f\x6f\x20\x6c\x61\x72\x67\x65\x20\x5b\x65\x61\x72\x6c\x79\x5d");
     return false;
   }
 
@@ -7730,7 +7730,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
   int current_level = 1;
   while (env->outer() != NULL) {
     if (current_level == FLAG_max_inlining_levels) {
-      TraceInline(target, caller, "inline depth limit reached");
+      TraceInline(target, caller, "\x69\x6e\x6c\x69\x6e\x65\x20\x64\x65\x70\x74\x68\x20\x6c\x69\x6d\x69\x74\x20\x72\x65\x61\x63\x68\x65\x64");
       return false;
     }
     if (env->outer()->frame_type() == JS_FUNCTION) {
@@ -7744,7 +7744,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
        state != NULL;
        state = state->outer()) {
     if (*state->compilation_info()->closure() == *target) {
-      TraceInline(target, caller, "target is recursive");
+      TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x69\x73\x20\x72\x65\x63\x75\x72\x73\x69\x76\x65");
       return false;
     }
   }
@@ -7752,7 +7752,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
   // We don't want to add more than a certain number of nodes from inlining.
   if (inlined_count_ > Min(FLAG_max_inlined_nodes_cumulative,
                            kUnlimitedMaxInlinedNodesCumulative)) {
-    TraceInline(target, caller, "cumulative AST node limit reached");
+    TraceInline(target, caller, "\x63\x75\x6d\x75\x6c\x61\x74\x69\x76\x65\x20\x41\x53\x54\x20\x6e\x6f\x64\x65\x20\x6c\x69\x6d\x69\x74\x20\x72\x65\x61\x63\x68\x65\x64");
     return false;
   }
 
@@ -7768,12 +7768,12 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
       SetStackOverflow();
       target_shared->DisableOptimization(kParseScopeError);
     }
-    TraceInline(target, caller, "parse failure");
+    TraceInline(target, caller, "\x70\x61\x72\x73\x65\x20\x66\x61\x69\x6c\x75\x72\x65");
     return false;
   }
 
   if (target_info.scope()->num_heap_slots() > 0) {
-    TraceInline(target, caller, "target has context-allocated variables");
+    TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x68\x61\x73\x20\x63\x6f\x6e\x74\x65\x78\x74\x2d\x61\x6c\x6c\x6f\x63\x61\x74\x65\x64\x20\x76\x61\x72\x69\x61\x62\x6c\x65\x73");
     return false;
   }
   FunctionLiteral* function = target_info.function();
@@ -7782,11 +7782,11 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
   // earlier the information might not have been complete due to lazy parsing.
   nodes_added = function->ast_node_count();
   if (nodes_added > Min(FLAG_max_inlined_nodes, kUnlimitedMaxInlinedNodes)) {
-    TraceInline(target, caller, "target AST is too large [late]");
+    TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x41\x53\x54\x20\x69\x73\x20\x74\x6f\x6f\x20\x6c\x61\x72\x67\x65\x20\x5b\x6c\x61\x74\x65\x5d");
     return false;
   }
   if (function->dont_optimize()) {
-    TraceInline(target, caller, "target contains unsupported syntax [late]");
+    TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x63\x6f\x6e\x74\x61\x69\x6e\x73\x20\x75\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x73\x79\x6e\x74\x61\x78\x20\x5b\x6c\x61\x74\x65\x5d");
     return false;
   }
 
@@ -7795,14 +7795,14 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
   // stack allocated.
   if (function->scope()->arguments() != NULL) {
     if (!FLAG_inline_arguments) {
-      TraceInline(target, caller, "target uses arguments object");
+      TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x75\x73\x65\x73\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x6f\x62\x6a\x65\x63\x74");
       return false;
     }
 
     if (!function->scope()->arguments()->IsStackAllocated()) {
       TraceInline(target,
                   caller,
-                  "target uses non-stackallocated arguments object");
+                  "\x74\x61\x72\x67\x65\x74\x20\x75\x73\x65\x73\x20\x6e\x6f\x6e\x2d\x73\x74\x61\x63\x6b\x61\x6c\x6c\x6f\x63\x61\x74\x65\x64\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x6f\x62\x6a\x65\x63\x74");
       return false;
     }
   }
@@ -7812,7 +7812,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
   int decl_count = decls->length();
   for (int i = 0; i < decl_count; ++i) {
     if (!decls->at(i)->IsInlineable()) {
-      TraceInline(target, caller, "target has non-trivial declaration");
+      TraceInline(target, caller, "\x74\x61\x72\x67\x65\x74\x20\x68\x61\x73\x20\x6e\x6f\x6e\x2d\x74\x72\x69\x76\x69\x61\x6c\x20\x64\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e");
       return false;
     }
   }
@@ -7824,7 +7824,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
     // generating the optimized inline code.
     target_info.EnableDeoptimizationSupport();
     if (!FullCodeGenerator::MakeCode(&target_info)) {
-      TraceInline(target, caller, "could not generate deoptimization info");
+      TraceInline(target, caller, "\x63\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x67\x65\x6e\x65\x72\x61\x74\x65\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x69\x6e\x66\x6f");
       return false;
     }
     if (target_shared->scope_info() == ScopeInfo::Empty(isolate())) {
@@ -7907,7 +7907,7 @@ bool HOptimizedGraphBuilder::TryInline(Handle<JSFunction> target,
   if (HasStackOverflow()) {
     // Bail out if the inline function did, as we cannot residualize a call
     // instead.
-    TraceInline(target, caller, "inline graph construction failed");
+    TraceInline(target, caller, "\x69\x6e\x6c\x69\x6e\x65\x20\x67\x72\x61\x70\x68\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x20\x66\x61\x69\x6c\x65\x64");
     target_shared->DisableOptimization(kInliningBailedOut);
     inline_bailout_ = true;
     delete target_state;
@@ -8574,9 +8574,9 @@ bool HOptimizedGraphBuilder::TryInlineApiCall(Handle<JSFunction> function,
   if (holder_lookup == CallOptimization::kHolderNotFound) return false;
 
   if (FLAG_trace_inlining) {
-    PrintF("Inlining api function ");
+    PrintF("\x49\x6e\x6c\x69\x6e\x69\x6e\x67\x20\x61\x70\x69\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20");
     function->ShortPrint();
-    PrintF("\n");
+    PrintF("\xa");
   }
 
   bool drop_extra = false;
@@ -9011,9 +9011,9 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
       Handle<Map> map = types->length() == 1 ? types->first() : Handle<Map>();
       if (TryInlineBuiltinMethodCall(expr, receiver, map)) {
         if (FLAG_trace_inlining) {
-          PrintF("Inlining builtin ");
+          PrintF("\x49\x6e\x6c\x69\x6e\x69\x6e\x67\x20\x62\x75\x69\x6c\x74\x69\x6e\x20");
           known_function->ShortPrint();
-          PrintF("\n");
+          PrintF("\xa");
         }
         return;
       }
@@ -9079,9 +9079,9 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
 
         if (TryInlineBuiltinFunctionCall(expr)) {
           if (FLAG_trace_inlining) {
-            PrintF("Inlining builtin ");
+            PrintF("\x49\x6e\x6c\x69\x6e\x69\x6e\x67\x20\x62\x75\x69\x6c\x74\x69\x6e\x20");
             expr->target()->ShortPrint();
-            PrintF("\n");
+            PrintF("\xa");
           }
           return;
         }
@@ -9110,9 +9110,9 @@ void HOptimizedGraphBuilder::VisitCall(Call* expr) {
 
       if (TryInlineBuiltinFunctionCall(expr)) {
         if (FLAG_trace_inlining) {
-          PrintF("Inlining builtin ");
+          PrintF("\x49\x6e\x6c\x69\x6e\x69\x6e\x67\x20\x62\x75\x69\x6c\x74\x69\x6e\x20");
           expr->target()->ShortPrint();
-          PrintF("\n");
+          PrintF("\xa");
         }
         return;
       }
@@ -9215,20 +9215,20 @@ bool HOptimizedGraphBuilder::IsCallArrayInlineable(
           inline_ok = value >= 0 && value <= kElementLoopUnrollThreshold;
           if (!inline_ok) {
             TraceInline(target, caller,
-                        "Constant length outside of valid inlining range.");
+                        "\x43\x6f\x6e\x73\x74\x61\x6e\x74\x20\x6c\x65\x6e\x67\x74\x68\x20\x6f\x75\x74\x73\x69\x64\x65\x20\x6f\x66\x20\x76\x61\x6c\x69\x64\x20\x69\x6e\x6c\x69\x6e\x69\x6e\x67\x20\x72\x61\x6e\x67\x65\x2e");
           }
         }
       } else {
         TraceInline(target, caller,
-                    "Dont inline [new] Array(n) where n isn't constant.");
+                    "\x44\x6f\x6e\x74\x20\x69\x6e\x6c\x69\x6e\x65\x20\x5b\x6e\x65\x77\x5d\x20\x41\x72\x72\x61\x79\x28\x6e\x29\x20\x77\x68\x65\x72\x65\x20\x6e\x20\x69\x73\x6e\x27\x74\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x2e");
       }
     } else if (argument_count == 0) {
       inline_ok = true;
     } else {
-      TraceInline(target, caller, "Too many arguments to inline.");
+      TraceInline(target, caller, "\x54\x6f\x6f\x20\x6d\x61\x6e\x79\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x74\x6f\x20\x69\x6e\x6c\x69\x6e\x65\x2e");
     }
   } else {
-    TraceInline(target, caller, "AllocationSite requested no inlining.");
+    TraceInline(target, caller, "\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65\x20\x72\x65\x71\x75\x65\x73\x74\x65\x64\x20\x6e\x6f\x20\x69\x6e\x6c\x69\x6e\x69\x6e\x67\x2e");
   }
 
   if (inline_ok) {
@@ -9765,7 +9765,7 @@ void HOptimizedGraphBuilder::VisitCallRuntime(CallRuntime* expr) {
   if (function->intrinsic_type == Runtime::INLINE ||
       function->intrinsic_type == Runtime::INLINE_OPTIMIZED) {
     DCHECK(expr->name()->length() > 0);
-    DCHECK(expr->name()->Get(0) == '_');
+    DCHECK(expr->name()->Get(0) == '\x5f');
     // Call to an inline function.
     int lookup_index = static_cast<int>(function->function_id) -
         static_cast<int>(Runtime::kFirstInlineFunction);
@@ -10254,7 +10254,7 @@ HValue* HGraphBuilder::BuildBinaryOperation(
                            right_type->Maybe(Type::Receiver()));
 
   if (left_type->Is(Type::None())) {
-    Add<HDeoptimize>("Insufficient type feedback for LHS of binary operation",
+    Add<HDeoptimize>("\x49\x6e\x73\x75\x66\x66\x69\x63\x69\x65\x6e\x74\x20\x74\x79\x70\x65\x20\x66\x65\x65\x64\x62\x61\x63\x6b\x20\x66\x6f\x72\x20\x4c\x48\x53\x20\x6f\x66\x20\x62\x69\x6e\x61\x72\x79\x20\x6f\x70\x65\x72\x61\x74\x69\x6f\x6e",
                      Deoptimizer::SOFT);
     // TODO(rossberg): we should be able to get rid of non-continuous
     // defaults.
@@ -10265,7 +10265,7 @@ HValue* HGraphBuilder::BuildBinaryOperation(
   }
 
   if (right_type->Is(Type::None())) {
-    Add<HDeoptimize>("Insufficient type feedback for RHS of binary operation",
+    Add<HDeoptimize>("\x49\x6e\x73\x75\x66\x66\x69\x63\x69\x65\x6e\x74\x20\x74\x79\x70\x65\x20\x66\x65\x65\x64\x62\x61\x63\x6b\x20\x66\x6f\x72\x20\x52\x48\x53\x20\x6f\x66\x20\x62\x69\x6e\x61\x72\x79\x20\x6f\x70\x65\x72\x61\x74\x69\x6f\x6e",
                      Deoptimizer::SOFT);
     right_type = Type::Any(zone());
   } else {
@@ -10387,7 +10387,7 @@ HValue* HGraphBuilder::BuildBinaryOperation(
           IfBuilder if_same(this);
           if_same.If<HCompareNumericAndBranch>(right, fixed_right, Token::EQ);
           if_same.Then();
-          if_same.ElseDeopt("Unexpected RHS of binary operation");
+          if_same.ElseDeopt("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x52\x48\x53\x20\x6f\x66\x20\x62\x69\x6e\x61\x72\x79\x20\x6f\x70\x65\x72\x61\x74\x69\x6f\x6e");
           right = fixed_right;
         }
         instr = AddUncasted<HMod>(left, right);
@@ -10460,7 +10460,7 @@ static bool IsClassOfTest(CompareOperation* expr) {
   Literal* literal = expr->right()->AsLiteral();
   if (literal == NULL) return false;
   if (!literal->value()->IsString()) return false;
-  if (!call->name()->IsOneByteEqualTo(STATIC_ASCII_VECTOR("_ClassOf"))) {
+  if (!call->name()->IsOneByteEqualTo(STATIC_ASCII_VECTOR("\x5f\x43\x6c\x61\x73\x73\x4f\x66"))) {
     return false;
   }
   DCHECK(call->arguments()->length() == 1);
@@ -10764,8 +10764,8 @@ HControlInstruction* HOptimizedGraphBuilder::BuildCompareInstruction(
   // Cases handled below depend on collected type feedback. They should
   // soft deoptimize when there is no type feedback.
   if (combined_type->Is(Type::None())) {
-    Add<HDeoptimize>("Insufficient type feedback for combined type "
-                     "of binary operation",
+    Add<HDeoptimize>("\x49\x6e\x73\x75\x66\x66\x69\x63\x69\x65\x6e\x74\x20\x74\x79\x70\x65\x20\x66\x65\x65\x64\x62\x61\x63\x6b\x20\x66\x6f\x72\x20\x63\x6f\x6d\x62\x69\x6e\x65\x64\x20\x74\x79\x70\x65\x20"
+                     "\x6f\x66\x20\x62\x69\x6e\x61\x72\x79\x20\x6f\x70\x65\x72\x61\x74\x69\x6f\x6e",
                      Deoptimizer::SOFT);
     combined_type = left_type = right_type = Type::Any(zone());
   }
@@ -10782,7 +10782,7 @@ HControlInstruction* HOptimizedGraphBuilder::BuildCompareInstruction(
            HConstant::cast(left)->HasNumberValue()) ||
           (right->IsConstant() &&
            HConstant::cast(right)->HasNumberValue())) {
-        Add<HDeoptimize>("Type mismatch between feedback and constant",
+        Add<HDeoptimize>("\x54\x79\x70\x65\x20\x6d\x69\x73\x6d\x61\x74\x63\x68\x20\x62\x65\x74\x77\x65\x65\x6e\x20\x66\x65\x65\x64\x62\x61\x63\x6b\x20\x61\x6e\x64\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74",
                          Deoptimizer::SOFT);
         // The caller expects a branch instruction, so make it happy.
         return New<HBranch>(graph()->GetConstantTrue());
@@ -10820,7 +10820,7 @@ HControlInstruction* HOptimizedGraphBuilder::BuildCompareInstruction(
          !HConstant::cast(left)->HasInternalizedStringValue()) ||
         (right->IsConstant() &&
          !HConstant::cast(right)->HasInternalizedStringValue())) {
-      Add<HDeoptimize>("Type mismatch between feedback and constant",
+      Add<HDeoptimize>("\x54\x79\x70\x65\x20\x6d\x69\x73\x6d\x61\x74\x63\x68\x20\x62\x65\x74\x77\x65\x65\x6e\x20\x66\x65\x65\x64\x62\x61\x63\x6b\x20\x61\x6e\x64\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74",
                        Deoptimizer::SOFT);
       // The caller expects a branch instruction, so make it happy.
       return New<HBranch>(graph()->GetConstantTrue());
@@ -12142,40 +12142,40 @@ HEnvironment* HEnvironment::CopyForInlining(
 
 OStream& operator<<(OStream& os, const HEnvironment& env) {
   for (int i = 0; i < env.length(); i++) {
-    if (i == 0) os << "parameters\n";
-    if (i == env.parameter_count()) os << "specials\n";
-    if (i == env.parameter_count() + env.specials_count()) os << "locals\n";
+    if (i == 0) os << "\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x73\xa";
+    if (i == env.parameter_count()) os << "\x73\x70\x65\x63\x69\x61\x6c\x73\xa";
+    if (i == env.parameter_count() + env.specials_count()) os << "\x6c\x6f\x63\x61\x6c\x73\xa";
     if (i == env.parameter_count() + env.specials_count() + env.local_count()) {
-      os << "expressions\n";
+      os << "\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x73\xa";
     }
     HValue* val = env.values()->at(i);
-    os << i << ": ";
+    os << i << "\x3a\x20";
     if (val != NULL) {
       os << val;
     } else {
-      os << "NULL";
+      os << "\x4e\x55\x4c\x4c";
     }
-    os << "\n";
+    os << "\xa";
   }
-  return os << "\n";
+  return os << "\xa";
 }
 
 
 void HTracer::TraceCompilation(CompilationInfo* info) {
-  Tag tag(this, "compilation");
+  Tag tag(this, "\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e");
   if (info->IsOptimizing()) {
     Handle<String> name = info->function()->debug_name();
-    PrintStringProperty("name", name->ToCString().get());
+    PrintStringProperty("\x6e\x61\x6d\x65", name->ToCString().get());
     PrintIndent();
-    trace_.Add("method \"%s:%d\"\n",
+    trace_.Add("\x6d\x65\x74\x68\x6f\x64\x20\x22\x6c\xa2\x3a\x6c\x84\x22\xa",
                name->ToCString().get(),
                info->optimization_id());
   } else {
     CodeStub::Major major_key = info->code_stub()->MajorKey();
-    PrintStringProperty("name", CodeStub::MajorName(major_key, false));
-    PrintStringProperty("method", "stub");
+    PrintStringProperty("\x6e\x61\x6d\x65", CodeStub::MajorName(major_key, false));
+    PrintStringProperty("\x6d\x65\x74\x68\x6f\x64", "\x73\x74\x75\x62");
   }
-  PrintLongProperty("date",
+  PrintLongProperty("\x64\x61\x74\x65",
                     static_cast<int64_t>(base::OS::TimeCurrentMillis()));
 }
 
@@ -12197,111 +12197,111 @@ void HTracer::TraceHydrogen(const char* name, HGraph* graph) {
 
 
 void HTracer::Trace(const char* name, HGraph* graph, LChunk* chunk) {
-  Tag tag(this, "cfg");
-  PrintStringProperty("name", name);
+  Tag tag(this, "\x63\x66\x67");
+  PrintStringProperty("\x6e\x61\x6d\x65", name);
   const ZoneList<HBasicBlock*>* blocks = graph->blocks();
   for (int i = 0; i < blocks->length(); i++) {
     HBasicBlock* current = blocks->at(i);
-    Tag block_tag(this, "block");
-    PrintBlockProperty("name", current->block_id());
-    PrintIntProperty("from_bci", -1);
-    PrintIntProperty("to_bci", -1);
+    Tag block_tag(this, "\x62\x6c\x6f\x63\x6b");
+    PrintBlockProperty("\x6e\x61\x6d\x65", current->block_id());
+    PrintIntProperty("\x66\x72\x6f\x6d\x5f\x62\x63\x69", -1);
+    PrintIntProperty("\x74\x6f\x5f\x62\x63\x69", -1);
 
     if (!current->predecessors()->is_empty()) {
       PrintIndent();
-      trace_.Add("predecessors");
+      trace_.Add("\x70\x72\x65\x64\x65\x63\x65\x73\x73\x6f\x72\x73");
       for (int j = 0; j < current->predecessors()->length(); ++j) {
-        trace_.Add(" \"B%d\"", current->predecessors()->at(j)->block_id());
+        trace_.Add("\x20\x22\x42\x6c\x84\x22", current->predecessors()->at(j)->block_id());
       }
-      trace_.Add("\n");
+      trace_.Add("\xa");
     } else {
-      PrintEmptyProperty("predecessors");
+      PrintEmptyProperty("\x70\x72\x65\x64\x65\x63\x65\x73\x73\x6f\x72\x73");
     }
 
     if (current->end()->SuccessorCount() == 0) {
-      PrintEmptyProperty("successors");
+      PrintEmptyProperty("\x73\x75\x63\x63\x65\x73\x73\x6f\x72\x73");
     } else  {
       PrintIndent();
-      trace_.Add("successors");
+      trace_.Add("\x73\x75\x63\x63\x65\x73\x73\x6f\x72\x73");
       for (HSuccessorIterator it(current->end()); !it.Done(); it.Advance()) {
-        trace_.Add(" \"B%d\"", it.Current()->block_id());
+        trace_.Add("\x20\x22\x42\x6c\x84\x22", it.Current()->block_id());
       }
-      trace_.Add("\n");
+      trace_.Add("\xa");
     }
 
-    PrintEmptyProperty("xhandlers");
+    PrintEmptyProperty("\x78\x68\x61\x6e\x64\x6c\x65\x72\x73");
 
     {
       PrintIndent();
-      trace_.Add("flags");
+      trace_.Add("\x66\x6c\x61\x67\x73");
       if (current->IsLoopSuccessorDominator()) {
-        trace_.Add(" \"dom-loop-succ\"");
+        trace_.Add("\x20\x22\x64\x6f\x6d\x2d\x6c\x6f\x6f\x70\x2d\x73\x75\x63\x63\x22");
       }
       if (current->IsUnreachable()) {
-        trace_.Add(" \"dead\"");
+        trace_.Add("\x20\x22\x64\x65\x61\x64\x22");
       }
       if (current->is_osr_entry()) {
-        trace_.Add(" \"osr\"");
+        trace_.Add("\x20\x22\x6f\x73\x72\x22");
       }
-      trace_.Add("\n");
+      trace_.Add("\xa");
     }
 
     if (current->dominator() != NULL) {
-      PrintBlockProperty("dominator", current->dominator()->block_id());
+      PrintBlockProperty("\x64\x6f\x6d\x69\x6e\x61\x74\x6f\x72", current->dominator()->block_id());
     }
 
-    PrintIntProperty("loop_depth", current->LoopNestingDepth());
+    PrintIntProperty("\x6c\x6f\x6f\x70\x5f\x64\x65\x70\x74\x68", current->LoopNestingDepth());
 
     if (chunk != NULL) {
       int first_index = current->first_instruction_index();
       int last_index = current->last_instruction_index();
       PrintIntProperty(
-          "first_lir_id",
+          "\x66\x69\x72\x73\x74\x5f\x6c\x69\x72\x5f\x69\x64",
           LifetimePosition::FromInstructionIndex(first_index).Value());
       PrintIntProperty(
-          "last_lir_id",
+          "\x6c\x61\x73\x74\x5f\x6c\x69\x72\x5f\x69\x64",
           LifetimePosition::FromInstructionIndex(last_index).Value());
     }
 
     {
-      Tag states_tag(this, "states");
-      Tag locals_tag(this, "locals");
+      Tag states_tag(this, "\x73\x74\x61\x74\x65\x73");
+      Tag locals_tag(this, "\x6c\x6f\x63\x61\x6c\x73");
       int total = current->phis()->length();
-      PrintIntProperty("size", current->phis()->length());
-      PrintStringProperty("method", "None");
+      PrintIntProperty("\x73\x69\x7a\x65", current->phis()->length());
+      PrintStringProperty("\x6d\x65\x74\x68\x6f\x64", "\x4e\x6f\x6e\x65");
       for (int j = 0; j < total; ++j) {
         HPhi* phi = current->phis()->at(j);
         PrintIndent();
         OStringStream os;
-        os << phi->merged_index() << " " << NameOf(phi) << " " << *phi << "\n";
+        os << phi->merged_index() << "\x20" << NameOf(phi) << "\x20" << *phi << "\xa";
         trace_.Add(os.c_str());
       }
     }
 
     {
-      Tag HIR_tag(this, "HIR");
+      Tag HIR_tag(this, "\x48\x49\x52");
       for (HInstructionIterator it(current); !it.Done(); it.Advance()) {
         HInstruction* instruction = it.Current();
         int uses = instruction->UseCount();
         PrintIndent();
         OStringStream os;
-        os << "0 " << uses << " " << NameOf(instruction) << " " << *instruction;
+        os << "\x30\x20" << uses << "\x20" << NameOf(instruction) << "\x20" << *instruction;
         if (FLAG_hydrogen_track_positions &&
             instruction->has_position() &&
             instruction->position().raw() != 0) {
           const HSourcePosition pos = instruction->position();
-          os << " pos:";
-          if (pos.inlining_id() != 0) os << pos.inlining_id() << "_";
+          os << "\x20\x70\x6f\x73\x3a";
+          if (pos.inlining_id() != 0) os << pos.inlining_id() << "\x5f";
           os << pos.position();
         }
-        os << " <|@\n";
+        os << "\x20\x3c\x7c\x40\xa";
         trace_.Add(os.c_str());
       }
     }
 
 
     if (chunk != NULL) {
-      Tag LIR_tag(this, "LIR");
+      Tag LIR_tag(this, "\x4c\x49\x52");
       int first_index = current->first_instruction_index();
       int last_index = current->last_instruction_index();
       if (first_index != -1 && last_index != -1) {
@@ -12310,11 +12310,11 @@ void HTracer::Trace(const char* name, HGraph* graph, LChunk* chunk) {
           LInstruction* linstr = instructions->at(i);
           if (linstr != NULL) {
             PrintIndent();
-            trace_.Add("%d ",
+            trace_.Add("\x6c\x84\x20",
                        LifetimePosition::FromInstructionIndex(i).Value());
             linstr->PrintTo(&trace_);
             OStringStream os;
-            os << " [hir:" << NameOf(linstr->hydrogen_value()) << "] <|@\n";
+            os << "\x20\x5b\x68\x69\x72\x3a" << NameOf(linstr->hydrogen_value()) << "\x5d\x20\x3c\x7c\x40\xa";
             trace_.Add(os.c_str());
           }
         }
@@ -12325,22 +12325,22 @@ void HTracer::Trace(const char* name, HGraph* graph, LChunk* chunk) {
 
 
 void HTracer::TraceLiveRanges(const char* name, LAllocator* allocator) {
-  Tag tag(this, "intervals");
-  PrintStringProperty("name", name);
+  Tag tag(this, "\x69\x6e\x74\x65\x72\x76\x61\x6c\x73");
+  PrintStringProperty("\x6e\x61\x6d\x65", name);
 
   const Vector<LiveRange*>* fixed_d = allocator->fixed_double_live_ranges();
   for (int i = 0; i < fixed_d->length(); ++i) {
-    TraceLiveRange(fixed_d->at(i), "fixed", allocator->zone());
+    TraceLiveRange(fixed_d->at(i), "\x66\x69\x78\x65\x64", allocator->zone());
   }
 
   const Vector<LiveRange*>* fixed = allocator->fixed_live_ranges();
   for (int i = 0; i < fixed->length(); ++i) {
-    TraceLiveRange(fixed->at(i), "fixed", allocator->zone());
+    TraceLiveRange(fixed->at(i), "\x66\x69\x78\x65\x64", allocator->zone());
   }
 
   const ZoneList<LiveRange*>* live_ranges = allocator->live_ranges();
   for (int i = 0; i < live_ranges->length(); ++i) {
-    TraceLiveRange(live_ranges->at(i), "object", allocator->zone());
+    TraceLiveRange(live_ranges->at(i), "\x6f\x62\x6a\x65\x63\x74", allocator->zone());
   }
 }
 
@@ -12349,24 +12349,24 @@ void HTracer::TraceLiveRange(LiveRange* range, const char* type,
                              Zone* zone) {
   if (range != NULL && !range->IsEmpty()) {
     PrintIndent();
-    trace_.Add("%d %s", range->id(), type);
+    trace_.Add("\x6c\x84\x20\x6c\xa2", range->id(), type);
     if (range->HasRegisterAssigned()) {
       LOperand* op = range->CreateAssignedOperand(zone);
       int assigned_reg = op->index();
       if (op->IsDoubleRegister()) {
-        trace_.Add(" \"%s\"",
+        trace_.Add("\x20\x22\x6c\xa2\x22",
                    DoubleRegister::AllocationIndexToString(assigned_reg));
       } else {
         DCHECK(op->IsRegister());
-        trace_.Add(" \"%s\"", Register::AllocationIndexToString(assigned_reg));
+        trace_.Add("\x20\x22\x6c\xa2\x22", Register::AllocationIndexToString(assigned_reg));
       }
     } else if (range->IsSpilled()) {
       LOperand* op = range->TopLevel()->GetSpillOperand();
       if (op->IsDoubleStackSlot()) {
-        trace_.Add(" \"double_stack:%d\"", op->index());
+        trace_.Add("\x20\x22\x64\x6f\x75\x62\x6c\x65\x5f\x73\x74\x61\x63\x6b\x3a\x6c\x84\x22", op->index());
       } else {
         DCHECK(op->IsStackSlot());
-        trace_.Add(" \"stack:%d\"", op->index());
+        trace_.Add("\x20\x22\x73\x74\x61\x63\x6b\x3a\x6c\x84\x22", op->index());
       }
     }
     int parent_index = -1;
@@ -12380,10 +12380,10 @@ void HTracer::TraceLiveRange(LiveRange* range, const char* type,
     if (op != NULL && op->IsUnallocated()) {
       hint_index = LUnallocated::cast(op)->virtual_register();
     }
-    trace_.Add(" %d %d", parent_index, hint_index);
+    trace_.Add("\x20\x6c\x84\x20\x6c\x84", parent_index, hint_index);
     UseInterval* cur_interval = range->first_interval();
     while (cur_interval != NULL && range->Covers(cur_interval->start())) {
-      trace_.Add(" [%d, %d[",
+      trace_.Add("\x20\x5b\x6c\x84\x2c\x20\x6c\x84\x5b",
                  cur_interval->start().Value(),
                  cur_interval->end().Value());
       cur_interval = cur_interval->next();
@@ -12392,12 +12392,12 @@ void HTracer::TraceLiveRange(LiveRange* range, const char* type,
     UsePosition* current_pos = range->first_pos();
     while (current_pos != NULL) {
       if (current_pos->RegisterIsBeneficial() || FLAG_trace_all_uses) {
-        trace_.Add(" %d M", current_pos->pos().Value());
+        trace_.Add("\x20\x6c\x84\x20\x4d", current_pos->pos().Value());
       }
       current_pos = current_pos->next();
     }
 
-    trace_.Add(" \"\"\n");
+    trace_.Add("\x20\x22\x22\xa");
   }
 }
 
@@ -12417,12 +12417,12 @@ void HStatistics::Initialize(CompilationInfo* info) {
 
 void HStatistics::Print(const char* stats_name) {
   PrintF(
-      "\n"
-      "----------------------------------------"
-      "----------------------------------------\n"
-      "--- %s timing results:\n"
-      "----------------------------------------"
-      "----------------------------------------\n",
+      "\xa"
+      "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d"
+      "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa"
+      "\x2d\x2d\x2d\x20\x6c\xa2\x20\x74\x69\x6d\x69\x6e\x67\x20\x72\x65\x73\x75\x6c\x74\x73\x3a\xa"
+      "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d"
+      "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa",
       stats_name);
   base::TimeDelta sum;
   for (int i = 0; i < times_.length(); ++i) {
@@ -12430,32 +12430,32 @@ void HStatistics::Print(const char* stats_name) {
   }
 
   for (int i = 0; i < names_.length(); ++i) {
-    PrintF("%33s", names_[i]);
+    PrintF("\x6c\xf3\xf3\xa2", names_[i]);
     double ms = times_[i].InMillisecondsF();
     double percent = times_[i].PercentOf(sum);
-    PrintF(" %8.3f ms / %4.1f %% ", ms, percent);
+    PrintF("\x20\x6c\xf8\x4b\xf3\x86\x20\x6d\x73\x20\x2f\x20\x6c\xf4\x4b\xf1\x86\x20\x25\x25\x20", ms, percent);
 
     unsigned size = sizes_[i];
     double size_percent = static_cast<double>(size) * 100 / total_size_;
-    PrintF(" %9u bytes / %4.1f %%\n", size, size_percent);
+    PrintF("\x20\x6c\xf9\xa4\x20\x62\x79\x74\x65\x73\x20\x2f\x20\x6c\xf4\x4b\xf1\x86\x20\x25\x25\xa", size, size_percent);
   }
 
   PrintF(
-      "----------------------------------------"
-      "----------------------------------------\n");
+      "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d"
+      "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
   base::TimeDelta total = create_graph_ + optimize_graph_ + generate_code_;
-  PrintF("%33s %8.3f ms / %4.1f %% \n", "Create graph",
+  PrintF("\x6c\xf3\xf3\xa2\x20\x6c\xf8\x4b\xf3\x86\x20\x6d\x73\x20\x2f\x20\x6c\xf4\x4b\xf1\x86\x20\x25\x25\x20\xa", "\x43\x72\x65\x61\x74\x65\x20\x67\x72\x61\x70\x68",
          create_graph_.InMillisecondsF(), create_graph_.PercentOf(total));
-  PrintF("%33s %8.3f ms / %4.1f %% \n", "Optimize graph",
+  PrintF("\x6c\xf3\xf3\xa2\x20\x6c\xf8\x4b\xf3\x86\x20\x6d\x73\x20\x2f\x20\x6c\xf4\x4b\xf1\x86\x20\x25\x25\x20\xa", "\x4f\x70\x74\x69\x6d\x69\x7a\x65\x20\x67\x72\x61\x70\x68",
          optimize_graph_.InMillisecondsF(), optimize_graph_.PercentOf(total));
-  PrintF("%33s %8.3f ms / %4.1f %% \n", "Generate and install code",
+  PrintF("\x6c\xf3\xf3\xa2\x20\x6c\xf8\x4b\xf3\x86\x20\x6d\x73\x20\x2f\x20\x6c\xf4\x4b\xf1\x86\x20\x25\x25\x20\xa", "\x47\x65\x6e\x65\x72\x61\x74\x65\x20\x61\x6e\x64\x20\x69\x6e\x73\x74\x61\x6c\x6c\x20\x63\x6f\x64\x65",
          generate_code_.InMillisecondsF(), generate_code_.PercentOf(total));
   PrintF(
-      "----------------------------------------"
-      "----------------------------------------\n");
-  PrintF("%33s %8.3f ms           %9u bytes\n", "Total",
+      "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d"
+      "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
+  PrintF("\x6c\xf3\xf3\xa2\x20\x6c\xf8\x4b\xf3\x86\x20\x6d\x73\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x6c\xf9\xa4\x20\x62\x79\x74\x65\x73\xa", "\x54\x6f\x74\x61\x6c",
          total.InMillisecondsF(), total_size_);
-  PrintF("%33s     (%.1f times slower than full code gen)\n", "",
+  PrintF("\x6c\xf3\xf3\xa2\x20\x20\x20\x20\x20\x28\x6c\x4b\xf1\x86\x20\x74\x69\x6d\x65\x73\x20\x73\x6c\x6f\x77\x65\x72\x20\x74\x68\x61\x6e\x20\x66\x75\x6c\x6c\x20\x63\x6f\x64\x65\x20\x67\x65\x6e\x29\xa", "",
          total.TimesOf(full_code_gen_));
 
   double source_size_in_kb = static_cast<double>(source_size_) / 1024;
@@ -12465,8 +12465,8 @@ void HStatistics::Print(const char* stats_name) {
   double normalized_size_in_kb = source_size_in_kb > 0
       ? total_size_ / 1024 / source_size_in_kb
       : 0;
-  PrintF("%33s %8.3f ms           %7.3f kB allocated\n",
-         "Average per kB source", normalized_time, normalized_size_in_kb);
+  PrintF("\x6c\xf3\xf3\xa2\x20\x6c\xf8\x4b\xf3\x86\x20\x6d\x73\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x6c\xf7\x4b\xf3\x86\x20\x6b\x42\x20\x61\x6c\x6c\x6f\x63\x61\x74\x65\x64\xa",
+         "\x41\x76\x65\x72\x61\x67\x65\x20\x70\x65\x72\x20\x6b\x42\x20\x73\x6f\x75\x72\x63\x65", normalized_time, normalized_size_in_kb);
 }
 
 

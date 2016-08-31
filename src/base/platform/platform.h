@@ -113,13 +113,13 @@ INLINE(intptr_t InternalGetExistingThreadLocal(intptr_t index));
 inline intptr_t InternalGetExistingThreadLocal(intptr_t index) {
   intptr_t result;
 #if V8_HOST_ARCH_IA32
-  asm("movl %%gs:(%1,%2,4), %0;"
-      :"=r"(result)  // Output must be a writable register.
-      :"r"(kMacTlsBaseOffset), "r"(index));
+  asm("\x6d\x6f\x76\x6c\x20\x25\x6c\x87\xa2\x3a\x28\x25\x31\x2c\x25\x32\x2c\x34\x29\x2c\x20\x25\x30\x3b"
+      :"\x3d\x72"(result)  // Output must be a writable register.
+      :"\x72"(kMacTlsBaseOffset), "\x72"(index));
 #else
-  asm("movq %%gs:(%1,%2,8), %0;"
-      :"=r"(result)
-      :"r"(kMacTlsBaseOffset), "r"(index));
+  asm("\x6d\x6f\x76\x71\x20\x25\x6c\x87\xa2\x3a\x28\x25\x31\x2c\x25\x32\x2c\x38\x29\x2c\x20\x25\x30\x3b"
+      :"\x3d\x72"(result)
+      :"\x72"(kMacTlsBaseOffset), "\x72"(index));
 #endif
   return result;
 }
@@ -438,7 +438,7 @@ class Thread {
 #endif
   class Options {
    public:
-    Options() : name_("v8:<unknown>"), stack_size_(0) {}
+    Options() : name_("\x76\x38\x3a\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e"), stack_size_(0) {}
     explicit Options(const char* name, int stack_size = 0)
         : name_(name), stack_size_(stack_size) {}
 

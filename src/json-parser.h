@@ -66,11 +66,11 @@ class JsonParser BASE_EMBEDDED {
   inline void AdvanceSkipWhitespace() {
     do {
       Advance();
-    } while (c0_ == ' ' || c0_ == '\t' || c0_ == '\n' || c0_ == '\r');
+    } while (c0_ == '\x20' || c0_ == '\x9' || c0_ == '\xa' || c0_ == '\xd');
   }
 
   inline void SkipWhitespace() {
-    while (c0_ == ' ' || c0_ == '\t' || c0_ == '\n' || c0_ == '\r') {
+    while (c0_ == '\x20' || c0_ == '\x9' || c0_ == '\xa' || c0_ == '\xd') {
       Advance();
     }
   }
@@ -104,17 +104,17 @@ class JsonParser BASE_EMBEDDED {
       DisallowHeapAllocation no_gc;
       String::FlatContent content = expected->GetFlatContent();
       if (content.IsAscii()) {
-        DCHECK_EQ('"', c0_);
+        DCHECK_EQ('\x22', c0_);
         const uint8_t* input_chars = seq_source_->GetChars() + position_ + 1;
         const uint8_t* expected_chars = content.ToOneByteVector().start();
         for (int i = 0; i < length; i++) {
           uint8_t c0 = input_chars[i];
           if (c0 != expected_chars[i] ||
-              c0 == '"' || c0 < 0x20 || c0 == '\\') {
+              c0 == '\x22' || c0 < 0x20 || c0 == '\x5c') {
             return false;
           }
         }
-        if (input_chars[length] == '"') {
+        if (input_chars[length] == '\x22') {
           position_ = position_ + length + 1;
           AdvanceSkipWhitespace();
           return true;
@@ -214,29 +214,29 @@ MaybeHandle<Object> JsonParser<seq_ascii>::ParseJson() {
 
     switch (c0_) {
       case kEndOfString:
-        message = "unexpected_eos";
+        message = "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x65\x6f\x73";
         array = factory->NewJSArray(0);
         break;
-      case '-':
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
-        message = "unexpected_token_number";
+      case '\x2d':
+      case '\x30':
+      case '\x31':
+      case '\x32':
+      case '\x33':
+      case '\x34':
+      case '\x35':
+      case '\x36':
+      case '\x37':
+      case '\x38':
+      case '\x39':
+        message = "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x74\x6f\x6b\x65\x6e\x5f\x6e\x75\x6d\x62\x65\x72";
         array = factory->NewJSArray(0);
         break;
-      case '"':
-        message = "unexpected_token_string";
+      case '\x22':
+        message = "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x74\x6f\x6b\x65\x6e\x5f\x73\x74\x72\x69\x6e\x67";
         array = factory->NewJSArray(0);
         break;
       default:
-        message = "unexpected_token";
+        message = "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x74\x6f\x6b\x65\x6e";
         Handle<Object> name = factory->LookupSingleCharacterStringFromCode(c0_);
         Handle<FixedArray> element = factory->NewFixedArray(1);
         element->set(0, *name);
@@ -263,29 +263,29 @@ Handle<Object> JsonParser<seq_ascii>::ParseJsonValue() {
     return Handle<Object>::null();
   }
 
-  if (c0_ == '"') return ParseJsonString();
-  if ((c0_ >= '0' && c0_ <= '9') || c0_ == '-') return ParseJsonNumber();
-  if (c0_ == '{') return ParseJsonObject();
-  if (c0_ == '[') return ParseJsonArray();
-  if (c0_ == 'f') {
-    if (AdvanceGetChar() == 'a' && AdvanceGetChar() == 'l' &&
-        AdvanceGetChar() == 's' && AdvanceGetChar() == 'e') {
+  if (c0_ == '\x22') return ParseJsonString();
+  if ((c0_ >= '\x30' && c0_ <= '\x39') || c0_ == '\x2d') return ParseJsonNumber();
+  if (c0_ == '\x7b') return ParseJsonObject();
+  if (c0_ == '\x5b') return ParseJsonArray();
+  if (c0_ == '\x66') {
+    if (AdvanceGetChar() == '\x61' && AdvanceGetChar() == '\x6c' &&
+        AdvanceGetChar() == '\x73' && AdvanceGetChar() == '\x65') {
       AdvanceSkipWhitespace();
       return factory()->false_value();
     }
     return ReportUnexpectedCharacter();
   }
-  if (c0_ == 't') {
-    if (AdvanceGetChar() == 'r' && AdvanceGetChar() == 'u' &&
-        AdvanceGetChar() == 'e') {
+  if (c0_ == '\x74') {
+    if (AdvanceGetChar() == '\x72' && AdvanceGetChar() == '\x75' &&
+        AdvanceGetChar() == '\x65') {
       AdvanceSkipWhitespace();
       return factory()->true_value();
     }
     return ReportUnexpectedCharacter();
   }
-  if (c0_ == 'n') {
-    if (AdvanceGetChar() == 'u' && AdvanceGetChar() == 'l' &&
-        AdvanceGetChar() == 'l') {
+  if (c0_ == '\x6e') {
+    if (AdvanceGetChar() == '\x75' && AdvanceGetChar() == '\x6c' &&
+        AdvanceGetChar() == '\x6c') {
       AdvanceSkipWhitespace();
       return factory()->null_value();
     }
@@ -303,38 +303,38 @@ Handle<Object> JsonParser<seq_ascii>::ParseJsonObject() {
       factory()->NewJSObject(object_constructor(), pretenure_);
   Handle<Map> map(json_object->map());
   ZoneList<Handle<Object> > properties(8, zone());
-  DCHECK_EQ(c0_, '{');
+  DCHECK_EQ(c0_, '\x7b');
 
   bool transitioning = true;
 
   AdvanceSkipWhitespace();
-  if (c0_ != '}') {
+  if (c0_ != '\x7d') {
     do {
-      if (c0_ != '"') return ReportUnexpectedCharacter();
+      if (c0_ != '\x22') return ReportUnexpectedCharacter();
 
       int start_position = position_;
       Advance();
 
       uint32_t index = 0;
-      if (c0_ >= '0' && c0_ <= '9') {
+      if (c0_ >= '\x30' && c0_ <= '\x39') {
         // Maybe an array index, try to parse it.
-        if (c0_ == '0') {
+        if (c0_ == '\x30') {
           // With a leading zero, the string has to be "0" only to be an index.
           Advance();
         } else {
           do {
-            int d = c0_ - '0';
+            int d = c0_ - '\x30';
             if (index > 429496729U - ((d > 5) ? 1 : 0)) break;
             index = (index * 10) + d;
             Advance();
-          } while (c0_ >= '0' && c0_ <= '9');
+          } while (c0_ >= '\x30' && c0_ <= '\x39');
         }
 
-        if (c0_ == '"') {
+        if (c0_ == '\x22') {
           // Successfully parsed index, parse and store element.
           AdvanceSkipWhitespace();
 
-          if (c0_ != ':') return ReportUnexpectedCharacter();
+          if (c0_ != '\x3a') return ReportUnexpectedCharacter();
           AdvanceSkipWhitespace();
           Handle<Object> value = ParseJsonValue();
           if (value.is_null()) return ReportUnexpectedCharacter();
@@ -347,7 +347,7 @@ Handle<Object> JsonParser<seq_ascii>::ParseJsonObject() {
 
       position_ = start_position;
 #ifdef DEBUG
-      c0_ = '"';
+      c0_ = '\x22';
 #endif
 
       Handle<String> key;
@@ -377,7 +377,7 @@ Handle<Object> JsonParser<seq_ascii>::ParseJsonObject() {
           // If a transition was found, follow it and continue.
           transitioning = !target.is_null();
         }
-        if (c0_ != ':') return ReportUnexpectedCharacter();
+        if (c0_ != '\x3a') return ReportUnexpectedCharacter();
 
         AdvanceSkipWhitespace();
         value = ParseJsonValue();
@@ -414,7 +414,7 @@ Handle<Object> JsonParser<seq_ascii>::ParseJsonObject() {
         CommitStateToJsonObject(json_object, map, &properties);
       } else {
         key = ParseJsonInternalizedString();
-        if (key.is_null() || c0_ != ':') return ReportUnexpectedCharacter();
+        if (key.is_null() || c0_ != '\x3a') return ReportUnexpectedCharacter();
 
         AdvanceSkipWhitespace();
         value = ParseJsonValue();
@@ -422,8 +422,8 @@ Handle<Object> JsonParser<seq_ascii>::ParseJsonObject() {
       }
 
       Runtime::DefineObjectProperty(json_object, key, value, NONE).Check();
-    } while (MatchSkipWhiteSpace(','));
-    if (c0_ != '}') {
+    } while (MatchSkipWhiteSpace('\x2c'));
+    if (c0_ != '\x7d') {
       return ReportUnexpectedCharacter();
     }
 
@@ -478,16 +478,16 @@ template <bool seq_ascii>
 Handle<Object> JsonParser<seq_ascii>::ParseJsonArray() {
   HandleScope scope(isolate());
   ZoneList<Handle<Object> > elements(4, zone());
-  DCHECK_EQ(c0_, '[');
+  DCHECK_EQ(c0_, '\x5b');
 
   AdvanceSkipWhitespace();
-  if (c0_ != ']') {
+  if (c0_ != '\x5d') {
     do {
       Handle<Object> element = ParseJsonValue();
       if (element.is_null()) return ReportUnexpectedCharacter();
       elements.Add(element, zone());
-    } while (MatchSkipWhiteSpace(','));
-    if (c0_ != ']') {
+    } while (MatchSkipWhiteSpace('\x2c'));
+    if (c0_ != '\x5d') {
       return ReportUnexpectedCharacter();
     }
   }
@@ -508,43 +508,43 @@ template <bool seq_ascii>
 Handle<Object> JsonParser<seq_ascii>::ParseJsonNumber() {
   bool negative = false;
   int beg_pos = position_;
-  if (c0_ == '-') {
+  if (c0_ == '\x2d') {
     Advance();
     negative = true;
   }
-  if (c0_ == '0') {
+  if (c0_ == '\x30') {
     Advance();
     // Prefix zero is only allowed if it's the only digit before
     // a decimal point or exponent.
-    if ('0' <= c0_ && c0_ <= '9') return ReportUnexpectedCharacter();
+    if ('\x30' <= c0_ && c0_ <= '\x39') return ReportUnexpectedCharacter();
   } else {
     int i = 0;
     int digits = 0;
-    if (c0_ < '1' || c0_ > '9') return ReportUnexpectedCharacter();
+    if (c0_ < '\x31' || c0_ > '\x39') return ReportUnexpectedCharacter();
     do {
-      i = i * 10 + c0_ - '0';
+      i = i * 10 + c0_ - '\x30';
       digits++;
       Advance();
-    } while (c0_ >= '0' && c0_ <= '9');
-    if (c0_ != '.' && c0_ != 'e' && c0_ != 'E' && digits < 10) {
+    } while (c0_ >= '\x30' && c0_ <= '\x39');
+    if (c0_ != '\x2e' && c0_ != '\x65' && c0_ != '\x45' && digits < 10) {
       SkipWhitespace();
       return Handle<Smi>(Smi::FromInt((negative ? -i : i)), isolate());
     }
   }
-  if (c0_ == '.') {
+  if (c0_ == '\x2e') {
     Advance();
-    if (c0_ < '0' || c0_ > '9') return ReportUnexpectedCharacter();
+    if (c0_ < '\x30' || c0_ > '\x39') return ReportUnexpectedCharacter();
     do {
       Advance();
-    } while (c0_ >= '0' && c0_ <= '9');
+    } while (c0_ >= '\x30' && c0_ <= '\x39');
   }
-  if (AsciiAlphaToLower(c0_) == 'e') {
+  if (AsciiAlphaToLower(c0_) == '\x65') {
     Advance();
-    if (c0_ == '-' || c0_ == '+') Advance();
-    if (c0_ < '0' || c0_ > '9') return ReportUnexpectedCharacter();
+    if (c0_ == '\x2d' || c0_ == '\x2b') Advance();
+    if (c0_ < '\x30' || c0_ > '\x39') return ReportUnexpectedCharacter();
     do {
       Advance();
-    } while (c0_ >= '0' && c0_ <= '9');
+    } while (c0_ >= '\x30' && c0_ <= '\x39');
   }
   int length = position_ - beg_pos;
   double number;
@@ -619,14 +619,14 @@ Handle<String> JsonParser<seq_ascii>::SlowScanJsonString(
   SinkChar* dest = seq_string->GetChars();
   String::WriteToFlat(*prefix, dest, start, end);
 
-  while (c0_ != '"') {
+  while (c0_ != '\x22') {
     // Check for control character (0x00-0x1f) or unterminated string (<0).
     if (c0_ < 0x20) return Handle<String>::null();
     if (count >= length) {
       // We need to create a longer sequential string for the result.
       return SlowScanJsonString<StringType, SinkChar>(seq_string, 0, count);
     }
-    if (c0_ != '\\') {
+    if (c0_ != '\x5c') {
       // If the sink can contain UC16 characters, or source_ contains only
       // ASCII characters, there's no need to test whether we can store the
       // character. Otherwise check whether the UC16 source character can fit
@@ -643,27 +643,27 @@ Handle<String> JsonParser<seq_ascii>::SlowScanJsonString(
     } else {
       Advance();  // Advance past the \.
       switch (c0_) {
-        case '"':
-        case '\\':
-        case '/':
+        case '\x22':
+        case '\x5c':
+        case '\x2f':
           SeqStringSet(seq_string, count++, c0_);
           break;
-        case 'b':
+        case '\x62':
           SeqStringSet(seq_string, count++, '\x08');
           break;
-        case 'f':
+        case '\x66':
           SeqStringSet(seq_string, count++, '\x0c');
           break;
-        case 'n':
+        case '\x6e':
           SeqStringSet(seq_string, count++, '\x0a');
           break;
-        case 'r':
+        case '\x72':
           SeqStringSet(seq_string, count++, '\x0d');
           break;
-        case 't':
+        case '\x74':
           SeqStringSet(seq_string, count++, '\x09');
           break;
-        case 'u': {
+        case '\x75': {
           uc32 value = 0;
           for (int i = 0; i < 4; i++) {
             Advance();
@@ -693,7 +693,7 @@ Handle<String> JsonParser<seq_ascii>::SlowScanJsonString(
     }
   }
 
-  DCHECK_EQ('"', c0_);
+  DCHECK_EQ('\x22', c0_);
   // Advance past the last '"'.
   AdvanceSkipWhitespace();
 
@@ -705,9 +705,9 @@ Handle<String> JsonParser<seq_ascii>::SlowScanJsonString(
 template <bool seq_ascii>
 template <bool is_internalized>
 Handle<String> JsonParser<seq_ascii>::ScanJsonString() {
-  DCHECK_EQ('"', c0_);
+  DCHECK_EQ('\x22', c0_);
   Advance();
-  if (c0_ == '"') {
+  if (c0_ == '\x22') {
     AdvanceSkipWhitespace();
     return factory()->empty_string();
   }
@@ -720,7 +720,7 @@ Handle<String> JsonParser<seq_ascii>::ScanJsonString() {
     int position = position_;
     uc32 c0 = c0_;
     do {
-      if (c0 == '\\') {
+      if (c0 == '\x5c') {
         c0_ = c0;
         int beg_pos = position_;
         position_ = position;
@@ -743,7 +743,7 @@ Handle<String> JsonParser<seq_ascii>::ScanJsonString() {
       position++;
       if (position >= source_length_) return Handle<String>::null();
       c0 = seq_source_->SeqOneByteStringGet(position);
-    } while (c0 != '"');
+    } while (c0 != '\x22');
     int length = position - position_;
     uint32_t hash = (length <= String::kMaxHashCalcLength)
                         ? StringHasher::GetHashCore(running_hash)
@@ -787,7 +787,7 @@ Handle<String> JsonParser<seq_ascii>::ScanJsonString() {
   do {
     // Check for control character (0x00-0x1f) or unterminated string (<0).
     if (c0_ < 0x20) return Handle<String>::null();
-    if (c0_ != '\\') {
+    if (c0_ != '\x5c') {
       if (seq_ascii || c0_ <= String::kMaxOneByteCharCode) {
         Advance();
       } else {
@@ -800,14 +800,14 @@ Handle<String> JsonParser<seq_ascii>::ScanJsonString() {
                                                            beg_pos,
                                                            position_);
     }
-  } while (c0_ != '"');
+  } while (c0_ != '\x22');
   int length = position_ - beg_pos;
   Handle<String> result =
       factory()->NewRawOneByteString(length, pretenure_).ToHandleChecked();
   uint8_t* dest = SeqOneByteString::cast(*result)->GetChars();
   String::WriteToFlat(*source_, dest, beg_pos, position_);
 
-  DCHECK_EQ('"', c0_);
+  DCHECK_EQ('\x22', c0_);
   // Advance past the last '"'.
   AdvanceSkipWhitespace();
   return result;

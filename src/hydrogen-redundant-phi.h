@@ -16,7 +16,7 @@ namespace internal {
 class HRedundantPhiEliminationPhase : public HPhase {
  public:
   explicit HRedundantPhiEliminationPhase(HGraph* graph)
-      : HPhase("H_Redundant phi elimination", graph) { }
+      : HPhase("\x48\x5f\x52\x65\x64\x75\x6e\x64\x61\x6e\x74\x20\x70\x68\x69\x20\x65\x6c\x69\x6d\x69\x6e\x61\x74\x69\x6f\x6e", graph) { }
 
   void Run();
   void ProcessBlock(HBasicBlock* block);

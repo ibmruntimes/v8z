@@ -13,14 +13,14 @@ bool HEscapeAnalysisPhase::HasNoEscapingUses(HValue* value, int size) {
     HValue* use = it.value();
     if (use->HasEscapingOperandAt(it.index())) {
       if (FLAG_trace_escape_analysis) {
-        PrintF("#%d (%s) escapes through #%d (%s) @%d\n", value->id(),
+        PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x65\x73\x63\x61\x70\x65\x73\x20\x74\x68\x72\x6f\x75\x67\x68\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x40\x6c\x84\xa", value->id(),
                value->Mnemonic(), use->id(), use->Mnemonic(), it.index());
       }
       return false;
     }
     if (use->HasOutOfBoundsAccess(size)) {
       if (FLAG_trace_escape_analysis) {
-        PrintF("#%d (%s) out of bounds at #%d (%s) @%d\n", value->id(),
+        PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x6f\x75\x74\x20\x6f\x66\x20\x62\x6f\x75\x6e\x64\x73\x20\x61\x74\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x40\x6c\x84\xa", value->id(),
                value->Mnemonic(), use->id(), use->Mnemonic(), it.index());
       }
       return false;
@@ -28,7 +28,7 @@ bool HEscapeAnalysisPhase::HasNoEscapingUses(HValue* value, int size) {
     int redefined_index = use->RedefinedOperandIndex();
     if (redefined_index == it.index() && !HasNoEscapingUses(use, size)) {
       if (FLAG_trace_escape_analysis) {
-        PrintF("#%d (%s) escapes redefinition #%d (%s) @%d\n", value->id(),
+        PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x65\x73\x63\x61\x70\x65\x73\x20\x72\x65\x64\x65\x66\x69\x6e\x69\x74\x69\x6f\x6e\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x40\x6c\x84\xa", value->id(),
                value->Mnemonic(), use->id(), use->Mnemonic(), it.index());
       }
       return false;
@@ -50,7 +50,7 @@ void HEscapeAnalysisPhase::CollectCapturedValues() {
       int size_in_bytes = allocate->size()->GetInteger32Constant();
       if (HasNoEscapingUses(instr, size_in_bytes)) {
         if (FLAG_trace_escape_analysis) {
-          PrintF("#%d (%s) is being captured\n", instr->id(),
+          PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x69\x73\x20\x62\x65\x69\x6e\x67\x20\x63\x61\x70\x74\x75\x72\x65\x64\xa", instr->id(),
                  instr->Mnemonic());
         }
         captured_.Add(instr, zone());
@@ -173,7 +173,7 @@ void HEscapeAnalysisPhase::AnalyzeDataFlow(HInstruction* allocate) {
     // Skip blocks that are not dominated by the captured allocation.
     if (!allocate_block->Dominates(block) && allocate_block != block) continue;
     if (FLAG_trace_escape_analysis) {
-      PrintF("Analyzing data-flow in B%d\n", block->block_id());
+      PrintF("\x41\x6e\x61\x6c\x79\x7a\x69\x6e\x67\x20\x64\x61\x74\x61\x2d\x66\x6c\x6f\x77\x20\x69\x6e\x20\x42\x6c\x84\xa", block->block_id());
     }
 
     // Go through all instructions of the current block.
@@ -194,7 +194,7 @@ void HEscapeAnalysisPhase::AnalyzeDataFlow(HInstruction* allocate) {
             NewLoadReplacement(load, state->OperandAt(index));
           load->DeleteAndReplaceWith(replacement);
           if (FLAG_trace_escape_analysis) {
-            PrintF("Replacing load #%d with #%d (%s)\n", load->id(),
+            PrintF("\x52\x65\x70\x6c\x61\x63\x69\x6e\x67\x20\x6c\x6f\x61\x64\x20\x23\x6c\x84\x20\x77\x69\x74\x68\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\xa", load->id(),
                    replacement->id(), replacement->Mnemonic());
           }
           break;
@@ -214,8 +214,8 @@ void HEscapeAnalysisPhase::AnalyzeDataFlow(HInstruction* allocate) {
           }
           store->DeleteAndReplaceWith(store->ActualValue());
           if (FLAG_trace_escape_analysis) {
-            PrintF("Replacing store #%d%s\n", instr->id(),
-                   store->has_transition() ? " (with transition)" : "");
+            PrintF("\x52\x65\x70\x6c\x61\x63\x69\x6e\x67\x20\x73\x74\x6f\x72\x65\x20\x23\x6c\x84\x6c\xa2\xa", instr->id(),
+                   store->has_transition() ? "\x20\x28\x77\x69\x74\x68\x20\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x29" : "");
           }
           break;
         }

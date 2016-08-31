@@ -42,14 +42,14 @@ typedef uint16_t RepTypeUnion;
 
 
 inline void RenderRepTypeUnion(char* buf, RepTypeUnion info) {
-  base::OS::SNPrintF(buf, REP_TYPE_STRLEN, "{%s%s%s%s%s %s%s%s%s%s%s%s}",
-                     (info & rBit) ? "k" : " ", (info & rWord32) ? "w" : " ",
-                     (info & rWord64) ? "q" : " ",
-                     (info & rFloat64) ? "f" : " ",
-                     (info & rTagged) ? "t" : " ", (info & tBool) ? "Z" : " ",
-                     (info & tInt32) ? "I" : " ", (info & tUint32) ? "U" : " ",
-                     (info & tInt64) ? "L" : " ", (info & tUint64) ? "J" : " ",
-                     (info & tNumber) ? "N" : " ", (info & tAny) ? "*" : " ");
+  base::OS::SNPrintF(buf, REP_TYPE_STRLEN, "\x7b\x6c\xa2\x6c\xa2\x6c\xa2\x6c\xa2\x6c\xa2\x20\x6c\xa2\x6c\xa2\x6c\xa2\x6c\xa2\x6c\xa2\x6c\xa2\x6c\xa2\x7d",
+                     (info & rBit) ? "\x6b" : "\x20", (info & rWord32) ? "\x77" : "\x20",
+                     (info & rWord64) ? "\x71" : "\x20",
+                     (info & rFloat64) ? "\x66" : "\x20",
+                     (info & rTagged) ? "\x74" : "\x20", (info & tBool) ? "\x5a" : "\x20",
+                     (info & tInt32) ? "\x49" : "\x20", (info & tUint32) ? "\x55" : "\x20",
+                     (info & tInt64) ? "\x4c" : "\x20", (info & tUint64) ? "\x4a" : "\x20",
+                     (info & tNumber) ? "\x4e" : "\x20", (info & tAny) ? "\x2a" : "\x20");
 }
 
 
@@ -397,8 +397,8 @@ class RepresentationChanger {
       RenderRepTypeUnion(buf1, output_type);
       RenderRepTypeUnion(buf2, use);
       V8_Fatal(__FILE__, __LINE__,
-               "RepresentationChangerError: node #%d:%s of rep"
-               "%s cannot be changed to rep%s",
+               "\x52\x65\x70\x72\x65\x73\x65\x6e\x74\x61\x74\x69\x6f\x6e\x43\x68\x61\x6e\x67\x65\x72\x45\x72\x72\x6f\x72\x3a\x20\x6e\x6f\x64\x65\x20\x23\x6c\x84\x3a\x6c\xa2\x20\x6f\x66\x20\x72\x65\x70"
+               "\x6c\xa2\x20\x63\x61\x6e\x6e\x6f\x74\x20\x62\x65\x20\x63\x68\x61\x6e\x67\x65\x64\x20\x74\x6f\x20\x72\x65\x70\x6c\xa2",
                node->id(), node->op()->mnemonic(), buf1, buf2);
     }
     return node;

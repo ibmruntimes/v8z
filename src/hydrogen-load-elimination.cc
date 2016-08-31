@@ -47,21 +47,21 @@ class HLoadEliminationTable : public ZoneObject {
     switch (instr->opcode()) {
       case HValue::kLoadNamedField: {
         HLoadNamedField* l = HLoadNamedField::cast(instr);
-        TRACE((" process L%d field %d (o%d)\n",
+        TRACE(("\x20\x70\x72\x6f\x63\x65\x73\x73\x20\x4c\x6c\x84\x20\x66\x69\x65\x6c\x64\x20\x6c\x84\x20\x28\x6f\x6c\x84\x29\xa",
                instr->id(),
                FieldOf(l->access()),
                l->object()->ActualValue()->id()));
         HValue* result = load(l);
         if (result != instr && l->CanBeReplacedWith(result)) {
           // The load can be replaced with a previous load or a value.
-          TRACE(("  replace L%d -> v%d\n", instr->id(), result->id()));
+          TRACE(("\x20\x20\x72\x65\x70\x6c\x61\x63\x65\x20\x4c\x6c\x84\x20\x2d\x3e\x20\x76\x6c\x84\xa", instr->id(), result->id()));
           instr->DeleteAndReplaceWith(result);
         }
         break;
       }
       case HValue::kStoreNamedField: {
         HStoreNamedField* s = HStoreNamedField::cast(instr);
-        TRACE((" process S%d field %d (o%d) = v%d\n",
+        TRACE(("\x20\x70\x72\x6f\x63\x65\x73\x73\x20\x53\x6c\x84\x20\x66\x69\x65\x6c\x64\x20\x6c\x84\x20\x28\x6f\x6c\x84\x29\x20\x3d\x20\x76\x6c\x84\xa",
                instr->id(),
                FieldOf(s->access()),
                s->object()->ActualValue()->id(),
@@ -69,7 +69,7 @@ class HLoadEliminationTable : public ZoneObject {
         HValue* result = store(s);
         if (result == NULL) {
           // The store is redundant. Remove it.
-          TRACE(("  remove S%d\n", instr->id()));
+          TRACE(("\x20\x20\x72\x65\x6d\x6f\x76\x65\x20\x53\x6c\x84\xa", instr->id()));
           instr->DeleteAndReplaceWith(NULL);
         }
         break;
@@ -83,25 +83,25 @@ class HLoadEliminationTable : public ZoneObject {
       }
       default: {
         if (instr->CheckChangesFlag(kInobjectFields)) {
-          TRACE((" kill-all i%d\n", instr->id()));
+          TRACE(("\x20\x6b\x69\x6c\x6c\x2d\x61\x6c\x6c\x20\x69\x6c\x84\xa", instr->id()));
           Kill();
           break;
         }
         if (instr->CheckChangesFlag(kMaps)) {
-          TRACE((" kill-maps i%d\n", instr->id()));
+          TRACE(("\x20\x6b\x69\x6c\x6c\x2d\x6d\x61\x70\x73\x20\x69\x6c\x84\xa", instr->id()));
           KillOffset(JSObject::kMapOffset);
         }
         if (instr->CheckChangesFlag(kElementsKind)) {
-          TRACE((" kill-elements-kind i%d\n", instr->id()));
+          TRACE(("\x20\x6b\x69\x6c\x6c\x2d\x65\x6c\x65\x6d\x65\x6e\x74\x73\x2d\x6b\x69\x6e\x64\x20\x69\x6c\x84\xa", instr->id()));
           KillOffset(JSObject::kMapOffset);
           KillOffset(JSObject::kElementsOffset);
         }
         if (instr->CheckChangesFlag(kElementsPointer)) {
-          TRACE((" kill-elements i%d\n", instr->id()));
+          TRACE(("\x20\x6b\x69\x6c\x6c\x2d\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x69\x6c\x84\xa", instr->id()));
           KillOffset(JSObject::kElementsOffset);
         }
         if (instr->CheckChangesFlag(kOsrEntries)) {
-          TRACE((" kill-osr i%d\n", instr->id()));
+          TRACE(("\x20\x6b\x69\x6c\x6c\x2d\x6f\x73\x72\x20\x69\x6c\x84\xa", instr->id()));
           Kill();
         }
       }
@@ -150,7 +150,7 @@ class HLoadEliminationTable : public ZoneObject {
       copy->fields_[i] = fields_[i] == NULL ? NULL : fields_[i]->Copy(zone);
     }
     if (FLAG_trace_load_elimination) {
-      TRACE((" copy-to B%d\n", succ->block_id()));
+      TRACE(("\x20\x63\x6f\x70\x79\x2d\x74\x6f\x20\x42\x6c\x84\xa", succ->block_id()));
       copy->Print();
     }
     return copy;
@@ -185,7 +185,7 @@ class HLoadEliminationTable : public ZoneObject {
       }
     }
     if (FLAG_trace_load_elimination) {
-      TRACE((" merge-to B%d\n", succ->block_id()));
+      TRACE(("\x20\x6d\x65\x72\x67\x65\x2d\x74\x6f\x20\x42\x6c\x84\xa", succ->block_id()));
       Print();
     }
     return this;
@@ -229,7 +229,7 @@ class HLoadEliminationTable : public ZoneObject {
   HValue* store(HStoreNamedField* instr) {
     if (instr->access().IsInobject() &&
         !instr->access().existing_inobject_property()) {
-      TRACE(("  skipping non existing property initialization store\n"));
+      TRACE(("\x20\x20\x73\x6b\x69\x70\x70\x69\x6e\x67\x20\x6e\x6f\x6e\x20\x65\x78\x69\x73\x74\x69\x6e\x67\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x20\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x61\x74\x69\x6f\x6e\x20\x73\x74\x6f\x72\x65\xa"));
       return instr;
     }
 
@@ -416,13 +416,13 @@ class HLoadEliminationTable : public ZoneObject {
   // Print this table to stdout.
   void Print() {
     for (int i = 0; i < fields_.length(); i++) {
-      PrintF("  field %d: ", i);
+      PrintF("\x20\x20\x66\x69\x65\x6c\x64\x20\x6c\x84\x3a\x20", i);
       for (HFieldApproximation* a = fields_[i]; a != NULL; a = a->next_) {
-        PrintF("[o%d =", a->object_->id());
-        if (a->last_value_ != NULL) PrintF(" v%d", a->last_value_->id());
-        PrintF("] ");
+        PrintF("\x5b\x6f\x6c\x84\x20\x3d", a->object_->id());
+        if (a->last_value_ != NULL) PrintF("\x20\x76\x6c\x84", a->last_value_->id());
+        PrintF("\x5d\x20");
       }
-      PrintF("\n");
+      PrintF("\xa");
     }
   }
 

@@ -38,7 +38,7 @@ namespace internal {
 
 #if V8_OS_LINUX
 
-const char PerfJitLogger::kFilenameFormatString[] = "perfjit-%d.dump";
+const char PerfJitLogger::kFilenameFormatString[] = "\x70\x65\x72\x66\x6a\x69\x74\x2d\x6c\x84\x2e\x64\x75\x6d\x70";
 
 // Extra padding for the PID in the filename
 const int PerfJitLogger::kFilenameBufferPadding = 16;
@@ -46,7 +46,7 @@ const int PerfJitLogger::kFilenameBufferPadding = 16;
 
 PerfJitLogger::PerfJitLogger() : perf_output_handle_(NULL), code_index_(0) {
   if (!base::TimeTicks::KernelTimestampAvailable()) {
-    FATAL("Cannot profile with perf JIT - kernel timestamps not available.");
+    FATAL("\x43\x61\x6e\x6e\x6f\x74\x20\x70\x72\x6f\x66\x69\x6c\x65\x20\x77\x69\x74\x68\x20\x70\x65\x72\x66\x20\x4a\x49\x54\x20\x2d\x20\x6b\x65\x72\x6e\x65\x6c\x20\x74\x69\x6d\x65\x73\x74\x61\x6d\x70\x73\x20\x6e\x6f\x74\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x2e");
   }
 
   // Open the perf JIT dump file.
@@ -85,7 +85,7 @@ void PerfJitLogger::LogRecordedBuffer(Code* code, SharedFunctionInfo*,
   uint8_t* code_pointer = reinterpret_cast<uint8_t*>(code->instruction_start());
   uint32_t code_size = code->instruction_size();
 
-  static const char string_terminator[] = "\0";
+  static const char string_terminator[] = "\x0";
 
   jr_code_load code_load;
   code_load.p.id = JIT_CODE_LOAD;

@@ -48,8 +48,8 @@ for (int i = 0; i < listeners_.length(); ++i) { \
 // ComputeMarker must only be used when SharedFunctionInfo is known.
 static const char* ComputeMarker(Code* code) {
   switch (code->kind()) {
-    case Code::FUNCTION: return code->optimizable() ? "~" : "";
-    case Code::OPTIMIZED_FUNCTION: return "*";
+    case Code::FUNCTION: return code->optimizable() ? "\x7e" : "";
+    case Code::OPTIMIZED_FUNCTION: return "\x2a";
     default: return "";
   }
 }
@@ -66,7 +66,7 @@ class CodeEventLogger::NameBuffer {
   void Init(Logger::LogEventsAndTags tag) {
     Reset();
     AppendBytes(kLogEventsNames[tag]);
-    AppendByte(':');
+    AppendByte('\x3a');
   }
 
   void AppendName(Name* name) {
@@ -74,15 +74,15 @@ class CodeEventLogger::NameBuffer {
       AppendString(String::cast(name));
     } else {
       Symbol* symbol = Symbol::cast(name);
-      AppendBytes("symbol(");
+      AppendBytes("\x73\x79\x6d\x62\x6f\x6c\x28");
       if (!symbol->name()->IsUndefined()) {
-        AppendBytes("\"");
+        AppendBytes("\x22");
         AppendString(String::cast(symbol->name()));
-        AppendBytes("\" ");
+        AppendBytes("\x22\x20");
       }
-      AppendBytes("hash ");
+      AppendBytes("\x68\x61\x73\x68\x20");
       AppendHex(symbol->Hash());
-      AppendByte(')');
+      AppendByte('\x29');
     }
   }
 
@@ -123,7 +123,7 @@ class CodeEventLogger::NameBuffer {
   void AppendInt(int n) {
     Vector<char> buffer(utf8_buffer_ + utf8_pos_,
                         kUtf8BufferSize - utf8_pos_);
-    int size = SNPrintF(buffer, "%d", n);
+    int size = SNPrintF(buffer, "\x6c\x84", n);
     if (size > 0 && utf8_pos_ + size <= kUtf8BufferSize) {
       utf8_pos_ += size;
     }
@@ -132,7 +132,7 @@ class CodeEventLogger::NameBuffer {
   void AppendHex(uint32_t n) {
     Vector<char> buffer(utf8_buffer_ + utf8_pos_,
                         kUtf8BufferSize - utf8_pos_);
-    int size = SNPrintF(buffer, "%x", n);
+    int size = SNPrintF(buffer, "\x6c\xa7", n);
     if (size > 0 && utf8_pos_ + size <= kUtf8BufferSize) {
       utf8_pos_ += size;
     }
@@ -194,15 +194,15 @@ void CodeEventLogger::CodeCreateEvent(Logger::LogEventsAndTags tag,
   name_buffer_->Init(tag);
   name_buffer_->AppendBytes(ComputeMarker(code));
   name_buffer_->AppendString(shared->DebugName());
-  name_buffer_->AppendByte(' ');
+  name_buffer_->AppendByte('\x20');
   if (source->IsString()) {
     name_buffer_->AppendString(String::cast(source));
   } else {
-    name_buffer_->AppendBytes("symbol(hash ");
+    name_buffer_->AppendBytes("\x73\x79\x6d\x62\x6f\x6c\x28\x68\x61\x73\x68\x20");
     name_buffer_->AppendHex(Name::cast(source)->Hash());
-    name_buffer_->AppendByte(')');
+    name_buffer_->AppendByte('\x29');
   }
-  name_buffer_->AppendByte(':');
+  name_buffer_->AppendByte('\x3a');
   name_buffer_->AppendInt(line);
   LogRecordedBuffer(code, shared, name_buffer_->get(), name_buffer_->size());
 }
@@ -251,7 +251,7 @@ class PerfBasicLogger : public CodeEventLogger {
   FILE* perf_output_handle_;
 };
 
-const char PerfBasicLogger::kFilenameFormatString[] = "/tmp/perf-%d.map";
+const char PerfBasicLogger::kFilenameFormatString[] = "\x2f\x74\x6d\x70\x2f\x70\x65\x72\x66\x2d\x6c\x84\x2e\x6d\x61\x70";
 // Extra space for the PID in the filename
 const int PerfBasicLogger::kFilenameBufferPadding = 16;
 
@@ -284,7 +284,7 @@ void PerfBasicLogger::LogRecordedBuffer(Code* code,
                                        int length) {
   DCHECK(code->instruction_start() == code->address() + Code::kHeaderSize);
 
-  base::OS::FPrint(perf_output_handle_, "%llx %x %.*s\n",
+  base::OS::FPrint(perf_output_handle_, "\x6c\x93\x93\xa7\x20\x6c\xa7\x20\x25\x2e\x2a\x73\xa",
                    reinterpret_cast<uint64_t>(code->instruction_start()),
                    code->instruction_size(), length, name);
 }
@@ -312,7 +312,7 @@ class LowLevelLogger : public CodeEventLogger {
 
   // Low-level profiling event structures.
   struct CodeCreateStruct {
-    static const char kTag = 'C';
+    static const char kTag = '\x43';
 
     int32_t name_size;
     Address code_address;
@@ -321,7 +321,7 @@ class LowLevelLogger : public CodeEventLogger {
 
 
   struct CodeMoveStruct {
-    static const char kTag = 'M';
+    static const char kTag = '\x4d';
 
     Address from_address;
     Address to_address;
@@ -329,21 +329,21 @@ class LowLevelLogger : public CodeEventLogger {
 
 
   struct CodeDeleteStruct {
-    static const char kTag = 'D';
+    static const char kTag = '\x44';
 
     Address address;
   };
 
 
   struct SnapshotPositionStruct {
-    static const char kTag = 'P';
+    static const char kTag = '\x50';
 
     Address address;
     int32_t position;
   };
 
 
-  static const char kCodeMovingGCTag = 'G';
+  static const char kCodeMovingGCTag = '\x47';
 
 
   // Extension added to V8 log file name to get the low-level log name.
@@ -366,7 +366,7 @@ class LowLevelLogger : public CodeEventLogger {
   FILE* ll_output_handle_;
 };
 
-const char LowLevelLogger::kLogExt[] = ".ll";
+const char LowLevelLogger::kLogExt[] = "\x2e\x6c\x6c";
 
 LowLevelLogger::LowLevelLogger(const char* name)
     : ll_output_handle_(NULL) {
@@ -391,25 +391,25 @@ LowLevelLogger::~LowLevelLogger() {
 
 void LowLevelLogger::LogCodeInfo() {
 #if V8_TARGET_ARCH_IA32
-  const char arch[] = "ia32";
+  const char arch[] = "\x69\x61\x33\x32";
 #elif V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_64_BIT
-  const char arch[] = "x64";
+  const char arch[] = "\x78\x36\x34";
 #elif V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT
-  const char arch[] = "x32";
+  const char arch[] = "\x78\x33\x32";
 #elif V8_TARGET_ARCH_ARM
-  const char arch[] = "arm";
+  const char arch[] = "\x61\x72\x6d";
 #elif V8_TARGET_ARCH_S390
-  const char arch[] = "s390";
+  const char arch[] = "\x73\x33\x39\x30";
 #elif V8_TARGET_ARCH_PPC
-  const char arch[] = "ppc";
+  const char arch[] = "\x70\x70\x63";
 #elif V8_TARGET_ARCH_MIPS
-  const char arch[] = "mips";
+  const char arch[] = "\x6d\x69\x70\x73";
 #elif V8_TARGET_ARCH_X87
-  const char arch[] = "x87";
+  const char arch[] = "\x78\x38\x37";
 #elif V8_TARGET_ARCH_ARM64
-  const char arch[] = "arm64";
+  const char arch[] = "\x61\x72\x6d\x36\x34";
 #else
-  const char arch[] = "unknown";
+  const char arch[] = "\x75\x6e\x6b\x6e\x6f\x77\x6e";
 #endif
   LogWriteBytes(arch, sizeof(arch));
 }
@@ -697,7 +697,7 @@ class Ticker: public Sampler {
 // Profiler implementation.
 //
 Profiler::Profiler(Isolate* isolate)
-    : base::Thread(Options("v8:Profiler")),
+    : base::Thread(Options("\x76\x38\x3a\x50\x72\x6f\x66\x69\x6c\x65\x72")),
       isolate_(isolate),
       head_(0),
       tail_(0),
@@ -747,7 +747,7 @@ void Profiler::Disengage() {
   Insert(&sample);
   Join();
 
-  LOG(isolate_, UncheckedStringEvent("profiler", "end"));
+  LOG(isolate_, UncheckedStringEvent("\x70\x72\x6f\x66\x69\x6c\x65\x72", "\x65\x6e\x64"));
 }
 
 
@@ -806,7 +806,7 @@ bool Logger::hasCodeEventListener(CodeEventListener* listener) {
 void Logger::ProfilerBeginEvent() {
   if (!log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("profiler,\"begin\",%d", kSamplingIntervalMs);
+  msg.Append("\x70\x72\x6f\x66\x69\x6c\x65\x72\x2c\x22\x62\x65\x67\x69\x6e\x22\x2c\x6c\x84", kSamplingIntervalMs);
   msg.WriteToLogFile();
 }
 
@@ -819,7 +819,7 @@ void Logger::StringEvent(const char* name, const char* value) {
 void Logger::UncheckedStringEvent(const char* name, const char* value) {
   if (!log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,\"%s\"", name, value);
+  msg.Append("\x6c\xa2\x2c\x22\x6c\xa2\x22", name, value);
   msg.WriteToLogFile();
 }
 
@@ -837,7 +837,7 @@ void Logger::IntPtrTEvent(const char* name, intptr_t value) {
 void Logger::UncheckedIntEvent(const char* name, int value) {
   if (!log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,%d", name, value);
+  msg.Append("\x6c\xa2\x2c\x6c\x84", name, value);
   msg.WriteToLogFile();
 }
 
@@ -845,7 +845,7 @@ void Logger::UncheckedIntEvent(const char* name, int value) {
 void Logger::UncheckedIntPtrTEvent(const char* name, intptr_t value) {
   if (!log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,%" V8_PTR_PREFIX "d", name, value);
+  msg.Append("\x6c\xa2\x2c\x25" V8_PTR_PREFIX "\x64", name, value);
   msg.WriteToLogFile();
 }
 
@@ -853,7 +853,7 @@ void Logger::UncheckedIntPtrTEvent(const char* name, intptr_t value) {
 void Logger::HandleEvent(const char* name, Object** location) {
   if (!log_->IsEnabled() || !FLAG_log_handles) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,0x%" V8PRIxPTR, name, location);
+  msg.Append("\x6c\xa2\x2c\x30\x78\x25" V8PRIxPTR, name, location);
   msg.WriteToLogFile();
 }
 
@@ -877,21 +877,21 @@ void Logger::ApiNamedSecurityCheck(Object* key) {
   if (key->IsString()) {
     SmartArrayPointer<char> str =
         String::cast(key)->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-    ApiEvent("api,check-security,\"%s\"", str.get());
+    ApiEvent("\x61\x70\x69\x2c\x63\x68\x65\x63\x6b\x2d\x73\x65\x63\x75\x72\x69\x74\x79\x2c\x22\x6c\xa2\x22", str.get());
   } else if (key->IsSymbol()) {
     Symbol* symbol = Symbol::cast(key);
     if (symbol->name()->IsUndefined()) {
-      ApiEvent("api,check-security,symbol(hash %x)", Symbol::cast(key)->Hash());
+      ApiEvent("\x61\x70\x69\x2c\x63\x68\x65\x63\x6b\x2d\x73\x65\x63\x75\x72\x69\x74\x79\x2c\x73\x79\x6d\x62\x6f\x6c\x28\x68\x61\x73\x68\x20\x6c\xa7\x29", Symbol::cast(key)->Hash());
     } else {
       SmartArrayPointer<char> str = String::cast(symbol->name())->ToCString(
           DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-      ApiEvent("api,check-security,symbol(\"%s\" hash %x)", str.get(),
+      ApiEvent("\x61\x70\x69\x2c\x63\x68\x65\x63\x6b\x2d\x73\x65\x63\x75\x72\x69\x74\x79\x2c\x73\x79\x6d\x62\x6f\x6c\x28\x22\x6c\xa2\x22\x20\x68\x61\x73\x68\x20\x6c\xa7\x29", str.get(),
                Symbol::cast(key)->Hash());
     }
   } else if (key->IsUndefined()) {
-    ApiEvent("api,check-security,undefined");
+    ApiEvent("\x61\x70\x69\x2c\x63\x68\x65\x63\x6b\x2d\x73\x65\x63\x75\x72\x69\x74\x79\x2c\x75\x6e\x64\x65\x66\x69\x6e\x65\x64");
   } else {
-    ApiEvent("api,check-security,['no-name']");
+    ApiEvent("\x61\x70\x69\x2c\x63\x68\x65\x63\x6b\x2d\x73\x65\x63\x75\x72\x69\x74\x79\x2c\x5b\x27\x6e\x6f\x2d\x6e\x61\x6d\x65\x27\x5d");
   }
 }
 
@@ -901,7 +901,7 @@ void Logger::SharedLibraryEvent(const std::string& library_path,
                                 uintptr_t end) {
   if (!log_->IsEnabled() || !FLAG_prof) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("shared-library,\"%s\",0x%08" V8PRIxPTR ",0x%08" V8PRIxPTR,
+  msg.Append("\x73\x68\x61\x72\x65\x64\x2d\x6c\x69\x62\x72\x61\x72\x79\x2c\x22\x6c\xa2\x22\x2c\x30\x78\x25\x30\x38" V8PRIxPTR "\x2c\x30\x78\x25\x30\x38" V8PRIxPTR,
              library_path.c_str(), start, end);
   msg.WriteToLogFile();
 }
@@ -912,7 +912,7 @@ void Logger::CodeDeoptEvent(Code* code) {
   DCHECK(FLAG_log_internal_timer_events);
   Log::MessageBuilder msg(log_);
   int since_epoch = static_cast<int>(timer_.Elapsed().InMicroseconds());
-  msg.Append("code-deopt,%ld,%d", since_epoch, code->CodeSize());
+  msg.Append("\x63\x6f\x64\x65\x2d\x64\x65\x6f\x70\x74\x2c\x6c\x93\x84\x2c\x6c\x84", since_epoch, code->CodeSize());
   msg.WriteToLogFile();
 }
 
@@ -922,7 +922,7 @@ void Logger::CurrentTimeEvent() {
   DCHECK(FLAG_log_internal_timer_events);
   Log::MessageBuilder msg(log_);
   int since_epoch = static_cast<int>(timer_.Elapsed().InMicroseconds());
-  msg.Append("current-time,%ld", since_epoch);
+  msg.Append("\x63\x75\x72\x72\x65\x6e\x74\x2d\x74\x69\x6d\x65\x2c\x6c\x93\x84", since_epoch);
   msg.WriteToLogFile();
 }
 
@@ -932,8 +932,8 @@ void Logger::TimerEvent(Logger::StartEnd se, const char* name) {
   DCHECK(FLAG_log_internal_timer_events);
   Log::MessageBuilder msg(log_);
   int since_epoch = static_cast<int>(timer_.Elapsed().InMicroseconds());
-  const char* format = (se == START) ? "timer-event-start,\"%s\",%ld"
-                                     : "timer-event-end,\"%s\",%ld";
+  const char* format = (se == START) ? "\x74\x69\x6d\x65\x72\x2d\x65\x76\x65\x6e\x74\x2d\x73\x74\x61\x72\x74\x2c\x22\x6c\xa2\x22\x2c\x6c\x93\x84"
+                                     : "\x74\x69\x6d\x65\x72\x2d\x65\x76\x65\x6e\x74\x2d\x65\x6e\x64\x2c\x22\x6c\xa2\x22\x2c\x6c\x93\x84";
   msg.Append(format, name, since_epoch);
   msg.WriteToLogFile();
 }
@@ -982,40 +982,40 @@ void Logger::LogRegExpSource(Handle<JSRegExp> regexp) {
   Log::MessageBuilder msg(log_);
 
   Handle<Object> source = Object::GetProperty(
-      isolate_, regexp, "source").ToHandleChecked();
+      isolate_, regexp, "\x73\x6f\x75\x72\x63\x65").ToHandleChecked();
   if (!source->IsString()) {
-    msg.Append("no source");
+    msg.Append("\x6e\x6f\x20\x73\x6f\x75\x72\x63\x65");
     return;
   }
 
   switch (regexp->TypeTag()) {
     case JSRegExp::ATOM:
-      msg.Append('a');
+      msg.Append('\x61');
       break;
     default:
       break;
   }
-  msg.Append('/');
+  msg.Append('\x2f');
   msg.AppendDetailed(*Handle<String>::cast(source), false);
-  msg.Append('/');
+  msg.Append('\x2f');
 
   // global flag
   Handle<Object> global = Object::GetProperty(
-      isolate_, regexp, "global").ToHandleChecked();
+      isolate_, regexp, "\x67\x6c\x6f\x62\x61\x6c").ToHandleChecked();
   if (global->IsTrue()) {
-    msg.Append('g');
+    msg.Append('\x67');
   }
   // ignorecase flag
   Handle<Object> ignorecase = Object::GetProperty(
-      isolate_, regexp, "ignoreCase").ToHandleChecked();
+      isolate_, regexp, "\x69\x67\x6e\x6f\x72\x65\x43\x61\x73\x65").ToHandleChecked();
   if (ignorecase->IsTrue()) {
-    msg.Append('i');
+    msg.Append('\x69');
   }
   // multiline flag
   Handle<Object> multiline = Object::GetProperty(
-      isolate_, regexp, "multiline").ToHandleChecked();
+      isolate_, regexp, "\x6d\x75\x6c\x74\x69\x6c\x69\x6e\x65").ToHandleChecked();
   if (multiline->IsTrue()) {
-    msg.Append('m');
+    msg.Append('\x6d');
   }
 
   msg.WriteToLogFile();
@@ -1025,16 +1025,16 @@ void Logger::LogRegExpSource(Handle<JSRegExp> regexp) {
 void Logger::RegExpCompileEvent(Handle<JSRegExp> regexp, bool in_cache) {
   if (!log_->IsEnabled() || !FLAG_log_regexp) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("regexp-compile,");
+  msg.Append("\x72\x65\x67\x65\x78\x70\x2d\x63\x6f\x6d\x70\x69\x6c\x65\x2c");
   LogRegExpSource(regexp);
-  msg.Append(in_cache ? ",hit" : ",miss");
+  msg.Append(in_cache ? "\x2c\x68\x69\x74" : "\x2c\x6d\x69\x73\x73");
   msg.WriteToLogFile();
 }
 
 
 void Logger::ApiIndexedSecurityCheck(uint32_t index) {
   if (!log_->IsEnabled() || !FLAG_log_api) return;
-  ApiEvent("api,check-security,%u", index);
+  ApiEvent("\x61\x70\x69\x2c\x63\x68\x65\x63\x6b\x2d\x73\x65\x63\x75\x72\x69\x74\x79\x2c\x6c\xa4", index);
 }
 
 
@@ -1049,17 +1049,17 @@ void Logger::ApiNamedPropertyAccess(const char* tag,
   if (name->IsString()) {
     SmartArrayPointer<char> property_name =
         String::cast(name)->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-    ApiEvent("api,%s,\"%s\",\"%s\"", tag, class_name.get(),
+    ApiEvent("\x61\x70\x69\x2c\x6c\xa2\x2c\x22\x6c\xa2\x22\x2c\x22\x6c\xa2\x22", tag, class_name.get(),
              property_name.get());
   } else {
     Symbol* symbol = Symbol::cast(name);
     uint32_t hash = symbol->Hash();
     if (symbol->name()->IsUndefined()) {
-      ApiEvent("api,%s,\"%s\",symbol(hash %x)", tag, class_name.get(), hash);
+      ApiEvent("\x61\x70\x69\x2c\x6c\xa2\x2c\x22\x6c\xa2\x22\x2c\x73\x79\x6d\x62\x6f\x6c\x28\x68\x61\x73\x68\x20\x6c\xa7\x29", tag, class_name.get(), hash);
     } else {
       SmartArrayPointer<char> str = String::cast(symbol->name())->ToCString(
           DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-      ApiEvent("api,%s,\"%s\",symbol(\"%s\" hash %x)", tag, class_name.get(),
+      ApiEvent("\x61\x70\x69\x2c\x6c\xa2\x2c\x22\x6c\xa2\x22\x2c\x73\x79\x6d\x62\x6f\x6c\x28\x22\x6c\xa2\x22\x20\x68\x61\x73\x68\x20\x6c\xa7\x29", tag, class_name.get(),
                str.get(), hash);
     }
   }
@@ -1072,7 +1072,7 @@ void Logger::ApiIndexedPropertyAccess(const char* tag,
   String* class_name_obj = holder->class_name();
   SmartArrayPointer<char> class_name =
       class_name_obj->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-  ApiEvent("api,%s,\"%s\",%u", tag, class_name.get(), index);
+  ApiEvent("\x61\x70\x69\x2c\x6c\xa2\x2c\x22\x6c\xa2\x22\x2c\x6c\xa4", tag, class_name.get(), index);
 }
 
 
@@ -1081,20 +1081,20 @@ void Logger::ApiObjectAccess(const char* tag, JSObject* object) {
   String* class_name_obj = object->class_name();
   SmartArrayPointer<char> class_name =
       class_name_obj->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-  ApiEvent("api,%s,\"%s\"", tag, class_name.get());
+  ApiEvent("\x61\x70\x69\x2c\x6c\xa2\x2c\x22\x6c\xa2\x22", tag, class_name.get());
 }
 
 
 void Logger::ApiEntryCall(const char* name) {
   if (!log_->IsEnabled() || !FLAG_log_api) return;
-  ApiEvent("api,%s", name);
+  ApiEvent("\x61\x70\x69\x2c\x6c\xa2", name);
 }
 
 
 void Logger::NewEvent(const char* name, void* object, size_t size) {
   if (!log_->IsEnabled() || !FLAG_log) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("new,%s,0x%" V8PRIxPTR ",%u", name, object,
+  msg.Append("\x6e\x65\x77\x2c\x6c\xa2\x2c\x30\x78\x25" V8PRIxPTR "\x2c\x6c\xa4", name, object,
              static_cast<unsigned int>(size));
   msg.WriteToLogFile();
 }
@@ -1103,7 +1103,7 @@ void Logger::NewEvent(const char* name, void* object, size_t size) {
 void Logger::DeleteEvent(const char* name, void* object) {
   if (!log_->IsEnabled() || !FLAG_log) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("delete,%s,0x%" V8PRIxPTR, name, object);
+  msg.Append("\x64\x65\x6c\x65\x74\x65\x2c\x6c\xa2\x2c\x30\x78\x25" V8PRIxPTR, name, object);
   msg.WriteToLogFile();
 }
 
@@ -1122,22 +1122,22 @@ void Logger::CallbackEventInternal(const char* prefix, Name* name,
                                    Address entry_point) {
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,%s,-2,",
+  msg.Append("\x6c\xa2\x2c\x6c\xa2\x2c\x2d\x32\x2c",
              kLogEventsNames[CODE_CREATION_EVENT],
              kLogEventsNames[CALLBACK_TAG]);
   msg.AppendAddress(entry_point);
   if (name->IsString()) {
     SmartArrayPointer<char> str =
         String::cast(name)->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-    msg.Append(",1,\"%s%s\"", prefix, str.get());
+    msg.Append("\x2c\x31\x2c\x22\x6c\xa2\x6c\xa2\x22", prefix, str.get());
   } else {
     Symbol* symbol = Symbol::cast(name);
     if (symbol->name()->IsUndefined()) {
-      msg.Append(",1,symbol(hash %x)", prefix, symbol->Hash());
+      msg.Append("\x2c\x31\x2c\x73\x79\x6d\x62\x6f\x6c\x28\x68\x61\x73\x68\x20\x6c\xa7\x29", prefix, symbol->Hash());
     } else {
       SmartArrayPointer<char> str = String::cast(symbol->name())->ToCString(
           DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-      msg.Append(",1,symbol(\"%s\" hash %x)", prefix, str.get(),
+      msg.Append("\x2c\x31\x2c\x73\x79\x6d\x62\x6f\x6c\x28\x22\x6c\xa2\x22\x20\x68\x61\x73\x68\x20\x6c\xa7\x29", prefix, str.get(),
                  symbol->Hash());
     }
   }
@@ -1153,13 +1153,13 @@ void Logger::CallbackEvent(Name* name, Address entry_point) {
 
 void Logger::GetterCallbackEvent(Name* name, Address entry_point) {
   PROFILER_LOG(GetterCallbackEvent(name, entry_point));
-  CallbackEventInternal("get ", name, entry_point);
+  CallbackEventInternal("\x67\x65\x74\x20", name, entry_point);
 }
 
 
 void Logger::SetterCallbackEvent(Name* name, Address entry_point) {
   PROFILER_LOG(SetterCallbackEvent(name, entry_point));
-  CallbackEventInternal("set ", name, entry_point);
+  CallbackEventInternal("\x73\x65\x74\x20", name, entry_point);
 }
 
 
@@ -1167,12 +1167,12 @@ static void AppendCodeCreateHeader(Log::MessageBuilder* msg,
                                    Logger::LogEventsAndTags tag,
                                    Code* code) {
   DCHECK(msg);
-  msg->Append("%s,%s,%d,",
+  msg->Append("\x6c\xa2\x2c\x6c\xa2\x2c\x6c\x84\x2c",
               kLogEventsNames[Logger::CODE_CREATION_EVENT],
               kLogEventsNames[tag],
               code->kind());
   msg->AppendAddress(code->address());
-  msg->Append(",%d,", code->ExecutableSize());
+  msg->Append("\x2c\x6c\x84\x2c", code->ExecutableSize());
 }
 
 
@@ -1204,9 +1204,9 @@ void Logger::CodeCreateEvent(LogEventsAndTags tag,
   Log::MessageBuilder msg(log_);
   AppendCodeCreateHeader(&msg, tag, code);
   if (name->IsString()) {
-    msg.Append('"');
+    msg.Append('\x22');
     msg.AppendDetailed(String::cast(name), false);
-    msg.Append('"');
+    msg.Append('\x22');
   } else {
     msg.AppendSymbolName(Symbol::cast(name));
   }
@@ -1233,13 +1233,13 @@ void Logger::CodeCreateEvent(LogEventsAndTags tag,
   if (name->IsString()) {
     SmartArrayPointer<char> str =
         String::cast(name)->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-    msg.Append("\"%s\"", str.get());
+    msg.Append("\x22\x6c\xa2\x22", str.get());
   } else {
     msg.AppendSymbolName(Symbol::cast(name));
   }
-  msg.Append(',');
+  msg.Append('\x2c');
   msg.AppendAddress(shared->address());
-  msg.Append(",%s", ComputeMarker(code));
+  msg.Append("\x2c\x6c\xa2", ComputeMarker(code));
   msg.WriteToLogFile();
 }
 
@@ -1263,17 +1263,17 @@ void Logger::CodeCreateEvent(LogEventsAndTags tag,
   AppendCodeCreateHeader(&msg, tag, code);
   SmartArrayPointer<char> name =
       shared->DebugName()->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-  msg.Append("\"%s ", name.get());
+  msg.Append("\x22\x6c\xa2\x20", name.get());
   if (source->IsString()) {
     SmartArrayPointer<char> sourcestr =
        String::cast(source)->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-    msg.Append("%s", sourcestr.get());
+    msg.Append("\x6c\xa2", sourcestr.get());
   } else {
     msg.AppendSymbolName(Symbol::cast(source));
   }
-  msg.Append(":%d:%d\",", line, column);
+  msg.Append("\x3a\x6c\x84\x3a\x6c\x84\x22\x2c", line, column);
   msg.AppendAddress(shared->address());
-  msg.Append(",%s", ComputeMarker(code));
+  msg.Append("\x2c\x6c\xa2", ComputeMarker(code));
   msg.WriteToLogFile();
 }
 
@@ -1289,7 +1289,7 @@ void Logger::CodeCreateEvent(LogEventsAndTags tag,
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
   AppendCodeCreateHeader(&msg, tag, code);
-  msg.Append("\"args_count: %d\"", args_count);
+  msg.Append("\x22\x61\x72\x67\x73\x5f\x63\x6f\x75\x6e\x74\x3a\x20\x6c\x84\x22", args_count);
   msg.WriteToLogFile();
 }
 
@@ -1303,11 +1303,11 @@ void Logger::CodeDisableOptEvent(Code* code,
 
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,", kLogEventsNames[CODE_DISABLE_OPT_EVENT]);
+  msg.Append("\x6c\xa2\x2c", kLogEventsNames[CODE_DISABLE_OPT_EVENT]);
   SmartArrayPointer<char> name =
       shared->DebugName()->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-  msg.Append("\"%s\",", name.get());
-  msg.Append("\"%s\"", GetBailoutReason(shared->DisableOptimizationReason()));
+  msg.Append("\x22\x6c\xa2\x22\x2c", name.get());
+  msg.Append("\x22\x6c\xa2\x22", GetBailoutReason(shared->DisableOptimizationReason()));
   msg.WriteToLogFile();
 }
 
@@ -1331,9 +1331,9 @@ void Logger::RegExpCodeCreateEvent(Code* code, String* source) {
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
   AppendCodeCreateHeader(&msg, REG_EXP_TAG, code);
-  msg.Append('"');
+  msg.Append('\x22');
   msg.AppendDetailed(source, false);
-  msg.Append('"');
+  msg.Append('\x22');
   msg.WriteToLogFile();
 }
 
@@ -1355,7 +1355,7 @@ void Logger::CodeDeleteEvent(Address from) {
 
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,", kLogEventsNames[CODE_DELETE_EVENT]);
+  msg.Append("\x6c\xa2\x2c", kLogEventsNames[CODE_DELETE_EVENT]);
   msg.AppendAddress(from);
   msg.WriteToLogFile();
 }
@@ -1397,7 +1397,7 @@ void Logger::CodeEndLinePosInfoRecordEvent(Code* code,
 void Logger::CodeNameEvent(Address addr, int pos, const char* code_name) {
   if (code_name == NULL) return;  // Not a code object.
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,%d,", kLogEventsNames[SNAPSHOT_CODE_NAME_EVENT], pos);
+  msg.Append("\x6c\xa2\x2c\x6c\x84\x2c", kLogEventsNames[SNAPSHOT_CODE_NAME_EVENT], pos);
   msg.AppendDoubleQuotedString(code_name);
   msg.WriteToLogFile();
 }
@@ -1408,9 +1408,9 @@ void Logger::SnapshotPositionEvent(Address addr, int pos) {
   LL_LOG(SnapshotPositionEvent(addr, pos));
   if (!FLAG_log_snapshot_positions) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,", kLogEventsNames[SNAPSHOT_POSITION_EVENT]);
+  msg.Append("\x6c\xa2\x2c", kLogEventsNames[SNAPSHOT_POSITION_EVENT]);
   msg.AppendAddress(addr);
-  msg.Append(",%d", pos);
+  msg.Append("\x2c\x6c\x84", pos);
   msg.WriteToLogFile();
 }
 
@@ -1428,9 +1428,9 @@ void Logger::MoveEventInternal(LogEventsAndTags event,
                                Address to) {
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,", kLogEventsNames[event]);
+  msg.Append("\x6c\xa2\x2c", kLogEventsNames[event]);
   msg.AppendAddress(from);
-  msg.Append(',');
+  msg.Append('\x2c');
   msg.AppendAddress(to);
   msg.WriteToLogFile();
 }
@@ -1439,13 +1439,13 @@ void Logger::MoveEventInternal(LogEventsAndTags event,
 void Logger::ResourceEvent(const char* name, const char* tag) {
   if (!log_->IsEnabled() || !FLAG_log) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,%s,", name, tag);
+  msg.Append("\x6c\xa2\x2c\x6c\xa2\x2c", name, tag);
 
   uint32_t sec, usec;
   if (base::OS::GetUserTime(&sec, &usec) != -1) {
-    msg.Append("%d,%d,", sec, usec);
+    msg.Append("\x6c\x84\x2c\x6c\x84\x2c", sec, usec);
   }
-  msg.Append("%.0f", base::OS::TimeCurrentMillis());
+  msg.Append("\x6c\x4b\xf0\x86", base::OS::TimeCurrentMillis());
   msg.WriteToLogFile();
 }
 
@@ -1456,13 +1456,13 @@ void Logger::SuspectReadEvent(Name* name, Object* obj) {
   String* class_name = obj->IsJSObject()
                        ? JSObject::cast(obj)->class_name()
                        : isolate_->heap()->empty_string();
-  msg.Append("suspect-read,");
+  msg.Append("\x73\x75\x73\x70\x65\x63\x74\x2d\x72\x65\x61\x64\x2c");
   msg.Append(class_name);
-  msg.Append(',');
+  msg.Append('\x2c');
   if (name->IsString()) {
-    msg.Append('"');
+    msg.Append('\x22');
     msg.Append(String::cast(name));
-    msg.Append('"');
+    msg.Append('\x22');
   } else {
     msg.AppendSymbolName(Symbol::cast(name));
   }
@@ -1475,7 +1475,7 @@ void Logger::HeapSampleBeginEvent(const char* space, const char* kind) {
   Log::MessageBuilder msg(log_);
   // Using non-relative system time in order to be able to synchronize with
   // external memory profiling events (e.g. DOM memory size).
-  msg.Append("heap-sample-begin,\"%s\",\"%s\",%.0f", space, kind,
+  msg.Append("\x68\x65\x61\x70\x2d\x73\x61\x6d\x70\x6c\x65\x2d\x62\x65\x67\x69\x6e\x2c\x22\x6c\xa2\x22\x2c\x22\x6c\xa2\x22\x2c\x6c\x4b\xf0\x86", space, kind,
              base::OS::TimeCurrentMillis());
   msg.WriteToLogFile();
 }
@@ -1484,7 +1484,7 @@ void Logger::HeapSampleBeginEvent(const char* space, const char* kind) {
 void Logger::HeapSampleEndEvent(const char* space, const char* kind) {
   if (!log_->IsEnabled() || !FLAG_log_gc) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("heap-sample-end,\"%s\",\"%s\"", space, kind);
+  msg.Append("\x68\x65\x61\x70\x2d\x73\x61\x6d\x70\x6c\x65\x2d\x65\x6e\x64\x2c\x22\x6c\xa2\x22\x2c\x22\x6c\xa2\x22", space, kind);
   msg.WriteToLogFile();
 }
 
@@ -1492,7 +1492,7 @@ void Logger::HeapSampleEndEvent(const char* space, const char* kind) {
 void Logger::HeapSampleItemEvent(const char* type, int number, int bytes) {
   if (!log_->IsEnabled() || !FLAG_log_gc) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("heap-sample-item,%s,%d,%d", type, number, bytes);
+  msg.Append("\x68\x65\x61\x70\x2d\x73\x61\x6d\x70\x6c\x65\x2d\x69\x74\x65\x6d\x2c\x6c\xa2\x2c\x6c\x84\x2c\x6c\x84", type, number, bytes);
   msg.WriteToLogFile();
 }
 
@@ -1500,7 +1500,7 @@ void Logger::HeapSampleItemEvent(const char* type, int number, int bytes) {
 void Logger::DebugTag(const char* call_site_tag) {
   if (!log_->IsEnabled() || !FLAG_log) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("debug-tag,%s", call_site_tag);
+  msg.Append("\x64\x65\x62\x75\x67\x2d\x74\x61\x67\x2c\x6c\xa2", call_site_tag);
   msg.WriteToLogFile();
 }
 
@@ -1513,7 +1513,7 @@ void Logger::DebugEvent(const char* event_type, Vector<uint16_t> parameter) {
   }
   char* parameter_string = s.Finalize();
   Log::MessageBuilder msg(log_);
-  msg.Append("debug-queue-event,%s,%15.3f,%s", event_type,
+  msg.Append("\x64\x65\x62\x75\x67\x2d\x71\x75\x65\x75\x65\x2d\x65\x76\x65\x6e\x74\x2c\x6c\xa2\x2c\x6c\xf1\xf5\x4b\xf3\x86\x2c\x6c\xa2", event_type,
              base::OS::TimeCurrentMillis(), parameter_string);
   DeleteArray(parameter_string);
   msg.WriteToLogFile();
@@ -1523,22 +1523,22 @@ void Logger::DebugEvent(const char* event_type, Vector<uint16_t> parameter) {
 void Logger::TickEvent(TickSample* sample, bool overflow) {
   if (!log_->IsEnabled() || !FLAG_prof) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("%s,", kLogEventsNames[TICK_EVENT]);
+  msg.Append("\x6c\xa2\x2c", kLogEventsNames[TICK_EVENT]);
   msg.AppendAddress(sample->pc);
-  msg.Append(",%ld", static_cast<int>(timer_.Elapsed().InMicroseconds()));
+  msg.Append("\x2c\x6c\x93\x84", static_cast<int>(timer_.Elapsed().InMicroseconds()));
   if (sample->has_external_callback) {
-    msg.Append(",1,");
+    msg.Append("\x2c\x31\x2c");
     msg.AppendAddress(sample->external_callback);
   } else {
-    msg.Append(",0,");
+    msg.Append("\x2c\x30\x2c");
     msg.AppendAddress(sample->tos);
   }
-  msg.Append(",%d", static_cast<int>(sample->state));
+  msg.Append("\x2c\x6c\x84", static_cast<int>(sample->state));
   if (overflow) {
-    msg.Append(",overflow");
+    msg.Append("\x2c\x6f\x76\x65\x72\x66\x6c\x6f\x77");
   }
   for (unsigned i = 0; i < sample->frames_count; ++i) {
-    msg.Append(',');
+    msg.Append('\x2c');
     msg.AppendAddress(sample->stack[i]);
   }
   msg.WriteToLogFile();
@@ -1631,7 +1631,7 @@ static int EnumerateCompiledFunctions(Heap* heap,
 void Logger::LogCodeObject(Object* object) {
   Code* code_object = Code::cast(object);
   LogEventsAndTags tag = Logger::STUB_TAG;
-  const char* description = "Unknown code from the snapshot";
+  const char* description = "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x63\x6f\x64\x65\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
   switch (code_object->kind()) {
     case Code::FUNCTION:
     case Code::OPTIMIZED_FUNCTION:
@@ -1644,39 +1644,39 @@ void Logger::LogCodeObject(Object* object) {
       description =
           CodeStub::MajorName(CodeStub::GetMajorKey(code_object), true);
       if (description == NULL)
-        description = "A stub from the snapshot";
+        description = "\x41\x20\x73\x74\x75\x62\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
       tag = Logger::STUB_TAG;
       break;
     case Code::REGEXP:
-      description = "Regular expression code";
+      description = "\x52\x65\x67\x75\x6c\x61\x72\x20\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x20\x63\x6f\x64\x65";
       tag = Logger::REG_EXP_TAG;
       break;
     case Code::BUILTIN:
-      description = "A builtin from the snapshot";
+      description = "\x41\x20\x62\x75\x69\x6c\x74\x69\x6e\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
       tag = Logger::BUILTIN_TAG;
       break;
     case Code::HANDLER:
-      description = "An IC handler from the snapshot";
+      description = "\x41\x6e\x20\x49\x43\x20\x68\x61\x6e\x64\x6c\x65\x72\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
       tag = Logger::HANDLER_TAG;
       break;
     case Code::KEYED_LOAD_IC:
-      description = "A keyed load IC from the snapshot";
+      description = "\x41\x20\x6b\x65\x79\x65\x64\x20\x6c\x6f\x61\x64\x20\x49\x43\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
       tag = Logger::KEYED_LOAD_IC_TAG;
       break;
     case Code::LOAD_IC:
-      description = "A load IC from the snapshot";
+      description = "\x41\x20\x6c\x6f\x61\x64\x20\x49\x43\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
       tag = Logger::LOAD_IC_TAG;
       break;
     case Code::CALL_IC:
-      description = "A call IC from the snapshot";
+      description = "\x41\x20\x63\x61\x6c\x6c\x20\x49\x43\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
       tag = Logger::CALL_IC_TAG;
       break;
     case Code::STORE_IC:
-      description = "A store IC from the snapshot";
+      description = "\x41\x20\x73\x74\x6f\x72\x65\x20\x49\x43\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
       tag = Logger::STORE_IC_TAG;
       break;
     case Code::KEYED_STORE_IC:
-      description = "A keyed store IC from the snapshot";
+      description = "\x41\x20\x6b\x65\x79\x65\x64\x20\x73\x74\x6f\x72\x65\x20\x49\x43\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
       tag = Logger::KEYED_STORE_IC_TAG;
       break;
     case Code::NUMBER_OF_KINDS:
@@ -1689,7 +1689,7 @@ void Logger::LogCodeObject(Object* object) {
 void Logger::LogCodeObjects() {
   Heap* heap = isolate_->heap();
   heap->CollectAllGarbage(Heap::kMakeHeapIterableMask,
-                          "Logger::LogCodeObjects");
+                          "\x4c\x6f\x67\x67\x65\x72\x3a\x3a\x4c\x6f\x67\x43\x6f\x64\x65\x4f\x62\x6a\x65\x63\x74\x73");
   HeapIterator iterator(heap);
   DisallowHeapAllocation no_gc;
   for (HeapObject* obj = iterator.next(); obj != NULL; obj = iterator.next()) {
@@ -1749,7 +1749,7 @@ void Logger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
 void Logger::LogCompiledFunctions() {
   Heap* heap = isolate_->heap();
   heap->CollectAllGarbage(Heap::kMakeHeapIterableMask,
-                          "Logger::LogCompiledFunctions");
+                          "\x4c\x6f\x67\x67\x65\x72\x3a\x3a\x4c\x6f\x67\x43\x6f\x6d\x70\x69\x6c\x65\x64\x46\x75\x6e\x63\x74\x69\x6f\x6e\x73");
   HandleScope scope(isolate_);
   const int compiled_funcs_count = EnumerateCompiledFunctions(heap, NULL, NULL);
   ScopedVector< Handle<SharedFunctionInfo> > sfis(compiled_funcs_count);
@@ -1770,7 +1770,7 @@ void Logger::LogCompiledFunctions() {
 void Logger::LogAccessorCallbacks() {
   Heap* heap = isolate_->heap();
   heap->CollectAllGarbage(Heap::kMakeHeapIterableMask,
-                          "Logger::LogAccessorCallbacks");
+                          "\x4c\x6f\x67\x67\x65\x72\x3a\x3a\x4c\x6f\x67\x41\x63\x63\x65\x73\x73\x6f\x72\x43\x61\x6c\x6c\x62\x61\x63\x6b\x73");
   HeapIterator iterator(heap);
   DisallowHeapAllocation no_gc;
   for (HeapObject* obj = iterator.next(); obj != NULL; obj = iterator.next()) {
@@ -1792,7 +1792,7 @@ void Logger::LogAccessorCallbacks() {
 
 static void AddIsolateIdIfNeeded(OStream& os,  // NOLINT
                                  Isolate* isolate) {
-  if (FLAG_logfile_per_isolate) os << "isolate-" << isolate << "-";
+  if (FLAG_logfile_per_isolate) os << "\x69\x73\x6f\x6c\x61\x74\x65\x2d" << isolate << "\x2d";
 }
 
 
@@ -1800,28 +1800,28 @@ static void PrepareLogFileName(OStream& os,  // NOLINT
                                Isolate* isolate, const char* file_name) {
   AddIsolateIdIfNeeded(os, isolate);
   for (const char* p = file_name; *p; p++) {
-    if (*p == '%') {
+    if (*p == '\x25') {
       p++;
       switch (*p) {
-        case '\0':
+        case '\x0':
           // If there's a % at the end of the string we back up
           // one character so we can escape the loop properly.
           p--;
           break;
-        case 'p':
+        case '\x70':
           os << base::OS::GetCurrentProcessId();
           break;
-        case 't':
+        case '\x74':
           // %t expands to the current time in milliseconds.
           os << static_cast<int64_t>(base::OS::TimeCurrentMillis());
           break;
-        case '%':
+        case '\x25':
           // %% expands (contracts really) to %.
-          os << '%';
+          os << '\x25';
           break;
         default:
           // All other %'s expand to themselves.
-          os << '%' << *p;
+          os << '\x25' << *p;
           break;
       }
     } else {

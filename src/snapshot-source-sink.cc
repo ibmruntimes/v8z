@@ -49,9 +49,9 @@ void SnapshotByteSink::PutInt(uintptr_t integer, const char* description) {
   if (integer > 0xff) bytes = 2;
   if (integer > 0xffff) bytes = 3;
   integer |= bytes;
-  Put(static_cast<int>(integer & 0xff), "IntPart1");
-  if (bytes > 1) Put(static_cast<int>((integer >> 8) & 0xff), "IntPart2");
-  if (bytes > 2) Put(static_cast<int>((integer >> 16) & 0xff), "IntPart3");
+  Put(static_cast<int>(integer & 0xff), "\x49\x6e\x74\x50\x61\x72\x74\x31");
+  if (bytes > 1) Put(static_cast<int>((integer >> 8) & 0xff), "\x49\x6e\x74\x50\x61\x72\x74\x32");
+  if (bytes > 2) Put(static_cast<int>((integer >> 16) & 0xff), "\x49\x6e\x74\x50\x61\x72\x74\x33");
 }
 
 void SnapshotByteSink::PutRaw(byte* data, int number_of_bytes,
@@ -93,7 +93,7 @@ bool SnapshotByteSource::GetBlob(const byte** data, int* number_of_bytes) {
 
 
 void DebugSnapshotSink::Put(byte b, const char* description) {
-  PrintF("%24s: %x\n", description, b);
+  PrintF("\x6c\xf2\xf4\xa2\x3a\x20\x6c\xa7\xa", description, b);
   sink_->Put(b, description);
 }
 

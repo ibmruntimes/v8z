@@ -19,7 +19,7 @@ namespace internal {
 class HMarkDeoptimizeOnUndefinedPhase : public HPhase {
  public:
   explicit HMarkDeoptimizeOnUndefinedPhase(HGraph* graph)
-      : HPhase("H_Mark deoptimize on undefined", graph),
+      : HPhase("\x48\x5f\x4d\x61\x72\x6b\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x20\x6f\x6e\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", graph),
         worklist_(16, zone()) {}
 
   void Run();
@@ -38,7 +38,7 @@ class HMarkDeoptimizeOnUndefinedPhase : public HPhase {
 class HComputeChangeUndefinedToNaN : public HPhase {
  public:
   explicit HComputeChangeUndefinedToNaN(HGraph* graph)
-      : HPhase("H_Compute change undefined to nan", graph) {}
+      : HPhase("\x48\x5f\x43\x6f\x6d\x70\x75\x74\x65\x20\x63\x68\x61\x6e\x67\x65\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x20\x74\x6f\x20\x6e\x61\x6e", graph) {}
 
   void Run();
 

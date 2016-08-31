@@ -12,7 +12,7 @@ namespace internal {
 
 HEnvironmentLivenessAnalysisPhase::HEnvironmentLivenessAnalysisPhase(
     HGraph* graph)
-    : HPhase("H_Environment liveness analysis", graph),
+    : HPhase("\x48\x5f\x45\x6e\x76\x69\x72\x6f\x6e\x6d\x65\x6e\x74\x20\x6c\x69\x76\x65\x6e\x65\x73\x73\x20\x61\x6e\x61\x6c\x79\x73\x69\x73", graph),
       block_count_(graph->blocks()->length()),
       maximum_environment_size_(graph->maximum_environment_size()),
       live_at_block_start_(block_count_, zone()),

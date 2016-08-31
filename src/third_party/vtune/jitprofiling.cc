@@ -69,28 +69,28 @@
 
 #include "jitprofiling.h"
 
-static const char rcsid[] = "\n@(#) $Revision: 234474 $\n";
+static const char rcsid[] = "\xa\x40\x28\x23\x29\x20\x24\x52\x65\x76\x69\x73\x69\x6f\x6e\x3a\x20\x32\x33\x34\x34\x37\x34\x20\x24\xa";
 
-#define DLL_ENVIRONMENT_VAR		"VS_PROFILER"
+#define DLL_ENVIRONMENT_VAR		"\x56\x53\x5f\x50\x52\x4f\x46\x49\x4c\x45\x52"
 
 #ifndef NEW_DLL_ENVIRONMENT_VAR
 #if ITT_ARCH==ITT_ARCH_IA32
-#define NEW_DLL_ENVIRONMENT_VAR		"INTEL_JIT_PROFILER32"
+#define NEW_DLL_ENVIRONMENT_VAR		"\x49\x4e\x54\x45\x4c\x5f\x4a\x49\x54\x5f\x50\x52\x4f\x46\x49\x4c\x45\x52\x33\x32"
 #else
-#define NEW_DLL_ENVIRONMENT_VAR		"INTEL_JIT_PROFILER64"
+#define NEW_DLL_ENVIRONMENT_VAR		"\x49\x4e\x54\x45\x4c\x5f\x4a\x49\x54\x5f\x50\x52\x4f\x46\x49\x4c\x45\x52\x36\x34"
 #endif
 #endif /* NEW_DLL_ENVIRONMENT_VAR */
 
 #if ITT_PLATFORM==ITT_PLATFORM_WIN
-#define DEFAULT_DLLNAME			"JitPI.dll"
+#define DEFAULT_DLLNAME			"\x4a\x69\x74\x50\x49\x2e\x64\x6c\x6c"
 HINSTANCE m_libHandle = NULL;
 #else  /* ITT_PLATFORM==ITT_PLATFORM_WIN */
-#define DEFAULT_DLLNAME			"libJitPI.so"
+#define DEFAULT_DLLNAME			"\x6c\x69\x62\x4a\x69\x74\x50\x49\x2e\x73\x6f"
 void* m_libHandle = NULL;
 #endif /* ITT_PLATFORM==ITT_PLATFORM_WIN */
 
 /* default location of JIT profiling agent on Android */
-#define ANDROID_JIT_AGENT_PATH  "/data/intel/libittnotify.so"
+#define ANDROID_JIT_AGENT_PATH  "\x2f\x64\x61\x74\x61\x2f\x69\x6e\x74\x65\x6c\x2f\x6c\x69\x62\x69\x74\x74\x6e\x6f\x74\x69\x66\x79\x2e\x73\x6f"
 
 /* the function pointers */
 typedef unsigned int(*TPInitialize)(void);
@@ -386,9 +386,9 @@ static int loadiJIT_Funcs()
         return 0;
     }
 #if ITT_PLATFORM==ITT_PLATFORM_WIN
-    FUNC_NotifyEvent = (TPNotify)GetProcAddress(m_libHandle, "NotifyEvent");
+    FUNC_NotifyEvent = (TPNotify)GetProcAddress(m_libHandle, "\x4e\x6f\x74\x69\x66\x79\x45\x76\x65\x6e\x74");
 #else  /* ITT_PLATFORM==ITT_PLATFORM_WIN */
-    FUNC_NotifyEvent = reinterpret_cast<TPNotify>(reinterpret_cast<intptr_t>(dlsym(m_libHandle, "NotifyEvent")));
+    FUNC_NotifyEvent = reinterpret_cast<TPNotify>(reinterpret_cast<intptr_t>(dlsym(m_libHandle, "\x4e\x6f\x74\x69\x66\x79\x45\x76\x65\x6e\x74")));
 #endif /* ITT_PLATFORM==ITT_PLATFORM_WIN */
     if (!FUNC_NotifyEvent)
     {
@@ -397,9 +397,9 @@ static int loadiJIT_Funcs()
     }
 
 #if ITT_PLATFORM==ITT_PLATFORM_WIN
-    FUNC_Initialize = (TPInitialize)GetProcAddress(m_libHandle, "Initialize");
+    FUNC_Initialize = (TPInitialize)GetProcAddress(m_libHandle, "\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65");
 #else  /* ITT_PLATFORM==ITT_PLATFORM_WIN */
-    FUNC_Initialize = reinterpret_cast<TPInitialize>(reinterpret_cast<intptr_t>(dlsym(m_libHandle, "Initialize")));
+    FUNC_Initialize = reinterpret_cast<TPInitialize>(reinterpret_cast<intptr_t>(dlsym(m_libHandle, "\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65")));
 #endif /* ITT_PLATFORM==ITT_PLATFORM_WIN */
     if (!FUNC_Initialize)
     {

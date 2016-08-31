@@ -6,7 +6,7 @@
 // parts, the implementation is in platform-posix.cc.
 
 #ifdef __sparc
-# error "V8 does not support the SPARC CPU architecture."
+# error "\x56\x38\x20\x64\x6f\x65\x73\x20\x6e\x6f\x74\x20\x73\x75\x70\x70\x6f\x72\x74\x20\x74\x68\x65\x20\x53\x50\x41\x52\x43\x20\x43\x50\x55\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65\x2e"
 #endif
 
 #include <dlfcn.h>  // dladdr
@@ -98,7 +98,7 @@ class PosixMemoryMappedFile : public OS::MemoryMappedFile {
 
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
-  FILE* file = fopen(name, "r+");
+  FILE* file = fopen(name, "\x72\x2b");
   if (file == NULL) return NULL;
 
   fseek(file, 0, SEEK_END);
@@ -112,7 +112,7 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name, int size,
     void* initial) {
-  FILE* file = fopen(name, "w+");
+  FILE* file = fopen(name, "\x77\x2b");
   if (file == NULL) return NULL;
   int result = fwrite(initial, size, 1, file);
   if (result < 1) {

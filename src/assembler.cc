@@ -74,7 +74,7 @@
 #elif V8_TARGET_ARCH_X87
 #include "src/x87/assembler-x87-inl.h"  // NOLINT
 #else
-#error "Unknown architecture."
+#error "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65\x2e"
 #endif
 
 // Include native regexp-macro-assembler.
@@ -98,7 +98,7 @@
 #elif V8_TARGET_ARCH_X87
 #include "src/x87/regexp-macro-assembler-x87.h"  // NOLINT
 #else  // Unknown architecture.
-#error "Unknown architecture."
+#error "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65\x2e"
 #endif  // Target architecture.
 #endif  // V8_INTERPRETED_REGEXP
 
@@ -121,7 +121,7 @@ double uint32_bias;
 
 static DoubleConstant double_constants;
 
-const char* const RelocInfo::kFillerCommentString = "DEOPTIMIZATION PADDING";
+const char* const RelocInfo::kFillerCommentString = "\x44\x45\x4f\x50\x54\x49\x4d\x49\x5a\x41\x54\x49\x4f\x4e\x20\x50\x41\x44\x44\x49\x4e\x47";
 
 static bool math_exp_data_initialized = false;
 static base::Mutex* math_exp_data_mutex = NULL;
@@ -757,81 +757,81 @@ bool RelocInfo::RequiresRelocation(const CodeDesc& desc) {
 const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
   switch (rmode) {
     case RelocInfo::NONE32:
-      return "no reloc 32";
+      return "\x6e\x6f\x20\x72\x65\x6c\x6f\x63\x20\x33\x32";
     case RelocInfo::NONE64:
-      return "no reloc 64";
+      return "\x6e\x6f\x20\x72\x65\x6c\x6f\x63\x20\x36\x34";
     case RelocInfo::EMBEDDED_OBJECT:
-      return "embedded object";
+      return "\x65\x6d\x62\x65\x64\x64\x65\x64\x20\x6f\x62\x6a\x65\x63\x74";
     case RelocInfo::CONSTRUCT_CALL:
-      return "code target (js construct call)";
+      return "\x63\x6f\x64\x65\x20\x74\x61\x72\x67\x65\x74\x20\x28\x6a\x73\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x20\x63\x61\x6c\x6c\x29";
     case RelocInfo::DEBUG_BREAK:
-      return "debug break";
+      return "\x64\x65\x62\x75\x67\x20\x62\x72\x65\x61\x6b";
     case RelocInfo::CODE_TARGET:
-      return "code target";
+      return "\x63\x6f\x64\x65\x20\x74\x61\x72\x67\x65\x74";
     case RelocInfo::CODE_TARGET_WITH_ID:
-      return "code target with id";
+      return "\x63\x6f\x64\x65\x20\x74\x61\x72\x67\x65\x74\x20\x77\x69\x74\x68\x20\x69\x64";
     case RelocInfo::CELL:
-      return "property cell";
+      return "\x70\x72\x6f\x70\x65\x72\x74\x79\x20\x63\x65\x6c\x6c";
     case RelocInfo::RUNTIME_ENTRY:
-      return "runtime entry";
+      return "\x72\x75\x6e\x74\x69\x6d\x65\x20\x65\x6e\x74\x72\x79";
     case RelocInfo::JS_RETURN:
-      return "js return";
+      return "\x6a\x73\x20\x72\x65\x74\x75\x72\x6e";
     case RelocInfo::COMMENT:
-      return "comment";
+      return "\x63\x6f\x6d\x6d\x65\x6e\x74";
     case RelocInfo::POSITION:
-      return "position";
+      return "\x70\x6f\x73\x69\x74\x69\x6f\x6e";
     case RelocInfo::STATEMENT_POSITION:
-      return "statement position";
+      return "\x73\x74\x61\x74\x65\x6d\x65\x6e\x74\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e";
     case RelocInfo::EXTERNAL_REFERENCE:
-      return "external reference";
+      return "\x65\x78\x74\x65\x72\x6e\x61\x6c\x20\x72\x65\x66\x65\x72\x65\x6e\x63\x65";
     case RelocInfo::INTERNAL_REFERENCE:
-      return "internal reference";
+      return "\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x72\x65\x66\x65\x72\x65\x6e\x63\x65";
     case RelocInfo::CONST_POOL:
-      return "constant pool";
+      return "\x63\x6f\x6e\x73\x74\x61\x6e\x74\x20\x70\x6f\x6f\x6c";
     case RelocInfo::VENEER_POOL:
-      return "veneer pool";
+      return "\x76\x65\x6e\x65\x65\x72\x20\x70\x6f\x6f\x6c";
     case RelocInfo::DEBUG_BREAK_SLOT:
-      return "debug break slot";
+      return "\x64\x65\x62\x75\x67\x20\x62\x72\x65\x61\x6b\x20\x73\x6c\x6f\x74";
     case RelocInfo::CODE_AGE_SEQUENCE:
-      return "code_age_sequence";
+      return "\x63\x6f\x64\x65\x5f\x61\x67\x65\x5f\x73\x65\x71\x75\x65\x6e\x63\x65";
     case RelocInfo::NUMBER_OF_MODES:
       UNREACHABLE();
-      return "number_of_modes";
+      return "\x6e\x75\x6d\x62\x65\x72\x5f\x6f\x66\x5f\x6d\x6f\x64\x65\x73";
   }
-  return "unknown relocation type";
+  return "\x75\x6e\x6b\x6e\x6f\x77\x6e\x20\x72\x65\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x74\x79\x70\x65";
 }
 
 
 void RelocInfo::Print(Isolate* isolate, OStream& os) {  // NOLINT
-  os << pc_ << "  " << RelocModeName(rmode_);
+  os << pc_ << "\x20\x20" << RelocModeName(rmode_);
   if (IsComment(rmode_)) {
-    os << "  (" << reinterpret_cast<char*>(data_) << ")";
+    os << "\x20\x20\x28" << reinterpret_cast<char*>(data_) << "\x29";
   } else if (rmode_ == EMBEDDED_OBJECT) {
-    os << "  (" << Brief(target_object()) << ")";
+    os << "\x20\x20\x28" << Brief(target_object()) << "\x29";
   } else if (rmode_ == EXTERNAL_REFERENCE) {
     ExternalReferenceEncoder ref_encoder(isolate);
-    os << " (" << ref_encoder.NameOfAddress(target_reference()) << ")  ("
-       << target_reference() << ")";
+    os << "\x20\x28" << ref_encoder.NameOfAddress(target_reference()) << "\x29\x20\x20\x28"
+       << target_reference() << "\x29";
   } else if (IsCodeTarget(rmode_)) {
     Code* code = Code::GetCodeFromTargetAddress(target_address());
-    os << " (" << Code::Kind2String(code->kind()) << ")  (" << target_address()
-       << ")";
+    os << "\x20\x28" << Code::Kind2String(code->kind()) << "\x29\x20\x20\x28" << target_address()
+       << "\x29";
     if (rmode_ == CODE_TARGET_WITH_ID) {
-      os << " (id=" << static_cast<int>(data_) << ")";
+      os << "\x20\x28\x69\x64\x3d" << static_cast<int>(data_) << "\x29";
     }
   } else if (IsPosition(rmode_)) {
-    os << "  (" << data() << ")";
+    os << "\x20\x20\x28" << data() << "\x29";
   } else if (IsRuntimeEntry(rmode_) &&
              isolate->deoptimizer_data() != NULL) {
     // Depotimization bailouts are stored as runtime entries.
     int id = Deoptimizer::GetDeoptimizationId(
         isolate, target_address(), Deoptimizer::EAGER);
     if (id != Deoptimizer::kNotDeoptimizationEntry) {
-      os << "  (deoptimization bailout " << id << ")";
+      os << "\x20\x20\x28\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x62\x61\x69\x6c\x6f\x75\x74\x20" << id << "\x29";
     }
   }
 
-  os << "\n";
+  os << "\xa";
 }
 #endif  // ENABLE_DISASSEMBLER
 

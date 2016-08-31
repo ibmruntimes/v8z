@@ -83,7 +83,7 @@ class PosixMemoryMappedFile : public OS::MemoryMappedFile {
 
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
-  FILE* file = fopen(name, "r+");
+  FILE* file = fopen(name, "\x72\x2b");
   if (file == NULL) return NULL;
 
   fseek(file, 0, SEEK_END);
@@ -102,7 +102,7 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name, int size,
     void* initial) {
-  FILE* file = fopen(name, "w+");
+  FILE* file = fopen(name, "\x77\x2b");
   if (file == NULL) return NULL;
   int result = fwrite(initial, size, 1, file);
   if (result < 1) {

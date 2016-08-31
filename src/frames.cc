@@ -790,10 +790,10 @@ void JavaScriptFrame::Summarize(List<FrameSummary>* functions) {
 void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
                                              Address pc, FILE* file,
                                              bool print_line_number) {
-  PrintF(file, "%s", function->IsOptimized() ? "*" : "~");
+  PrintF(file, "\x6c\xa2", function->IsOptimized() ? "\x2a" : "\x7e");
   function->PrintName(file);
   int code_offset = static_cast<int>(pc - code->instruction_start());
-  PrintF(file, "+%d", code_offset);
+  PrintF(file, "\x2b\x6c\x84", code_offset);
   if (print_line_number) {
     SharedFunctionInfo* shared = function->shared();
     int source_pos = code->SourcePosition(pc);
@@ -806,12 +806,12 @@ void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
         String* script_name = String::cast(script->name());
         SmartArrayPointer<char> c_script_name =
             script_name->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-        PrintF(file, " at %s:%d", c_script_name.get(), line);
+        PrintF(file, "\x20\x61\x74\x20\x6c\xa2\x3a\x6c\x84", c_script_name.get(), line);
       } else {
-        PrintF(file, " at <unknown>:%d", line);
+        PrintF(file, "\x20\x61\x74\x20\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e\x3a\x6c\x84", line);
       }
     } else {
-      PrintF(file, " at <unknown>:<unknown>");
+      PrintF(file, "\x20\x61\x74\x20\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e\x3a\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e");
     }
   }
 }
@@ -825,21 +825,21 @@ void JavaScriptFrame::PrintTop(Isolate* isolate, FILE* file, bool print_args,
   while (!it.done()) {
     if (it.frame()->is_java_script()) {
       JavaScriptFrame* frame = it.frame();
-      if (frame->IsConstructor()) PrintF(file, "new ");
+      if (frame->IsConstructor()) PrintF(file, "\x6e\x65\x77\x20");
       PrintFunctionAndOffset(frame->function(), frame->unchecked_code(),
                              frame->pc(), file, print_line_number);
       if (print_args) {
         // function arguments
         // (we are intentionally only printing the actually
         // supplied parameters, not all parameters required)
-        PrintF(file, "(this=");
+        PrintF(file, "\x28\x74\x68\x69\x73\x3d");
         frame->receiver()->ShortPrint(file);
         const int length = frame->ComputeParametersCount();
         for (int i = 0; i < length; i++) {
-          PrintF(file, ", ");
+          PrintF(file, "\x2c\x20");
           frame->GetParameter(i)->ShortPrint(file);
         }
-        PrintF(file, ")");
+        PrintF(file, "\x29");
       }
       break;
     }
@@ -915,15 +915,15 @@ void JavaScriptFrame::RestoreOperandStack(FixedArray* store,
 
 
 void FrameSummary::Print() {
-  PrintF("receiver: ");
+  PrintF("\x72\x65\x63\x65\x69\x76\x65\x72\x3a\x20");
   receiver_->ShortPrint();
-  PrintF("\nfunction: ");
+  PrintF("\xaf\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20");
   function_->shared()->DebugName()->ShortPrint();
-  PrintF("\ncode: ");
+  PrintF("\xac\x6f\x64\x65\x3a\x20");
   code_->ShortPrint();
-  if (code_->kind() == Code::FUNCTION) PrintF(" NON-OPT");
-  if (code_->kind() == Code::OPTIMIZED_FUNCTION) PrintF(" OPT");
-  PrintF("\npc: %d\n", offset_);
+  if (code_->kind() == Code::FUNCTION) PrintF("\x20\x4e\x4f\x4e\x2d\x4f\x50\x54");
+  if (code_->kind() == Code::OPTIMIZED_FUNCTION) PrintF("\x20\x4f\x50\x54");
+  PrintF("\xa\x70\x63\x3a\x20\x6c\x84\xa", offset_);
 }
 
 
@@ -1161,7 +1161,7 @@ Code* InternalFrame::unchecked_code() const {
 void StackFrame::PrintIndex(StringStream* accumulator,
                             PrintMode mode,
                             int index) {
-  accumulator->Add((mode == OVERVIEW) ? "%5d: " : "[%d]: ", index);
+  accumulator->Add((mode == OVERVIEW) ? "\x6c\xf5\x84\x3a\x20" : "\x5b\x6c\x84\x5d\x3a\x20", index);
 }
 
 
@@ -1175,7 +1175,7 @@ void JavaScriptFrame::Print(StringStream* accumulator,
   accumulator->PrintSecurityTokenIfChanged(function);
   PrintIndex(accumulator, mode, index);
   Code* code = NULL;
-  if (IsConstructor()) accumulator->Add("new ");
+  if (IsConstructor()) accumulator->Add("\x6e\x65\x77\x20");
   accumulator->PrintFunction(function, receiver, &code);
 
   // Get scope information for nicer output, if possible. If code is NULL, or
@@ -1187,7 +1187,7 @@ void JavaScriptFrame::Print(StringStream* accumulator,
   Object* script_obj = shared->script();
   if (script_obj->IsScript()) {
     Script* script = Script::cast(script_obj);
-    accumulator->Add(" [");
+    accumulator->Add("\x20\x5b");
     accumulator->PrintName(script->name());
 
     Address pc = this->pc();
@@ -1195,42 +1195,42 @@ void JavaScriptFrame::Print(StringStream* accumulator,
         pc >= code->instruction_start() && pc < code->instruction_end()) {
       int source_pos = code->SourcePosition(pc);
       int line = script->GetLineNumber(source_pos) + 1;
-      accumulator->Add(":%d", line);
+      accumulator->Add("\x3a\x6c\x84", line);
     } else {
       int function_start_pos = shared->start_position();
       int line = script->GetLineNumber(function_start_pos) + 1;
-      accumulator->Add(":~%d", line);
+      accumulator->Add("\x3a\x7e\x6c\x84", line);
     }
 
-    accumulator->Add("] ");
+    accumulator->Add("\x5d\x20");
   }
 
-  accumulator->Add("(this=%o", receiver);
+  accumulator->Add("\x28\x74\x68\x69\x73\x3d\x6c\x96", receiver);
 
   // Print the parameters.
   int parameters_count = ComputeParametersCount();
   for (int i = 0; i < parameters_count; i++) {
-    accumulator->Add(",");
+    accumulator->Add("\x2c");
     // If we have a name for the parameter we print it. Nameless
     // parameters are either because we have more actual parameters
     // than formal parameters or because we have no scope information.
     if (i < scope_info->ParameterCount()) {
       accumulator->PrintName(scope_info->ParameterName(i));
-      accumulator->Add("=");
+      accumulator->Add("\x3d");
     }
-    accumulator->Add("%o", GetParameter(i));
+    accumulator->Add("\x6c\x96", GetParameter(i));
   }
 
-  accumulator->Add(")");
+  accumulator->Add("\x29");
   if (mode == OVERVIEW) {
-    accumulator->Add("\n");
+    accumulator->Add("\xa");
     return;
   }
   if (is_optimized()) {
-    accumulator->Add(" {\n// optimized frame\n}\n");
+    accumulator->Add("\x20\x7b\xa\x2f\x2f\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x66\x72\x61\x6d\x65\xa\x7d\xa");
     return;
   }
-  accumulator->Add(" {\n");
+  accumulator->Add("\x20\x7b\xa");
 
   // Compute the number of locals and expression stack elements.
   int stack_locals_count = scope_info->StackLocalCount();
@@ -1239,18 +1239,18 @@ void JavaScriptFrame::Print(StringStream* accumulator,
 
   // Print stack-allocated local variables.
   if (stack_locals_count > 0) {
-    accumulator->Add("  // stack-allocated locals\n");
+    accumulator->Add("\x20\x20\x2f\x2f\x20\x73\x74\x61\x63\x6b\x2d\x61\x6c\x6c\x6f\x63\x61\x74\x65\x64\x20\x6c\x6f\x63\x61\x6c\x73\xa");
   }
   for (int i = 0; i < stack_locals_count; i++) {
-    accumulator->Add("  var ");
+    accumulator->Add("\x20\x20\x76\x61\x72\x20");
     accumulator->PrintName(scope_info->StackLocalName(i));
-    accumulator->Add(" = ");
+    accumulator->Add("\x20\x3d\x20");
     if (i < expressions_count) {
-      accumulator->Add("%o", GetExpression(i));
+      accumulator->Add("\x6c\x96", GetExpression(i));
     } else {
-      accumulator->Add("// no expression found - inconsistent frame?");
+      accumulator->Add("\x2f\x2f\x20\x6e\x6f\x20\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x20\x66\x6f\x75\x6e\x64\x20\x2d\x20\x69\x6e\x63\x6f\x6e\x73\x69\x73\x74\x65\x6e\x74\x20\x66\x72\x61\x6d\x65\x3f");
     }
-    accumulator->Add("\n");
+    accumulator->Add("\xa");
   }
 
   // Try to get hold of the context of this frame.
@@ -1265,47 +1265,47 @@ void JavaScriptFrame::Print(StringStream* accumulator,
 
   // Print heap-allocated local variables.
   if (heap_locals_count > 0) {
-    accumulator->Add("  // heap-allocated locals\n");
+    accumulator->Add("\x20\x20\x2f\x2f\x20\x68\x65\x61\x70\x2d\x61\x6c\x6c\x6f\x63\x61\x74\x65\x64\x20\x6c\x6f\x63\x61\x6c\x73\xa");
   }
   for (int i = 0; i < heap_locals_count; i++) {
-    accumulator->Add("  var ");
+    accumulator->Add("\x20\x20\x76\x61\x72\x20");
     accumulator->PrintName(scope_info->ContextLocalName(i));
-    accumulator->Add(" = ");
+    accumulator->Add("\x20\x3d\x20");
     if (context != NULL) {
       int index = Context::MIN_CONTEXT_SLOTS + i;
       if (index < context->length()) {
-        accumulator->Add("%o", context->get(index));
+        accumulator->Add("\x6c\x96", context->get(index));
       } else {
         accumulator->Add(
-            "// warning: missing context slot - inconsistent frame?");
+            "\x2f\x2f\x20\x77\x61\x72\x6e\x69\x6e\x67\x3a\x20\x6d\x69\x73\x73\x69\x6e\x67\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x73\x6c\x6f\x74\x20\x2d\x20\x69\x6e\x63\x6f\x6e\x73\x69\x73\x74\x65\x6e\x74\x20\x66\x72\x61\x6d\x65\x3f");
       }
     } else {
-      accumulator->Add("// warning: no context found - inconsistent frame?");
+      accumulator->Add("\x2f\x2f\x20\x77\x61\x72\x6e\x69\x6e\x67\x3a\x20\x6e\x6f\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x66\x6f\x75\x6e\x64\x20\x2d\x20\x69\x6e\x63\x6f\x6e\x73\x69\x73\x74\x65\x6e\x74\x20\x66\x72\x61\x6d\x65\x3f");
     }
-    accumulator->Add("\n");
+    accumulator->Add("\xa");
   }
 
   // Print the expression stack.
   int expressions_start = stack_locals_count;
   if (expressions_start < expressions_count) {
-    accumulator->Add("  // expression stack (top to bottom)\n");
+    accumulator->Add("\x20\x20\x2f\x2f\x20\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x20\x73\x74\x61\x63\x6b\x20\x28\x74\x6f\x70\x20\x74\x6f\x20\x62\x6f\x74\x74\x6f\x6d\x29\xa");
   }
   for (int i = expressions_count - 1; i >= expressions_start; i--) {
     if (IsExpressionInsideHandler(i)) continue;
-    accumulator->Add("  [%02d] : %o\n", i, GetExpression(i));
+    accumulator->Add("\x20\x20\x5b\x6c\xf0\xf2\x84\x5d\x20\x3a\x20\x6c\x96\xa", i, GetExpression(i));
   }
 
   // Print details about the function.
   if (FLAG_max_stack_trace_source_length != 0 && code != NULL) {
     OStringStream os;
     SharedFunctionInfo* shared = function->shared();
-    os << "--------- s o u r c e   c o d e ---------\n"
+    os << "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x73\x20\x6f\x20\x75\x20\x72\x20\x63\x20\x65\x20\x20\x20\x63\x20\x6f\x20\x64\x20\x65\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa"
        << SourceCodeOf(shared, FLAG_max_stack_trace_source_length)
-       << "\n-----------------------------------------\n";
+       << "\xa\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa";
     accumulator->Add(os.c_str());
   }
 
-  accumulator->Add("}\n\n");
+  accumulator->Add("\x7d\xa\xa");
 }
 
 
@@ -1318,24 +1318,24 @@ void ArgumentsAdaptorFrame::Print(StringStream* accumulator,
   expected = function->shared()->formal_parameter_count();
 
   PrintIndex(accumulator, mode, index);
-  accumulator->Add("arguments adaptor frame: %d->%d", actual, expected);
+  accumulator->Add("\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x61\x64\x61\x70\x74\x6f\x72\x20\x66\x72\x61\x6d\x65\x3a\x20\x6c\x84\x2d\x3e\x6c\x84", actual, expected);
   if (mode == OVERVIEW) {
-    accumulator->Add("\n");
+    accumulator->Add("\xa");
     return;
   }
-  accumulator->Add(" {\n");
+  accumulator->Add("\x20\x7b\xa");
 
   // Print actual arguments.
-  if (actual > 0) accumulator->Add("  // actual arguments\n");
+  if (actual > 0) accumulator->Add("\x20\x20\x2f\x2f\x20\x61\x63\x74\x75\x61\x6c\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\xa");
   for (int i = 0; i < actual; i++) {
-    accumulator->Add("  [%02d] : %o", i, GetParameter(i));
+    accumulator->Add("\x20\x20\x5b\x6c\xf0\xf2\x84\x5d\x20\x3a\x20\x6c\x96", i, GetParameter(i));
     if (expected != -1 && i >= expected) {
-      accumulator->Add("  // not passed to callee");
+      accumulator->Add("\x20\x20\x2f\x2f\x20\x6e\x6f\x74\x20\x70\x61\x73\x73\x65\x64\x20\x74\x6f\x20\x63\x61\x6c\x6c\x65\x65");
     }
-    accumulator->Add("\n");
+    accumulator->Add("\xa");
   }
 
-  accumulator->Add("}\n\n");
+  accumulator->Add("\x7d\xa\xa");
 }
 
 

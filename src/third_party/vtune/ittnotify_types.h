@@ -92,20 +92,20 @@ typedef struct ___itt_group_list
 
 #define ITT_GROUP_LIST(varname) \
     static __itt_group_list varname[] = {       \
-        { __itt_group_all,       "all"       }, \
-        { __itt_group_control,   "control"   }, \
-        { __itt_group_thread,    "thread"    }, \
-        { __itt_group_mark,      "mark"      }, \
-        { __itt_group_sync,      "sync"      }, \
-        { __itt_group_fsync,     "fsync"     }, \
-        { __itt_group_jit,       "jit"       }, \
-        { __itt_group_model,     "model"     }, \
-        { __itt_group_counter,   "counter"   }, \
-        { __itt_group_frame,     "frame"     }, \
-        { __itt_group_stitch,    "stitch"    }, \
-        { __itt_group_heap,      "heap"      }, \
-        { __itt_group_structure, "structure" }, \
-        { __itt_group_suppress,  "suppress"  }, \
+        { __itt_group_all,       "\x61\x6c\x6c"       }, \
+        { __itt_group_control,   "\x63\x6f\x6e\x74\x72\x6f\x6c"   }, \
+        { __itt_group_thread,    "\x74\x68\x72\x65\x61\x64"    }, \
+        { __itt_group_mark,      "\x6d\x61\x72\x6b"      }, \
+        { __itt_group_sync,      "\x73\x79\x6e\x63"      }, \
+        { __itt_group_fsync,     "\x66\x73\x79\x6e\x63"     }, \
+        { __itt_group_jit,       "\x6a\x69\x74"       }, \
+        { __itt_group_model,     "\x6d\x6f\x64\x65\x6c"     }, \
+        { __itt_group_counter,   "\x63\x6f\x75\x6e\x74\x65\x72"   }, \
+        { __itt_group_frame,     "\x66\x72\x61\x6d\x65"     }, \
+        { __itt_group_stitch,    "\x73\x74\x69\x74\x63\x68"    }, \
+        { __itt_group_heap,      "\x68\x65\x61\x70"      }, \
+        { __itt_group_structure, "\x73\x74\x72\x75\x63\x74\x75\x72\x65" }, \
+        { __itt_group_suppress,  "\x73\x75\x70\x70\x72\x65\x73\x73"  }, \
         { __itt_group_none,      NULL        }  \
     }
 

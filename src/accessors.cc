@@ -223,7 +223,7 @@ void Accessors::ArrayLengthSetter(
   }
 
   isolate->ScheduleThrow(
-      *isolate->factory()->NewRangeError("invalid_array_length",
+      *isolate->factory()->NewRangeError("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x61\x72\x72\x61\x79\x5f\x6c\x65\x6e\x67\x74\x68",
                                          HandleVector<Object>(NULL, 0)));
 }
 
@@ -312,7 +312,7 @@ void Accessors::ScriptColumnOffsetSetter(
 Handle<AccessorInfo> Accessors::ScriptColumnOffsetInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   Handle<String> name(isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("column_offset")));
+        STATIC_ASCII_VECTOR("\x63\x6f\x6c\x75\x6d\x6e\x5f\x6f\x66\x66\x73\x65\x74")));
   return MakeAccessor(isolate,
                       name,
                       &ScriptColumnOffsetGetter,
@@ -349,7 +349,7 @@ void Accessors::ScriptIdSetter(
 Handle<AccessorInfo> Accessors::ScriptIdInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   Handle<String> name(isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("id")));
+        STATIC_ASCII_VECTOR("\x69\x64")));
   return MakeAccessor(isolate,
                       name,
                       &ScriptIdGetter,
@@ -456,7 +456,7 @@ void Accessors::ScriptLineOffsetSetter(
 Handle<AccessorInfo> Accessors::ScriptLineOffsetInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   Handle<String> name(isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("line_offset")));
+        STATIC_ASCII_VECTOR("\x6c\x69\x6e\x65\x5f\x6f\x66\x66\x73\x65\x74")));
   return MakeAccessor(isolate,
                       name,
                       &ScriptLineOffsetGetter,
@@ -493,7 +493,7 @@ void Accessors::ScriptTypeSetter(
 Handle<AccessorInfo> Accessors::ScriptTypeInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   Handle<String> name(isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("type")));
+        STATIC_ASCII_VECTOR("\x74\x79\x70\x65")));
   return MakeAccessor(isolate,
                       name,
                       &ScriptTypeGetter,
@@ -531,7 +531,7 @@ void Accessors::ScriptCompilationTypeSetter(
 Handle<AccessorInfo> Accessors::ScriptCompilationTypeInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   Handle<String> name(isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("compilation_type")));
+        STATIC_ASCII_VECTOR("\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x5f\x74\x79\x70\x65")));
   return MakeAccessor(isolate,
                       name,
                       &ScriptCompilationTypeGetter,
@@ -576,7 +576,7 @@ void Accessors::ScriptLineEndsSetter(
 Handle<AccessorInfo> Accessors::ScriptLineEndsInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   Handle<String> name(isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("line_ends")));
+        STATIC_ASCII_VECTOR("\x6c\x69\x6e\x65\x5f\x65\x6e\x64\x73")));
   return MakeAccessor(isolate,
                       name,
                       &ScriptLineEndsGetter,
@@ -684,7 +684,7 @@ void Accessors::ScriptContextDataSetter(
 Handle<AccessorInfo> Accessors::ScriptContextDataInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   Handle<String> name(isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("context_data")));
+        STATIC_ASCII_VECTOR("\x63\x6f\x6e\x74\x65\x78\x74\x5f\x64\x61\x74\x61")));
   return MakeAccessor(isolate,
                       name,
                       &ScriptContextDataGetter,
@@ -731,7 +731,7 @@ void Accessors::ScriptEvalFromScriptSetter(
 Handle<AccessorInfo> Accessors::ScriptEvalFromScriptInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   Handle<String> name(isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("eval_from_script")));
+        STATIC_ASCII_VECTOR("\x65\x76\x61\x6c\x5f\x66\x72\x6f\x6d\x5f\x73\x63\x72\x69\x70\x74")));
   return MakeAccessor(isolate,
                       name,
                       &ScriptEvalFromScriptGetter,
@@ -777,7 +777,7 @@ void Accessors::ScriptEvalFromScriptPositionSetter(
 Handle<AccessorInfo> Accessors::ScriptEvalFromScriptPositionInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   Handle<String> name(isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("eval_from_script_position")));
+        STATIC_ASCII_VECTOR("\x65\x76\x61\x6c\x5f\x66\x72\x6f\x6d\x5f\x73\x63\x72\x69\x70\x74\x5f\x70\x6f\x73\x69\x74\x69\x6f\x6e")));
   return MakeAccessor(isolate,
                       name,
                       &ScriptEvalFromScriptPositionGetter,
@@ -823,7 +823,7 @@ void Accessors::ScriptEvalFromFunctionNameSetter(
 Handle<AccessorInfo> Accessors::ScriptEvalFromFunctionNameInfo(
       Isolate* isolate, PropertyAttributes attributes) {
   Handle<String> name(isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("eval_from_function_name")));
+        STATIC_ASCII_VECTOR("\x65\x76\x61\x6c\x5f\x66\x72\x6f\x6d\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6e\x61\x6d\x65")));
   return MakeAccessor(isolate,
                       name,
                       &ScriptEvalFromFunctionNameGetter,
@@ -863,7 +863,7 @@ static Handle<Object> SetFunctionPrototype(Isolate* isolate,
 
   if (is_observed && !old_value->SameValue(*value)) {
     JSObject::EnqueueChangeRecord(
-        function, "update", isolate->factory()->prototype_string(), old_value);
+        function, "\x75\x70\x64\x61\x74\x65", isolate->factory()->prototype_string(), old_value);
   }
 
   return function;
@@ -1311,7 +1311,7 @@ static void ModuleGetExport(
   if (value->IsTheHole()) {
     Handle<String> name = v8::Utils::OpenHandle(*property);
     isolate->ScheduleThrow(
-        *isolate->factory()->NewReferenceError("not_defined",
+        *isolate->factory()->NewReferenceError("\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64",
                                                HandleVector(&name, 1)));
     return;
   }
@@ -1332,7 +1332,7 @@ static void ModuleSetExport(
     Handle<String> name = v8::Utils::OpenHandle(*property);
     Isolate* isolate = instance->GetIsolate();
     isolate->ScheduleThrow(
-        *isolate->factory()->NewReferenceError("not_defined",
+        *isolate->factory()->NewReferenceError("\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64",
                                                HandleVector(&name, 1)));
     return;
   }

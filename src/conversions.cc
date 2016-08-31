@@ -120,9 +120,9 @@ double StringToInt(UnicodeCache* unicode_cache,
 
 const char* DoubleToCString(double v, Vector<char> buffer) {
   switch (fpclassify(v)) {
-    case FP_NAN: return "NaN";
-    case FP_INFINITE: return (v < 0.0 ? "-Infinity" : "Infinity");
-    case FP_ZERO: return "0";
+    case FP_NAN: return "\x4e\x61\x4e";
+    case FP_INFINITE: return (v < 0.0 ? "\x2d\x49\x6e\x66\x69\x6e\x69\x74\x79" : "\x49\x6e\x66\x69\x6e\x69\x74\x79");
+    case FP_ZERO: return "\x30";
     default: {
       SimpleStringBuilder builder(buffer.start(), buffer.length());
       int decimal_point;
@@ -135,34 +135,34 @@ const char* DoubleToCString(double v, Vector<char> buffer) {
                     Vector<char>(decimal_rep, kV8DtoaBufferCapacity),
                     &sign, &length, &decimal_point);
 
-      if (sign) builder.AddCharacter('-');
+      if (sign) builder.AddCharacter('\x2d');
 
       if (length <= decimal_point && decimal_point <= 21) {
         // ECMA-262 section 9.8.1 step 6.
         builder.AddString(decimal_rep);
-        builder.AddPadding('0', decimal_point - length);
+        builder.AddPadding('\x30', decimal_point - length);
 
       } else if (0 < decimal_point && decimal_point <= 21) {
         // ECMA-262 section 9.8.1 step 7.
         builder.AddSubstring(decimal_rep, decimal_point);
-        builder.AddCharacter('.');
+        builder.AddCharacter('\x2e');
         builder.AddString(decimal_rep + decimal_point);
 
       } else if (decimal_point <= 0 && decimal_point > -6) {
         // ECMA-262 section 9.8.1 step 8.
-        builder.AddString("0.");
-        builder.AddPadding('0', -decimal_point);
+        builder.AddString("\x30\x2e");
+        builder.AddPadding('\x30', -decimal_point);
         builder.AddString(decimal_rep);
 
       } else {
         // ECMA-262 section 9.8.1 step 9 and 10 combined.
         builder.AddCharacter(decimal_rep[0]);
         if (length != 1) {
-          builder.AddCharacter('.');
+          builder.AddCharacter('\x2e');
           builder.AddString(decimal_rep + 1);
         }
-        builder.AddCharacter('e');
-        builder.AddCharacter((decimal_point >= 0) ? '+' : '-');
+        builder.AddCharacter('\x65');
+        builder.AddCharacter((decimal_point >= 0) ? '\x2b' : '\x2d');
         int exponent = decimal_point - 1;
         if (exponent < 0) exponent = -exponent;
         builder.AddDecimalInteger(exponent);
@@ -183,12 +183,12 @@ const char* IntToCString(int n, Vector<char> buffer) {
   }
   // Build the string backwards from the least significant digit.
   int i = buffer.length();
-  buffer[--i] = '\0';
+  buffer[--i] = '\x0';
   do {
-    buffer[--i] = '0' + (n % 10);
+    buffer[--i] = '\x30' + (n % 10);
     n /= 10;
   } while (n);
-  if (negative) buffer[--i] = '-';
+  if (negative) buffer[--i] = '\x2d';
   return buffer.start() + i;
 }
 
@@ -244,19 +244,19 @@ char* DoubleToFixedCString(double value, int f) {
   unsigned rep_length =
       zero_prefix_length + decimal_rep_length + zero_postfix_length;
   SimpleStringBuilder rep_builder(rep_length + 1);
-  rep_builder.AddPadding('0', zero_prefix_length);
+  rep_builder.AddPadding('\x30', zero_prefix_length);
   rep_builder.AddString(decimal_rep);
-  rep_builder.AddPadding('0', zero_postfix_length);
+  rep_builder.AddPadding('\x30', zero_postfix_length);
   char* rep = rep_builder.Finalize();
 
   // Create the result string by appending a minus and putting in a
   // decimal point if needed.
   unsigned result_size = decimal_point + f + 2;
   SimpleStringBuilder builder(result_size + 1);
-  if (negative) builder.AddCharacter('-');
+  if (negative) builder.AddCharacter('\x2d');
   builder.AddSubstring(rep, decimal_point);
   if (f > 0) {
-    builder.AddCharacter('.');
+    builder.AddCharacter('\x2e');
     builder.AddSubstring(rep + decimal_point, f);
   }
   DeleteArray(rep);
@@ -280,17 +280,17 @@ static char* CreateExponentialRepresentation(char* decimal_rep,
   unsigned result_size = significant_digits + 7;
   SimpleStringBuilder builder(result_size + 1);
 
-  if (negative) builder.AddCharacter('-');
+  if (negative) builder.AddCharacter('\x2d');
   builder.AddCharacter(decimal_rep[0]);
   if (significant_digits != 1) {
-    builder.AddCharacter('.');
+    builder.AddCharacter('\x2e');
     builder.AddString(decimal_rep + 1);
     int rep_length = StrLength(decimal_rep);
-    builder.AddPadding('0', significant_digits - rep_length);
+    builder.AddPadding('\x30', significant_digits - rep_length);
   }
 
-  builder.AddCharacter('e');
-  builder.AddCharacter(negative_exponent ? '-' : '+');
+  builder.AddCharacter('\x65');
+  builder.AddCharacter(negative_exponent ? '\x2d' : '\x2b');
   builder.AddDecimalInteger(exponent);
   return builder.Finalize();
 }
@@ -383,25 +383,25 @@ char* DoubleToPrecisionCString(double value, int p) {
         ? -decimal_point + p + 3
         : p + 2;
     SimpleStringBuilder builder(result_size + 1);
-    if (negative) builder.AddCharacter('-');
+    if (negative) builder.AddCharacter('\x2d');
     if (decimal_point <= 0) {
-      builder.AddString("0.");
-      builder.AddPadding('0', -decimal_point);
+      builder.AddString("\x30\x2e");
+      builder.AddPadding('\x30', -decimal_point);
       builder.AddString(decimal_rep);
-      builder.AddPadding('0', p - decimal_rep_length);
+      builder.AddPadding('\x30', p - decimal_rep_length);
     } else {
       const int m = Min(decimal_rep_length, decimal_point);
       builder.AddSubstring(decimal_rep, m);
-      builder.AddPadding('0', decimal_point - decimal_rep_length);
+      builder.AddPadding('\x30', decimal_point - decimal_rep_length);
       if (decimal_point < p) {
-        builder.AddCharacter('.');
+        builder.AddCharacter('\x2e');
         const int extra = negative ? 2 : 1;
         if (decimal_rep_length > decimal_point) {
           const int len = StrLength(decimal_rep + decimal_point);
           const int n = Min(len, p - (builder.position() - extra));
           builder.AddSubstring(decimal_rep + decimal_point, n);
         }
-        builder.AddPadding('0', extra + (p - builder.position()));
+        builder.AddPadding('\x30', extra + (p - builder.position()));
       }
     }
     result = builder.Finalize();
@@ -415,18 +415,18 @@ char* DoubleToRadixCString(double value, int radix) {
   DCHECK(radix >= 2 && radix <= 36);
 
   // Character array used for conversion.
-  static const char chars[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+  static const char chars[] = "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a";
 
   // Buffer for the integer part of the result. 1024 chars is enough
   // for max integer value in radix 2.  We need room for a sign too.
   static const int kBufferSize = 1100;
   char integer_buffer[kBufferSize];
-  integer_buffer[kBufferSize - 1] = '\0';
+  integer_buffer[kBufferSize - 1] = '\x0';
 
   // Buffer for the decimal part of the result.  We only generate up
   // to kBufferSize - 1 chars for the decimal part.
   char decimal_buffer[kBufferSize];
-  decimal_buffer[kBufferSize - 1] = '\0';
+  decimal_buffer[kBufferSize - 1] = '\x0';
 
   // Make sure the value is positive.
   bool is_negative = value < 0.0;
@@ -448,7 +448,7 @@ char* DoubleToRadixCString(double value, int radix) {
   // Sanity check.
   DCHECK(integer_pos > 0);
   // Add sign if needed.
-  if (is_negative) integer_buffer[integer_pos--] = '-';
+  if (is_negative) integer_buffer[integer_pos--] = '\x2d';
 
   // Convert the decimal part.  Repeatedly multiply by the radix to
   // generate the next char.  Never generate more than kBufferSize - 1
@@ -466,7 +466,7 @@ char* DoubleToRadixCString(double value, int radix) {
         chars[static_cast<int>(std::floor(decimal_part))];
     decimal_part -= std::floor(decimal_part);
   }
-  decimal_buffer[decimal_pos] = '\0';
+  decimal_buffer[decimal_pos] = '\x0';
 
   // Compute the result size.
   int integer_part_size = kBufferSize - 2 - integer_pos;
@@ -477,7 +477,7 @@ char* DoubleToRadixCString(double value, int radix) {
   // Allocate result and fill in the parts.
   SimpleStringBuilder builder(result_size + 1);
   builder.AddSubstring(integer_buffer + integer_pos + 1, integer_part_size);
-  if (decimal_pos > 0) builder.AddCharacter('.');
+  if (decimal_pos > 0) builder.AddCharacter('\x2e');
   builder.AddSubstring(decimal_buffer, decimal_pos);
   return builder.Finalize();
 }

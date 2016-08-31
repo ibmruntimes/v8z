@@ -530,7 +530,7 @@ class Factory V8_FINAL {
   Handle<Object> NewRangeError(Handle<String> message);
 
   Handle<Object> NewInvalidStringLengthError() {
-    return NewRangeError("invalid_string_length",
+    return NewRangeError("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x73\x74\x72\x69\x6e\x67\x5f\x6c\x65\x6e\x67\x74\x68",
                          HandleVector<Object>(NULL, 0));
   }
 

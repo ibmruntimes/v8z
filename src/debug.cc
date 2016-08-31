@@ -600,8 +600,8 @@ ScriptCache::ScriptCache(Isolate* isolate) : HashMap(HashMap::PointersMatch),
   // Perform two GCs to get rid of all unreferenced scripts. The first GC gets
   // rid of all the cached script wrappers and the second gets rid of the
   // scripts which are no longer referenced.
-  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask, "ScriptCache");
-  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask, "ScriptCache");
+  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask, "\x53\x63\x72\x69\x70\x74\x43\x61\x63\x68\x65");
+  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask, "\x53\x63\x72\x69\x70\x74\x43\x61\x63\x68\x65");
 
   // Scan heap for Script objects.
   HeapIterator iterator(heap);
@@ -775,7 +775,7 @@ bool Debug::CompileDebuggerScript(Isolate* isolate, int index) {
     MessageLocation computed_location;
     isolate->ComputeLocation(&computed_location);
     Handle<Object> message = MessageHandler::MakeMessageObject(
-        isolate, "error_loading_debugger", &computed_location,
+        isolate, "\x65\x72\x72\x6f\x72\x5f\x6c\x6f\x61\x64\x69\x6e\x67\x5f\x64\x65\x62\x75\x67\x67\x65\x72", &computed_location,
         Vector<Handle<Object> >::empty(), Handle<JSArray>());
     DCHECK(!isolate->has_pending_exception());
     if (!exception.is_null()) {
@@ -825,7 +825,7 @@ bool Debug::Load() {
 
   // Expose the builtins object in the debugger context.
   Handle<String> key = isolate_->factory()->InternalizeOneByteString(
-      STATIC_ASCII_VECTOR("builtins"));
+      STATIC_ASCII_VECTOR("\x62\x75\x69\x6c\x74\x69\x6e\x73"));
   Handle<GlobalObject> global =
       Handle<GlobalObject>(context->global_object(), isolate_);
   Handle<JSBuiltinsObject> builtin =
@@ -835,12 +835,12 @@ bool Debug::Load() {
 
   // Compile the JavaScript for the debugger in the debugger context.
   bool caught_exception =
-      !CompileDebuggerScript(isolate_, Natives::GetIndex("mirror")) ||
-      !CompileDebuggerScript(isolate_, Natives::GetIndex("debug"));
+      !CompileDebuggerScript(isolate_, Natives::GetIndex("\x6d\x69\x72\x72\x6f\x72")) ||
+      !CompileDebuggerScript(isolate_, Natives::GetIndex("\x64\x65\x62\x75\x67"));
 
   if (FLAG_enable_liveedit) {
     caught_exception = caught_exception ||
-        !CompileDebuggerScript(isolate_, Natives::GetIndex("liveedit"));
+        !CompileDebuggerScript(isolate_, Natives::GetIndex("\x6c\x69\x76\x65\x65\x64\x69\x74"));
   }
   // Check for caught exceptions.
   if (caught_exception) return false;
@@ -1044,7 +1044,7 @@ bool Debug::CheckBreakPoint(Handle<Object> break_point_object) {
   // Get the function IsBreakPointTriggered (defined in debug-debugger.js).
   Handle<String> is_break_point_triggered_string =
       factory->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("IsBreakPointTriggered"));
+          STATIC_ASCII_VECTOR("\x49\x73\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x54\x72\x69\x67\x67\x65\x72\x65\x64"));
   Handle<GlobalObject> debug_global(debug_context()->global_object());
   Handle<JSFunction> check_break_point =
     Handle<JSFunction>::cast(Object::GetProperty(
@@ -1327,7 +1327,7 @@ bool Debug::PromiseHasRejectHandler(Handle<JSObject> promise) {
   Handle<JSFunction> fun = Handle<JSFunction>::cast(
       JSObject::GetDataProperty(isolate_->js_builtins_object(),
                                 isolate_->factory()->NewStringFromStaticAscii(
-                                    "PromiseHasRejectHandler")));
+                                    "\x50\x72\x6f\x6d\x69\x73\x65\x48\x61\x73\x52\x65\x6a\x65\x63\x74\x48\x61\x6e\x64\x6c\x65\x72")));
   Handle<Object> result =
       Execution::Call(isolate_, fun, promise, 0, NULL).ToHandleChecked();
   return result->IsTrue();
@@ -1874,10 +1874,10 @@ static void RedirectActivationsToRecompiledCodeOnThread(
     byte* new_pc = new_code->instruction_start() + new_pc_offset;
 
     if (FLAG_trace_deopt) {
-      PrintF("Replacing code %08" V8PRIxPTR " - %08" V8PRIxPTR " (%d) "
-             "with %08" V8PRIxPTR " - %08" V8PRIxPTR " (%d) "
-             "for debugging, "
-             "changing pc from %08" V8PRIxPTR " to %08" V8PRIxPTR "\n",
+      PrintF("\x52\x65\x70\x6c\x61\x63\x69\x6e\x67\x20\x63\x6f\x64\x65\x20\x25\x30\x38" V8PRIxPTR "\x20\x2d\x20\x25\x30\x38" V8PRIxPTR "\x20\x28\x6c\x84\x29\x20"
+             "\x77\x69\x74\x68\x20\x25\x30\x38" V8PRIxPTR "\x20\x2d\x20\x25\x30\x38" V8PRIxPTR "\x20\x28\x6c\x84\x29\x20"
+             "\x66\x6f\x72\x20\x64\x65\x62\x75\x67\x67\x69\x6e\x67\x2c\x20"
+             "\x63\x68\x61\x6e\x67\x69\x6e\x67\x20\x70\x63\x20\x66\x72\x6f\x6d\x20\x25\x30\x38" V8PRIxPTR "\x20\x74\x6f\x20\x25\x30\x38" V8PRIxPTR "\xa",
              reinterpret_cast<intptr_t>(
                  frame_code->instruction_start()),
              reinterpret_cast<intptr_t>(
@@ -2004,7 +2004,7 @@ void Debug::PrepareForBreakPoints() {
       // debug break slots.
       Heap* heap = isolate_->heap();
       heap->CollectAllGarbage(Heap::kMakeHeapIterableMask,
-                              "preparing for breakpoints");
+                              "\x70\x72\x65\x70\x61\x72\x69\x6e\x67\x20\x66\x6f\x72\x20\x62\x72\x65\x61\x6b\x70\x6f\x69\x6e\x74\x73");
       HeapIterator iterator(heap);
 
       // Ensure no GC in this scope as we are going to use gc_metadata
@@ -2454,11 +2454,11 @@ void Debug::ClearMirrorCache() {
   Factory* factory = isolate_->factory();
   Handle<GlobalObject> global(isolate_->global_object());
   JSObject::SetProperty(global,
-      factory->NewStringFromAsciiChecked("next_handle_"),
+      factory->NewStringFromAsciiChecked("\x6e\x65\x78\x74\x5f\x68\x61\x6e\x64\x6c\x65\x5f"),
       handle(Smi::FromInt(0), isolate_),
       SLOPPY).Check();
   JSObject::SetProperty(global,
-      factory->NewStringFromAsciiChecked("mirror_cache_"),
+      factory->NewStringFromAsciiChecked("\x6d\x69\x72\x72\x6f\x72\x5f\x63\x61\x63\x68\x65\x5f"),
       factory->NewJSArray(0, FAST_ELEMENTS),
       SLOPPY).Check();
 }
@@ -2472,7 +2472,7 @@ Handle<FixedArray> Debug::GetLoadedScripts() {
   // Perform GC to get unreferenced scripts evicted from the cache before
   // returning the content.
   isolate_->heap()->CollectAllGarbage(Heap::kNoGCFlags,
-                                      "Debug::GetLoadedScripts");
+                                      "\x44\x65\x62\x75\x67\x3a\x3a\x47\x65\x74\x4c\x6f\x61\x64\x65\x64\x53\x63\x72\x69\x70\x74\x73");
 
   // Get the scripts from the cache.
   return script_cache_->GetScripts();
@@ -2516,7 +2516,7 @@ MaybeHandle<Object> Debug::MakeJSObject(const char* constructor_name,
 MaybeHandle<Object> Debug::MakeExecutionState() {
   // Create the execution state object.
   Handle<Object> argv[] = { isolate_->factory()->NewNumberFromInt(break_id()) };
-  return MakeJSObject("MakeExecutionState", ARRAY_SIZE(argv), argv);
+  return MakeJSObject("\x4d\x61\x6b\x65\x45\x78\x65\x63\x75\x74\x69\x6f\x6e\x53\x74\x61\x74\x65", ARRAY_SIZE(argv), argv);
 }
 
 
@@ -2524,7 +2524,7 @@ MaybeHandle<Object> Debug::MakeBreakEvent(Handle<Object> break_points_hit) {
   // Create the new break event object.
   Handle<Object> argv[] = { isolate_->factory()->NewNumberFromInt(break_id()),
                             break_points_hit };
-  return MakeJSObject("MakeBreakEvent", ARRAY_SIZE(argv), argv);
+  return MakeJSObject("\x4d\x61\x6b\x65\x42\x72\x65\x61\x6b\x45\x76\x65\x6e\x74", ARRAY_SIZE(argv), argv);
 }
 
 
@@ -2536,7 +2536,7 @@ MaybeHandle<Object> Debug::MakeExceptionEvent(Handle<Object> exception,
                             exception,
                             isolate_->factory()->ToBoolean(uncaught),
                             promise };
-  return MakeJSObject("MakeExceptionEvent", ARRAY_SIZE(argv), argv);
+  return MakeJSObject("\x4d\x61\x6b\x65\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x45\x76\x65\x6e\x74", ARRAY_SIZE(argv), argv);
 }
 
 
@@ -2546,21 +2546,21 @@ MaybeHandle<Object> Debug::MakeCompileEvent(Handle<Script> script,
   Handle<Object> script_wrapper = Script::GetWrapper(script);
   Handle<Object> argv[] = { script_wrapper,
                             isolate_->factory()->NewNumberFromInt(type) };
-  return MakeJSObject("MakeCompileEvent", ARRAY_SIZE(argv), argv);
+  return MakeJSObject("\x4d\x61\x6b\x65\x43\x6f\x6d\x70\x69\x6c\x65\x45\x76\x65\x6e\x74", ARRAY_SIZE(argv), argv);
 }
 
 
 MaybeHandle<Object> Debug::MakePromiseEvent(Handle<JSObject> event_data) {
   // Create the promise event object.
   Handle<Object> argv[] = { event_data };
-  return MakeJSObject("MakePromiseEvent", ARRAY_SIZE(argv), argv);
+  return MakeJSObject("\x4d\x61\x6b\x65\x50\x72\x6f\x6d\x69\x73\x65\x45\x76\x65\x6e\x74", ARRAY_SIZE(argv), argv);
 }
 
 
 MaybeHandle<Object> Debug::MakeAsyncTaskEvent(Handle<JSObject> task_event) {
   // Create the async task event object.
   Handle<Object> argv[] = { task_event };
-  return MakeJSObject("MakeAsyncTaskEvent", ARRAY_SIZE(argv), argv);
+  return MakeJSObject("\x4d\x61\x6b\x65\x41\x73\x79\x6e\x63\x54\x61\x73\x6b\x45\x76\x65\x6e\x74", ARRAY_SIZE(argv), argv);
 }
 
 
@@ -2688,7 +2688,7 @@ void Debug::OnAfterCompile(Handle<Script> script) {
   // Get the function UpdateScriptBreakPoints (defined in debug-debugger.js).
   Handle<String> update_script_break_points_string =
       isolate_->factory()->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("UpdateScriptBreakPoints"));
+          STATIC_ASCII_VECTOR("\x55\x70\x64\x61\x74\x65\x53\x63\x72\x69\x70\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x73"));
   Handle<GlobalObject> debug_global(debug_context()->global_object());
   Handle<Object> update_script_break_points =
       Object::GetProperty(
@@ -2892,15 +2892,15 @@ void Debug::NotifyMessageHandler(v8::DebugEvent event,
   bool running = auto_continue;
 
   Handle<Object> cmd_processor_ctor = Object::GetProperty(
-      isolate_, exec_state, "debugCommandProcessor").ToHandleChecked();
+      isolate_, exec_state, "\x64\x65\x62\x75\x67\x43\x6f\x6d\x6d\x61\x6e\x64\x50\x72\x6f\x63\x65\x73\x73\x6f\x72").ToHandleChecked();
   Handle<Object> ctor_args[] = { isolate_->factory()->ToBoolean(running) };
   Handle<Object> cmd_processor = Execution::Call(
       isolate_, cmd_processor_ctor, exec_state, 1, ctor_args).ToHandleChecked();
   Handle<JSFunction> process_debug_request = Handle<JSFunction>::cast(
       Object::GetProperty(
-          isolate_, cmd_processor, "processDebugRequest").ToHandleChecked());
+          isolate_, cmd_processor, "\x70\x72\x6f\x63\x65\x73\x73\x44\x65\x62\x75\x67\x52\x65\x71\x75\x65\x73\x74").ToHandleChecked());
   Handle<Object> is_running = Object::GetProperty(
-      isolate_, cmd_processor, "isRunning").ToHandleChecked();
+      isolate_, cmd_processor, "\x69\x73\x52\x75\x6e\x6e\x69\x6e\x67").ToHandleChecked();
 
   // Process requests from the debugger.
   do {
@@ -2910,7 +2910,7 @@ void Debug::NotifyMessageHandler(v8::DebugEvent event,
     // Get the command from the queue.
     CommandMessage command = command_queue_.Get();
     isolate_->logger()->DebugTag(
-        "Got request from command queue, in interactive loop.");
+        "\x47\x6f\x74\x20\x72\x65\x71\x75\x65\x73\x74\x20\x66\x72\x6f\x6d\x20\x63\x6f\x6d\x6d\x61\x6e\x64\x20\x71\x75\x65\x75\x65\x2c\x20\x69\x6e\x20\x69\x6e\x74\x65\x72\x61\x63\x74\x69\x76\x65\x20\x6c\x6f\x6f\x70\x2e");
     if (!is_active()) {
       // Delete command text and user data.
       command.Dispose();
@@ -2938,8 +2938,8 @@ void Debug::NotifyMessageHandler(v8::DebugEvent event,
 
       // Log the JSON request/response.
       if (FLAG_trace_debug_json) {
-        PrintF("%s\n", request_text->ToCString().get());
-        PrintF("%s\n", answer->ToCString().get());
+        PrintF("\x6c\xa2\xa", request_text->ToCString().get());
+        PrintF("\x6c\xa2\xa", answer->ToCString().get());
       }
 
       Handle<Object> is_running_args[] = { answer };
@@ -3029,7 +3029,7 @@ void Debug::EnqueueCommandMessage(Vector<const uint16_t> command,
       Vector<uint16_t>(const_cast<uint16_t*>(command.start()),
                        command.length()),
       client_data);
-  isolate_->logger()->DebugTag("Put command on command_queue.");
+  isolate_->logger()->DebugTag("\x50\x75\x74\x20\x63\x6f\x6d\x6d\x61\x6e\x64\x20\x6f\x6e\x20\x63\x6f\x6d\x6d\x61\x6e\x64\x5f\x71\x75\x65\x75\x65\x2e");
   command_queue_.Put(message);
   command_received_.Signal();
 
@@ -3250,7 +3250,7 @@ v8::Handle<v8::String> MessageImpl::GetJSON() const {
   if (IsEvent()) {
     // Call toJSONProtocol on the debug event object.
     Handle<Object> fun = Object::GetProperty(
-        isolate, event_data_, "toJSONProtocol").ToHandleChecked();
+        isolate, event_data_, "\x74\x6f\x4a\x53\x4f\x4e\x50\x72\x6f\x74\x6f\x63\x6f\x6c").ToHandleChecked();
     if (!fun->IsJSFunction()) {
       return v8::Handle<v8::String>();
     }
@@ -3405,7 +3405,7 @@ bool LockingCommandMessageQueue::IsEmpty() const {
 CommandMessage LockingCommandMessageQueue::Get() {
   base::LockGuard<base::Mutex> lock_guard(&mutex_);
   CommandMessage result = queue_.Get();
-  logger_->DebugEvent("Get", result.text());
+  logger_->DebugEvent("\x47\x65\x74", result.text());
   return result;
 }
 
@@ -3413,7 +3413,7 @@ CommandMessage LockingCommandMessageQueue::Get() {
 void LockingCommandMessageQueue::Put(const CommandMessage& message) {
   base::LockGuard<base::Mutex> lock_guard(&mutex_);
   queue_.Put(message);
-  logger_->DebugEvent("Put", message.text());
+  logger_->DebugEvent("\x50\x75\x74", message.text());
 }
 
 

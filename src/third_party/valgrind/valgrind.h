@@ -228,8 +228,8 @@ typedef
    OrigFn;
 
 #define __SPECIAL_INSTRUCTION_PREAMBLE                            \
-                     "roll $3,  %%edi ; roll $13, %%edi\n\t"      \
-                     "roll $29, %%edi ; roll $19, %%edi\n\t"
+                     "\x72\x6f\x6c\x6c\x20\x24\x33\x2c\x20\x20\x25\x6c\x85\x84\x89\x20\x3b\x20\x72\x6f\x6c\x6c\x20\x24\x31\x33\x2c\x20\x25\x6c\x85\x84\x89\xa\x9"      \
+                     "\x72\x6f\x6c\x6c\x20\x24\x32\x39\x2c\x20\x25\x6c\x85\x84\x89\x20\x3b\x20\x72\x6f\x6c\x6c\x20\x24\x31\x39\x2c\x20\x25\x6c\x85\x84\x89\xa\x9"
 
 #define VALGRIND_DO_CLIENT_REQUEST_EXPR(                          \
         _zzq_default, _zzq_request,                               \
@@ -245,10 +245,10 @@ typedef
     _zzq_args[5] = (unsigned int)(_zzq_arg5);                     \
     __asm__ volatile(__SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* %EDX = client_request ( %EAX ) */         \
-                     "xchgl %%ebx,%%ebx"                          \
-                     : "=d" (_zzq_result)                         \
-                     : "a" (&_zzq_args[0]), "0" (_zzq_default)    \
-                     : "cc", "memory"                             \
+                     "\x78\x63\x68\x67\x6c\x20\x25\x6c\x85\x62\x78\x2c\x25\x6c\x85\x62\x78"                          \
+                     : "\x3d\x64" (_zzq_result)                         \
+                     : "\x61" (&_zzq_args[0]), "\x30" (_zzq_default)    \
+                     : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79"                             \
                     );                                            \
     _zzq_result;                                                  \
   })
@@ -258,10 +258,10 @@ typedef
     volatile unsigned int __addr;                                 \
     __asm__ volatile(__SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* %EAX = guest_NRADDR */                    \
-                     "xchgl %%ecx,%%ecx"                          \
-                     : "=a" (__addr)                              \
+                     "\x78\x63\x68\x67\x6c\x20\x25\x6c\x85\x83\xa7\x2c\x25\x6c\x85\x83\xa7"                          \
+                     : "\x3d\x61" (__addr)                              \
                      :                                            \
-                     : "cc", "memory"                             \
+                     : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79"                             \
                     );                                            \
     _zzq_orig->nraddr = __addr;                                   \
   }
@@ -269,7 +269,7 @@ typedef
 #define VALGRIND_CALL_NOREDIR_EAX                                 \
                      __SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* call-noredir *%EAX */                     \
-                     "xchgl %%edx,%%edx\n\t"
+                     "\x78\x63\x68\x67\x6c\x20\x25\x6c\x85\x84\xa7\x2c\x25\x6c\x85\x84\xa7\xa\x9"
 #endif /* PLAT_x86_linux || PLAT_x86_darwin || (PLAT_x86_win32 && __GNUC__) */
 
 /* ------------------------- x86-Win32 ------------------------- */
@@ -349,8 +349,8 @@ typedef
    OrigFn;
 
 #define __SPECIAL_INSTRUCTION_PREAMBLE                            \
-                     "rolq $3,  %%rdi ; rolq $13, %%rdi\n\t"      \
-                     "rolq $61, %%rdi ; rolq $51, %%rdi\n\t"
+                     "\x72\x6f\x6c\x71\x20\x24\x33\x2c\x20\x20\x25\x25\x72\x64\x69\x20\x3b\x20\x72\x6f\x6c\x71\x20\x24\x31\x33\x2c\x20\x25\x25\x72\x64\x69\xa\x9"      \
+                     "\x72\x6f\x6c\x71\x20\x24\x36\x31\x2c\x20\x25\x25\x72\x64\x69\x20\x3b\x20\x72\x6f\x6c\x71\x20\x24\x35\x31\x2c\x20\x25\x25\x72\x64\x69\xa\x9"
 
 #define VALGRIND_DO_CLIENT_REQUEST_EXPR(                          \
         _zzq_default, _zzq_request,                               \
@@ -366,10 +366,10 @@ typedef
     _zzq_args[5] = (uint64_t)(_zzq_arg5);           \
     __asm__ volatile(__SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* %RDX = client_request ( %RAX ) */         \
-                     "xchgq %%rbx,%%rbx"                          \
-                     : "=d" (_zzq_result)                         \
-                     : "a" (&_zzq_args[0]), "0" (_zzq_default)    \
-                     : "cc", "memory"                             \
+                     "\x78\x63\x68\x67\x71\x20\x25\x25\x72\x62\x78\x2c\x25\x25\x72\x62\x78"                          \
+                     : "\x3d\x64" (_zzq_result)                         \
+                     : "\x61" (&_zzq_args[0]), "\x30" (_zzq_default)    \
+                     : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79"                             \
                     );                                            \
     _zzq_result;                                                  \
     })
@@ -379,10 +379,10 @@ typedef
     volatile uint64_t __addr;                       \
     __asm__ volatile(__SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* %RAX = guest_NRADDR */                    \
-                     "xchgq %%rcx,%%rcx"                          \
-                     : "=a" (__addr)                              \
+                     "\x78\x63\x68\x67\x71\x20\x25\x25\x72\x63\x78\x2c\x25\x25\x72\x63\x78"                          \
+                     : "\x3d\x61" (__addr)                              \
                      :                                            \
-                     : "cc", "memory"                             \
+                     : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79"                             \
                     );                                            \
     _zzq_orig->nraddr = __addr;                                   \
   }
@@ -390,7 +390,7 @@ typedef
 #define VALGRIND_CALL_NOREDIR_RAX                                 \
                      __SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* call-noredir *%RAX */                     \
-                     "xchgq %%rdx,%%rdx\n\t"
+                     "\x78\x63\x68\x67\x71\x20\x25\x25\x72\x64\x78\x2c\x25\x25\x72\x64\x78\xa\x9"
 #endif /* PLAT_amd64_linux || PLAT_amd64_darwin */
 
 /* ------------------------ ppc32-linux ------------------------ */
@@ -404,8 +404,8 @@ typedef
    OrigFn;
 
 #define __SPECIAL_INSTRUCTION_PREAMBLE                            \
-                     "rlwinm 0,0,3,0,0  ; rlwinm 0,0,13,0,0\n\t"  \
-                     "rlwinm 0,0,29,0,0 ; rlwinm 0,0,19,0,0\n\t"
+                     "\x72\x6c\x77\x69\x6e\x6d\x20\x30\x2c\x30\x2c\x33\x2c\x30\x2c\x30\x20\x20\x3b\x20\x72\x6c\x77\x69\x6e\x6d\x20\x30\x2c\x30\x2c\x31\x33\x2c\x30\x2c\x30\xa\x9"  \
+                     "\x72\x6c\x77\x69\x6e\x6d\x20\x30\x2c\x30\x2c\x32\x39\x2c\x30\x2c\x30\x20\x3b\x20\x72\x6c\x77\x69\x6e\x6d\x20\x30\x2c\x30\x2c\x31\x39\x2c\x30\x2c\x30\xa\x9"
 
 #define VALGRIND_DO_CLIENT_REQUEST_EXPR(                          \
         _zzq_default, _zzq_request,                               \
@@ -422,15 +422,15 @@ typedef
     _zzq_args[4] = (unsigned int)(_zzq_arg4);                     \
     _zzq_args[5] = (unsigned int)(_zzq_arg5);                     \
     _zzq_ptr = _zzq_args;                                         \
-    __asm__ volatile("mr 3,%1\n\t" /*default*/                    \
-                     "mr 4,%2\n\t" /*ptr*/                        \
+    __asm__ volatile("\x6d\x72\x20\x33\x2c\x25\x31\xa\x9" /*default*/                    \
+                     "\x6d\x72\x20\x34\x2c\x25\x32\xa\x9" /*ptr*/                        \
                      __SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* %R3 = client_request ( %R4 ) */           \
-                     "or 1,1,1\n\t"                               \
-                     "mr %0,3"     /*result*/                     \
-                     : "=b" (_zzq_result)                         \
-                     : "b" (_zzq_default), "b" (_zzq_ptr)         \
-                     : "cc", "memory", "r3", "r4");               \
+                     "\x6f\x72\x20\x31\x2c\x31\x2c\x31\xa\x9"                               \
+                     "\x6d\x72\x20\x25\x30\x2c\x33"     /*result*/                     \
+                     : "\x3d\x62" (_zzq_result)                         \
+                     : "\x62" (_zzq_default), "\x62" (_zzq_ptr)         \
+                     : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", "\x72\x33", "\x72\x34");               \
     _zzq_result;                                                  \
     })
 
@@ -439,11 +439,11 @@ typedef
     unsigned int __addr;                                          \
     __asm__ volatile(__SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* %R3 = guest_NRADDR */                     \
-                     "or 2,2,2\n\t"                               \
-                     "mr %0,3"                                    \
-                     : "=b" (__addr)                              \
+                     "\x6f\x72\x20\x32\x2c\x32\x2c\x32\xa\x9"                               \
+                     "\x6d\x72\x20\x25\x30\x2c\x33"                                    \
+                     : "\x3d\x62" (__addr)                              \
                      :                                            \
-                     : "cc", "memory", "r3"                       \
+                     : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", "\x72\x33"                       \
                     );                                            \
     _zzq_orig->nraddr = __addr;                                   \
   }
@@ -451,7 +451,7 @@ typedef
 #define VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                   \
                      __SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* branch-and-link-to-noredir *%R11 */       \
-                     "or 3,3,3\n\t"
+                     "\x6f\x72\x20\x33\x2c\x33\x2c\x33\xa\x9"
 #endif /* PLAT_ppc32_linux */
 
 /* ------------------------ ppc64-linux ------------------------ */
@@ -466,8 +466,8 @@ typedef
    OrigFn;
 
 #define __SPECIAL_INSTRUCTION_PREAMBLE                            \
-                     "rotldi 0,0,3  ; rotldi 0,0,13\n\t"          \
-                     "rotldi 0,0,61 ; rotldi 0,0,51\n\t"
+                     "\x72\x6f\x74\x6c\x64\x69\x20\x30\x2c\x30\x2c\x33\x20\x20\x3b\x20\x72\x6f\x74\x6c\x64\x69\x20\x30\x2c\x30\x2c\x31\x33\xa\x9"          \
+                     "\x72\x6f\x74\x6c\x64\x69\x20\x30\x2c\x30\x2c\x36\x31\x20\x3b\x20\x72\x6f\x74\x6c\x64\x69\x20\x30\x2c\x30\x2c\x35\x31\xa\x9"
 
 #define VALGRIND_DO_CLIENT_REQUEST_EXPR(                          \
         _zzq_default, _zzq_request,                               \
@@ -475,8 +475,8 @@ typedef
                                                                   \
   __extension__                                                   \
   ({         uint64_t  _zzq_args[6];                \
-    register uint64_t  _zzq_result __asm__("r3");   \
-    register uint64_t* _zzq_ptr __asm__("r4");      \
+    register uint64_t  _zzq_result __asm__("\x72\x33");   \
+    register uint64_t* _zzq_ptr __asm__("\x72\x34");      \
     _zzq_args[0] = (uint64_t)(_zzq_request);        \
     _zzq_args[1] = (uint64_t)(_zzq_arg1);           \
     _zzq_args[2] = (uint64_t)(_zzq_arg2);           \
@@ -486,30 +486,30 @@ typedef
     _zzq_ptr = _zzq_args;                                         \
     __asm__ volatile(__SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* %R3 = client_request ( %R4 ) */           \
-                     "or 1,1,1"                                   \
-                     : "=r" (_zzq_result)                         \
-                     : "0" (_zzq_default), "r" (_zzq_ptr)         \
-                     : "cc", "memory");                           \
+                     "\x6f\x72\x20\x31\x2c\x31\x2c\x31"                                   \
+                     : "\x3d\x72" (_zzq_result)                         \
+                     : "\x30" (_zzq_default), "\x72" (_zzq_ptr)         \
+                     : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79");                           \
     _zzq_result;                                                  \
   })
 
 #define VALGRIND_GET_NR_CONTEXT(_zzq_rlval)                       \
   { volatile OrigFn* _zzq_orig = &(_zzq_rlval);                   \
-    register uint64_t __addr __asm__("r3");         \
+    register uint64_t __addr __asm__("\x72\x33");         \
     __asm__ volatile(__SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* %R3 = guest_NRADDR */                     \
-                     "or 2,2,2"                                   \
-                     : "=r" (__addr)                              \
+                     "\x6f\x72\x20\x32\x2c\x32\x2c\x32"                                   \
+                     : "\x3d\x72" (__addr)                              \
                      :                                            \
-                     : "cc", "memory"                             \
+                     : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79"                             \
                     );                                            \
     _zzq_orig->nraddr = __addr;                                   \
     __asm__ volatile(__SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* %R3 = guest_NRADDR_GPR2 */                \
-                     "or 4,4,4"                                   \
-                     : "=r" (__addr)                              \
+                     "\x6f\x72\x20\x34\x2c\x34\x2c\x34"                                   \
+                     : "\x3d\x72" (__addr)                              \
                      :                                            \
-                     : "cc", "memory"                             \
+                     : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79"                             \
                     );                                            \
     _zzq_orig->r2 = __addr;                                       \
   }
@@ -517,7 +517,7 @@ typedef
 #define VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                   \
                      __SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* branch-and-link-to-noredir *%R11 */       \
-                     "or 3,3,3\n\t"
+                     "\x6f\x72\x20\x33\x2c\x33\x2c\x33\xa\x9"
 
 #endif /* PLAT_ppc64_linux */
 
@@ -532,8 +532,8 @@ typedef
    OrigFn;
 
 #define __SPECIAL_INSTRUCTION_PREAMBLE                            \
-            "mov r12, r12, ror #3  ; mov r12, r12, ror #13 \n\t"  \
-            "mov r12, r12, ror #29 ; mov r12, r12, ror #19 \n\t"
+            "\x6d\x6f\x76\x20\x72\x31\x32\x2c\x20\x72\x31\x32\x2c\x20\x72\x6f\x72\x20\x23\x33\x20\x20\x3b\x20\x6d\x6f\x76\x20\x72\x31\x32\x2c\x20\x72\x31\x32\x2c\x20\x72\x6f\x72\x20\x23\x31\x33\x20\xa\x9"  \
+            "\x6d\x6f\x76\x20\x72\x31\x32\x2c\x20\x72\x31\x32\x2c\x20\x72\x6f\x72\x20\x23\x32\x39\x20\x3b\x20\x6d\x6f\x76\x20\x72\x31\x32\x2c\x20\x72\x31\x32\x2c\x20\x72\x6f\x72\x20\x23\x31\x39\x20\xa\x9"
 
 #define VALGRIND_DO_CLIENT_REQUEST_EXPR(                          \
         _zzq_default, _zzq_request,                               \
@@ -548,15 +548,15 @@ typedef
     _zzq_args[3] = (unsigned int)(_zzq_arg3);                     \
     _zzq_args[4] = (unsigned int)(_zzq_arg4);                     \
     _zzq_args[5] = (unsigned int)(_zzq_arg5);                     \
-    __asm__ volatile("mov r3, %1\n\t" /*default*/                 \
-                     "mov r4, %2\n\t" /*ptr*/                     \
+    __asm__ volatile("\x6d\x6f\x76\x20\x72\x33\x2c\x20\x25\x31\xa\x9" /*default*/                 \
+                     "\x6d\x6f\x76\x20\x72\x34\x2c\x20\x25\x32\xa\x9" /*ptr*/                     \
                      __SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* R3 = client_request ( R4 ) */             \
-                     "orr r10, r10, r10\n\t"                      \
-                     "mov %0, r3"     /*result*/                  \
-                     : "=r" (_zzq_result)                         \
-                     : "r" (_zzq_default), "r" (&_zzq_args[0])    \
-                     : "cc","memory", "r3", "r4");                \
+                     "\x6f\x72\x72\x20\x72\x31\x30\x2c\x20\x72\x31\x30\x2c\x20\x72\x31\x30\xa\x9"                      \
+                     "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x33"     /*result*/                  \
+                     : "\x3d\x72" (_zzq_result)                         \
+                     : "\x72" (_zzq_default), "\x72" (&_zzq_args[0])    \
+                     : "\x63\x63","\x6d\x65\x6d\x6f\x72\x79", "\x72\x33", "\x72\x34");                \
     _zzq_result;                                                  \
   })
 
@@ -565,11 +565,11 @@ typedef
     unsigned int __addr;                                          \
     __asm__ volatile(__SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* R3 = guest_NRADDR */                      \
-                     "orr r11, r11, r11\n\t"                      \
-                     "mov %0, r3"                                 \
-                     : "=r" (__addr)                              \
+                     "\x6f\x72\x72\x20\x72\x31\x31\x2c\x20\x72\x31\x31\x2c\x20\x72\x31\x31\xa\x9"                      \
+                     "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x33"                                 \
+                     : "\x3d\x72" (__addr)                              \
                      :                                            \
-                     : "cc", "memory", "r3"                       \
+                     : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", "\x72\x33"                       \
                     );                                            \
     _zzq_orig->nraddr = __addr;                                   \
   }
@@ -577,7 +577,7 @@ typedef
 #define VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                    \
                      __SPECIAL_INSTRUCTION_PREAMBLE               \
                      /* branch-and-link-to-noredir *%R4 */        \
-                     "orr r12, r12, r12\n\t"
+                     "\x6f\x72\x72\x20\x72\x31\x32\x2c\x20\x72\x31\x32\x2c\x20\x72\x31\x32\xa\x9"
 
 #endif /* PLAT_arm_linux */
 
@@ -596,14 +596,14 @@ typedef
  * (e.g. VEX/priv/guest_s390_decoder.c).
  */
 #define __SPECIAL_INSTRUCTION_PREAMBLE                           \
-                     "lr 15,15\n\t"                              \
-                     "lr 1,1\n\t"                                \
-                     "lr 2,2\n\t"                                \
-                     "lr 3,3\n\t"
+                     "\x6c\x72\x20\x31\x35\x2c\x31\x35\xa\x9"                              \
+                     "\x6c\x72\x20\x31\x2c\x31\xa\x9"                                \
+                     "\x6c\x72\x20\x32\x2c\x32\xa\x9"                                \
+                     "\x6c\x72\x20\x33\x2c\x33\xa\x9"
 
-#define __CLIENT_REQUEST_CODE "lr 2,2\n\t"
-#define __GET_NR_CONTEXT_CODE "lr 3,3\n\t"
-#define __CALL_NO_REDIR_CODE  "lr 4,4\n\t"
+#define __CLIENT_REQUEST_CODE "\x6c\x72\x20\x32\x2c\x32\xa\x9"
+#define __GET_NR_CONTEXT_CODE "\x6c\x72\x20\x33\x2c\x33\xa\x9"
+#define __CALL_NO_REDIR_CODE  "\x6c\x72\x20\x34\x2c\x34\xa\x9"
 
 #define VALGRIND_DO_CLIENT_REQUEST_EXPR(                         \
        _zzq_default, _zzq_request,                               \
@@ -618,16 +618,16 @@ typedef
    _zzq_args[4] = (uint64_t)(_zzq_arg4);           \
    _zzq_args[5] = (uint64_t)(_zzq_arg5);           \
    __asm__ volatile(/* r2 = args */                              \
-                    "lgr 2,%1\n\t"                               \
+                    "\x6c\x67\x72\x20\x32\x2c\x25\x31\xa\x9"                               \
                     /* r3 = default */                           \
-                    "lgr 3,%2\n\t"                               \
+                    "\x6c\x67\x72\x20\x33\x2c\x25\x32\xa\x9"                               \
                     __SPECIAL_INSTRUCTION_PREAMBLE               \
                     __CLIENT_REQUEST_CODE                        \
                     /* results = r3 */                           \
-                    "lgr %0, 3\n\t"                              \
-                    : "=d" (_zzq_result)                         \
-                    : "a" (&_zzq_args[0]), "0" (_zzq_default)    \
-                    : "cc", "2", "3", "memory"                   \
+                    "\x6c\x67\x72\x20\x25\x30\x2c\x20\x33\xa\x9"                              \
+                    : "\x3d\x64" (_zzq_result)                         \
+                    : "\x61" (&_zzq_args[0]), "\x30" (_zzq_default)    \
+                    : "\x63\x63", "\x32", "\x33", "\x6d\x65\x6d\x6f\x72\x79"                   \
                    );                                            \
    _zzq_result;                                                  \
  })
@@ -637,10 +637,10 @@ typedef
    volatile uint64_t __addr;                       \
    __asm__ volatile(__SPECIAL_INSTRUCTION_PREAMBLE               \
                     __GET_NR_CONTEXT_CODE                        \
-                    "lgr %0, 3\n\t"                              \
-                    : "=a" (__addr)                              \
+                    "\x6c\x67\x72\x20\x25\x30\x2c\x20\x33\xa\x9"                              \
+                    : "\x3d\x61" (__addr)                              \
                     :                                            \
-                    : "cc", "3", "memory"                        \
+                    : "\x63\x63", "\x33", "\x6d\x65\x6d\x6f\x72\x79"                        \
                    );                                            \
    _zzq_orig->nraddr = __addr;                                   \
  }
@@ -739,7 +739,7 @@ typedef
 
 /* These regs are trashed by the hidden call.  No need to mention eax
    as gcc can already see that, plus causes gcc to bomb. */
-#define __CALLER_SAVED_REGS /*"eax"*/ "ecx", "edx"
+#define __CALLER_SAVED_REGS /*"\x65\x61\x78"*/ "\x65\x63\x78", "\x65\x64\x78"
 
 /* These CALL_FN_ macros assume that on x86-linux, sizeof(unsigned
    long) == 4. */
@@ -751,11 +751,11 @@ typedef
       volatile unsigned long _res;                                \
       _argvec[0] = (unsigned long)_orig.nraddr;                   \
       __asm__ volatile(                                           \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -768,14 +768,14 @@ typedef
       _argvec[0] = (unsigned long)_orig.nraddr;                   \
       _argvec[1] = (unsigned long)(arg1);                         \
       __asm__ volatile(                                           \
-         "subl $12, %%esp\n\t"                                    \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x73\x75\x62\x6c\x20\x24\x31\x32\x2c\x20\x25\x6c\x85\xa2\x97\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $16, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x31\x36\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -789,15 +789,15 @@ typedef
       _argvec[1] = (unsigned long)(arg1);                         \
       _argvec[2] = (unsigned long)(arg2);                         \
       __asm__ volatile(                                           \
-         "subl $8, %%esp\n\t"                                     \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x73\x75\x62\x6c\x20\x24\x38\x2c\x20\x25\x6c\x85\xa2\x97\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $16, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x31\x36\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -812,16 +812,16 @@ typedef
       _argvec[2] = (unsigned long)(arg2);                         \
       _argvec[3] = (unsigned long)(arg3);                         \
       __asm__ volatile(                                           \
-         "subl $4, %%esp\n\t"                                     \
-         "pushl 12(%%eax)\n\t"                                    \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x73\x75\x62\x6c\x20\x24\x34\x2c\x20\x25\x6c\x85\xa2\x97\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x31\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $16, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x31\x36\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -837,16 +837,16 @@ typedef
       _argvec[3] = (unsigned long)(arg3);                         \
       _argvec[4] = (unsigned long)(arg4);                         \
       __asm__ volatile(                                           \
-         "pushl 16(%%eax)\n\t"                                    \
-         "pushl 12(%%eax)\n\t"                                    \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x70\x75\x73\x68\x6c\x20\x31\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $16, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x31\x36\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -863,18 +863,18 @@ typedef
       _argvec[4] = (unsigned long)(arg4);                         \
       _argvec[5] = (unsigned long)(arg5);                         \
       __asm__ volatile(                                           \
-         "subl $12, %%esp\n\t"                                    \
-         "pushl 20(%%eax)\n\t"                                    \
-         "pushl 16(%%eax)\n\t"                                    \
-         "pushl 12(%%eax)\n\t"                                    \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x73\x75\x62\x6c\x20\x24\x31\x32\x2c\x20\x25\x6c\x85\xa2\x97\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $32, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x33\x32\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -892,19 +892,19 @@ typedef
       _argvec[5] = (unsigned long)(arg5);                         \
       _argvec[6] = (unsigned long)(arg6);                         \
       __asm__ volatile(                                           \
-         "subl $8, %%esp\n\t"                                     \
-         "pushl 24(%%eax)\n\t"                                    \
-         "pushl 20(%%eax)\n\t"                                    \
-         "pushl 16(%%eax)\n\t"                                    \
-         "pushl 12(%%eax)\n\t"                                    \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x73\x75\x62\x6c\x20\x24\x38\x2c\x20\x25\x6c\x85\xa2\x97\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x32\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $32, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x33\x32\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -924,20 +924,20 @@ typedef
       _argvec[6] = (unsigned long)(arg6);                         \
       _argvec[7] = (unsigned long)(arg7);                         \
       __asm__ volatile(                                           \
-         "subl $4, %%esp\n\t"                                     \
-         "pushl 28(%%eax)\n\t"                                    \
-         "pushl 24(%%eax)\n\t"                                    \
-         "pushl 20(%%eax)\n\t"                                    \
-         "pushl 16(%%eax)\n\t"                                    \
-         "pushl 12(%%eax)\n\t"                                    \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x73\x75\x62\x6c\x20\x24\x34\x2c\x20\x25\x6c\x85\xa2\x97\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x32\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $32, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x33\x32\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -958,20 +958,20 @@ typedef
       _argvec[7] = (unsigned long)(arg7);                         \
       _argvec[8] = (unsigned long)(arg8);                         \
       __asm__ volatile(                                           \
-         "pushl 32(%%eax)\n\t"                                    \
-         "pushl 28(%%eax)\n\t"                                    \
-         "pushl 24(%%eax)\n\t"                                    \
-         "pushl 20(%%eax)\n\t"                                    \
-         "pushl 16(%%eax)\n\t"                                    \
-         "pushl 12(%%eax)\n\t"                                    \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x70\x75\x73\x68\x6c\x20\x33\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $32, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x33\x32\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -993,22 +993,22 @@ typedef
       _argvec[8] = (unsigned long)(arg8);                         \
       _argvec[9] = (unsigned long)(arg9);                         \
       __asm__ volatile(                                           \
-         "subl $12, %%esp\n\t"                                    \
-         "pushl 36(%%eax)\n\t"                                    \
-         "pushl 32(%%eax)\n\t"                                    \
-         "pushl 28(%%eax)\n\t"                                    \
-         "pushl 24(%%eax)\n\t"                                    \
-         "pushl 20(%%eax)\n\t"                                    \
-         "pushl 16(%%eax)\n\t"                                    \
-         "pushl 12(%%eax)\n\t"                                    \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x73\x75\x62\x6c\x20\x24\x31\x32\x2c\x20\x25\x6c\x85\xa2\x97\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x33\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x33\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $48, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x34\x38\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1031,23 +1031,23 @@ typedef
       _argvec[9] = (unsigned long)(arg9);                         \
       _argvec[10] = (unsigned long)(arg10);                       \
       __asm__ volatile(                                           \
-         "subl $8, %%esp\n\t"                                     \
-         "pushl 40(%%eax)\n\t"                                    \
-         "pushl 36(%%eax)\n\t"                                    \
-         "pushl 32(%%eax)\n\t"                                    \
-         "pushl 28(%%eax)\n\t"                                    \
-         "pushl 24(%%eax)\n\t"                                    \
-         "pushl 20(%%eax)\n\t"                                    \
-         "pushl 16(%%eax)\n\t"                                    \
-         "pushl 12(%%eax)\n\t"                                    \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x73\x75\x62\x6c\x20\x24\x38\x2c\x20\x25\x6c\x85\xa2\x97\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x33\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x33\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $48, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x34\x38\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1072,24 +1072,24 @@ typedef
       _argvec[10] = (unsigned long)(arg10);                       \
       _argvec[11] = (unsigned long)(arg11);                       \
       __asm__ volatile(                                           \
-         "subl $4, %%esp\n\t"                                     \
-         "pushl 44(%%eax)\n\t"                                    \
-         "pushl 40(%%eax)\n\t"                                    \
-         "pushl 36(%%eax)\n\t"                                    \
-         "pushl 32(%%eax)\n\t"                                    \
-         "pushl 28(%%eax)\n\t"                                    \
-         "pushl 24(%%eax)\n\t"                                    \
-         "pushl 20(%%eax)\n\t"                                    \
-         "pushl 16(%%eax)\n\t"                                    \
-         "pushl 12(%%eax)\n\t"                                    \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x73\x75\x62\x6c\x20\x24\x34\x2c\x20\x25\x6c\x85\xa2\x97\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x34\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x33\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x33\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $48, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x34\x38\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1115,24 +1115,24 @@ typedef
       _argvec[11] = (unsigned long)(arg11);                       \
       _argvec[12] = (unsigned long)(arg12);                       \
       __asm__ volatile(                                           \
-         "pushl 48(%%eax)\n\t"                                    \
-         "pushl 44(%%eax)\n\t"                                    \
-         "pushl 40(%%eax)\n\t"                                    \
-         "pushl 36(%%eax)\n\t"                                    \
-         "pushl 32(%%eax)\n\t"                                    \
-         "pushl 28(%%eax)\n\t"                                    \
-         "pushl 24(%%eax)\n\t"                                    \
-         "pushl 20(%%eax)\n\t"                                    \
-         "pushl 16(%%eax)\n\t"                                    \
-         "pushl 12(%%eax)\n\t"                                    \
-         "pushl 8(%%eax)\n\t"                                     \
-         "pushl 4(%%eax)\n\t"                                     \
-         "movl (%%eax), %%eax\n\t"  /* target->%eax */            \
+         "\x70\x75\x73\x68\x6c\x20\x34\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x34\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x34\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x33\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x33\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x32\x30\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x36\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x31\x32\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x6c\x20\x38\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x70\x75\x73\x68\x6c\x20\x34\x28\x25\x6c\x85\x81\xa7\x29\xa\x9"                                     \
+         "\x6d\x6f\x76\x6c\x20\x28\x25\x6c\x85\x81\xa7\x29\x2c\x20\x25\x6c\x85\x81\xa7\xa\x9"  /* target->%eax */            \
          VALGRIND_CALL_NOREDIR_EAX                                \
-         "addl $48, %%esp\n"                                      \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x6c\x20\x24\x34\x38\x2c\x20\x25\x6c\x85\xa2\x97\xa"                                      \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1146,8 +1146,8 @@ typedef
 /* ARGREGS: rdi rsi rdx rcx r8 r9 (the rest on stack in R-to-L order) */
 
 /* These regs are trashed by the hidden call. */
-#define __CALLER_SAVED_REGS /*"rax",*/ "rcx", "rdx", "rsi",       \
-                            "rdi", "r8", "r9", "r10", "r11"
+#define __CALLER_SAVED_REGS /*"\x72\x61\x78",*/ "\x72\x63\x78", "\x72\x64\x78", "\x72\x73\x69",       \
+                            "\x72\x64\x69", "\x72\x38", "\x72\x39", "\x72\x31\x30", "\x72\x31\x31"
 
 /* This is all pretty complex.  It's so as to make stack unwinding
    work reliably.  See bug 243270.  The basic problem is the sub and
@@ -1205,15 +1205,15 @@ typedef
 */
 #if defined(__GNUC__) && defined(__GCC_HAVE_DWARF2_CFI_ASM)
 #  define __FRAME_POINTER                                         \
-      ,"r"(__builtin_dwarf_cfa())
+      ,"\x72"(__builtin_dwarf_cfa())
 #  define VALGRIND_CFI_PROLOGUE                                   \
-      "movq %%rbp, %%r15\n\t"                                     \
-      "movq %2, %%rbp\n\t"                                        \
-      ".cfi_remember_state\n\t"                                   \
-      ".cfi_def_cfa rbp, 0\n\t"
+      "\x6d\x6f\x76\x71\x20\x25\x25\x72\x62\x70\x2c\x20\x25\x25\x72\x31\x35\xa\x9"                                     \
+      "\x6d\x6f\x76\x71\x20\x25\x32\x2c\x20\x25\x25\x72\x62\x70\xa\x9"                                        \
+      "\x2e\x63\x66\x69\x5f\x72\x65\x6d\x65\x6d\x62\x65\x72\x5f\x73\x74\x61\x74\x65\xa\x9"                                   \
+      "\x2e\x63\x66\x69\x5f\x64\x65\x66\x5f\x63\x66\x61\x20\x72\x62\x70\x2c\x20\x30\xa\x9"
 #  define VALGRIND_CFI_EPILOGUE                                   \
-      "movq %%r15, %%rbp\n\t"                                     \
-      ".cfi_restore_state\n\t"
+      "\x6d\x6f\x76\x71\x20\x25\x25\x72\x31\x35\x2c\x20\x25\x25\x72\x62\x70\xa\x9"                                     \
+      "\x2e\x63\x66\x69\x5f\x72\x65\x73\x74\x6f\x72\x65\x5f\x73\x74\x61\x74\x65\xa\x9"
 #else
 #  define __FRAME_POINTER
 #  define VALGRIND_CFI_PROLOGUE
@@ -1253,14 +1253,14 @@ typedef
       _argvec[0] = (unsigned long)_orig.nraddr;                   \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $128,%%rsp\n\t"                                    \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $128,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1274,15 +1274,15 @@ typedef
       _argvec[1] = (unsigned long)(arg1);                         \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $128,%%rsp\n\t"                                    \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $128,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1297,16 +1297,16 @@ typedef
       _argvec[2] = (unsigned long)(arg2);                         \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $128,%%rsp\n\t"                                    \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $128,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1322,17 +1322,17 @@ typedef
       _argvec[3] = (unsigned long)(arg3);                         \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $128,%%rsp\n\t"                                    \
-         "movq 24(%%rax), %%rdx\n\t"                              \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x32\x34\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $128,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1349,18 +1349,18 @@ typedef
       _argvec[4] = (unsigned long)(arg4);                         \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $128,%%rsp\n\t"                                    \
-         "movq 32(%%rax), %%rcx\n\t"                              \
-         "movq 24(%%rax), %%rdx\n\t"                              \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x33\x32\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x63\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x32\x34\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $128,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1378,19 +1378,19 @@ typedef
       _argvec[5] = (unsigned long)(arg5);                         \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $128,%%rsp\n\t"                                    \
-         "movq 40(%%rax), %%r8\n\t"                               \
-         "movq 32(%%rax), %%rcx\n\t"                              \
-         "movq 24(%%rax), %%rdx\n\t"                              \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x34\x30\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x38\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x33\x32\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x63\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x32\x34\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $128,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1409,20 +1409,20 @@ typedef
       _argvec[6] = (unsigned long)(arg6);                         \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $128,%%rsp\n\t"                                    \
-         "movq 48(%%rax), %%r9\n\t"                               \
-         "movq 40(%%rax), %%r8\n\t"                               \
-         "movq 32(%%rax), %%rcx\n\t"                              \
-         "movq 24(%%rax), %%rdx\n\t"                              \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x34\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x39\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x34\x30\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x38\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x33\x32\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x63\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x32\x34\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $128,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1443,22 +1443,22 @@ typedef
       _argvec[7] = (unsigned long)(arg7);                         \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $136,%%rsp\n\t"                                    \
-         "pushq 56(%%rax)\n\t"                                    \
-         "movq 48(%%rax), %%r9\n\t"                               \
-         "movq 40(%%rax), %%r8\n\t"                               \
-         "movq 32(%%rax), %%rcx\n\t"                              \
-         "movq 24(%%rax), %%rdx\n\t"                              \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x33\x36\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x35\x36\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x34\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x39\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x34\x30\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x38\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x33\x32\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x63\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x32\x34\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $8, %%rsp\n"                                       \
-         "addq $136,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x38\x2c\x20\x25\x25\x72\x73\x70\xa"                                       \
+         "\x61\x64\x64\x71\x20\x24\x31\x33\x36\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1480,23 +1480,23 @@ typedef
       _argvec[8] = (unsigned long)(arg8);                         \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $128,%%rsp\n\t"                                    \
-         "pushq 64(%%rax)\n\t"                                    \
-         "pushq 56(%%rax)\n\t"                                    \
-         "movq 48(%%rax), %%r9\n\t"                               \
-         "movq 40(%%rax), %%r8\n\t"                               \
-         "movq 32(%%rax), %%rcx\n\t"                              \
-         "movq 24(%%rax), %%rdx\n\t"                              \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x36\x34\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x35\x36\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x34\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x39\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x34\x30\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x38\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x33\x32\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x63\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x32\x34\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $16, %%rsp\n"                                      \
-         "addq $128,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x31\x36\x2c\x20\x25\x25\x72\x73\x70\xa"                                      \
+         "\x61\x64\x64\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1519,24 +1519,24 @@ typedef
       _argvec[9] = (unsigned long)(arg9);                         \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $136,%%rsp\n\t"                                    \
-         "pushq 72(%%rax)\n\t"                                    \
-         "pushq 64(%%rax)\n\t"                                    \
-         "pushq 56(%%rax)\n\t"                                    \
-         "movq 48(%%rax), %%r9\n\t"                               \
-         "movq 40(%%rax), %%r8\n\t"                               \
-         "movq 32(%%rax), %%rcx\n\t"                              \
-         "movq 24(%%rax), %%rdx\n\t"                              \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x33\x36\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x37\x32\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x36\x34\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x35\x36\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x34\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x39\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x34\x30\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x38\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x33\x32\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x63\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x32\x34\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $24, %%rsp\n"                                      \
-         "addq $136,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x32\x34\x2c\x20\x25\x25\x72\x73\x70\xa"                                      \
+         "\x61\x64\x64\x71\x20\x24\x31\x33\x36\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1560,25 +1560,25 @@ typedef
       _argvec[10] = (unsigned long)(arg10);                       \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $128,%%rsp\n\t"                                    \
-         "pushq 80(%%rax)\n\t"                                    \
-         "pushq 72(%%rax)\n\t"                                    \
-         "pushq 64(%%rax)\n\t"                                    \
-         "pushq 56(%%rax)\n\t"                                    \
-         "movq 48(%%rax), %%r9\n\t"                               \
-         "movq 40(%%rax), %%r8\n\t"                               \
-         "movq 32(%%rax), %%rcx\n\t"                              \
-         "movq 24(%%rax), %%rdx\n\t"                              \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x38\x30\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x37\x32\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x36\x34\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x35\x36\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x34\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x39\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x34\x30\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x38\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x33\x32\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x63\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x32\x34\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $32, %%rsp\n"                                      \
-         "addq $128,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x33\x32\x2c\x20\x25\x25\x72\x73\x70\xa"                                      \
+         "\x61\x64\x64\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1603,26 +1603,26 @@ typedef
       _argvec[11] = (unsigned long)(arg11);                       \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $136,%%rsp\n\t"                                    \
-         "pushq 88(%%rax)\n\t"                                    \
-         "pushq 80(%%rax)\n\t"                                    \
-         "pushq 72(%%rax)\n\t"                                    \
-         "pushq 64(%%rax)\n\t"                                    \
-         "pushq 56(%%rax)\n\t"                                    \
-         "movq 48(%%rax), %%r9\n\t"                               \
-         "movq 40(%%rax), %%r8\n\t"                               \
-         "movq 32(%%rax), %%rcx\n\t"                              \
-         "movq 24(%%rax), %%rdx\n\t"                              \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x33\x36\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x38\x38\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x38\x30\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x37\x32\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x36\x34\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x35\x36\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x34\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x39\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x34\x30\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x38\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x33\x32\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x63\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x32\x34\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $40, %%rsp\n"                                      \
-         "addq $136,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x34\x30\x2c\x20\x25\x25\x72\x73\x70\xa"                                      \
+         "\x61\x64\x64\x71\x20\x24\x31\x33\x36\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1648,27 +1648,27 @@ typedef
       _argvec[12] = (unsigned long)(arg12);                       \
       __asm__ volatile(                                           \
          VALGRIND_CFI_PROLOGUE                                    \
-         "subq $128,%%rsp\n\t"                                    \
-         "pushq 96(%%rax)\n\t"                                    \
-         "pushq 88(%%rax)\n\t"                                    \
-         "pushq 80(%%rax)\n\t"                                    \
-         "pushq 72(%%rax)\n\t"                                    \
-         "pushq 64(%%rax)\n\t"                                    \
-         "pushq 56(%%rax)\n\t"                                    \
-         "movq 48(%%rax), %%r9\n\t"                               \
-         "movq 40(%%rax), %%r8\n\t"                               \
-         "movq 32(%%rax), %%rcx\n\t"                              \
-         "movq 24(%%rax), %%rdx\n\t"                              \
-         "movq 16(%%rax), %%rsi\n\t"                              \
-         "movq 8(%%rax), %%rdi\n\t"                               \
-         "movq (%%rax), %%rax\n\t"  /* target->%rax */            \
+         "\x73\x75\x62\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x39\x36\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x38\x38\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x38\x30\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x37\x32\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x36\x34\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x70\x75\x73\x68\x71\x20\x35\x36\x28\x25\x25\x72\x61\x78\x29\xa\x9"                                    \
+         "\x6d\x6f\x76\x71\x20\x34\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x39\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x34\x30\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x38\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x33\x32\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x63\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x32\x34\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x78\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x31\x36\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x73\x69\xa\x9"                              \
+         "\x6d\x6f\x76\x71\x20\x38\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x64\x69\xa\x9"                               \
+         "\x6d\x6f\x76\x71\x20\x28\x25\x25\x72\x61\x78\x29\x2c\x20\x25\x25\x72\x61\x78\xa\x9"  /* target->%rax */            \
          VALGRIND_CALL_NOREDIR_RAX                                \
-         "addq $48, %%rsp\n"                                      \
-         "addq $128,%%rsp\n\t"                                    \
+         "\x61\x64\x64\x71\x20\x24\x34\x38\x2c\x20\x25\x25\x72\x73\x70\xa"                                      \
+         "\x61\x64\x64\x71\x20\x24\x31\x32\x38\x2c\x25\x25\x72\x73\x70\xa\x9"                                    \
          VALGRIND_CFI_EPILOGUE                                    \
-         : /*out*/   "=a" (_res)                                  \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS, "r15"   \
+         : /*out*/   "\x3d\x61" (_res)                                  \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS, "\x72\x31\x35"   \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1704,10 +1704,10 @@ typedef
 
 /* These regs are trashed by the hidden call. */
 #define __CALLER_SAVED_REGS                                       \
-   "lr", "ctr", "xer",                                            \
-   "cr0", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7",        \
-   "r0", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",   \
-   "r11", "r12", "r13"
+   "\x6c\x72", "\x63\x74\x72", "\x78\x65\x72",                                            \
+   "\x63\x72\x30", "\x63\x72\x31", "\x63\x72\x32", "\x63\x72\x33", "\x63\x72\x34", "\x63\x72\x35", "\x63\x72\x36", "\x63\x72\x37",        \
+   "\x72\x30", "\x72\x32", "\x72\x33", "\x72\x34", "\x72\x35", "\x72\x36", "\x72\x37", "\x72\x38", "\x72\x39", "\x72\x31\x30",   \
+   "\x72\x31\x31", "\x72\x31\x32", "\x72\x31\x33"
 
 /* These CALL_FN_ macros assume that on ppc32-linux,
    sizeof(unsigned long) == 4. */
@@ -1719,13 +1719,13 @@ typedef
       volatile unsigned long _res;                                \
       _argvec[0] = (unsigned long)_orig.nraddr;                   \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1738,14 +1738,14 @@ typedef
       _argvec[0] = (unsigned long)_orig.nraddr;                   \
       _argvec[1] = (unsigned long)arg1;                           \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1759,15 +1759,15 @@ typedef
       _argvec[1] = (unsigned long)arg1;                           \
       _argvec[2] = (unsigned long)arg2;                           \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1782,16 +1782,16 @@ typedef
       _argvec[2] = (unsigned long)arg2;                           \
       _argvec[3] = (unsigned long)arg3;                           \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 5,12(11)\n\t"                                       \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x35\x2c\x31\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1807,17 +1807,17 @@ typedef
       _argvec[3] = (unsigned long)arg3;                           \
       _argvec[4] = (unsigned long)arg4;                           \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 5,12(11)\n\t"                                       \
-         "lwz 6,16(11)\n\t"  /* arg4->r6 */                       \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x35\x2c\x31\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x36\x2c\x31\x36\x28\x31\x31\x29\xa\x9"  /* arg4->r6 */                       \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1834,18 +1834,18 @@ typedef
       _argvec[4] = (unsigned long)arg4;                           \
       _argvec[5] = (unsigned long)arg5;                           \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 5,12(11)\n\t"                                       \
-         "lwz 6,16(11)\n\t"  /* arg4->r6 */                       \
-         "lwz 7,20(11)\n\t"                                       \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x35\x2c\x31\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x36\x2c\x31\x36\x28\x31\x31\x29\xa\x9"  /* arg4->r6 */                       \
+         "\x6c\x77\x7a\x20\x37\x2c\x32\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1863,19 +1863,19 @@ typedef
       _argvec[5] = (unsigned long)arg5;                           \
       _argvec[6] = (unsigned long)arg6;                           \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 5,12(11)\n\t"                                       \
-         "lwz 6,16(11)\n\t"  /* arg4->r6 */                       \
-         "lwz 7,20(11)\n\t"                                       \
-         "lwz 8,24(11)\n\t"                                       \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x35\x2c\x31\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x36\x2c\x31\x36\x28\x31\x31\x29\xa\x9"  /* arg4->r6 */                       \
+         "\x6c\x77\x7a\x20\x37\x2c\x32\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x38\x2c\x32\x34\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1895,20 +1895,20 @@ typedef
       _argvec[6] = (unsigned long)arg6;                           \
       _argvec[7] = (unsigned long)arg7;                           \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 5,12(11)\n\t"                                       \
-         "lwz 6,16(11)\n\t"  /* arg4->r6 */                       \
-         "lwz 7,20(11)\n\t"                                       \
-         "lwz 8,24(11)\n\t"                                       \
-         "lwz 9,28(11)\n\t"                                       \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x35\x2c\x31\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x36\x2c\x31\x36\x28\x31\x31\x29\xa\x9"  /* arg4->r6 */                       \
+         "\x6c\x77\x7a\x20\x37\x2c\x32\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x38\x2c\x32\x34\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x39\x2c\x32\x38\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1929,21 +1929,21 @@ typedef
       _argvec[7] = (unsigned long)arg7;                           \
       _argvec[8] = (unsigned long)arg8;                           \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 5,12(11)\n\t"                                       \
-         "lwz 6,16(11)\n\t"  /* arg4->r6 */                       \
-         "lwz 7,20(11)\n\t"                                       \
-         "lwz 8,24(11)\n\t"                                       \
-         "lwz 9,28(11)\n\t"                                       \
-         "lwz 10,32(11)\n\t" /* arg8->r10 */                      \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x35\x2c\x31\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x36\x2c\x31\x36\x28\x31\x31\x29\xa\x9"  /* arg4->r6 */                       \
+         "\x6c\x77\x7a\x20\x37\x2c\x32\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x38\x2c\x32\x34\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x39\x2c\x32\x38\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x31\x30\x2c\x33\x32\x28\x31\x31\x29\xa\x9" /* arg8->r10 */                      \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -1965,27 +1965,27 @@ typedef
       _argvec[8] = (unsigned long)arg8;                           \
       _argvec[9] = (unsigned long)arg9;                           \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "addi 1,1,-16\n\t"                                       \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x2d\x31\x36\xa\x9"                                       \
          /* arg9 */                                               \
-         "lwz 3,36(11)\n\t"                                       \
-         "stw 3,8(1)\n\t"                                         \
+         "\x6c\x77\x7a\x20\x33\x2c\x33\x36\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x77\x20\x33\x2c\x38\x28\x31\x29\xa\x9"                                         \
          /* args1-8 */                                            \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 5,12(11)\n\t"                                       \
-         "lwz 6,16(11)\n\t"  /* arg4->r6 */                       \
-         "lwz 7,20(11)\n\t"                                       \
-         "lwz 8,24(11)\n\t"                                       \
-         "lwz 9,28(11)\n\t"                                       \
-         "lwz 10,32(11)\n\t" /* arg8->r10 */                      \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x35\x2c\x31\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x36\x2c\x31\x36\x28\x31\x31\x29\xa\x9"  /* arg4->r6 */                       \
+         "\x6c\x77\x7a\x20\x37\x2c\x32\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x38\x2c\x32\x34\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x39\x2c\x32\x38\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x31\x30\x2c\x33\x32\x28\x31\x31\x29\xa\x9" /* arg8->r10 */                      \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "addi 1,1,16\n\t"                                        \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x31\x36\xa\x9"                                        \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2008,30 +2008,30 @@ typedef
       _argvec[9] = (unsigned long)arg9;                           \
       _argvec[10] = (unsigned long)arg10;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "addi 1,1,-16\n\t"                                       \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x2d\x31\x36\xa\x9"                                       \
          /* arg10 */                                              \
-         "lwz 3,40(11)\n\t"                                       \
-         "stw 3,12(1)\n\t"                                        \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x77\x20\x33\x2c\x31\x32\x28\x31\x29\xa\x9"                                        \
          /* arg9 */                                               \
-         "lwz 3,36(11)\n\t"                                       \
-         "stw 3,8(1)\n\t"                                         \
+         "\x6c\x77\x7a\x20\x33\x2c\x33\x36\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x77\x20\x33\x2c\x38\x28\x31\x29\xa\x9"                                         \
          /* args1-8 */                                            \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 5,12(11)\n\t"                                       \
-         "lwz 6,16(11)\n\t"  /* arg4->r6 */                       \
-         "lwz 7,20(11)\n\t"                                       \
-         "lwz 8,24(11)\n\t"                                       \
-         "lwz 9,28(11)\n\t"                                       \
-         "lwz 10,32(11)\n\t" /* arg8->r10 */                      \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x35\x2c\x31\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x36\x2c\x31\x36\x28\x31\x31\x29\xa\x9"  /* arg4->r6 */                       \
+         "\x6c\x77\x7a\x20\x37\x2c\x32\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x38\x2c\x32\x34\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x39\x2c\x32\x38\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x31\x30\x2c\x33\x32\x28\x31\x31\x29\xa\x9" /* arg8->r10 */                      \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "addi 1,1,16\n\t"                                        \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x31\x36\xa\x9"                                        \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2055,33 +2055,33 @@ typedef
       _argvec[10] = (unsigned long)arg10;                         \
       _argvec[11] = (unsigned long)arg11;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "addi 1,1,-32\n\t"                                       \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x2d\x33\x32\xa\x9"                                       \
          /* arg11 */                                              \
-         "lwz 3,44(11)\n\t"                                       \
-         "stw 3,16(1)\n\t"                                        \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x34\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x77\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
          /* arg10 */                                              \
-         "lwz 3,40(11)\n\t"                                       \
-         "stw 3,12(1)\n\t"                                        \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x77\x20\x33\x2c\x31\x32\x28\x31\x29\xa\x9"                                        \
          /* arg9 */                                               \
-         "lwz 3,36(11)\n\t"                                       \
-         "stw 3,8(1)\n\t"                                         \
+         "\x6c\x77\x7a\x20\x33\x2c\x33\x36\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x77\x20\x33\x2c\x38\x28\x31\x29\xa\x9"                                         \
          /* args1-8 */                                            \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 5,12(11)\n\t"                                       \
-         "lwz 6,16(11)\n\t"  /* arg4->r6 */                       \
-         "lwz 7,20(11)\n\t"                                       \
-         "lwz 8,24(11)\n\t"                                       \
-         "lwz 9,28(11)\n\t"                                       \
-         "lwz 10,32(11)\n\t" /* arg8->r10 */                      \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x35\x2c\x31\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x36\x2c\x31\x36\x28\x31\x31\x29\xa\x9"  /* arg4->r6 */                       \
+         "\x6c\x77\x7a\x20\x37\x2c\x32\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x38\x2c\x32\x34\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x39\x2c\x32\x38\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x31\x30\x2c\x33\x32\x28\x31\x31\x29\xa\x9" /* arg8->r10 */                      \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "addi 1,1,32\n\t"                                        \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x33\x32\xa\x9"                                        \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2106,36 +2106,36 @@ typedef
       _argvec[11] = (unsigned long)arg11;                         \
       _argvec[12] = (unsigned long)arg12;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "addi 1,1,-32\n\t"                                       \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x2d\x33\x32\xa\x9"                                       \
          /* arg12 */                                              \
-         "lwz 3,48(11)\n\t"                                       \
-         "stw 3,20(1)\n\t"                                        \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x38\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x77\x20\x33\x2c\x32\x30\x28\x31\x29\xa\x9"                                        \
          /* arg11 */                                              \
-         "lwz 3,44(11)\n\t"                                       \
-         "stw 3,16(1)\n\t"                                        \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x34\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x77\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
          /* arg10 */                                              \
-         "lwz 3,40(11)\n\t"                                       \
-         "stw 3,12(1)\n\t"                                        \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x77\x20\x33\x2c\x31\x32\x28\x31\x29\xa\x9"                                        \
          /* arg9 */                                               \
-         "lwz 3,36(11)\n\t"                                       \
-         "stw 3,8(1)\n\t"                                         \
+         "\x6c\x77\x7a\x20\x33\x2c\x33\x36\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x77\x20\x33\x2c\x38\x28\x31\x29\xa\x9"                                         \
          /* args1-8 */                                            \
-         "lwz 3,4(11)\n\t"   /* arg1->r3 */                       \
-         "lwz 4,8(11)\n\t"                                        \
-         "lwz 5,12(11)\n\t"                                       \
-         "lwz 6,16(11)\n\t"  /* arg4->r6 */                       \
-         "lwz 7,20(11)\n\t"                                       \
-         "lwz 8,24(11)\n\t"                                       \
-         "lwz 9,28(11)\n\t"                                       \
-         "lwz 10,32(11)\n\t" /* arg8->r10 */                      \
-         "lwz 11,0(11)\n\t"  /* target->r11 */                    \
+         "\x6c\x77\x7a\x20\x33\x2c\x34\x28\x31\x31\x29\xa\x9"   /* arg1->r3 */                       \
+         "\x6c\x77\x7a\x20\x34\x2c\x38\x28\x31\x31\x29\xa\x9"                                        \
+         "\x6c\x77\x7a\x20\x35\x2c\x31\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x36\x2c\x31\x36\x28\x31\x31\x29\xa\x9"  /* arg4->r6 */                       \
+         "\x6c\x77\x7a\x20\x37\x2c\x32\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x38\x2c\x32\x34\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x39\x2c\x32\x38\x28\x31\x31\x29\xa\x9"                                       \
+         "\x6c\x77\x7a\x20\x31\x30\x2c\x33\x32\x28\x31\x31\x29\xa\x9" /* arg8->r10 */                      \
+         "\x6c\x77\x7a\x20\x31\x31\x2c\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "addi 1,1,32\n\t"                                        \
-         "mr %0,3"                                                \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x33\x32\xa\x9"                                        \
+         "\x6d\x72\x20\x25\x30\x2c\x33"                                                \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2150,10 +2150,10 @@ typedef
 
 /* These regs are trashed by the hidden call. */
 #define __CALLER_SAVED_REGS                                       \
-   "lr", "ctr", "xer",                                            \
-   "cr0", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7",        \
-   "r0", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10",   \
-   "r11", "r12", "r13"
+   "\x6c\x72", "\x63\x74\x72", "\x78\x65\x72",                                            \
+   "\x63\x72\x30", "\x63\x72\x31", "\x63\x72\x32", "\x63\x72\x33", "\x63\x72\x34", "\x63\x72\x35", "\x63\x72\x36", "\x63\x72\x37",        \
+   "\x72\x30", "\x72\x32", "\x72\x33", "\x72\x34", "\x72\x35", "\x72\x36", "\x72\x37", "\x72\x38", "\x72\x39", "\x72\x31\x30",   \
+   "\x72\x31\x31", "\x72\x31\x32", "\x72\x31\x33"
 
 /* These CALL_FN_ macros assume that on ppc64-linux, sizeof(unsigned
    long) == 8. */
@@ -2167,17 +2167,17 @@ typedef
       _argvec[1] = (unsigned long)_orig.r2;                       \
       _argvec[2] = (unsigned long)_orig.nraddr;                   \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)" /* restore tocptr */                      \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29" /* restore tocptr */                      \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2192,18 +2192,18 @@ typedef
       _argvec[2]   = (unsigned long)_orig.nraddr;                 \
       _argvec[2+1] = (unsigned long)arg1;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)" /* restore tocptr */                      \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29" /* restore tocptr */                      \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2219,19 +2219,19 @@ typedef
       _argvec[2+1] = (unsigned long)arg1;                         \
       _argvec[2+2] = (unsigned long)arg2;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)" /* restore tocptr */                      \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29" /* restore tocptr */                      \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2248,20 +2248,20 @@ typedef
       _argvec[2+2] = (unsigned long)arg2;                         \
       _argvec[2+3] = (unsigned long)arg3;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld   5, 24(11)\n\t" /* arg3->r5 */                      \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x20\x35\x2c\x20\x32\x34\x28\x31\x31\x29\xa\x9" /* arg3->r5 */                      \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)" /* restore tocptr */                      \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29" /* restore tocptr */                      \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2279,21 +2279,21 @@ typedef
       _argvec[2+3] = (unsigned long)arg3;                         \
       _argvec[2+4] = (unsigned long)arg4;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld   5, 24(11)\n\t" /* arg3->r5 */                      \
-         "ld   6, 32(11)\n\t" /* arg4->r6 */                      \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x20\x35\x2c\x20\x32\x34\x28\x31\x31\x29\xa\x9" /* arg3->r5 */                      \
+         "\x6c\x64\x20\x20\x20\x36\x2c\x20\x33\x32\x28\x31\x31\x29\xa\x9" /* arg4->r6 */                      \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)" /* restore tocptr */                      \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29" /* restore tocptr */                      \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2312,22 +2312,22 @@ typedef
       _argvec[2+4] = (unsigned long)arg4;                         \
       _argvec[2+5] = (unsigned long)arg5;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld   5, 24(11)\n\t" /* arg3->r5 */                      \
-         "ld   6, 32(11)\n\t" /* arg4->r6 */                      \
-         "ld   7, 40(11)\n\t" /* arg5->r7 */                      \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x20\x35\x2c\x20\x32\x34\x28\x31\x31\x29\xa\x9" /* arg3->r5 */                      \
+         "\x6c\x64\x20\x20\x20\x36\x2c\x20\x33\x32\x28\x31\x31\x29\xa\x9" /* arg4->r6 */                      \
+         "\x6c\x64\x20\x20\x20\x37\x2c\x20\x34\x30\x28\x31\x31\x29\xa\x9" /* arg5->r7 */                      \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)" /* restore tocptr */                      \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29" /* restore tocptr */                      \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2347,23 +2347,23 @@ typedef
       _argvec[2+5] = (unsigned long)arg5;                         \
       _argvec[2+6] = (unsigned long)arg6;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld   5, 24(11)\n\t" /* arg3->r5 */                      \
-         "ld   6, 32(11)\n\t" /* arg4->r6 */                      \
-         "ld   7, 40(11)\n\t" /* arg5->r7 */                      \
-         "ld   8, 48(11)\n\t" /* arg6->r8 */                      \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x20\x35\x2c\x20\x32\x34\x28\x31\x31\x29\xa\x9" /* arg3->r5 */                      \
+         "\x6c\x64\x20\x20\x20\x36\x2c\x20\x33\x32\x28\x31\x31\x29\xa\x9" /* arg4->r6 */                      \
+         "\x6c\x64\x20\x20\x20\x37\x2c\x20\x34\x30\x28\x31\x31\x29\xa\x9" /* arg5->r7 */                      \
+         "\x6c\x64\x20\x20\x20\x38\x2c\x20\x34\x38\x28\x31\x31\x29\xa\x9" /* arg6->r8 */                      \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)" /* restore tocptr */                      \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29" /* restore tocptr */                      \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2385,24 +2385,24 @@ typedef
       _argvec[2+6] = (unsigned long)arg6;                         \
       _argvec[2+7] = (unsigned long)arg7;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld   5, 24(11)\n\t" /* arg3->r5 */                      \
-         "ld   6, 32(11)\n\t" /* arg4->r6 */                      \
-         "ld   7, 40(11)\n\t" /* arg5->r7 */                      \
-         "ld   8, 48(11)\n\t" /* arg6->r8 */                      \
-         "ld   9, 56(11)\n\t" /* arg7->r9 */                      \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x20\x35\x2c\x20\x32\x34\x28\x31\x31\x29\xa\x9" /* arg3->r5 */                      \
+         "\x6c\x64\x20\x20\x20\x36\x2c\x20\x33\x32\x28\x31\x31\x29\xa\x9" /* arg4->r6 */                      \
+         "\x6c\x64\x20\x20\x20\x37\x2c\x20\x34\x30\x28\x31\x31\x29\xa\x9" /* arg5->r7 */                      \
+         "\x6c\x64\x20\x20\x20\x38\x2c\x20\x34\x38\x28\x31\x31\x29\xa\x9" /* arg6->r8 */                      \
+         "\x6c\x64\x20\x20\x20\x39\x2c\x20\x35\x36\x28\x31\x31\x29\xa\x9" /* arg7->r9 */                      \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)" /* restore tocptr */                      \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29" /* restore tocptr */                      \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2425,25 +2425,25 @@ typedef
       _argvec[2+7] = (unsigned long)arg7;                         \
       _argvec[2+8] = (unsigned long)arg8;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld   5, 24(11)\n\t" /* arg3->r5 */                      \
-         "ld   6, 32(11)\n\t" /* arg4->r6 */                      \
-         "ld   7, 40(11)\n\t" /* arg5->r7 */                      \
-         "ld   8, 48(11)\n\t" /* arg6->r8 */                      \
-         "ld   9, 56(11)\n\t" /* arg7->r9 */                      \
-         "ld  10, 64(11)\n\t" /* arg8->r10 */                     \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x20\x35\x2c\x20\x32\x34\x28\x31\x31\x29\xa\x9" /* arg3->r5 */                      \
+         "\x6c\x64\x20\x20\x20\x36\x2c\x20\x33\x32\x28\x31\x31\x29\xa\x9" /* arg4->r6 */                      \
+         "\x6c\x64\x20\x20\x20\x37\x2c\x20\x34\x30\x28\x31\x31\x29\xa\x9" /* arg5->r7 */                      \
+         "\x6c\x64\x20\x20\x20\x38\x2c\x20\x34\x38\x28\x31\x31\x29\xa\x9" /* arg6->r8 */                      \
+         "\x6c\x64\x20\x20\x20\x39\x2c\x20\x35\x36\x28\x31\x31\x29\xa\x9" /* arg7->r9 */                      \
+         "\x6c\x64\x20\x20\x31\x30\x2c\x20\x36\x34\x28\x31\x31\x29\xa\x9" /* arg8->r10 */                     \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)" /* restore tocptr */                      \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29" /* restore tocptr */                      \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2467,31 +2467,31 @@ typedef
       _argvec[2+8] = (unsigned long)arg8;                         \
       _argvec[2+9] = (unsigned long)arg9;                         \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "addi 1,1,-128\n\t"  /* expand stack frame */            \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x2d\x31\x32\x38\xa\x9"  /* expand stack frame */            \
          /* arg9 */                                               \
-         "ld  3,72(11)\n\t"                                       \
-         "std 3,112(1)\n\t"                                       \
+         "\x6c\x64\x20\x20\x33\x2c\x37\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x64\x20\x33\x2c\x31\x31\x32\x28\x31\x29\xa\x9"                                       \
          /* args1-8 */                                            \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld   5, 24(11)\n\t" /* arg3->r5 */                      \
-         "ld   6, 32(11)\n\t" /* arg4->r6 */                      \
-         "ld   7, 40(11)\n\t" /* arg5->r7 */                      \
-         "ld   8, 48(11)\n\t" /* arg6->r8 */                      \
-         "ld   9, 56(11)\n\t" /* arg7->r9 */                      \
-         "ld  10, 64(11)\n\t" /* arg8->r10 */                     \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x20\x35\x2c\x20\x32\x34\x28\x31\x31\x29\xa\x9" /* arg3->r5 */                      \
+         "\x6c\x64\x20\x20\x20\x36\x2c\x20\x33\x32\x28\x31\x31\x29\xa\x9" /* arg4->r6 */                      \
+         "\x6c\x64\x20\x20\x20\x37\x2c\x20\x34\x30\x28\x31\x31\x29\xa\x9" /* arg5->r7 */                      \
+         "\x6c\x64\x20\x20\x20\x38\x2c\x20\x34\x38\x28\x31\x31\x29\xa\x9" /* arg6->r8 */                      \
+         "\x6c\x64\x20\x20\x20\x39\x2c\x20\x35\x36\x28\x31\x31\x29\xa\x9" /* arg7->r9 */                      \
+         "\x6c\x64\x20\x20\x31\x30\x2c\x20\x36\x34\x28\x31\x31\x29\xa\x9" /* arg8->r10 */                     \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)\n\t" /* restore tocptr */                  \
-         "addi 1,1,128"     /* restore frame */                   \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9" /* restore tocptr */                  \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x31\x32\x38"     /* restore frame */                   \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2516,34 +2516,34 @@ typedef
       _argvec[2+9] = (unsigned long)arg9;                         \
       _argvec[2+10] = (unsigned long)arg10;                       \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "addi 1,1,-128\n\t"  /* expand stack frame */            \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x2d\x31\x32\x38\xa\x9"  /* expand stack frame */            \
          /* arg10 */                                              \
-         "ld  3,80(11)\n\t"                                       \
-         "std 3,120(1)\n\t"                                       \
+         "\x6c\x64\x20\x20\x33\x2c\x38\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x64\x20\x33\x2c\x31\x32\x30\x28\x31\x29\xa\x9"                                       \
          /* arg9 */                                               \
-         "ld  3,72(11)\n\t"                                       \
-         "std 3,112(1)\n\t"                                       \
+         "\x6c\x64\x20\x20\x33\x2c\x37\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x64\x20\x33\x2c\x31\x31\x32\x28\x31\x29\xa\x9"                                       \
          /* args1-8 */                                            \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld   5, 24(11)\n\t" /* arg3->r5 */                      \
-         "ld   6, 32(11)\n\t" /* arg4->r6 */                      \
-         "ld   7, 40(11)\n\t" /* arg5->r7 */                      \
-         "ld   8, 48(11)\n\t" /* arg6->r8 */                      \
-         "ld   9, 56(11)\n\t" /* arg7->r9 */                      \
-         "ld  10, 64(11)\n\t" /* arg8->r10 */                     \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x20\x35\x2c\x20\x32\x34\x28\x31\x31\x29\xa\x9" /* arg3->r5 */                      \
+         "\x6c\x64\x20\x20\x20\x36\x2c\x20\x33\x32\x28\x31\x31\x29\xa\x9" /* arg4->r6 */                      \
+         "\x6c\x64\x20\x20\x20\x37\x2c\x20\x34\x30\x28\x31\x31\x29\xa\x9" /* arg5->r7 */                      \
+         "\x6c\x64\x20\x20\x20\x38\x2c\x20\x34\x38\x28\x31\x31\x29\xa\x9" /* arg6->r8 */                      \
+         "\x6c\x64\x20\x20\x20\x39\x2c\x20\x35\x36\x28\x31\x31\x29\xa\x9" /* arg7->r9 */                      \
+         "\x6c\x64\x20\x20\x31\x30\x2c\x20\x36\x34\x28\x31\x31\x29\xa\x9" /* arg8->r10 */                     \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)\n\t" /* restore tocptr */                  \
-         "addi 1,1,128"     /* restore frame */                   \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9" /* restore tocptr */                  \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x31\x32\x38"     /* restore frame */                   \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2569,37 +2569,37 @@ typedef
       _argvec[2+10] = (unsigned long)arg10;                       \
       _argvec[2+11] = (unsigned long)arg11;                       \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "addi 1,1,-144\n\t"  /* expand stack frame */            \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x2d\x31\x34\x34\xa\x9"  /* expand stack frame */            \
          /* arg11 */                                              \
-         "ld  3,88(11)\n\t"                                       \
-         "std 3,128(1)\n\t"                                       \
+         "\x6c\x64\x20\x20\x33\x2c\x38\x38\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x64\x20\x33\x2c\x31\x32\x38\x28\x31\x29\xa\x9"                                       \
          /* arg10 */                                              \
-         "ld  3,80(11)\n\t"                                       \
-         "std 3,120(1)\n\t"                                       \
+         "\x6c\x64\x20\x20\x33\x2c\x38\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x64\x20\x33\x2c\x31\x32\x30\x28\x31\x29\xa\x9"                                       \
          /* arg9 */                                               \
-         "ld  3,72(11)\n\t"                                       \
-         "std 3,112(1)\n\t"                                       \
+         "\x6c\x64\x20\x20\x33\x2c\x37\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x64\x20\x33\x2c\x31\x31\x32\x28\x31\x29\xa\x9"                                       \
          /* args1-8 */                                            \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld   5, 24(11)\n\t" /* arg3->r5 */                      \
-         "ld   6, 32(11)\n\t" /* arg4->r6 */                      \
-         "ld   7, 40(11)\n\t" /* arg5->r7 */                      \
-         "ld   8, 48(11)\n\t" /* arg6->r8 */                      \
-         "ld   9, 56(11)\n\t" /* arg7->r9 */                      \
-         "ld  10, 64(11)\n\t" /* arg8->r10 */                     \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x20\x35\x2c\x20\x32\x34\x28\x31\x31\x29\xa\x9" /* arg3->r5 */                      \
+         "\x6c\x64\x20\x20\x20\x36\x2c\x20\x33\x32\x28\x31\x31\x29\xa\x9" /* arg4->r6 */                      \
+         "\x6c\x64\x20\x20\x20\x37\x2c\x20\x34\x30\x28\x31\x31\x29\xa\x9" /* arg5->r7 */                      \
+         "\x6c\x64\x20\x20\x20\x38\x2c\x20\x34\x38\x28\x31\x31\x29\xa\x9" /* arg6->r8 */                      \
+         "\x6c\x64\x20\x20\x20\x39\x2c\x20\x35\x36\x28\x31\x31\x29\xa\x9" /* arg7->r9 */                      \
+         "\x6c\x64\x20\x20\x31\x30\x2c\x20\x36\x34\x28\x31\x31\x29\xa\x9" /* arg8->r10 */                     \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)\n\t" /* restore tocptr */                  \
-         "addi 1,1,144"     /* restore frame */                   \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9" /* restore tocptr */                  \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x31\x34\x34"     /* restore frame */                   \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2626,40 +2626,40 @@ typedef
       _argvec[2+11] = (unsigned long)arg11;                       \
       _argvec[2+12] = (unsigned long)arg12;                       \
       __asm__ volatile(                                           \
-         "mr 11,%1\n\t"                                           \
-         "std 2,-16(11)\n\t"  /* save tocptr */                   \
-         "ld   2,-8(11)\n\t"  /* use nraddr's tocptr */           \
-         "addi 1,1,-144\n\t"  /* expand stack frame */            \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x73\x74\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9"  /* save tocptr */                   \
+         "\x6c\x64\x20\x20\x20\x32\x2c\x2d\x38\x28\x31\x31\x29\xa\x9"  /* use nraddr's tocptr */           \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x2d\x31\x34\x34\xa\x9"  /* expand stack frame */            \
          /* arg12 */                                              \
-         "ld  3,96(11)\n\t"                                       \
-         "std 3,136(1)\n\t"                                       \
+         "\x6c\x64\x20\x20\x33\x2c\x39\x36\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x64\x20\x33\x2c\x31\x33\x36\x28\x31\x29\xa\x9"                                       \
          /* arg11 */                                              \
-         "ld  3,88(11)\n\t"                                       \
-         "std 3,128(1)\n\t"                                       \
+         "\x6c\x64\x20\x20\x33\x2c\x38\x38\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x64\x20\x33\x2c\x31\x32\x38\x28\x31\x29\xa\x9"                                       \
          /* arg10 */                                              \
-         "ld  3,80(11)\n\t"                                       \
-         "std 3,120(1)\n\t"                                       \
+         "\x6c\x64\x20\x20\x33\x2c\x38\x30\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x64\x20\x33\x2c\x31\x32\x30\x28\x31\x29\xa\x9"                                       \
          /* arg9 */                                               \
-         "ld  3,72(11)\n\t"                                       \
-         "std 3,112(1)\n\t"                                       \
+         "\x6c\x64\x20\x20\x33\x2c\x37\x32\x28\x31\x31\x29\xa\x9"                                       \
+         "\x73\x74\x64\x20\x33\x2c\x31\x31\x32\x28\x31\x29\xa\x9"                                       \
          /* args1-8 */                                            \
-         "ld   3, 8(11)\n\t"  /* arg1->r3 */                      \
-         "ld   4, 16(11)\n\t" /* arg2->r4 */                      \
-         "ld   5, 24(11)\n\t" /* arg3->r5 */                      \
-         "ld   6, 32(11)\n\t" /* arg4->r6 */                      \
-         "ld   7, 40(11)\n\t" /* arg5->r7 */                      \
-         "ld   8, 48(11)\n\t" /* arg6->r8 */                      \
-         "ld   9, 56(11)\n\t" /* arg7->r9 */                      \
-         "ld  10, 64(11)\n\t" /* arg8->r10 */                     \
-         "ld  11, 0(11)\n\t"  /* target->r11 */                   \
+         "\x6c\x64\x20\x20\x20\x33\x2c\x20\x38\x28\x31\x31\x29\xa\x9"  /* arg1->r3 */                      \
+         "\x6c\x64\x20\x20\x20\x34\x2c\x20\x31\x36\x28\x31\x31\x29\xa\x9" /* arg2->r4 */                      \
+         "\x6c\x64\x20\x20\x20\x35\x2c\x20\x32\x34\x28\x31\x31\x29\xa\x9" /* arg3->r5 */                      \
+         "\x6c\x64\x20\x20\x20\x36\x2c\x20\x33\x32\x28\x31\x31\x29\xa\x9" /* arg4->r6 */                      \
+         "\x6c\x64\x20\x20\x20\x37\x2c\x20\x34\x30\x28\x31\x31\x29\xa\x9" /* arg5->r7 */                      \
+         "\x6c\x64\x20\x20\x20\x38\x2c\x20\x34\x38\x28\x31\x31\x29\xa\x9" /* arg6->r8 */                      \
+         "\x6c\x64\x20\x20\x20\x39\x2c\x20\x35\x36\x28\x31\x31\x29\xa\x9" /* arg7->r9 */                      \
+         "\x6c\x64\x20\x20\x31\x30\x2c\x20\x36\x34\x28\x31\x31\x29\xa\x9" /* arg8->r10 */                     \
+         "\x6c\x64\x20\x20\x31\x31\x2c\x20\x30\x28\x31\x31\x29\xa\x9"  /* target->r11 */                   \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R11                  \
-         "mr 11,%1\n\t"                                           \
-         "mr %0,3\n\t"                                            \
-         "ld 2,-16(11)\n\t" /* restore tocptr */                  \
-         "addi 1,1,144"     /* restore frame */                   \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "r" (&_argvec[2])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x72\x20\x31\x31\x2c\x25\x31\xa\x9"                                           \
+         "\x6d\x72\x20\x25\x30\x2c\x33\xa\x9"                                            \
+         "\x6c\x64\x20\x32\x2c\x2d\x31\x36\x28\x31\x31\x29\xa\x9" /* restore tocptr */                  \
+         "\x61\x64\x64\x69\x20\x31\x2c\x31\x2c\x31\x34\x34"     /* restore frame */                   \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x72" (&_argvec[2])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2671,7 +2671,7 @@ typedef
 #if defined(PLAT_arm_linux)
 
 /* These regs are trashed by the hidden call. */
-#define __CALLER_SAVED_REGS "r0", "r1", "r2", "r3","r4","r14"
+#define __CALLER_SAVED_REGS "\x72\x30", "\x72\x31", "\x72\x32", "\x72\x33","\x72\x34","\x72\x31\x34"
 
 /* These CALL_FN_ macros assume that on arm-linux, sizeof(unsigned
    long) == 4. */
@@ -2683,12 +2683,12 @@ typedef
       volatile unsigned long _res;                                \
       _argvec[0] = (unsigned long)_orig.nraddr;                   \
       __asm__ volatile(                                           \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "mov %0, r0\n"                                           \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30\xa"                                           \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2701,13 +2701,13 @@ typedef
       _argvec[0] = (unsigned long)_orig.nraddr;                   \
       _argvec[1] = (unsigned long)(arg1);                         \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "mov %0, r0\n"                                           \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory",  __CALLER_SAVED_REGS         \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30\xa"                                           \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79",  __CALLER_SAVED_REGS         \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2721,14 +2721,14 @@ typedef
       _argvec[1] = (unsigned long)(arg1);                         \
       _argvec[2] = (unsigned long)(arg2);                         \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "mov %0, r0\n"                                           \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30\xa"                                           \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2743,15 +2743,15 @@ typedef
       _argvec[2] = (unsigned long)(arg2);                         \
       _argvec[3] = (unsigned long)(arg3);                         \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r2, [%1, #12] \n\t"                                 \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "mov %0, r0\n"                                           \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30\xa"                                           \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2767,16 +2767,16 @@ typedef
       _argvec[3] = (unsigned long)(arg3);                         \
       _argvec[4] = (unsigned long)(arg4);                         \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r2, [%1, #12] \n\t"                                 \
-         "ldr r3, [%1, #16] \n\t"                                 \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x36\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "mov %0, r0"                                             \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30"                                             \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2793,19 +2793,19 @@ typedef
       _argvec[4] = (unsigned long)(arg4);                         \
       _argvec[5] = (unsigned long)(arg5);                         \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #20] \n\t"                                 \
-         "push {r0} \n\t"                                         \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r2, [%1, #12] \n\t"                                 \
-         "ldr r3, [%1, #16] \n\t"                                 \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x30\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x7d\x20\xa\x9"                                         \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x36\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "add sp, sp, #4 \n\t"                                    \
-         "mov %0, r0"                                             \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x20\x73\x70\x2c\x20\x73\x70\x2c\x20\x23\x34\x20\xa\x9"                                    \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30"                                             \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2823,20 +2823,20 @@ typedef
       _argvec[5] = (unsigned long)(arg5);                         \
       _argvec[6] = (unsigned long)(arg6);                         \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #20] \n\t"                                 \
-         "ldr r1, [%1, #24] \n\t"                                 \
-         "push {r0, r1} \n\t"                                     \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r2, [%1, #12] \n\t"                                 \
-         "ldr r3, [%1, #16] \n\t"                                 \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x30\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x34\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x2c\x20\x72\x31\x7d\x20\xa\x9"                                     \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x36\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "add sp, sp, #8 \n\t"                                    \
-         "mov %0, r0"                                             \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x20\x73\x70\x2c\x20\x73\x70\x2c\x20\x23\x38\x20\xa\x9"                                    \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30"                                             \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2856,21 +2856,21 @@ typedef
       _argvec[6] = (unsigned long)(arg6);                         \
       _argvec[7] = (unsigned long)(arg7);                         \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #20] \n\t"                                 \
-         "ldr r1, [%1, #24] \n\t"                                 \
-         "ldr r2, [%1, #28] \n\t"                                 \
-         "push {r0, r1, r2} \n\t"                                 \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r2, [%1, #12] \n\t"                                 \
-         "ldr r3, [%1, #16] \n\t"                                 \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x30\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x34\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x38\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x2c\x20\x72\x31\x2c\x20\x72\x32\x7d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x36\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "add sp, sp, #12 \n\t"                                   \
-         "mov %0, r0"                                             \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x20\x73\x70\x2c\x20\x73\x70\x2c\x20\x23\x31\x32\x20\xa\x9"                                   \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30"                                             \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2891,22 +2891,22 @@ typedef
       _argvec[7] = (unsigned long)(arg7);                         \
       _argvec[8] = (unsigned long)(arg8);                         \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #20] \n\t"                                 \
-         "ldr r1, [%1, #24] \n\t"                                 \
-         "ldr r2, [%1, #28] \n\t"                                 \
-         "ldr r3, [%1, #32] \n\t"                                 \
-         "push {r0, r1, r2, r3} \n\t"                             \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r2, [%1, #12] \n\t"                                 \
-         "ldr r3, [%1, #16] \n\t"                                 \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x30\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x34\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x38\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x33\x32\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x2c\x20\x72\x31\x2c\x20\x72\x32\x2c\x20\x72\x33\x7d\x20\xa\x9"                             \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x36\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "add sp, sp, #16 \n\t"                                   \
-         "mov %0, r0"                                             \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x20\x73\x70\x2c\x20\x73\x70\x2c\x20\x23\x31\x36\x20\xa\x9"                                   \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30"                                             \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2928,23 +2928,23 @@ typedef
       _argvec[8] = (unsigned long)(arg8);                         \
       _argvec[9] = (unsigned long)(arg9);                         \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #20] \n\t"                                 \
-         "ldr r1, [%1, #24] \n\t"                                 \
-         "ldr r2, [%1, #28] \n\t"                                 \
-         "ldr r3, [%1, #32] \n\t"                                 \
-         "ldr r4, [%1, #36] \n\t"                                 \
-         "push {r0, r1, r2, r3, r4} \n\t"                         \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r2, [%1, #12] \n\t"                                 \
-         "ldr r3, [%1, #16] \n\t"                                 \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x30\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x34\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x38\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x33\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x2c\x20\x23\x33\x36\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x2c\x20\x72\x31\x2c\x20\x72\x32\x2c\x20\x72\x33\x2c\x20\x72\x34\x7d\x20\xa\x9"                         \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x36\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "add sp, sp, #20 \n\t"                                   \
-         "mov %0, r0"                                             \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x20\x73\x70\x2c\x20\x73\x70\x2c\x20\x23\x32\x30\x20\xa\x9"                                   \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30"                                             \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -2967,25 +2967,25 @@ typedef
       _argvec[9] = (unsigned long)(arg9);                         \
       _argvec[10] = (unsigned long)(arg10);                       \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #40] \n\t"                                 \
-         "push {r0} \n\t"                                         \
-         "ldr r0, [%1, #20] \n\t"                                 \
-         "ldr r1, [%1, #24] \n\t"                                 \
-         "ldr r2, [%1, #28] \n\t"                                 \
-         "ldr r3, [%1, #32] \n\t"                                 \
-         "ldr r4, [%1, #36] \n\t"                                 \
-         "push {r0, r1, r2, r3, r4} \n\t"                         \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r2, [%1, #12] \n\t"                                 \
-         "ldr r3, [%1, #16] \n\t"                                 \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x30\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x7d\x20\xa\x9"                                         \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x30\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x34\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x38\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x33\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x2c\x20\x23\x33\x36\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x2c\x20\x72\x31\x2c\x20\x72\x32\x2c\x20\x72\x33\x2c\x20\x72\x34\x7d\x20\xa\x9"                         \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x36\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "add sp, sp, #24 \n\t"                                   \
-         "mov %0, r0"                                             \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x20\x73\x70\x2c\x20\x73\x70\x2c\x20\x23\x32\x34\x20\xa\x9"                                   \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30"                                             \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -3010,26 +3010,26 @@ typedef
       _argvec[10] = (unsigned long)(arg10);                       \
       _argvec[11] = (unsigned long)(arg11);                       \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #40] \n\t"                                 \
-         "ldr r1, [%1, #44] \n\t"                                 \
-         "push {r0, r1} \n\t"                                     \
-         "ldr r0, [%1, #20] \n\t"                                 \
-         "ldr r1, [%1, #24] \n\t"                                 \
-         "ldr r2, [%1, #28] \n\t"                                 \
-         "ldr r3, [%1, #32] \n\t"                                 \
-         "ldr r4, [%1, #36] \n\t"                                 \
-         "push {r0, r1, r2, r3, r4} \n\t"                         \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r2, [%1, #12] \n\t"                                 \
-         "ldr r3, [%1, #16] \n\t"                                 \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x30\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x34\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x2c\x20\x72\x31\x7d\x20\xa\x9"                                     \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x30\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x34\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x38\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x33\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x2c\x20\x23\x33\x36\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x2c\x20\x72\x31\x2c\x20\x72\x32\x2c\x20\x72\x33\x2c\x20\x72\x34\x7d\x20\xa\x9"                         \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x36\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "add sp, sp, #28 \n\t"                                   \
-         "mov %0, r0"                                             \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory",__CALLER_SAVED_REGS           \
+         "\x61\x64\x64\x20\x73\x70\x2c\x20\x73\x70\x2c\x20\x23\x32\x38\x20\xa\x9"                                   \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30"                                             \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79",__CALLER_SAVED_REGS           \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -3055,27 +3055,27 @@ typedef
       _argvec[11] = (unsigned long)(arg11);                       \
       _argvec[12] = (unsigned long)(arg12);                       \
       __asm__ volatile(                                           \
-         "ldr r0, [%1, #40] \n\t"                                 \
-         "ldr r1, [%1, #44] \n\t"                                 \
-         "ldr r2, [%1, #48] \n\t"                                 \
-         "push {r0, r1, r2} \n\t"                                 \
-         "ldr r0, [%1, #20] \n\t"                                 \
-         "ldr r1, [%1, #24] \n\t"                                 \
-         "ldr r2, [%1, #28] \n\t"                                 \
-         "ldr r3, [%1, #32] \n\t"                                 \
-         "ldr r4, [%1, #36] \n\t"                                 \
-         "push {r0, r1, r2, r3, r4} \n\t"                         \
-         "ldr r0, [%1, #4] \n\t"                                  \
-         "ldr r1, [%1, #8] \n\t"                                  \
-         "ldr r2, [%1, #12] \n\t"                                 \
-         "ldr r3, [%1, #16] \n\t"                                 \
-         "ldr r4, [%1] \n\t"  /* target->r4 */                    \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x30\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x34\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x38\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x2c\x20\x72\x31\x2c\x20\x72\x32\x7d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x30\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x34\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x32\x38\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x33\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x2c\x20\x23\x33\x36\x5d\x20\xa\x9"                                 \
+         "\x70\x75\x73\x68\x20\x7b\x72\x30\x2c\x20\x72\x31\x2c\x20\x72\x32\x2c\x20\x72\x33\x2c\x20\x72\x34\x7d\x20\xa\x9"                         \
+         "\x6c\x64\x72\x20\x72\x30\x2c\x20\x5b\x25\x31\x2c\x20\x23\x34\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x31\x2c\x20\x5b\x25\x31\x2c\x20\x23\x38\x5d\x20\xa\x9"                                  \
+         "\x6c\x64\x72\x20\x72\x32\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x32\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x33\x2c\x20\x5b\x25\x31\x2c\x20\x23\x31\x36\x5d\x20\xa\x9"                                 \
+         "\x6c\x64\x72\x20\x72\x34\x2c\x20\x5b\x25\x31\x5d\x20\xa\x9"  /* target->r4 */                    \
          VALGRIND_BRANCH_AND_LINK_TO_NOREDIR_R4                   \
-         "add sp, sp, #32 \n\t"                                   \
-         "mov %0, r0"                                             \
-         : /*out*/   "=r" (_res)                                  \
-         : /*in*/    "0" (&_argvec[0])                            \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS          \
+         "\x61\x64\x64\x20\x73\x70\x2c\x20\x73\x70\x2c\x20\x23\x33\x32\x20\xa\x9"                                   \
+         "\x6d\x6f\x76\x20\x25\x30\x2c\x20\x72\x30"                                             \
+         : /*out*/   "\x3d\x72" (_res)                                  \
+         : /*in*/    "\x30" (&_argvec[0])                            \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS          \
       );                                                          \
       lval = (__typeof__(lval)) _res;                             \
    } while (0)
@@ -3092,20 +3092,20 @@ typedef
    after the call anyway.  */
 #if defined(__GNUC__) && defined(__GCC_HAVE_DWARF2_CFI_ASM)
 #  define __FRAME_POINTER                                         \
-      ,"d"(__builtin_dwarf_cfa())
+      ,"\x64"(__builtin_dwarf_cfa())
 #  define VALGRIND_CFI_PROLOGUE                                   \
-      ".cfi_remember_state\n\t"                                   \
-      "lgr 1,%1\n\t" /* copy the argvec pointer in r1 */          \
-      "lgr 7,11\n\t"                                              \
-      "lgr 11,%2\n\t"                                             \
-      ".cfi_def_cfa r11, 0\n\t"
+      "\x2e\x63\x66\x69\x5f\x72\x65\x6d\x65\x6d\x62\x65\x72\x5f\x73\x74\x61\x74\x65\xa\x9"                                   \
+      "\x6c\x67\x72\x20\x31\x2c\x25\x31\xa\x9" /* copy the argvec pointer in r1 */          \
+      "\x6c\x67\x72\x20\x37\x2c\x31\x31\xa\x9"                                              \
+      "\x6c\x67\x72\x20\x31\x31\x2c\x25\x32\xa\x9"                                             \
+      "\x2e\x63\x66\x69\x5f\x64\x65\x66\x5f\x63\x66\x61\x20\x72\x31\x31\x2c\x20\x30\xa\x9"
 #  define VALGRIND_CFI_EPILOGUE                                   \
-      "lgr 11, 7\n\t"                                             \
-      ".cfi_restore_state\n\t"
+      "\x6c\x67\x72\x20\x31\x31\x2c\x20\x37\xa\x9"                                             \
+      "\x2e\x63\x66\x69\x5f\x72\x65\x73\x74\x6f\x72\x65\x5f\x73\x74\x61\x74\x65\xa\x9"
 #else
 #  define __FRAME_POINTER
 #  define VALGRIND_CFI_PROLOGUE                                   \
-      "lgr 1,%1\n\t"
+      "\x6c\x67\x72\x20\x31\x2c\x25\x31\xa\x9"
 #  define VALGRIND_CFI_EPILOGUE
 #endif
 
@@ -3116,8 +3116,8 @@ typedef
    r14 in s390_irgen_noredir (VEX/priv/guest_s390_irgen.c) to give the
    function a proper return address. All others are ABI defined call
    clobbers. */
-#define __CALLER_SAVED_REGS "0","1","2","3","4","5","14", \
-                           "f0","f1","f2","f3","f4","f5","f6","f7"
+#define __CALLER_SAVED_REGS "\x30","\x31","\x32","\x33","\x34","\x35","\x31\x34", \
+                           "\x66\x30","\x66\x31","\x66\x32","\x66\x33","\x66\x34","\x66\x35","\x66\x36","\x66\x37"
 
 
 #define CALL_FN_W_v(lval, orig)                                  \
@@ -3128,15 +3128,15 @@ typedef
       _argvec[0] = (unsigned long)_orig.nraddr;                  \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-160\n\t"                                      \
-         "lg 1, 0(1)\n\t"  /* target->r1 */                      \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x31\x36\x30\xa\x9"                                      \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"  /* target->r1 */                      \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,160\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x31\x36\x30\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "d" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"7"     \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x64" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x37"     \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3151,16 +3151,16 @@ typedef
       _argvec[1] = (unsigned long)arg1;                          \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-160\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x31\x36\x30\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,160\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x31\x36\x30\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"7"     \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x37"     \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3175,17 +3175,17 @@ typedef
       _argvec[2] = (unsigned long)arg2;                          \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-160\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x31\x36\x30\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,160\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x31\x36\x30\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"7"     \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x37"     \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3201,18 +3201,18 @@ typedef
       _argvec[3] = (unsigned long)arg3;                          \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-160\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 4,24(1)\n\t"                                        \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x31\x36\x30\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x34\x2c\x32\x34\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,160\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x31\x36\x30\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"7"     \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x37"     \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3229,19 +3229,19 @@ typedef
       _argvec[4] = (unsigned long)arg4;                          \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-160\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 4,24(1)\n\t"                                        \
-         "lg 5,32(1)\n\t"                                        \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x31\x36\x30\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x34\x2c\x32\x34\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x35\x2c\x33\x32\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,160\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x31\x36\x30\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"7"     \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x37"     \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3259,20 +3259,20 @@ typedef
       _argvec[5] = (unsigned long)arg5;                          \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-160\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 4,24(1)\n\t"                                        \
-         "lg 5,32(1)\n\t"                                        \
-         "lg 6,40(1)\n\t"                                        \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x31\x36\x30\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x34\x2c\x32\x34\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x35\x2c\x33\x32\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x36\x2c\x34\x30\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,160\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x31\x36\x30\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"6","7" \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x36","\x37" \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3292,21 +3292,21 @@ typedef
       _argvec[6] = (unsigned long)arg6;                          \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-168\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 4,24(1)\n\t"                                        \
-         "lg 5,32(1)\n\t"                                        \
-         "lg 6,40(1)\n\t"                                        \
-         "mvc 160(8,15), 48(1)\n\t"                              \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x31\x36\x38\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x34\x2c\x32\x34\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x35\x2c\x33\x32\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x36\x2c\x34\x30\x28\x31\x29\xa\x9"                                        \
+         "\x6d\x76\x63\x20\x31\x36\x30\x28\x38\x2c\x31\x35\x29\x2c\x20\x34\x38\x28\x31\x29\xa\x9"                              \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,168\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x31\x36\x38\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"6","7" \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x36","\x37" \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3327,22 +3327,22 @@ typedef
       _argvec[7] = (unsigned long)arg7;                          \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-176\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 4,24(1)\n\t"                                        \
-         "lg 5,32(1)\n\t"                                        \
-         "lg 6,40(1)\n\t"                                        \
-         "mvc 160(8,15), 48(1)\n\t"                              \
-         "mvc 168(8,15), 56(1)\n\t"                              \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x31\x37\x36\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x34\x2c\x32\x34\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x35\x2c\x33\x32\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x36\x2c\x34\x30\x28\x31\x29\xa\x9"                                        \
+         "\x6d\x76\x63\x20\x31\x36\x30\x28\x38\x2c\x31\x35\x29\x2c\x20\x34\x38\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x36\x38\x28\x38\x2c\x31\x35\x29\x2c\x20\x35\x36\x28\x31\x29\xa\x9"                              \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,176\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x31\x37\x36\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"6","7" \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x36","\x37" \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3364,23 +3364,23 @@ typedef
       _argvec[8] = (unsigned long)arg8;                          \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-184\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 4,24(1)\n\t"                                        \
-         "lg 5,32(1)\n\t"                                        \
-         "lg 6,40(1)\n\t"                                        \
-         "mvc 160(8,15), 48(1)\n\t"                              \
-         "mvc 168(8,15), 56(1)\n\t"                              \
-         "mvc 176(8,15), 64(1)\n\t"                              \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x31\x38\x34\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x34\x2c\x32\x34\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x35\x2c\x33\x32\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x36\x2c\x34\x30\x28\x31\x29\xa\x9"                                        \
+         "\x6d\x76\x63\x20\x31\x36\x30\x28\x38\x2c\x31\x35\x29\x2c\x20\x34\x38\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x36\x38\x28\x38\x2c\x31\x35\x29\x2c\x20\x35\x36\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x37\x36\x28\x38\x2c\x31\x35\x29\x2c\x20\x36\x34\x28\x31\x29\xa\x9"                              \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,184\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x31\x38\x34\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"6","7" \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x36","\x37" \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3403,24 +3403,24 @@ typedef
       _argvec[9] = (unsigned long)arg9;                          \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-192\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 4,24(1)\n\t"                                        \
-         "lg 5,32(1)\n\t"                                        \
-         "lg 6,40(1)\n\t"                                        \
-         "mvc 160(8,15), 48(1)\n\t"                              \
-         "mvc 168(8,15), 56(1)\n\t"                              \
-         "mvc 176(8,15), 64(1)\n\t"                              \
-         "mvc 184(8,15), 72(1)\n\t"                              \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x31\x39\x32\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x34\x2c\x32\x34\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x35\x2c\x33\x32\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x36\x2c\x34\x30\x28\x31\x29\xa\x9"                                        \
+         "\x6d\x76\x63\x20\x31\x36\x30\x28\x38\x2c\x31\x35\x29\x2c\x20\x34\x38\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x36\x38\x28\x38\x2c\x31\x35\x29\x2c\x20\x35\x36\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x37\x36\x28\x38\x2c\x31\x35\x29\x2c\x20\x36\x34\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x38\x34\x28\x38\x2c\x31\x35\x29\x2c\x20\x37\x32\x28\x31\x29\xa\x9"                              \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,192\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x31\x39\x32\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"6","7" \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x36","\x37" \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3444,25 +3444,25 @@ typedef
       _argvec[10] = (unsigned long)arg10;                        \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-200\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 4,24(1)\n\t"                                        \
-         "lg 5,32(1)\n\t"                                        \
-         "lg 6,40(1)\n\t"                                        \
-         "mvc 160(8,15), 48(1)\n\t"                              \
-         "mvc 168(8,15), 56(1)\n\t"                              \
-         "mvc 176(8,15), 64(1)\n\t"                              \
-         "mvc 184(8,15), 72(1)\n\t"                              \
-         "mvc 192(8,15), 80(1)\n\t"                              \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x32\x30\x30\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x34\x2c\x32\x34\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x35\x2c\x33\x32\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x36\x2c\x34\x30\x28\x31\x29\xa\x9"                                        \
+         "\x6d\x76\x63\x20\x31\x36\x30\x28\x38\x2c\x31\x35\x29\x2c\x20\x34\x38\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x36\x38\x28\x38\x2c\x31\x35\x29\x2c\x20\x35\x36\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x37\x36\x28\x38\x2c\x31\x35\x29\x2c\x20\x36\x34\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x38\x34\x28\x38\x2c\x31\x35\x29\x2c\x20\x37\x32\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x39\x32\x28\x38\x2c\x31\x35\x29\x2c\x20\x38\x30\x28\x31\x29\xa\x9"                              \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,200\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x32\x30\x30\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"6","7" \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x36","\x37" \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3487,26 +3487,26 @@ typedef
       _argvec[11] = (unsigned long)arg11;                        \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-208\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 4,24(1)\n\t"                                        \
-         "lg 5,32(1)\n\t"                                        \
-         "lg 6,40(1)\n\t"                                        \
-         "mvc 160(8,15), 48(1)\n\t"                              \
-         "mvc 168(8,15), 56(1)\n\t"                              \
-         "mvc 176(8,15), 64(1)\n\t"                              \
-         "mvc 184(8,15), 72(1)\n\t"                              \
-         "mvc 192(8,15), 80(1)\n\t"                              \
-         "mvc 200(8,15), 88(1)\n\t"                              \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x32\x30\x38\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x34\x2c\x32\x34\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x35\x2c\x33\x32\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x36\x2c\x34\x30\x28\x31\x29\xa\x9"                                        \
+         "\x6d\x76\x63\x20\x31\x36\x30\x28\x38\x2c\x31\x35\x29\x2c\x20\x34\x38\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x36\x38\x28\x38\x2c\x31\x35\x29\x2c\x20\x35\x36\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x37\x36\x28\x38\x2c\x31\x35\x29\x2c\x20\x36\x34\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x38\x34\x28\x38\x2c\x31\x35\x29\x2c\x20\x37\x32\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x39\x32\x28\x38\x2c\x31\x35\x29\x2c\x20\x38\x30\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x32\x30\x30\x28\x38\x2c\x31\x35\x29\x2c\x20\x38\x38\x28\x31\x29\xa\x9"                              \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,208\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x32\x30\x38\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"6","7" \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x36","\x37" \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)
@@ -3532,27 +3532,27 @@ typedef
       _argvec[12] = (unsigned long)arg12;                        \
       __asm__ volatile(                                          \
          VALGRIND_CFI_PROLOGUE                                   \
-         "aghi 15,-216\n\t"                                      \
-         "lg 2, 8(1)\n\t"                                        \
-         "lg 3,16(1)\n\t"                                        \
-         "lg 4,24(1)\n\t"                                        \
-         "lg 5,32(1)\n\t"                                        \
-         "lg 6,40(1)\n\t"                                        \
-         "mvc 160(8,15), 48(1)\n\t"                              \
-         "mvc 168(8,15), 56(1)\n\t"                              \
-         "mvc 176(8,15), 64(1)\n\t"                              \
-         "mvc 184(8,15), 72(1)\n\t"                              \
-         "mvc 192(8,15), 80(1)\n\t"                              \
-         "mvc 200(8,15), 88(1)\n\t"                              \
-         "mvc 208(8,15), 96(1)\n\t"                              \
-         "lg 1, 0(1)\n\t"                                        \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x2d\x32\x31\x36\xa\x9"                                      \
+         "\x6c\x67\x20\x32\x2c\x20\x38\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x33\x2c\x31\x36\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x34\x2c\x32\x34\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x35\x2c\x33\x32\x28\x31\x29\xa\x9"                                        \
+         "\x6c\x67\x20\x36\x2c\x34\x30\x28\x31\x29\xa\x9"                                        \
+         "\x6d\x76\x63\x20\x31\x36\x30\x28\x38\x2c\x31\x35\x29\x2c\x20\x34\x38\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x36\x38\x28\x38\x2c\x31\x35\x29\x2c\x20\x35\x36\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x37\x36\x28\x38\x2c\x31\x35\x29\x2c\x20\x36\x34\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x38\x34\x28\x38\x2c\x31\x35\x29\x2c\x20\x37\x32\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x31\x39\x32\x28\x38\x2c\x31\x35\x29\x2c\x20\x38\x30\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x32\x30\x30\x28\x38\x2c\x31\x35\x29\x2c\x20\x38\x38\x28\x31\x29\xa\x9"                              \
+         "\x6d\x76\x63\x20\x32\x30\x38\x28\x38\x2c\x31\x35\x29\x2c\x20\x39\x36\x28\x31\x29\xa\x9"                              \
+         "\x6c\x67\x20\x31\x2c\x20\x30\x28\x31\x29\xa\x9"                                        \
          VALGRIND_CALL_NOREDIR_R1                                \
-         "lgr %0, 2\n\t"                                         \
-         "aghi 15,216\n\t"                                       \
+         "\x6c\x67\x72\x20\x25\x30\x2c\x20\x32\xa\x9"                                         \
+         "\x61\x67\x68\x69\x20\x31\x35\x2c\x32\x31\x36\xa\x9"                                       \
          VALGRIND_CFI_EPILOGUE                                   \
-         : /*out*/   "=d" (_res)                                 \
-         : /*in*/    "a" (&_argvec[0]) __FRAME_POINTER           \
-         : /*trash*/ "cc", "memory", __CALLER_SAVED_REGS,"6","7" \
+         : /*out*/   "\x3d\x64" (_res)                                 \
+         : /*in*/    "\x61" (&_argvec[0]) __FRAME_POINTER           \
+         : /*trash*/ "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79", __CALLER_SAVED_REGS,"\x36","\x37" \
       );                                                         \
       lval = (__typeof__(lval)) _res;                            \
    } while (0)

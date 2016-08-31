@@ -649,7 +649,7 @@ Expression* ParserTraits::ExpressionFromIdentifier(
   // The name may refer to a module instance object, so its type is unknown.
 #ifdef DEBUG
   if (FLAG_print_interface_details)
-    PrintF("# Variable %.*s ", name->length(), name->raw_data());
+    PrintF("\x23\x20\x56\x61\x72\x69\x61\x62\x6c\x65\x20\x25\x2e\x2a\x73\x20", name->length(), name->raw_data());
 #endif
   Interface* interface = Interface::NewUnknown(parser_->zone());
   return scope->NewUnresolved(factory, name, interface, pos);
@@ -668,7 +668,7 @@ Expression* ParserTraits::ExpressionFromString(
 Expression* ParserTraits::GetIterator(
     Expression* iterable, AstNodeFactory<AstConstructionVisitor>* factory) {
   Expression* iterator_symbol_literal =
-      factory->NewSymbolLiteral("symbolIterator", RelocInfo::kNoPosition);
+      factory->NewSymbolLiteral("\x73\x79\x6d\x62\x6f\x6c\x49\x74\x65\x72\x61\x74\x6f\x72", RelocInfo::kNoPosition);
   int pos = iterable->position();
   Expression* prop =
       factory->NewProperty(iterable, iterator_symbol_literal, pos);
@@ -778,15 +778,15 @@ FunctionLiteral* Parser::ParseProgram() {
   if (FLAG_trace_parse && result != NULL) {
     double ms = timer.Elapsed().InMillisecondsF();
     if (info()->is_eval()) {
-      PrintF("[parsing eval");
+      PrintF("\x5b\x70\x61\x72\x73\x69\x6e\x67\x20\x65\x76\x61\x6c");
     } else if (info()->script()->name()->IsString()) {
       String* name = String::cast(info()->script()->name());
       SmartArrayPointer<char> name_chars = name->ToCString();
-      PrintF("[parsing script: %s", name_chars.get());
+      PrintF("\x5b\x70\x61\x72\x73\x69\x6e\x67\x20\x73\x63\x72\x69\x70\x74\x3a\x20\x6c\xa2", name_chars.get());
     } else {
-      PrintF("[parsing script");
+      PrintF("\x5b\x70\x61\x72\x73\x69\x6e\x67\x20\x73\x63\x72\x69\x70\x74");
     }
-    PrintF(" - took %0.3f ms]\n", ms);
+    PrintF("\x20\x2d\x20\x74\x6f\x6f\x6b\x20\x6c\xf0\x4b\xf3\x86\x20\x6d\x73\x5d\xa", ms);
   }
   if (compile_options() == ScriptCompiler::kProduceParserCache) {
     if (result != NULL) *info_->cached_data() = recorder.GetScriptData();
@@ -857,7 +857,7 @@ FunctionLiteral* Parser::DoParseProgram(CompilationInfo* info,
           !body->at(0)->IsExpressionStatement() ||
           !body->at(0)->AsExpressionStatement()->
               expression()->IsFunctionLiteral()) {
-        ReportMessage("single_function_literal");
+        ReportMessage("\x73\x69\x6e\x67\x6c\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6c\x69\x74\x65\x72\x61\x6c");
         ok = false;
       }
     }
@@ -919,7 +919,7 @@ FunctionLiteral* Parser::ParseLazy() {
   if (FLAG_trace_parse && result != NULL) {
     double ms = timer.Elapsed().InMillisecondsF();
     SmartArrayPointer<char> name_chars = result->debug_name()->ToCString();
-    PrintF("[parsing function: %s - took %0.3f ms]\n", name_chars.get(), ms);
+    PrintF("\x5b\x70\x61\x72\x73\x69\x6e\x67\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20\x6c\xa2\x20\x2d\x20\x74\x6f\x6f\x6b\x20\x6c\xf0\x4b\xf3\x86\x20\x6d\x73\x5d\xa", name_chars.get(), ms);
   }
   return result;
 }
@@ -1147,7 +1147,7 @@ Statement* Parser::ParseModuleDeclaration(ZoneList<const AstRawString*>* names,
 
 #ifdef DEBUG
   if (FLAG_print_interface_details)
-    PrintF("# Module %.*s ", name->length(), name->raw_data());
+    PrintF("\x23\x20\x4d\x6f\x64\x75\x6c\x65\x20\x25\x2e\x2a\x73\x20", name->length(), name->raw_data());
 #endif
 
   Module* module = ParseModule(CHECK_OK);
@@ -1158,9 +1158,9 @@ Statement* Parser::ParseModuleDeclaration(ZoneList<const AstRawString*>* names,
 
 #ifdef DEBUG
   if (FLAG_print_interface_details)
-    PrintF("# Module %.*s ", name->length(), name->raw_data());
+    PrintF("\x23\x20\x4d\x6f\x64\x75\x6c\x65\x20\x25\x2e\x2a\x73\x20", name->length(), name->raw_data());
   if (FLAG_print_interfaces) {
-    PrintF("module %.*s: ", name->length(), name->raw_data());
+    PrintF("\x6d\x6f\x64\x75\x6c\x65\x20\x25\x2e\x2a\x73\x3a\x20", name->length(), name->raw_data());
     module->interface()->Print();
   }
 #endif
@@ -1191,7 +1191,7 @@ Module* Parser::ParseModule(bool* ok) {
     }
 
     default: {
-      ExpectContextualKeyword(CStrVector("at"), CHECK_OK);
+      ExpectContextualKeyword(CStrVector("\x61\x74"), CHECK_OK);
       Module* result = ParseModuleUrl(CHECK_OK);
       ExpectSemicolon(CHECK_OK);
       return result;
@@ -1208,7 +1208,7 @@ Module* Parser::ParseModuleLiteral(bool* ok) {
   // Construct block expecting 16 statements.
   Block* body = factory()->NewBlock(NULL, 16, false, RelocInfo::kNoPosition);
 #ifdef DEBUG
-  if (FLAG_print_interface_details) PrintF("# Literal ");
+  if (FLAG_print_interface_details) PrintF("\x23\x20\x4c\x69\x74\x65\x72\x61\x6c\x20");
 #endif
   Scope* scope = NewScope(scope_, MODULE_SCOPE);
 
@@ -1239,7 +1239,7 @@ Module* Parser::ParseModuleLiteral(bool* ok) {
   for (Interface::Iterator it = interface->iterator();
        !it.done(); it.Advance()) {
     if (scope->LookupLocal(it.name()) == NULL) {
-      ParserTraits::ReportMessage("module_export_undefined", it.name());
+      ParserTraits::ReportMessage("\x6d\x6f\x64\x75\x6c\x65\x5f\x65\x78\x70\x6f\x72\x74\x5f\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", it.name());
       *ok = false;
       return NULL;
     }
@@ -1264,21 +1264,21 @@ Module* Parser::ParseModulePath(bool* ok) {
     const AstRawString* name = ParseIdentifierName(CHECK_OK);
 #ifdef DEBUG
     if (FLAG_print_interface_details)
-      PrintF("# Path .%.*s ", name->length(), name->raw_data());
+      PrintF("\x23\x20\x50\x61\x74\x68\x20\x2e\x25\x2e\x2a\x73\x20", name->length(), name->raw_data());
 #endif
     Module* member = factory()->NewModulePath(result, name, pos);
     result->interface()->Add(name, member->interface(), zone(), ok);
     if (!*ok) {
 #ifdef DEBUG
       if (FLAG_print_interfaces) {
-        PrintF("PATH TYPE ERROR at '%.*s'\n", name->length(), name->raw_data());
-        PrintF("result: ");
+        PrintF("\x50\x41\x54\x48\x20\x54\x59\x50\x45\x20\x45\x52\x52\x4f\x52\x20\x61\x74\x20\x27\x25\x2e\x2a\x73\x27\xa", name->length(), name->raw_data());
+        PrintF("\x72\x65\x73\x75\x6c\x74\x3a\x20");
         result->interface()->Print();
-        PrintF("member: ");
+        PrintF("\x6d\x65\x6d\x62\x65\x72\x3a\x20");
         member->interface()->Print();
       }
 #endif
-      ParserTraits::ReportMessage("invalid_module_path", name);
+      ParserTraits::ReportMessage("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x6d\x6f\x64\x75\x6c\x65\x5f\x70\x61\x74\x68", name);
       return NULL;
     }
     result = member;
@@ -1297,7 +1297,7 @@ Module* Parser::ParseModuleVariable(bool* ok) {
       ParseIdentifier(kDontAllowEvalOrArguments, CHECK_OK);
 #ifdef DEBUG
   if (FLAG_print_interface_details)
-    PrintF("# Module variable %.*s ", name->length(), name->raw_data());
+    PrintF("\x23\x20\x4d\x6f\x64\x75\x6c\x65\x20\x76\x61\x72\x69\x61\x62\x6c\x65\x20\x25\x2e\x2a\x73\x20", name->length(), name->raw_data());
 #endif
   VariableProxy* proxy = scope_->NewUnresolved(
       factory(), name, Interface::NewModule(zone()),
@@ -1318,7 +1318,7 @@ Module* Parser::ParseModuleUrl(bool* ok) {
   // TODO(ES6): Request JS resource from environment...
 
 #ifdef DEBUG
-  if (FLAG_print_interface_details) PrintF("# Url ");
+  if (FLAG_print_interface_details) PrintF("\x23\x20\x55\x72\x6c\x20");
 #endif
 
   // Create an empty literal as long as the feature isn't finished.
@@ -1367,7 +1367,7 @@ Block* Parser::ParseImportDeclaration(bool* ok) {
     names.Add(name, zone());
   }
 
-  ExpectContextualKeyword(CStrVector("from"), CHECK_OK);
+  ExpectContextualKeyword(CStrVector("\x66\x72\x6f\x6d"), CHECK_OK);
   Module* module = ParseModuleSpecifier(CHECK_OK);
   ExpectSemicolon(CHECK_OK);
 
@@ -1377,20 +1377,20 @@ Block* Parser::ParseImportDeclaration(bool* ok) {
   for (int i = 0; i < names.length(); ++i) {
 #ifdef DEBUG
     if (FLAG_print_interface_details)
-      PrintF("# Import %.*s ", name->length(), name->raw_data());
+      PrintF("\x23\x20\x49\x6d\x70\x6f\x72\x74\x20\x25\x2e\x2a\x73\x20", name->length(), name->raw_data());
 #endif
     Interface* interface = Interface::NewUnknown(zone());
     module->interface()->Add(names[i], interface, zone(), ok);
     if (!*ok) {
 #ifdef DEBUG
       if (FLAG_print_interfaces) {
-        PrintF("IMPORT TYPE ERROR at '%.*s'\n", name->length(),
+        PrintF("\x49\x4d\x50\x4f\x52\x54\x20\x54\x59\x50\x45\x20\x45\x52\x52\x4f\x52\x20\x61\x74\x20\x27\x25\x2e\x2a\x73\x27\xa", name->length(),
                name->raw_data());
-        PrintF("module: ");
+        PrintF("\x6d\x6f\x64\x75\x6c\x65\x3a\x20");
         module->interface()->Print();
       }
 #endif
-      ParserTraits::ReportMessage("invalid_module_path", name);
+      ParserTraits::ReportMessage("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x6d\x6f\x64\x75\x6c\x65\x5f\x70\x61\x74\x68", name);
       return NULL;
     }
     VariableProxy* proxy = NewUnresolved(names[i], LET, interface);
@@ -1472,7 +1472,7 @@ Statement* Parser::ParseExportDeclaration(bool* ok) {
   for (int i = 0; i < names.length(); ++i) {
 #ifdef DEBUG
     if (FLAG_print_interface_details)
-      PrintF("# Export %.*s ", names[i]->length(), names[i]->raw_data());
+      PrintF("\x23\x20\x45\x78\x70\x6f\x72\x74\x20\x25\x2e\x2a\x73\x20", names[i]->length(), names[i]->raw_data());
 #endif
     Interface* inner = Interface::NewUnknown(zone());
     interface->Add(names[i], inner, zone(), CHECK_OK);
@@ -1612,7 +1612,7 @@ Statement* Parser::ParseStatement(ZoneList<const AstRawString*>* labels,
       // Statement:
       //    GeneratorDeclaration
       if (strict_mode() == STRICT) {
-        ReportMessageAt(scanner()->peek_location(), "strict_function");
+        ReportMessageAt(scanner()->peek_location(), "\x73\x74\x72\x69\x63\x74\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e");
         *ok = false;
         return NULL;
       }
@@ -1703,12 +1703,12 @@ void Parser::Declare(Declaration* declaration, bool resolve, bool* ok) {
       if (allow_harmony_scoping() && strict_mode() == STRICT) {
         // In harmony we treat re-declarations as early errors. See
         // ES5 16 for a definition of early errors.
-        ParserTraits::ReportMessage("var_redeclaration", name);
+        ParserTraits::ReportMessage("\x76\x61\x72\x5f\x72\x65\x64\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e", name);
         *ok = false;
         return;
       }
       Expression* expression = NewThrowTypeError(
-          "var_redeclaration", name, declaration->position());
+          "\x76\x61\x72\x5f\x72\x65\x64\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e", name, declaration->position());
       declaration_scope->SetIllegalRedeclaration(expression);
     } else if (mode == VAR) {
       var->set_maybe_assigned();
@@ -1785,7 +1785,7 @@ void Parser::Declare(Declaration* declaration, bool resolve, bool* ok) {
       bool ok;
 #ifdef DEBUG
       if (FLAG_print_interface_details) {
-        PrintF("# Declare %.*s ", var->raw_name()->length(),
+        PrintF("\x23\x20\x44\x65\x63\x6c\x61\x72\x65\x20\x25\x2e\x2a\x73\x20", var->raw_name()->length(),
                var->raw_name()->raw_data());
       }
 #endif
@@ -1793,14 +1793,14 @@ void Parser::Declare(Declaration* declaration, bool resolve, bool* ok) {
       if (!ok) {
 #ifdef DEBUG
         if (FLAG_print_interfaces) {
-          PrintF("DECLARE TYPE ERROR\n");
-          PrintF("proxy: ");
+          PrintF("\x44\x45\x43\x4c\x41\x52\x45\x20\x54\x59\x50\x45\x20\x45\x52\x52\x4f\x52\xa");
+          PrintF("\x70\x72\x6f\x78\x79\x3a\x20");
           proxy->interface()->Print();
-          PrintF("var: ");
+          PrintF("\x76\x61\x72\x3a\x20");
           var->interface()->Print();
         }
 #endif
-        ParserTraits::ReportMessage("module_type_error", name);
+        ParserTraits::ReportMessage("\x6d\x6f\x64\x75\x6c\x65\x5f\x74\x79\x70\x65\x5f\x65\x72\x72\x6f\x72", name);
       }
     }
   }
@@ -2023,14 +2023,14 @@ Block* Parser::ParseVariableDeclarations(
           if (var_context == kStatement) {
             // In strict mode 'const' declarations are only allowed in source
             // element positions.
-            ReportMessage("unprotected_const");
+            ReportMessage("\x75\x6e\x70\x72\x6f\x74\x65\x63\x74\x65\x64\x5f\x63\x6f\x6e\x73\x74");
             *ok = false;
             return NULL;
           }
           mode = CONST;
           init_op = Token::INIT_CONST;
         } else {
-          ReportMessage("strict_const");
+          ReportMessage("\x73\x74\x72\x69\x63\x74\x5f\x63\x6f\x6e\x73\x74");
           *ok = false;
           return NULL;
         }
@@ -2042,7 +2042,7 @@ Block* Parser::ParseVariableDeclarations(
     Consume(Token::LET);
     if (var_context == kStatement) {
       // Let declarations are only allowed in source element positions.
-      ReportMessage("unprotected_let");
+      ReportMessage("\x75\x6e\x70\x72\x6f\x74\x65\x63\x74\x65\x64\x5f\x6c\x65\x74");
       *ok = false;
       return NULL;
     }
@@ -2102,7 +2102,7 @@ Block* Parser::ParseVariableDeclarations(
     Declare(declaration, mode != VAR, CHECK_OK);
     nvars++;
     if (declaration_scope->num_var_or_const() > kMaxNumFunctionLocals) {
-      ReportMessage("too_many_variables");
+      ReportMessage("\x74\x6f\x6f\x5f\x6d\x61\x6e\x79\x5f\x76\x61\x72\x69\x61\x62\x6c\x65\x73");
       *ok = false;
       return NULL;
     }
@@ -2315,7 +2315,7 @@ Statement* Parser::ParseExpressionOrLabelledStatement(
     // structured.  However, these are probably changes we want to
     // make later anyway so we should go back and fix this then.
     if (ContainsLabel(labels, label) || TargetStackContainsLabel(label)) {
-      ParserTraits::ReportMessage("label_redeclaration", label);
+      ParserTraits::ReportMessage("\x6c\x61\x62\x65\x6c\x5f\x72\x65\x64\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e", label);
       *ok = false;
       return NULL;
     }
@@ -2399,9 +2399,9 @@ Statement* Parser::ParseContinueStatement(bool* ok) {
   IterationStatement* target = LookupContinueTarget(label, CHECK_OK);
   if (target == NULL) {
     // Illegal continue statement.
-    const char* message = "illegal_continue";
+    const char* message = "\x69\x6c\x6c\x65\x67\x61\x6c\x5f\x63\x6f\x6e\x74\x69\x6e\x75\x65";
     if (label != NULL) {
-      message = "unknown_label";
+      message = "\x75\x6e\x6b\x6e\x6f\x77\x6e\x5f\x6c\x61\x62\x65\x6c";
     }
     ParserTraits::ReportMessage(message, label);
     *ok = false;
@@ -2436,9 +2436,9 @@ Statement* Parser::ParseBreakStatement(ZoneList<const AstRawString*>* labels,
   target = LookupBreakTarget(label, CHECK_OK);
   if (target == NULL) {
     // Illegal break statement.
-    const char* message = "illegal_break";
+    const char* message = "\x69\x6c\x6c\x65\x67\x61\x6c\x5f\x62\x72\x65\x61\x6b";
     if (label != NULL) {
-      message = "unknown_label";
+      message = "\x75\x6e\x6b\x6e\x6f\x77\x6e\x5f\x6c\x61\x62\x65\x6c";
     }
     ParserTraits::ReportMessage(message, label);
     *ok = false;
@@ -2483,7 +2483,7 @@ Statement* Parser::ParseReturnStatement(bool* ok) {
 
   Scope* decl_scope = scope_->DeclarationScope();
   if (decl_scope->is_global_scope() || decl_scope->is_eval_scope()) {
-    ReportMessageAt(loc, "illegal_return");
+    ReportMessageAt(loc, "\x69\x6c\x6c\x65\x67\x61\x6c\x5f\x72\x65\x74\x75\x72\x6e");
     *ok = false;
     return NULL;
   }
@@ -2500,7 +2500,7 @@ Statement* Parser::ParseWithStatement(ZoneList<const AstRawString*>* labels,
   int pos = position();
 
   if (strict_mode() == STRICT) {
-    ReportMessage("strict_mode_with");
+    ReportMessage("\x73\x74\x72\x69\x63\x74\x5f\x6d\x6f\x64\x65\x5f\x77\x69\x74\x68");
     *ok = false;
     return NULL;
   }
@@ -2533,7 +2533,7 @@ CaseClause* Parser::ParseCaseClause(bool* default_seen_ptr, bool* ok) {
   } else {
     Expect(Token::DEFAULT, CHECK_OK);
     if (*default_seen_ptr) {
-      ReportMessage("multiple_defaults_in_switch");
+      ReportMessage("\x6d\x75\x6c\x74\x69\x70\x6c\x65\x5f\x64\x65\x66\x61\x75\x6c\x74\x73\x5f\x69\x6e\x5f\x73\x77\x69\x74\x63\x68");
       *ok = false;
       return NULL;
     }
@@ -2589,7 +2589,7 @@ Statement* Parser::ParseThrowStatement(bool* ok) {
   Expect(Token::THROW, CHECK_OK);
   int pos = position();
   if (scanner()->HasAnyLineTerminatorBeforeNext()) {
-    ReportMessage("newline_after_throw");
+    ReportMessage("\x6e\x65\x77\x6c\x69\x6e\x65\x5f\x61\x66\x74\x65\x72\x5f\x74\x68\x72\x6f\x77");
     *ok = false;
     return NULL;
   }
@@ -2625,7 +2625,7 @@ TryStatement* Parser::ParseTryStatement(bool* ok) {
 
   Token::Value tok = peek();
   if (tok != Token::CATCH && tok != Token::FINALLY) {
-    ReportMessage("no_catch_or_finally");
+    ReportMessage("\x6e\x6f\x5f\x63\x61\x74\x63\x68\x5f\x6f\x72\x5f\x66\x69\x6e\x61\x6c\x6c\x79");
     *ok = false;
     return NULL;
   }
@@ -2758,7 +2758,7 @@ bool Parser::CheckInOrOf(bool accept_OF,
   if (Check(Token::IN)) {
     *visit_mode = ForEachStatement::ENUMERATE;
     return true;
-  } else if (accept_OF && CheckContextualKeyword(CStrVector("of"))) {
+  } else if (accept_OF && CheckContextualKeyword(CStrVector("\x6f\x66"))) {
     *visit_mode = ForEachStatement::ITERATE;
     return true;
   }
@@ -3120,7 +3120,7 @@ Statement* Parser::ParseForStatement(ZoneList<const AstRawString*>* labels,
 
       if (CheckInOrOf(accept_OF, &mode)) {
         expression = this->CheckAndRewriteReferenceExpression(
-            expression, lhs_location, "invalid_lhs_in_for", CHECK_OK);
+            expression, lhs_location, "\x69\x6e\x76\x61\x6c\x69\x64\x5f\x6c\x68\x73\x5f\x69\x6e\x5f\x66\x6f\x72", CHECK_OK);
 
         ForEachStatement* loop =
             factory()->NewForEachStatement(mode, labels, pos);
@@ -3474,7 +3474,7 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
 
       num_parameters++;
       if (num_parameters > Code::kMaxArguments) {
-        ReportMessage("too_many_parameters");
+        ReportMessage("\x74\x6f\x6f\x5f\x6d\x61\x6e\x79\x5f\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x73");
         *ok = false;
         return NULL;
       }
@@ -3779,7 +3779,7 @@ Expression* Parser::ParseV8Intrinsic(bool* ok) {
     if (args->length() == 1 && args->at(0)->AsVariableProxy() != NULL) {
       return args->at(0);
     } else {
-      ReportMessage("not_isvar");
+      ReportMessage("\x6e\x6f\x74\x5f\x69\x73\x76\x61\x72");
       *ok = false;
       return NULL;
     }
@@ -3789,14 +3789,14 @@ Expression* Parser::ParseV8Intrinsic(bool* ok) {
   if (function != NULL &&
       function->nargs != -1 &&
       function->nargs != args->length()) {
-    ReportMessage("illegal_access");
+    ReportMessage("\x69\x6c\x6c\x65\x67\x61\x6c\x5f\x61\x63\x63\x65\x73\x73");
     *ok = false;
     return NULL;
   }
 
   // Check that the function is defined if it's an inline runtime call.
-  if (function == NULL && name->FirstCharacter() == '_') {
-    ParserTraits::ReportMessage("not_defined", name);
+  if (function == NULL && name->FirstCharacter() == '\x5f') {
+    ParserTraits::ReportMessage("\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64", name);
     *ok = false;
     return NULL;
   }
@@ -3821,7 +3821,7 @@ void Parser::CheckConflictingVarDeclarations(Scope* scope, bool* ok) {
     Scanner::Location location = position == RelocInfo::kNoPosition
         ? Scanner::Location::invalid()
         : Scanner::Location(position, position + 1);
-    ParserTraits::ReportMessageAt(location, "var_redeclaration", name);
+    ParserTraits::ReportMessageAt(location, "\x76\x61\x72\x5f\x72\x65\x64\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e", name);
     *ok = false;
   }
 }
@@ -3979,7 +3979,7 @@ void RegExpParser::Advance() {
     if (check.HasOverflowed()) {
       ReportError(CStrVector(Isolate::kStackOverflowMessage));
     } else if (zone()->excess_allocation()) {
-      ReportError(CStrVector("Regular expression too large"));
+      ReportError(CStrVector("\x52\x65\x67\x75\x6c\x61\x72\x20\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x20\x74\x6f\x6f\x20\x6c\x61\x72\x67\x65"));
     } else {
       current_ = in()->Get(next_pos_);
       next_pos_++;
@@ -4054,14 +4054,14 @@ RegExpTree* RegExpParser::ParseDisjunction() {
     case kEndMarker:
       if (stored_state->IsSubexpression()) {
         // Inside a parenthesized group when hitting end of input.
-        ReportError(CStrVector("Unterminated group") CHECK_FAILED);
+        ReportError(CStrVector("\x55\x6e\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x64\x20\x67\x72\x6f\x75\x70") CHECK_FAILED);
       }
       DCHECK_EQ(INITIAL, stored_state->group_type());
       // Parsing completed successfully.
       return builder->ToRegExp();
-    case ')': {
+    case '\x29': {
       if (!stored_state->IsSubexpression()) {
-        ReportError(CStrVector("Unmatched ')'") CHECK_FAILED);
+        ReportError(CStrVector("\x55\x6e\x6d\x61\x74\x63\x68\x65\x64\x20\x27\x29\x27") CHECK_FAILED);
       }
       DCHECK_NE(INITIAL, stored_state->group_type());
 
@@ -4098,16 +4098,16 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       // lookaheads, and break in all cases.
       break;
     }
-    case '|': {
+    case '\x7c': {
       Advance();
       builder->NewAlternative();
       continue;
     }
-    case '*':
-    case '+':
-    case '?':
-      return ReportError(CStrVector("Nothing to repeat"));
-    case '^': {
+    case '\x2a':
+    case '\x2b':
+    case '\x3f':
+      return ReportError(CStrVector("\x4e\x6f\x74\x68\x69\x6e\x67\x20\x74\x6f\x20\x72\x65\x70\x65\x61\x74"));
+    case '\x5e': {
       Advance();
       if (multiline_) {
         builder->AddAssertion(
@@ -4119,7 +4119,7 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       }
       continue;
     }
-    case '$': {
+    case '\x24': {
       Advance();
       RegExpAssertion::AssertionType assertion_type =
           multiline_ ? RegExpAssertion::END_OF_LINE :
@@ -4127,32 +4127,32 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       builder->AddAssertion(new(zone()) RegExpAssertion(assertion_type));
       continue;
     }
-    case '.': {
+    case '\x2e': {
       Advance();
       // everything except \x0a, \x0d, \u2028 and \u2029
       ZoneList<CharacterRange>* ranges =
           new(zone()) ZoneList<CharacterRange>(2, zone());
-      CharacterRange::AddClassEscape('.', ranges, zone());
+      CharacterRange::AddClassEscape('\x2e', ranges, zone());
       RegExpTree* atom = new(zone()) RegExpCharacterClass(ranges, false);
       builder->AddAtom(atom);
       break;
     }
-    case '(': {
+    case '\x28': {
       SubexpressionType subexpr_type = CAPTURE;
       Advance();
-      if (current() == '?') {
+      if (current() == '\x3f') {
         switch (Next()) {
-          case ':':
+          case '\x3a':
             subexpr_type = GROUPING;
             break;
-          case '=':
+          case '\x3d':
             subexpr_type = POSITIVE_LOOKAHEAD;
             break;
-          case '!':
+          case '\x21':
             subexpr_type = NEGATIVE_LOOKAHEAD;
             break;
           default:
-            ReportError(CStrVector("Invalid group") CHECK_FAILED);
+            ReportError(CStrVector("\x49\x6e\x76\x61\x6c\x69\x64\x20\x67\x72\x6f\x75\x70") CHECK_FAILED);
             break;
         }
         Advance(2);
@@ -4161,7 +4161,7 @@ RegExpTree* RegExpParser::ParseDisjunction() {
           captures_ = new(zone()) ZoneList<RegExpCapture*>(2, zone());
         }
         if (captures_started() >= kMaxCaptures) {
-          ReportError(CStrVector("Too many captures") CHECK_FAILED);
+          ReportError(CStrVector("\x54\x6f\x6f\x20\x6d\x61\x6e\x79\x20\x63\x61\x70\x74\x75\x72\x65\x73") CHECK_FAILED);
         }
         captures_->Add(NULL, zone());
       }
@@ -4171,23 +4171,23 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       builder = stored_state->builder();
       continue;
     }
-    case '[': {
+    case '\x5b': {
       RegExpTree* atom = ParseCharacterClass(CHECK_FAILED);
       builder->AddAtom(atom);
       break;
     }
     // Atom ::
     //   \ AtomEscape
-    case '\\':
+    case '\x5c':
       switch (Next()) {
       case kEndMarker:
-        return ReportError(CStrVector("\\ at end of pattern"));
-      case 'b':
+        return ReportError(CStrVector("\x5c\x20\x61\x74\x20\x65\x6e\x64\x20\x6f\x66\x20\x70\x61\x74\x74\x65\x72\x6e"));
+      case '\x62':
         Advance(2);
         builder->AddAssertion(
             new(zone()) RegExpAssertion(RegExpAssertion::BOUNDARY));
         continue;
-      case 'B':
+      case '\x42':
         Advance(2);
         builder->AddAssertion(
             new(zone()) RegExpAssertion(RegExpAssertion::NON_BOUNDARY));
@@ -4197,7 +4197,7 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       //
       // CharacterClassEscape :: one of
       //   d D s S w W
-      case 'd': case 'D': case 's': case 'S': case 'w': case 'W': {
+      case '\x64': case '\x44': case '\x73': case '\x53': case '\x77': case '\x57': {
         uc32 c = Next();
         Advance(2);
         ZoneList<CharacterRange>* ranges =
@@ -4207,8 +4207,8 @@ RegExpTree* RegExpParser::ParseDisjunction() {
         builder->AddAtom(atom);
         break;
       }
-      case '1': case '2': case '3': case '4': case '5': case '6':
-      case '7': case '8': case '9': {
+      case '\x31': case '\x32': case '\x33': case '\x34': case '\x35': case '\x36':
+      case '\x37': case '\x38': case '\x39': {
         int index = 0;
         if (ParseBackReferenceIndex(&index)) {
           RegExpCapture* capture = NULL;
@@ -4224,7 +4224,7 @@ RegExpTree* RegExpParser::ParseDisjunction() {
           break;
         }
         uc32 first_digit = Next();
-        if (first_digit == '8' || first_digit == '9') {
+        if (first_digit == '\x38' || first_digit == '\x39') {
           // Treat as identity escape
           builder->AddCharacter(first_digit);
           Advance(2);
@@ -4232,7 +4232,7 @@ RegExpTree* RegExpParser::ParseDisjunction() {
         }
       }
       // FALLTHROUGH
-      case '0': {
+      case '\x30': {
         Advance();
         uc32 octal = ParseOctalLiteral();
         builder->AddCharacter(octal);
@@ -4240,61 +4240,61 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       }
       // ControlEscape :: one of
       //   f n r t v
-      case 'f':
+      case '\x66':
         Advance(2);
-        builder->AddCharacter('\f');
+        builder->AddCharacter('\xc');
         break;
-      case 'n':
+      case '\x6e':
         Advance(2);
-        builder->AddCharacter('\n');
+        builder->AddCharacter('\xa');
         break;
-      case 'r':
+      case '\x72':
         Advance(2);
-        builder->AddCharacter('\r');
+        builder->AddCharacter('\xd');
         break;
-      case 't':
+      case '\x74':
         Advance(2);
-        builder->AddCharacter('\t');
+        builder->AddCharacter('\x9');
         break;
-      case 'v':
+      case '\x76':
         Advance(2);
-        builder->AddCharacter('\v');
+        builder->AddCharacter('\xb');
         break;
-      case 'c': {
+      case '\x63': {
         Advance();
         uc32 controlLetter = Next();
         // Special case if it is an ASCII letter.
         // Convert lower case letters to uppercase.
-        uc32 letter = controlLetter & ~('a' ^ 'A');
-        if (letter < 'A' || 'Z' < letter) {
+        uc32 letter = controlLetter & ~('\x61' ^ '\x41');
+        if (letter < '\x41' || '\x5a' < letter) {
           // controlLetter is not in range 'A'-'Z' or 'a'-'z'.
           // This is outside the specification. We match JSC in
           // reading the backslash as a literal character instead
           // of as starting an escape.
-          builder->AddCharacter('\\');
+          builder->AddCharacter('\x5c');
         } else {
           Advance(2);
           builder->AddCharacter(controlLetter & 0x1f);
         }
         break;
       }
-      case 'x': {
+      case '\x78': {
         Advance(2);
         uc32 value;
         if (ParseHexEscape(2, &value)) {
           builder->AddCharacter(value);
         } else {
-          builder->AddCharacter('x');
+          builder->AddCharacter('\x78');
         }
         break;
       }
-      case 'u': {
+      case '\x75': {
         Advance(2);
         uc32 value;
         if (ParseHexEscape(4, &value)) {
           builder->AddCharacter(value);
         } else {
-          builder->AddCharacter('u');
+          builder->AddCharacter('\x75');
         }
         break;
       }
@@ -4305,10 +4305,10 @@ RegExpTree* RegExpParser::ParseDisjunction() {
         break;
       }
       break;
-    case '{': {
+    case '\x7b': {
       int dummy;
       if (ParseIntervalQuantifier(&dummy, &dummy)) {
-        ReportError(CStrVector("Nothing to repeat") CHECK_FAILED);
+        ReportError(CStrVector("\x4e\x6f\x74\x68\x69\x6e\x67\x20\x74\x6f\x20\x72\x65\x70\x65\x61\x74") CHECK_FAILED);
       }
       // fallthrough
     }
@@ -4326,25 +4326,25 @@ RegExpTree* RegExpParser::ParseDisjunction() {
     //   +
     //   ?
     //   {
-    case '*':
+    case '\x2a':
       min = 0;
       max = RegExpTree::kInfinity;
       Advance();
       break;
-    case '+':
+    case '\x2b':
       min = 1;
       max = RegExpTree::kInfinity;
       Advance();
       break;
-    case '?':
+    case '\x3f':
       min = 0;
       max = 1;
       Advance();
       break;
-    case '{':
+    case '\x7b':
       if (ParseIntervalQuantifier(&min, &max)) {
         if (max < min) {
-          ReportError(CStrVector("numbers out of order in {} quantifier.")
+          ReportError(CStrVector("\x6e\x75\x6d\x62\x65\x72\x73\x20\x6f\x75\x74\x20\x6f\x66\x20\x6f\x72\x64\x65\x72\x20\x69\x6e\x20\x7b\x7d\x20\x71\x75\x61\x6e\x74\x69\x66\x69\x65\x72\x2e")
                       CHECK_FAILED);
         }
         break;
@@ -4355,10 +4355,10 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       continue;
     }
     RegExpQuantifier::QuantifierType quantifier_type = RegExpQuantifier::GREEDY;
-    if (current() == '?') {
+    if (current() == '\x3f') {
       quantifier_type = RegExpQuantifier::NON_GREEDY;
       Advance();
-    } else if (FLAG_regexp_possessive_quantifier && current() == '+') {
+    } else if (FLAG_regexp_possessive_quantifier && current() == '\x2b') {
       // FLAG_regexp_possessive_quantifier is a debug-only flag.
       quantifier_type = RegExpQuantifier::POSSESSIVE;
       Advance();
@@ -4372,9 +4372,9 @@ RegExpTree* RegExpParser::ParseDisjunction() {
 // Currently only used in an DCHECK.
 static bool IsSpecialClassEscape(uc32 c) {
   switch (c) {
-    case 'd': case 'D':
-    case 's': case 'S':
-    case 'w': case 'W':
+    case '\x64': case '\x44':
+    case '\x73': case '\x53':
+    case '\x77': case '\x57':
       return true;
     default:
       return false;
@@ -4397,23 +4397,23 @@ void RegExpParser::ScanForCaptures() {
   while ((n = current()) != kEndMarker) {
     Advance();
     switch (n) {
-      case '\\':
+      case '\x5c':
         Advance();
         break;
-      case '[': {
+      case '\x5b': {
         int c;
         while ((c = current()) != kEndMarker) {
           Advance();
-          if (c == '\\') {
+          if (c == '\x5c') {
             Advance();
           } else {
-            if (c == ']') break;
+            if (c == '\x5d') break;
           }
         }
         break;
       }
-      case '(':
-        if (current() != '?') capture_count++;
+      case '\x28':
+        if (current() != '\x3f') capture_count++;
         break;
     }
   }
@@ -4423,17 +4423,17 @@ void RegExpParser::ScanForCaptures() {
 
 
 bool RegExpParser::ParseBackReferenceIndex(int* index_out) {
-  DCHECK_EQ('\\', current());
-  DCHECK('1' <= Next() && Next() <= '9');
+  DCHECK_EQ('\x5c', current());
+  DCHECK('\x31' <= Next() && Next() <= '\x39');
   // Try to parse a decimal literal that is no greater than the total number
   // of left capturing parentheses in the input.
   int start = position();
-  int value = Next() - '0';
+  int value = Next() - '\x30';
   Advance(2);
   while (true) {
     uc32 c = current();
     if (IsDecimalDigit(c)) {
-      value = 10 * value + (c - '0');
+      value = 10 * value + (c - '\x30');
       if (value > kMaxCaptures) {
         Reset(start);
         return false;
@@ -4467,7 +4467,7 @@ bool RegExpParser::ParseBackReferenceIndex(int* index_out) {
 // Returns true if parsing succeeds, and set the min_out and max_out
 // values. Values are truncated to RegExpTree::kInfinity if they overflow.
 bool RegExpParser::ParseIntervalQuantifier(int* min_out, int* max_out) {
-  DCHECK_EQ(current(), '{');
+  DCHECK_EQ(current(), '\x7b');
   int start = position();
   Advance();
   int min = 0;
@@ -4476,7 +4476,7 @@ bool RegExpParser::ParseIntervalQuantifier(int* min_out, int* max_out) {
     return false;
   }
   while (IsDecimalDigit(current())) {
-    int next = current() - '0';
+    int next = current() - '\x30';
     if (min > (RegExpTree::kInfinity - next) / 10) {
       // Overflow. Skip past remaining decimal digits and return -1.
       do {
@@ -4489,17 +4489,17 @@ bool RegExpParser::ParseIntervalQuantifier(int* min_out, int* max_out) {
     Advance();
   }
   int max = 0;
-  if (current() == '}') {
+  if (current() == '\x7d') {
     max = min;
     Advance();
-  } else if (current() == ',') {
+  } else if (current() == '\x2c') {
     Advance();
-    if (current() == '}') {
+    if (current() == '\x7d') {
       max = RegExpTree::kInfinity;
       Advance();
     } else {
       while (IsDecimalDigit(current())) {
-        int next = current() - '0';
+        int next = current() - '\x30';
         if (max > (RegExpTree::kInfinity - next) / 10) {
           do {
             Advance();
@@ -4510,7 +4510,7 @@ bool RegExpParser::ParseIntervalQuantifier(int* min_out, int* max_out) {
         max = 10 * max + next;
         Advance();
       }
-      if (current() != '}') {
+      if (current() != '\x7d') {
         Reset(start);
         return false;
       }
@@ -4527,16 +4527,16 @@ bool RegExpParser::ParseIntervalQuantifier(int* min_out, int* max_out) {
 
 
 uc32 RegExpParser::ParseOctalLiteral() {
-  DCHECK(('0' <= current() && current() <= '7') || current() == kEndMarker);
+  DCHECK(('\x30' <= current() && current() <= '\x37') || current() == kEndMarker);
   // For compatibility with some other browsers (not all), we parse
   // up to three octal digits with a value below 256.
-  uc32 value = current() - '0';
+  uc32 value = current() - '\x30';
   Advance();
-  if ('0' <= current() && current() <= '7') {
-    value = value * 8 + current() - '0';
+  if ('\x30' <= current() && current() <= '\x37') {
+    value = value * 8 + current() - '\x30';
     Advance();
-    if (value < 32 && '0' <= current() && current() <= '7') {
-      value = value * 8 + current() - '0';
+    if (value < 32 && '\x30' <= current() && current() <= '\x37') {
+      value = value * 8 + current() - '\x30';
       Advance();
     }
   }
@@ -4567,38 +4567,38 @@ bool RegExpParser::ParseHexEscape(int length, uc32 *value) {
 
 
 uc32 RegExpParser::ParseClassCharacterEscape() {
-  DCHECK(current() == '\\');
+  DCHECK(current() == '\x5c');
   DCHECK(has_next() && !IsSpecialClassEscape(Next()));
   Advance();
   switch (current()) {
-    case 'b':
+    case '\x62':
       Advance();
-      return '\b';
+      return '\x8';
     // ControlEscape :: one of
     //   f n r t v
-    case 'f':
+    case '\x66':
       Advance();
-      return '\f';
-    case 'n':
+      return '\xc';
+    case '\x6e':
       Advance();
-      return '\n';
-    case 'r':
+      return '\xa';
+    case '\x72':
       Advance();
-      return '\r';
-    case 't':
+      return '\xd';
+    case '\x74':
       Advance();
-      return '\t';
-    case 'v':
+      return '\x9';
+    case '\x76':
       Advance();
-      return '\v';
-    case 'c': {
+      return '\xb';
+    case '\x63': {
       uc32 controlLetter = Next();
-      uc32 letter = controlLetter & ~('A' ^ 'a');
+      uc32 letter = controlLetter & ~('\x41' ^ '\x61');
       // For compatibility with JSC, inside a character class
       // we also accept digits and underscore as control characters.
-      if ((controlLetter >= '0' && controlLetter <= '9') ||
-          controlLetter == '_' ||
-          (letter >= 'A' && letter <= 'Z')) {
+      if ((controlLetter >= '\x30' && controlLetter <= '\x39') ||
+          controlLetter == '\x5f' ||
+          (letter >= '\x41' && letter <= '\x5a')) {
         Advance(2);
         // Control letters mapped to ASCII control characters in the range
         // 0x00-0x1f.
@@ -4606,15 +4606,15 @@ uc32 RegExpParser::ParseClassCharacterEscape() {
       }
       // We match JSC in reading the backslash as a literal
       // character instead of as starting an escape.
-      return '\\';
+      return '\x5c';
     }
-    case '0': case '1': case '2': case '3': case '4': case '5':
-    case '6': case '7':
+    case '\x30': case '\x31': case '\x32': case '\x33': case '\x34': case '\x35':
+    case '\x36': case '\x37':
       // For compatibility, we interpret a decimal escape that isn't
       // a back reference (and therefore either \0 or not valid according
       // to the specification) as a 1..3 digit octal character code.
       return ParseOctalLiteral();
-    case 'x': {
+    case '\x78': {
       Advance();
       uc32 value;
       if (ParseHexEscape(2, &value)) {
@@ -4622,9 +4622,9 @@ uc32 RegExpParser::ParseClassCharacterEscape() {
       }
       // If \x is not followed by a two-digit hexadecimal, treat it
       // as an identity escape.
-      return 'x';
+      return '\x78';
     }
-    case 'u': {
+    case '\x75': {
       Advance();
       uc32 value;
       if (ParseHexEscape(4, &value)) {
@@ -4632,7 +4632,7 @@ uc32 RegExpParser::ParseClassCharacterEscape() {
       }
       // If \u is not followed by a four-digit hexadecimal, treat it
       // as an identity escape.
-      return 'u';
+      return '\x75';
     }
     default: {
       // Extended identity escape. We accept any character that hasn't
@@ -4650,15 +4650,15 @@ uc32 RegExpParser::ParseClassCharacterEscape() {
 CharacterRange RegExpParser::ParseClassAtom(uc16* char_class) {
   DCHECK_EQ(0, *char_class);
   uc32 first = current();
-  if (first == '\\') {
+  if (first == '\x5c') {
     switch (Next()) {
-      case 'w': case 'W': case 'd': case 'D': case 's': case 'S': {
+      case '\x77': case '\x57': case '\x64': case '\x44': case '\x73': case '\x53': {
         *char_class = Next();
         Advance(2);
         return CharacterRange::Singleton(0);  // Return dummy value.
       }
       case kEndMarker:
-        return ReportError(CStrVector("\\ at end of pattern"));
+        return ReportError(CStrVector("\x5c\x20\x61\x74\x20\x65\x6e\x64\x20\x6f\x66\x20\x70\x61\x74\x74\x65\x72\x6e"));
       default:
         uc32 c = ParseClassCharacterEscape(CHECK_FAILED);
         return CharacterRange::Singleton(c);
@@ -4688,30 +4688,30 @@ static inline void AddRangeOrEscape(ZoneList<CharacterRange>* ranges,
 
 
 RegExpTree* RegExpParser::ParseCharacterClass() {
-  static const char* kUnterminated = "Unterminated character class";
-  static const char* kRangeOutOfOrder = "Range out of order in character class";
+  static const char* kUnterminated = "\x55\x6e\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x64\x20\x63\x68\x61\x72\x61\x63\x74\x65\x72\x20\x63\x6c\x61\x73\x73";
+  static const char* kRangeOutOfOrder = "\x52\x61\x6e\x67\x65\x20\x6f\x75\x74\x20\x6f\x66\x20\x6f\x72\x64\x65\x72\x20\x69\x6e\x20\x63\x68\x61\x72\x61\x63\x74\x65\x72\x20\x63\x6c\x61\x73\x73";
 
-  DCHECK_EQ(current(), '[');
+  DCHECK_EQ(current(), '\x5b');
   Advance();
   bool is_negated = false;
-  if (current() == '^') {
+  if (current() == '\x5e') {
     is_negated = true;
     Advance();
   }
   ZoneList<CharacterRange>* ranges =
       new(zone()) ZoneList<CharacterRange>(2, zone());
-  while (has_more() && current() != ']') {
+  while (has_more() && current() != '\x5d') {
     uc16 char_class = kNoCharClass;
     CharacterRange first = ParseClassAtom(&char_class CHECK_FAILED);
-    if (current() == '-') {
+    if (current() == '\x2d') {
       Advance();
       if (current() == kEndMarker) {
         // If we reach the end we break out of the loop and let the
         // following code report an error.
         break;
-      } else if (current() == ']') {
+      } else if (current() == '\x5d') {
         AddRangeOrEscape(ranges, char_class, first, zone());
-        ranges->Add(CharacterRange::Singleton('-'), zone());
+        ranges->Add(CharacterRange::Singleton('\x2d'), zone());
         break;
       }
       uc16 char_class_2 = kNoCharClass;
@@ -4719,7 +4719,7 @@ RegExpTree* RegExpParser::ParseCharacterClass() {
       if (char_class != kNoCharClass || char_class_2 != kNoCharClass) {
         // Either end is an escaped character class. Treat the '-' verbatim.
         AddRangeOrEscape(ranges, char_class, first, zone());
-        ranges->Add(CharacterRange::Singleton('-'), zone());
+        ranges->Add(CharacterRange::Singleton('\x2d'), zone());
         AddRangeOrEscape(ranges, char_class_2, next, zone());
         continue;
       }

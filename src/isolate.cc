@@ -270,9 +270,9 @@ Handle<String> Isolate::StackTraceString() {
   } else if (stack_trace_nesting_level_ == 1) {
     stack_trace_nesting_level_++;
     base::OS::PrintError(
-      "\n\nAttempt to print stack while printing stack (double fault)\n");
+      "\xa\xaA\x74\x74\x65\x6d\x70\x74\x20\x74\x6f\x20\x70\x72\x69\x6e\x74\x20\x73\x74\x61\x63\x6b\x20\x77\x68\x69\x6c\x65\x20\x70\x72\x69\x6e\x74\x69\x6e\x67\x20\x73\x74\x61\x63\x6b\x20\x28\x64\x6f\x75\x62\x6c\x65\x20\x66\x61\x75\x6c\x74\x29\xa");
     base::OS::PrintError(
-      "If you are lucky you may find a partial stack dump on stdout.\n\n");
+      "\x49\x66\x20\x79\x6f\x75\x20\x61\x72\x65\x20\x6c\x75\x63\x6b\x79\x20\x79\x6f\x75\x20\x6d\x61\x79\x20\x66\x69\x6e\x64\x20\x61\x20\x70\x61\x72\x74\x69\x61\x6c\x20\x73\x74\x61\x63\x6b\x20\x64\x75\x6d\x70\x20\x6f\x6e\x20\x73\x74\x64\x6f\x75\x74\x2e\xa\xa");
     incomplete_message_->OutputToStdOut();
     return factory()->empty_string();
   } else {
@@ -292,9 +292,9 @@ void Isolate::PushStackTraceAndDie(unsigned int magic,
   uint8_t buffer[kMaxStackTraceSize];
   int length = Min(kMaxStackTraceSize - 1, trace->length());
   String::WriteToFlat(*trace, buffer, 0, length);
-  buffer[length] = '\0';
+  buffer[length] = '\x0';
   // TODO(dcarney): convert buffer to utf8?
-  base::OS::PrintError("Stacktrace (%x-%x) %p %p: %s\n", magic, magic2,
+  base::OS::PrintError("\x53\x74\x61\x63\x6b\x74\x72\x61\x63\x65\x20\x28\x6c\xa7\x2d\x6c\xa7\x29\x20\x6c\x97\x20\x6c\x97\x3a\x20\x6c\xa2\xa", magic, magic2,
                        static_cast<void*>(object), static_cast<void*>(map),
                        reinterpret_cast<char*>(buffer));
   base::OS::Abort();
@@ -338,11 +338,11 @@ Handle<Object> Isolate::CaptureSimpleStackTrace(Handle<JSObject> error_object,
                                                 Handle<Object> caller) {
   // Get stack trace limit.
   Handle<Object> error = Object::GetProperty(
-      this, js_builtins_object(), "$Error").ToHandleChecked();
+      this, js_builtins_object(), "\x24\x45\x72\x72\x6f\x72").ToHandleChecked();
   if (!error->IsJSObject()) return factory()->undefined_value();
 
   Handle<String> stackTraceLimit =
-      factory()->InternalizeUtf8String("stackTraceLimit");
+      factory()->InternalizeUtf8String("\x73\x74\x61\x63\x6b\x54\x72\x61\x63\x65\x4c\x69\x6d\x69\x74");
   DCHECK(!stackTraceLimit.is_null());
   Handle<Object> stack_trace_limit =
       JSObject::GetDataProperty(Handle<JSObject>::cast(error),
@@ -445,22 +445,22 @@ Handle<JSArray> Isolate::CaptureCurrentStackTrace(
   Handle<JSArray> stack_trace = factory()->NewJSArray(frame_limit);
 
   Handle<String> column_key =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("column"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x63\x6f\x6c\x75\x6d\x6e"));
   Handle<String> line_key =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("lineNumber"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x6c\x69\x6e\x65\x4e\x75\x6d\x62\x65\x72"));
   Handle<String> script_id_key =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("scriptId"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x73\x63\x72\x69\x70\x74\x49\x64"));
   Handle<String> script_name_key =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("scriptName"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x73\x63\x72\x69\x70\x74\x4e\x61\x6d\x65"));
   Handle<String> script_name_or_source_url_key =
       factory()->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("scriptNameOrSourceURL"));
+          STATIC_ASCII_VECTOR("\x73\x63\x72\x69\x70\x74\x4e\x61\x6d\x65\x4f\x72\x53\x6f\x75\x72\x63\x65\x55\x52\x4c"));
   Handle<String> function_key =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("functionName"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x4e\x61\x6d\x65"));
   Handle<String> eval_key =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("isEval"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x69\x73\x45\x76\x61\x6c"));
   Handle<String> constructor_key =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("isConstructor"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x69\x73\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72"));
 
   StackTraceFrameIterator it(this);
   int frames_seen = 0;
@@ -568,9 +568,9 @@ void Isolate::PrintStack(FILE* out) {
   } else if (stack_trace_nesting_level_ == 1) {
     stack_trace_nesting_level_++;
     base::OS::PrintError(
-      "\n\nAttempt to print stack while printing stack (double fault)\n");
+      "\xa\xaA\x74\x74\x65\x6d\x70\x74\x20\x74\x6f\x20\x70\x72\x69\x6e\x74\x20\x73\x74\x61\x63\x6b\x20\x77\x68\x69\x6c\x65\x20\x70\x72\x69\x6e\x74\x69\x6e\x67\x20\x73\x74\x61\x63\x6b\x20\x28\x64\x6f\x75\x62\x6c\x65\x20\x66\x61\x75\x6c\x74\x29\xa");
     base::OS::PrintError(
-      "If you are lucky you may find a partial stack dump on stdout.\n\n");
+      "\x49\x66\x20\x79\x6f\x75\x20\x61\x72\x65\x20\x6c\x75\x63\x6b\x79\x20\x79\x6f\x75\x20\x6d\x61\x79\x20\x66\x69\x6e\x64\x20\x61\x20\x70\x61\x72\x74\x69\x61\x6c\x20\x73\x74\x61\x63\x6b\x20\x64\x75\x6d\x70\x20\x6f\x6e\x20\x73\x74\x64\x6f\x75\x74\x2e\xa\xa");
     incomplete_message_->OutputToFile(out);
   }
 }
@@ -589,9 +589,9 @@ static void PrintFrames(Isolate* isolate,
 void Isolate::PrintStack(StringStream* accumulator) {
   if (!IsInitialized()) {
     accumulator->Add(
-        "\n==== JS stack trace is not available =======================\n\n");
+        "\xa\x3d\x3d\x3d\x3d\x20\x4a\x53\x20\x73\x74\x61\x63\x6b\x20\x74\x72\x61\x63\x65\x20\x69\x73\x20\x6e\x6f\x74\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa\xa");
     accumulator->Add(
-        "\n==== Isolate for the thread is not initialized =============\n\n");
+        "\xa\x3d\x3d\x3d\x3d\x20\x49\x73\x6f\x6c\x61\x74\x65\x20\x66\x6f\x72\x20\x74\x68\x65\x20\x74\x68\x72\x65\x61\x64\x20\x69\x73\x20\x6e\x6f\x74\x20\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa\xa");
     return;
   }
   // The MentionedObjectCache is not GC-proof at the moment.
@@ -602,15 +602,15 @@ void Isolate::PrintStack(StringStream* accumulator) {
   if (c_entry_fp(thread_local_top()) == 0) return;
 
   accumulator->Add(
-      "\n==== JS stack trace =========================================\n\n");
+      "\xa\x3d\x3d\x3d\x3d\x20\x4a\x53\x20\x73\x74\x61\x63\x6b\x20\x74\x72\x61\x63\x65\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa\xa");
   PrintFrames(this, accumulator, StackFrame::OVERVIEW);
 
   accumulator->Add(
-      "\n==== Details ================================================\n\n");
+      "\xa\x3d\x3d\x3d\x3d\x20\x44\x65\x74\x61\x69\x6c\x73\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa\xa");
   PrintFrames(this, accumulator, StackFrame::DETAILS);
 
   accumulator->PrintMentionedObjectCache(this);
-  accumulator->Add("=====================\n\n");
+  accumulator->Add("\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa\xa");
 }
 
 
@@ -636,7 +636,7 @@ static inline AccessCheckInfo* GetAccessCheckInfo(Isolate* isolate,
 void Isolate::ReportFailedAccessCheck(Handle<JSObject> receiver,
                                       v8::AccessType type) {
   if (!thread_local_top()->failed_access_check_callback_) {
-    Handle<String> message = factory()->InternalizeUtf8String("no access");
+    Handle<String> message = factory()->InternalizeUtf8String("\x6e\x6f\x20\x61\x63\x63\x65\x73\x73");
     ScheduleThrow(*factory()->NewTypeError(message));
     return;
   }
@@ -766,7 +766,7 @@ bool Isolate::MayIndexedAccess(Handle<JSObject> receiver,
 
 
 const char* const Isolate::kStackOverflowMessage =
-  "Uncaught RangeError: Maximum call stack size exceeded";
+  "\x55\x6e\x63\x61\x75\x67\x68\x74\x20\x52\x61\x6e\x67\x65\x45\x72\x72\x6f\x72\x3a\x20\x4d\x61\x78\x69\x6d\x75\x6d\x20\x63\x61\x6c\x6c\x20\x73\x74\x61\x63\x6b\x20\x73\x69\x7a\x65\x20\x65\x78\x63\x65\x65\x64\x65\x64";
 
 
 Object* Isolate::StackOverflow() {
@@ -856,7 +856,7 @@ Object* Isolate::ThrowIllegalOperation() {
 
 Object* Isolate::ThrowInvalidStringLength() {
   return Throw(*factory()->NewRangeError(
-      "invalid_string_length", HandleVector<Object>(NULL, 0)));
+      "\x69\x6e\x76\x61\x6c\x69\x64\x5f\x73\x74\x72\x69\x6e\x67\x5f\x6c\x65\x6e\x67\x74\x68", HandleVector<Object>(NULL, 0)));
 }
 
 
@@ -928,7 +928,7 @@ void Isolate::PrintCurrentStackTrace(FILE* out) {
         Execution::GetStackTraceLine(recv, fun, pos_obj, is_top_level);
     if (line->length() > 0) {
       line->PrintOn(out);
-      PrintF(out, "\n");
+      PrintF(out, "\xa");
     }
   }
 }
@@ -987,7 +987,7 @@ bool Isolate::IsErrorObject(Handle<Object> obj) {
   if (!obj->IsJSObject()) return false;
 
   Handle<String> error_key =
-      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("$Error"));
+      factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x24\x45\x72\x72\x6f\x72"));
   Handle<Object> error_constructor = Object::GetProperty(
       js_builtins_object(), error_key).ToHandleChecked();
 
@@ -1074,12 +1074,12 @@ void Isolate::DoThrow(Object* exception, MessageLocation* location) {
             Execution::ToDetailString(this, exception_arg);
         if (!maybe_exception.ToHandle(&exception_arg)) {
           exception_arg = factory()->InternalizeOneByteString(
-              STATIC_ASCII_VECTOR("exception"));
+              STATIC_ASCII_VECTOR("\x65\x78\x63\x65\x70\x74\x69\x6f\x6e"));
         }
       }
       Handle<Object> message_obj = MessageHandler::MakeMessageObject(
           this,
-          "uncaught_exception",
+          "\x75\x6e\x63\x61\x75\x67\x68\x74\x5f\x65\x78\x63\x65\x70\x74\x69\x6f\x6e",
           location,
           HandleVector<Object>(&exception_arg, 1),
           stack_trace_object);
@@ -1099,7 +1099,7 @@ void Isolate::DoThrow(Object* exception, MessageLocation* location) {
           (report_exception || can_be_caught_externally)) {
         fatal_exception_depth++;
         PrintF(stderr,
-               "%s\n\nFROM\n",
+               "\x6c\xa2\xa\xaF\x52\x4f\x4d\xa",
                MessageHandler::GetLocalizedMessage(this, message_obj).get());
         PrintCurrentStackTrace(stderr);
         base::OS::Abort();
@@ -1114,32 +1114,32 @@ void Isolate::DoThrow(Object* exception, MessageLocation* location) {
           location->script()->GetLineNumber(location->start_pos()) + 1;
       if (exception->IsString() && location->script()->name()->IsString()) {
         base::OS::PrintError(
-            "Extension or internal compilation error: %s in %s at line %d.\n",
+            "\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x20\x6f\x72\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x65\x72\x72\x6f\x72\x3a\x20\x6c\xa2\x20\x69\x6e\x20\x6c\xa2\x20\x61\x74\x20\x6c\x69\x6e\x65\x20\x6c\x84\x2e\xa",
             String::cast(exception)->ToCString().get(),
             String::cast(location->script()->name())->ToCString().get(),
             line_number);
       } else if (location->script()->name()->IsString()) {
         base::OS::PrintError(
-            "Extension or internal compilation error in %s at line %d.\n",
+            "\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x20\x6f\x72\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x65\x72\x72\x6f\x72\x20\x69\x6e\x20\x6c\xa2\x20\x61\x74\x20\x6c\x69\x6e\x65\x20\x6c\x84\x2e\xa",
             String::cast(location->script()->name())->ToCString().get(),
             line_number);
       } else {
-        base::OS::PrintError("Extension or internal compilation error.\n");
+        base::OS::PrintError("\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x20\x6f\x72\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x65\x72\x72\x6f\x72\x2e\xa");
       }
 #ifdef OBJECT_PRINT
       // Since comments and empty lines have been stripped from the source of
       // builtins, print the actual source here so that line numbers match.
       if (location->script()->source()->IsString()) {
         Handle<String> src(String::cast(location->script()->source()));
-        PrintF("Failing script:\n");
+        PrintF("\x46\x61\x69\x6c\x69\x6e\x67\x20\x73\x63\x72\x69\x70\x74\x3a\xa");
         int len = src->length();
         int line_number = 1;
-        PrintF("%5d: ", line_number);
+        PrintF("\x6c\xf5\x84\x3a\x20", line_number);
         for (int i = 0; i < len; i++) {
           uint16_t character = src->Get(i);
-          PrintF("%c", character);
-          if (character == '\n' && i < len - 2) {
-            PrintF("%5d: ", ++line_number);
+          PrintF("\x6c\x83", character);
+          if (character == '\xa' && i < len - 2) {
+            PrintF("\x6c\xf5\x84\x3a\x20", ++line_number);
           }
         }
       }
@@ -1412,7 +1412,7 @@ void Isolate::ThreadDataTable::RemoveAllThreads(Isolate* isolate) {
 #define TRACE_ISOLATE(tag)                                              \
   do {                                                                  \
     if (FLAG_trace_isolates) {                                          \
-      PrintF("Isolate %p (id %d)" #tag "\n",                            \
+      PrintF("\x49\x73\x6f\x6c\x61\x74\x65\x20\x6c\x97\x20\x28\x69\x64\x20\x6c\x84\x29" #tag "\xa",                            \
              reinterpret_cast<void*>(this), id());                      \
     }                                                                   \
   } while (false)
@@ -1571,11 +1571,11 @@ void Isolate::Deinit() {
       heap_.mark_compact_collector()->EnsureSweepingCompleted();
     }
 
-    if (FLAG_turbo_stats) GetTStatistics()->Print("TurboFan");
-    if (FLAG_hydrogen_stats) GetHStatistics()->Print("Hydrogen");
+    if (FLAG_turbo_stats) GetTStatistics()->Print("\x54\x75\x72\x62\x6f\x46\x61\x6e");
+    if (FLAG_hydrogen_stats) GetHStatistics()->Print("\x48\x79\x64\x72\x6f\x67\x65\x6e");
 
     if (FLAG_print_deopt_stress) {
-      PrintF(stdout, "=== Stress deopt counter: %u\n", stress_deopt_count_);
+      PrintF(stdout, "\x3d\x3d\x3d\x20\x53\x74\x72\x65\x73\x73\x20\x64\x65\x6f\x70\x74\x20\x63\x6f\x75\x6e\x74\x65\x72\x3a\x20\x6c\xa4\xa", stress_deopt_count_);
     }
 
     // We must stop the logger before we tear down other components.
@@ -1862,7 +1862,7 @@ bool Isolate::Init(Deserializer* des) {
   // SetUp the object heap.
   DCHECK(!heap_.HasBeenSetUp());
   if (!heap_.SetUp()) {
-    V8::FatalProcessOutOfMemory("heap setup");
+    V8::FatalProcessOutOfMemory("\x68\x65\x61\x70\x20\x73\x65\x74\x75\x70");
     return false;
   }
 
@@ -1870,7 +1870,7 @@ bool Isolate::Init(Deserializer* des) {
 
   const bool create_heap_objects = (des == NULL);
   if (create_heap_objects && !heap_.CreateHeapObjects()) {
-    V8::FatalProcessOutOfMemory("heap object creation");
+    V8::FatalProcessOutOfMemory("\x68\x65\x61\x70\x20\x6f\x62\x6a\x65\x63\x74\x20\x63\x72\x65\x61\x74\x69\x6f\x6e");
     return false;
   }
 
@@ -1905,7 +1905,7 @@ bool Isolate::Init(Deserializer* des) {
   }
 
   if (FLAG_trace_hydrogen || FLAG_trace_hydrogen_stubs) {
-    PrintF("Concurrent recompilation has been disabled for tracing.\n");
+    PrintF("\x43\x6f\x6e\x63\x75\x72\x72\x65\x6e\x74\x20\x72\x65\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x68\x61\x73\x20\x62\x65\x65\x6e\x20\x64\x69\x73\x61\x62\x6c\x65\x64\x20\x66\x6f\x72\x20\x74\x72\x61\x63\x69\x6e\x67\x2e\xa");
   } else if (OptimizingCompilerThread::Enabled(max_available_threads_)) {
     optimizing_compiler_thread_ = new OptimizingCompilerThread(this);
     optimizing_compiler_thread_->Start();
@@ -2217,7 +2217,7 @@ Handle<JSObject> Isolate::GetSymbolRegistry() {
     heap()->set_symbol_registry(*registry);
 
     static const char* nested[] = {
-      "for", "for_api", "for_intern", "keyFor", "private_api", "private_intern"
+      "\x66\x6f\x72", "\x66\x6f\x72\x5f\x61\x70\x69", "\x66\x6f\x72\x5f\x69\x6e\x74\x65\x72\x6e", "\x6b\x65\x79\x46\x6f\x72", "\x70\x72\x69\x76\x61\x74\x65\x5f\x61\x70\x69", "\x70\x72\x69\x76\x61\x74\x65\x5f\x69\x6e\x74\x65\x72\x6e"
     };
     for (unsigned i = 0; i < ARRAY_SIZE(nested); ++i) {
       Handle<String> name = factory()->InternalizeUtf8String(nested[i]);

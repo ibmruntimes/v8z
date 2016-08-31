@@ -15,7 +15,7 @@ namespace internal {
 static const int kSweeperThreadStackSize = 64 * KB;
 
 SweeperThread::SweeperThread(Isolate* isolate)
-    : Thread(Thread::Options("v8:SweeperThread", kSweeperThreadStackSize)),
+    : Thread(Thread::Options("\x76\x38\x3a\x53\x77\x65\x65\x70\x65\x72\x54\x68\x72\x65\x61\x64", kSweeperThreadStackSize)),
       isolate_(isolate),
       heap_(isolate->heap()),
       collector_(heap_->mark_compact_collector()),

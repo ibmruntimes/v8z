@@ -76,39 +76,39 @@ Counters::Counters(Isolate* isolate) {
 #undef HM
 
 #define SC(name, caption) \
-    name##_ = StatsCounter(isolate, "c:" #caption);
+    name##_ = StatsCounter(isolate, "\x63\x3a" #caption);
 
     STATS_COUNTER_LIST_1(SC)
     STATS_COUNTER_LIST_2(SC)
 #undef SC
 
 #define SC(name) \
-    count_of_##name##_ = StatsCounter(isolate, "c:" "V8.CountOf_" #name); \
-    size_of_##name##_ = StatsCounter(isolate, "c:" "V8.SizeOf_" #name);
+    count_of_##name##_ = StatsCounter(isolate, "\x63\x3a" "\x56\x38\x2e\x43\x6f\x75\x6e\x74\x4f\x66\x5f" #name); \
+    size_of_##name##_ = StatsCounter(isolate, "\x63\x3a" "\x56\x38\x2e\x53\x69\x7a\x65\x4f\x66\x5f" #name);
     INSTANCE_TYPE_LIST(SC)
 #undef SC
 
 #define SC(name) \
     count_of_CODE_TYPE_##name##_ = \
-        StatsCounter(isolate, "c:" "V8.CountOf_CODE_TYPE-" #name); \
+        StatsCounter(isolate, "\x63\x3a" "\x56\x38\x2e\x43\x6f\x75\x6e\x74\x4f\x66\x5f\x43\x4f\x44\x45\x5f\x54\x59\x50\x45\x2d" #name); \
     size_of_CODE_TYPE_##name##_ = \
-        StatsCounter(isolate, "c:" "V8.SizeOf_CODE_TYPE-" #name);
+        StatsCounter(isolate, "\x63\x3a" "\x56\x38\x2e\x53\x69\x7a\x65\x4f\x66\x5f\x43\x4f\x44\x45\x5f\x54\x59\x50\x45\x2d" #name);
     CODE_KIND_LIST(SC)
 #undef SC
 
 #define SC(name) \
     count_of_FIXED_ARRAY_##name##_ = \
-        StatsCounter(isolate, "c:" "V8.CountOf_FIXED_ARRAY-" #name); \
+        StatsCounter(isolate, "\x63\x3a" "\x56\x38\x2e\x43\x6f\x75\x6e\x74\x4f\x66\x5f\x46\x49\x58\x45\x44\x5f\x41\x52\x52\x41\x59\x2d" #name); \
     size_of_FIXED_ARRAY_##name##_ = \
-        StatsCounter(isolate, "c:" "V8.SizeOf_FIXED_ARRAY-" #name);
+        StatsCounter(isolate, "\x63\x3a" "\x56\x38\x2e\x53\x69\x7a\x65\x4f\x66\x5f\x46\x49\x58\x45\x44\x5f\x41\x52\x52\x41\x59\x2d" #name);
     FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(SC)
 #undef SC
 
 #define SC(name) \
     count_of_CODE_AGE_##name##_ = \
-        StatsCounter(isolate, "c:" "V8.CountOf_CODE_AGE-" #name); \
+        StatsCounter(isolate, "\x63\x3a" "\x56\x38\x2e\x43\x6f\x75\x6e\x74\x4f\x66\x5f\x43\x4f\x44\x45\x5f\x41\x47\x45\x2d" #name); \
     size_of_CODE_AGE_##name##_ = \
-        StatsCounter(isolate, "c:" "V8.SizeOf_CODE_AGE-" #name);
+        StatsCounter(isolate, "\x63\x3a" "\x56\x38\x2e\x53\x69\x7a\x65\x4f\x66\x5f\x43\x4f\x44\x45\x5f\x41\x47\x45\x2d" #name);
     CODE_AGE_LIST_COMPLETE(SC)
 #undef SC
 }

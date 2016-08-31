@@ -77,7 +77,7 @@ class RepresentationSelector {
 
   void Run(SimplifiedLowering* lowering) {
     // Run propagation phase to a fixpoint.
-    TRACE(("--{Propagation phase}--\n"));
+    TRACE(("\x2d\x2d\x7b\x50\x72\x6f\x70\x61\x67\x61\x74\x69\x6f\x6e\x20\x70\x68\x61\x73\x65\x7d\x2d\x2d\xa"));
     phase_ = PROPAGATE;
     Enqueue(jsgraph_->graph()->end());
     // Process nodes from the queue until it is empty.
@@ -86,20 +86,20 @@ class RepresentationSelector {
       NodeInfo* info = GetInfo(node);
       queue_.pop();
       info->queued = false;
-      TRACE((" visit #%d: %s\n", node->id(), node->op()->mnemonic()));
+      TRACE(("\x20\x76\x69\x73\x69\x74\x20\x23\x6c\x84\x3a\x20\x6c\xa2\xa", node->id(), node->op()->mnemonic()));
       VisitNode(node, info->use, NULL);
-      TRACE(("  ==> output "));
+      TRACE(("\x20\x20\x3d\x3d\x3e\x20\x6f\x75\x74\x70\x75\x74\x20"));
       PrintInfo(info->output);
-      TRACE(("\n"));
+      TRACE(("\xa"));
     }
 
     // Run lowering and change insertion phase.
-    TRACE(("--{Simplified lowering phase}--\n"));
+    TRACE(("\x2d\x2d\x7b\x53\x69\x6d\x70\x6c\x69\x66\x69\x65\x64\x20\x6c\x6f\x77\x65\x72\x69\x6e\x67\x20\x70\x68\x61\x73\x65\x7d\x2d\x2d\xa"));
     phase_ = LOWER;
     // Process nodes from the collected {nodes_} vector.
     for (NodeVector::iterator i = nodes_.begin(); i != nodes_.end(); ++i) {
       Node* node = *i;
-      TRACE((" visit #%d: %s\n", node->id(), node->op()->mnemonic()));
+      TRACE(("\x20\x76\x69\x73\x69\x74\x20\x23\x6c\x84\x3a\x20\x6c\xa2\xa", node->id(), node->op()->mnemonic()));
       // Reuse {VisitNode()} so the representation rules are in one place.
       VisitNode(node, GetUseInfo(node), lowering);
     }
@@ -124,21 +124,21 @@ class RepresentationSelector {
       info->queued = true;
       nodes_.push_back(node);
       queue_.push(node);
-      TRACE(("  initial: "));
+      TRACE(("\x20\x20\x69\x6e\x69\x74\x69\x61\x6c\x3a\x20"));
       info->use |= use;
       PrintUseInfo(node);
       return;
     }
-    TRACE(("   queue?: "));
+    TRACE(("\x20\x20\x20\x71\x75\x65\x75\x65\x3f\x3a\x20"));
     PrintUseInfo(node);
     if ((info->use & use) != use) {
       // New usage information for the node is available.
       if (!info->queued) {
         queue_.push(node);
         info->queued = true;
-        TRACE(("   added: "));
+        TRACE(("\x20\x20\x20\x61\x64\x64\x65\x64\x3a\x20"));
       } else {
-        TRACE((" inqueue: "));
+        TRACE(("\x20\x69\x6e\x71\x75\x65\x75\x65\x3a\x20"));
       }
       info->use |= use;
       PrintUseInfo(node);
@@ -176,14 +176,14 @@ class RepresentationSelector {
       RepTypeUnion output = GetInfo(input)->output;
       if ((output & rMask & use) == 0) {
         // Output representation doesn't match usage.
-        TRACE(("  change: #%d:%s(@%d #%d:%s) ", node->id(),
+        TRACE(("\x20\x20\x63\x68\x61\x6e\x67\x65\x3a\x20\x23\x6c\x84\x3a\x6c\xa2\x28\x40\x6c\x84\x20\x23\x6c\x84\x3a\x6c\xa2\x29\x20", node->id(),
                node->op()->mnemonic(), index, input->id(),
                input->op()->mnemonic()));
-        TRACE((" from "));
+        TRACE(("\x20\x66\x72\x6f\x6d\x20"));
         PrintInfo(output);
-        TRACE((" to "));
+        TRACE(("\x20\x74\x6f\x20"));
         PrintInfo(use);
-        TRACE(("\n"));
+        TRACE(("\xa"));
         Node* n = changer_->GetRepresentationFor(input, output, use);
         node->ReplaceInput(index, n);
       }
@@ -669,16 +669,16 @@ class RepresentationSelector {
   }
 
   void PrintUseInfo(Node* node) {
-    TRACE(("#%d:%-20s ", node->id(), node->op()->mnemonic()));
+    TRACE(("\x23\x6c\x84\x3a\x6c\x60\xf2\xf0\xa2\x20", node->id(), node->op()->mnemonic()));
     PrintInfo(GetUseInfo(node));
-    TRACE(("\n"));
+    TRACE(("\xa"));
   }
 
   void PrintInfo(RepTypeUnion info) {
     if (FLAG_trace_representation) {
       char buf[REP_TYPE_STRLEN];
       RenderRepTypeUnion(buf, info);
-      TRACE(("%s", buf));
+      TRACE(("\x6c\xa2", buf));
     }
   }
 

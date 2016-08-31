@@ -22,12 +22,12 @@ namespace internal {
 void Disassembler::Dump(FILE* f, byte* begin, byte* end) {
   for (byte* pc = begin; pc < end; pc++) {
     if (f == NULL) {
-      PrintF("%" V8PRIxPTR "  %4" V8PRIdPTR "  %02x\n",
+      PrintF("\x25" V8PRIxPTR "\x20\x20\x25\x34" V8PRIdPTR "\x20\x20\x6c\xf0\xf2\xa7\xa",
              reinterpret_cast<intptr_t>(pc),
              pc - begin,
              *pc);
     } else {
-      PrintF(f, "%" V8PRIxPTR "  %4" V8PRIdPTR "  %02x\n",
+      PrintF(f, "\x25" V8PRIxPTR "\x20\x20\x25\x34" V8PRIdPTR "\x20\x20\x6c\xf0\xf2\xa7\xa",
              reinterpret_cast<uintptr_t>(pc), pc - begin, *pc);
     }
   }
@@ -50,7 +50,7 @@ class V8NameConverter: public disasm::NameConverter {
 const char* V8NameConverter::NameOfAddress(byte* pc) const {
   const char* name = code_->GetIsolate()->builtins()->Lookup(pc);
   if (name != NULL) {
-    SNPrintF(v8_buffer_, "%s  (%p)", name, pc);
+    SNPrintF(v8_buffer_, "\x6c\xa2\x20\x20\x28\x6c\x97\x29", name, pc);
     return v8_buffer_.start();
   }
 
@@ -58,7 +58,7 @@ const char* V8NameConverter::NameOfAddress(byte* pc) const {
     int offs = static_cast<int>(pc - code_->instruction_start());
     // print as code offset, if it seems reasonable
     if (0 <= offs && offs < code_->instruction_size()) {
-      SNPrintF(v8_buffer_, "%d  (%p)", offs, pc);
+      SNPrintF(v8_buffer_, "\x6c\x84\x20\x20\x28\x6c\x97\x29", offs, pc);
       return v8_buffer_.start();
     }
   }
@@ -76,9 +76,9 @@ const char* V8NameConverter::NameInCode(byte* addr) const {
 
 static void DumpBuffer(FILE* f, StringBuilder* out) {
   if (f == NULL) {
-    PrintF("%s\n", out->Finalize());
+    PrintF("\x6c\xa2\xa", out->Finalize());
   } else {
-    PrintF(f, "%s\n", out->Finalize());
+    PrintF(f, "\x6c\xa2\xa", out->Finalize());
   }
   out->Reset();
 }
@@ -117,7 +117,7 @@ static int DecodeIt(Isolate* isolate,
 #if !V8_TARGET_ARCH_PPC
     if (constants > 0) {
       SNPrintF(decode_buffer,
-               "%08x       constant",
+               "\x6c\xf0\xf8\xa7\x20\x20\x20\x20\x20\x20\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74",
                *reinterpret_cast<int32_t*>(pc));
       constants--;
       pc += 4;
@@ -125,7 +125,7 @@ static int DecodeIt(Isolate* isolate,
       int num_const = d.ConstantPoolSizeAt(pc);
       if (num_const >= 0) {
         SNPrintF(decode_buffer,
-                 "%08x       constant pool begin",
+                 "\x6c\xf0\xf8\xa7\x20\x20\x20\x20\x20\x20\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x20\x70\x6f\x6f\x6c\x20\x62\x65\x67\x69\x6e",
                  *reinterpret_cast<int32_t*>(pc));
         constants = num_const;
         pc += 4;
@@ -138,7 +138,7 @@ static int DecodeIt(Isolate* isolate,
         // raw pointer embedded in code stream, e.g., jump table
         byte* ptr = *reinterpret_cast<byte**>(pc);
         SNPrintF(decode_buffer,
-                 "%08" V8PRIxPTR "      jump table entry %4" V8PRIdPTR,
+                 "\x25\x30\x38" V8PRIxPTR "\x20\x20\x20\x20\x20\x20\x6a\x75\x6d\x70\x20\x74\x61\x62\x6c\x65\x20\x65\x6e\x74\x72\x79\x20\x25\x34" V8PRIdPTR,
                  reinterpret_cast<intptr_t>(ptr),
                  ptr - begin);
         pc += 4;
@@ -160,7 +160,7 @@ static int DecodeIt(Isolate* isolate,
     {
       {
 #endif
-        decode_buffer[0] = '\0';
+        decode_buffer[0] = '\x0';
         pc += d.InstructionDecode(decode_buffer, pc);
       }
     }
@@ -187,15 +187,15 @@ static int DecodeIt(Isolate* isolate,
 
     // Comments.
     for (int i = 0; i < comments.length(); i++) {
-      out.AddFormatted("                  %s", comments[i]);
+      out.AddFormatted("\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x6c\xa2", comments[i]);
       DumpBuffer(f, &out);
     }
 
     // Instruction address and instruction offset.
-    out.AddFormatted("%p  %4d  ", prev_pc, prev_pc - begin);
+    out.AddFormatted("\x6c\x97\x20\x20\x6c\xf4\x84\x20\x20", prev_pc, prev_pc - begin);
 
     // Instruction.
-    out.AddFormatted("%s", decode_buffer.start());
+    out.AddFormatted("\x6c\xa2", decode_buffer.start());
 
     // Print all the reloc info for this instruction which are not comments.
     for (int i = 0; i < pcs.length(); i++) {
@@ -205,48 +205,48 @@ static int DecodeIt(Isolate* isolate,
       // Indent the printing of the reloc info.
       if (i == 0) {
         // The first reloc info is printed after the disassembled instruction.
-        out.AddPadding(' ', kRelocInfoPosition - out.position());
+        out.AddPadding('\x20', kRelocInfoPosition - out.position());
       } else {
         // Additional reloc infos are printed on separate lines.
         DumpBuffer(f, &out);
-        out.AddPadding(' ', kRelocInfoPosition);
+        out.AddPadding('\x20', kRelocInfoPosition);
       }
 
       RelocInfo::Mode rmode = relocinfo.rmode();
       if (RelocInfo::IsPosition(rmode)) {
         if (RelocInfo::IsStatementPosition(rmode)) {
-          out.AddFormatted("    ;; debug: statement %d", relocinfo.data());
+          out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x64\x65\x62\x75\x67\x3a\x20\x73\x74\x61\x74\x65\x6d\x65\x6e\x74\x20\x6c\x84", relocinfo.data());
         } else {
-          out.AddFormatted("    ;; debug: position %d", relocinfo.data());
+          out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x64\x65\x62\x75\x67\x3a\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x6c\x84", relocinfo.data());
         }
       } else if (rmode == RelocInfo::EMBEDDED_OBJECT) {
         HeapStringAllocator allocator;
         StringStream accumulator(&allocator);
         relocinfo.target_object()->ShortPrint(&accumulator);
         SmartArrayPointer<const char> obj_name = accumulator.ToCString();
-        out.AddFormatted("    ;; object: %s", obj_name.get());
+        out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x6f\x62\x6a\x65\x63\x74\x3a\x20\x6c\xa2", obj_name.get());
       } else if (rmode == RelocInfo::EXTERNAL_REFERENCE) {
         const char* reference_name =
             ref_encoder.NameOfAddress(relocinfo.target_reference());
-        out.AddFormatted("    ;; external reference (%s)", reference_name);
+        out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x20\x72\x65\x66\x65\x72\x65\x6e\x63\x65\x20\x28\x6c\xa2\x29", reference_name);
       } else if (RelocInfo::IsCodeTarget(rmode)) {
-        out.AddFormatted("    ;; code:");
+        out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x63\x6f\x64\x65\x3a");
         if (rmode == RelocInfo::CONSTRUCT_CALL) {
-          out.AddFormatted(" constructor,");
+          out.AddFormatted("\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x2c");
         }
         Code* code = Code::GetCodeFromTargetAddress(relocinfo.target_address());
         Code::Kind kind = code->kind();
         if (code->is_inline_cache_stub()) {
           if (kind == Code::LOAD_IC &&
               LoadIC::GetContextualMode(code->extra_ic_state()) == CONTEXTUAL) {
-            out.AddFormatted(" contextual,");
+            out.AddFormatted("\x20\x63\x6f\x6e\x74\x65\x78\x74\x75\x61\x6c\x2c");
           }
           InlineCacheState ic_state = code->ic_state();
-          out.AddFormatted(" %s, %s", Code::Kind2String(kind),
+          out.AddFormatted("\x20\x6c\xa2\x2c\x20\x6c\xa2", Code::Kind2String(kind),
               Code::ICState2String(ic_state));
           if (ic_state == MONOMORPHIC) {
             Code::StubType type = code->type();
-            out.AddFormatted(", %s", Code::StubType2String(type));
+            out.AddFormatted("\x2c\x20\x6c\xa2", Code::StubType2String(type));
           }
         } else if (kind == Code::STUB || kind == Code::HANDLER) {
           // Get the STUB key and extract major and minor key.
@@ -254,22 +254,22 @@ static int DecodeIt(Isolate* isolate,
           uint32_t minor_key = CodeStub::MinorKeyFromKey(key);
           CodeStub::Major major_key = CodeStub::GetMajorKey(code);
           DCHECK(major_key == CodeStub::MajorKeyFromKey(key));
-          out.AddFormatted(" %s, %s, ", Code::Kind2String(kind),
+          out.AddFormatted("\x20\x6c\xa2\x2c\x20\x6c\xa2\x2c\x20", Code::Kind2String(kind),
                            CodeStub::MajorName(major_key, false));
           switch (major_key) {
             case CodeStub::CallFunction: {
               int argc = CallFunctionStub::ExtractArgcFromMinorKey(minor_key);
-              out.AddFormatted("argc = %d", argc);
+              out.AddFormatted("\x61\x72\x67\x63\x20\x3d\x20\x6c\x84", argc);
               break;
             }
             default:
-              out.AddFormatted("minor: %d", minor_key);
+              out.AddFormatted("\x6d\x69\x6e\x6f\x72\x3a\x20\x6c\x84", minor_key);
           }
         } else {
-          out.AddFormatted(" %s", Code::Kind2String(kind));
+          out.AddFormatted("\x20\x6c\xa2", Code::Kind2String(kind));
         }
         if (rmode == RelocInfo::CODE_TARGET_WITH_ID) {
-          out.AddFormatted(" (id = %d)", static_cast<int>(relocinfo.data()));
+          out.AddFormatted("\x20\x28\x69\x64\x20\x3d\x20\x6c\x84\x29", static_cast<int>(relocinfo.data()));
         }
       } else if (RelocInfo::IsRuntimeEntry(rmode) &&
                  isolate->deoptimizer_data() != NULL) {
@@ -287,18 +287,18 @@ static int DecodeIt(Isolate* isolate,
                                                   addr,
                                                   Deoptimizer::SOFT);
             if (id == Deoptimizer::kNotDeoptimizationEntry) {
-              out.AddFormatted("    ;; %s", RelocInfo::RelocModeName(rmode));
+              out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x6c\xa2", RelocInfo::RelocModeName(rmode));
             } else {
-              out.AddFormatted("    ;; soft deoptimization bailout %d", id);
+              out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x73\x6f\x66\x74\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x62\x61\x69\x6c\x6f\x75\x74\x20\x6c\x84", id);
             }
           } else {
-            out.AddFormatted("    ;; lazy deoptimization bailout %d", id);
+            out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x6c\x61\x7a\x79\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x62\x61\x69\x6c\x6f\x75\x74\x20\x6c\x84", id);
           }
         } else {
-          out.AddFormatted("    ;; deoptimization bailout %d", id);
+          out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x62\x61\x69\x6c\x6f\x75\x74\x20\x6c\x84", id);
         }
       } else {
-        out.AddFormatted("    ;; %s", RelocInfo::RelocModeName(rmode));
+        out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x6c\xa2", RelocInfo::RelocModeName(rmode));
       }
     }
     DumpBuffer(f, &out);
@@ -308,7 +308,7 @@ static int DecodeIt(Isolate* isolate,
   if (it != NULL) {
     for ( ; !it->done(); it->next()) {
       if (RelocInfo::IsComment(it->rinfo()->rmode())) {
-        out.AddFormatted("                  %s",
+        out.AddFormatted("\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x6c\xa2",
                          reinterpret_cast<const char*>(it->rinfo()->data()));
         DumpBuffer(f, &out);
       }
@@ -349,11 +349,11 @@ void Disassembler::Decode(FILE* f, Code* code) {
     StringBuilder out(out_buffer.start(), out_buffer.length());
     int constant_size = code_size - constant_offset;
     DCHECK((constant_size & kPointerAlignmentMask) == 0);
-    out.AddFormatted("\nConstant Pool (size = %d)", constant_size);
+    out.AddFormatted("\xaC\x6f\x6e\x73\x74\x61\x6e\x74\x20\x50\x6f\x6f\x6c\x20\x28\x73\x69\x7a\x65\x20\x3d\x20\x6c\x84\x29", constant_size);
     DumpBuffer(f, &out);
     intptr_t* ptr = reinterpret_cast<intptr_t*>(begin + constant_offset);
     for (int i = 0; i < constant_size; i += kPointerSize, ptr++) {
-      out.AddFormatted("%08" V8PRIxPTR "  %4d %08" V8PRIxPTR, ptr, i, *ptr);
+      out.AddFormatted("\x25\x30\x38" V8PRIxPTR "\x20\x20\x6c\xf4\x84\x20\x25\x30\x38" V8PRIxPTR, ptr, i, *ptr);
       DumpBuffer(f, &out);
     }
   }

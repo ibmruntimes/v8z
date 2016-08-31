@@ -16,14 +16,14 @@ Handle<AllocationSite> AllocationSiteCreationContext::EnterNewScope() {
     InitializeTraversal(isolate()->factory()->NewAllocationSite());
     scope_site = Handle<AllocationSite>(*top(), isolate());
     if (FLAG_trace_creation_allocation_sites) {
-      PrintF("*** Creating top level AllocationSite %p\n",
+      PrintF("\x2a\x2a\x2a\x20\x43\x72\x65\x61\x74\x69\x6e\x67\x20\x74\x6f\x70\x20\x6c\x65\x76\x65\x6c\x20\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65\x20\x6c\x97\xa",
              static_cast<void*>(*scope_site));
     }
   } else {
     DCHECK(!current().is_null());
     scope_site = isolate()->factory()->NewAllocationSite();
     if (FLAG_trace_creation_allocation_sites) {
-      PrintF("Creating nested site (top, current, new) (%p, %p, %p)\n",
+      PrintF("\x43\x72\x65\x61\x74\x69\x6e\x67\x20\x6e\x65\x73\x74\x65\x64\x20\x73\x69\x74\x65\x20\x28\x74\x6f\x70\x2c\x20\x63\x75\x72\x72\x65\x6e\x74\x2c\x20\x6e\x65\x77\x29\x20\x28\x6c\x97\x2c\x20\x6c\x97\x2c\x20\x6c\x97\x29\xa",
              static_cast<void*>(*top()),
              static_cast<void*>(*current()),
              static_cast<void*>(*scope_site));
@@ -46,11 +46,11 @@ void AllocationSiteCreationContext::ExitScope(
     scope_site->set_transition_info(*object);
     if (FLAG_trace_creation_allocation_sites) {
       if (top_level) {
-        PrintF("*** Setting AllocationSite %p transition_info %p\n",
+        PrintF("\x2a\x2a\x2a\x20\x53\x65\x74\x74\x69\x6e\x67\x20\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65\x20\x6c\x97\x20\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x5f\x69\x6e\x66\x6f\x20\x6c\x97\xa",
                static_cast<void*>(*scope_site),
                static_cast<void*>(*object));
       } else {
-        PrintF("Setting AllocationSite (%p, %p) transition_info %p\n",
+        PrintF("\x53\x65\x74\x74\x69\x6e\x67\x20\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65\x20\x28\x6c\x97\x2c\x20\x6c\x97\x29\x20\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x5f\x69\x6e\x66\x6f\x20\x6c\x97\xa",
                static_cast<void*>(*top()),
                static_cast<void*>(*scope_site),
                static_cast<void*>(*object));
@@ -66,8 +66,8 @@ bool AllocationSiteUsageContext::ShouldCreateMemento(Handle<JSObject> object) {
         AllocationSite::GetMode(object->GetElementsKind()) ==
         TRACK_ALLOCATION_SITE) {
       if (FLAG_trace_creation_allocation_sites) {
-        PrintF("*** Creating Memento for %s %p\n",
-               object->IsJSArray() ? "JSArray" : "JSObject",
+        PrintF("\x2a\x2a\x2a\x20\x43\x72\x65\x61\x74\x69\x6e\x67\x20\x4d\x65\x6d\x65\x6e\x74\x6f\x20\x66\x6f\x72\x20\x6c\xa2\x20\x6c\x97\xa",
+               object->IsJSArray() ? "\x4a\x53\x41\x72\x72\x61\x79" : "\x4a\x53\x4f\x62\x6a\x65\x63\x74",
                static_cast<void*>(*object));
       }
       return true;

@@ -4966,11 +4966,6 @@ void LCodeGen::DoStringCharCodeAt(LStringCharCodeAt* instr) {
    private:
     LStringCharCodeAt* instr_;
   };
-#ifdef V8_OS_ZOS
-  bool native_ascii = false;
-#else
-  bool native_ascii = true;
-#endif
   DeferredStringCharCodeAt* deferred =
       new(zone()) DeferredStringCharCodeAt(this, instr);
 
@@ -4978,8 +4973,7 @@ void LCodeGen::DoStringCharCodeAt(LStringCharCodeAt* instr) {
                                     ToRegister(instr->string()),
                                     ToRegister(instr->index()),
                                     ToRegister(instr->result()),
-                                    deferred->entry(),
-                                    !native_ascii);
+                                    deferred->entry());
   __ bind(deferred->exit());
 }
 

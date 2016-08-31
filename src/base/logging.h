@@ -17,16 +17,16 @@ extern "C" void V8_Fatal(const char* file, int line, const char* format, ...);
 // development, but they should not be relied on in the final product.
 #ifdef DEBUG
 #define FATAL(msg)                              \
-  V8_Fatal(__FILE__, __LINE__, "%s", (msg))
+  V8_Fatal(__FILE__, __LINE__, "\x6c\xa2", (msg))
 #define UNIMPLEMENTED()                         \
-  V8_Fatal(__FILE__, __LINE__, "unimplemented code")
+  V8_Fatal(__FILE__, __LINE__, "\x75\x6e\x69\x6d\x70\x6c\x65\x6d\x65\x6e\x74\x65\x64\x20\x63\x6f\x64\x65")
 #define UNREACHABLE()                           \
-  V8_Fatal(__FILE__, __LINE__, "unreachable code")
+  V8_Fatal(__FILE__, __LINE__, "\x75\x6e\x72\x65\x61\x63\x68\x61\x62\x6c\x65\x20\x63\x6f\x64\x65")
 #else
 #define FATAL(msg)                              \
-  V8_Fatal("", 0, "%s", (msg))
+  V8_Fatal("", 0, "\x6c\xa2", (msg))
 #define UNIMPLEMENTED()                         \
-  V8_Fatal("", 0, "unimplemented code")
+  V8_Fatal("", 0, "\x75\x6e\x69\x6d\x70\x6c\x65\x6d\x65\x6e\x74\x65\x64\x20\x63\x6f\x64\x65")
 #define UNREACHABLE() ((void) 0)
 #endif
 
@@ -35,7 +35,7 @@ extern "C" void V8_Fatal(const char* file, int line, const char* format, ...);
 // prints a message to stderr and aborts.
 #define CHECK(condition) do {                                       \
     if (!(condition)) {                                             \
-      V8_Fatal(__FILE__, __LINE__, "CHECK(%s) failed", #condition); \
+      V8_Fatal(__FILE__, __LINE__, "\x43\x48\x45\x43\x4b\x28\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64", #condition); \
     }                                                               \
   } while (0)
 
@@ -47,7 +47,7 @@ inline void CheckEqualsHelper(const char* file, int line,
                               const char* value_source, int value) {
   if (expected != value) {
     V8_Fatal(file, line,
-             "CHECK_EQ(%s, %s) failed\n#   Expected: %i\n#   Found: %i",
+             "\x43\x48\x45\x43\x4b\x5f\x45\x51\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x6c\x89\xa\x23\x20\x20\x20\x46\x6f\x75\x6e\x64\x3a\x20\x6c\x89",
              expected_source, value_source, expected, value);
   }
 }
@@ -64,8 +64,8 @@ inline void CheckEqualsHelper(const char* file, int line,
     // Print int64_t values in hex, as two int32s,
     // to avoid platform-dependencies.
     V8_Fatal(file, line,
-             "CHECK_EQ(%s, %s) failed\n#"
-             "   Expected: 0x%08x%08x\n#   Found: 0x%08x%08x",
+             "\x43\x48\x45\x43\x4b\x5f\x45\x51\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23"
+             "\x20\x20\x20\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x30\x78\x6c\xf0\xf8\xa7\x6c\xf0\xf8\xa7\xa\x23\x20\x20\x20\x46\x6f\x75\x6e\x64\x3a\x20\x30\x78\x6c\xf0\xf8\xa7\x6c\xf0\xf8\xa7",
              expected_source, value_source,
              static_cast<uint32_t>(expected >> 32),
              static_cast<uint32_t>(expected),
@@ -84,8 +84,8 @@ inline void CheckEqualsHelper(const char* file, int line,
                               const char* value_source, intptr_t value) {
   if (expected != value) {
     V8_Fatal(file, line,
-             "CHECK_EQ(%s, %s) failed\n#"
-             "   Expected: 0x%lx\n#   Found: 0x%lx",
+             "\x43\x48\x45\x43\x4b\x5f\x45\x51\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23"
+             "\x20\x20\x20\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x30\x78\x6c\x93\xa7\xa\x23\x20\x20\x20\x46\x6f\x75\x6e\x64\x3a\x20\x30\x78\x6c\x93\xa7",
              expected_source, value_source, expected, value);
   }
 }
@@ -101,7 +101,7 @@ inline void CheckNonEqualsHelper(const char* file,
                                  const char* value_source,
                                  int value) {
   if (unexpected == value) {
-    V8_Fatal(file, line, "CHECK_NE(%s, %s) failed\n#   Value: %i",
+    V8_Fatal(file, line, "\x43\x48\x45\x43\x4b\x5f\x4e\x45\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x56\x61\x6c\x75\x65\x3a\x20\x6c\x89",
              unexpected_source, value_source, value);
   }
 }
@@ -119,7 +119,7 @@ inline void CheckEqualsHelper(const char* file,
       (expected != NULL && value == NULL) ||
       (expected != NULL && value != NULL && strcmp(expected, value) != 0)) {
     V8_Fatal(file, line,
-             "CHECK_EQ(%s, %s) failed\n#   Expected: %s\n#   Found: %s",
+             "\x43\x48\x45\x43\x4b\x5f\x45\x51\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x6c\xa2\xa\x23\x20\x20\x20\x46\x6f\x75\x6e\x64\x3a\x20\x6c\xa2",
              expected_source, value_source, expected, value);
   }
 }
@@ -133,7 +133,7 @@ inline void CheckNonEqualsHelper(const char* file,
                                  const char* value) {
   if (expected == value ||
       (expected != NULL && value != NULL && strcmp(expected, value) == 0)) {
-    V8_Fatal(file, line, "CHECK_NE(%s, %s) failed\n#   Value: %s",
+    V8_Fatal(file, line, "\x43\x48\x45\x43\x4b\x5f\x4e\x45\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x56\x61\x6c\x75\x65\x3a\x20\x6c\xa2",
              expected_source, value_source, value);
   }
 }
@@ -149,7 +149,7 @@ inline void CheckEqualsHelper(const char* file,
                               const void* value) {
   if (expected != value) {
     V8_Fatal(file, line,
-             "CHECK_EQ(%s, %s) failed\n#   Expected: %p\n#   Found: %p",
+             "\x43\x48\x45\x43\x4b\x5f\x45\x51\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x6c\x97\xa\x23\x20\x20\x20\x46\x6f\x75\x6e\x64\x3a\x20\x6c\x97",
              expected_source, value_source,
              expected, value);
   }
@@ -163,7 +163,7 @@ inline void CheckNonEqualsHelper(const char* file,
                                  const char* value_source,
                                  const void* value) {
   if (expected == value) {
-    V8_Fatal(file, line, "CHECK_NE(%s, %s) failed\n#   Value: %p",
+    V8_Fatal(file, line, "\x43\x48\x45\x43\x4b\x5f\x4e\x45\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x56\x61\x6c\x75\x65\x3a\x20\x6c\x97",
              expected_source, value_source, value);
   }
 }
@@ -177,7 +177,7 @@ inline void CheckNonEqualsHelper(const char* file,
                               int64_t value) {
   if (expected == value) {
     V8_Fatal(file, line,
-             "CHECK_EQ(%s, %s) failed\n#   Expected: %f\n#   Found: %f",
+             "\x43\x48\x45\x43\x4b\x5f\x45\x51\x28\x6c\xa2\x2c\x20\x6c\xa2\x29\x20\x66\x61\x69\x6c\x65\x64\xa\x23\x20\x20\x20\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x6c\x86\xa\x23\x20\x20\x20\x46\x6f\x75\x6e\x64\x3a\x20\x6c\x86",
              expected_source, value_source, expected, value);
   }
 }

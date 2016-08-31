@@ -166,13 +166,13 @@ class ExecArgs {
     String::Utf8Value prog(arg0);
     if (*prog == NULL) {
       const char* message =
-          "os.system(): String conversion of program name failed";
+          "\x6f\x73\x2e\x73\x79\x73\x74\x65\x6d\x28\x29\x3a\x20\x53\x74\x72\x69\x6e\x67\x20\x63\x6f\x6e\x76\x65\x72\x73\x69\x6f\x6e\x20\x6f\x66\x20\x70\x72\x6f\x67\x72\x61\x6d\x20\x6e\x61\x6d\x65\x20\x66\x61\x69\x6c\x65\x64";
       isolate->ThrowException(String::NewFromUtf8(isolate, message));
       return false;
     }
     int len = prog.length() + 3;
     char* c_arg = new char[len];
-    snprintf(c_arg, len, "%s", *prog);
+    snprintf(c_arg, len, "\x6c\xa2", *prog);
     exec_args_[0] = c_arg;
     int i = 1;
     for (unsigned j = 0; j < command_args->Length(); i++, j++) {
@@ -181,13 +181,13 @@ class ExecArgs {
       if (*utf8_arg == NULL) {
         exec_args_[i] = NULL;  // Consistent state for destructor.
         const char* message =
-            "os.system(): String conversion of argument failed.";
+            "\x6f\x73\x2e\x73\x79\x73\x74\x65\x6d\x28\x29\x3a\x20\x53\x74\x72\x69\x6e\x67\x20\x63\x6f\x6e\x76\x65\x72\x73\x69\x6f\x6e\x20\x6f\x66\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x20\x66\x61\x69\x6c\x65\x64\x2e";
         isolate->ThrowException(String::NewFromUtf8(isolate, message));
         return false;
       }
       int len = utf8_arg.length() + 1;
       char* c_arg = new char[len];
-      snprintf(c_arg, len, "%s", *utf8_arg);
+      snprintf(c_arg, len, "\x6c\xa2", *utf8_arg);
       exec_args_[i] = c_arg;
     }
     exec_args_[i] = NULL;
@@ -220,7 +220,7 @@ static bool GetTimeouts(const v8::FunctionCallbackInfo<v8::Value>& args,
       *total_timeout = args[3]->Int32Value();
     } else {
       args.GetIsolate()->ThrowException(String::NewFromUtf8(
-          args.GetIsolate(), "system: Argument 4 must be a number"));
+          args.GetIsolate(), "\x73\x79\x73\x74\x65\x6d\x3a\x20\x41\x72\x67\x75\x6d\x65\x6e\x74\x20\x34\x20\x6d\x75\x73\x74\x20\x62\x65\x20\x61\x20\x6e\x75\x6d\x62\x65\x72"));
       return false;
     }
   }
@@ -229,7 +229,7 @@ static bool GetTimeouts(const v8::FunctionCallbackInfo<v8::Value>& args,
       *read_timeout = args[2]->Int32Value();
     } else {
       args.GetIsolate()->ThrowException(String::NewFromUtf8(
-          args.GetIsolate(), "system: Argument 3 must be a number"));
+          args.GetIsolate(), "\x73\x79\x73\x74\x65\x6d\x3a\x20\x41\x72\x67\x75\x6d\x65\x6e\x74\x20\x33\x20\x6d\x75\x73\x74\x20\x62\x65\x20\x61\x20\x6e\x75\x6d\x62\x65\x72"));
       return false;
     }
   }
@@ -312,7 +312,7 @@ static Handle<Value> GetStdout(Isolate* isolate,
                       start_time) ||
             (TimeIsOut(start_time, total_timeout))) {
           return isolate->ThrowException(
-              String::NewFromUtf8(isolate, "Timed out waiting for output"));
+              String::NewFromUtf8(isolate, "\x54\x69\x6d\x65\x64\x20\x6f\x75\x74\x20\x77\x61\x69\x74\x69\x6e\x67\x20\x66\x6f\x72\x20\x6f\x75\x74\x70\x75\x74"));
         }
         continue;
       } else if (errno == EINTR) {
@@ -374,7 +374,7 @@ static bool WaitForChild(Isolate* isolate,
     if ((read_timeout != -1 && useconds / 1000 > read_timeout) ||
         (TimeIsOut(start_time, total_timeout))) {
       isolate->ThrowException(String::NewFromUtf8(
-          isolate, "Timed out waiting for process to terminate"));
+          isolate, "\x54\x69\x6d\x65\x64\x20\x6f\x75\x74\x20\x77\x61\x69\x74\x69\x6e\x67\x20\x66\x6f\x72\x20\x70\x72\x6f\x63\x65\x73\x73\x20\x74\x6f\x20\x74\x65\x72\x6d\x69\x6e\x61\x74\x65"));
       kill(pid, SIGINT);
       return false;
     }
@@ -383,7 +383,7 @@ static bool WaitForChild(Isolate* isolate,
     char message[999];
     snprintf(message,
              sizeof(message),
-             "Child killed by signal %d",
+             "\x43\x68\x69\x6c\x64\x20\x6b\x69\x6c\x6c\x65\x64\x20\x62\x79\x20\x73\x69\x67\x6e\x61\x6c\x20\x6c\x84",
              child_info.si_status);
     isolate->ThrowException(String::NewFromUtf8(isolate, message));
     return false;
@@ -392,7 +392,7 @@ static bool WaitForChild(Isolate* isolate,
     char message[999];
     snprintf(message,
              sizeof(message),
-             "Child exited with status %d",
+             "\x43\x68\x69\x6c\x64\x20\x65\x78\x69\x74\x65\x64\x20\x77\x69\x74\x68\x20\x73\x74\x61\x74\x75\x73\x20\x6c\x84",
              child_info.si_status);
     isolate->ThrowException(String::NewFromUtf8(isolate, message));
     return false;
@@ -407,7 +407,7 @@ static bool WaitForChild(Isolate* isolate,
     char message[999];
     snprintf(message,
              sizeof(message),
-             "Child killed by signal %d",
+             "\x43\x68\x69\x6c\x64\x20\x6b\x69\x6c\x6c\x65\x64\x20\x62\x79\x20\x73\x69\x67\x6e\x61\x6c\x20\x6c\x84",
              WTERMSIG(child_status));
     isolate->ThrowException(String::NewFromUtf8(isolate, message));
     return false;
@@ -417,7 +417,7 @@ static bool WaitForChild(Isolate* isolate,
     int exit_status = WEXITSTATUS(child_status);
     snprintf(message,
              sizeof(message),
-             "Child exited with status %d",
+             "\x43\x68\x69\x6c\x64\x20\x65\x78\x69\x74\x65\x64\x20\x77\x69\x74\x68\x20\x73\x74\x61\x74\x75\x73\x20\x6c\x84",
              exit_status);
     isolate->ThrowException(String::NewFromUtf8(isolate, message));
     return false;
@@ -439,7 +439,7 @@ void Shell::System(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() > 1) {
     if (!args[1]->IsArray()) {
       args.GetIsolate()->ThrowException(String::NewFromUtf8(
-          args.GetIsolate(), "system: Argument 2 must be an array"));
+          args.GetIsolate(), "\x73\x79\x73\x74\x65\x6d\x3a\x20\x41\x72\x67\x75\x6d\x65\x6e\x74\x20\x32\x20\x6d\x75\x73\x74\x20\x62\x65\x20\x61\x6e\x20\x61\x72\x72\x61\x79"));
       return;
     }
     command_args = Handle<Array>::Cast(args[1]);
@@ -448,12 +448,12 @@ void Shell::System(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
   if (command_args->Length() > ExecArgs::kMaxArgs) {
     args.GetIsolate()->ThrowException(String::NewFromUtf8(
-        args.GetIsolate(), "Too many arguments to system()"));
+        args.GetIsolate(), "\x54\x6f\x6f\x20\x6d\x61\x6e\x79\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x74\x6f\x20\x73\x79\x73\x74\x65\x6d\x28\x29"));
     return;
   }
   if (args.Length() < 1) {
     args.GetIsolate()->ThrowException(String::NewFromUtf8(
-        args.GetIsolate(), "Too few arguments to system()"));
+        args.GetIsolate(), "\x54\x6f\x6f\x20\x66\x65\x77\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x74\x6f\x20\x73\x79\x73\x74\x65\x6d\x28\x29"));
     return;
   }
 
@@ -469,12 +469,12 @@ void Shell::System(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
   if (pipe(exec_error_fds) != 0) {
     args.GetIsolate()->ThrowException(
-        String::NewFromUtf8(args.GetIsolate(), "pipe syscall failed."));
+        String::NewFromUtf8(args.GetIsolate(), "\x70\x69\x70\x65\x20\x73\x79\x73\x63\x61\x6c\x6c\x20\x66\x61\x69\x6c\x65\x64\x2e"));
     return;
   }
   if (pipe(stdout_fds) != 0) {
     args.GetIsolate()->ThrowException(
-        String::NewFromUtf8(args.GetIsolate(), "pipe syscall failed."));
+        String::NewFromUtf8(args.GetIsolate(), "\x70\x69\x70\x65\x20\x73\x79\x73\x63\x61\x6c\x6c\x20\x66\x61\x69\x6c\x65\x64\x2e"));
     return;
   }
 
@@ -519,14 +519,14 @@ void Shell::System(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Shell::ChangeDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() != 1) {
-    const char* message = "chdir() takes one argument";
+    const char* message = "\x63\x68\x64\x69\x72\x28\x29\x20\x74\x61\x6b\x65\x73\x20\x6f\x6e\x65\x20\x61\x72\x67\x75\x6d\x65\x6e\x74";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
   }
   String::Utf8Value directory(args[0]);
   if (*directory == NULL) {
-    const char* message = "os.chdir(): String conversion of argument failed.";
+    const char* message = "\x6f\x73\x2e\x63\x68\x64\x69\x72\x28\x29\x3a\x20\x53\x74\x72\x69\x6e\x67\x20\x63\x6f\x6e\x76\x65\x72\x73\x69\x6f\x6e\x20\x6f\x66\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x20\x66\x61\x69\x6c\x65\x64\x2e";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
@@ -541,7 +541,7 @@ void Shell::ChangeDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Shell::SetUMask(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() != 1) {
-    const char* message = "umask() takes one argument";
+    const char* message = "\x75\x6d\x61\x73\x6b\x28\x29\x20\x74\x61\x6b\x65\x73\x20\x6f\x6e\x65\x20\x61\x72\x67\x75\x6d\x65\x6e\x74";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
@@ -552,7 +552,7 @@ void Shell::SetUMask(const v8::FunctionCallbackInfo<v8::Value>& args) {
     args.GetReturnValue().Set(previous);
     return;
   } else {
-    const char* message = "umask() argument must be numeric";
+    const char* message = "\x75\x6d\x61\x73\x6b\x28\x29\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x20\x6d\x75\x73\x74\x20\x62\x65\x20\x6e\x75\x6d\x65\x72\x69\x63";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
@@ -581,14 +581,14 @@ static bool mkdirp(Isolate* isolate, char* directory, mode_t mask) {
   if (errno == EEXIST) {
     return CheckItsADirectory(isolate, directory);
   } else if (errno == ENOENT) {  // Intermediate path element is missing.
-    char* last_slash = strrchr(directory, '/');
+    char* last_slash = strrchr(directory, '\x2f');
     if (last_slash == NULL) {
       isolate->ThrowException(String::NewFromUtf8(isolate, strerror(errno)));
       return false;
     }
     *last_slash = 0;
     if (!mkdirp(isolate, directory, mask)) return false;
-    *last_slash = '/';
+    *last_slash = '\x2f';
     result = mkdir(directory, mask);
     if (result == 0) return true;
     if (errno == EEXIST) {
@@ -609,20 +609,20 @@ void Shell::MakeDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
     if (args[1]->IsNumber()) {
       mask = args[1]->Int32Value();
     } else {
-      const char* message = "mkdirp() second argument must be numeric";
+      const char* message = "\x6d\x6b\x64\x69\x72\x70\x28\x29\x20\x73\x65\x63\x6f\x6e\x64\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x20\x6d\x75\x73\x74\x20\x62\x65\x20\x6e\x75\x6d\x65\x72\x69\x63";
       args.GetIsolate()->ThrowException(
           String::NewFromUtf8(args.GetIsolate(), message));
       return;
     }
   } else if (args.Length() != 1) {
-    const char* message = "mkdirp() takes one or two arguments";
+    const char* message = "\x6d\x6b\x64\x69\x72\x70\x28\x29\x20\x74\x61\x6b\x65\x73\x20\x6f\x6e\x65\x20\x6f\x72\x20\x74\x77\x6f\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
   }
   String::Utf8Value directory(args[0]);
   if (*directory == NULL) {
-    const char* message = "os.mkdirp(): String conversion of argument failed.";
+    const char* message = "\x6f\x73\x2e\x6d\x6b\x64\x69\x72\x70\x28\x29\x3a\x20\x53\x74\x72\x69\x6e\x67\x20\x63\x6f\x6e\x76\x65\x72\x73\x69\x6f\x6e\x20\x6f\x66\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x20\x66\x61\x69\x6c\x65\x64\x2e";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
@@ -633,14 +633,14 @@ void Shell::MakeDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Shell::RemoveDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() != 1) {
-    const char* message = "rmdir() takes one or two arguments";
+    const char* message = "\x72\x6d\x64\x69\x72\x28\x29\x20\x74\x61\x6b\x65\x73\x20\x6f\x6e\x65\x20\x6f\x72\x20\x74\x77\x6f\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
   }
   String::Utf8Value directory(args[0]);
   if (*directory == NULL) {
-    const char* message = "os.rmdir(): String conversion of argument failed.";
+    const char* message = "\x6f\x73\x2e\x72\x6d\x64\x69\x72\x28\x29\x3a\x20\x53\x74\x72\x69\x6e\x67\x20\x63\x6f\x6e\x76\x65\x72\x73\x69\x6f\x6e\x20\x6f\x66\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x20\x66\x61\x69\x6c\x65\x64\x2e";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
@@ -651,7 +651,7 @@ void Shell::RemoveDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Shell::SetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() != 2) {
-    const char* message = "setenv() takes two arguments";
+    const char* message = "\x73\x65\x74\x65\x6e\x76\x28\x29\x20\x74\x61\x6b\x65\x73\x20\x74\x77\x6f\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
@@ -660,14 +660,14 @@ void Shell::SetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
   String::Utf8Value value(args[1]);
   if (*var == NULL) {
     const char* message =
-        "os.setenv(): String conversion of variable name failed.";
+        "\x6f\x73\x2e\x73\x65\x74\x65\x6e\x76\x28\x29\x3a\x20\x53\x74\x72\x69\x6e\x67\x20\x63\x6f\x6e\x76\x65\x72\x73\x69\x6f\x6e\x20\x6f\x66\x20\x76\x61\x72\x69\x61\x62\x6c\x65\x20\x6e\x61\x6d\x65\x20\x66\x61\x69\x6c\x65\x64\x2e";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
   }
   if (*value == NULL) {
     const char* message =
-        "os.setenv(): String conversion of variable contents failed.";
+        "\x6f\x73\x2e\x73\x65\x74\x65\x6e\x76\x28\x29\x3a\x20\x53\x74\x72\x69\x6e\x67\x20\x63\x6f\x6e\x76\x65\x72\x73\x69\x6f\x6e\x20\x6f\x66\x20\x76\x61\x72\x69\x61\x62\x6c\x65\x20\x63\x6f\x6e\x74\x65\x6e\x74\x73\x20\x66\x61\x69\x6c\x65\x64\x2e";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
@@ -678,7 +678,7 @@ void Shell::SetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Shell::UnsetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() != 1) {
-    const char* message = "unsetenv() takes one argument";
+    const char* message = "\x75\x6e\x73\x65\x74\x65\x6e\x76\x28\x29\x20\x74\x61\x6b\x65\x73\x20\x6f\x6e\x65\x20\x61\x72\x67\x75\x6d\x65\x6e\x74";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
@@ -686,7 +686,7 @@ void Shell::UnsetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
   String::Utf8Value var(args[0]);
   if (*var == NULL) {
     const char* message =
-        "os.setenv(): String conversion of variable name failed.";
+        "\x6f\x73\x2e\x73\x65\x74\x65\x6e\x76\x28\x29\x3a\x20\x53\x74\x72\x69\x6e\x67\x20\x63\x6f\x6e\x76\x65\x72\x73\x69\x6f\x6e\x20\x6f\x66\x20\x76\x61\x72\x69\x61\x62\x6c\x65\x20\x6e\x61\x6d\x65\x20\x66\x61\x69\x6c\x65\x64\x2e";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message));
     return;
@@ -696,19 +696,19 @@ void Shell::UnsetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 
 void Shell::AddOSMethods(Isolate* isolate, Handle<ObjectTemplate> os_templ) {
-  os_templ->Set(String::NewFromUtf8(isolate, "system"),
+  os_templ->Set(String::NewFromUtf8(isolate, "\x73\x79\x73\x74\x65\x6d"),
                 FunctionTemplate::New(isolate, System));
-  os_templ->Set(String::NewFromUtf8(isolate, "chdir"),
+  os_templ->Set(String::NewFromUtf8(isolate, "\x63\x68\x64\x69\x72"),
                 FunctionTemplate::New(isolate, ChangeDirectory));
-  os_templ->Set(String::NewFromUtf8(isolate, "setenv"),
+  os_templ->Set(String::NewFromUtf8(isolate, "\x73\x65\x74\x65\x6e\x76"),
                 FunctionTemplate::New(isolate, SetEnvironment));
-  os_templ->Set(String::NewFromUtf8(isolate, "unsetenv"),
+  os_templ->Set(String::NewFromUtf8(isolate, "\x75\x6e\x73\x65\x74\x65\x6e\x76"),
                 FunctionTemplate::New(isolate, UnsetEnvironment));
-  os_templ->Set(String::NewFromUtf8(isolate, "umask"),
+  os_templ->Set(String::NewFromUtf8(isolate, "\x75\x6d\x61\x73\x6b"),
                 FunctionTemplate::New(isolate, SetUMask));
-  os_templ->Set(String::NewFromUtf8(isolate, "mkdirp"),
+  os_templ->Set(String::NewFromUtf8(isolate, "\x6d\x6b\x64\x69\x72\x70"),
                 FunctionTemplate::New(isolate, MakeDirectory));
-  os_templ->Set(String::NewFromUtf8(isolate, "rmdir"),
+  os_templ->Set(String::NewFromUtf8(isolate, "\x72\x6d\x64\x69\x72"),
                 FunctionTemplate::New(isolate, RemoveDirectory));
 }
 

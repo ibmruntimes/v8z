@@ -1494,7 +1494,7 @@ class CodeTracer V8_FINAL : public Malloced {
 
     if (FLAG_redirect_code_traces_to == NULL) {
       SNPrintF(filename_,
-               "code-%d-%d.asm",
+               "\x63\x6f\x64\x65\x2d\x6c\x84\x2d\x6c\x84\x2e\x61\x73\x6d",
                base::OS::GetCurrentProcessId(),
                isolate_id);
     } else {
@@ -1521,7 +1521,7 @@ class CodeTracer V8_FINAL : public Malloced {
     }
 
     if (file_ == NULL) {
-      file_ = base::OS::FOpen(filename_.start(), "a");
+      file_ = base::OS::FOpen(filename_.start(), "\x61");
     }
 
     scope_depth_++;

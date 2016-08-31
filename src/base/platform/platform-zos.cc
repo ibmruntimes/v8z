@@ -82,9 +82,9 @@ bool OS::ArmUsingHardFloat() {
       !defined(__VFP_FP__)
   return false;
 #else
-#error "Your version of GCC does not report the FP ABI compiled for."          \
-       "Please report it on this issue"                                        \
-       "http://code.google.com/p/v8/issues/detail?id=2140"
+#error "\x59\x6f\x75\x72\x20\x76\x65\x72\x73\x69\x6f\x6e\x20\x6f\x66\x20\x47\x43\x43\x20\x64\x6f\x65\x73\x20\x6e\x6f\x74\x20\x72\x65\x70\x6f\x72\x74\x20\x74\x68\x65\x20\x46\x50\x20\x41\x42\x49\x20\x63\x6f\x6d\x70\x69\x6c\x65\x64\x20\x66\x6f\x72\x2e"          \
+       "\x50\x6c\x65\x61\x73\x65\x20\x72\x65\x70\x6f\x72\x74\x20\x69\x74\x20\x6f\x6e\x20\x74\x68\x69\x73\x20\x69\x73\x73\x75\x65"                                        \
+       "\x68\x74\x74\x70\x3a\x2f\x2f\x63\x6f\x64\x65\x2e\x67\x6f\x6f\x67\x6c\x65\x2e\x63\x6f\x6d\x2f\x70\x2f\x76\x38\x2f\x69\x73\x73\x75\x65\x73\x2f\x64\x65\x74\x61\x69\x6c\x3f\x69\x64\x3d\x32\x31\x34\x30"
 
 #endif
 #endif
@@ -152,9 +152,9 @@ const char* OS::LocalTimezone(double time, TimezoneCache* cache) {
   double offset_secs = LocalTimeOffset(cache);
   int offset_hrs  = (int)offset_secs/3600;
   if ( offset_hrs == 0)
-     return "GMT";
+     return "\x47\x4d\x54";
   else if (offset_hrs > -6 && offset_hrs <= -5)
-          return "EST";
+          return "\x45\x53\x54";
   //Todo(muntasir) Add the rest of the timezones 
   return "";
 }
@@ -199,7 +199,7 @@ class PosixMemoryMappedFile : public OS::MemoryMappedFile {
 
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
-  FILE* file = fopen(name, "r+");
+  FILE* file = fopen(name, "\x72\x2b");
   if (file == NULL) return NULL;
 
   fseek(file, 0, SEEK_END);
@@ -218,7 +218,7 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name, int size,
     void* initial) {
-  FILE* file = fopen(name, "w+");
+  FILE* file = fopen(name, "\x77\x2b");
   if (file == NULL) return NULL;
   int result = fwrite(initial, size, 1, file);
   if (result < 1) {
@@ -247,7 +247,7 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
   // This function assumes that the layout of the file is as follows:
   // hex_start_addr-hex_end_addr rwxp <unused data> [binary_file_name]
   // If we encounter an unexpected situation we abort scanning further entries.
-  FILE* fp = fopen("/proc/self/maps", "r");
+  FILE* fp = fopen("\x2f\x70\x72\x6f\x63\x2f\x73\x65\x6c\x66\x2f\x6d\x61\x70\x73", "\x72");
   if (fp == NULL) return result;
 
   // Allocate enough room to be able to store a full file name.
@@ -259,20 +259,20 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
     uintptr_t start, end;
     char attr_r, attr_w, attr_x, attr_p;
     // Parse the addresses and permission bits at the beginning of the line.
-    if (fscanf(fp, "%" V8PRIxPTR "-%" V8PRIxPTR, &start, &end) != 2) break;
-    if (fscanf(fp, " %c%c%c%c", &attr_r, &attr_w, &attr_x, &attr_p) != 4) break;
+    if (fscanf(fp, "\x25" V8PRIxPTR "\x2d\x25" V8PRIxPTR, &start, &end) != 2) break;
+    if (fscanf(fp, "\x20\x6c\x83\x6c\x83\x6c\x83\x6c\x83", &attr_r, &attr_w, &attr_x, &attr_p) != 4) break;
 
     int c;
-    if (attr_r == 'r' && attr_w != 'w' && attr_x == 'x') {
+    if (attr_r == '\x72' && attr_w != '\x77' && attr_x == '\x78') {
       // Found a read-only executable entry. Skip characters until we reach
       // the beginning of the filename or the end of the line.
       do {
         c = getc(fp);
-      } while ((c != EOF) && (c != '\n') && (c != '/') && (c != '['));
+      } while ((c != EOF) && (c != '\xa') && (c != '\x2f') && (c != '\x5b'));
       if (c == EOF) break;  // EOF: Was unexpected, just exit.
 
       // Process the filename if found.
-      if ((c == '/') || (c == '[')) {
+      if ((c == '\x2f') || (c == '\x5b')) {
         // Push the '/' or '[' back into the stream to be read below.
         ungetc(c, fp);
 
@@ -282,11 +282,11 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
         // Drop the newline character read by fgets. We do not need to check
         // for a zero-length string because we know that we at least read the
         // '/' or '[' character.
-        lib_name[strlen(lib_name) - 1] = '\0';
+        lib_name[strlen(lib_name) - 1] = '\x0';
       } else {
         // No library name found, just record the raw address range.
         snprintf(lib_name, kLibNameLen,
-                 "%08" V8PRIxPTR "-%08" V8PRIxPTR, start, end);
+                 "\x25\x30\x38" V8PRIxPTR "\x2d\x25\x30\x38" V8PRIxPTR, start, end);
       }
       result.push_back(SharedLibraryAddress(lib_name, start, end));
     } else {
@@ -294,7 +294,7 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
       // reading the next entry.
       do {
         c = getc(fp);
-      } while ((c != EOF) && (c != '\n'));
+      } while ((c != EOF) && (c != '\xa'));
       if (c == EOF) break;
     }
   }
@@ -316,7 +316,7 @@ void OS::SignalCodeMovingGC() {
   int size = sysconf(_SC_PAGESIZE);
   FILE* f = NULL;
   if (f == NULL) {
-    OS::PrintError("Failed to open %s\n", "");
+    OS::PrintError("\x46\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x6f\x70\x65\x6e\x20\x6c\xa2\xa", "");
     OS::Abort();
   }
   void* addr = mmap(OS::GetRandomMmapAddr(),

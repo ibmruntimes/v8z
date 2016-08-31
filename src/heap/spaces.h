@@ -196,9 +196,9 @@ class Bitmap {
 
   static void PrintWord(uint32_t word, uint32_t himask = 0) {
     for (uint32_t mask = 1; mask != 0; mask <<= 1) {
-      if ((mask & himask) != 0) PrintF("[");
-      PrintF((mask & word) ? "1" : "0");
-      if ((mask & himask) != 0) PrintF("]");
+      if ((mask & himask) != 0) PrintF("\x5b");
+      PrintF((mask & word) ? "\x31" : "\x30");
+      if ((mask & himask) != 0) PrintF("\x5d");
     }
   }
 
@@ -221,14 +221,14 @@ class Bitmap {
         return;
       }
 
-      PrintF("%d: ", pos);
+      PrintF("\x6c\x84\x3a\x20", pos);
       PrintWord(cell);
-      PrintF("\n");
+      PrintF("\xa");
     }
 
     void Flush() {
       if (seq_length > 0) {
-        PrintF("%d: %dx%d\n", seq_start, seq_type == 0 ? 0 : 1,
+        PrintF("\x6c\x84\x3a\x20\x6c\x84\xa7\x6c\x84\xa", seq_start, seq_type == 0 ? 0 : 1,
                seq_length * kBitsPerCell);
         seq_length = 0;
       }
@@ -248,7 +248,7 @@ class Bitmap {
       printer.Print(i, cells()[i]);
     }
     printer.Flush();
-    PrintF("\n");
+    PrintF("\xa");
   }
 
   bool IsClean() {
@@ -465,15 +465,15 @@ class MemoryChunk {
   // because they are marked black).
   void ResetLiveBytes() {
     if (FLAG_gc_verbose) {
-      PrintF("ResetLiveBytes:%p:%x->0\n", static_cast<void*>(this),
+      PrintF("\x52\x65\x73\x65\x74\x4c\x69\x76\x65\x42\x79\x74\x65\x73\x3a\x6c\x97\x3a\x6c\xa7\x2d\x3e\x30\xa", static_cast<void*>(this),
              live_byte_count_);
     }
     live_byte_count_ = 0;
   }
   void IncrementLiveBytes(int by) {
     if (FLAG_gc_verbose) {
-      printf("UpdateLiveBytes:%p:%x%c=%x->%x\n", static_cast<void*>(this),
-             live_byte_count_, ((by < 0) ? '-' : '+'), ((by < 0) ? -by : by),
+      printf("\x55\x70\x64\x61\x74\x65\x4c\x69\x76\x65\x42\x79\x74\x65\x73\x3a\x6c\x97\x3a\x6c\xa7\x6c\x83\x3d\x6c\xa7\x2d\x3e\x6c\xa7\xa", static_cast<void*>(this),
+             live_byte_count_, ((by < 0) ? '\x2d' : '\x2b'), ((by < 0) ? -by : by),
              live_byte_count_ + by);
     }
     live_byte_count_ += by;
@@ -2232,7 +2232,7 @@ class SemiSpace : public Space {
   friend class NewSpacePageIterator;
 
  public:
-  TRACK_MEMORY("SemiSpace")
+  TRACK_MEMORY("\x53\x65\x6d\x69\x53\x70\x61\x63\x65")
 };
 
 
@@ -2593,7 +2593,7 @@ class NewSpace : public Space {
   friend class SemiSpaceIterator;
 
  public:
-  TRACK_MEMORY("NewSpace")
+  TRACK_MEMORY("\x4e\x65\x77\x53\x70\x61\x63\x65")
 };
 
 
@@ -2609,7 +2609,7 @@ class OldSpace : public PagedSpace {
       : PagedSpace(heap, max_capacity, id, executable) {}
 
  public:
-  TRACK_MEMORY("OldSpace")
+  TRACK_MEMORY("\x4f\x6c\x64\x53\x70\x61\x63\x65")
 };
 
 
@@ -2657,7 +2657,7 @@ class MapSpace : public PagedSpace {
   const int max_map_space_pages_;
 
  public:
-  TRACK_MEMORY("MapSpace")
+  TRACK_MEMORY("\x4d\x61\x70\x53\x70\x61\x63\x65")
 };
 
 
@@ -2682,7 +2682,7 @@ class CellSpace : public PagedSpace {
   virtual void VerifyObject(HeapObject* obj);
 
  public:
-  TRACK_MEMORY("CellSpace")
+  TRACK_MEMORY("\x43\x65\x6c\x6c\x53\x70\x61\x63\x65")
 };
 
 
@@ -2707,7 +2707,7 @@ class PropertyCellSpace : public PagedSpace {
   virtual void VerifyObject(HeapObject* obj);
 
  public:
-  TRACK_MEMORY("PropertyCellSpace")
+  TRACK_MEMORY("\x50\x72\x6f\x70\x65\x72\x74\x79\x43\x65\x6c\x6c\x53\x70\x61\x63\x65")
 };
 
 
@@ -2801,7 +2801,7 @@ class LargeObjectSpace : public Space {
   friend class LargeObjectIterator;
 
  public:
-  TRACK_MEMORY("LargeObjectSpace")
+  TRACK_MEMORY("\x4c\x61\x72\x67\x65\x4f\x62\x6a\x65\x63\x74\x53\x70\x61\x63\x65")
 };
 
 

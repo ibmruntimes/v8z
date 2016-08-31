@@ -24,7 +24,7 @@ ProfilerEventsProcessor::ProfilerEventsProcessor(
     ProfileGenerator* generator,
     Sampler* sampler,
     base::TimeDelta period)
-    : Thread(Thread::Options("v8:ProfEvntProc", kProfilerStackSize)),
+    : Thread(Thread::Options("\x76\x38\x3a\x50\x72\x6f\x66\x45\x76\x6e\x74\x50\x72\x6f\x63", kProfilerStackSize)),
       generator_(generator),
       sampler_(sampler),
       running_(true),
@@ -284,7 +284,7 @@ void CpuProfiler::CodeCreateEvent(Logger::LogEventsAndTags tag,
   rec->entry = profiles_->NewCodeEntry(
       tag,
       profiles_->GetName(args_count),
-      "args_count: ");
+      "\x61\x72\x67\x73\x5f\x63\x6f\x75\x6e\x74\x3a\x20");
   rec->size = code->ExecutableSize();
   rec->shared = NULL;
   processor_->Enqueue(evt_rec);
@@ -331,7 +331,7 @@ void CpuProfiler::GetterCallbackEvent(Name* name, Address entry_point) {
   rec->entry = profiles_->NewCodeEntry(
       Logger::CALLBACK_TAG,
       profiles_->GetName(name),
-      "get ");
+      "\x67\x65\x74\x20");
   rec->size = 1;
   rec->shared = NULL;
   processor_->Enqueue(evt_rec);
@@ -346,7 +346,7 @@ void CpuProfiler::RegExpCodeCreateEvent(Code* code, String* source) {
   rec->entry = profiles_->NewCodeEntry(
       Logger::REG_EXP_TAG,
       profiles_->GetName(source),
-      "RegExp: ");
+      "\x52\x65\x67\x45\x78\x70\x3a\x20");
   rec->size = code->ExecutableSize();
   processor_->Enqueue(evt_rec);
 }
@@ -360,7 +360,7 @@ void CpuProfiler::SetterCallbackEvent(Name* name, Address entry_point) {
   rec->entry = profiles_->NewCodeEntry(
       Logger::CALLBACK_TAG,
       profiles_->GetName(name),
-      "set ");
+      "\x73\x65\x74\x20");
   rec->size = 1;
   rec->shared = NULL;
   processor_->Enqueue(evt_rec);

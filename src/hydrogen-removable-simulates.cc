@@ -16,8 +16,8 @@ class State : public ZoneObject {
 
   State* Process(HInstruction* instr, Zone* zone) {
     if (FLAG_trace_removable_simulates) {
-      PrintF("[%s with state %p in B%d: #%d %s]\n",
-             mode_ == NORMAL ? "processing" : "collecting",
+      PrintF("\x5b\x6c\xa2\x20\x77\x69\x74\x68\x20\x73\x74\x61\x74\x65\x20\x6c\x97\x20\x69\x6e\x20\x42\x6c\x84\x3a\x20\x23\x6c\x84\x20\x6c\xa2\x5d\xa",
+             mode_ == NORMAL ? "\x70\x72\x6f\x63\x65\x73\x73\x69\x6e\x67" : "\x63\x6f\x6c\x6c\x65\x63\x74\x69\x6e\x67",
              reinterpret_cast<void*>(this), instr->block()->block_id(),
              instr->id(), instr->Mnemonic());
     }
@@ -88,7 +88,7 @@ class State : public ZoneObject {
 
   static State* Finish(State* state, HBasicBlock* block, Zone* zone) {
     if (FLAG_trace_removable_simulates) {
-      PrintF("[preparing state %p for B%d]\n", reinterpret_cast<void*>(state),
+      PrintF("\x5b\x70\x72\x65\x70\x61\x72\x69\x6e\x67\x20\x73\x74\x61\x74\x65\x20\x6c\x97\x20\x66\x6f\x72\x20\x42\x6c\x84\x5d\xa", reinterpret_cast<void*>(state),
              block->block_id());
     }
     // For our current local analysis, we should not remember simulates across
@@ -130,7 +130,7 @@ class State : public ZoneObject {
   State* Copy(HBasicBlock* succ_block, HBasicBlock* pred_block, Zone* zone) {
     State* copy = new(zone) State(*this);
     if (FLAG_trace_removable_simulates) {
-      PrintF("[copy state %p from B%d to new state %p for B%d]\n",
+      PrintF("\x5b\x63\x6f\x70\x79\x20\x73\x74\x61\x74\x65\x20\x6c\x97\x20\x66\x72\x6f\x6d\x20\x42\x6c\x84\x20\x74\x6f\x20\x6e\x65\x77\x20\x73\x74\x61\x74\x65\x20\x6c\x97\x20\x66\x6f\x72\x20\x42\x6c\x84\x5d\xa",
              reinterpret_cast<void*>(this), pred_block->block_id(),
              reinterpret_cast<void*>(copy), succ_block->block_id());
     }
@@ -146,7 +146,7 @@ class State : public ZoneObject {
     DCHECK(!pred_state->HasRememberedSimulates());
     DCHECK(!HasRememberedSimulates());
     if (FLAG_trace_removable_simulates) {
-      PrintF("[merge state %p from B%d into %p for B%d]\n",
+      PrintF("\x5b\x6d\x65\x72\x67\x65\x20\x73\x74\x61\x74\x65\x20\x6c\x97\x20\x66\x72\x6f\x6d\x20\x42\x6c\x84\x20\x69\x6e\x74\x6f\x20\x6c\x97\x20\x66\x6f\x72\x20\x42\x6c\x84\x5d\xa",
              reinterpret_cast<void*>(pred_state), pred_block->block_id(),
              reinterpret_cast<void*>(this), succ_block->block_id());
     }

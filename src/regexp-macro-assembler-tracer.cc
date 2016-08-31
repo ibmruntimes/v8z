@@ -17,9 +17,9 @@ RegExpMacroAssemblerTracer::RegExpMacroAssemblerTracer(
   assembler_(assembler) {
   unsigned int type = assembler->Implementation();
   DCHECK(type < 6);
-  const char* impl_names[] = {"IA32", "ARM", "ARM64",
-                              "MIPS", "X64", "X87", "Bytecode"};
-  PrintF("RegExpMacroAssembler%s();\n", impl_names[type]);
+  const char* impl_names[] = {"\x49\x41\x33\x32", "\x41\x52\x4d", "\x41\x52\x4d\x36\x34",
+                              "\x4d\x49\x50\x53", "\x58\x36\x34", "\x58\x38\x37", "\x42\x79\x74\x65\x63\x6f\x64\x65"};
+  PrintF("\x52\x65\x67\x45\x78\x70\x4d\x61\x63\x72\x6f\x41\x73\x73\x65\x6d\x62\x6c\x65\x72\x6c\xa2\x28\x29\x3b\xa", impl_names[type]);
 }
 
 
@@ -35,68 +35,68 @@ static int LabelToInt(Label* label) {
 
 
 void RegExpMacroAssemblerTracer::Bind(Label* label) {
-  PrintF("label[%08x]: (Bind)\n", LabelToInt(label));
+  PrintF("\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x3a\x20\x28\x42\x69\x6e\x64\x29\xa", LabelToInt(label));
   assembler_->Bind(label);
 }
 
 
 void RegExpMacroAssemblerTracer::AdvanceCurrentPosition(int by) {
-  PrintF(" AdvanceCurrentPosition(by=%d);\n", by);
+  PrintF("\x20\x41\x64\x76\x61\x6e\x63\x65\x43\x75\x72\x72\x65\x6e\x74\x50\x6f\x73\x69\x74\x69\x6f\x6e\x28\x62\x79\x3d\x6c\x84\x29\x3b\xa", by);
   assembler_->AdvanceCurrentPosition(by);
 }
 
 
 void RegExpMacroAssemblerTracer::CheckGreedyLoop(Label* label) {
-  PrintF(" CheckGreedyLoop(label[%08x]);\n\n", LabelToInt(label));
+  PrintF("\x20\x43\x68\x65\x63\x6b\x47\x72\x65\x65\x64\x79\x4c\x6f\x6f\x70\x28\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa\xa", LabelToInt(label));
   assembler_->CheckGreedyLoop(label);
 }
 
 
 void RegExpMacroAssemblerTracer::PopCurrentPosition() {
-  PrintF(" PopCurrentPosition();\n");
+  PrintF("\x20\x50\x6f\x70\x43\x75\x72\x72\x65\x6e\x74\x50\x6f\x73\x69\x74\x69\x6f\x6e\x28\x29\x3b\xa");
   assembler_->PopCurrentPosition();
 }
 
 
 void RegExpMacroAssemblerTracer::PushCurrentPosition() {
-  PrintF(" PushCurrentPosition();\n");
+  PrintF("\x20\x50\x75\x73\x68\x43\x75\x72\x72\x65\x6e\x74\x50\x6f\x73\x69\x74\x69\x6f\x6e\x28\x29\x3b\xa");
   assembler_->PushCurrentPosition();
 }
 
 
 void RegExpMacroAssemblerTracer::Backtrack() {
-  PrintF(" Backtrack();\n");
+  PrintF("\x20\x42\x61\x63\x6b\x74\x72\x61\x63\x6b\x28\x29\x3b\xa");
   assembler_->Backtrack();
 }
 
 
 void RegExpMacroAssemblerTracer::GoTo(Label* label) {
-  PrintF(" GoTo(label[%08x]);\n\n", LabelToInt(label));
+  PrintF("\x20\x47\x6f\x54\x6f\x28\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa\xa", LabelToInt(label));
   assembler_->GoTo(label);
 }
 
 
 void RegExpMacroAssemblerTracer::PushBacktrack(Label* label) {
-  PrintF(" PushBacktrack(label[%08x]);\n", LabelToInt(label));
+  PrintF("\x20\x50\x75\x73\x68\x42\x61\x63\x6b\x74\x72\x61\x63\x6b\x28\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa", LabelToInt(label));
   assembler_->PushBacktrack(label);
 }
 
 
 bool RegExpMacroAssemblerTracer::Succeed() {
   bool restart = assembler_->Succeed();
-  PrintF(" Succeed();%s\n", restart ? " [restart for global match]" : "");
+  PrintF("\x20\x53\x75\x63\x63\x65\x65\x64\x28\x29\x3b\x6c\xa2\xa", restart ? "\x20\x5b\x72\x65\x73\x74\x61\x72\x74\x20\x66\x6f\x72\x20\x67\x6c\x6f\x62\x61\x6c\x20\x6d\x61\x74\x63\x68\x5d" : "");
   return restart;
 }
 
 
 void RegExpMacroAssemblerTracer::Fail() {
-  PrintF(" Fail();");
+  PrintF("\x20\x46\x61\x69\x6c\x28\x29\x3b");
   assembler_->Fail();
 }
 
 
 void RegExpMacroAssemblerTracer::PopRegister(int register_index) {
-  PrintF(" PopRegister(register=%d);\n", register_index);
+  PrintF("\x20\x50\x6f\x70\x52\x65\x67\x69\x73\x74\x65\x72\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x29\x3b\xa", register_index);
   assembler_->PopRegister(register_index);
 }
 
@@ -104,34 +104,34 @@ void RegExpMacroAssemblerTracer::PopRegister(int register_index) {
 void RegExpMacroAssemblerTracer::PushRegister(
     int register_index,
     StackCheckFlag check_stack_limit) {
-  PrintF(" PushRegister(register=%d, %s);\n",
+  PrintF("\x20\x50\x75\x73\x68\x52\x65\x67\x69\x73\x74\x65\x72\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x2c\x20\x6c\xa2\x29\x3b\xa",
          register_index,
-         check_stack_limit ? "check stack limit" : "");
+         check_stack_limit ? "\x63\x68\x65\x63\x6b\x20\x73\x74\x61\x63\x6b\x20\x6c\x69\x6d\x69\x74" : "");
   assembler_->PushRegister(register_index, check_stack_limit);
 }
 
 
 void RegExpMacroAssemblerTracer::AdvanceRegister(int reg, int by) {
-  PrintF(" AdvanceRegister(register=%d, by=%d);\n", reg, by);
+  PrintF("\x20\x41\x64\x76\x61\x6e\x63\x65\x52\x65\x67\x69\x73\x74\x65\x72\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x2c\x20\x62\x79\x3d\x6c\x84\x29\x3b\xa", reg, by);
   assembler_->AdvanceRegister(reg, by);
 }
 
 
 void RegExpMacroAssemblerTracer::SetCurrentPositionFromEnd(int by) {
-  PrintF(" SetCurrentPositionFromEnd(by=%d);\n", by);
+  PrintF("\x20\x53\x65\x74\x43\x75\x72\x72\x65\x6e\x74\x50\x6f\x73\x69\x74\x69\x6f\x6e\x46\x72\x6f\x6d\x45\x6e\x64\x28\x62\x79\x3d\x6c\x84\x29\x3b\xa", by);
   assembler_->SetCurrentPositionFromEnd(by);
 }
 
 
 void RegExpMacroAssemblerTracer::SetRegister(int register_index, int to) {
-  PrintF(" SetRegister(register=%d, to=%d);\n", register_index, to);
+  PrintF("\x20\x53\x65\x74\x52\x65\x67\x69\x73\x74\x65\x72\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x2c\x20\x74\x6f\x3d\x6c\x84\x29\x3b\xa", register_index, to);
   assembler_->SetRegister(register_index, to);
 }
 
 
 void RegExpMacroAssemblerTracer::WriteCurrentPositionToRegister(int reg,
                                                                 int cp_offset) {
-  PrintF(" WriteCurrentPositionToRegister(register=%d,cp_offset=%d);\n",
+  PrintF("\x20\x57\x72\x69\x74\x65\x43\x75\x72\x72\x65\x6e\x74\x50\x6f\x73\x69\x74\x69\x6f\x6e\x54\x6f\x52\x65\x67\x69\x73\x74\x65\x72\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x2c\x63\x70\x5f\x6f\x66\x66\x73\x65\x74\x3d\x6c\x84\x29\x3b\xa",
          reg,
          cp_offset);
   assembler_->WriteCurrentPositionToRegister(reg, cp_offset);
@@ -139,25 +139,25 @@ void RegExpMacroAssemblerTracer::WriteCurrentPositionToRegister(int reg,
 
 
 void RegExpMacroAssemblerTracer::ClearRegisters(int reg_from, int reg_to) {
-  PrintF(" ClearRegister(from=%d, to=%d);\n", reg_from, reg_to);
+  PrintF("\x20\x43\x6c\x65\x61\x72\x52\x65\x67\x69\x73\x74\x65\x72\x28\x66\x72\x6f\x6d\x3d\x6c\x84\x2c\x20\x74\x6f\x3d\x6c\x84\x29\x3b\xa", reg_from, reg_to);
   assembler_->ClearRegisters(reg_from, reg_to);
 }
 
 
 void RegExpMacroAssemblerTracer::ReadCurrentPositionFromRegister(int reg) {
-  PrintF(" ReadCurrentPositionFromRegister(register=%d);\n", reg);
+  PrintF("\x20\x52\x65\x61\x64\x43\x75\x72\x72\x65\x6e\x74\x50\x6f\x73\x69\x74\x69\x6f\x6e\x46\x72\x6f\x6d\x52\x65\x67\x69\x73\x74\x65\x72\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x29\x3b\xa", reg);
   assembler_->ReadCurrentPositionFromRegister(reg);
 }
 
 
 void RegExpMacroAssemblerTracer::WriteStackPointerToRegister(int reg) {
-  PrintF(" WriteStackPointerToRegister(register=%d);\n", reg);
+  PrintF("\x20\x57\x72\x69\x74\x65\x53\x74\x61\x63\x6b\x50\x6f\x69\x6e\x74\x65\x72\x54\x6f\x52\x65\x67\x69\x73\x74\x65\x72\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x29\x3b\xa", reg);
   assembler_->WriteStackPointerToRegister(reg);
 }
 
 
 void RegExpMacroAssemblerTracer::ReadStackPointerFromRegister(int reg) {
-  PrintF(" ReadStackPointerFromRegister(register=%d);\n", reg);
+  PrintF("\x20\x52\x65\x61\x64\x53\x74\x61\x63\x6b\x50\x6f\x69\x6e\x74\x65\x72\x46\x72\x6f\x6d\x52\x65\x67\x69\x73\x74\x65\x72\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x29\x3b\xa", reg);
   assembler_->ReadStackPointerFromRegister(reg);
 }
 
@@ -166,8 +166,8 @@ void RegExpMacroAssemblerTracer::LoadCurrentCharacter(int cp_offset,
                                                       Label* on_end_of_input,
                                                       bool check_bounds,
                                                       int characters) {
-  const char* check_msg = check_bounds ? "" : " (unchecked)";
-  PrintF(" LoadCurrentCharacter(cp_offset=%d, label[%08x]%s (%d chars));\n",
+  const char* check_msg = check_bounds ? "" : "\x20\x28\x75\x6e\x63\x68\x65\x63\x6b\x65\x64\x29";
+  PrintF("\x20\x4c\x6f\x61\x64\x43\x75\x72\x72\x65\x6e\x74\x43\x68\x61\x72\x61\x63\x74\x65\x72\x28\x63\x70\x5f\x6f\x66\x66\x73\x65\x74\x3d\x6c\x84\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x6c\xa2\x20\x28\x6c\x84\x20\x63\x68\x61\x72\x73\x29\x29\x3b\xa",
          cp_offset,
          LabelToInt(on_end_of_input),
          check_msg,
@@ -184,13 +184,13 @@ class PrintablePrinter {
   explicit PrintablePrinter(uc16 character) : character_(character) { }
 
   const char* operator*() {
-    if (character_ >= ' ' && character_ <= '~') {
-      buffer_[0] = '(';
+    if (character_ >= '\x20' && character_ <= '\x7e') {
+      buffer_[0] = '\x28';
       buffer_[1] = static_cast<char>(character_);
-      buffer_[2] = ')';
-      buffer_[3] = '\0';
+      buffer_[2] = '\x29';
+      buffer_[3] = '\x0';
     } else {
-      buffer_[0] = '\0';
+      buffer_[0] = '\x0';
     }
     return &buffer_[0];
   }
@@ -203,7 +203,7 @@ class PrintablePrinter {
 
 void RegExpMacroAssemblerTracer::CheckCharacterLT(uc16 limit, Label* on_less) {
   PrintablePrinter printable(limit);
-  PrintF(" CheckCharacterLT(c=0x%04x%s, label[%08x]);\n",
+  PrintF("\x20\x43\x68\x65\x63\x6b\x43\x68\x61\x72\x61\x63\x74\x65\x72\x4c\x54\x28\x63\x3d\x30\x78\x6c\xf0\xf4\xa7\x6c\xa2\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          limit,
          *printable,
          LabelToInt(on_less));
@@ -214,7 +214,7 @@ void RegExpMacroAssemblerTracer::CheckCharacterLT(uc16 limit, Label* on_less) {
 void RegExpMacroAssemblerTracer::CheckCharacterGT(uc16 limit,
                                                   Label* on_greater) {
   PrintablePrinter printable(limit);
-  PrintF(" CheckCharacterGT(c=0x%04x%s, label[%08x]);\n",
+  PrintF("\x20\x43\x68\x65\x63\x6b\x43\x68\x61\x72\x61\x63\x74\x65\x72\x47\x54\x28\x63\x3d\x30\x78\x6c\xf0\xf4\xa7\x6c\xa2\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          limit,
          *printable,
          LabelToInt(on_greater));
@@ -224,7 +224,7 @@ void RegExpMacroAssemblerTracer::CheckCharacterGT(uc16 limit,
 
 void RegExpMacroAssemblerTracer::CheckCharacter(unsigned c, Label* on_equal) {
   PrintablePrinter printable(c);
-  PrintF(" CheckCharacter(c=0x%04x%s, label[%08x]);\n",
+  PrintF("\x20\x43\x68\x65\x63\x6b\x43\x68\x61\x72\x61\x63\x74\x65\x72\x28\x63\x3d\x30\x78\x6c\xf0\xf4\xa7\x6c\xa2\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          c,
          *printable,
          LabelToInt(on_equal));
@@ -233,13 +233,13 @@ void RegExpMacroAssemblerTracer::CheckCharacter(unsigned c, Label* on_equal) {
 
 
 void RegExpMacroAssemblerTracer::CheckAtStart(Label* on_at_start) {
-  PrintF(" CheckAtStart(label[%08x]);\n", LabelToInt(on_at_start));
+  PrintF("\x20\x43\x68\x65\x63\x6b\x41\x74\x53\x74\x61\x72\x74\x28\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa", LabelToInt(on_at_start));
   assembler_->CheckAtStart(on_at_start);
 }
 
 
 void RegExpMacroAssemblerTracer::CheckNotAtStart(Label* on_not_at_start) {
-  PrintF(" CheckNotAtStart(label[%08x]);\n", LabelToInt(on_not_at_start));
+  PrintF("\x20\x43\x68\x65\x63\x6b\x4e\x6f\x74\x41\x74\x53\x74\x61\x72\x74\x28\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa", LabelToInt(on_not_at_start));
   assembler_->CheckNotAtStart(on_not_at_start);
 }
 
@@ -247,7 +247,7 @@ void RegExpMacroAssemblerTracer::CheckNotAtStart(Label* on_not_at_start) {
 void RegExpMacroAssemblerTracer::CheckNotCharacter(unsigned c,
                                                    Label* on_not_equal) {
   PrintablePrinter printable(c);
-  PrintF(" CheckNotCharacter(c=0x%04x%s, label[%08x]);\n",
+  PrintF("\x20\x43\x68\x65\x63\x6b\x4e\x6f\x74\x43\x68\x61\x72\x61\x63\x74\x65\x72\x28\x63\x3d\x30\x78\x6c\xf0\xf4\xa7\x6c\xa2\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          c,
          *printable,
          LabelToInt(on_not_equal));
@@ -260,7 +260,7 @@ void RegExpMacroAssemblerTracer::CheckCharacterAfterAnd(
     unsigned mask,
     Label* on_equal) {
   PrintablePrinter printable(c);
-  PrintF(" CheckCharacterAfterAnd(c=0x%04x%s, mask=0x%04x, label[%08x]);\n",
+  PrintF("\x20\x43\x68\x65\x63\x6b\x43\x68\x61\x72\x61\x63\x74\x65\x72\x41\x66\x74\x65\x72\x41\x6e\x64\x28\x63\x3d\x30\x78\x6c\xf0\xf4\xa7\x6c\xa2\x2c\x20\x6d\x61\x73\x6b\x3d\x30\x78\x6c\xf0\xf4\xa7\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          c,
          *printable,
          mask,
@@ -274,7 +274,7 @@ void RegExpMacroAssemblerTracer::CheckNotCharacterAfterAnd(
     unsigned mask,
     Label* on_not_equal) {
   PrintablePrinter printable(c);
-  PrintF(" CheckNotCharacterAfterAnd(c=0x%04x%s, mask=0x%04x, label[%08x]);\n",
+  PrintF("\x20\x43\x68\x65\x63\x6b\x4e\x6f\x74\x43\x68\x61\x72\x61\x63\x74\x65\x72\x41\x66\x74\x65\x72\x41\x6e\x64\x28\x63\x3d\x30\x78\x6c\xf0\xf4\xa7\x6c\xa2\x2c\x20\x6d\x61\x73\x6b\x3d\x30\x78\x6c\xf0\xf4\xa7\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          c,
          *printable,
          mask,
@@ -288,8 +288,8 @@ void RegExpMacroAssemblerTracer::CheckNotCharacterAfterMinusAnd(
     uc16 minus,
     uc16 mask,
     Label* on_not_equal) {
-  PrintF(" CheckNotCharacterAfterMinusAnd(c=0x%04x, minus=%04x, mask=0x%04x, "
-             "label[%08x]);\n",
+  PrintF("\x20\x43\x68\x65\x63\x6b\x4e\x6f\x74\x43\x68\x61\x72\x61\x63\x74\x65\x72\x41\x66\x74\x65\x72\x4d\x69\x6e\x75\x73\x41\x6e\x64\x28\x63\x3d\x30\x78\x6c\xf0\xf4\xa7\x2c\x20\x6d\x69\x6e\x75\x73\x3d\x6c\xf0\xf4\xa7\x2c\x20\x6d\x61\x73\x6b\x3d\x30\x78\x6c\xf0\xf4\xa7\x2c\x20"
+             "\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          c,
          minus,
          mask,
@@ -304,7 +304,7 @@ void RegExpMacroAssemblerTracer::CheckCharacterInRange(
     Label* on_not_in_range) {
   PrintablePrinter printable_from(from);
   PrintablePrinter printable_to(to);
-  PrintF(" CheckCharacterInRange(from=0x%04x%s, to=0x%04x%s, label[%08x]);\n",
+  PrintF("\x20\x43\x68\x65\x63\x6b\x43\x68\x61\x72\x61\x63\x74\x65\x72\x49\x6e\x52\x61\x6e\x67\x65\x28\x66\x72\x6f\x6d\x3d\x30\x78\x6c\xf0\xf4\xa7\x6c\xa2\x2c\x20\x74\x6f\x3d\x30\x78\x6c\xf0\xf4\xa7\x6c\xa2\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          from,
          *printable_from,
          to,
@@ -321,7 +321,7 @@ void RegExpMacroAssemblerTracer::CheckCharacterNotInRange(
   PrintablePrinter printable_from(from);
   PrintablePrinter printable_to(to);
   PrintF(
-      " CheckCharacterNotInRange(from=0x%04x%s," " to=%04x%s, label[%08x]);\n",
+      "\x20\x43\x68\x65\x63\x6b\x43\x68\x61\x72\x61\x63\x74\x65\x72\x4e\x6f\x74\x49\x6e\x52\x61\x6e\x67\x65\x28\x66\x72\x6f\x6d\x3d\x30\x78\x6c\xf0\xf4\xa7\x6c\xa2\x2c" "\x20\x74\x6f\x3d\x6c\xf0\xf4\xa7\x6c\xa2\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
       from,
       *printable_from,
       to,
@@ -333,21 +333,21 @@ void RegExpMacroAssemblerTracer::CheckCharacterNotInRange(
 
 void RegExpMacroAssemblerTracer::CheckBitInTable(
     Handle<ByteArray> table, Label* on_bit_set) {
-  PrintF(" CheckBitInTable(label[%08x] ", LabelToInt(on_bit_set));
+  PrintF("\x20\x43\x68\x65\x63\x6b\x42\x69\x74\x49\x6e\x54\x61\x62\x6c\x65\x28\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x20", LabelToInt(on_bit_set));
   for (int i = 0; i < kTableSize; i++) {
-    PrintF("%c", table->get(i) != 0 ? 'X' : '.');
+    PrintF("\x6c\x83", table->get(i) != 0 ? '\x58' : '\x2e');
     if (i % 32 == 31 && i != kTableMask) {
-      PrintF("\n                                 ");
+      PrintF("\xa\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20");
     }
   }
-  PrintF(");\n");
+  PrintF("\x29\x3b\xa");
   assembler_->CheckBitInTable(table, on_bit_set);
 }
 
 
 void RegExpMacroAssemblerTracer::CheckNotBackReference(int start_reg,
                                                        Label* on_no_match) {
-  PrintF(" CheckNotBackReference(register=%d, label[%08x]);\n", start_reg,
+  PrintF("\x20\x43\x68\x65\x63\x6b\x4e\x6f\x74\x42\x61\x63\x6b\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa", start_reg,
          LabelToInt(on_no_match));
   assembler_->CheckNotBackReference(start_reg, on_no_match);
 }
@@ -356,7 +356,7 @@ void RegExpMacroAssemblerTracer::CheckNotBackReference(int start_reg,
 void RegExpMacroAssemblerTracer::CheckNotBackReferenceIgnoreCase(
     int start_reg,
     Label* on_no_match) {
-  PrintF(" CheckNotBackReferenceIgnoreCase(register=%d, label[%08x]);\n",
+  PrintF("\x20\x43\x68\x65\x63\x6b\x4e\x6f\x74\x42\x61\x63\x6b\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x49\x67\x6e\x6f\x72\x65\x43\x61\x73\x65\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          start_reg, LabelToInt(on_no_match));
   assembler_->CheckNotBackReferenceIgnoreCase(start_reg, on_no_match);
 }
@@ -367,17 +367,17 @@ bool RegExpMacroAssemblerTracer::CheckSpecialCharacterClass(
     Label* on_no_match) {
   bool supported = assembler_->CheckSpecialCharacterClass(type,
                                                           on_no_match);
-  PrintF(" CheckSpecialCharacterClass(type='%c', label[%08x]): %s;\n",
+  PrintF("\x20\x43\x68\x65\x63\x6b\x53\x70\x65\x63\x69\x61\x6c\x43\x68\x61\x72\x61\x63\x74\x65\x72\x43\x6c\x61\x73\x73\x28\x74\x79\x70\x65\x3d\x27\x6c\x83\x27\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3a\x20\x6c\xa2\x3b\xa",
          type,
          LabelToInt(on_no_match),
-         supported ? "true" : "false");
+         supported ? "\x74\x72\x75\x65" : "\x66\x61\x6c\x73\x65");
   return supported;
 }
 
 
 void RegExpMacroAssemblerTracer::IfRegisterLT(int register_index,
                                               int comparand, Label* if_lt) {
-  PrintF(" IfRegisterLT(register=%d, number=%d, label[%08x]);\n",
+  PrintF("\x20\x49\x66\x52\x65\x67\x69\x73\x74\x65\x72\x4c\x54\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x2c\x20\x6e\x75\x6d\x62\x65\x72\x3d\x6c\x84\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          register_index, comparand, LabelToInt(if_lt));
   assembler_->IfRegisterLT(register_index, comparand, if_lt);
 }
@@ -385,7 +385,7 @@ void RegExpMacroAssemblerTracer::IfRegisterLT(int register_index,
 
 void RegExpMacroAssemblerTracer::IfRegisterEqPos(int register_index,
                                                  Label* if_eq) {
-  PrintF(" IfRegisterEqPos(register=%d, label[%08x]);\n",
+  PrintF("\x20\x49\x66\x52\x65\x67\x69\x73\x74\x65\x72\x45\x71\x50\x6f\x73\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          register_index, LabelToInt(if_eq));
   assembler_->IfRegisterEqPos(register_index, if_eq);
 }
@@ -393,7 +393,7 @@ void RegExpMacroAssemblerTracer::IfRegisterEqPos(int register_index,
 
 void RegExpMacroAssemblerTracer::IfRegisterGE(int register_index,
                                               int comparand, Label* if_ge) {
-  PrintF(" IfRegisterGE(register=%d, number=%d, label[%08x]);\n",
+  PrintF("\x20\x49\x66\x52\x65\x67\x69\x73\x74\x65\x72\x47\x45\x28\x72\x65\x67\x69\x73\x74\x65\x72\x3d\x6c\x84\x2c\x20\x6e\x75\x6d\x62\x65\x72\x3d\x6c\x84\x2c\x20\x6c\x61\x62\x65\x6c\x5b\x6c\xf0\xf8\xa7\x5d\x29\x3b\xa",
          register_index, comparand, LabelToInt(if_ge));
   assembler_->IfRegisterGE(register_index, comparand, if_ge);
 }
@@ -406,7 +406,7 @@ RegExpMacroAssembler::IrregexpImplementation
 
 
 Handle<HeapObject> RegExpMacroAssemblerTracer::GetCode(Handle<String> source) {
-  PrintF(" GetCode(%s);\n", source->ToCString().get());
+  PrintF("\x20\x47\x65\x74\x43\x6f\x64\x65\x28\x6c\xa2\x29\x3b\xa", source->ToCString().get());
   return assembler_->GetCode(source);
 }
 

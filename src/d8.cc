@@ -122,7 +122,7 @@ LineEditor::LineEditor(Type type, const char* name)
 class DumbLineEditor: public LineEditor {
  public:
   explicit DumbLineEditor(Isolate* isolate)
-      : LineEditor(LineEditor::DUMB, "dumb"), isolate_(isolate) { }
+      : LineEditor(LineEditor::DUMB, "\x64\x75\x6d\x62"), isolate_(isolate) { }
   virtual Handle<String> Prompt(const char* prompt);
  private:
   Isolate* isolate_;
@@ -130,7 +130,7 @@ class DumbLineEditor: public LineEditor {
 
 
 Handle<String> DumbLineEditor::Prompt(const char* prompt) {
-  printf("%s", prompt);
+  printf("\x6c\xa2", prompt);
 #if defined(__native_client__)
   // Native Client libc is used to being embedded in Chrome and
   // has trouble recognizing when to flush.
@@ -153,7 +153,7 @@ Persistent<Context> Shell::utility_context_;
 
 Persistent<Context> Shell::evaluation_context_;
 ShellOptions Shell::options;
-const char* Shell::kPrompt = "d8> ";
+const char* Shell::kPrompt = "\x64\x38\x3e\x20";
 
 
 #ifndef V8_SHARED
@@ -169,7 +169,7 @@ bool CounterMap::Match(void* key1, void* key2) {
 
 // Converts a V8 value to a C string.
 const char* Shell::ToCString(const v8::String::Utf8Value& value) {
-  return *value ? *value : "<string conversion failed>";
+  return *value ? *value : "\x3c\x73\x74\x72\x69\x6e\x67\x20\x63\x6f\x6e\x76\x65\x72\x73\x69\x6f\x6e\x20\x66\x61\x69\x6c\x65\x64\x3e";
 }
 
 
@@ -254,7 +254,7 @@ bool Shell::ExecuteString(Isolate* isolate,
             // the returned value.
             v8::String::Utf8Value str(result);
             fwrite(*str, sizeof(**str), str.length(), stdout);
-            printf("\n");
+            printf("\xa");
           }
 #if !defined(V8_SHARED)
         } else {
@@ -264,13 +264,13 @@ bool Shell::ExecuteString(Isolate* isolate,
           v8::Context::Scope context_scope(context);
           Handle<Object> global = context->Global();
           Handle<Value> fun =
-              global->Get(String::NewFromUtf8(isolate, "Stringify"));
+              global->Get(String::NewFromUtf8(isolate, "\x53\x74\x72\x69\x6e\x67\x69\x66\x79"));
           Handle<Value> argv[1] = { result };
           Handle<Value> s = Handle<Function>::Cast(fun)->Call(global, 1, argv);
           if (try_catch.HasCaught()) return true;
           v8::String::Utf8Value str(s);
-          fwrite(*str, sizeof(**str), str.length(), stdout);
-          printf("\n");
+          fwrite((*str), sizeof(**str), str.length(), stdout);
+          printf("\xa");
         }
 #endif
       }
@@ -312,14 +312,14 @@ int PerIsolateData::RealmIndexOrThrow(
     const v8::FunctionCallbackInfo<v8::Value>& args,
     int arg_offset) {
   if (args.Length() < arg_offset || !args[arg_offset]->IsNumber()) {
-    Throw(args.GetIsolate(), "Invalid argument");
+    Throw(args.GetIsolate(), "\x49\x6e\x76\x61\x6c\x69\x64\x20\x61\x72\x67\x75\x6d\x65\x6e\x74");
     return -1;
   }
   int index = args[arg_offset]->Int32Value();
   if (index < 0 ||
       index >= realm_count_ ||
       realms_[index].IsEmpty()) {
-    Throw(args.GetIsolate(), "Invalid realm index");
+    Throw(args.GetIsolate(), "\x49\x6e\x76\x61\x6c\x69\x64\x20\x72\x65\x61\x6c\x6d\x20\x69\x6e\x64\x65\x78");
     return -1;
   }
   return index;
@@ -360,7 +360,7 @@ void Shell::RealmOwner(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Isolate* isolate = args.GetIsolate();
   PerIsolateData* data = PerIsolateData::Get(isolate);
   if (args.Length() < 1 || !args[0]->IsObject()) {
-    Throw(args.GetIsolate(), "Invalid argument");
+    Throw(args.GetIsolate(), "\x49\x6e\x76\x61\x6c\x69\x64\x20\x61\x72\x67\x75\x6d\x65\x6e\x74");
     return;
   }
   int index = data->RealmFind(args[0]->ToObject()->CreationContext());
@@ -406,7 +406,7 @@ void Shell::RealmDispose(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (index == -1) return;
   if (index == 0 ||
       index == data->realm_current_ || index == data->realm_switch_) {
-    Throw(args.GetIsolate(), "Invalid realm index");
+    Throw(args.GetIsolate(), "\x49\x6e\x76\x61\x6c\x69\x64\x20\x72\x65\x61\x6c\x6d\x20\x69\x6e\x64\x65\x78");
     return;
   }
   data->realms_[index].Reset();
@@ -430,7 +430,7 @@ void Shell::RealmEval(const v8::FunctionCallbackInfo<v8::Value>& args) {
   int index = data->RealmIndexOrThrow(args, 0);
   if (index == -1) return;
   if (args.Length() < 2 || !args[1]->IsString()) {
-    Throw(args.GetIsolate(), "Invalid argument");
+    Throw(args.GetIsolate(), "\x49\x6e\x76\x61\x6c\x69\x64\x20\x61\x72\x67\x75\x6d\x65\x6e\x74");
     return;
   }
   ScriptCompiler::Source script_source(args[1]->ToString());
@@ -465,7 +465,7 @@ void Shell::RealmSharedSet(Local<String> property,
 
 void Shell::Print(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Write(args);
-  printf("\n");
+  printf("\xa");
   fflush(stdout);
 }
 
@@ -474,7 +474,7 @@ void Shell::Write(const v8::FunctionCallbackInfo<v8::Value>& args) {
   for (int i = 0; i < args.Length(); i++) {
     HandleScope handle_scope(args.GetIsolate());
     if (i != 0) {
-      printf(" ");
+      printf("\x20");
     }
 
     // Explicitly catch potential exceptions in toString().
@@ -488,7 +488,7 @@ void Shell::Write(const v8::FunctionCallbackInfo<v8::Value>& args) {
     v8::String::Utf8Value str(str_obj);
     int n = static_cast<int>(fwrite(*str, sizeof(**str), str.length(), stdout));
     if (n != str.length()) {
-      printf("Error in fwrite\n");
+      printf("\x45\x72\x72\x6f\x72\x20\x69\x6e\x20\x66\x77\x72\x69\x74\x65\xa");
       Exit(1);
     }
   }
@@ -498,12 +498,12 @@ void Shell::Write(const v8::FunctionCallbackInfo<v8::Value>& args) {
 void Shell::Read(const v8::FunctionCallbackInfo<v8::Value>& args) {
   String::Utf8Value file(args[0]);
   if (*file == NULL) {
-    Throw(args.GetIsolate(), "Error loading file");
+    Throw(args.GetIsolate(), "\x45\x72\x72\x6f\x72\x20\x6c\x6f\x61\x64\x69\x6e\x67\x20\x66\x69\x6c\x65");
     return;
   }
   Handle<String> source = ReadFile(args.GetIsolate(), *file);
   if (source.IsEmpty()) {
-    Throw(args.GetIsolate(), "Error loading file");
+    Throw(args.GetIsolate(), "\x45\x72\x72\x6f\x72\x20\x6c\x6f\x61\x64\x69\x6e\x67\x20\x66\x69\x6c\x65");
     return;
   }
   args.GetReturnValue().Set(source);
@@ -556,12 +556,12 @@ void Shell::Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
     HandleScope handle_scope(args.GetIsolate());
     String::Utf8Value file(args[i]);
     if (*file == NULL) {
-      Throw(args.GetIsolate(), "Error loading file");
+      Throw(args.GetIsolate(), "\x45\x72\x72\x6f\x72\x20\x6c\x6f\x61\x64\x69\x6e\x67\x20\x66\x69\x6c\x65");
       return;
     }
     Handle<String> source = ReadFile(args.GetIsolate(), *file);
     if (source.IsEmpty()) {
-      Throw(args.GetIsolate(), "Error loading file");
+      Throw(args.GetIsolate(), "\x45\x72\x72\x6f\x72\x20\x6c\x6f\x61\x64\x69\x6e\x67\x20\x66\x69\x6c\x65");
       return;
     }
     if (!ExecuteString(args.GetIsolate(),
@@ -569,7 +569,7 @@ void Shell::Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
                        String::NewFromUtf8(args.GetIsolate(), *file),
                        false,
                        true)) {
-      Throw(args.GetIsolate(), "Error executing file");
+      Throw(args.GetIsolate(), "\x45\x72\x72\x6f\x72\x20\x65\x78\x65\x63\x75\x74\x69\x6e\x67\x20\x66\x69\x6c\x65");
       return;
     }
   }
@@ -605,34 +605,34 @@ void Shell::ReportException(Isolate* isolate, v8::TryCatch* try_catch) {
   if (message.IsEmpty()) {
     // V8 didn't provide any extra information about this error; just
     // print the exception.
-    printf("%s\n", exception_string);
+    printf("\x6c\xa2\xa", exception_string);
   } else {
     // Print (filename):(line number): (message).
     v8::String::Utf8Value filename(message->GetScriptOrigin().ResourceName());
     const char* filename_string = ToCString(filename);
     int linenum = message->GetLineNumber();
-    printf("%s:%i: %s\n", filename_string, linenum, exception_string);
+    printf("\x6c\xa2\x3a\x6c\x89\x3a\x20\x6c\xa2\xa", filename_string, linenum, exception_string);
     // Print line of source code.
     v8::String::Utf8Value sourceline(message->GetSourceLine());
     const char* sourceline_string = ToCString(sourceline);
-    printf("%s\n", sourceline_string);
+    printf("\x6c\xa2\xa", sourceline_string);
     // Print wavy underline (GetUnderline is deprecated).
     int start = message->GetStartColumn();
     for (int i = 0; i < start; i++) {
-      printf(" ");
+      printf("\x20");
     }
     int end = message->GetEndColumn();
     for (int i = start; i < end; i++) {
-      printf("^");
+      printf("\x5e");
     }
-    printf("\n");
+    printf("\xa");
     v8::String::Utf8Value stack_trace(try_catch->StackTrace());
     if (stack_trace.length() > 0) {
       const char* stack_trace_string = ToCString(stack_trace);
-      printf("%s\n", stack_trace_string);
+      printf("\x6c\xa2\xa", stack_trace_string);
     }
   }
-  printf("\n");
+  printf("\xa");
 #ifndef V8_SHARED
   if (enter_context) utility_context->Exit();
 #endif  // !V8_SHARED
@@ -649,7 +649,7 @@ Handle<Array> Shell::GetCompletions(Isolate* isolate,
   v8::Context::Scope context_scope(utility_context);
   Handle<Object> global = utility_context->Global();
   Local<Value> fun =
-      global->Get(String::NewFromUtf8(isolate, "GetCompletions"));
+      global->Get(String::NewFromUtf8(isolate, "\x47\x65\x74\x43\x6f\x6d\x70\x6c\x65\x74\x69\x6f\x6e\x73"));
   static const int kArgc = 3;
   v8::Local<v8::Context> evaluation_context =
       v8::Local<v8::Context>::New(isolate, evaluation_context_);
@@ -667,7 +667,7 @@ Local<Object> Shell::DebugMessageDetails(Isolate* isolate,
   v8::Context::Scope context_scope(context);
   Handle<Object> global = context->Global();
   Handle<Value> fun =
-      global->Get(String::NewFromUtf8(isolate, "DebugMessageDetails"));
+      global->Get(String::NewFromUtf8(isolate, "\x44\x65\x62\x75\x67\x4d\x65\x73\x73\x61\x67\x65\x44\x65\x74\x61\x69\x6c\x73"));
   static const int kArgc = 1;
   Handle<Value> argv[kArgc] = { message };
   Handle<Value> val = Handle<Function>::Cast(fun)->Call(global, kArgc, argv);
@@ -683,7 +683,7 @@ Local<Value> Shell::DebugCommandToJSONRequest(Isolate* isolate,
   v8::Context::Scope context_scope(context);
   Handle<Object> global = context->Global();
   Handle<Value> fun =
-      global->Get(String::NewFromUtf8(isolate, "DebugCommandToJSONRequest"));
+      global->Get(String::NewFromUtf8(isolate, "\x44\x65\x62\x75\x67\x43\x6f\x6d\x6d\x61\x6e\x64\x54\x6f\x4a\x53\x4f\x4e\x52\x65\x71\x75\x65\x73\x74"));
   static const int kArgc = 1;
   Handle<Value> argv[kArgc] = { command };
   Handle<Value> val = Handle<Function>::Cast(fun)->Call(global, kArgc, argv);
@@ -695,7 +695,7 @@ int32_t* Counter::Bind(const char* name, bool is_histogram) {
   int i;
   for (i = 0; i < kMaxNameSize - 1 && name[i]; i++)
     name_[i] = static_cast<char>(name[i]);
-  name_[i] = '\0';
+  name_[i] = '\x0';
   is_histogram_ = is_histogram;
   return ptr();
 }
@@ -727,7 +727,7 @@ void Shell::MapCounters(v8::Isolate* isolate, const char* name) {
   void* memory = (counters_file_ == NULL) ?
       NULL : counters_file_->memory();
   if (memory == NULL) {
-    printf("Could not map counters file %s\n", name);
+    printf("\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x6d\x61\x70\x20\x63\x6f\x75\x6e\x74\x65\x72\x73\x20\x66\x69\x6c\x65\x20\x6c\xa2\xa", name);
     Exit(1);
   }
   counters_ = static_cast<CounterCollection*>(memory);
@@ -801,20 +801,20 @@ void Shell::InstallUtilityScript(Isolate* isolate) {
   evaluation_context->SetSecurityToken(Undefined(isolate));
   v8::Context::Scope context_scope(utility_context);
 
-  if (i::FLAG_debugger) printf("JavaScript debugger enabled\n");
+  if (i::FLAG_debugger) printf("\x4a\x61\x76\x61\x53\x63\x72\x69\x70\x74\x20\x64\x65\x62\x75\x67\x67\x65\x72\x20\x65\x6e\x61\x62\x6c\x65\x64\xa");
   // Install the debugger object in the utility scope
   i::Debug* debug = reinterpret_cast<i::Isolate*>(isolate)->debug();
   debug->Load();
   i::Handle<i::Context> debug_context = debug->debug_context();
   i::Handle<i::JSObject> js_debug
       = i::Handle<i::JSObject>(debug_context->global_object());
-  utility_context->Global()->Set(String::NewFromUtf8(isolate, "$debug"),
+  utility_context->Global()->Set(String::NewFromUtf8(isolate, "\x24\x64\x65\x62\x75\x67"),
                                  Utils::ToLocal(js_debug));
   debug_context->set_security_token(
       reinterpret_cast<i::Isolate*>(isolate)->heap()->undefined_value());
 
   // Run the d8 shell utility script in the utility context
-  int source_index = i::NativesCollection<i::D8>::GetIndex("d8");
+  int source_index = i::NativesCollection<i::D8>::GetIndex("\x64\x38");
   i::Vector<const char> shell_source =
       i::NativesCollection<i::D8>::GetRawScriptSource(source_index);
   i::Vector<const char> shell_source_name =
@@ -874,54 +874,54 @@ class BZip2Decompressor : public v8::StartupDataDecompressor {
 
 Handle<ObjectTemplate> Shell::CreateGlobalTemplate(Isolate* isolate) {
   Handle<ObjectTemplate> global_template = ObjectTemplate::New(isolate);
-  global_template->Set(String::NewFromUtf8(isolate, "print"),
+  global_template->Set(String::NewFromUtf8(isolate, "\x70\x72\x69\x6e\x74"),
                        FunctionTemplate::New(isolate, Print));
-  global_template->Set(String::NewFromUtf8(isolate, "write"),
+  global_template->Set(String::NewFromUtf8(isolate, "\x77\x72\x69\x74\x65"),
                        FunctionTemplate::New(isolate, Write));
-  global_template->Set(String::NewFromUtf8(isolate, "read"),
+  global_template->Set(String::NewFromUtf8(isolate, "\x72\x65\x61\x64"),
                        FunctionTemplate::New(isolate, Read));
-  global_template->Set(String::NewFromUtf8(isolate, "readbuffer"),
+  global_template->Set(String::NewFromUtf8(isolate, "\x72\x65\x61\x64\x62\x75\x66\x66\x65\x72"),
                        FunctionTemplate::New(isolate, ReadBuffer));
-  global_template->Set(String::NewFromUtf8(isolate, "readline"),
+  global_template->Set(String::NewFromUtf8(isolate, "\x72\x65\x61\x64\x6c\x69\x6e\x65"),
                        FunctionTemplate::New(isolate, ReadLine));
-  global_template->Set(String::NewFromUtf8(isolate, "load"),
+  global_template->Set(String::NewFromUtf8(isolate, "\x6c\x6f\x61\x64"),
                        FunctionTemplate::New(isolate, Load));
-  global_template->Set(String::NewFromUtf8(isolate, "quit"),
+  global_template->Set(String::NewFromUtf8(isolate, "\x71\x75\x69\x74"),
                        FunctionTemplate::New(isolate, Quit));
-  global_template->Set(String::NewFromUtf8(isolate, "version"),
+  global_template->Set(String::NewFromUtf8(isolate, "\x76\x65\x72\x73\x69\x6f\x6e"),
                        FunctionTemplate::New(isolate, Version));
 
   // Bind the Realm object.
   Handle<ObjectTemplate> realm_template = ObjectTemplate::New(isolate);
-  realm_template->Set(String::NewFromUtf8(isolate, "current"),
+  realm_template->Set(String::NewFromUtf8(isolate, "\x63\x75\x72\x72\x65\x6e\x74"),
                       FunctionTemplate::New(isolate, RealmCurrent));
-  realm_template->Set(String::NewFromUtf8(isolate, "owner"),
+  realm_template->Set(String::NewFromUtf8(isolate, "\x6f\x77\x6e\x65\x72"),
                       FunctionTemplate::New(isolate, RealmOwner));
-  realm_template->Set(String::NewFromUtf8(isolate, "global"),
+  realm_template->Set(String::NewFromUtf8(isolate, "\x67\x6c\x6f\x62\x61\x6c"),
                       FunctionTemplate::New(isolate, RealmGlobal));
-  realm_template->Set(String::NewFromUtf8(isolate, "create"),
+  realm_template->Set(String::NewFromUtf8(isolate, "\x63\x72\x65\x61\x74\x65"),
                       FunctionTemplate::New(isolate, RealmCreate));
-  realm_template->Set(String::NewFromUtf8(isolate, "dispose"),
+  realm_template->Set(String::NewFromUtf8(isolate, "\x64\x69\x73\x70\x6f\x73\x65"),
                       FunctionTemplate::New(isolate, RealmDispose));
-  realm_template->Set(String::NewFromUtf8(isolate, "switch"),
+  realm_template->Set(String::NewFromUtf8(isolate, "\x73\x77\x69\x74\x63\x68"),
                       FunctionTemplate::New(isolate, RealmSwitch));
-  realm_template->Set(String::NewFromUtf8(isolate, "eval"),
+  realm_template->Set(String::NewFromUtf8(isolate, "\x65\x76\x61\x6c"),
                       FunctionTemplate::New(isolate, RealmEval));
-  realm_template->SetAccessor(String::NewFromUtf8(isolate, "shared"),
+  realm_template->SetAccessor(String::NewFromUtf8(isolate, "\x73\x68\x61\x72\x65\x64"),
                               RealmSharedGet, RealmSharedSet);
-  global_template->Set(String::NewFromUtf8(isolate, "Realm"), realm_template);
+  global_template->Set(String::NewFromUtf8(isolate, "\x52\x65\x61\x6c\x6d"), realm_template);
 
 #ifndef V8_SHARED
   Handle<ObjectTemplate> performance_template = ObjectTemplate::New(isolate);
-  performance_template->Set(String::NewFromUtf8(isolate, "now"),
+  performance_template->Set(String::NewFromUtf8(isolate, "\x6e\x6f\x77"),
                             FunctionTemplate::New(isolate, PerformanceNow));
-  global_template->Set(String::NewFromUtf8(isolate, "performance"),
+  global_template->Set(String::NewFromUtf8(isolate, "\x70\x65\x72\x66\x6f\x72\x6d\x61\x6e\x63\x65"),
                        performance_template);
 #endif  // !V8_SHARED
 
   Handle<ObjectTemplate> os_templ = ObjectTemplate::New(isolate);
   AddOSMethods(isolate, os_templ);
-  global_template->Set(String::NewFromUtf8(isolate, "os"), os_templ);
+  global_template->Set(String::NewFromUtf8(isolate, "\x6f\x73"), os_templ);
 
   return global_template;
 }
@@ -932,7 +932,7 @@ void Shell::Initialize(Isolate* isolate) {
   BZip2Decompressor startup_data_decompressor;
   int bz2_result = startup_data_decompressor.Decompress();
   if (bz2_result != BZ_OK) {
-    fprintf(stderr, "bzip error code: %d\n", bz2_result);
+    fprintf(stderr, "\x62\x7a\x69\x70\x20\x65\x72\x72\x6f\x72\x20\x63\x6f\x64\x65\x3a\x20\x6c\x84\xa", bz2_result);
     Exit(1);
   }
 #endif
@@ -986,7 +986,7 @@ Local<Context> Shell::CreateEvaluationContext(Isolate* isolate) {
   }
   i::Handle<i::JSArray> arguments_jsarray =
       factory->NewJSArrayWithElements(arguments_array);
-  context->Global()->Set(String::NewFromUtf8(isolate, "arguments"),
+  context->Global()->Set(String::NewFromUtf8(isolate, "\x61\x72\x67\x75\x6d\x65\x6e\x74\x73"),
                          Utils::ToLocal(arguments_jsarray));
 #endif  // !V8_SHARED
   return handle_scope.Escape(context);
@@ -1073,13 +1073,25 @@ static FILE* FOpen(const char* path, const char* mode) {
     return NULL;
   }
 #else
+#ifdef V8_OS_ZOS  
+  char * path_ebcdic = (char *)malloc(sizeof(char)*strlen(path)); 
+//  char * mode_ebcdic = (char *)malloc(sizeof(char)*strlen(mode)); 
+  strcpy(path_ebcdic,path);
+//  strcpy(mode_ebcdic,mode);
+  __a2e_s(path_ebcdic);
+//  __a2e_s(mode_ebcdic);
+  FILE* file = fopen(path_ebcdic, mode);
+#else
   FILE* file = fopen(path, mode);
+#endif
   if (file == NULL) return NULL;
   struct stat file_stat;
   if (fstat(fileno(file), &file_stat) != 0) return NULL;
   bool is_regular_file = ((file_stat.st_mode & S_IFREG) != 0);
   if (is_regular_file) return file;
   fclose(file);
+  free(path_ebcdic);
+//  free(mode_ebcdic);
   return NULL;
 #endif
 }
@@ -1094,9 +1106,10 @@ static char* ReadChars(Isolate* isolate, const char* name, int* size_out) {
   rewind(file);
 
   char* chars = new char[size + 1];
-  chars[size] = '\0';
+  chars[size] = '\x0';
   for (int i = 0; i < size;) {
     int read = static_cast<int>(fread(&chars[i], 1, size - i, file));
+    __e2a_s(chars);
     i += read;
   }
   fclose(file);
@@ -1128,7 +1141,7 @@ void Shell::ReadBuffer(const v8::FunctionCallbackInfo<v8::Value>& args) {
   String::Utf8Value filename(args[0]);
   int length;
   if (*filename == NULL) {
-    Throw(args.GetIsolate(), "Error loading file");
+    Throw(args.GetIsolate(), "\x45\x72\x72\x6f\x72\x20\x6c\x6f\x61\x64\x69\x6e\x67\x20\x66\x69\x6c\x65");
     return;
   }
 
@@ -1138,7 +1151,7 @@ void Shell::ReadBuffer(const v8::FunctionCallbackInfo<v8::Value>& args) {
       ReadChars(args.GetIsolate(), *filename, &length));
   if (data->data == NULL) {
     delete data;
-    Throw(args.GetIsolate(), "Error reading file");
+    Throw(args.GetIsolate(), "\x45\x72\x72\x6f\x72\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x66\x69\x6c\x65");
     return;
   }
   Handle<v8::ArrayBuffer> buffer =
@@ -1170,9 +1183,9 @@ void Shell::RunShell(Isolate* isolate) {
       v8::Local<v8::Context>::New(isolate, evaluation_context_);
   v8::Context::Scope context_scope(context);
   PerIsolateData::RealmScope realm_scope(PerIsolateData::Get(isolate));
-  Handle<String> name = String::NewFromUtf8(isolate, "(d8)");
+  Handle<String> name = String::NewFromUtf8(isolate, "\x28\x64\x38\x29");
   LineEditor* console = LineEditor::Get();
-  printf("V8 version %s [console: %s]\n", V8::GetVersion(), console->name());
+  printf("\x56\x38\x20\x76\x65\x72\x73\x69\x6f\x6e\x20\x6c\xa2\x20\x5b\x63\x6f\x6e\x73\x6f\x6c\x65\x3a\x20\x6c\xa2\x5d\xa", V8::GetVersion(), console->name());
   console->Open(isolate);
   while (true) {
     HandleScope inner_scope(isolate);
@@ -1180,7 +1193,7 @@ void Shell::RunShell(Isolate* isolate) {
     if (input.IsEmpty()) break;
     ExecuteString(isolate, input, name, true, true);
   }
-  printf("\n");
+  printf("\xa");
 }
 
 
@@ -1196,17 +1209,17 @@ void SourceGroup::Execute(Isolate* isolate) {
   bool exception_was_thrown = false;
   for (int i = begin_offset_; i < end_offset_; ++i) {
     const char* arg = argv_[i];
-    if (strcmp(arg, "-e") == 0 && i + 1 < end_offset_) {
+    if (strcmp(arg, "\x2d\x65") == 0 && i + 1 < end_offset_) {
       // Execute argument given to -e option directly.
       HandleScope handle_scope(isolate);
-      Handle<String> file_name = String::NewFromUtf8(isolate, "unnamed");
+      Handle<String> file_name = String::NewFromUtf8(isolate, "\x75\x6e\x6e\x61\x6d\x65\x64");
       Handle<String> source = String::NewFromUtf8(isolate, argv_[i + 1]);
       if (!Shell::ExecuteString(isolate, source, file_name, false, true)) {
         exception_was_thrown = true;
         break;
       }
       ++i;
-    } else if (arg[0] == '-') {
+    } else if (arg[0] == '\x2d') {
       // Ignore other options. They have been parsed already.
     } else {
       // Use all other arguments as names of files to load and run.
@@ -1214,7 +1227,7 @@ void SourceGroup::Execute(Isolate* isolate) {
       Handle<String> file_name = String::NewFromUtf8(isolate, arg);
       Handle<String> source = ReadFile(isolate, arg);
       if (source.IsEmpty()) {
-        printf("Error reading '%s'\n", arg);
+        printf("\x45\x72\x72\x6f\x72\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x27\x6c\xa2\x27\xa", arg);
         Shell::Exit(1);
       }
       if (!Shell::ExecuteString(isolate, source, file_name, false, true)) {
@@ -1246,7 +1259,7 @@ base::Thread::Options SourceGroup::GetThreadOptions() {
   // which is not enough to parse the big literal expressions used in tests.
   // The stack size should be at least StackGuard::kLimitSize + some
   // OS-specific padding for thread startup code.  2Mbytes seems to be enough.
-  return base::Thread::Options("IsolateThread", 2 * MB);
+  return base::Thread::Options("\x49\x73\x6f\x6c\x61\x74\x65\x54\x68\x72\x65\x61\x64", 2 * MB);
 }
 
 
@@ -1313,91 +1326,90 @@ void SetFlagsFromString(const char* flags) {
 bool Shell::SetOptions(int argc, char* argv[]) {
   bool logfile_per_isolate = false;
   for (int i = 0; i < argc; i++) {
-    __e2a_s(argv[i]);
-    if (strcmp(argv[i], "--stress-opt") == 0) {
+    if (strcmp(argv[i], "\x2d\x2d\x73\x74\x72\x65\x73\x73\x2d\x6f\x70\x74") == 0) {
       options.stress_opt = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--nostress-opt") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x6e\x6f\x73\x74\x72\x65\x73\x73\x2d\x6f\x70\x74") == 0) {
       options.stress_opt = false;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--stress-deopt") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x73\x74\x72\x65\x73\x73\x2d\x64\x65\x6f\x70\x74") == 0) {
       options.stress_deopt = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--mock-arraybuffer-allocator") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x6d\x6f\x63\x6b\x2d\x61\x72\x72\x61\x79\x62\x75\x66\x66\x65\x72\x2d\x61\x6c\x6c\x6f\x63\x61\x74\x6f\x72") == 0) {
       options.mock_arraybuffer_allocator = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--noalways-opt") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x6e\x6f\x61\x6c\x77\x61\x79\x73\x2d\x6f\x70\x74") == 0) {
       // No support for stressing if we can't use --always-opt.
       options.stress_opt = false;
       options.stress_deopt = false;
-    } else if (strcmp(argv[i], "--logfile-per-isolate") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x6c\x6f\x67\x66\x69\x6c\x65\x2d\x70\x65\x72\x2d\x69\x73\x6f\x6c\x61\x74\x65") == 0) {
       logfile_per_isolate = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--shell") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x73\x68\x65\x6c\x6c") == 0) {
       options.interactive_shell = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--test") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x74\x65\x73\x74") == 0) {
       options.test_shell = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--send-idle-notification") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x73\x65\x6e\x64\x2d\x69\x64\x6c\x65\x2d\x6e\x6f\x74\x69\x66\x69\x63\x61\x74\x69\x6f\x6e") == 0) {
       options.send_idle_notification = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--invoke-weak-callbacks") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x69\x6e\x76\x6f\x6b\x65\x2d\x77\x65\x61\x6b\x2d\x63\x61\x6c\x6c\x62\x61\x63\x6b\x73") == 0) {
       options.invoke_weak_callbacks = true;
       // TODO(jochen) See issue 3351
       options.send_idle_notification = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "-f") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x66") == 0) {
       // Ignore any -f flags for compatibility with other stand-alone
       // JavaScript engines.
       continue;
-    } else if (strcmp(argv[i], "--isolate") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x69\x73\x6f\x6c\x61\x74\x65") == 0) {
 #ifdef V8_SHARED
-      printf("D8 with shared library does not support multi-threading\n");
+      printf("\x44\x38\x20\x77\x69\x74\x68\x20\x73\x68\x61\x72\x65\x64\x20\x6c\x69\x62\x72\x61\x72\x79\x20\x64\x6f\x65\x73\x20\x6e\x6f\x74\x20\x73\x75\x70\x70\x6f\x72\x74\x20\x6d\x75\x6c\x74\x69\x2d\x74\x68\x72\x65\x61\x64\x69\x6e\x67\xa");
       return false;
 #endif  // V8_SHARED
       options.num_isolates++;
-    } else if (strcmp(argv[i], "--dump-heap-constants") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x64\x75\x6d\x70\x2d\x68\x65\x61\x70\x2d\x63\x6f\x6e\x73\x74\x61\x6e\x74\x73") == 0) {
 #ifdef V8_SHARED
-      printf("D8 with shared library does not support constant dumping\n");
+      printf("\x44\x38\x20\x77\x69\x74\x68\x20\x73\x68\x61\x72\x65\x64\x20\x6c\x69\x62\x72\x61\x72\x79\x20\x64\x6f\x65\x73\x20\x6e\x6f\x74\x20\x73\x75\x70\x70\x6f\x72\x74\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x20\x64\x75\x6d\x70\x69\x6e\x67\xa");
       return false;
 #else
       options.dump_heap_constants = true;
       argv[i] = NULL;
 #endif  // V8_SHARED
-    } else if (strcmp(argv[i], "--throws") == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x74\x68\x72\x6f\x77\x73") == 0) {
       options.expected_to_throw = true;
       argv[i] = NULL;
-    } else if (strncmp(argv[i], "--icu-data-file=", 16) == 0) {
+    } else if (strncmp(argv[i], "\x2d\x2d\x69\x63\x75\x2d\x64\x61\x74\x61\x2d\x66\x69\x6c\x65\x3d", 16) == 0) {
       options.icu_data_file = argv[i] + 16;
       argv[i] = NULL;
 #ifdef V8_SHARED
-    } else if (strcmp(argv[i], "--dump-counters") == 0) {
-      printf("D8 with shared library does not include counters\n");
+    } else if (strcmp(argv[i], "\x2d\x2d\x64\x75\x6d\x70\x2d\x63\x6f\x75\x6e\x74\x65\x72\x73") == 0) {
+      printf("\x44\x38\x20\x77\x69\x74\x68\x20\x73\x68\x61\x72\x65\x64\x20\x6c\x69\x62\x72\x61\x72\x79\x20\x64\x6f\x65\x73\x20\x6e\x6f\x74\x20\x69\x6e\x63\x6c\x75\x64\x65\x20\x63\x6f\x75\x6e\x74\x65\x72\x73\xa");
       return false;
-    } else if (strcmp(argv[i], "--debugger") == 0) {
-      printf("Javascript debugger not included\n");
+    } else if (strcmp(argv[i], "\x2d\x2d\x64\x65\x62\x75\x67\x67\x65\x72") == 0) {
+      printf("\x4a\x61\x76\x61\x73\x63\x72\x69\x70\x74\x20\x64\x65\x62\x75\x67\x67\x65\x72\x20\x6e\x6f\x74\x20\x69\x6e\x63\x6c\x75\x64\x65\x64\xa");
       return false;
 #endif  // V8_SHARED
 #ifdef V8_USE_EXTERNAL_STARTUP_DATA
-    } else if (strncmp(argv[i], "--natives_blob=", 15) == 0) {
+    } else if (strncmp(argv[i], "\x2d\x2d\x6e\x61\x74\x69\x76\x65\x73\x5f\x62\x6c\x6f\x62\x3d", 15) == 0) {
       options.natives_blob = argv[i] + 15;
       argv[i] = NULL;
-    } else if (strncmp(argv[i], "--snapshot_blob=", 16) == 0) {
+    } else if (strncmp(argv[i], "\x2d\x2d\x73\x6e\x61\x70\x73\x68\x6f\x74\x5f\x62\x6c\x6f\x62\x3d", 16) == 0) {
       options.snapshot_blob = argv[i] + 16;
       argv[i] = NULL;
 #endif  // V8_USE_EXTERNAL_STARTUP_DATA
-    } else if (strcmp(argv[i], "--cache") == 0 ||
-               strncmp(argv[i], "--cache=", 8) == 0) {
+    } else if (strcmp(argv[i], "\x2d\x2d\x63\x61\x63\x68\x65") == 0 ||
+               strncmp(argv[i], "\x2d\x2d\x63\x61\x63\x68\x65\x3d", 8) == 0) {
       const char* value = argv[i] + 7;
-      if (!*value || strncmp(value, "=code", 6) == 0) {
+      if (!*value || strncmp(value, "\x3d\x63\x6f\x64\x65", 6) == 0) {
         options.compile_options = v8::ScriptCompiler::kProduceCodeCache;
-      } else if (strncmp(value, "=parse", 7) == 0) {
+      } else if (strncmp(value, "\x3d\x70\x61\x72\x73\x65", 7) == 0) {
         options.compile_options = v8::ScriptCompiler::kProduceParserCache;
-      } else if (strncmp(value, "=none", 6) == 0) {
+      } else if (strncmp(value, "\x3d\x6e\x6f\x6e\x65", 6) == 0) {
         options.compile_options = v8::ScriptCompiler::kNoCompileOptions;
       } else {
-        printf("Unknown option to --cache.\n");
+        printf("\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x6f\x70\x74\x69\x6f\x6e\x20\x74\x6f\x20\x2d\x2d\x63\x61\x63\x68\x65\x2e\xa");
         return false;
       }
       argv[i] = NULL;
@@ -1412,18 +1424,18 @@ bool Shell::SetOptions(int argc, char* argv[]) {
   current->Begin(argv, 1);
   for (int i = 1; i < argc; i++) {
     const char* str = argv[i];
-    if (strcmp(str, "--isolate") == 0) {
+    if (strcmp(str, "\x2d\x2d\x69\x73\x6f\x6c\x61\x74\x65") == 0) {
       current->End(i);
       current++;
       current->Begin(argv, i + 1);
-    } else if (strncmp(argv[i], "--", 2) == 0) {
-      printf("Warning: unknown flag %s.\nTry --help for options\n", argv[i]);
+    } else if (strncmp(argv[i], "\x2d\x2d", 2) == 0) {
+      printf("\x57\x61\x72\x6e\x69\x6e\x67\x3a\x20\x75\x6e\x6b\x6e\x6f\x77\x6e\x20\x66\x6c\x61\x67\x20\x6c\xa2\x2e\xa\x54\x72\x79\x20\x2d\x2d\x68\x65\x6c\x70\x20\x66\x6f\x72\x20\x6f\x70\x74\x69\x6f\x6e\x73\xa", argv[i]);
     }
   }
   current->End(argc);
 
   if (!logfile_per_isolate && options.num_isolates) {
-    SetFlagsFromString("--nologfile_per_isolate");
+    SetFlagsFromString("\x2d\x2d\x6e\x6f\x6c\x6f\x67\x66\x69\x6c\x65\x5f\x70\x65\x72\x5f\x69\x73\x6f\x6c\x61\x74\x65");
   }
 
   return true;
@@ -1482,21 +1494,21 @@ static void DumpHeapConstants(i::Isolate* isolate) {
   i::Heap* heap = isolate->heap();
 
   // Dump the INSTANCE_TYPES table to the console.
-  printf("# List of known V8 instance types.\n");
-#define DUMP_TYPE(T) printf("  %d: \"%s\",\n", i::T, #T);
-  printf("INSTANCE_TYPES = {\n");
+  printf("\x23\x20\x4c\x69\x73\x74\x20\x6f\x66\x20\x6b\x6e\x6f\x77\x6e\x20\x56\x38\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x74\x79\x70\x65\x73\x2e\xa");
+#define DUMP_TYPE(T) printf("\x20\x20\x6c\x84\x3a\x20\x22\x6c\xa2\x22\x2c\xa", i::T, #T);
+  printf("\x49\x4e\x53\x54\x41\x4e\x43\x45\x5f\x54\x59\x50\x45\x53\x20\x3d\x20\x7b\xa");
   INSTANCE_TYPE_LIST(DUMP_TYPE)
-  printf("}\n");
+  printf("\x7d\xa");
 #undef DUMP_TYPE
 
   // Dump the KNOWN_MAP table to the console.
-  printf("\n# List of known V8 maps.\n");
+  printf("\xa\x23\x20\x4c\x69\x73\x74\x20\x6f\x66\x20\x6b\x6e\x6f\x77\x6e\x20\x56\x38\x20\x6d\x61\x70\x73\x2e\xa");
 #define ROOT_LIST_CASE(type, name, camel_name) \
   if (n == NULL && o == heap->name()) n = #camel_name;
 #define STRUCT_LIST_CASE(upper_name, camel_name, name) \
-  if (n == NULL && o == heap->name##_map()) n = #camel_name "Map";
+  if (n == NULL && o == heap->name##_map()) n = #camel_name "\x4d\x61\x70";
   i::HeapObjectIterator it(heap->map_space());
-  printf("KNOWN_MAPS = {\n");
+  printf("\x4b\x4e\x4f\x57\x4e\x5f\x4d\x41\x50\x53\x20\x3d\x20\x7b\xa");
   for (i::Object* o = it.Next(); o != NULL; o = it.Next()) {
     i::Map* m = i::Map::cast(o);
     const char* n = NULL;
@@ -1505,18 +1517,18 @@ static void DumpHeapConstants(i::Isolate* isolate) {
     ROOT_LIST(ROOT_LIST_CASE)
     STRUCT_LIST(STRUCT_LIST_CASE)
     if (n == NULL) continue;
-    printf("  0x%05" V8PRIxPTR ": (%d, \"%s\"),\n", p, t, n);
+    printf("\x20\x20\x30\x78\x25\x30\x35" V8PRIxPTR "\x3a\x20\x28\x6c\x84\x2c\x20\x22\x6c\xa2\x22\x29\x2c\xa", p, t, n);
   }
-  printf("}\n");
+  printf("\x7d\xa");
 #undef STRUCT_LIST_CASE
 #undef ROOT_LIST_CASE
 
   // Dump the KNOWN_OBJECTS table to the console.
-  printf("\n# List of known V8 objects.\n");
+  printf("\xa\x23\x20\x4c\x69\x73\x74\x20\x6f\x66\x20\x6b\x6e\x6f\x77\x6e\x20\x56\x38\x20\x6f\x62\x6a\x65\x63\x74\x73\x2e\xa");
 #define ROOT_LIST_CASE(type, name, camel_name) \
   if (n == NULL && o == heap->name()) n = #camel_name;
   i::OldSpaces spit(heap);
-  printf("KNOWN_OBJECTS = {\n");
+  printf("\x4b\x4e\x4f\x57\x4e\x5f\x4f\x42\x4a\x45\x43\x54\x53\x20\x3d\x20\x7b\xa");
   for (i::PagedSpace* s = spit.next(); s != NULL; s = spit.next()) {
     i::HeapObjectIterator it(s);
     const char* sname = AllocationSpaceName(s->identity());
@@ -1525,10 +1537,10 @@ static void DumpHeapConstants(i::Isolate* isolate) {
       intptr_t p = reinterpret_cast<intptr_t>(o) & 0xfffff;
       ROOT_LIST(ROOT_LIST_CASE)
       if (n == NULL) continue;
-      printf("  (\"%s\", 0x%05" V8PRIxPTR "): \"%s\",\n", sname, p, n);
+      printf("\x20\x20\x28\x22\x6c\xa2\x22\x2c\x20\x30\x78\x25\x30\x35" V8PRIxPTR "\x29\x3a\x20\x22\x6c\xa2\x22\x2c\xa", sname, p, n);
     }
   }
-  printf("}\n");
+  printf("\x7d\xa");
 #undef ROOT_LIST_CASE
 }
 #endif  // !V8_SHARED
@@ -1584,7 +1596,7 @@ class StartupDataHandler {
     if (!blob_file)
       return;
 
-    FILE* file = fopen(blob_file, "rb");
+    FILE* file = fopen(blob_file, "\x72\x62");
     if (!file)
       return;
 
@@ -1620,8 +1632,8 @@ int Shell::Main(int argc, char* argv[]) {
 #ifdef V8_USE_EXTERNAL_STARTUP_DATA
   StartupDataHandler startup_data(options.natives_blob, options.snapshot_blob);
 #endif
-  SetFlagsFromString("--trace-hydrogen-file=hydrogen.cfg");
-  SetFlagsFromString("--redirect-code-traces-to=code.asm");
+  SetFlagsFromString("\x2d\x2d\x74\x72\x61\x63\x65\x2d\x68\x79\x64\x72\x6f\x67\x65\x6e\x2d\x66\x69\x6c\x65\x3d\x68\x79\x64\x72\x6f\x67\x65\x6e\x2e\x63\x66\x67");
+  SetFlagsFromString("\x2d\x2d\x72\x65\x64\x69\x72\x65\x63\x74\x2d\x63\x6f\x64\x65\x2d\x74\x72\x61\x63\x65\x73\x2d\x74\x6f\x3d\x63\x6f\x64\x65\x2e\x61\x73\x6d");
   ShellArrayBufferAllocator array_buffer_allocator;
   MockArrayBufferAllocator mock_arraybuffer_allocator;
   if (options.mock_arraybuffer_allocator) {
@@ -1667,18 +1679,18 @@ int Shell::Main(int argc, char* argv[]) {
                                 : Testing::kStressTypeDeopt);
       int stress_runs = Testing::GetStressRuns();
       for (int i = 0; i < stress_runs && result == 0; i++) {
-        printf("============ Stress %d/%d ============\n", i + 1, stress_runs);
+        printf("\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x20\x53\x74\x72\x65\x73\x73\x20\x6c\x84\x2f\x6c\x84\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa", i + 1, stress_runs);
         Testing::PrepareStressRun(i);
         options.last_run = (i == stress_runs - 1);
         result = RunMain(isolate, argc, argv);
       }
-      printf("======== Full Deoptimization =======\n");
+      printf("\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x20\x46\x75\x6c\x6c\x20\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa");
       Testing::DeoptimizeAll();
 #if !defined(V8_SHARED)
     } else if (i::FLAG_stress_runs > 0) {
       int stress_runs = i::FLAG_stress_runs;
       for (int i = 0; i < stress_runs && result == 0; i++) {
-        printf("============ Run %d/%d ============\n", i + 1, stress_runs);
+        printf("\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x20\x52\x75\x6e\x20\x6c\x84\x2f\x6c\x84\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa", i + 1, stress_runs);
         options.last_run = (i == stress_runs - 1);
         result = RunMain(isolate, argc, argv);
       }
@@ -1712,6 +1724,10 @@ int Shell::Main(int argc, char* argv[]) {
 
 #ifndef GOOGLE3
 int main(int argc, char* argv[]) {
+#ifdef V8_OS_ZOS
+  for (int i=0; i<argc; i++)
+       __e2a_s(argv[i]);
+#endif
   return v8::Shell::Main(argc, argv);
 }
 #endif

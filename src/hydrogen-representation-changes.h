@@ -14,7 +14,7 @@ namespace internal {
 class HRepresentationChangesPhase : public HPhase {
  public:
   explicit HRepresentationChangesPhase(HGraph* graph)
-      : HPhase("H_Representation changes", graph) { }
+      : HPhase("\x48\x5f\x52\x65\x70\x72\x65\x73\x65\x6e\x74\x61\x74\x69\x6f\x6e\x20\x63\x68\x61\x6e\x67\x65\x73", graph) { }
 
   void Run();
 

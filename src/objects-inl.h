@@ -1727,7 +1727,7 @@ inline bool AllocationSite::DigestPretenuringFeedback(
 
   if (FLAG_trace_pretenuring_statistics) {
     PrintF(
-        "AllocationSite(%p): (created, found, ratio) (%d, %d, %f) %s => %s\n",
+        "\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65\x28\x6c\x97\x29\x3a\x20\x28\x63\x72\x65\x61\x74\x65\x64\x2c\x20\x66\x6f\x75\x6e\x64\x2c\x20\x72\x61\x74\x69\x6f\x29\x20\x28\x6c\x84\x2c\x20\x6c\x84\x2c\x20\x6c\x86\x29\x20\x6c\xa2\x20\x3d\x3e\x20\x6c\xa2\xa",
          static_cast<void*>(this), create_count, found_count, ratio,
          PretenureDecisionName(current_decision),
          PretenureDecisionName(pretenure_decision()));
@@ -2174,7 +2174,7 @@ void Object::VerifyApiCallResultType() {
         IsTrue() ||
         IsFalse() ||
         IsNull())) {
-    FATAL("API call returned invalid object");
+    FATAL("\x41\x50\x49\x20\x63\x61\x6c\x6c\x20\x72\x65\x74\x75\x72\x6e\x65\x64\x20\x69\x6e\x76\x61\x6c\x69\x64\x20\x6f\x62\x6a\x65\x63\x74");
   }
 #endif  // ENABLE_EXTRA_CHECKS
 }
@@ -5910,7 +5910,7 @@ void JSFunction::ReplaceCode(Code* code) {
 
   if (was_optimized && is_optimized) {
     shared()->EvictFromOptimizedCodeMap(this->code(),
-        "Replacing with another optimized code");
+        "\x52\x65\x70\x6c\x61\x63\x69\x6e\x67\x20\x77\x69\x74\x68\x20\x61\x6e\x6f\x74\x68\x65\x72\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65");
   }
 
   set_code(code);
@@ -6571,14 +6571,14 @@ bool StringHasher::UpdateIndex(Char c) {
       c = GET_ASCII_CODE(c);
   }
 
-  if (c < GET_ASCII_CODE('0') || c > GET_ASCII_CODE('9')) {
+  if (c < GET_ASCII_CODE('\x30') || c > GET_ASCII_CODE('\x39')) {
     is_array_index_ = false;
     return false;
   }
-  int d = c - GET_ASCII_CODE('0');
+  int d = c - GET_ASCII_CODE('\x30');
   if (is_first_char_) {
     is_first_char_ = false;
-    if (c == GET_ASCII_CODE('0') && length_ > 1) {
+    if (c == GET_ASCII_CODE('\x30') && length_ > 1) {
       is_array_index_ = false;
       return false;
     }

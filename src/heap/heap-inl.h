@@ -300,7 +300,7 @@ void Heap::UpdateAllocationsHash(uint32_t value) {
 
 void Heap::PrintAlloctionsHash() {
   uint32_t hash = StringHasher::GetHashCore(raw_allocations_hash_);
-  PrintF("\n### Allocations = %u, hash = 0x%08x\n", allocations_count_, hash);
+  PrintF("\xa\x23\x23\x23\x20\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x73\x20\x3d\x20\x6c\xa4\x2c\x20\x68\x61\x73\x68\x20\x3d\x20\x30\x78\x6c\xf0\xf8\xa7\xa", allocations_count_, hash);
 }
 
 
@@ -608,18 +608,18 @@ Isolate* Heap::isolate() {
     Object* __object__ = NULL;                                                \
     RETURN_OBJECT_UNLESS_RETRY(ISOLATE, RETURN_VALUE)                         \
     (ISOLATE)->heap()->CollectGarbage(__allocation__.RetrySpace(),            \
-                                      "allocation failure");                  \
+                                      "\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x66\x61\x69\x6c\x75\x72\x65");                  \
     __allocation__ = FUNCTION_CALL;                                           \
     RETURN_OBJECT_UNLESS_RETRY(ISOLATE, RETURN_VALUE)                         \
     (ISOLATE)->counters()->gc_last_resort_from_handles()->Increment();        \
-    (ISOLATE)->heap()->CollectAllAvailableGarbage("last resort gc");          \
+    (ISOLATE)->heap()->CollectAllAvailableGarbage("\x6c\x61\x73\x74\x20\x72\x65\x73\x6f\x72\x74\x20\x67\x63");          \
     {                                                                         \
       AlwaysAllocateScope __scope__(ISOLATE);                                 \
       __allocation__ = FUNCTION_CALL;                                         \
     }                                                                         \
     RETURN_OBJECT_UNLESS_RETRY(ISOLATE, RETURN_VALUE)                         \
     /* TODO(1181417): Fix this. */                                            \
-    v8::internal::Heap::FatalProcessOutOfMemory("CALL_AND_RETRY_LAST", true); \
+    v8::internal::Heap::FatalProcessOutOfMemory("\x43\x41\x4c\x4c\x5f\x41\x4e\x44\x5f\x52\x45\x54\x52\x59\x5f\x4c\x41\x53\x54", true); \
     RETURN_EMPTY;                                                             \
   } while (false)
 

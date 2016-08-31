@@ -113,7 +113,7 @@ class JSOperatorBuilder {
   Operator* CallNew(int arguments) {
     return new (zone_)
         Operator1<int>(IrOpcode::kJSCallConstruct, Operator::kNoProperties,
-                       arguments, 1, "JSCallConstruct", arguments);
+                       arguments, 1, "\x4a\x53\x43\x61\x6c\x6c\x43\x6f\x6e\x73\x74\x72\x75\x63\x74", arguments);
   }
 
   Operator* LoadProperty() { BINOP(JSLoadProperty); }
@@ -183,8 +183,8 @@ class JSOperatorBuilder {
 template <>
 struct StaticParameterTraits<ContextAccess> {
   static OStream& PrintTo(OStream& os, ContextAccess val) {  // NOLINT
-    return os << val.depth() << "," << val.index()
-              << (val.immutable() ? ",imm" : "");
+    return os << val.depth() << "\x2c" << val.index()
+              << (val.immutable() ? "\x2c\x69\x6d\x6d" : "");
   }
   static int HashCode(ContextAccess val) {
     return (val.depth() << 16) | (val.index() & 0xffff);
@@ -200,7 +200,7 @@ template <>
 struct StaticParameterTraits<Runtime::FunctionId> {
   static OStream& PrintTo(OStream& os, Runtime::FunctionId val) {  // NOLINT
     const Runtime::Function* f = Runtime::FunctionForId(val);
-    return os << (f->name ? f->name : "?Runtime?");
+    return os << (f->name ? f->name : "\x3f\x52\x75\x6e\x74\x69\x6d\x65\x3f");
   }
   static int HashCode(Runtime::FunctionId val) { return static_cast<int>(val); }
   static bool Equals(Runtime::FunctionId a, Runtime::FunctionId b) {

@@ -26,10 +26,10 @@ namespace v8 {
 namespace internal {
 
 
-const char* Marking::kWhiteBitPattern = "00";
-const char* Marking::kBlackBitPattern = "10";
-const char* Marking::kGreyBitPattern = "11";
-const char* Marking::kImpossibleBitPattern = "01";
+const char* Marking::kWhiteBitPattern = "\x30\x30";
+const char* Marking::kBlackBitPattern = "\x31\x30";
+const char* Marking::kGreyBitPattern = "\x31\x31";
+const char* Marking::kImpossibleBitPattern = "\x30\x31";
 
 
 // -------------------------------------------------------------------------
@@ -345,7 +345,7 @@ static void TraceFragmentation(PagedSpace* space) {
   int number_of_pages = space->CountTotalPages();
   intptr_t reserved = (number_of_pages * space->AreaSize());
   intptr_t free = reserved - space->SizeOfObjects();
-  PrintF("[%s]: %d pages, %d (%.1f%%) free\n",
+  PrintF("\x5b\x6c\xa2\x5d\x3a\x20\x6c\x84\x20\x70\x61\x67\x65\x73\x2c\x20\x6c\x84\x20\x28\x6c\x4b\xf1\x86\x25\x25\x29\x20\x66\x72\x65\x65\xa",
          AllocationSpaceName(space->identity()), number_of_pages,
          static_cast<int>(free), static_cast<double>(free) * 100 / reserved);
 }
@@ -692,21 +692,21 @@ void Marking::TransferMark(Address old_start, Address new_start) {
 const char* AllocationSpaceName(AllocationSpace space) {
   switch (space) {
     case NEW_SPACE:
-      return "NEW_SPACE";
+      return "\x4e\x45\x57\x5f\x53\x50\x41\x43\x45";
     case OLD_POINTER_SPACE:
-      return "OLD_POINTER_SPACE";
+      return "\x4f\x4c\x44\x5f\x50\x4f\x49\x4e\x54\x45\x52\x5f\x53\x50\x41\x43\x45";
     case OLD_DATA_SPACE:
-      return "OLD_DATA_SPACE";
+      return "\x4f\x4c\x44\x5f\x44\x41\x54\x41\x5f\x53\x50\x41\x43\x45";
     case CODE_SPACE:
-      return "CODE_SPACE";
+      return "\x43\x4f\x44\x45\x5f\x53\x50\x41\x43\x45";
     case MAP_SPACE:
-      return "MAP_SPACE";
+      return "\x4d\x41\x50\x5f\x53\x50\x41\x43\x45";
     case CELL_SPACE:
-      return "CELL_SPACE";
+      return "\x43\x45\x4c\x4c\x5f\x53\x50\x41\x43\x45";
     case PROPERTY_CELL_SPACE:
-      return "PROPERTY_CELL_SPACE";
+      return "\x50\x52\x4f\x50\x45\x52\x54\x59\x5f\x43\x45\x4c\x4c\x5f\x53\x50\x41\x43\x45";
     case LO_SPACE:
-      return "LO_SPACE";
+      return "\x4c\x4f\x5f\x53\x50\x41\x43\x45";
     default:
       UNREACHABLE();
   }
@@ -722,7 +722,7 @@ static int FreeListFragmentation(PagedSpace* space, Page* p) {
   // If page was not swept then there are no free list items on it.
   if (!p->WasSwept()) {
     if (FLAG_trace_fragmentation) {
-      PrintF("%p [%s]: %d bytes live (unswept)\n", reinterpret_cast<void*>(p),
+      PrintF("\x6c\x97\x20\x5b\x6c\xa2\x5d\x3a\x20\x6c\x84\x20\x62\x79\x74\x65\x73\x20\x6c\x69\x76\x65\x20\x28\x75\x6e\x73\x77\x65\x70\x74\x29\xa", reinterpret_cast<void*>(p),
              AllocationSpaceName(space->identity()), p->LiveBytes());
     }
     return 0;
@@ -743,7 +743,7 @@ static int FreeListFragmentation(PagedSpace* space, Page* p) {
   }
 
   if (FLAG_trace_fragmentation) {
-    PrintF("%p [%s]: %d (%.2f%%) %d (%.2f%%) %d (%.2f%%) %d (%.2f%%) %s\n",
+    PrintF("\x6c\x97\x20\x5b\x6c\xa2\x5d\x3a\x20\x6c\x84\x20\x28\x6c\x4b\xf2\x86\x25\x25\x29\x20\x6c\x84\x20\x28\x6c\x4b\xf2\x86\x25\x25\x29\x20\x6c\x84\x20\x28\x6c\x4b\xf2\x86\x25\x25\x29\x20\x6c\x84\x20\x28\x6c\x4b\xf2\x86\x25\x25\x29\x20\x6c\xa2\xa",
            reinterpret_cast<void*>(p), AllocationSpaceName(space->identity()),
            static_cast<int>(sizes.small_size_),
            static_cast<double>(sizes.small_size_ * 100) / area_size,
@@ -753,7 +753,7 @@ static int FreeListFragmentation(PagedSpace* space, Page* p) {
            static_cast<double>(sizes.large_size_ * 100) / area_size,
            static_cast<int>(sizes.huge_size_),
            static_cast<double>(sizes.huge_size_ * 100) / area_size,
-           (ratio > ratio_threshold) ? "[fragmented]" : "");
+           (ratio > ratio_threshold) ? "\x5b\x66\x72\x61\x67\x6d\x65\x6e\x74\x65\x64\x5d" : "");
   }
 
   if (FLAG_always_compact && sizes.Total() != area_size) {
@@ -820,8 +820,8 @@ void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
 
   if (FLAG_trace_fragmentation && mode == REDUCE_MEMORY_FOOTPRINT) {
     PrintF(
-        "Estimated over reserved memory: %.1f / %.1f MB (threshold %d), "
-        "evacuation candidate limit: %d\n",
+        "\x45\x73\x74\x69\x6d\x61\x74\x65\x64\x20\x6f\x76\x65\x72\x20\x72\x65\x73\x65\x72\x76\x65\x64\x20\x6d\x65\x6d\x6f\x72\x79\x3a\x20\x6c\x4b\xf1\x86\x20\x2f\x20\x6c\x4b\xf1\x86\x20\x4d\x42\x20\x28\x74\x68\x72\x65\x73\x68\x6f\x6c\x64\x20\x6c\x84\x29\x2c\x20"
+        "\x65\x76\x61\x63\x75\x61\x74\x69\x6f\x6e\x20\x63\x61\x6e\x64\x69\x64\x61\x74\x65\x20\x6c\x69\x6d\x69\x74\x3a\x20\x6c\x84\xa",
         static_cast<double>(over_reserved) / MB,
         static_cast<double>(reserved) / MB,
         static_cast<int>(kFreenessThreshold), max_evacuation_candidates);
@@ -875,11 +875,11 @@ void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
       }
 
       if (FLAG_trace_fragmentation) {
-        PrintF("%p [%s]: %d (%.2f%%) free %s\n", reinterpret_cast<void*>(p),
+        PrintF("\x6c\x97\x20\x5b\x6c\xa2\x5d\x3a\x20\x6c\x84\x20\x28\x6c\x4b\xf2\x86\x25\x25\x29\x20\x66\x72\x65\x65\x20\x6c\xa2\xa", reinterpret_cast<void*>(p),
                AllocationSpaceName(space->identity()),
                static_cast<int>(free_bytes),
                static_cast<double>(free_bytes * 100) / p->area_size(),
-               (fragmentation > 0) ? "[fragmented]" : "");
+               (fragmentation > 0) ? "\x5b\x66\x72\x61\x67\x6d\x65\x6e\x74\x65\x64\x5d" : "");
       }
     } else {
       fragmentation = FreeListFragmentation(space, p);
@@ -910,7 +910,7 @@ void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
   }
 
   if (count > 0 && FLAG_trace_fragmentation) {
-    PrintF("Collected %d evacuation candidates for space %s\n", count,
+    PrintF("\x43\x6f\x6c\x6c\x65\x63\x74\x65\x64\x20\x6c\x84\x20\x65\x76\x61\x63\x75\x61\x74\x69\x6f\x6e\x20\x63\x61\x6e\x64\x69\x64\x61\x74\x65\x73\x20\x66\x6f\x72\x20\x73\x70\x61\x63\x65\x20\x6c\xa2\xa", count,
            AllocationSpaceName(space->identity()));
   }
 }
@@ -1041,9 +1041,9 @@ void CodeFlusher::ProcessJSFunctionCandidates() {
     MarkBit code_mark = Marking::MarkBitFrom(code);
     if (!code_mark.Get()) {
       if (FLAG_trace_code_flushing && shared->is_compiled()) {
-        PrintF("[code-flushing clears: ");
+        PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x63\x6c\x65\x61\x72\x73\x3a\x20");
         shared->ShortPrint();
-        PrintF(" - age: %d]\n", code->GetAge());
+        PrintF("\x20\x2d\x20\x61\x67\x65\x3a\x20\x6c\x84\x5d\xa", code->GetAge());
       }
       shared->set_code(lazy_compile);
       candidate->set_code(lazy_compile);
@@ -1084,9 +1084,9 @@ void CodeFlusher::ProcessSharedFunctionInfoCandidates() {
     MarkBit code_mark = Marking::MarkBitFrom(code);
     if (!code_mark.Get()) {
       if (FLAG_trace_code_flushing && candidate->is_compiled()) {
-        PrintF("[code-flushing clears: ");
+        PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x63\x6c\x65\x61\x72\x73\x3a\x20");
         candidate->ShortPrint();
-        PrintF(" - age: %d]\n", code->GetAge());
+        PrintF("\x20\x2d\x20\x61\x67\x65\x3a\x20\x6c\x84\x5d\xa", code->GetAge());
       }
       candidate->set_code(lazy_compile);
     }
@@ -1156,9 +1156,9 @@ void CodeFlusher::EvictCandidate(SharedFunctionInfo* shared_info) {
   isolate_->heap()->incremental_marking()->RecordWrites(shared_info);
 
   if (FLAG_trace_code_flushing) {
-    PrintF("[code-flushing abandons function-info: ");
+    PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x61\x62\x61\x6e\x64\x6f\x6e\x73\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x2d\x69\x6e\x66\x6f\x3a\x20");
     shared_info->ShortPrint();
-    PrintF("]\n");
+    PrintF("\x5d\xa");
   }
 
   SharedFunctionInfo* candidate = shared_function_info_candidates_head_;
@@ -1193,9 +1193,9 @@ void CodeFlusher::EvictCandidate(JSFunction* function) {
   isolate_->heap()->incremental_marking()->RecordWrites(function->shared());
 
   if (FLAG_trace_code_flushing) {
-    PrintF("[code-flushing abandons closure: ");
+    PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x61\x62\x61\x6e\x64\x6f\x6e\x73\x20\x63\x6c\x6f\x73\x75\x72\x65\x3a\x20");
     function->shared()->ShortPrint();
-    PrintF("]\n");
+    PrintF("\x5d\xa");
   }
 
   JSFunction* candidate = jsfunction_candidates_head_;
@@ -1230,9 +1230,9 @@ void CodeFlusher::EvictOptimizedCodeMap(SharedFunctionInfo* code_map_holder) {
   isolate_->heap()->incremental_marking()->RecordWrites(code_map_holder);
 
   if (FLAG_trace_code_flushing) {
-    PrintF("[code-flushing abandons code-map: ");
+    PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x61\x62\x61\x6e\x64\x6f\x6e\x73\x20\x63\x6f\x64\x65\x2d\x6d\x61\x70\x3a\x20");
     code_map_holder->ShortPrint();
-    PrintF("]\n");
+    PrintF("\x5d\xa");
   }
 
   SharedFunctionInfo* holder = optimized_code_map_holder_head_;
@@ -1903,10 +1903,10 @@ static inline int MarkWordToObjectStarts(uint32_t mark_bits, int* starts);
 static void DiscoverGreyObjectsOnPage(MarkingDeque* marking_deque,
                                       MemoryChunk* p) {
   DCHECK(!marking_deque->IsFull());
-  DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "11") == 0);
-  DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
+  DCHECK(strcmp(Marking::kWhiteBitPattern, "\x30\x30") == 0);
+  DCHECK(strcmp(Marking::kBlackBitPattern, "\x31\x30") == 0);
+  DCHECK(strcmp(Marking::kGreyBitPattern, "\x31\x31") == 0);
+  DCHECK(strcmp(Marking::kImpossibleBitPattern, "\x30\x31") == 0);
 
   for (MarkBitCellIterator it(p); !it.Done(); it.Advance()) {
     Address cell_base = it.CurrentCellBase();
@@ -1948,10 +1948,10 @@ static void DiscoverGreyObjectsOnPage(MarkingDeque* marking_deque,
 
 int MarkCompactCollector::DiscoverAndEvacuateBlackObjectsOnPage(
     NewSpace* new_space, NewSpacePage* p) {
-  DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "11") == 0);
-  DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
+  DCHECK(strcmp(Marking::kWhiteBitPattern, "\x30\x30") == 0);
+  DCHECK(strcmp(Marking::kBlackBitPattern, "\x31\x30") == 0);
+  DCHECK(strcmp(Marking::kGreyBitPattern, "\x31\x31") == 0);
+  DCHECK(strcmp(Marking::kImpossibleBitPattern, "\x30\x31") == 0);
 
   MarkBit::CellType* cells = p->markbits()->cells();
   int survivors_size = 0;
@@ -3152,7 +3152,7 @@ void MarkCompactCollector::EvacuateLiveObjectsFromPage(Page* p) {
       }
       if (!allocation.To(&target_object)) {
         // OS refused to give us memory.
-        V8::FatalProcessOutOfMemory("Evacuation");
+        V8::FatalProcessOutOfMemory("\x45\x76\x61\x63\x75\x61\x74\x69\x6f\x6e");
         return;
       }
 
@@ -3565,7 +3565,7 @@ void MarkCompactCollector::EvacuateNewSpaceAndCandidates() {
     SlotsBuffer::UpdateSlotsRecordedIn(heap_, migration_slots_buffer_,
                                        code_slots_filtering_required);
     if (FLAG_trace_fragmentation) {
-      PrintF("  migration slots buffer: %d\n",
+      PrintF("\x20\x20\x6d\x69\x67\x72\x61\x74\x69\x6f\x6e\x20\x73\x6c\x6f\x74\x73\x20\x62\x75\x66\x66\x65\x72\x3a\x20\x6c\x84\xa",
              SlotsBuffer::SizeOfChain(migration_slots_buffer_));
     }
 
@@ -3600,7 +3600,7 @@ void MarkCompactCollector::EvacuateNewSpaceAndCandidates() {
         SlotsBuffer::UpdateSlotsRecordedIn(heap_, p->slots_buffer(),
                                            code_slots_filtering_required);
         if (FLAG_trace_fragmentation) {
-          PrintF("  page %p slots buffer: %d\n", reinterpret_cast<void*>(p),
+          PrintF("\x20\x20\x70\x61\x67\x65\x20\x6c\x97\x20\x73\x6c\x6f\x74\x73\x20\x62\x75\x66\x66\x65\x72\x3a\x20\x6c\x84\xa", reinterpret_cast<void*>(p),
                  SlotsBuffer::SizeOfChain(p->slots_buffer()));
         }
 
@@ -3611,7 +3611,7 @@ void MarkCompactCollector::EvacuateNewSpaceAndCandidates() {
         if (list != NULL) list->Clear();
       } else {
         if (FLAG_gc_verbose) {
-          PrintF("Sweeping 0x%" V8PRIxPTR " during evacuation.\n",
+          PrintF("\x53\x77\x65\x65\x70\x69\x6e\x67\x20\x30\x78\x25" V8PRIxPTR "\x20\x64\x75\x72\x69\x6e\x67\x20\x65\x76\x61\x63\x75\x61\x74\x69\x6f\x6e\x2e\xa",
                  reinterpret_cast<intptr_t>(p));
         }
         PagedSpace* space = static_cast<PagedSpace*>(p->owner());
@@ -4368,7 +4368,7 @@ void MarkCompactCollector::SweepSpace(PagedSpace* space, SweeperType sweeper) {
     if (p->LiveBytes() == 0) {
       if (unused_page_present) {
         if (FLAG_gc_verbose) {
-          PrintF("Sweeping 0x%" V8PRIxPTR " released page.\n",
+          PrintF("\x53\x77\x65\x65\x70\x69\x6e\x67\x20\x30\x78\x25" V8PRIxPTR "\x20\x72\x65\x6c\x65\x61\x73\x65\x64\x20\x70\x61\x67\x65\x2e\xa",
                  reinterpret_cast<intptr_t>(p));
         }
         // Adjust unswept free bytes because releasing a page expects said
@@ -4385,7 +4385,7 @@ void MarkCompactCollector::SweepSpace(PagedSpace* space, SweeperType sweeper) {
       case PARALLEL_CONSERVATIVE: {
         if (!parallel_sweeping_active) {
           if (FLAG_gc_verbose) {
-            PrintF("Sweeping 0x%" V8PRIxPTR " conservatively.\n",
+            PrintF("\x53\x77\x65\x65\x70\x69\x6e\x67\x20\x30\x78\x25" V8PRIxPTR "\x20\x63\x6f\x6e\x73\x65\x72\x76\x61\x74\x69\x76\x65\x6c\x79\x2e\xa",
                    reinterpret_cast<intptr_t>(p));
           }
           SweepConservatively<SWEEP_ON_MAIN_THREAD>(space, NULL, p);
@@ -4393,7 +4393,7 @@ void MarkCompactCollector::SweepSpace(PagedSpace* space, SweeperType sweeper) {
           parallel_sweeping_active = true;
         } else {
           if (FLAG_gc_verbose) {
-            PrintF("Sweeping 0x%" V8PRIxPTR " conservatively in parallel.\n",
+            PrintF("\x53\x77\x65\x65\x70\x69\x6e\x67\x20\x30\x78\x25" V8PRIxPTR "\x20\x63\x6f\x6e\x73\x65\x72\x76\x61\x74\x69\x76\x65\x6c\x79\x20\x69\x6e\x20\x70\x61\x72\x61\x6c\x6c\x65\x6c\x2e\xa",
                    reinterpret_cast<intptr_t>(p));
           }
           p->set_parallel_sweeping(MemoryChunk::SWEEPING_PENDING);
@@ -4406,7 +4406,7 @@ void MarkCompactCollector::SweepSpace(PagedSpace* space, SweeperType sweeper) {
       case PARALLEL_PRECISE:
         if (!parallel_sweeping_active) {
           if (FLAG_gc_verbose) {
-            PrintF("Sweeping 0x%" V8PRIxPTR " precisely.\n",
+            PrintF("\x53\x77\x65\x65\x70\x69\x6e\x67\x20\x30\x78\x25" V8PRIxPTR "\x20\x70\x72\x65\x63\x69\x73\x65\x6c\x79\x2e\xa",
                    reinterpret_cast<intptr_t>(p));
           }
           SweepPrecisely<SWEEP_ONLY, SWEEP_ON_MAIN_THREAD, IGNORE_SKIP_LIST,
@@ -4415,7 +4415,7 @@ void MarkCompactCollector::SweepSpace(PagedSpace* space, SweeperType sweeper) {
           parallel_sweeping_active = true;
         } else {
           if (FLAG_gc_verbose) {
-            PrintF("Sweeping 0x%" V8PRIxPTR " conservatively in parallel.\n",
+            PrintF("\x53\x77\x65\x65\x70\x69\x6e\x67\x20\x30\x78\x25" V8PRIxPTR "\x20\x63\x6f\x6e\x73\x65\x72\x76\x61\x74\x69\x76\x65\x6c\x79\x20\x69\x6e\x20\x70\x61\x72\x61\x6c\x6c\x65\x6c\x2e\xa",
                    reinterpret_cast<intptr_t>(p));
           }
           p->set_parallel_sweeping(MemoryChunk::SWEEPING_PENDING);
@@ -4425,7 +4425,7 @@ void MarkCompactCollector::SweepSpace(PagedSpace* space, SweeperType sweeper) {
         break;
       case PRECISE: {
         if (FLAG_gc_verbose) {
-          PrintF("Sweeping 0x%" V8PRIxPTR " precisely.\n",
+          PrintF("\x53\x77\x65\x65\x70\x69\x6e\x67\x20\x30\x78\x25" V8PRIxPTR "\x20\x70\x72\x65\x63\x69\x73\x65\x6c\x79\x2e\xa",
                  reinterpret_cast<intptr_t>(p));
         }
         if (space->identity() == CODE_SPACE && FLAG_zap_code_space) {
@@ -4446,7 +4446,7 @@ void MarkCompactCollector::SweepSpace(PagedSpace* space, SweeperType sweeper) {
   }
 
   if (FLAG_gc_verbose) {
-    PrintF("SweepSpace: %s (%d pages swept)\n",
+    PrintF("\x53\x77\x65\x65\x70\x53\x70\x61\x63\x65\x3a\x20\x6c\xa2\x20\x28\x6c\x84\x20\x70\x61\x67\x65\x73\x20\x73\x77\x65\x70\x74\x29\xa",
            AllocationSpaceName(space->identity()), pages_swept);
   }
 
@@ -4594,7 +4594,7 @@ void MarkCompactCollector::EnableCodeFlushing(bool enable) {
   }
 
   if (FLAG_trace_code_flushing) {
-    PrintF("[code-flushing is now %s]\n", enable ? "on" : "off");
+    PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x69\x73\x20\x6e\x6f\x77\x20\x6c\xa2\x5d\xa", enable ? "\x6f\x6e" : "\x6f\x66\x66");
   }
 }
 

@@ -217,7 +217,7 @@ Address Zone::NewExpand(int size) {
   // Guard against integer overflow.
   if (new_size_no_overhead < static_cast<size_t>(size) ||
       new_size < static_cast<size_t>(kSegmentOverhead)) {
-    V8::FatalProcessOutOfMemory("Zone");
+    V8::FatalProcessOutOfMemory("\x5a\x6f\x6e\x65");
     return NULL;
   }
   if (new_size < static_cast<size_t>(kMinimumSegmentSize)) {
@@ -230,12 +230,12 @@ Address Zone::NewExpand(int size) {
     new_size = Max(min_new_size, static_cast<size_t>(kMaximumSegmentSize));
   }
   if (new_size > INT_MAX) {
-    V8::FatalProcessOutOfMemory("Zone");
+    V8::FatalProcessOutOfMemory("\x5a\x6f\x6e\x65");
     return NULL;
   }
   Segment* segment = NewSegment(static_cast<int>(new_size));
   if (segment == NULL) {
-    V8::FatalProcessOutOfMemory("Zone");
+    V8::FatalProcessOutOfMemory("\x5a\x6f\x6e\x65");
     return NULL;
   }
 
@@ -247,7 +247,7 @@ Address Zone::NewExpand(int size) {
   // size bytes + header and alignment padding)
   if (reinterpret_cast<uintptr_t>(position_)
       < reinterpret_cast<uintptr_t>(result)) {
-    V8::FatalProcessOutOfMemory("Zone");
+    V8::FatalProcessOutOfMemory("\x5a\x6f\x6e\x65");
     return NULL;
   }
   limit_ = segment->end();

@@ -30,10 +30,10 @@ class ParserRecorder;
 // If c is not a legal hexadecimal character, returns a value < 0.
 inline int HexValue(uc32 c) {
   uc32 ascii_c = (uc32)c;
-  ascii_c -= '0';
+  ascii_c -= '\x30';
   if (static_cast<unsigned>(ascii_c) <= 9) return ascii_c;
   // Detect 0x11..0x16 and 0x31..0x36.
-  ascii_c = (ascii_c | 0x20) - ('a' - '0');
+  ascii_c = (ascii_c | 0x20) - ('\x61' - '\x30');
   if (static_cast<unsigned>(ascii_c) <= 5) return ascii_c + 10;
   return -1;
 
@@ -403,8 +403,8 @@ class Scanner {
         !literal_contains_escapes()) {
       const char* token =
           reinterpret_cast<const char*>(literal_one_byte_string().start());
-      *is_get = memcmp(token, "get", 3) == 0;
-      *is_set = !*is_get && memcmp(token, "set", 3) == 0;
+      *is_get = memcmp(token, "\x67\x65\x74", 3) == 0;
+      *is_set = !*is_get && memcmp(token, "\x73\x65\x74", 3) == 0;
     }
   }
 

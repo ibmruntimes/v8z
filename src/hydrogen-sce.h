@@ -14,7 +14,7 @@ namespace internal {
 class HStackCheckEliminationPhase : public HPhase {
  public:
   explicit HStackCheckEliminationPhase(HGraph* graph)
-      : HPhase("H_Stack check elimination", graph) { }
+      : HPhase("\x48\x5f\x53\x74\x61\x63\x6b\x20\x63\x68\x65\x63\x6b\x20\x65\x6c\x69\x6d\x69\x6e\x61\x74\x69\x6f\x6e", graph) { }
 
   void Run();
 };

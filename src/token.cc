@@ -29,8 +29,8 @@ const int8_t Token::precedence_[NUM_TOKENS] = {
 #undef T
 
 
-#define KT(a, b, c) 'T',
-#define KK(a, b, c) 'K',
+#define KT(a, b, c) '\x54',
+#define KK(a, b, c) '\x4b',
 const char Token::token_type[] = {
   TOKEN_LIST(KT, KK)
 };

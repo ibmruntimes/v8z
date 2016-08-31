@@ -600,7 +600,7 @@ void InstructionSelector::VisitNode(Node* node) {
     case IrOpcode::kFloat64LessThanOrEqual:
       return VisitFloat64LessThanOrEqual(node);
     default:
-      V8_Fatal(__FILE__, __LINE__, "Unexpected operator #%d:%s @ node #%d",
+      V8_Fatal(__FILE__, __LINE__, "\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x6f\x70\x65\x72\x61\x74\x6f\x72\x20\x23\x6c\x84\x3a\x6c\xa2\x20\x40\x20\x6e\x6f\x64\x65\x20\x23\x6c\x84",
                node->opcode(), node->op()->mnemonic(), node->id());
   }
 }

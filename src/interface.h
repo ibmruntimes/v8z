@@ -198,7 +198,7 @@ class Interface : public ZoneObject {
       index_(-1) {
 #ifdef DEBUG
     if (FLAG_print_interface_details)
-      PrintF("# Creating %p\n", static_cast<void*>(this));
+      PrintF("\x23\x20\x43\x72\x65\x61\x74\x69\x6e\x67\x20\x6c\x97\xa", static_cast<void*>(this));
 #endif
   }
 

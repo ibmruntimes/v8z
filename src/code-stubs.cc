@@ -197,7 +197,7 @@ Handle<Code> CodeStub::GetCode() {
       OStringStream name;
       name << *this;
       new_object->Disassemble(name.c_str(), os);
-      os << "\n";
+      os << "\xa";
     }
 #endif
 
@@ -226,12 +226,12 @@ Handle<Code> CodeStub::GetCode() {
 const char* CodeStub::MajorName(CodeStub::Major major_key,
                                 bool allow_unknown_keys) {
   switch (major_key) {
-#define DEF_CASE(name) case name: return #name "Stub";
+#define DEF_CASE(name) case name: return #name "\x53\x74\x75\x62";
     CODE_STUB_LIST(DEF_CASE)
 #undef DEF_CASE
-    case UninitializedMajorKey: return "<UninitializedMajorKey>Stub";
+    case UninitializedMajorKey: return "\x3c\x55\x6e\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64\x4d\x61\x6a\x6f\x72\x4b\x65\x79\x3e\x53\x74\x75\x62";
     case NoCache:
-      return "<NoCache>Stub";
+      return "\x3c\x4e\x6f\x43\x61\x63\x68\x65\x3e\x53\x74\x75\x62";
     default:
       if (!allow_unknown_keys) {
         UNREACHABLE();
@@ -306,16 +306,16 @@ void BinaryOpICWithAllocationSiteStub::GenerateAheadOfTime(
 
 
 void StringAddStub::PrintBaseName(OStream& os) const {  // NOLINT
-  os << "StringAddStub";
+  os << "\x53\x74\x72\x69\x6e\x67\x41\x64\x64\x53\x74\x75\x62";
   if ((flags() & STRING_ADD_CHECK_BOTH) == STRING_ADD_CHECK_BOTH) {
-    os << "_CheckBoth";
+    os << "\x5f\x43\x68\x65\x63\x6b\x42\x6f\x74\x68";
   } else if ((flags() & STRING_ADD_CHECK_LEFT) == STRING_ADD_CHECK_LEFT) {
-    os << "_CheckLeft";
+    os << "\x5f\x43\x68\x65\x63\x6b\x4c\x65\x66\x74";
   } else if ((flags() & STRING_ADD_CHECK_RIGHT) == STRING_ADD_CHECK_RIGHT) {
-    os << "_CheckRight";
+    os << "\x5f\x43\x68\x65\x63\x6b\x52\x69\x67\x68\x74";
   }
   if (pretenure_flag() == TENURED) {
-    os << "_Tenured";
+    os << "\x5f\x54\x65\x6e\x75\x72\x65\x64";
   }
 }
 
@@ -474,15 +474,15 @@ void HydrogenCodeStub::TraceTransition(StateType from, StateType to) {
   DCHECK(from != to);
   if (!FLAG_trace_ic) return;
   OFStream os(stdout);
-  os << "[";
+  os << "\x5b";
   PrintBaseName(os);
-  os << ": " << from << "=>" << to << "]" << endl;
+  os << "\x3a\x20" << from << "\x3d\x3e" << to << "\x5d" << endl;
 }
 
 
 void CompareNilICStub::PrintBaseName(OStream& os) const {  // NOLINT
   CodeStub::PrintBaseName(os);
-  os << ((nil_value_ == kNullValue) ? "(NullValue)" : "(UndefinedValue)");
+  os << ((nil_value_ == kNullValue) ? "\x28\x4e\x75\x6c\x6c\x56\x61\x6c\x75\x65\x29" : "\x28\x55\x6e\x64\x65\x66\x69\x6e\x65\x64\x56\x61\x6c\x75\x65\x29");
 }
 
 
@@ -500,7 +500,7 @@ class SimpleListPrinter {
     if (first_) {
       first_ = false;
     } else {
-      os_ << ",";
+      os_ << "\x2c";
     }
     os_ << s;
   }
@@ -512,14 +512,14 @@ class SimpleListPrinter {
 
 
 OStream& operator<<(OStream& os, const CompareNilICStub::State& s) {
-  os << "(";
+  os << "\x28";
   SimpleListPrinter p(os);
-  if (s.IsEmpty()) p.Add("None");
-  if (s.Contains(CompareNilICStub::UNDEFINED)) p.Add("Undefined");
-  if (s.Contains(CompareNilICStub::NULL_TYPE)) p.Add("Null");
-  if (s.Contains(CompareNilICStub::MONOMORPHIC_MAP)) p.Add("MonomorphicMap");
-  if (s.Contains(CompareNilICStub::GENERIC)) p.Add("Generic");
-  return os << ")";
+  if (s.IsEmpty()) p.Add("\x4e\x6f\x6e\x65");
+  if (s.Contains(CompareNilICStub::UNDEFINED)) p.Add("\x55\x6e\x64\x65\x66\x69\x6e\x65\x64");
+  if (s.Contains(CompareNilICStub::NULL_TYPE)) p.Add("\x4e\x75\x6c\x6c");
+  if (s.Contains(CompareNilICStub::MONOMORPHIC_MAP)) p.Add("\x4d\x6f\x6e\x6f\x6d\x6f\x72\x70\x68\x69\x63\x4d\x61\x70");
+  if (s.Contains(CompareNilICStub::GENERIC)) p.Add("\x47\x65\x6e\x65\x72\x69\x63");
+  return os << "\x29";
 }
 
 
@@ -554,7 +554,7 @@ Type* CompareNilICStub::GetInputType(Zone* zone, Handle<Map> map) {
 
 
 void CallIC_ArrayStub::PrintState(OStream& os) const {  // NOLINT
-  os << state_ << " (Array)";
+  os << state_ << "\x20\x28\x41\x72\x72\x61\x79\x29";
 }
 
 
@@ -564,10 +564,10 @@ void CallICStub::PrintState(OStream& os) const {  // NOLINT
 
 
 void InstanceofStub::PrintName(OStream& os) const {  // NOLINT
-  os << "InstanceofStub";
-  if (HasArgsInRegisters()) os << "_REGS";
-  if (HasCallSiteInlineCheck()) os << "_INLINE";
-  if (ReturnTrueFalseObject()) os << "_TRUEFALSE";
+  os << "\x49\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x53\x74\x75\x62";
+  if (HasArgsInRegisters()) os << "\x5f\x52\x45\x47\x53";
+  if (HasCallSiteInlineCheck()) os << "\x5f\x49\x4e\x4c\x49\x4e\x45";
+  if (ReturnTrueFalseObject()) os << "\x5f\x54\x52\x55\x45\x46\x41\x4c\x53\x45";
 }
 
 
@@ -700,19 +700,19 @@ void StoreElementStub::Generate(MacroAssembler* masm) {
 
 
 void ArgumentsAccessStub::PrintName(OStream& os) const {  // NOLINT
-  os << "ArgumentsAccessStub_";
+  os << "\x41\x72\x67\x75\x6d\x65\x6e\x74\x73\x41\x63\x63\x65\x73\x73\x53\x74\x75\x62\x5f";
   switch (type_) {
     case READ_ELEMENT:
-      os << "ReadElement";
+      os << "\x52\x65\x61\x64\x45\x6c\x65\x6d\x65\x6e\x74";
       break;
     case NEW_SLOPPY_FAST:
-      os << "NewSloppyFast";
+      os << "\x4e\x65\x77\x53\x6c\x6f\x70\x70\x79\x46\x61\x73\x74";
       break;
     case NEW_SLOPPY_SLOW:
-      os << "NewSloppySlow";
+      os << "\x4e\x65\x77\x53\x6c\x6f\x70\x70\x79\x53\x6c\x6f\x77";
       break;
     case NEW_STRICT:
-      os << "NewStrict";
+      os << "\x4e\x65\x77\x53\x74\x72\x69\x63\x74";
       break;
   }
   return;
@@ -720,30 +720,30 @@ void ArgumentsAccessStub::PrintName(OStream& os) const {  // NOLINT
 
 
 void CallFunctionStub::PrintName(OStream& os) const {  // NOLINT
-  os << "CallFunctionStub_Args" << argc_;
+  os << "\x43\x61\x6c\x6c\x46\x75\x6e\x63\x74\x69\x6f\x6e\x53\x74\x75\x62\x5f\x41\x72\x67\x73" << argc_;
 }
 
 
 void CallConstructStub::PrintName(OStream& os) const {  // NOLINT
-  os << "CallConstructStub";
-  if (RecordCallTarget()) os << "_Recording";
+  os << "\x43\x61\x6c\x6c\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x53\x74\x75\x62";
+  if (RecordCallTarget()) os << "\x5f\x52\x65\x63\x6f\x72\x64\x69\x6e\x67";
 }
 
 
 void ArrayConstructorStub::PrintName(OStream& os) const {  // NOLINT
-  os << "ArrayConstructorStub";
+  os << "\x41\x72\x72\x61\x79\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x53\x74\x75\x62";
   switch (argument_count_) {
     case ANY:
-      os << "_Any";
+      os << "\x5f\x41\x6e\x79";
       break;
     case NONE:
-      os << "_None";
+      os << "\x5f\x4e\x6f\x6e\x65";
       break;
     case ONE:
-      os << "_One";
+      os << "\x5f\x4f\x6e\x65";
       break;
     case MORE_THAN_ONE:
-      os << "_More_Than_One";
+      os << "\x5f\x4d\x6f\x72\x65\x5f\x54\x68\x61\x6e\x5f\x4f\x6e\x65";
       break;
   }
   return;
@@ -752,9 +752,9 @@ void ArrayConstructorStub::PrintName(OStream& os) const {  // NOLINT
 
 OStream& ArrayConstructorStubBase::BasePrintName(OStream& os,  // NOLINT
                                                  const char* name) const {
-  os << name << "_" << ElementsKindToString(elements_kind());
+  os << name << "\x5f" << ElementsKindToString(elements_kind());
   if (override_mode() == DISABLE_ALLOCATION_SITES) {
-    os << "_DISABLE_ALLOCATION_SITES";
+    os << "\x5f\x44\x49\x53\x41\x42\x4c\x45\x5f\x41\x4c\x4c\x4f\x43\x41\x54\x49\x4f\x4e\x5f\x53\x49\x54\x45\x53";
   }
   return os;
 }
@@ -774,18 +774,18 @@ void ToBooleanStub::PrintState(OStream& os) const {  // NOLINT
 
 
 OStream& operator<<(OStream& os, const ToBooleanStub::Types& s) {
-  os << "(";
+  os << "\x28";
   SimpleListPrinter p(os);
-  if (s.IsEmpty()) p.Add("None");
-  if (s.Contains(ToBooleanStub::UNDEFINED)) p.Add("Undefined");
-  if (s.Contains(ToBooleanStub::BOOLEAN)) p.Add("Bool");
-  if (s.Contains(ToBooleanStub::NULL_TYPE)) p.Add("Null");
-  if (s.Contains(ToBooleanStub::SMI)) p.Add("Smi");
-  if (s.Contains(ToBooleanStub::SPEC_OBJECT)) p.Add("SpecObject");
-  if (s.Contains(ToBooleanStub::STRING)) p.Add("String");
-  if (s.Contains(ToBooleanStub::SYMBOL)) p.Add("Symbol");
-  if (s.Contains(ToBooleanStub::HEAP_NUMBER)) p.Add("HeapNumber");
-  return os << ")";
+  if (s.IsEmpty()) p.Add("\x4e\x6f\x6e\x65");
+  if (s.Contains(ToBooleanStub::UNDEFINED)) p.Add("\x55\x6e\x64\x65\x66\x69\x6e\x65\x64");
+  if (s.Contains(ToBooleanStub::BOOLEAN)) p.Add("\x42\x6f\x6f\x6c");
+  if (s.Contains(ToBooleanStub::NULL_TYPE)) p.Add("\x4e\x75\x6c\x6c");
+  if (s.Contains(ToBooleanStub::SMI)) p.Add("\x53\x6d\x69");
+  if (s.Contains(ToBooleanStub::SPEC_OBJECT)) p.Add("\x53\x70\x65\x63\x4f\x62\x6a\x65\x63\x74");
+  if (s.Contains(ToBooleanStub::STRING)) p.Add("\x53\x74\x72\x69\x6e\x67");
+  if (s.Contains(ToBooleanStub::SYMBOL)) p.Add("\x53\x79\x6d\x62\x6f\x6c");
+  if (s.Contains(ToBooleanStub::HEAP_NUMBER)) p.Add("\x48\x65\x61\x70\x4e\x75\x6d\x62\x65\x72");
+  return os << "\x29";
 }
 
 

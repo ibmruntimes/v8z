@@ -312,14 +312,14 @@ BUILTIN(ArrayPush) {
       EnsureJSArrayWithWritableFastElements(isolate, receiver, &args, 1);
   Handle<FixedArrayBase> elms_obj;
   if (!maybe_elms_obj.ToHandle(&elms_obj)) {
-    return CallJsBuiltin(isolate, "ArrayPush", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x50\x75\x73\x68", args);
   }
 
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
   int len = Smi::cast(array->length())->value();
   int to_add = args.length() - 1;
   if (to_add > 0 && JSArray::WouldChangeReadOnlyLength(array, len + to_add)) {
-    return CallJsBuiltin(isolate, "ArrayPush", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x50\x75\x73\x68", args);
   }
   DCHECK(!array->map()->is_observed());
 
@@ -422,7 +422,7 @@ BUILTIN(ArrayPop) {
       EnsureJSArrayWithWritableFastElements(isolate, receiver, NULL, 0);
   Handle<FixedArrayBase> elms_obj;
   if (!maybe_elms_obj.ToHandle(&elms_obj)) {
-    return CallJsBuiltin(isolate, "ArrayPop", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x50\x6f\x70", args);
   }
 
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
@@ -436,7 +436,7 @@ BUILTIN(ArrayPop) {
   Handle<Object> element =
       accessor->Get(array, array, new_length, elms_obj).ToHandleChecked();
   if (element->IsTheHole()) {
-    return CallJsBuiltin(isolate, "ArrayPop", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x50\x6f\x70", args);
   }
   RETURN_FAILURE_ON_EXCEPTION(
       isolate,
@@ -455,7 +455,7 @@ BUILTIN(ArrayShift) {
   if (!maybe_elms_obj.ToHandle(&elms_obj) ||
       !IsJSArrayFastElementMovingAllowed(heap,
                                          *Handle<JSArray>::cast(receiver))) {
-    return CallJsBuiltin(isolate, "ArrayShift", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x68\x69\x66\x74", args);
   }
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
   DCHECK(!array->map()->is_observed());
@@ -468,7 +468,7 @@ BUILTIN(ArrayShift) {
   Handle<Object> first =
     accessor->Get(array, array, 0, elms_obj).ToHandleChecked();
   if (first->IsTheHole()) {
-    return CallJsBuiltin(isolate, "ArrayShift", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x68\x69\x66\x74", args);
   }
 
   if (heap->CanMoveObjectStart(*elms_obj)) {
@@ -504,12 +504,12 @@ BUILTIN(ArrayUnshift) {
   if (!maybe_elms_obj.ToHandle(&elms_obj) ||
       !IsJSArrayFastElementMovingAllowed(heap,
                                          *Handle<JSArray>::cast(receiver))) {
-    return CallJsBuiltin(isolate, "ArrayUnshift", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x55\x6e\x73\x68\x69\x66\x74", args);
   }
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
   DCHECK(!array->map()->is_observed());
   if (!array->HasFastSmiOrObjectElements()) {
-    return CallJsBuiltin(isolate, "ArrayUnshift", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x55\x6e\x73\x68\x69\x66\x74", args);
   }
   int len = Smi::cast(array->length())->value();
   int to_add = args.length() - 1;
@@ -519,7 +519,7 @@ BUILTIN(ArrayUnshift) {
   DCHECK(to_add <= (Smi::kMaxValue - len));
 
   if (to_add > 0 && JSArray::WouldChangeReadOnlyLength(array, len + to_add)) {
-    return CallJsBuiltin(isolate, "ArrayUnshift", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x55\x6e\x73\x68\x69\x66\x74", args);
   }
 
   Handle<FixedArray> elms = Handle<FixedArray>::cast(elms_obj);
@@ -572,12 +572,12 @@ BUILTIN(ArraySlice) {
       JSArray* array = JSArray::cast(*receiver);
       if (!IsJSArrayFastElementMovingAllowed(heap, array)) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArraySlice", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
       }
 
       if (!array->HasFastElements()) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArraySlice", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
       }
 
       len = Smi::cast(array->length())->value();
@@ -592,24 +592,24 @@ BUILTIN(ArraySlice) {
           JSObject::cast(*receiver)->map() == arguments_map;
       if (!is_arguments_object_with_fast_elements) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArraySlice", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
       }
       JSObject* object = JSObject::cast(*receiver);
 
       if (!object->HasFastElements()) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArraySlice", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
       }
 
       Object* len_obj = object->InObjectPropertyAt(Heap::kArgumentsLengthIndex);
       if (!len_obj->IsSmi()) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArraySlice", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
       }
       len = Smi::cast(len_obj)->value();
       if (len > object->elements()->length()) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArraySlice", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
       }
     }
 
@@ -629,12 +629,12 @@ BUILTIN(ArraySlice) {
         double start = HeapNumber::cast(arg1)->value();
         if (start < kMinInt || start > kMaxInt) {
           AllowHeapAllocation allow_allocation;
-          return CallJsBuiltin(isolate, "ArraySlice", args);
+          return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
         }
         relative_start = isnan(start) ? 0 : static_cast<int>(start);
       } else if (!arg1->IsUndefined()) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArraySlice", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
       }
       if (n_arguments > 1) {
         Object* arg2 = args[2];
@@ -644,12 +644,12 @@ BUILTIN(ArraySlice) {
           double end = HeapNumber::cast(arg2)->value();
           if (end < kMinInt || end > kMaxInt) {
             AllowHeapAllocation allow_allocation;
-            return CallJsBuiltin(isolate, "ArraySlice", args);
+            return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
           }
           relative_end = isnan(end) ? 0 : static_cast<int>(end);
         } else if (!arg2->IsUndefined()) {
           AllowHeapAllocation allow_allocation;
-          return CallJsBuiltin(isolate, "ArraySlice", args);
+          return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
         }
       }
     }
@@ -684,7 +684,7 @@ BUILTIN(ArraySlice) {
       kind = GetPackedElementsKind(kind);
     } else if (!receiver->IsJSArray()) {
       AllowHeapAllocation allow_allocation;
-      return CallJsBuiltin(isolate, "ArraySlice", args);
+      return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x6c\x69\x63\x65", args);
     }
   }
 
@@ -711,7 +711,7 @@ BUILTIN(ArraySplice) {
   if (!maybe_elms_obj.ToHandle(&elms_obj) ||
       !IsJSArrayFastElementMovingAllowed(heap,
                                          *Handle<JSArray>::cast(receiver))) {
-    return CallJsBuiltin(isolate, "ArraySplice", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x70\x6c\x69\x63\x65", args);
   }
   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
   DCHECK(!array->map()->is_observed());
@@ -730,12 +730,12 @@ BUILTIN(ArraySplice) {
       double start = HeapNumber::cast(arg1)->value();
       if (start < kMinInt || start > kMaxInt) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArraySplice", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x70\x6c\x69\x63\x65", args);
       }
       relative_start = isnan(start) ? 0 : static_cast<int>(start);
     } else if (!arg1->IsUndefined()) {
       AllowHeapAllocation allow_allocation;
-      return CallJsBuiltin(isolate, "ArraySplice", args);
+      return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x70\x6c\x69\x63\x65", args);
     }
   }
   int actual_start = (relative_start < 0) ? Max(len + relative_start, 0)
@@ -759,7 +759,7 @@ BUILTIN(ArraySplice) {
         value = Smi::cast(arg2)->value();
       } else {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArraySplice", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x70\x6c\x69\x63\x65", args);
       }
     }
     actual_delete_count = Min(Max(value, 0), len - actual_start);
@@ -772,7 +772,7 @@ BUILTIN(ArraySplice) {
 
   // For double mode we do not support changing the length.
   if (new_length > len && IsFastDoubleElementsKind(elements_kind)) {
-    return CallJsBuiltin(isolate, "ArraySplice", args);
+    return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x53\x70\x6c\x69\x63\x65", args);
   }
 
   if (new_length == 0) {
@@ -932,7 +932,7 @@ BUILTIN(ArrayConcat) {
         JSObject::cast(native_context->array_function()->prototype());
     if (!ArrayPrototypeHasNoElements(heap, native_context, array_proto)) {
       AllowHeapAllocation allow_allocation;
-      return CallJsBuiltin(isolate, "ArrayConcatJS", args);
+      return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x43\x6f\x6e\x63\x61\x74\x4a\x53", args);
     }
 
     // Iterate through all the arguments performing checks
@@ -944,7 +944,7 @@ BUILTIN(ArrayConcat) {
       if (!arg->IsJSArray() || !JSArray::cast(arg)->HasFastElements() ||
           iter.GetCurrent() != array_proto) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArrayConcatJS", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x43\x6f\x6e\x63\x61\x74\x4a\x53", args);
       }
       int len = Smi::cast(JSArray::cast(arg)->length())->value();
 
@@ -957,7 +957,7 @@ BUILTIN(ArrayConcat) {
 
       if (result_len > FixedDoubleArray::kMaxLength) {
         AllowHeapAllocation allow_allocation;
-        return CallJsBuiltin(isolate, "ArrayConcatJS", args);
+        return CallJsBuiltin(isolate, "\x41\x72\x72\x61\x79\x43\x6f\x6e\x63\x61\x74\x4a\x53", args);
       }
 
       ElementsKind arg_kind = JSArray::cast(arg)->map()->elements_kind();
@@ -1011,14 +1011,14 @@ BUILTIN(ArrayConcat) {
 BUILTIN(StrictModePoisonPill) {
   HandleScope scope(isolate);
   return isolate->Throw(*isolate->factory()->NewTypeError(
-      "strict_poison_pill", HandleVector<Object>(NULL, 0)));
+      "\x73\x74\x72\x69\x63\x74\x5f\x70\x6f\x69\x73\x6f\x6e\x5f\x70\x69\x6c\x6c", HandleVector<Object>(NULL, 0)));
 }
 
 
 BUILTIN(GeneratorPoisonPill) {
   HandleScope scope(isolate);
   return isolate->Throw(*isolate->factory()->NewTypeError(
-      "generator_poison_pill", HandleVector<Object>(NULL, 0)));
+      "\x67\x65\x6e\x65\x72\x61\x74\x6f\x72\x5f\x70\x6f\x69\x73\x6f\x6e\x5f\x70\x69\x6c\x6c", HandleVector<Object>(NULL, 0)));
 }
 
 
@@ -1117,7 +1117,7 @@ MUST_USE_RESULT static Object* HandleApiCallHelper(
     // This function cannot be called with the given receiver.  Abort!
     Handle<Object> obj =
         isolate->factory()->NewTypeError(
-            "illegal_invocation", HandleVector(&function, 1));
+            "\x69\x6c\x6c\x65\x67\x61\x6c\x5f\x69\x6e\x76\x6f\x63\x61\x74\x69\x6f\x6e", HandleVector(&function, 1));
     return isolate->Throw(*obj);
   }
 
@@ -1130,7 +1130,7 @@ MUST_USE_RESULT static Object* HandleApiCallHelper(
     Object* data_obj = call_data->data();
     Object* result;
 
-    LOG(isolate, ApiObjectAccess("call", JSObject::cast(*args.receiver())));
+    LOG(isolate, ApiObjectAccess("\x63\x61\x6c\x6c", JSObject::cast(*args.receiver())));
     DCHECK(raw_holder->IsJSObject());
 
     FunctionCallbackArguments custom(isolate,
@@ -1201,7 +1201,7 @@ MUST_USE_RESULT static Object* HandleApiCallAsFunctionOrConstructor(
   Object* result;
   {
     HandleScope scope(isolate);
-    LOG(isolate, ApiObjectAccess("call non-function", obj));
+    LOG(isolate, ApiObjectAccess("\x63\x61\x6c\x6c\x20\x6e\x6f\x6e\x2d\x66\x75\x6e\x63\x74\x69\x6f\x6e", obj));
 
     FunctionCallbackArguments custom(isolate,
                                      call_data->data(),
@@ -1583,9 +1583,9 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
       if (FLAG_print_builtin_code) {
         CodeTracer::Scope trace_scope(isolate->GetCodeTracer());
         OFStream os(trace_scope.file());
-        os << "Builtin: " << functions[i].s_name << "\n";
+        os << "\x42\x75\x69\x6c\x74\x69\x6e\x3a\x20" << functions[i].s_name << "\xa";
         code->Disassemble(functions[i].s_name, os);
-        os << "\n";
+        os << "\xa";
       }
 #endif
     } else {

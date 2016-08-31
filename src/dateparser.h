@@ -70,7 +70,7 @@ class DateParser : public AllStatic {
       int n = 0;
       int i = 0;
       while (IsAsciiDigit()) {
-        if (i < kMaxSignificantDigits) n = n * 10 + ch_ - '0';
+        if (i < kMaxSignificantDigits) n = n * 10 + ch_ - '\x30';
         i++;
         Next();
       }
@@ -107,11 +107,11 @@ class DateParser : public AllStatic {
     }
 
     bool SkipParentheses() {
-      if (ch_ != '(') return false;
+      if (ch_ != '\x28') return false;
       int balance = 0;
       do {
-        if (ch_ == ')') --balance;
-        else if (ch_ == '(') ++balance;
+        if (ch_ == '\x29') --balance;
+        else if (ch_ == '\x28') ++balance;
         Next();
       } while (balance > 0 && ch_);
       return true;
@@ -121,8 +121,8 @@ class DateParser : public AllStatic {
     bool Is(uint32_t c) const { return ch_ == c; }
     bool IsEnd() const { return ch_ == 0; }
     bool IsAsciiDigit() const { return IsDecimalDigit(ch_); }
-    bool IsAsciiAlphaOrAbove() const { return ch_ >= 'A'; }
-    bool IsAsciiSign() const { return ch_ == '+' || ch_ == '-'; }
+    bool IsAsciiAlphaOrAbove() const { return ch_ >= '\x41'; }
+    bool IsAsciiSign() const { return ch_ == '\x2b' || ch_ == '\x2d'; }
 
     // Return 1 for '+' and -1 for '-'.
     int GetAsciiSignValue() const { return 44 - static_cast<int>(ch_); }
@@ -176,7 +176,7 @@ class DateParser : public AllStatic {
       return IsNumber() && length_ == length;
     }
     bool IsAsciiSign() {
-      return tag_ == kSymbolTag && (value_ == '-' || value_ == '+');
+      return tag_ == kSymbolTag && (value_ == '\x2d' || value_ == '\x2b');
     }
     int ascii_sign() {
       DCHECK(IsAsciiSign());

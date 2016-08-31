@@ -36,7 +36,7 @@ void HRangeAnalysisPhase::Run() {
   HBasicBlock* block(graph()->entry_block());
   ZoneList<Pending> stack(graph()->blocks()->length(), zone());
   while (block != NULL) {
-    TraceRange("Analyzing block B%d\n", block->block_id());
+    TraceRange("\x41\x6e\x61\x6c\x79\x7a\x69\x6e\x67\x20\x62\x6c\x6f\x63\x6b\x20\x42\x6c\x84\xa", block->block_id());
 
     // Infer range based on control flow.
     if (block->predecessors()->length() == 1) {
@@ -143,7 +143,7 @@ void HRangeAnalysisPhase::UpdateControlFlowRange(Token::Value op,
   Range* range = other->range() != NULL ? other->range() : &temp_range;
   Range* new_range = NULL;
 
-  TraceRange("Control flow range infer %d %s %d\n",
+  TraceRange("\x43\x6f\x6e\x74\x72\x6f\x6c\x20\x66\x6c\x6f\x77\x20\x72\x61\x6e\x67\x65\x20\x69\x6e\x66\x65\x72\x20\x6c\x84\x20\x6c\xa2\x20\x6c\x84\xa",
              value->id(),
              Token::Name(op),
              other->id());
@@ -174,7 +174,7 @@ void HRangeAnalysisPhase::InferRange(HValue* value) {
   if (!value->representation().IsNone()) {
     value->ComputeInitialRange(graph()->zone());
     Range* range = value->range();
-    TraceRange("Initial inferred range of %d (%s) set to [%d,%d]\n",
+    TraceRange("\x49\x6e\x69\x74\x69\x61\x6c\x20\x69\x6e\x66\x65\x72\x72\x65\x64\x20\x72\x61\x6e\x67\x65\x20\x6f\x66\x20\x6c\x84\x20\x28\x6c\xa2\x29\x20\x73\x65\x74\x20\x74\x6f\x20\x5b\x6c\x84\x2c\x6c\x84\x5d\xa",
                value->id(),
                value->Mnemonic(),
                range->lower(),
@@ -197,16 +197,16 @@ void HRangeAnalysisPhase::AddRange(HValue* value, Range* range) {
   value->AddNewRange(range, graph()->zone());
   changed_ranges_.Add(value, zone());
   Range* new_range = value->range();
-  TraceRange("Updated range of %d set to [%d,%d]\n",
+  TraceRange("\x55\x70\x64\x61\x74\x65\x64\x20\x72\x61\x6e\x67\x65\x20\x6f\x66\x20\x6c\x84\x20\x73\x65\x74\x20\x74\x6f\x20\x5b\x6c\x84\x2c\x6c\x84\x5d\xa",
              value->id(),
              new_range->lower(),
              new_range->upper());
   if (original_range != NULL) {
-    TraceRange("Original range was [%d,%d]\n",
+    TraceRange("\x4f\x72\x69\x67\x69\x6e\x61\x6c\x20\x72\x61\x6e\x67\x65\x20\x77\x61\x73\x20\x5b\x6c\x84\x2c\x6c\x84\x5d\xa",
                original_range->lower(),
                original_range->upper());
   }
-  TraceRange("New information was [%d,%d]\n",
+  TraceRange("\x4e\x65\x77\x20\x69\x6e\x66\x6f\x72\x6d\x61\x74\x69\x6f\x6e\x20\x77\x61\x73\x20\x5b\x6c\x84\x2c\x6c\x84\x5d\xa",
              range->lower(),
              range->upper());
 }

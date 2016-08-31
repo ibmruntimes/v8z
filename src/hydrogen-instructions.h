@@ -5594,11 +5594,11 @@ class HAllocate V8_FINAL : public HTemplateInstruction<2> {
     SetDependsOnFlag(kNewSpacePromotion);
 
     if (FLAG_trace_pretenuring) {
-      PrintF("HAllocate with AllocationSite %p %s\n",
+      PrintF("\x48\x41\x6c\x6c\x6f\x63\x61\x74\x65\x20\x77\x69\x74\x68\x20\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65\x20\x6c\x97\x20\x6c\xa2\xa",
              allocation_site.is_null()
                  ? static_cast<void*>(NULL)
                  : static_cast<void*>(*allocation_site),
-             pretenure_flag == TENURED ? "tenured" : "not tenured");
+             pretenure_flag == TENURED ? "\x74\x65\x6e\x75\x72\x65\x64" : "\x6e\x6f\x74\x20\x74\x65\x6e\x75\x72\x65\x64");
     }
   }
 
@@ -7269,11 +7269,11 @@ class HStringAdd V8_FINAL : public HBinaryOperation {
     SetDependsOnFlag(kMaps);
     SetChangesFlag(kNewSpacePromotion);
     if (FLAG_trace_pretenuring) {
-      PrintF("HStringAdd with AllocationSite %p %s\n",
+      PrintF("\x48\x53\x74\x72\x69\x6e\x67\x41\x64\x64\x20\x77\x69\x74\x68\x20\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65\x20\x6c\x97\x20\x6c\xa2\xa",
              allocation_site.is_null()
                  ? static_cast<void*>(NULL)
                  : static_cast<void*>(*allocation_site),
-             pretenure_flag == TENURED ? "tenured" : "not tenured");
+             pretenure_flag == TENURED ? "\x74\x65\x6e\x75\x72\x65\x64" : "\x6e\x6f\x74\x20\x74\x65\x6e\x75\x72\x65\x64");
     }
   }
 

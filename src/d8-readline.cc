@@ -24,7 +24,7 @@ namespace v8 {
 
 class ReadLineEditor: public LineEditor {
  public:
-  ReadLineEditor() : LineEditor(LineEditor::READLINE, "readline") { }
+  ReadLineEditor() : LineEditor(LineEditor::READLINE, "\x72\x65\x61\x64\x6c\x69\x6e\x65") { }
   virtual Handle<String> Prompt(const char* prompt);
   virtual bool Open(Isolate* isolate);
   virtual bool Close();
@@ -45,12 +45,12 @@ class ReadLineEditor: public LineEditor {
 
 
 static ReadLineEditor read_line_editor;
-char ReadLineEditor::kWordBreakCharacters[] = {' ', '\t', '\n', '"',
-    '\\', '\'', '`', '@', '.', '>', '<', '=', ';', '|', '&', '{', '(',
-    '\0'};
+char ReadLineEditor::kWordBreakCharacters[] = {'\x20', '\x9', '\xa', '\x22',
+    '\x5c', '\x27', '\x60', '\x40', '\x2e', '\x3e', '\x3c', '\x3d', '\x3b', '\x7c', '\x26', '\x7b', '\x28',
+    '\x0'};
 
 
-const char* ReadLineEditor::kHistoryFileName = ".d8_history";
+const char* ReadLineEditor::kHistoryFileName = "\x2e\x64\x38\x5f\x68\x69\x73\x74\x6f\x72\x79";
 const int ReadLineEditor::kMaxHistoryEntries = 1000;
 
 
@@ -62,13 +62,13 @@ bool ReadLineEditor::Open(Isolate* isolate) {
 #ifdef V8_SHARED
   // Don't do completion on shared library mode
   // http://cnswww.cns.cwru.edu/php/chet/readline/readline.html#SEC24
-  rl_bind_key('\t', rl_insert);
+  rl_bind_key('\x9', rl_insert);
 #else
   rl_attempted_completion_function = AttemptedCompletion;
 #endif  // V8_SHARED
 
   rl_completer_word_break_characters = kWordBreakCharacters;
-  rl_bind_key('\t', rl_complete);
+  rl_bind_key('\x9', rl_complete);
   using_history();
   stifle_history(kMaxHistoryEntries);
   return read_history(kHistoryFileName) == 0;

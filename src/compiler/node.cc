@@ -38,14 +38,14 @@ OStream& operator<<(OStream& os, const Operator& op) { return op.PrintTo(os); }
 
 
 OStream& operator<<(OStream& os, const Node& n) {
-  os << n.id() << ": " << *n.op();
+  os << n.id() << "\x3a\x20" << *n.op();
   if (n.op()->InputCount() != 0) {
-    os << "(";
+    os << "\x28";
     for (int i = 0; i < n.op()->InputCount(); ++i) {
-      if (i != 0) os << ", ";
+      if (i != 0) os << "\x2c\x20";
       os << n.InputAt(i)->id();
     }
-    os << ")";
+    os << "\x29";
   }
   return os;
 }

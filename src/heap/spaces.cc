@@ -127,7 +127,7 @@ bool CodeRange::SetUp(size_t requested) {
 
   // We are sure that we have mapped a block of requested addresses.
   DCHECK(code_range_->size() == requested);
-  LOG(isolate_, NewEvent("CodeRange", code_range_->address(), requested));
+  LOG(isolate_, NewEvent("\x43\x6f\x64\x65\x52\x61\x6e\x67\x65", code_range_->address(), requested));
   Address base = reinterpret_cast<Address>(code_range_->address());
   Address aligned_base =
       RoundUp(reinterpret_cast<Address>(code_range_->address()),
@@ -601,8 +601,8 @@ MemoryChunk* MemoryAllocator::AllocateChunk(intptr_t reserve_area_size,
 
     // Check executable memory limit.
     if (size_executable_ + chunk_size > capacity_executable_) {
-      LOG(isolate_, StringEvent("MemoryAllocator::AllocateRawMemory",
-                                "V8 Executable Allocation capacity exceeded"));
+      LOG(isolate_, StringEvent("\x4d\x65\x6d\x6f\x72\x79\x41\x6c\x6c\x6f\x63\x61\x74\x6f\x72\x3a\x3a\x41\x6c\x6c\x6f\x63\x61\x74\x65\x52\x61\x77\x4d\x65\x6d\x6f\x72\x79",
+                                "\x56\x38\x20\x45\x78\x65\x63\x75\x74\x61\x62\x6c\x65\x20\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x63\x61\x70\x61\x63\x69\x74\x79\x20\x65\x78\x63\x65\x65\x64\x65\x64"));
       return NULL;
     }
 
@@ -661,7 +661,7 @@ MemoryChunk* MemoryAllocator::AllocateChunk(intptr_t reserve_area_size,
   isolate_->counters()->memory_allocated()->Increment(
       static_cast<int>(chunk_size));
 
-  LOG(isolate_, NewEvent("MemoryChunk", base, chunk_size));
+  LOG(isolate_, NewEvent("\x4d\x65\x6d\x6f\x72\x79\x43\x68\x75\x6e\x6b", base, chunk_size));
   if (owner != NULL) {
     ObjectSpace space = static_cast<ObjectSpace>(1 << owner->identity());
     PerformAllocationCallback(space, kAllocationActionAllocate, chunk_size);
@@ -705,7 +705,7 @@ LargePage* MemoryAllocator::AllocateLargePage(intptr_t object_size,
 
 
 void MemoryAllocator::Free(MemoryChunk* chunk) {
-  LOG(isolate_, DeleteEvent("MemoryChunk", chunk));
+  LOG(isolate_, DeleteEvent("\x4d\x65\x6d\x6f\x72\x79\x43\x68\x75\x6e\x6b", chunk));
   if (chunk->owner() != NULL) {
     ObjectSpace space =
         static_cast<ObjectSpace>(1 << chunk->owner()->identity());
@@ -802,11 +802,11 @@ void MemoryAllocator::RemoveMemoryAllocationCallback(
 #ifdef DEBUG
 void MemoryAllocator::ReportStatistics() {
   float pct = static_cast<float>(capacity_ - size_) / capacity_;
-  PrintF("  capacity: %" V8_PTR_PREFIX
-         "d"
-         ", used: %" V8_PTR_PREFIX
-         "d"
-         ", available: %%%d\n\n",
+  PrintF("\x20\x20\x63\x61\x70\x61\x63\x69\x74\x79\x3a\x20\x25" V8_PTR_PREFIX
+         "\x64"
+         "\x2c\x20\x75\x73\x65\x64\x3a\x20\x25" V8_PTR_PREFIX
+         "\x64"
+         "\x2c\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x3a\x20\x25\x25\x6c\x84\xa\xa",
          static_cast<intptr_t>(capacity_), static_cast<intptr_t>(size_),
          static_cast<int>(pct * 100));
 }
@@ -1200,7 +1200,7 @@ bool NewSpace::SetUp(int reserved_semispace_capacity,
 
   chunk_base_ = base;
   chunk_size_ = static_cast<uintptr_t>(size);
-  LOG(heap()->isolate(), NewEvent("InitialChunk", chunk_base_, chunk_size_));
+  LOG(heap()->isolate(), NewEvent("\x49\x6e\x69\x74\x69\x61\x6c\x43\x68\x75\x6e\x6b", chunk_base_, chunk_size_));
 
   DCHECK(initial_semispace_capacity <= maximum_semispace_capacity);
   DCHECK(IsPowerOf2(maximum_semispace_capacity));
@@ -1257,7 +1257,7 @@ void NewSpace::TearDown() {
   to_space_.TearDown();
   from_space_.TearDown();
 
-  LOG(heap()->isolate(), DeleteEvent("InitialChunk", chunk_base_));
+  LOG(heap()->isolate(), DeleteEvent("\x49\x6e\x69\x74\x69\x61\x6c\x43\x68\x75\x6e\x6b", chunk_base_));
 
   DCHECK(reservation_.IsReserved());
   heap()->isolate()->memory_allocator()->FreeMemory(&reservation_,
@@ -1282,7 +1282,7 @@ void NewSpace::Grow() {
       if (!to_space_.ShrinkTo(from_space_.Capacity())) {
         // We are in an inconsistent state because we could not
         // commit/uncommit memory from new space.
-        V8::FatalProcessOutOfMemory("Failed to grow new space.");
+        V8::FatalProcessOutOfMemory("\x46\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x67\x72\x6f\x77\x20\x6e\x65\x77\x20\x73\x70\x61\x63\x65\x2e");
       }
     }
   }
@@ -1303,7 +1303,7 @@ void NewSpace::Shrink() {
       if (!to_space_.GrowTo(from_space_.Capacity())) {
         // We are in an inconsistent state because we could not
         // commit/uncommit memory from new space.
-        V8::FatalProcessOutOfMemory("Failed to shrink new space.");
+        V8::FatalProcessOutOfMemory("\x46\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x73\x68\x72\x69\x6e\x6b\x20\x6e\x65\x77\x20\x73\x70\x61\x63\x65\x2e");
       }
     }
   }
@@ -1797,15 +1797,15 @@ static void ClearCodeKindStatistics(int* code_kind_statistics) {
 
 
 static void ReportCodeKindStatistics(int* code_kind_statistics) {
-  PrintF("\n   Code kind histograms: \n");
+  PrintF("\xa\x20\x20\x20\x43\x6f\x64\x65\x20\x6b\x69\x6e\x64\x20\x68\x69\x73\x74\x6f\x67\x72\x61\x6d\x73\x3a\x20\xa");
   for (int i = 0; i < Code::NUMBER_OF_KINDS; i++) {
     if (code_kind_statistics[i] > 0) {
-      PrintF("     %-20s: %10d bytes\n",
+      PrintF("\x20\x20\x20\x20\x20\x6c\x60\xf2\xf0\xa2\x3a\x20\x6c\xf1\xf0\x84\x20\x62\x79\x74\x65\x73\xa",
              Code::Kind2String(static_cast<Code::Kind>(i)),
              code_kind_statistics[i]);
     }
   }
-  PrintF("\n");
+  PrintF("\xa");
 }
 
 
@@ -1827,16 +1827,16 @@ static int CollectHistogramInfo(HeapObject* obj) {
 
 
 static void ReportHistogram(Isolate* isolate, bool print_spill) {
-  PrintF("\n  Object Histogram:\n");
+  PrintF("\xa\x20\x20\x4f\x62\x6a\x65\x63\x74\x20\x48\x69\x73\x74\x6f\x67\x72\x61\x6d\x3a\xa");
   for (int i = 0; i <= LAST_TYPE; i++) {
     if (isolate->heap_histograms()[i].number() > 0) {
-      PrintF("    %-34s%10d (%10d bytes)\n",
+      PrintF("\x20\x20\x20\x20\x6c\x60\xf3\xf4\xa2\x6c\xf1\xf0\x84\x20\x28\x6c\xf1\xf0\x84\x20\x62\x79\x74\x65\x73\x29\xa",
              isolate->heap_histograms()[i].name(),
              isolate->heap_histograms()[i].number(),
              isolate->heap_histograms()[i].bytes());
     }
   }
-  PrintF("\n");
+  PrintF("\xa");
 
   // Summarize string types.
   int string_number = 0;
@@ -1847,7 +1847,7 @@ static void ReportHistogram(Isolate* isolate, bool print_spill) {
   STRING_TYPE_LIST(INCREMENT)
 #undef INCREMENT
   if (string_number > 0) {
-    PrintF("    %-34s%10d (%10d bytes)\n\n", "STRING_TYPE", string_number,
+    PrintF("\x20\x20\x20\x20\x6c\x60\xf3\xf4\xa2\x6c\xf1\xf0\x84\x20\x28\x6c\xf1\xf0\x84\x20\x62\x79\x74\x65\x73\x29\xa\xa", "\x53\x54\x52\x49\x4e\x47\x5f\x54\x59\x50\x45", string_number,
            string_bytes);
   }
 
@@ -1880,7 +1880,7 @@ void NewSpace::CollectStatistics() {
 
 static void DoReportStatistics(Isolate* isolate, HistogramInfo* info,
                                const char* description) {
-  LOG(isolate, HeapSampleBeginEvent("NewSpace", description));
+  LOG(isolate, HeapSampleBeginEvent("\x4e\x65\x77\x53\x70\x61\x63\x65", description));
   // Lump all the string types together.
   int string_number = 0;
   int string_bytes = 0;
@@ -1891,7 +1891,7 @@ static void DoReportStatistics(Isolate* isolate, HistogramInfo* info,
 #undef INCREMENT
   if (string_number > 0) {
     LOG(isolate,
-        HeapSampleItemEvent("STRING_TYPE", string_number, string_bytes));
+        HeapSampleItemEvent("\x53\x54\x52\x49\x4e\x47\x5f\x54\x59\x50\x45", string_number, string_bytes));
   }
 
   // Then do the other types.
@@ -1901,7 +1901,7 @@ static void DoReportStatistics(Isolate* isolate, HistogramInfo* info,
                                        info[i].bytes()));
     }
   }
-  LOG(isolate, HeapSampleEndEvent("NewSpace", description));
+  LOG(isolate, HeapSampleEndEvent("\x4e\x65\x77\x53\x70\x61\x63\x65", description));
 }
 
 
@@ -1909,26 +1909,26 @@ void NewSpace::ReportStatistics() {
 #ifdef DEBUG
   if (FLAG_heap_stats) {
     float pct = static_cast<float>(Available()) / Capacity();
-    PrintF("  capacity: %" V8_PTR_PREFIX
-           "d"
-           ", available: %" V8_PTR_PREFIX "d, %%%d\n",
+    PrintF("\x20\x20\x63\x61\x70\x61\x63\x69\x74\x79\x3a\x20\x25" V8_PTR_PREFIX
+           "\x64"
+           "\x2c\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x3a\x20\x25" V8_PTR_PREFIX "\x64\x2c\x20\x25\x25\x6c\x84\xa",
            Capacity(), Available(), static_cast<int>(pct * 100));
-    PrintF("\n  Object Histogram:\n");
+    PrintF("\xa\x20\x20\x4f\x62\x6a\x65\x63\x74\x20\x48\x69\x73\x74\x6f\x67\x72\x61\x6d\x3a\xa");
     for (int i = 0; i <= LAST_TYPE; i++) {
       if (allocated_histogram_[i].number() > 0) {
-        PrintF("    %-34s%10d (%10d bytes)\n", allocated_histogram_[i].name(),
+        PrintF("\x20\x20\x20\x20\x6c\x60\xf3\xf4\xa2\x6c\xf1\xf0\x84\x20\x28\x6c\xf1\xf0\x84\x20\x62\x79\x74\x65\x73\x29\xa", allocated_histogram_[i].name(),
                allocated_histogram_[i].number(),
                allocated_histogram_[i].bytes());
       }
     }
-    PrintF("\n");
+    PrintF("\xa");
   }
 #endif  // DEBUG
 
   if (FLAG_log_gc) {
     Isolate* isolate = heap()->isolate();
-    DoReportStatistics(isolate, allocated_histogram_, "allocated");
-    DoReportStatistics(isolate, promoted_histogram_, "promoted");
+    DoReportStatistics(isolate, allocated_histogram_, "\x61\x6c\x6c\x6f\x63\x61\x74\x65\x64");
+    DoReportStatistics(isolate, promoted_histogram_, "\x70\x72\x6f\x6d\x6f\x74\x65\x64");
   }
 }
 
@@ -2611,16 +2611,16 @@ void PagedSpace::ReportCodeStatistics(Isolate* isolate) {
       isolate->paged_space_comments_statistics();
   ReportCodeKindStatistics(isolate->code_kind_statistics());
   PrintF(
-      "Code comment statistics (\"   [ comment-txt   :    size/   "
-      "count  (average)\"):\n");
+      "\x43\x6f\x64\x65\x20\x63\x6f\x6d\x6d\x65\x6e\x74\x20\x73\x74\x61\x74\x69\x73\x74\x69\x63\x73\x20\x28\x22\x20\x20\x20\x5b\x20\x63\x6f\x6d\x6d\x65\x6e\x74\x2d\x74\x78\x74\x20\x20\x20\x3a\x20\x20\x20\x20\x73\x69\x7a\x65\x2f\x20\x20\x20"
+      "\x63\x6f\x75\x6e\x74\x20\x20\x28\x61\x76\x65\x72\x61\x67\x65\x29\x22\x29\x3a\xa");
   for (int i = 0; i <= CommentStatistic::kMaxComments; i++) {
     const CommentStatistic& cs = comments_statistics[i];
     if (cs.size > 0) {
-      PrintF("   %-30s: %10d/%6d     (%d)\n", cs.comment, cs.size, cs.count,
+      PrintF("\x20\x20\x20\x6c\x60\xf3\xf0\xa2\x3a\x20\x6c\xf1\xf0\x84\x2f\x6c\xf6\x84\x20\x20\x20\x20\x20\x28\x6c\x84\x29\xa", cs.comment, cs.size, cs.count,
              cs.size / cs.count);
     }
   }
-  PrintF("\n");
+  PrintF("\xa");
 }
 
 
@@ -2631,7 +2631,7 @@ void PagedSpace::ResetCodeStatistics(Isolate* isolate) {
   for (int i = 0; i < CommentStatistic::kMaxComments; i++) {
     comments_statistics[i].Clear();
   }
-  comments_statistics[CommentStatistic::kMaxComments].comment = "Unknown";
+  comments_statistics[CommentStatistic::kMaxComments].comment = "\x55\x6e\x6b\x6e\x6f\x77\x6e";
   comments_statistics[CommentStatistic::kMaxComments].size = 0;
   comments_statistics[CommentStatistic::kMaxComments].count = 0;
 }
@@ -2669,7 +2669,7 @@ static void CollectCommentStatistics(Isolate* isolate, RelocIterator* it) {
   DCHECK(!it->done());
   DCHECK(it->rinfo()->rmode() == RelocInfo::COMMENT);
   const char* tmp = reinterpret_cast<const char*>(it->rinfo()->data());
-  if (tmp[0] != '[') {
+  if (tmp[0] != '\x5b') {
     // Not a nested comment; skip
     return;
   }
@@ -2688,7 +2688,7 @@ static void CollectCommentStatistics(Isolate* isolate, RelocIterator* it) {
       const char* const txt =
           reinterpret_cast<const char*>(it->rinfo()->data());
       flat_delta += static_cast<int>(it->rinfo()->pc() - prev_pc);
-      if (txt[0] == ']') break;  // End of nested  comment
+      if (txt[0] == '\x5d') break;  // End of nested  comment
       // A new comment
       CollectCommentStatistics(isolate, it);
       // Skip code that was covered with previous comment
@@ -2725,7 +2725,7 @@ void PagedSpace::CollectCodeStatistics() {
       DCHECK(code->instruction_start() <= prev_pc &&
              prev_pc <= code->instruction_end());
       delta += static_cast<int>(code->instruction_end() - prev_pc);
-      EnterComment(isolate, "NoComment", delta);
+      EnterComment(isolate, "\x4e\x6f\x43\x6f\x6d\x6d\x65\x6e\x74", delta);
     }
   }
 }
@@ -2733,11 +2733,11 @@ void PagedSpace::CollectCodeStatistics() {
 
 void PagedSpace::ReportStatistics() {
   int pct = static_cast<int>(Available() * 100 / Capacity());
-  PrintF("  capacity: %" V8_PTR_PREFIX
-         "d"
-         ", waste: %" V8_PTR_PREFIX
-         "d"
-         ", available: %" V8_PTR_PREFIX "d, %%%d\n",
+  PrintF("\x20\x20\x63\x61\x70\x61\x63\x69\x74\x79\x3a\x20\x25" V8_PTR_PREFIX
+         "\x64"
+         "\x2c\x20\x77\x61\x73\x74\x65\x3a\x20\x25" V8_PTR_PREFIX
+         "\x64"
+         "\x2c\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x3a\x20\x25" V8_PTR_PREFIX "\x64\x2c\x20\x25\x25\x6c\x84\xa",
          Capacity(), Waste(), Available(), pct);
 
   if (!swept_precisely_) return;
@@ -2829,7 +2829,7 @@ void LargeObjectSpace::TearDown() {
   while (first_page_ != NULL) {
     LargePage* page = first_page_;
     first_page_ = first_page_->next_page();
-    LOG(heap()->isolate(), DeleteEvent("LargeObjectChunk", page->address()));
+    LOG(heap()->isolate(), DeleteEvent("\x4c\x61\x72\x67\x65\x4f\x62\x6a\x65\x63\x74\x43\x68\x75\x6e\x6b", page->address()));
 
     ObjectSpace space = static_cast<ObjectSpace>(1 << identity());
     heap()->isolate()->memory_allocator()->PerformAllocationCallback(
@@ -3059,7 +3059,7 @@ void LargeObjectSpace::Print() {
 
 
 void LargeObjectSpace::ReportStatistics() {
-  PrintF("  size: %" V8_PTR_PREFIX "d\n", size_);
+  PrintF("\x20\x20\x73\x69\x7a\x65\x3a\x20\x25" V8_PTR_PREFIX "\x64\xa", size_);
   int num_objects = 0;
   ClearHistograms(heap()->isolate());
   LargeObjectIterator it(this);
@@ -3069,8 +3069,8 @@ void LargeObjectSpace::ReportStatistics() {
   }
 
   PrintF(
-      "  number of objects %d, "
-      "size of objects %" V8_PTR_PREFIX "d\n",
+      "\x20\x20\x6e\x75\x6d\x62\x65\x72\x20\x6f\x66\x20\x6f\x62\x6a\x65\x63\x74\x73\x20\x6c\x84\x2c\x20"
+      "\x73\x69\x7a\x65\x20\x6f\x66\x20\x6f\x62\x6a\x65\x63\x74\x73\x20\x25" V8_PTR_PREFIX "\x64\xa",
       num_objects, objects_size_);
   if (num_objects > 0) ReportHistogram(heap()->isolate(), false);
 }
@@ -3090,23 +3090,23 @@ void LargeObjectSpace::CollectCodeStatistics() {
 
 void Page::Print() {
   // Make a best-effort to print the objects in the page.
-  PrintF("Page@%p in %s\n", this->address(),
+  PrintF("\x50\x61\x67\x65\x40\x6c\x97\x20\x69\x6e\x20\x6c\xa2\xa", this->address(),
          AllocationSpaceName(this->owner()->identity()));
-  printf(" --------------------------------------\n");
+  printf("\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
   HeapObjectIterator objects(this, heap()->GcSafeSizeOfOldObjectFunction());
   unsigned mark_size = 0;
   for (HeapObject* object = objects.Next(); object != NULL;
        object = objects.Next()) {
     bool is_marked = Marking::MarkBitFrom(object).Get();
-    PrintF(" %c ", (is_marked ? '!' : ' '));  // Indent a little.
+    PrintF("\x20\x6c\x83\x20", (is_marked ? '\x21' : '\x20'));  // Indent a little.
     if (is_marked) {
       mark_size += heap()->GcSafeSizeOfOldObjectFunction()(object);
     }
     object->ShortPrint();
-    PrintF("\n");
+    PrintF("\xa");
   }
-  printf(" --------------------------------------\n");
-  printf(" Marked: %x, LiveCount: %x\n", mark_size, LiveBytes());
+  printf("\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
+  printf("\x20\x4d\x61\x72\x6b\x65\x64\x3a\x20\x6c\xa7\x2c\x20\x4c\x69\x76\x65\x43\x6f\x75\x6e\x74\x3a\x20\x6c\xa7\xa", mark_size, LiveBytes());
 }
 
 #endif  // DEBUG

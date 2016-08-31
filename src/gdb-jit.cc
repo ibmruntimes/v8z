@@ -360,8 +360,8 @@ class MachOTextSection : public MachOSection {
   MachOTextSection(uintptr_t align,
                    uintptr_t addr,
                    uintptr_t size)
-      : MachOSection("__text",
-                     "__TEXT",
+      : MachOSection("\x5f\x5f\x74\x65\x78\x74",
+                     "\x5f\x5f\x54\x45\x58\x54",
                      align,
                      MachOSection::S_REGULAR |
                          MachOSection::S_ATTR_SOME_INSTRUCTIONS |
@@ -423,7 +423,7 @@ class ELFStringTable : public ELFSection {
   }
 
   uintptr_t Add(const char* str) {
-    if (*str == '\0') return 0;
+    if (*str == '\x0') return 0;
 
     uintptr_t offset = size_;
     WriteString(str);
@@ -609,7 +609,7 @@ class ELF BASE_EMBEDDED {
  public:
   explicit ELF(Zone* zone) : zone_(zone), sections_(6, zone) {
     sections_.Add(new(zone) ELFSection("", ELFSection::TYPE_NULL, 0), zone);
-    sections_.Add(new(zone) ELFStringTable(".shstrtab"), zone);
+    sections_.Add(new(zone) ELFStringTable("\x2e\x73\x68\x73\x74\x72\x74\x61\x62"), zone);
   }
 
   void Write(Writer* w) {
@@ -653,16 +653,16 @@ class ELF BASE_EMBEDDED {
 #if (V8_TARGET_ARCH_IA32 || V8_TARGET_ARCH_ARM || V8_TARGET_ARCH_X87 || \
      (V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT))
     const uint8_t ident[16] =
-        { 0x7f, 'E', 'L', 'F', 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        { 0x7f, '\x45', '\x4c', '\x46', 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 #elif V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_64_BIT
     const uint8_t ident[16] =
-        { 0x7f, 'E', 'L', 'F', 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        { 0x7f, '\x45', '\x4c', '\x46', 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 #elif defined(V8_TARGET_ARCH_S390) && V8_TARGET_ARCH_32_BIT
     const uint8_t ident[16] =
-        { 0x7f, 'E', 'L', 'F', 1, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0};
+        { 0x7f, '\x45', '\x4c', '\x46', 1, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0};
 #elif defined(V8_TARGET_ARCH_S390X)
      const uint8_t ident[16] =
-        { 0x7f, 'E', 'L', 'F', 2, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0};
+        { 0x7f, '\x45', '\x4c', '\x46', 2, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0};
 #else
 #error Unsupported target architecture.
 #endif
@@ -1036,14 +1036,14 @@ static void CreateSymbolsTable(CodeDescription* desc,
                                Zone* zone,
                                ELF* elf,
                                int text_section_index) {
-  ELFSymbolTable* symtab = new(zone) ELFSymbolTable(".symtab", zone);
-  ELFStringTable* strtab = new(zone) ELFStringTable(".strtab");
+  ELFSymbolTable* symtab = new(zone) ELFSymbolTable("\x2e\x73\x79\x6d\x74\x61\x62", zone);
+  ELFStringTable* strtab = new(zone) ELFStringTable("\x2e\x73\x74\x72\x74\x61\x62");
 
   // Symbol table should be followed by the linked string table.
   elf->AddSection(symtab);
   elf->AddSection(strtab);
 
-  symtab->Add(ELFSymbol("V8 Code",
+  symtab->Add(ELFSymbol("\x56\x38\x20\x43\x6f\x64\x65",
                         0,
                         0,
                         ELFSymbol::BIND_LOCAL,
@@ -1066,10 +1066,10 @@ class DebugInfoSection : public DebugSection {
  public:
   explicit DebugInfoSection(CodeDescription* desc)
 #if defined(__ELF)
-      : ELFSection(".debug_info", TYPE_PROGBITS, 1),
+      : ELFSection("\x2e\x64\x65\x62\x75\x67\x5f\x69\x6e\x66\x6f", TYPE_PROGBITS, 1),
 #else
-      : MachOSection("__debug_info",
-                     "__DWARF",
+      : MachOSection("\x5f\x5f\x64\x65\x62\x75\x67\x5f\x69\x6e\x66\x6f",
+                     "\x5f\x5f\x44\x57\x41\x52\x46",
                      1,
                      MachOSection::S_REGULAR | MachOSection::S_ATTR_DEBUG),
 #endif
@@ -1114,7 +1114,7 @@ class DebugInfoSection : public DebugSection {
     uint32_t ty_offset = static_cast<uint32_t>(w->position() - cu_start);
     w->WriteULEB128(3);
     w->Write<uint8_t>(kPointerSize);
-    w->WriteString("v8value");
+    w->WriteString("\x76\x38\x76\x61\x6c\x75\x65");
 
     if (desc_->IsInfoAvailable()) {
       Scope* scope = desc_->info()->scope();
@@ -1169,7 +1169,7 @@ class DebugInfoSection : public DebugSection {
       for (int slot = 0; slot < slots; ++slot) {
         w->WriteULEB128(current_abbreviation++);
         builder.Reset();
-        builder.AddFormatted("slot%d", slot);
+        builder.AddFormatted("\x73\x6c\x6f\x74\x6c\x84", slot);
         w->WriteString(builder.Finalize());
       }
 
@@ -1180,20 +1180,20 @@ class DebugInfoSection : public DebugSection {
       DCHECK(Context::EXTENSION_INDEX == 2);
       DCHECK(Context::GLOBAL_OBJECT_INDEX == 3);
       w->WriteULEB128(current_abbreviation++);
-      w->WriteString(".closure");
+      w->WriteString("\x2e\x63\x6c\x6f\x73\x75\x72\x65");
       w->WriteULEB128(current_abbreviation++);
-      w->WriteString(".previous");
+      w->WriteString("\x2e\x70\x72\x65\x76\x69\x6f\x75\x73");
       w->WriteULEB128(current_abbreviation++);
-      w->WriteString(".extension");
+      w->WriteString("\x2e\x65\x78\x74\x65\x6e\x73\x69\x6f\x6e");
       w->WriteULEB128(current_abbreviation++);
-      w->WriteString(".global");
+      w->WriteString("\x2e\x67\x6c\x6f\x62\x61\x6c");
 
       for (int context_slot = 0;
            context_slot < context_slots;
            ++context_slot) {
         w->WriteULEB128(current_abbreviation++);
         builder.Reset();
-        builder.AddFormatted("context_slot%d", context_slot + internal_slots);
+        builder.AddFormatted("\x63\x6f\x6e\x74\x65\x78\x74\x5f\x73\x6c\x6f\x74\x6c\x84", context_slot + internal_slots);
         w->WriteString(builder.Finalize());
       }
 
@@ -1216,7 +1216,7 @@ class DebugInfoSection : public DebugSection {
 
       {
         w->WriteULEB128(current_abbreviation++);
-        w->WriteString("__function");
+        w->WriteString("\x5f\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e");
         w->Write<uint32_t>(ty_offset);
         Writer::Slot<uint32_t> block_size = w->CreateSlotHere<uint32_t>();
         uintptr_t block_start = w->position();
@@ -1227,7 +1227,7 @@ class DebugInfoSection : public DebugSection {
 
       {
         w->WriteULEB128(current_abbreviation++);
-        w->WriteString("__context");
+        w->WriteString("\x5f\x5f\x63\x6f\x6e\x74\x65\x78\x74");
         w->Write<uint32_t>(ty_offset);
         Writer::Slot<uint32_t> block_size = w->CreateSlotHere<uint32_t>();
         uintptr_t block_start = w->position();
@@ -1253,10 +1253,10 @@ class DebugAbbrevSection : public DebugSection {
  public:
   explicit DebugAbbrevSection(CodeDescription* desc)
 #ifdef __ELF
-      : ELFSection(".debug_abbrev", TYPE_PROGBITS, 1),
+      : ELFSection("\x2e\x64\x65\x62\x75\x67\x5f\x61\x62\x62\x72\x65\x76", TYPE_PROGBITS, 1),
 #else
-      : MachOSection("__debug_abbrev",
-                     "__DWARF",
+      : MachOSection("\x5f\x5f\x64\x65\x62\x75\x67\x5f\x61\x62\x62\x72\x65\x76",
+                     "\x5f\x5f\x44\x57\x41\x52\x46",
                      1,
                      MachOSection::S_REGULAR | MachOSection::S_ATTR_DEBUG),
 #endif
@@ -1424,10 +1424,10 @@ class DebugLineSection : public DebugSection {
  public:
   explicit DebugLineSection(CodeDescription* desc)
 #ifdef __ELF
-      : ELFSection(".debug_line", TYPE_PROGBITS, 1),
+      : ELFSection("\x2e\x64\x65\x62\x75\x67\x5f\x6c\x69\x6e\x65", TYPE_PROGBITS, 1),
 #else
-      : MachOSection("__debug_line",
-                     "__DWARF",
+      : MachOSection("\x5f\x5f\x64\x65\x62\x75\x67\x5f\x6c\x69\x6e\x65",
+                     "\x5f\x5f\x44\x57\x41\x52\x46",
                      1,
                      MachOSection::S_REGULAR | MachOSection::S_ATTR_DEBUG),
 #endif
@@ -1674,9 +1674,9 @@ void UnwindInfoSection::WriteLength(Writer* w,
 
 UnwindInfoSection::UnwindInfoSection(CodeDescription* desc)
 #ifdef __ELF
-    : ELFSection(".eh_frame", TYPE_X86_64_UNWIND, 1),
+    : ELFSection("\x2e\x65\x68\x5f\x66\x72\x61\x6d\x65", TYPE_X86_64_UNWIND, 1),
 #else
-    : MachOSection("__eh_frame", "__TEXT", sizeof(uintptr_t),
+    : MachOSection("\x5f\x5f\x65\x68\x5f\x66\x72\x61\x6d\x65", "\x5f\x5f\x54\x45\x58\x54", sizeof(uintptr_t),
                    MachOSection::S_REGULAR),
 #endif
       desc_(desc) { }
@@ -1898,12 +1898,12 @@ static void RegisterCodeEntry(JITCodeEntry* entry,
   static int file_num = 0;
   if (FLAG_gdbjit_dump && dump_if_enabled) {
     static const int kMaxFileNameSize = 64;
-    static const char* kElfFilePrefix = "/tmp/elfdump";
-    static const char* kObjFileExt = ".o";
+    static const char* kElfFilePrefix = "\x2f\x74\x6d\x70\x2f\x65\x6c\x66\x64\x75\x6d\x70";
+    static const char* kObjFileExt = "\x2e\x6f";
     char file_name[64];
 
     SNPrintF(Vector<char>(file_name, kMaxFileNameSize),
-             "%s%s%d%s",
+             "\x6c\xa2\x6c\xa2\x6c\x84\x6c\xa2",
              kElfFilePrefix,
              (name_hint != NULL) ? name_hint : "",
              file_num++,
@@ -1959,7 +1959,7 @@ static JITCodeEntry* CreateELFObject(CodeDescription* desc, Isolate* isolate) {
 
   int text_section_index = elf.AddSection(
       new(&zone) FullHeaderELFSection(
-          ".text",
+          "\x2e\x74\x65\x78\x74",
           ELFSection::TYPE_NOBITS,
           kCodeAlignment,
           desc->CodeStart(),

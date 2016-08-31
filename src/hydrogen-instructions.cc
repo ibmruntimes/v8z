@@ -63,12 +63,12 @@ void HValue::AssumeRepresentation(Representation r) {
 void HValue::InferRepresentation(HInferRepresentationPhase* h_infer) {
   DCHECK(CheckFlag(kFlexibleRepresentation));
   Representation new_rep = RepresentationFromInputs();
-  UpdateRepresentation(new_rep, h_infer, "inputs");
+  UpdateRepresentation(new_rep, h_infer, "\x69\x6e\x70\x75\x74\x73");
   new_rep = RepresentationFromUses();
-  UpdateRepresentation(new_rep, h_infer, "uses");
+  UpdateRepresentation(new_rep, h_infer, "\x75\x73\x65\x73");
   if (representation().IsSmi() && HasNonSmiUse()) {
     UpdateRepresentation(
-        Representation::Integer32(), h_infer, "use requirements");
+        Representation::Integer32(), h_infer, "\x75\x73\x65\x20\x72\x65\x71\x75\x69\x72\x65\x6d\x65\x6e\x74\x73");
   }
 }
 
@@ -84,9 +84,9 @@ Representation HValue::RepresentationFromUses() {
     Representation rep = use->observed_input_representation(it.index());
     if (rep.IsNone()) continue;
     if (FLAG_trace_representation) {
-      PrintF("#%d %s is used by #%d %s as %s%s\n",
+      PrintF("\x23\x6c\x84\x20\x6c\xa2\x20\x69\x73\x20\x75\x73\x65\x64\x20\x62\x79\x20\x23\x6c\x84\x20\x6c\xa2\x20\x61\x73\x20\x6c\xa2\x6c\xa2\xa",
              id(), Mnemonic(), use->id(), use->Mnemonic(), rep.Mnemonic(),
-             (use->CheckFlag(kTruncatingToInt32) ? "-trunc" : ""));
+             (use->CheckFlag(kTruncatingToInt32) ? "\x2d\x74\x72\x75\x6e\x63" : ""));
     }
     use_count[rep.kind()] += 1;
   }
@@ -112,7 +112,7 @@ void HValue::UpdateRepresentation(Representation new_rep,
   if (new_rep.is_more_general_than(r)) {
     if (CheckFlag(kCannotBeTagged) && new_rep.IsTagged()) return;
     if (FLAG_trace_representation) {
-      PrintF("Changing #%d %s representation %s -> %s based on %s\n",
+      PrintF("\x43\x68\x61\x6e\x67\x69\x6e\x67\x20\x23\x6c\x84\x20\x6c\xa2\x20\x72\x65\x70\x72\x65\x73\x65\x6e\x74\x61\x74\x69\x6f\x6e\x20\x6c\xa2\x20\x2d\x3e\x20\x6c\xa2\x20\x62\x61\x73\x65\x64\x20\x6f\x6e\x20\x6c\xa2\xa",
              id(), Mnemonic(), r.Mnemonic(), new_rep.Mnemonic(), reason);
     }
     ChangeRepresentation(new_rep);
@@ -445,7 +445,7 @@ const char* HValue::Mnemonic() const {
 #define MAKE_CASE(type) case k##type: return #type;
     HYDROGEN_CONCRETE_INSTRUCTION_LIST(MAKE_CASE)
 #undef MAKE_CASE
-    case kPhi: return "Phi";
+    case kPhi: return "\x50\x68\x69";
     default: return "";
   }
 }
@@ -538,21 +538,21 @@ OStream& operator<<(OStream& os, const TypeOf& t) {
   if (t.value->representation().IsTagged() &&
       !t.value->type().Equals(HType::Tagged()))
     return os;
-  return os << " type:" << t.value->type();
+  return os << "\x20\x74\x79\x70\x65\x3a" << t.value->type();
 }
 
 
 OStream& operator<<(OStream& os, const ChangesOf& c) {
   GVNFlagSet changes_flags = c.value->ChangesFlags();
   if (changes_flags.IsEmpty()) return os;
-  os << " changes[";
+  os << "\x20\x63\x68\x61\x6e\x67\x65\x73\x5b";
   if (changes_flags == c.value->AllSideEffectsFlagSet()) {
-    os << "*";
+    os << "\x2a";
   } else {
     bool add_comma = false;
 #define PRINT_DO(Type)                   \
   if (changes_flags.Contains(k##Type)) { \
-    if (add_comma) os << ",";            \
+    if (add_comma) os << "\x2c";            \
     add_comma = true;                    \
     os << #Type;                         \
   }
@@ -560,7 +560,7 @@ OStream& operator<<(OStream& os, const ChangesOf& c) {
     GVN_UNTRACKED_FLAG_LIST(PRINT_DO);
 #undef PRINT_DO
   }
-  return os << "]";
+  return os << "\x5d";
 }
 
 
@@ -623,27 +623,27 @@ void HValue::ComputeInitialRange(Zone* zone) {
 
 OStream& operator<<(OStream& os, const HSourcePosition& p) {
   if (p.IsUnknown()) {
-    return os << "<?>";
+    return os << "\x3c\x3f\x3e";
   } else if (FLAG_hydrogen_track_positions) {
-    return os << "<" << p.inlining_id() << ":" << p.position() << ">";
+    return os << "\x3c" << p.inlining_id() << "\x3a" << p.position() << "\x3e";
   } else {
-    return os << "<0:" << p.raw() << ">";
+    return os << "\x3c\x30\x3a" << p.raw() << "\x3e";
   }
 }
 
 
 OStream& HInstruction::PrintTo(OStream& os) const {  // NOLINT
-  os << Mnemonic() << " ";
+  os << Mnemonic() << "\x20";
   PrintDataTo(os) << ChangesOf(this) << TypeOf(this);
-  if (CheckFlag(HValue::kHasNoObservableSideEffects)) os << " [noOSE]";
-  if (CheckFlag(HValue::kIsDead)) os << " [dead]";
+  if (CheckFlag(HValue::kHasNoObservableSideEffects)) os << "\x20\x5b\x6e\x6f\x4f\x53\x45\x5d";
+  if (CheckFlag(HValue::kIsDead)) os << "\x20\x5b\x64\x65\x61\x64\x5d";
   return os;
 }
 
 
 OStream& HInstruction::PrintDataTo(OStream& os) const {  // NOLINT
   for (int i = 0; i < OperandCount(); ++i) {
-    if (i > 0) os << " ";
+    if (i > 0) os << "\x20";
     os << NameOf(OperandAt(i));
   }
   return os;
@@ -924,18 +924,18 @@ OStream& HDummyUse::PrintDataTo(OStream& os) const {  // NOLINT
 
 
 OStream& HEnvironmentMarker::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << (kind() == BIND ? "bind" : "lookup") << " var[" << index()
-            << "]";
+  return os << (kind() == BIND ? "\x62\x69\x6e\x64" : "\x6c\x6f\x6f\x6b\x75\x70") << "\x20\x76\x61\x72\x5b" << index()
+            << "\x5d";
 }
 
 
 OStream& HUnaryCall::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(value()) << " #" << argument_count();
+  return os << NameOf(value()) << "\x20\x23" << argument_count();
 }
 
 
 OStream& HCallJSFunction::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(function()) << " #" << argument_count();
+  return os << NameOf(function()) << "\x20\x23" << argument_count();
 }
 
 
@@ -962,7 +962,7 @@ HCallJSFunction* HCallJSFunction::New(
 
 
 OStream& HBinaryCall::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(first()) << " " << NameOf(second()) << " #"
+  return os << NameOf(first()) << "\x20" << NameOf(second()) << "\x20\x23"
             << argument_count();
 }
 
@@ -1018,17 +1018,17 @@ void HBoundsCheck::ApplyIndexChange() {
 
 
 OStream& HBoundsCheck::PrintDataTo(OStream& os) const {  // NOLINT
-  os << NameOf(index()) << " " << NameOf(length());
+  os << NameOf(index()) << "\x20" << NameOf(length());
   if (base() != NULL && (offset() != 0 || scale() != 0)) {
-    os << " base: ((";
+    os << "\x20\x62\x61\x73\x65\x3a\x20\x28\x28";
     if (base() != index()) {
       os << NameOf(index());
     } else {
-      os << "index";
+      os << "\x69\x6e\x64\x65\x78";
     }
-    os << " + " << offset() << ") >> " << scale() << ")";
+    os << "\x20\x2b\x20" << offset() << "\x29\x20\x3e\x3e\x20" << scale() << "\x29";
   }
-  if (skip_check()) os << " [DISABLED]";
+  if (skip_check()) os << "\x20\x5b\x44\x49\x53\x41\x42\x4c\x45\x44\x5d";
   return os;
 }
 
@@ -1049,7 +1049,7 @@ void HBoundsCheck::InferRepresentation(HInferRepresentationPhase* h_infer) {
   if (r.is_more_general_than(Representation::Integer32())) {
     r = Representation::Integer32();
   }
-  UpdateRepresentation(r, h_infer, "boundscheck");
+  UpdateRepresentation(r, h_infer, "\x62\x6f\x75\x6e\x64\x73\x63\x68\x65\x63\x6b");
 }
 
 
@@ -1075,63 +1075,63 @@ Range* HBoundsCheck::InferRange(Zone* zone) {
 OStream& HBoundsCheckBaseIndexInformation::PrintDataTo(
     OStream& os) const {  // NOLINT
   // TODO(svenpanne) This 2nd base_index() looks wrong...
-  return os << "base: " << NameOf(base_index())
-            << ", check: " << NameOf(base_index());
+  return os << "\x62\x61\x73\x65\x3a\x20" << NameOf(base_index())
+            << "\x2c\x20\x63\x68\x65\x63\x6b\x3a\x20" << NameOf(base_index());
 }
 
 
 OStream& HCallWithDescriptor::PrintDataTo(OStream& os) const {  // NOLINT
   for (int i = 0; i < OperandCount(); i++) {
-    os << NameOf(OperandAt(i)) << " ";
+    os << NameOf(OperandAt(i)) << "\x20";
   }
-  return os << "#" << argument_count();
+  return os << "\x23" << argument_count();
 }
 
 
 OStream& HCallNewArray::PrintDataTo(OStream& os) const {  // NOLINT
-  os << ElementsKindToString(elements_kind()) << " ";
+  os << ElementsKindToString(elements_kind()) << "\x20";
   return HBinaryCall::PrintDataTo(os);
 }
 
 
 OStream& HCallRuntime::PrintDataTo(OStream& os) const {  // NOLINT
-  os << name()->ToCString().get() << " ";
-  if (save_doubles() == kSaveFPRegs) os << "[save doubles] ";
-  return os << "#" << argument_count();
+  os << name()->ToCString().get() << "\x20";
+  if (save_doubles() == kSaveFPRegs) os << "\x5b\x73\x61\x76\x65\x20\x64\x6f\x75\x62\x6c\x65\x73\x5d\x20";
+  return os << "\x23" << argument_count();
 }
 
 
 OStream& HClassOfTestAndBranch::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << "class_of_test(" << NameOf(value()) << ", \""
-            << class_name()->ToCString().get() << "\")";
+  return os << "\x63\x6c\x61\x73\x73\x5f\x6f\x66\x5f\x74\x65\x73\x74\x28" << NameOf(value()) << "\x2c\x20\x22"
+            << class_name()->ToCString().get() << "\x22\x29";
 }
 
 
 OStream& HWrapReceiver::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(receiver()) << " " << NameOf(function());
+  return os << NameOf(receiver()) << "\x20" << NameOf(function());
 }
 
 
 OStream& HAccessArgumentsAt::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(arguments()) << "[" << NameOf(index()) << "], length "
+  return os << NameOf(arguments()) << "\x5b" << NameOf(index()) << "\x5d\x2c\x20\x6c\x65\x6e\x67\x74\x68\x20"
             << NameOf(length());
 }
 
 
 OStream& HAllocateBlockContext::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(context()) << " " << NameOf(function());
+  return os << NameOf(context()) << "\x20" << NameOf(function());
 }
 
 
 OStream& HControlInstruction::PrintDataTo(OStream& os) const {  // NOLINT
-  os << " goto (";
+  os << "\x20\x67\x6f\x74\x6f\x20\x28";
   bool first_block = true;
   for (HSuccessorIterator it(this); !it.Done(); it.Advance()) {
-    if (!first_block) os << ", ";
+    if (!first_block) os << "\x2c\x20";
     os << *it.Current();
     first_block = false;
   }
-  return os << ")";
+  return os << "\x29";
 }
 
 
@@ -1142,8 +1142,8 @@ OStream& HUnaryControlInstruction::PrintDataTo(OStream& os) const {  // NOLINT
 
 
 OStream& HReturn::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(value()) << " (pop " << NameOf(parameter_count())
-            << " values)";
+  return os << NameOf(value()) << "\x20\x28\x70\x6f\x70\x20" << NameOf(parameter_count())
+            << "\x20\x76\x61\x6c\x75\x65\x73\x29";
 }
 
 
@@ -1188,18 +1188,18 @@ bool HBranch::KnownSuccessorBlock(HBasicBlock** block) {
 
 
 OStream& HBranch::PrintDataTo(OStream& os) const {  // NOLINT
-  return HUnaryControlInstruction::PrintDataTo(os) << " "
+  return HUnaryControlInstruction::PrintDataTo(os) << "\x20"
                                                    << expected_input_types();
 }
 
 
 OStream& HCompareMap::PrintDataTo(OStream& os) const {  // NOLINT
-  os << NameOf(value()) << " (" << *map().handle() << ")";
+  os << NameOf(value()) << "\x20\x28" << *map().handle() << "\x29";
   HControlInstruction::PrintDataTo(os);
   if (known_successor_index() == 0) {
-    os << " [true]";
+    os << "\x20\x5b\x74\x72\x75\x65\x5d";
   } else if (known_successor_index() == 1) {
-    os << " [false]";
+    os << "\x20\x5b\x66\x61\x6c\x73\x65\x5d";
   }
   return os;
 }
@@ -1208,23 +1208,23 @@ OStream& HCompareMap::PrintDataTo(OStream& os) const {  // NOLINT
 const char* HUnaryMathOperation::OpName() const {
   switch (op()) {
     case kMathFloor:
-      return "floor";
+      return "\x66\x6c\x6f\x6f\x72";
     case kMathFround:
-      return "fround";
+      return "\x66\x72\x6f\x75\x6e\x64";
     case kMathRound:
-      return "round";
+      return "\x72\x6f\x75\x6e\x64";
     case kMathAbs:
-      return "abs";
+      return "\x61\x62\x73";
     case kMathLog:
-      return "log";
+      return "\x6c\x6f\x67";
     case kMathExp:
-      return "exp";
+      return "\x65\x78\x70";
     case kMathSqrt:
-      return "sqrt";
+      return "\x73\x71\x72\x74";
     case kMathPowHalf:
-      return "pow-half";
+      return "\x70\x6f\x77\x2d\x68\x61\x6c\x66";
     case kMathClz32:
-      return "clz32";
+      return "\x63\x6c\x7a\x33\x32";
     default:
       UNREACHABLE();
       return NULL;
@@ -1258,7 +1258,7 @@ Range* HUnaryMathOperation::InferRange(Zone* zone) {
 
 
 OStream& HUnaryMathOperation::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << OpName() << " " << NameOf(value());
+  return os << OpName() << "\x20" << NameOf(value());
 }
 
 
@@ -1271,16 +1271,16 @@ OStream& HHasInstanceTypeAndBranch::PrintDataTo(OStream& os) const {  // NOLINT
   os << NameOf(value());
   switch (from_) {
     case FIRST_JS_RECEIVER_TYPE:
-      if (to_ == LAST_TYPE) os << " spec_object";
+      if (to_ == LAST_TYPE) os << "\x20\x73\x70\x65\x63\x5f\x6f\x62\x6a\x65\x63\x74";
       break;
     case JS_REGEXP_TYPE:
-      if (to_ == JS_REGEXP_TYPE) os << " reg_exp";
+      if (to_ == JS_REGEXP_TYPE) os << "\x20\x72\x65\x67\x5f\x65\x78\x70";
       break;
     case JS_ARRAY_TYPE:
-      if (to_ == JS_ARRAY_TYPE) os << " array";
+      if (to_ == JS_ARRAY_TYPE) os << "\x20\x61\x72\x72\x61\x79";
       break;
     case JS_FUNCTION_TYPE:
-      if (to_ == JS_FUNCTION_TYPE) os << " function";
+      if (to_ == JS_FUNCTION_TYPE) os << "\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e";
       break;
     default:
       break;
@@ -1290,7 +1290,7 @@ OStream& HHasInstanceTypeAndBranch::PrintDataTo(OStream& os) const {  // NOLINT
 
 
 OStream& HTypeofIsAndBranch::PrintDataTo(OStream& os) const {  // NOLINT
-  os << NameOf(value()) << " == " << type_literal()->ToCString().get();
+  os << NameOf(value()) << "\x20\x3d\x3d\x20" << type_literal()->ToCString().get();
   return HControlInstruction::PrintDataTo(os);
 }
 
@@ -1343,7 +1343,7 @@ bool HTypeofIsAndBranch::KnownSuccessorBlock(HBasicBlock** block) {
 
 
 OStream& HCheckMapValue::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(value()) << " " << NameOf(map());
+  return os << NameOf(value()) << "\x20" << NameOf(map());
 }
 
 
@@ -1364,13 +1364,13 @@ OStream& HForInPrepareMap::PrintDataTo(OStream& os) const {  // NOLINT
 
 
 OStream& HForInCacheArray::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(enumerable()) << " " << NameOf(map()) << "[" << idx_
-            << "]";
+  return os << NameOf(enumerable()) << "\x20" << NameOf(map()) << "\x5b" << idx_
+            << "\x5d";
 }
 
 
 OStream& HLoadFieldByIndex::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(object()) << " " << NameOf(index());
+  return os << NameOf(object()) << "\x20" << NameOf(index());
 }
 
 
@@ -1523,18 +1523,18 @@ HInstruction* HForceRepresentation::New(Zone* zone, HValue* context,
 
 
 OStream& HForceRepresentation::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << representation().Mnemonic() << " " << NameOf(value());
+  return os << representation().Mnemonic() << "\x20" << NameOf(value());
 }
 
 
 OStream& HChange::PrintDataTo(OStream& os) const {  // NOLINT
   HUnaryOperation::PrintDataTo(os);
-  os << " " << from().Mnemonic() << " to " << to().Mnemonic();
+  os << "\x20" << from().Mnemonic() << "\x20\x74\x6f\x20" << to().Mnemonic();
 
-  if (CanTruncateToSmi()) os << " truncating-smi";
-  if (CanTruncateToInt32()) os << " truncating-int32";
-  if (CheckFlag(kBailoutOnMinusZero)) os << " -0?";
-  if (CheckFlag(kAllowUndefinedAsNaN)) os << " allow-undefined-as-nan";
+  if (CanTruncateToSmi()) os << "\x20\x74\x72\x75\x6e\x63\x61\x74\x69\x6e\x67\x2d\x73\x6d\x69";
+  if (CanTruncateToInt32()) os << "\x20\x74\x72\x75\x6e\x63\x61\x74\x69\x6e\x67\x2d\x69\x6e\x74\x33\x32";
+  if (CheckFlag(kBailoutOnMinusZero)) os << "\x20\x2d\x30\x3f";
+  if (CheckFlag(kAllowUndefinedAsNaN)) os << "\x20\x61\x6c\x6c\x6f\x77\x2d\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x2d\x61\x73\x2d\x6e\x61\x6e";
   return os;
 }
 
@@ -1640,12 +1640,12 @@ void HCheckInstanceType::GetCheckMaskAndTag(uint8_t* mask, uint8_t* tag) {
 
 
 OStream& HCheckMaps::PrintDataTo(OStream& os) const {  // NOLINT
-  os << NameOf(value()) << " [" << *maps()->at(0).handle();
+  os << NameOf(value()) << "\x20\x5b" << *maps()->at(0).handle();
   for (int i = 1; i < maps()->size(); ++i) {
-    os << "," << *maps()->at(i).handle();
+    os << "\x2c" << *maps()->at(i).handle();
   }
-  os << "]";
-  if (IsStabilityCheck()) os << "(stability-check)";
+  os << "\x5d";
+  if (IsStabilityCheck()) os << "\x28\x73\x74\x61\x62\x69\x6c\x69\x74\x79\x2d\x63\x68\x65\x63\x6b\x29";
   return os;
 }
 
@@ -1671,7 +1671,7 @@ HValue* HCheckMaps::Canonicalize() {
 
 
 OStream& HCheckValue::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(value()) << " " << Brief(*object().handle());
+  return os << NameOf(value()) << "\x20" << Brief(*object().handle());
 }
 
 
@@ -1683,10 +1683,10 @@ HValue* HCheckValue::Canonicalize() {
 
 const char* HCheckInstanceType::GetCheckName() const {
   switch (check_) {
-    case IS_SPEC_OBJECT: return "object";
-    case IS_JS_ARRAY: return "array";
-    case IS_STRING: return "string";
-    case IS_INTERNALIZED_STRING: return "internalized_string";
+    case IS_SPEC_OBJECT: return "\x6f\x62\x6a\x65\x63\x74";
+    case IS_JS_ARRAY: return "\x61\x72\x72\x61\x79";
+    case IS_STRING: return "\x73\x74\x72\x69\x6e\x67";
+    case IS_INTERNALIZED_STRING: return "\x69\x6e\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x64\x5f\x73\x74\x72\x69\x6e\x67";
   }
   UNREACHABLE();
   return "";
@@ -1694,28 +1694,28 @@ const char* HCheckInstanceType::GetCheckName() const {
 
 
 OStream& HCheckInstanceType::PrintDataTo(OStream& os) const {  // NOLINT
-  os << GetCheckName() << " ";
+  os << GetCheckName() << "\x20";
   return HUnaryOperation::PrintDataTo(os);
 }
 
 
 OStream& HCallStub::PrintDataTo(OStream& os) const {  // NOLINT
-  os << CodeStub::MajorName(major_key_, false) << " ";
+  os << CodeStub::MajorName(major_key_, false) << "\x20";
   return HUnaryCall::PrintDataTo(os);
 }
 
 
 OStream& HUnknownOSRValue::PrintDataTo(OStream& os) const {  // NOLINT
-  const char* type = "expression";
-  if (environment_->is_local_index(index_)) type = "local";
-  if (environment_->is_special_index(index_)) type = "special";
-  if (environment_->is_parameter_index(index_)) type = "parameter";
-  return os << type << " @ " << index_;
+  const char* type = "\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e";
+  if (environment_->is_local_index(index_)) type = "\x6c\x6f\x63\x61\x6c";
+  if (environment_->is_special_index(index_)) type = "\x73\x70\x65\x63\x69\x61\x6c";
+  if (environment_->is_parameter_index(index_)) type = "\x70\x61\x72\x61\x6d\x65\x74\x65\x72";
+  return os << type << "\x20\x40\x20" << index_;
 }
 
 
 OStream& HInstanceOf::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(left()) << " " << NameOf(right()) << " "
+  return os << NameOf(left()) << "\x20" << NameOf(right()) << "\x20"
             << NameOf(context());
 }
 
@@ -2433,16 +2433,16 @@ void HPushArguments::AddInput(HValue* value) {
 
 
 OStream& HPhi::PrintTo(OStream& os) const {  // NOLINT
-  os << "[";
+  os << "\x5b";
   for (int i = 0; i < OperandCount(); ++i) {
-    os << " " << NameOf(OperandAt(i)) << " ";
+    os << "\x20" << NameOf(OperandAt(i)) << "\x20";
   }
-  return os << " uses:" << UseCount() << "_"
-            << smi_non_phi_uses() + smi_indirect_uses() << "s_"
-            << int32_non_phi_uses() + int32_indirect_uses() << "i_"
-            << double_non_phi_uses() + double_indirect_uses() << "d_"
-            << tagged_non_phi_uses() + tagged_indirect_uses() << "t"
-            << TypeOf(this) << "]";
+  return os << "\x20\x75\x73\x65\x73\x3a" << UseCount() << "\x5f"
+            << smi_non_phi_uses() + smi_indirect_uses() << "\x73\x5f"
+            << int32_non_phi_uses() + int32_indirect_uses() << "\x69\x5f"
+            << double_non_phi_uses() + double_indirect_uses() << "\x64\x5f"
+            << tagged_non_phi_uses() + tagged_indirect_uses() << "\x74"
+            << TypeOf(this) << "\x5d";
 }
 
 
@@ -2502,7 +2502,7 @@ void HPhi::InitRealUses(int phi_id) {
       Representation rep = value->observed_input_representation(it.index());
       non_phi_uses_[rep.kind()] += 1;
       if (FLAG_trace_representation) {
-        PrintF("#%d Phi is used by real #%d %s as %s\n",
+        PrintF("\x23\x6c\x84\x20\x50\x68\x69\x20\x69\x73\x20\x75\x73\x65\x64\x20\x62\x79\x20\x72\x65\x61\x6c\x20\x23\x6c\x84\x20\x6c\xa2\x20\x61\x73\x20\x6c\xa2\xa",
                id(), value->id(), value->Mnemonic(), rep.Mnemonic());
       }
       if (!value->IsSimulate()) {
@@ -2520,7 +2520,7 @@ void HPhi::InitRealUses(int phi_id) {
 
 void HPhi::AddNonPhiUsesFrom(HPhi* other) {
   if (FLAG_trace_representation) {
-    PrintF("adding to #%d Phi uses of #%d Phi: s%d i%d d%d t%d\n",
+    PrintF("\x61\x64\x64\x69\x6e\x67\x20\x74\x6f\x20\x23\x6c\x84\x20\x50\x68\x69\x20\x75\x73\x65\x73\x20\x6f\x66\x20\x23\x6c\x84\x20\x50\x68\x69\x3a\x20\x73\x6c\x84\x20\x69\x6c\x84\x20\x64\x6c\x84\x20\x74\x6c\x84\xa",
            id(), other->id(),
            other->non_phi_uses_[Representation::kSmi],
            other->non_phi_uses_[Representation::kInteger32],
@@ -2565,18 +2565,18 @@ void HSimulate::MergeWith(ZoneList<HSimulate*>* list) {
 
 
 OStream& HSimulate::PrintDataTo(OStream& os) const {  // NOLINT
-  os << "id=" << ast_id().ToInt();
-  if (pop_count_ > 0) os << " pop " << pop_count_;
+  os << "\x69\x64\x3d" << ast_id().ToInt();
+  if (pop_count_ > 0) os << "\x20\x70\x6f\x70\x20" << pop_count_;
   if (values_.length() > 0) {
-    if (pop_count_ > 0) os << " /";
+    if (pop_count_ > 0) os << "\x20\x2f";
     for (int i = values_.length() - 1; i >= 0; --i) {
       if (HasAssignedIndexAt(i)) {
-        os << " var[" << GetAssignedIndexAt(i) << "] = ";
+        os << "\x20\x76\x61\x72\x5b" << GetAssignedIndexAt(i) << "\x5d\x20\x3d\x20";
       } else {
-        os << " push ";
+        os << "\x20\x70\x75\x73\x68\x20";
       }
       os << NameOf(values_[i]);
-      if (i > 0) os << ",";
+      if (i > 0) os << "\x2c";
     }
   }
   return os;
@@ -2627,7 +2627,7 @@ void HCapturedObject::ReplayEnvironment(HEnvironment* env) {
 
 
 OStream& HCapturedObject::PrintDataTo(OStream& os) const {  // NOLINT
-  os << "#" << capture_id() << " ";
+  os << "\x23" << capture_id() << "\x20";
   return HDematerializedObject::PrintDataTo(os);
 }
 
@@ -2641,7 +2641,7 @@ void HEnterInlined::RegisterReturnTarget(HBasicBlock* return_target,
 
 OStream& HEnterInlined::PrintDataTo(OStream& os) const {  // NOLINT
   return os << function()->debug_name()->ToCString().get()
-            << ", id=" << function()->id().ToInt();
+            << "\x2c\x20\x69\x64\x3d" << function()->id().ToInt();
 }
 
 
@@ -2924,27 +2924,27 @@ Maybe<HConstant*> HConstant::CopyToTruncatedNumber(Zone* zone) {
 
 OStream& HConstant::PrintDataTo(OStream& os) const {  // NOLINT
   if (has_int32_value_) {
-    os << int32_value_ << " ";
+    os << int32_value_ << "\x20";
   } else if (has_double_value_) {
-    os << double_value_ << " ";
+    os << double_value_ << "\x20";
   } else if (has_external_reference_value_) {
-    os << reinterpret_cast<void*>(external_reference_value_.address()) << " ";
+    os << reinterpret_cast<void*>(external_reference_value_.address()) << "\x20";
   } else {
     // The handle() method is silently and lazily mutating the object.
     Handle<Object> h = const_cast<HConstant*>(this)->handle(Isolate::Current());
-    os << Brief(*h) << " ";
-    if (HasStableMapValue()) os << "[stable-map] ";
-    if (HasObjectMap()) os << "[map " << *ObjectMap().handle() << "] ";
+    os << Brief(*h) << "\x20";
+    if (HasStableMapValue()) os << "\x5b\x73\x74\x61\x62\x6c\x65\x2d\x6d\x61\x70\x5d\x20";
+    if (HasObjectMap()) os << "\x5b\x6d\x61\x70\x20" << *ObjectMap().handle() << "\x5d\x20";
   }
-  if (!is_not_in_new_space_) os << "[new space] ";
+  if (!is_not_in_new_space_) os << "\x5b\x6e\x65\x77\x20\x73\x70\x61\x63\x65\x5d\x20";
   return os;
 }
 
 
 OStream& HBinaryOperation::PrintDataTo(OStream& os) const {  // NOLINT
-  os << NameOf(left()) << " " << NameOf(right());
-  if (CheckFlag(kCanOverflow)) os << " !";
-  if (CheckFlag(kBailoutOnMinusZero)) os << " -0?";
+  os << NameOf(left()) << "\x20" << NameOf(right());
+  if (CheckFlag(kCanOverflow)) os << "\x20\x21";
+  if (CheckFlag(kBailoutOnMinusZero)) os << "\x20\x2d\x30\x3f";
   return os;
 }
 
@@ -2952,19 +2952,19 @@ OStream& HBinaryOperation::PrintDataTo(OStream& os) const {  // NOLINT
 void HBinaryOperation::InferRepresentation(HInferRepresentationPhase* h_infer) {
   DCHECK(CheckFlag(kFlexibleRepresentation));
   Representation new_rep = RepresentationFromInputs();
-  UpdateRepresentation(new_rep, h_infer, "inputs");
+  UpdateRepresentation(new_rep, h_infer, "\x69\x6e\x70\x75\x74\x73");
 
   if (representation().IsSmi() && HasNonSmiUse()) {
     UpdateRepresentation(
-        Representation::Integer32(), h_infer, "use requirements");
+        Representation::Integer32(), h_infer, "\x75\x73\x65\x20\x72\x65\x71\x75\x69\x72\x65\x6d\x65\x6e\x74\x73");
   }
 
   if (observed_output_representation_.IsNone()) {
     new_rep = RepresentationFromUses();
-    UpdateRepresentation(new_rep, h_infer, "uses");
+    UpdateRepresentation(new_rep, h_infer, "\x75\x73\x65\x73");
   } else {
     new_rep = RepresentationFromOutput();
-    UpdateRepresentation(new_rep, h_infer, "output");
+    UpdateRepresentation(new_rep, h_infer, "\x6f\x75\x74\x70\x75\x74");
   }
 }
 
@@ -3019,7 +3019,7 @@ void HBinaryOperation::AssumeRepresentation(Representation r) {
 void HMathMinMax::InferRepresentation(HInferRepresentationPhase* h_infer) {
   DCHECK(CheckFlag(kFlexibleRepresentation));
   Representation new_rep = RepresentationFromInputs();
-  UpdateRepresentation(new_rep, h_infer, "inputs");
+  UpdateRepresentation(new_rep, h_infer, "\x69\x6e\x70\x75\x74\x73");
   // Do not care about uses.
 }
 
@@ -3169,25 +3169,25 @@ Range* HLoadKeyed::InferRange(Zone* zone) {
 
 
 OStream& HCompareGeneric::PrintDataTo(OStream& os) const {  // NOLINT
-  os << Token::Name(token()) << " ";
+  os << Token::Name(token()) << "\x20";
   return HBinaryOperation::PrintDataTo(os);
 }
 
 
 OStream& HStringCompareAndBranch::PrintDataTo(OStream& os) const {  // NOLINT
-  os << Token::Name(token()) << " ";
+  os << Token::Name(token()) << "\x20";
   return HControlInstruction::PrintDataTo(os);
 }
 
 
 OStream& HCompareNumericAndBranch::PrintDataTo(OStream& os) const {  // NOLINT
-  os << Token::Name(token()) << " " << NameOf(left()) << " " << NameOf(right());
+  os << Token::Name(token()) << "\x20" << NameOf(left()) << "\x20" << NameOf(right());
   return HControlInstruction::PrintDataTo(os);
 }
 
 
 OStream& HCompareObjectEqAndBranch::PrintDataTo(OStream& os) const {  // NOLINT
-  os << NameOf(left()) << " " << NameOf(right());
+  os << NameOf(left()) << "\x20" << NameOf(right());
   return HControlInstruction::PrintDataTo(os);
 }
 
@@ -3379,21 +3379,21 @@ OStream& HLoadNamedField::PrintDataTo(OStream& os) const {  // NOLINT
   os << NameOf(object()) << access_;
 
   if (maps() != NULL) {
-    os << " [" << *maps()->at(0).handle();
+    os << "\x20\x5b" << *maps()->at(0).handle();
     for (int i = 1; i < maps()->size(); ++i) {
-      os << "," << *maps()->at(i).handle();
+      os << "\x2c" << *maps()->at(i).handle();
     }
-    os << "]";
+    os << "\x5d";
   }
 
-  if (HasDependency()) os << " " << NameOf(dependency());
+  if (HasDependency()) os << "\x20" << NameOf(dependency());
   return os;
 }
 
 
 OStream& HLoadNamedGeneric::PrintDataTo(OStream& os) const {  // NOLINT
   Handle<String> n = Handle<String>::cast(name());
-  return os << NameOf(object()) << "." << n->ToCString().get();
+  return os << NameOf(object()) << "\x2e" << n->ToCString().get();
 }
 
 
@@ -3403,15 +3403,15 @@ OStream& HLoadKeyed::PrintDataTo(OStream& os) const {  // NOLINT
   } else {
     DCHECK(elements_kind() >= FIRST_EXTERNAL_ARRAY_ELEMENTS_KIND &&
            elements_kind() <= LAST_EXTERNAL_ARRAY_ELEMENTS_KIND);
-    os << NameOf(elements()) << "." << ElementsKindToString(elements_kind());
+    os << NameOf(elements()) << "\x2e" << ElementsKindToString(elements_kind());
   }
 
-  os << "[" << NameOf(key());
-  if (IsDehoisted()) os << " + " << base_offset();
-  os << "]";
+  os << "\x5b" << NameOf(key());
+  if (IsDehoisted()) os << "\x20\x2b\x20" << base_offset();
+  os << "\x5d";
 
-  if (HasDependency()) os << " " << NameOf(dependency());
-  if (RequiresHoleCheck()) os << " check_hole";
+  if (HasDependency()) os << "\x20" << NameOf(dependency());
+  if (RequiresHoleCheck()) os << "\x20\x63\x68\x65\x63\x6b\x5f\x68\x6f\x6c\x65";
   return os;
 }
 
@@ -3486,7 +3486,7 @@ bool HLoadKeyed::RequiresHoleCheck() const {
 
 
 OStream& HLoadKeyedGeneric::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(object()) << "[" << NameOf(key()) << "]";
+  return os << NameOf(object()) << "\x5b" << NameOf(key()) << "\x5d";
 }
 
 
@@ -3529,15 +3529,15 @@ HValue* HLoadKeyedGeneric::Canonicalize() {
 
 OStream& HStoreNamedGeneric::PrintDataTo(OStream& os) const {  // NOLINT
   Handle<String> n = Handle<String>::cast(name());
-  return os << NameOf(object()) << "." << n->ToCString().get() << " = "
+  return os << NameOf(object()) << "\x2e" << n->ToCString().get() << "\x20\x3d\x20"
             << NameOf(value());
 }
 
 
 OStream& HStoreNamedField::PrintDataTo(OStream& os) const {  // NOLINT
-  os << NameOf(object()) << access_ << " = " << NameOf(value());
-  if (NeedsWriteBarrier()) os << " (write-barrier)";
-  if (has_transition()) os << " (transition map " << *transition_map() << ")";
+  os << NameOf(object()) << access_ << "\x20\x3d\x20" << NameOf(value());
+  if (NeedsWriteBarrier()) os << "\x20\x28\x77\x72\x69\x74\x65\x2d\x62\x61\x72\x72\x69\x65\x72\x29";
+  if (has_transition()) os << "\x20\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x6d\x61\x70\x20" << *transition_map() << "\x29";
   return os;
 }
 
@@ -3548,18 +3548,18 @@ OStream& HStoreKeyed::PrintDataTo(OStream& os) const {  // NOLINT
   } else {
     DCHECK(elements_kind() >= FIRST_EXTERNAL_ARRAY_ELEMENTS_KIND &&
            elements_kind() <= LAST_EXTERNAL_ARRAY_ELEMENTS_KIND);
-    os << NameOf(elements()) << "." << ElementsKindToString(elements_kind());
+    os << NameOf(elements()) << "\x2e" << ElementsKindToString(elements_kind());
   }
 
-  os << "[" << NameOf(key());
-  if (IsDehoisted()) os << " + " << base_offset();
-  return os << "] = " << NameOf(value());
+  os << "\x5b" << NameOf(key());
+  if (IsDehoisted()) os << "\x20\x2b\x20" << base_offset();
+  return os << "\x5d\x20\x3d\x20" << NameOf(value());
 }
 
 
 OStream& HStoreKeyedGeneric::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(object()) << "[" << NameOf(key())
-            << "] = " << NameOf(value());
+  return os << NameOf(object()) << "\x5b" << NameOf(key())
+            << "\x5d\x20\x3d\x20" << NameOf(value());
 }
 
 
@@ -3567,19 +3567,19 @@ OStream& HTransitionElementsKind::PrintDataTo(OStream& os) const {  // NOLINT
   os << NameOf(object());
   ElementsKind from_kind = original_map().handle()->elements_kind();
   ElementsKind to_kind = transitioned_map().handle()->elements_kind();
-  os << " " << *original_map().handle() << " ["
-     << ElementsAccessor::ForKind(from_kind)->name() << "] -> "
-     << *transitioned_map().handle() << " ["
-     << ElementsAccessor::ForKind(to_kind)->name() << "]";
-  if (IsSimpleMapChangeTransition(from_kind, to_kind)) os << " (simple)";
+  os << "\x20" << *original_map().handle() << "\x20\x5b"
+     << ElementsAccessor::ForKind(from_kind)->name() << "\x5d\x20\x2d\x3e\x20"
+     << *transitioned_map().handle() << "\x20\x5b"
+     << ElementsAccessor::ForKind(to_kind)->name() << "\x5d";
+  if (IsSimpleMapChangeTransition(from_kind, to_kind)) os << "\x20\x28\x73\x69\x6d\x70\x6c\x65\x29";
   return os;
 }
 
 
 OStream& HLoadGlobalCell::PrintDataTo(OStream& os) const {  // NOLINT
-  os << "[" << *cell().handle() << "]";
-  if (!details_.IsDontDelete()) os << " (deleteable)";
-  if (details_.IsReadOnly()) os << " (read-only)";
+  os << "\x5b" << *cell().handle() << "\x5d";
+  if (!details_.IsDontDelete()) os << "\x20\x28\x64\x65\x6c\x65\x74\x65\x61\x62\x6c\x65\x29";
+  if (details_.IsReadOnly()) os << "\x20\x28\x72\x65\x61\x64\x2d\x6f\x6e\x6c\x79\x29";
   return os;
 }
 
@@ -3595,32 +3595,32 @@ bool HLoadGlobalCell::RequiresHoleCheck() const {
 
 
 OStream& HLoadGlobalGeneric::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << name()->ToCString().get() << " ";
+  return os << name()->ToCString().get() << "\x20";
 }
 
 
 OStream& HInnerAllocatedObject::PrintDataTo(OStream& os) const {  // NOLINT
-  os << NameOf(base_object()) << " offset ";
+  os << NameOf(base_object()) << "\x20\x6f\x66\x66\x73\x65\x74\x20";
   return offset()->PrintTo(os);
 }
 
 
 OStream& HStoreGlobalCell::PrintDataTo(OStream& os) const {  // NOLINT
-  os << "[" << *cell().handle() << "] = " << NameOf(value());
-  if (!details_.IsDontDelete()) os << " (deleteable)";
-  if (details_.IsReadOnly()) os << " (read-only)";
+  os << "\x5b" << *cell().handle() << "\x5d\x20\x3d\x20" << NameOf(value());
+  if (!details_.IsDontDelete()) os << "\x20\x28\x64\x65\x6c\x65\x74\x65\x61\x62\x6c\x65\x29";
+  if (details_.IsReadOnly()) os << "\x20\x28\x72\x65\x61\x64\x2d\x6f\x6e\x6c\x79\x29";
   return os;
 }
 
 
 OStream& HLoadContextSlot::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(value()) << "[" << slot_index() << "]";
+  return os << NameOf(value()) << "\x5b" << slot_index() << "\x5d";
 }
 
 
 OStream& HStoreContextSlot::PrintDataTo(OStream& os) const {  // NOLINT
-  return os << NameOf(context()) << "[" << slot_index()
-            << "] = " << NameOf(value());
+  return os << NameOf(context()) << "\x5b" << slot_index()
+            << "\x5d\x20\x3d\x20" << NameOf(value());
 }
 
 
@@ -3676,7 +3676,7 @@ bool HAllocate::HandleSideEffectDominator(GVNFlag side_effect,
   // Try to fold allocations together with their dominating allocations.
   if (!dominator->IsAllocate()) {
     if (FLAG_trace_allocation_folding) {
-      PrintF("#%d (%s) cannot fold into #%d (%s)\n",
+      PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x63\x61\x6e\x6e\x6f\x74\x20\x66\x6f\x6c\x64\x20\x69\x6e\x74\x6f\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\xa",
           id(), Mnemonic(), dominator->id(), dominator->Mnemonic());
     }
     return false;
@@ -3685,7 +3685,7 @@ bool HAllocate::HandleSideEffectDominator(GVNFlag side_effect,
   // Check whether we are folding within the same block for local folding.
   if (FLAG_use_local_allocation_folding && dominator->block() != block()) {
     if (FLAG_trace_allocation_folding) {
-      PrintF("#%d (%s) cannot fold into #%d (%s), crosses basic blocks\n",
+      PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x63\x61\x6e\x6e\x6f\x74\x20\x66\x6f\x6c\x64\x20\x69\x6e\x74\x6f\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x2c\x20\x63\x72\x6f\x73\x73\x65\x73\x20\x62\x61\x73\x69\x63\x20\x62\x6c\x6f\x63\x6b\x73\xa",
           id(), Mnemonic(), dominator->id(), dominator->Mnemonic());
     }
     return false;
@@ -3698,8 +3698,8 @@ bool HAllocate::HandleSideEffectDominator(GVNFlag side_effect,
   // TODO(hpayer): Add support for non-constant allocation in dominator.
   if (!dominator_size->IsInteger32Constant()) {
     if (FLAG_trace_allocation_folding) {
-      PrintF("#%d (%s) cannot fold into #%d (%s), "
-             "dynamic allocation size in dominator\n",
+      PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x63\x61\x6e\x6e\x6f\x74\x20\x66\x6f\x6c\x64\x20\x69\x6e\x74\x6f\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x2c\x20"
+             "\x64\x79\x6e\x61\x6d\x69\x63\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x73\x69\x7a\x65\x20\x69\x6e\x20\x64\x6f\x6d\x69\x6e\x61\x74\x6f\x72\xa",
           id(), Mnemonic(), dominator->id(), dominator->Mnemonic());
     }
     return false;
@@ -3712,8 +3712,8 @@ bool HAllocate::HandleSideEffectDominator(GVNFlag side_effect,
 
   if (!has_size_upper_bound()) {
     if (FLAG_trace_allocation_folding) {
-      PrintF("#%d (%s) cannot fold into #%d (%s), "
-             "can't estimate total allocation size\n",
+      PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x63\x61\x6e\x6e\x6f\x74\x20\x66\x6f\x6c\x64\x20\x69\x6e\x74\x6f\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x2c\x20"
+             "\x63\x61\x6e\x27\x74\x20\x65\x73\x74\x69\x6d\x61\x74\x65\x20\x74\x6f\x74\x61\x6c\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x73\x69\x7a\x65\xa",
           id(), Mnemonic(), dominator->id(), dominator->Mnemonic());
     }
     return false;
@@ -3727,8 +3727,8 @@ bool HAllocate::HandleSideEffectDominator(GVNFlag side_effect,
     HInstruction* current_instr = HInstruction::cast(current_size);
     if (!current_instr->Dominates(dominator_allocate)) {
       if (FLAG_trace_allocation_folding) {
-        PrintF("#%d (%s) cannot fold into #%d (%s), dynamic size "
-               "value does not dominate target allocation\n",
+        PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x63\x61\x6e\x6e\x6f\x74\x20\x66\x6f\x6c\x64\x20\x69\x6e\x74\x6f\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x2c\x20\x64\x79\x6e\x61\x6d\x69\x63\x20\x73\x69\x7a\x65\x20"
+               "\x76\x61\x6c\x75\x65\x20\x64\x6f\x65\x73\x20\x6e\x6f\x74\x20\x64\x6f\x6d\x69\x6e\x61\x74\x65\x20\x74\x61\x72\x67\x65\x74\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\xa",
             id(), Mnemonic(), dominator_allocate->id(),
             dominator_allocate->Mnemonic());
       }
@@ -3762,7 +3762,7 @@ bool HAllocate::HandleSideEffectDominator(GVNFlag side_effect,
   // whole Page::kMaxRegularHeapObjectSize memory.
   if (new_dominator_size > Page::kMaxRegularHeapObjectSize - kPointerSize) {
     if (FLAG_trace_allocation_folding) {
-      PrintF("#%d (%s) cannot fold into #%d (%s) due to size: %d\n",
+      PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x63\x61\x6e\x6e\x6f\x74\x20\x66\x6f\x6c\x64\x20\x69\x6e\x74\x6f\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x64\x75\x65\x20\x74\x6f\x20\x73\x69\x7a\x65\x3a\x20\x6c\x84\xa",
           id(), Mnemonic(), dominator_allocate->id(),
           dominator_allocate->Mnemonic(), new_dominator_size);
     }
@@ -3837,7 +3837,7 @@ bool HAllocate::HandleSideEffectDominator(GVNFlag side_effect,
   dominated_allocate_instr->InsertBefore(this);
   DeleteAndReplaceWith(dominated_allocate_instr);
   if (FLAG_trace_allocation_folding) {
-    PrintF("#%d (%s) folded into #%d (%s)\n",
+    PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x66\x6f\x6c\x64\x65\x64\x20\x69\x6e\x74\x6f\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\xa",
         id(), Mnemonic(), dominator_allocate->id(),
         dominator_allocate->Mnemonic());
   }
@@ -3850,7 +3850,7 @@ HAllocate* HAllocate::GetFoldableDominator(HAllocate* dominator) {
     // We cannot hoist old space allocations over new space allocations.
     if (IsNewSpaceAllocation() || dominator->IsNewSpaceAllocation()) {
       if (FLAG_trace_allocation_folding) {
-        PrintF("#%d (%s) cannot fold into #%d (%s), new space hoisting\n",
+        PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x63\x61\x6e\x6e\x6f\x74\x20\x66\x6f\x6c\x64\x20\x69\x6e\x74\x6f\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x2c\x20\x6e\x65\x77\x20\x73\x70\x61\x63\x65\x20\x68\x6f\x69\x73\x74\x69\x6e\x67\xa",
             id(), Mnemonic(), dominator->id(), dominator->Mnemonic());
       }
       return NULL;
@@ -3864,7 +3864,7 @@ HAllocate* HAllocate::GetFoldableDominator(HAllocate* dominator) {
     if (dominator_dominator == NULL) {
       dominating_allocate_ = dominator;
       if (FLAG_trace_allocation_folding) {
-        PrintF("#%d (%s) cannot fold into #%d (%s), different spaces\n",
+        PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x63\x61\x6e\x6e\x6f\x74\x20\x66\x6f\x6c\x64\x20\x69\x6e\x74\x6f\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x2c\x20\x64\x69\x66\x66\x65\x72\x65\x6e\x74\x20\x73\x70\x61\x63\x65\x73\xa",
             id(), Mnemonic(), dominator->id(), dominator->Mnemonic());
       }
       return NULL;
@@ -3877,7 +3877,7 @@ HAllocate* HAllocate::GetFoldableDominator(HAllocate* dominator) {
     // allocation as soon as we have store elimination.
     if (block()->block_id() != dominator_dominator->block()->block_id()) {
       if (FLAG_trace_allocation_folding) {
-        PrintF("#%d (%s) cannot fold into #%d (%s), different basic blocks\n",
+        PrintF("\x23\x6c\x84\x20\x28\x6c\xa2\x29\x20\x63\x61\x6e\x6e\x6f\x74\x20\x66\x6f\x6c\x64\x20\x69\x6e\x74\x6f\x20\x23\x6c\x84\x20\x28\x6c\xa2\x29\x2c\x20\x64\x69\x66\x66\x65\x72\x65\x6e\x74\x20\x62\x61\x73\x69\x63\x20\x62\x6c\x6f\x63\x6b\x73\xa",
             id(), Mnemonic(), dominator_dominator->id(),
             dominator_dominator->Mnemonic());
       }
@@ -3974,13 +3974,13 @@ void HAllocate::ClearNextMapWord(int offset) {
 
 
 OStream& HAllocate::PrintDataTo(OStream& os) const {  // NOLINT
-  os << NameOf(size()) << " (";
-  if (IsNewSpaceAllocation()) os << "N";
-  if (IsOldPointerSpaceAllocation()) os << "P";
-  if (IsOldDataSpaceAllocation()) os << "D";
-  if (MustAllocateDoubleAligned()) os << "A";
-  if (MustPrefillWithFiller()) os << "F";
-  return os << ")";
+  os << NameOf(size()) << "\x20\x28";
+  if (IsNewSpaceAllocation()) os << "\x4e";
+  if (IsOldPointerSpaceAllocation()) os << "\x50";
+  if (IsOldDataSpaceAllocation()) os << "\x44";
+  if (MustAllocateDoubleAligned()) os << "\x41";
+  if (MustPrefillWithFiller()) os << "\x46";
+  return os << "\x29";
 }
 
 
@@ -4084,19 +4084,19 @@ HInstruction* HStringAdd::New(Zone* zone,
 
 OStream& HStringAdd::PrintDataTo(OStream& os) const {  // NOLINT
   if ((flags() & STRING_ADD_CHECK_BOTH) == STRING_ADD_CHECK_BOTH) {
-    os << "_CheckBoth";
+    os << "\x5f\x43\x68\x65\x63\x6b\x42\x6f\x74\x68";
   } else if ((flags() & STRING_ADD_CHECK_BOTH) == STRING_ADD_CHECK_LEFT) {
-    os << "_CheckLeft";
+    os << "\x5f\x43\x68\x65\x63\x6b\x4c\x65\x66\x74";
   } else if ((flags() & STRING_ADD_CHECK_BOTH) == STRING_ADD_CHECK_RIGHT) {
-    os << "_CheckRight";
+    os << "\x5f\x43\x68\x65\x63\x6b\x52\x69\x67\x68\x74";
   }
   HBinaryOperation::PrintDataTo(os);
-  os << " (";
+  os << "\x20\x28";
   if (pretenure_flag() == NOT_TENURED)
-    os << "N";
+    os << "\x4e";
   else if (pretenure_flag() == TENURED)
-    os << "D";
-  return os << ")";
+    os << "\x44";
+  return os << "\x29";
 }
 
 
@@ -4207,15 +4207,15 @@ Representation HUnaryMathOperation::RepresentationFromUses() {
     }
     if (FLAG_trace_representation) {
       if (!rep_required.IsDouble() || rep_observed.IsDouble()) {
-        PrintF("#%d %s is used by #%d %s as %s%s\n",
+        PrintF("\x23\x6c\x84\x20\x6c\xa2\x20\x69\x73\x20\x75\x73\x65\x64\x20\x62\x79\x20\x23\x6c\x84\x20\x6c\xa2\x20\x61\x73\x20\x6c\xa2\x6c\xa2\xa",
                id(), Mnemonic(), use->id(),
                use->Mnemonic(), rep_observed.Mnemonic(),
-               (use->CheckFlag(kTruncatingToInt32) ? "-trunc" : ""));
+               (use->CheckFlag(kTruncatingToInt32) ? "\x2d\x74\x72\x75\x6e\x63" : ""));
       } else {
-        PrintF("#%d %s is required by #%d %s as %s%s\n",
+        PrintF("\x23\x6c\x84\x20\x6c\xa2\x20\x69\x73\x20\x72\x65\x71\x75\x69\x72\x65\x64\x20\x62\x79\x20\x23\x6c\x84\x20\x6c\xa2\x20\x61\x73\x20\x6c\xa2\x6c\xa2\xa",
                id(), Mnemonic(), use->id(),
                use->Mnemonic(), rep_required.Mnemonic(),
-               (use->CheckFlag(kTruncatingToInt32) ? "-trunc" : ""));
+               (use->CheckFlag(kTruncatingToInt32) ? "\x2d\x74\x72\x75\x6e\x63" : ""));
       }
     }
   }
@@ -4419,7 +4419,7 @@ HInstruction* HSeqStringGetChar::New(Zone* zone,
 
 
 OStream& HBitwise::PrintDataTo(OStream& os) const {  // NOLINT
-  os << Token::Name(op_) << " ";
+  os << Token::Name(op_) << "\x20";
   return HBitwiseBinaryOperation::PrintDataTo(os);
 }
 
@@ -4463,11 +4463,11 @@ void HPhi::SimplifyConstantInputs() {
 void HPhi::InferRepresentation(HInferRepresentationPhase* h_infer) {
   DCHECK(CheckFlag(kFlexibleRepresentation));
   Representation new_rep = RepresentationFromInputs();
-  UpdateRepresentation(new_rep, h_infer, "inputs");
+  UpdateRepresentation(new_rep, h_infer, "\x69\x6e\x70\x75\x74\x73");
   new_rep = RepresentationFromUses();
-  UpdateRepresentation(new_rep, h_infer, "uses");
+  UpdateRepresentation(new_rep, h_infer, "\x75\x73\x65\x73");
   new_rep = RepresentationFromUseRequirements();
-  UpdateRepresentation(new_rep, h_infer, "use requirements");
+  UpdateRepresentation(new_rep, h_infer, "\x75\x73\x65\x20\x72\x65\x71\x75\x69\x72\x65\x6d\x65\x6e\x74\x73");
 }
 
 
@@ -4750,38 +4750,38 @@ void HObjectAccess::SetGVNFlags(HValue *instr, PropertyAccessType access_type) {
 
 
 OStream& operator<<(OStream& os, const HObjectAccess& access) {
-  os << ".";
+  os << "\x2e";
 
   switch (access.portion()) {
     case HObjectAccess::kArrayLengths:
     case HObjectAccess::kStringLengths:
-      os << "%length";
+      os << "\x6c\x93\x85\x95\x87\x74\x68";
       break;
     case HObjectAccess::kElementsPointer:
-      os << "%elements";
+      os << "\x6c\x85\x6c\x65\x6d\x65\x6e\x74\x73";
       break;
     case HObjectAccess::kMaps:
-      os << "%map";
+      os << "\x25\x6d\x61\x70";
       break;
     case HObjectAccess::kDouble:  // fall through
     case HObjectAccess::kInobject:
       if (!access.name().is_null()) {
         os << Handle<String>::cast(access.name())->ToCString().get();
       }
-      os << "[in-object]";
+      os << "\x5b\x69\x6e\x2d\x6f\x62\x6a\x65\x63\x74\x5d";
       break;
     case HObjectAccess::kBackingStore:
       if (!access.name().is_null()) {
         os << Handle<String>::cast(access.name())->ToCString().get();
       }
-      os << "[backing-store]";
+      os << "\x5b\x62\x61\x63\x6b\x69\x6e\x67\x2d\x73\x74\x6f\x72\x65\x5d";
       break;
     case HObjectAccess::kExternalMemory:
-      os << "[external-memory]";
+      os << "\x5b\x65\x78\x74\x65\x72\x6e\x61\x6c\x2d\x6d\x65\x6d\x6f\x72\x79\x5d";
       break;
   }
 
-  return os << "@" << access.offset();
+  return os << "\x40" << access.offset();
 }
 
 } }  // namespace v8::internal

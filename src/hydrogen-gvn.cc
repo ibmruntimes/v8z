@@ -403,12 +403,12 @@ SideEffects SideEffectsTracker::ComputeDependsOn(HInstruction* instr) {
 OStream& operator<<(OStream& os, const TrackedEffects& te) {
   SideEffectsTracker* t = te.tracker;
   const char* separator = "";
-  os << "[";
+  os << "\x5b";
   for (int bit = 0; bit < kNumberOfFlags; ++bit) {
     GVNFlag flag = GVNFlagFromInt(bit);
     if (te.effects.ContainsFlag(flag)) {
       os << separator;
-      separator = ", ";
+      separator = "\x2c\x20";
       switch (flag) {
 #define DECLARE_FLAG(Type) \
   case k##Type:            \
@@ -424,17 +424,17 @@ GVN_UNTRACKED_FLAG_LIST(DECLARE_FLAG)
   }
   for (int index = 0; index < t->num_global_vars_; ++index) {
     if (te.effects.ContainsSpecial(t->GlobalVar(index))) {
-      os << separator << "[" << *t->global_vars_[index].handle() << "]";
-      separator = ", ";
+      os << separator << "\x5b" << *t->global_vars_[index].handle() << "\x5d";
+      separator = "\x2c\x20";
     }
   }
   for (int index = 0; index < t->num_inobject_fields_; ++index) {
     if (te.effects.ContainsSpecial(t->InobjectField(index))) {
       os << separator << t->inobject_fields_[index];
-      separator = ", ";
+      separator = "\x2c\x20";
     }
   }
-  os << "]";
+  os << "\x5d";
   return os;
 }
 
@@ -449,8 +449,8 @@ bool SideEffectsTracker::ComputeGlobalVar(Unique<Cell> cell, int* index) {
   if (num_global_vars_ < kNumberOfGlobalVars) {
     if (FLAG_trace_gvn) {
       OFStream os(stdout);
-      os << "Tracking global var [" << *cell.handle() << "] "
-         << "(mapped to index " << num_global_vars_ << ")" << endl;
+      os << "\x54\x72\x61\x63\x6b\x69\x6e\x67\x20\x67\x6c\x6f\x62\x61\x6c\x20\x76\x61\x72\x20\x5b" << *cell.handle() << "\x5d\x20"
+         << "\x28\x6d\x61\x70\x70\x65\x64\x20\x74\x6f\x20\x69\x6e\x64\x65\x78\x20" << num_global_vars_ << "\x29" << endl;
     }
     *index = num_global_vars_;
     global_vars_[num_global_vars_++] = cell;
@@ -471,8 +471,8 @@ bool SideEffectsTracker::ComputeInobjectField(HObjectAccess access,
   if (num_inobject_fields_ < kNumberOfInobjectFields) {
     if (FLAG_trace_gvn) {
       OFStream os(stdout);
-      os << "Tracking inobject field access " << access << " (mapped to index "
-         << num_inobject_fields_ << ")" << endl;
+      os << "\x54\x72\x61\x63\x6b\x69\x6e\x67\x20\x69\x6e\x6f\x62\x6a\x65\x63\x74\x20\x66\x69\x65\x6c\x64\x20\x61\x63\x63\x65\x73\x73\x20" << access << "\x20\x28\x6d\x61\x70\x70\x65\x64\x20\x74\x6f\x20\x69\x6e\x64\x65\x78\x20"
+         << num_inobject_fields_ << "\x29" << endl;
     }
     *index = num_inobject_fields_;
     inobject_fields_[num_inobject_fields_++] = access;
@@ -483,7 +483,7 @@ bool SideEffectsTracker::ComputeInobjectField(HObjectAccess access,
 
 
 HGlobalValueNumberingPhase::HGlobalValueNumberingPhase(HGraph* graph)
-    : HPhase("H_Global value numbering", graph),
+    : HPhase("\x48\x5f\x47\x6c\x6f\x62\x61\x6c\x20\x76\x61\x6c\x75\x65\x20\x6e\x75\x6d\x62\x65\x72\x69\x6e\x67", graph),
       removed_side_effects_(false),
       block_side_effects_(graph->blocks()->length(), zone()),
       loop_side_effects_(graph->blocks()->length(), zone()),
@@ -558,15 +558,15 @@ void HGlobalValueNumberingPhase::ComputeBlockSideEffects() {
 
 
 void HGlobalValueNumberingPhase::LoopInvariantCodeMotion() {
-  TRACE_GVN_1("Using optimistic loop invariant code motion: %s\n",
-              graph()->use_optimistic_licm() ? "yes" : "no");
+  TRACE_GVN_1("\x55\x73\x69\x6e\x67\x20\x6f\x70\x74\x69\x6d\x69\x73\x74\x69\x63\x20\x6c\x6f\x6f\x70\x20\x69\x6e\x76\x61\x72\x69\x61\x6e\x74\x20\x63\x6f\x64\x65\x20\x6d\x6f\x74\x69\x6f\x6e\x3a\x20\x6c\xa2\xa",
+              graph()->use_optimistic_licm() ? "\x79\x65\x73" : "\x6e\x6f");
   for (int i = graph()->blocks()->length() - 1; i >= 0; --i) {
     HBasicBlock* block = graph()->blocks()->at(i);
     if (block->IsLoopHeader()) {
       SideEffects side_effects = loop_side_effects_[block->block_id()];
       if (FLAG_trace_gvn) {
         OFStream os(stdout);
-        os << "Try loop invariant motion for " << *block << " changes "
+        os << "\x54\x72\x79\x20\x6c\x6f\x6f\x70\x20\x69\x6e\x76\x61\x72\x69\x61\x6e\x74\x20\x6d\x6f\x74\x69\x6f\x6e\x20\x66\x6f\x72\x20" << *block << "\x20\x63\x68\x61\x6e\x67\x65\x73\x20"
            << Print(side_effects) << endl;
       }
       HBasicBlock* last = block->loop_information()->GetLastBackEdge();
@@ -585,7 +585,7 @@ void HGlobalValueNumberingPhase::ProcessLoopBlock(
   HBasicBlock* pre_header = loop_header->predecessors()->at(0);
   if (FLAG_trace_gvn) {
     OFStream os(stdout);
-    os << "Loop invariant code motion for " << *block << " depends on "
+    os << "\x4c\x6f\x6f\x70\x20\x69\x6e\x76\x61\x72\x69\x61\x6e\x74\x20\x63\x6f\x64\x65\x20\x6d\x6f\x74\x69\x6f\x6e\x20\x66\x6f\x72\x20" << *block << "\x20\x64\x65\x70\x65\x6e\x64\x73\x20\x6f\x6e\x20"
        << Print(loop_kills) << endl;
   }
   HInstruction* instr = block->first();
@@ -596,9 +596,9 @@ void HGlobalValueNumberingPhase::ProcessLoopBlock(
       SideEffects depends_on = side_effects_tracker_.ComputeDependsOn(instr);
       if (FLAG_trace_gvn) {
         OFStream os(stdout);
-        os << "Checking instruction i" << instr->id() << " ("
-           << instr->Mnemonic() << ") changes " << Print(changes)
-           << ", depends on " << Print(depends_on) << ". Loop changes "
+        os << "\x43\x68\x65\x63\x6b\x69\x6e\x67\x20\x69\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x20\x69" << instr->id() << "\x20\x28"
+           << instr->Mnemonic() << "\x29\x20\x63\x68\x61\x6e\x67\x65\x73\x20" << Print(changes)
+           << "\x2c\x20\x64\x65\x70\x65\x6e\x64\x73\x20\x6f\x6e\x20" << Print(depends_on) << "\x2e\x20\x4c\x6f\x6f\x70\x20\x63\x68\x61\x6e\x67\x65\x73\x20"
            << Print(loop_kills) << endl;
       }
       bool can_hoist = !depends_on.ContainsAnyOf(loop_kills);
@@ -615,7 +615,7 @@ void HGlobalValueNumberingPhase::ProcessLoopBlock(
         }
 
         if (inputs_loop_invariant && ShouldMove(instr, loop_header)) {
-          TRACE_GVN_2("Hoisting loop invariant instruction i%d to block B%d\n",
+          TRACE_GVN_2("\x48\x6f\x69\x73\x74\x69\x6e\x67\x20\x6c\x6f\x6f\x70\x20\x69\x6e\x76\x61\x72\x69\x61\x6e\x74\x20\x69\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x20\x69\x6c\x84\x20\x74\x6f\x20\x62\x6c\x6f\x63\x6b\x20\x42\x6c\x84\xa",
                       instr->id(), pre_header->block_id());
           // Move the instruction out of the loop.
           instr->Unlink();
@@ -760,7 +760,7 @@ class GvnBasicBlockState: public ZoneObject {
   GvnBasicBlockState* pop() {
     GvnBasicBlockState* result = previous_;
     while (result != NULL && result->is_done()) {
-      TRACE_GVN_2("Backtracking from block B%d to block b%d\n",
+      TRACE_GVN_2("\x42\x61\x63\x6b\x74\x72\x61\x63\x6b\x69\x6e\x67\x20\x66\x72\x6f\x6d\x20\x62\x6c\x6f\x63\x6b\x20\x42\x6c\x84\x20\x74\x6f\x20\x62\x6c\x6f\x63\x6b\x20\x62\x6c\x84\xa",
                   block()->block_id(),
                   previous_->block()->block_id())
       result = result->previous_;
@@ -794,9 +794,9 @@ void HGlobalValueNumberingPhase::AnalyzeGraph() {
     HInstructionMap* map = current->map();
     HSideEffectMap* dominators = current->dominators();
 
-    TRACE_GVN_2("Analyzing block B%d%s\n",
+    TRACE_GVN_2("\x41\x6e\x61\x6c\x79\x7a\x69\x6e\x67\x20\x62\x6c\x6f\x63\x6b\x20\x42\x6c\x84\x6c\xa2\xa",
                 block->block_id(),
-                block->IsLoopHeader() ? " (loop header)" : "");
+                block->IsLoopHeader() ? "\x20\x28\x6c\x6f\x6f\x70\x20\x68\x65\x61\x64\x65\x72\x29" : "");
 
     // If this is a loop header kill everything killed by the loop.
     if (block->IsLoopHeader()) {
@@ -812,7 +812,7 @@ void HGlobalValueNumberingPhase::AnalyzeGraph() {
           HValue* other = dominators->at(i);
           GVNFlag flag = GVNFlagFromInt(i);
           if (instr->DependsOnFlags().Contains(flag) && other != NULL) {
-            TRACE_GVN_5("Side-effect #%d in %d (%s) is dominated by %d (%s)\n",
+            TRACE_GVN_5("\x53\x69\x64\x65\x2d\x65\x66\x66\x65\x63\x74\x20\x23\x6c\x84\x20\x69\x6e\x20\x6c\x84\x20\x28\x6c\xa2\x29\x20\x69\x73\x20\x64\x6f\x6d\x69\x6e\x61\x74\x65\x64\x20\x62\x79\x20\x6c\x84\x20\x28\x6c\xa2\x29\xa",
                         i,
                         instr->id(),
                         instr->Mnemonic(),
@@ -835,7 +835,7 @@ void HGlobalValueNumberingPhase::AnalyzeGraph() {
         dominators->Store(changes, instr);
         if (FLAG_trace_gvn) {
           OFStream os(stdout);
-          os << "Instruction i" << instr->id() << " changes " << Print(changes)
+          os << "\x49\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x20\x69" << instr->id() << "\x20\x63\x68\x61\x6e\x67\x65\x73\x20" << Print(changes)
              << endl;
         }
       }
@@ -845,7 +845,7 @@ void HGlobalValueNumberingPhase::AnalyzeGraph() {
         HInstruction* other = map->Lookup(instr);
         if (other != NULL) {
           DCHECK(instr->Equals(other) && other->Equals(instr));
-          TRACE_GVN_4("Replacing instruction i%d (%s) with i%d (%s)\n",
+          TRACE_GVN_4("\x52\x65\x70\x6c\x61\x63\x69\x6e\x67\x20\x69\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x20\x69\x6c\x84\x20\x28\x6c\xa2\x29\x20\x77\x69\x74\x68\x20\x69\x6c\x84\x20\x28\x6c\xa2\x29\xa",
                       instr->id(),
                       instr->Mnemonic(),
                       other->id(),

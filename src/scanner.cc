@@ -533,19 +533,19 @@ bool Scanner::SkipWhiteSpace() {
     // line (with only whitespace in front of it), we treat the rest
     // of the line as a comment. This is in line with the way
     // SpiderMonkey handles it.
-    if (c0_ == '-' && has_line_terminator_before_next_) {
+    if (c0_ == '\x2d' && has_line_terminator_before_next_) {
       Advance();
-      if (c0_ == '-') {
+      if (c0_ == '\x2d') {
         Advance();
-        if (c0_ == '>') {
+        if (c0_ == '\x3e') {
           // Treat the rest of the line as a comment.
           SkipSingleLineComment();
           // Continue skipping white space after the comment.
           continue;
         }
-        PushBack('-');  // undo Advance()
+        PushBack('\x2d');  // undo Advance()
       }
-      PushBack('-');  // undo Advance()
+      PushBack('\x2d');  // undo Advance()
     }
     // Return whether or not we skipped any characters.
     return source_pos() != start_position;
@@ -587,21 +587,21 @@ void Scanner::TryToParseSourceURLComment() {
   Advance();
   LiteralBuffer name;
   while (c0_ >= 0 && !unicode_cache_->IsWhiteSpaceOrLineTerminator(c0_) &&
-         c0_ != '=') {
+         c0_ != '\x3d') {
     name.AddChar(c0_);
     Advance();
   }
   if (!name.is_one_byte()) return;
   Vector<const uint8_t> name_literal = name.one_byte_literal();
   LiteralBuffer* value;
-  if (name_literal == STATIC_ASCII_VECTOR("sourceURL")) {
+  if (name_literal == STATIC_ASCII_VECTOR("\x73\x6f\x75\x72\x63\x65\x55\x52\x4c")) {
     value = &source_url_;
-  } else if (name_literal == STATIC_ASCII_VECTOR("sourceMappingURL")) {
+  } else if (name_literal == STATIC_ASCII_VECTOR("\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c")) {
     value = &source_mapping_url_;
   } else {
     return;
   }
-  if (c0_ != '=')
+  if (c0_ != '\x3d')
     return;
   Advance();
   value->Reset();
@@ -610,7 +610,7 @@ void Scanner::TryToParseSourceURLComment() {
   }
   while (c0_ >= 0 && !unicode_cache_->IsLineTerminator(c0_)) {
     // Disallowed characters.
-    if (c0_ == '"' || c0_ == '\'') {
+    if (c0_ == '\x22' || c0_ == '\x27') {
       value->Reset();
       return;
     }
@@ -632,7 +632,7 @@ void Scanner::TryToParseSourceURLComment() {
 
 
 Token::Value Scanner::SkipMultiLineComment() {
-  DCHECK(c0_ == '*');
+  DCHECK(c0_ == '\x2a');
   Advance();
 
   while (c0_ >= 0) {
@@ -646,8 +646,8 @@ Token::Value Scanner::SkipMultiLineComment() {
     // If we have reached the end of the multi-line comment, we
     // consume the '/' and insert a whitespace. This way all
     // multi-line comments are treated as whitespace.
-    if (ch == '*' && c0_ == '/') {
-      c0_ = ' ';
+    if (ch == '\x2a' && c0_ == '\x2f') {
+      c0_ = '\x20';
       return Token::WHITESPACE;
     }
   }
@@ -659,15 +659,15 @@ Token::Value Scanner::SkipMultiLineComment() {
 
 Token::Value Scanner::ScanHtmlComment() {
   // Check for <!-- comments.
-  DCHECK(c0_ == '!');
+  DCHECK(c0_ == '\x21');
   Advance();
-  if (c0_ == '-') {
+  if (c0_ == '\x2d') {
     Advance();
-    if (c0_ == '-') return SkipSingleLineComment();
-    PushBack('-');  // undo Advance()
+    if (c0_ == '\x2d') return SkipSingleLineComment();
+    PushBack('\x2d');  // undo Advance()
   }
-  PushBack('!');  // undo Advance()
-  DCHECK(c0_ == '!');
+  PushBack('\x21');  // undo Advance()
+  DCHECK(c0_ == '\x21');
   return Token::LT;
 }
 
@@ -680,48 +680,48 @@ void Scanner::Scan() {
     next_.location.beg_pos = source_pos();
 
     switch (c0_) {
-      case ' ':
-      case '\t':
+      case '\x20':
+      case '\x9':
         Advance();
         token = Token::WHITESPACE;
         break;
 
-      case '\n':
+      case '\xa':
         Advance();
         has_line_terminator_before_next_ = true;
         token = Token::WHITESPACE;
         break;
 
-      case '"': case '\'':
+      case '\x22': case '\x27':
         token = ScanString();
         break;
 
-      case '<':
+      case '\x3c':
         // < <= << <<= <!--
         Advance();
-        if (c0_ == '=') {
+        if (c0_ == '\x3d') {
           token = Select(Token::LTE);
-        } else if (c0_ == '<') {
-          token = Select('=', Token::ASSIGN_SHL, Token::SHL);
-        } else if (c0_ == '!') {
+        } else if (c0_ == '\x3c') {
+          token = Select('\x3d', Token::ASSIGN_SHL, Token::SHL);
+        } else if (c0_ == '\x21') {
           token = ScanHtmlComment();
         } else {
           token = Token::LT;
         }
         break;
 
-      case '>':
+      case '\x3e':
         // > >= >> >>= >>> >>>=
         Advance();
-        if (c0_ == '=') {
+        if (c0_ == '\x3d') {
           token = Select(Token::GTE);
-        } else if (c0_ == '>') {
+        } else if (c0_ == '\x3e') {
           // >> >>= >>> >>>=
           Advance();
-          if (c0_ == '=') {
+          if (c0_ == '\x3d') {
             token = Select(Token::ASSIGN_SAR);
-          } else if (c0_ == '>') {
-            token = Select('=', Token::ASSIGN_SHR, Token::SHR);
+          } else if (c0_ == '\x3e') {
+            token = Select('\x3d', Token::ASSIGN_SHR, Token::SHR);
           } else {
             token = Token::SAR;
           }
@@ -730,120 +730,120 @@ void Scanner::Scan() {
         }
         break;
 
-      case '=':
+      case '\x3d':
         // = == === =>
         Advance();
-        if (c0_ == '=') {
-          token = Select('=', Token::EQ_STRICT, Token::EQ);
-        } else if (c0_ == '>') {
+        if (c0_ == '\x3d') {
+          token = Select('\x3d', Token::EQ_STRICT, Token::EQ);
+        } else if (c0_ == '\x3e') {
           token = Select(Token::ARROW);
         } else {
           token = Token::ASSIGN;
         }
         break;
 
-      case '!':
+      case '\x21':
         // ! != !==
         Advance();
-        if (c0_ == '=') {
-          token = Select('=', Token::NE_STRICT, Token::NE);
+        if (c0_ == '\x3d') {
+          token = Select('\x3d', Token::NE_STRICT, Token::NE);
         } else {
           token = Token::NOT;
         }
         break;
 
-      case '+':
+      case '\x2b':
         // + ++ +=
         Advance();
-        if (c0_ == '+') {
+        if (c0_ == '\x2b') {
           token = Select(Token::INC);
-        } else if (c0_ == '=') {
+        } else if (c0_ == '\x3d') {
           token = Select(Token::ASSIGN_ADD);
         } else {
           token = Token::ADD;
         }
         break;
 
-      case '-':
+      case '\x2d':
         // - -- --> -=
         Advance();
-        if (c0_ == '-') {
+        if (c0_ == '\x2d') {
           Advance();
-          if (c0_ == '>' && has_line_terminator_before_next_) {
+          if (c0_ == '\x3e' && has_line_terminator_before_next_) {
             // For compatibility with SpiderMonkey, we skip lines that
             // start with an HTML comment end '-->'.
             token = SkipSingleLineComment();
           } else {
             token = Token::DEC;
           }
-        } else if (c0_ == '=') {
+        } else if (c0_ == '\x3d') {
           token = Select(Token::ASSIGN_SUB);
         } else {
           token = Token::SUB;
         }
         break;
 
-      case '*':
+      case '\x2a':
         // * *=
-        token = Select('=', Token::ASSIGN_MUL, Token::MUL);
+        token = Select('\x3d', Token::ASSIGN_MUL, Token::MUL);
         break;
 
-      case '%':
+      case '\x25':
         // % %=
-        token = Select('=', Token::ASSIGN_MOD, Token::MOD);
+        token = Select('\x3d', Token::ASSIGN_MOD, Token::MOD);
         break;
 
-      case '/':
+      case '\x2f':
         // /  // /* /=
         Advance();
-        if (c0_ == '/') {
+        if (c0_ == '\x2f') {
           Advance();
-          if (c0_ == '@' || c0_ == '#') {
+          if (c0_ == '\x40' || c0_ == '\x23') {
             Advance();
             token = SkipSourceURLComment();
           } else {
             PushBack(c0_);
             token = SkipSingleLineComment();
           }
-        } else if (c0_ == '*') {
+        } else if (c0_ == '\x2a') {
           token = SkipMultiLineComment();
-        } else if (c0_ == '=') {
+        } else if (c0_ == '\x3d') {
           token = Select(Token::ASSIGN_DIV);
         } else {
           token = Token::DIV;
         }
         break;
 
-      case '&':
+      case '\x26':
         // & && &=
         Advance();
-        if (c0_ == '&') {
+        if (c0_ == '\x26') {
           token = Select(Token::AND);
-        } else if (c0_ == '=') {
+        } else if (c0_ == '\x3d') {
           token = Select(Token::ASSIGN_BIT_AND);
         } else {
           token = Token::BIT_AND;
         }
         break;
 
-      case '|':
+      case '\x7c':
         // | || |=
         Advance();
-        if (c0_ == '|') {
+        if (c0_ == '\x7c') {
           token = Select(Token::OR);
-        } else if (c0_ == '=') {
+        } else if (c0_ == '\x3d') {
           token = Select(Token::ASSIGN_BIT_OR);
         } else {
           token = Token::BIT_OR;
         }
         break;
 
-      case '^':
+      case '\x5e':
         // ^ ^=
-        token = Select('=', Token::ASSIGN_BIT_XOR, Token::BIT_XOR);
+        token = Select('\x3d', Token::ASSIGN_BIT_XOR, Token::BIT_XOR);
         break;
 
-      case '.':
+      case '\x2e':
         // . Number
         Advance();
         if (IsDecimalDigit(c0_)) {
@@ -853,47 +853,47 @@ void Scanner::Scan() {
         }
         break;
 
-      case ':':
+      case '\x3a':
         token = Select(Token::COLON);
         break;
 
-      case ';':
+      case '\x3b':
         token = Select(Token::SEMICOLON);
         break;
 
-      case ',':
+      case '\x2c':
         token = Select(Token::COMMA);
         break;
 
-      case '(':
+      case '\x28':
         token = Select(Token::LPAREN);
         break;
 
-      case ')':
+      case '\x29':
         token = Select(Token::RPAREN);
         break;
 
-      case '[':
+      case '\x5b':
         token = Select(Token::LBRACK);
         break;
 
-      case ']':
+      case '\x5d':
         token = Select(Token::RBRACK);
         break;
 
-      case '{':
+      case '\x7b':
         token = Select(Token::LBRACE);
         break;
 
-      case '}':
+      case '\x7d':
         token = Select(Token::RBRACE);
         break;
 
-      case '?':
+      case '\x3f':
         token = Select(Token::CONDITIONAL);
         break;
 
-      case '~':
+      case '\x7e':
         token = Select(Token::BIT_NOT);
         break;
 
@@ -956,39 +956,33 @@ bool Scanner::ScanEscape() {
   }
 
   switch (c) {
-    case '\'':  // fall through
-    case '"' :  // fall through
-    case '\\': break;
-    case 'b' : c = '\b'; break;
-    case 'f' : c = '\f'; break;
-    case 'n' : c = '\n'; break;
-    case 'r' : c = '\r'; break;
-    case 't' : c = '\t'; break;
-    case 'u' : {
+    case '\x27':  // fall through
+    case '\x22' :  // fall through
+    case '\x5c': break;
+    case '\x62' : c = '\x8'; break;
+    case '\x66' : c = '\xc'; break;
+    case '\x6e' : c = '\xa'; break;
+    case '\x72' : c = '\xd'; break;
+    case '\x74' : c = '\x9'; break;
+    case '\x75' : {
       c = ScanHexNumber(4);
       if (c < 0) return false;
-#ifdef V8_OS_ZOS
-      if (c <= 0x7F && c >= 0) c = Ascii2Ebcdic(c); 
-#endif
       break;
     }
-    case 'v' : c = '\v'; break;
-    case 'x' : {
+    case '\x76' : c = '\xb'; break;
+    case '\x78' : {
       c = ScanHexNumber(2);
       if (c < 0) return false;
-#ifdef V8_OS_ZOS
-      if (c < 0x7F && c >= 0) c = Ascii2Ebcdic(c);
-#endif 
       break;
     }
-    case '0' :  // fall through
-    case '1' :  // fall through
-    case '2' :  // fall through
-    case '3' :  // fall through
-    case '4' :  // fall through
-    case '5' :  // fall through
-    case '6' :  // fall through
-    case '7' : c = ScanOctalEscape(c, 2); break;
+    case '\x30' :  // fall through
+    case '\x31' :  // fall through
+    case '\x32' :  // fall through
+    case '\x33' :  // fall through
+    case '\x34' :  // fall through
+    case '\x35' :  // fall through
+    case '\x36' :  // fall through
+    case '\x37' : c = ScanOctalEscape(c, 2); break;
   }
 
   // According to ECMA-262, section 7.8.4, characters not covered by the
@@ -1002,10 +996,10 @@ bool Scanner::ScanEscape() {
 // Octal escapes of the forms '\0xx' and '\xxx' are not a part of
 // ECMA-262. Other JS VMs support them.
 uc32 Scanner::ScanOctalEscape(uc32 c, int length) {
-  uc32 x = c - '0';
+  uc32 x = c - '\x30';
   int i = 0;
   for (; i < length; i++) {
-    int d = c0_ - '0';
+    int d = c0_ - '\x30';
     if (d < 0 || d > 7) break;
     int nx = x * 8 + d;
     if (nx >= 256) break;
@@ -1017,7 +1011,7 @@ uc32 Scanner::ScanOctalEscape(uc32 c, int length) {
   // can be reported later (in strict mode).
   // We don't report the error immediately, because the octal escape can
   // occur before the "use strict" directive.
-  if (c != '0' || i > 0) {
+  if (c != '\x30' || i > 0) {
     octal_pos_ = Location(source_pos() - i - 1, source_pos() - 1);
   }
   return x;
@@ -1033,7 +1027,7 @@ Token::Value Scanner::ScanString() {
          && !unicode_cache_->IsLineTerminator(c0_)) {
     uc32 c = c0_;
     Advance();
-    if (c == '\\') {
+    if (c == '\x5c') {
       if (c0_ < 0 || !ScanEscape()) return Token::ILLEGAL;
     } else {
       AddLiteralChar(c);
@@ -1061,18 +1055,18 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
   LiteralScope literal(this);
   if (seen_period) {
     // we have already seen a decimal point of the float
-    AddLiteralChar('.');
+    AddLiteralChar('\x2e');
     ScanDecimalDigits();  // we know we have at least one digit
 
   } else {
     // if the first character is '0' we must check for octals and hex
-    if (c0_ == '0') {
+    if (c0_ == '\x30') {
       int start_pos = source_pos();  // For reporting octal positions.
       AddLiteralCharAdvance();
 
       // either 0, 0exxx, 0Exxx, 0.xxx, a hex number, a binary number or
       // an octal number.
-      if (c0_ == 'x' || c0_ == 'X') {
+      if (c0_ == '\x78' || c0_ == '\x58') {
         // hex number
         kind = HEX;
         AddLiteralCharAdvance();
@@ -1083,7 +1077,7 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
         while (IsHexDigit(c0_)) {
           AddLiteralCharAdvance();
         }
-      } else if (harmony_numeric_literals_ && (c0_ == 'o' || c0_ == 'O')) {
+      } else if (harmony_numeric_literals_ && (c0_ == '\x6f' || c0_ == '\x4f')) {
         kind = OCTAL;
         AddLiteralCharAdvance();
         if (!IsOctalDigit(c0_)) {
@@ -1093,7 +1087,7 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
         while (IsOctalDigit(c0_)) {
           AddLiteralCharAdvance();
         }
-      } else if (harmony_numeric_literals_ && (c0_ == 'b' || c0_ == 'B')) {
+      } else if (harmony_numeric_literals_ && (c0_ == '\x62' || c0_ == '\x42')) {
         kind = BINARY;
         AddLiteralCharAdvance();
         if (!IsBinaryDigit(c0_)) {
@@ -1103,15 +1097,15 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
         while (IsBinaryDigit(c0_)) {
           AddLiteralCharAdvance();
         }
-      } else if ('0' <= c0_ && c0_ <= '7') {
+      } else if ('\x30' <= c0_ && c0_ <= '\x37') {
         // (possible) octal number
         kind = IMPLICIT_OCTAL;
         while (true) {
-          if (c0_ == '8' || c0_ == '9') {
+          if (c0_ == '\x38' || c0_ == '\x39') {
             kind = DECIMAL;
             break;
           }
-          if (c0_  < '0' || '7'  < c0_) {
+          if (c0_  < '\x30' || '\x37'  < c0_) {
             // Octal literal finished.
             octal_pos_ = Location(start_pos, source_pos());
             break;
@@ -1124,7 +1118,7 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
     // Parse decimal digits and allow trailing fractional part.
     if (kind == DECIMAL) {
       ScanDecimalDigits();  // optional
-      if (c0_ == '.') {
+      if (c0_ == '\x2e') {
         AddLiteralCharAdvance();
         ScanDecimalDigits();  // optional
       }
@@ -1132,12 +1126,12 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
   }
 
   // scan exponent, if any
-  if (c0_ == 'e' || c0_ == 'E') {
-    DCHECK(kind != HEX);  // 'e'/'E' must be scanned as part of the hex number
+  if (c0_ == '\x65' || c0_ == '\x45') {
+    DCHECK(kind != HEX);  // '\x65'/'\x45' must be scanned as part of the hex number
     if (kind != DECIMAL) return Token::ILLEGAL;
     // scan exponent
     AddLiteralCharAdvance();
-    if (c0_ == '+' || c0_ == '-')
+    if (c0_ == '\x2b' || c0_ == '\x2d')
       AddLiteralCharAdvance();
     if (!IsDecimalDigit(c0_)) {
       // we must have at least one decimal digit after 'e'/'E'
@@ -1161,10 +1155,10 @@ Token::Value Scanner::ScanNumber(bool seen_period) {
 
 uc32 Scanner::ScanIdentifierUnicodeEscape() {
   Advance();
-  if (c0_ != 'u') return -1;
+  if (c0_ != '\x75') return -1;
   Advance();
   uc32 result = ScanHexNumber(4);
-  if (result < 0) PushBack('u');
+  if (result < 0) PushBack('\x75');
   return result;
 }
 
@@ -1173,69 +1167,69 @@ uc32 Scanner::ScanIdentifierUnicodeEscape() {
 // Keyword Matcher
 
 #define KEYWORDS(KEYWORD_GROUP, KEYWORD)                            \
-  KEYWORD_GROUP('b')                                                \
-  KEYWORD("break", Token::BREAK)                                    \
-  KEYWORD_GROUP('c')                                                \
-  KEYWORD("case", Token::CASE)                                      \
-  KEYWORD("catch", Token::CATCH)                                    \
-  KEYWORD("class", Token::FUTURE_RESERVED_WORD)                     \
-  KEYWORD("const", Token::CONST)                                    \
-  KEYWORD("continue", Token::CONTINUE)                              \
-  KEYWORD_GROUP('d')                                                \
-  KEYWORD("debugger", Token::DEBUGGER)                              \
-  KEYWORD("default", Token::DEFAULT)                                \
-  KEYWORD("delete", Token::DELETE)                                  \
-  KEYWORD("do", Token::DO)                                          \
-  KEYWORD_GROUP('e')                                                \
-  KEYWORD("else", Token::ELSE)                                      \
-  KEYWORD("enum", Token::FUTURE_RESERVED_WORD)                      \
-  KEYWORD("export", harmony_modules                                 \
+  KEYWORD_GROUP('\x62')                                                \
+  KEYWORD("\x62\x72\x65\x61\x6b", Token::BREAK)                                    \
+  KEYWORD_GROUP('\x63')                                                \
+  KEYWORD("\x63\x61\x73\x65", Token::CASE)                                      \
+  KEYWORD("\x63\x61\x74\x63\x68", Token::CATCH)                                    \
+  KEYWORD("\x63\x6c\x61\x73\x73", Token::FUTURE_RESERVED_WORD)                     \
+  KEYWORD("\x63\x6f\x6e\x73\x74", Token::CONST)                                    \
+  KEYWORD("\x63\x6f\x6e\x74\x69\x6e\x75\x65", Token::CONTINUE)                              \
+  KEYWORD_GROUP('\x64')                                                \
+  KEYWORD("\x64\x65\x62\x75\x67\x67\x65\x72", Token::DEBUGGER)                              \
+  KEYWORD("\x64\x65\x66\x61\x75\x6c\x74", Token::DEFAULT)                                \
+  KEYWORD("\x64\x65\x6c\x65\x74\x65", Token::DELETE)                                  \
+  KEYWORD("\x64\x6f", Token::DO)                                          \
+  KEYWORD_GROUP('\x65')                                                \
+  KEYWORD("\x65\x6c\x73\x65", Token::ELSE)                                      \
+  KEYWORD("\x65\x6e\x75\x6d", Token::FUTURE_RESERVED_WORD)                      \
+  KEYWORD("\x65\x78\x70\x6f\x72\x74", harmony_modules                                 \
                     ? Token::EXPORT : Token::FUTURE_RESERVED_WORD)  \
-  KEYWORD("extends", Token::FUTURE_RESERVED_WORD)                   \
-  KEYWORD_GROUP('f')                                                \
-  KEYWORD("false", Token::FALSE_LITERAL)                            \
-  KEYWORD("finally", Token::FINALLY)                                \
-  KEYWORD("for", Token::FOR)                                        \
-  KEYWORD("function", Token::FUNCTION)                              \
-  KEYWORD_GROUP('i')                                                \
-  KEYWORD("if", Token::IF)                                          \
-  KEYWORD("implements", Token::FUTURE_STRICT_RESERVED_WORD)         \
-  KEYWORD("import", harmony_modules                                 \
+  KEYWORD("\x65\x78\x74\x65\x6e\x64\x73", Token::FUTURE_RESERVED_WORD)                   \
+  KEYWORD_GROUP('\x66')                                                \
+  KEYWORD("\x66\x61\x6c\x73\x65", Token::FALSE_LITERAL)                            \
+  KEYWORD("\x66\x69\x6e\x61\x6c\x6c\x79", Token::FINALLY)                                \
+  KEYWORD("\x66\x6f\x72", Token::FOR)                                        \
+  KEYWORD("\x66\x75\x6e\x63\x74\x69\x6f\x6e", Token::FUNCTION)                              \
+  KEYWORD_GROUP('\x69')                                                \
+  KEYWORD("\x69\x66", Token::IF)                                          \
+  KEYWORD("\x69\x6d\x70\x6c\x65\x6d\x65\x6e\x74\x73", Token::FUTURE_STRICT_RESERVED_WORD)         \
+  KEYWORD("\x69\x6d\x70\x6f\x72\x74", harmony_modules                                 \
                     ? Token::IMPORT : Token::FUTURE_RESERVED_WORD)  \
-  KEYWORD("in", Token::IN)                                          \
-  KEYWORD("instanceof", Token::INSTANCEOF)                          \
-  KEYWORD("interface", Token::FUTURE_STRICT_RESERVED_WORD)          \
-  KEYWORD_GROUP('l')                                                \
-  KEYWORD("let", harmony_scoping                                    \
+  KEYWORD("\x69\x6e", Token::IN)                                          \
+  KEYWORD("\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66", Token::INSTANCEOF)                          \
+  KEYWORD("\x69\x6e\x74\x65\x72\x66\x61\x63\x65", Token::FUTURE_STRICT_RESERVED_WORD)          \
+  KEYWORD_GROUP('\x6c')                                                \
+  KEYWORD("\x6c\x65\x74", harmony_scoping                                    \
                  ? Token::LET : Token::FUTURE_STRICT_RESERVED_WORD) \
-  KEYWORD_GROUP('n')                                                \
-  KEYWORD("new", Token::NEW)                                        \
-  KEYWORD("null", Token::NULL_LITERAL)                              \
-  KEYWORD_GROUP('p')                                                \
-  KEYWORD("package", Token::FUTURE_STRICT_RESERVED_WORD)            \
-  KEYWORD("private", Token::FUTURE_STRICT_RESERVED_WORD)            \
-  KEYWORD("protected", Token::FUTURE_STRICT_RESERVED_WORD)          \
-  KEYWORD("public", Token::FUTURE_STRICT_RESERVED_WORD)             \
-  KEYWORD_GROUP('r')                                                \
-  KEYWORD("return", Token::RETURN)                                  \
-  KEYWORD_GROUP('s')                                                \
-  KEYWORD("static", Token::FUTURE_STRICT_RESERVED_WORD)             \
-  KEYWORD("super", Token::FUTURE_RESERVED_WORD)                     \
-  KEYWORD("switch", Token::SWITCH)                                  \
-  KEYWORD_GROUP('t')                                                \
-  KEYWORD("this", Token::THIS)                                      \
-  KEYWORD("throw", Token::THROW)                                    \
-  KEYWORD("true", Token::TRUE_LITERAL)                              \
-  KEYWORD("try", Token::TRY)                                        \
-  KEYWORD("typeof", Token::TYPEOF)                                  \
-  KEYWORD_GROUP('v')                                                \
-  KEYWORD("var", Token::VAR)                                        \
-  KEYWORD("void", Token::VOID)                                      \
-  KEYWORD_GROUP('w')                                                \
-  KEYWORD("while", Token::WHILE)                                    \
-  KEYWORD("with", Token::WITH)                                      \
-  KEYWORD_GROUP('y')                                                \
-  KEYWORD("yield", Token::YIELD)
+  KEYWORD_GROUP('\x6e')                                                \
+  KEYWORD("\x6e\x65\x77", Token::NEW)                                        \
+  KEYWORD("\x6e\x75\x6c\x6c", Token::NULL_LITERAL)                              \
+  KEYWORD_GROUP('\x70')                                                \
+  KEYWORD("\x70\x61\x63\x6b\x61\x67\x65", Token::FUTURE_STRICT_RESERVED_WORD)            \
+  KEYWORD("\x70\x72\x69\x76\x61\x74\x65", Token::FUTURE_STRICT_RESERVED_WORD)            \
+  KEYWORD("\x70\x72\x6f\x74\x65\x63\x74\x65\x64", Token::FUTURE_STRICT_RESERVED_WORD)          \
+  KEYWORD("\x70\x75\x62\x6c\x69\x63", Token::FUTURE_STRICT_RESERVED_WORD)             \
+  KEYWORD_GROUP('\x72')                                                \
+  KEYWORD("\x72\x65\x74\x75\x72\x6e", Token::RETURN)                                  \
+  KEYWORD_GROUP('\x73')                                                \
+  KEYWORD("\x73\x74\x61\x74\x69\x63", Token::FUTURE_STRICT_RESERVED_WORD)             \
+  KEYWORD("\x73\x75\x70\x65\x72", Token::FUTURE_RESERVED_WORD)                     \
+  KEYWORD("\x73\x77\x69\x74\x63\x68", Token::SWITCH)                                  \
+  KEYWORD_GROUP('\x74')                                                \
+  KEYWORD("\x74\x68\x69\x73", Token::THIS)                                      \
+  KEYWORD("\x74\x68\x72\x6f\x77", Token::THROW)                                    \
+  KEYWORD("\x74\x72\x75\x65", Token::TRUE_LITERAL)                              \
+  KEYWORD("\x74\x72\x79", Token::TRY)                                        \
+  KEYWORD("\x74\x79\x70\x65\x6f\x66", Token::TYPEOF)                                  \
+  KEYWORD_GROUP('\x76')                                                \
+  KEYWORD("\x76\x61\x72", Token::VAR)                                        \
+  KEYWORD("\x76\x6f\x69\x64", Token::VOID)                                      \
+  KEYWORD_GROUP('\x77')                                                \
+  KEYWORD("\x77\x68\x69\x6c\x65", Token::WHILE)                                    \
+  KEYWORD("\x77\x69\x74\x68", Token::WITH)                                      \
+  KEYWORD_GROUP('\x79')                                                \
+  KEYWORD("\x79\x69\x65\x6c\x64", Token::YIELD)
 
 
 static Token::Value KeywordOrIdentifierToken(const uint8_t* input,
@@ -1293,11 +1287,11 @@ Token::Value Scanner::ScanIdentifierOrKeyword() {
   DCHECK(unicode_cache_->IsIdentifierStart(c0_));
   LiteralScope literal(this);
   // Scan identifier start character.
-  if (c0_ == '\\') {
+  if (c0_ == '\x5c') {
     uc32 c = ScanIdentifierUnicodeEscape();
     // Only allow legal identifier start characters.
     if (c < 0 ||
-        c == '\\' ||  // No recursive escapes.
+        c == '\x5c' ||  // No recursive escapes.
         !unicode_cache_->IsIdentifierStart(c)) {
       return Token::ILLEGAL;
     }
@@ -1311,7 +1305,7 @@ Token::Value Scanner::ScanIdentifierOrKeyword() {
 
   // Scan the rest of the identifier characters.
   while (unicode_cache_->IsIdentifierPart(c0_)) {
-    if (c0_ != '\\') {
+    if (c0_ != '\x5c') {
       uc32 next_char = c0_;
       Advance();
       AddLiteralChar(next_char);
@@ -1338,11 +1332,11 @@ Token::Value Scanner::ScanIdentifierOrKeyword() {
 Token::Value Scanner::ScanIdentifierSuffix(LiteralScope* literal) {
   // Scan the rest of the identifier characters.
   while (unicode_cache_->IsIdentifierPart(c0_)) {
-    if (c0_ == '\\') {
+    if (c0_ == '\x5c') {
       uc32 c = ScanIdentifierUnicodeEscape();
       // Only allow legal identifier part characters.
       if (c < 0 ||
-          c == '\\' ||
+          c == '\x5c' ||
           !unicode_cache_->IsIdentifierPart(c)) {
         return Token::ILLEGAL;
       }
@@ -1372,12 +1366,12 @@ bool Scanner::ScanRegExpPattern(bool seen_equal) {
   // constructor.
   LiteralScope literal(this);
   if (seen_equal) {
-    AddLiteralChar('=');
+    AddLiteralChar('\x3d');
   }
 
-  while (c0_ != '/' || in_character_class) {
+  while (c0_ != '\x2f' || in_character_class) {
     if (unicode_cache_->IsLineTerminator(c0_) || c0_ < 0) return false;
-    if (c0_ == '\\') {  // Escape sequence.
+    if (c0_ == '\x5c') {  // Escape sequence.
       AddLiteralCharAdvance();
       if (unicode_cache_->IsLineTerminator(c0_) || c0_ < 0) return false;
       AddLiteralCharAdvance();
@@ -1392,12 +1386,12 @@ bool Scanner::ScanRegExpPattern(bool seen_equal) {
       // TODO(896): At some point, parse RegExps more throughly to capture
       // octal esacpes in strict mode.
     } else {  // Unescaped character.
-      if (c0_ == '[') in_character_class = true;
-      if (c0_ == ']') in_character_class = false;
+      if (c0_ == '\x5b') in_character_class = true;
+      if (c0_ == '\x5d') in_character_class = false;
       AddLiteralCharAdvance();
     }
   }
-  Advance();  // consume '/'
+  Advance();  // consume '\x2f'
 
   literal.Complete();
 
@@ -1406,11 +1400,11 @@ bool Scanner::ScanRegExpPattern(bool seen_equal) {
 
 
 bool Scanner::ScanLiteralUnicodeEscape() {
-  DCHECK(c0_ == '\\');
-  uc32 chars_read[6] = {'\\', 'u', 0, 0, 0, 0};
+  DCHECK(c0_ == '\x5c');
+  uc32 chars_read[6] = {'\x5c', '\x75', 0, 0, 0, 0};
   Advance();
   int i = 1;
-  if (c0_ == 'u') {
+  if (c0_ == '\x75') {
     i++;
     while (i < 6) {
       Advance();
@@ -1439,7 +1433,7 @@ bool Scanner::ScanRegExpFlags() {
   // Scan regular expression flags.
   LiteralScope literal(this);
   while (unicode_cache_->IsIdentifierPart(c0_)) {
-    if (c0_ != '\\') {
+    if (c0_ != '\x5c') {
       AddLiteralCharAdvance();
     } else {
       if (!ScanLiteralUnicodeEscape()) {
@@ -1529,8 +1523,8 @@ int DuplicateFinder::AddNumber(Vector<const uint8_t> key, int value) {
   int length;
   const char* string;
   if (!isfinite(double_value)) {
-    string = "Infinity";
-    length = 8;  // strlen("Infinity");
+    string = "\x49\x6e\x66\x69\x6e\x69\x74\x79";
+    length = 8;  // strlen("\x49\x6e\x66\x69\x6e\x69\x74\x79");
   } else {
     string = DoubleToCString(double_value,
                              Vector<char>(number_buffer_, kBufferSize));
@@ -1549,19 +1543,19 @@ bool DuplicateFinder::IsNumberCanonical(Vector<const uint8_t> number) {
   int pos = 0;
   int length = number.length();
   if (number.length() > 15) return false;
-  if (number[pos] == '0') {
+  if (number[pos] == '\x30') {
     pos++;
   } else {
     while (pos < length &&
-           static_cast<unsigned>(number[pos] - '0') <= ('9' - '0')) pos++;
+           static_cast<unsigned>(number[pos] - '\x30') <= ('\x39' - '\x30')) pos++;
   }
   if (length == pos) return true;
-  if (number[pos] != '.') return false;
+  if (number[pos] != '\x2e') return false;
   pos++;
   bool invalid_last_digit = true;
   while (pos < length) {
-    uint8_t digit = number[pos] - '0';
-    if (digit > '9' - '0') return false;
+    uint8_t digit = number[pos] - '\x30';
+    if (digit > '\x39' - '\x30') return false;
     invalid_last_digit = (digit == 0);
     pos++;
   }

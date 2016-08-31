@@ -281,7 +281,7 @@ bool Scope::Analyze(CompilationInfo* info) {
   }
 
   if (FLAG_harmony_modules && FLAG_print_interfaces && top->is_global_scope()) {
-    PrintF("global : ");
+    PrintF("\x67\x6c\x6f\x62\x61\x6c\x20\x3a\x20");
     top->interface()->Print();
   }
 #endif
@@ -769,13 +769,13 @@ void Scope::GetNestedScopeChain(
 #ifdef DEBUG
 static const char* Header(ScopeType scope_type) {
   switch (scope_type) {
-    case EVAL_SCOPE: return "eval";
-    case FUNCTION_SCOPE: return "function";
-    case MODULE_SCOPE: return "module";
-    case GLOBAL_SCOPE: return "global";
-    case CATCH_SCOPE: return "catch";
-    case BLOCK_SCOPE: return "block";
-    case WITH_SCOPE: return "with";
+    case EVAL_SCOPE: return "\x65\x76\x61\x6c";
+    case FUNCTION_SCOPE: return "\x66\x75\x6e\x63\x74\x69\x6f\x6e";
+    case MODULE_SCOPE: return "\x6d\x6f\x64\x75\x6c\x65";
+    case GLOBAL_SCOPE: return "\x67\x6c\x6f\x62\x61\x6c";
+    case CATCH_SCOPE: return "\x63\x61\x74\x63\x68";
+    case BLOCK_SCOPE: return "\x62\x6c\x6f\x63\x6b";
+    case WITH_SCOPE: return "\x77\x69\x74\x68";
   }
   UNREACHABLE();
   return NULL;
@@ -783,12 +783,12 @@ static const char* Header(ScopeType scope_type) {
 
 
 static void Indent(int n, const char* str) {
-  PrintF("%*s%s", n, "", str);
+  PrintF("\x25\x2a\x73\x6c\xa2", n, "", str);
 }
 
 
 static void PrintName(const AstRawString* name) {
-  PrintF("%.*s", name->length(), name->raw_data());
+  PrintF("\x25\x2e\x2a\x73", name->length(), name->raw_data());
 }
 
 
@@ -797,16 +797,16 @@ static void PrintLocation(Variable* var) {
     case Variable::UNALLOCATED:
       break;
     case Variable::PARAMETER:
-      PrintF("parameter[%d]", var->index());
+      PrintF("\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x5b\x6c\x84\x5d", var->index());
       break;
     case Variable::LOCAL:
-      PrintF("local[%d]", var->index());
+      PrintF("\x6c\x6f\x63\x61\x6c\x5b\x6c\x84\x5d", var->index());
       break;
     case Variable::CONTEXT:
-      PrintF("context[%d]", var->index());
+      PrintF("\x63\x6f\x6e\x74\x65\x78\x74\x5b\x6c\x84\x5d", var->index());
       break;
     case Variable::LOOKUP:
-      PrintF("lookup");
+      PrintF("\x6c\x6f\x6f\x6b\x75\x70");
       break;
   }
 }
@@ -815,21 +815,21 @@ static void PrintLocation(Variable* var) {
 static void PrintVar(int indent, Variable* var) {
   if (var->is_used() || !var->IsUnallocated()) {
     Indent(indent, Variable::Mode2String(var->mode()));
-    PrintF(" ");
+    PrintF("\x20");
     PrintName(var->raw_name());
-    PrintF(";  // ");
+    PrintF("\x3b\x20\x20\x2f\x2f\x20");
     PrintLocation(var);
     bool comma = !var->IsUnallocated();
     if (var->has_forced_context_allocation()) {
-      if (comma) PrintF(", ");
-      PrintF("forced context allocation");
+      if (comma) PrintF("\x2c\x20");
+      PrintF("\x66\x6f\x72\x63\x65\x64\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e");
       comma = true;
     }
     if (var->maybe_assigned() == kMaybeAssigned) {
-      if (comma) PrintF(", ");
-      PrintF("maybe assigned");
+      if (comma) PrintF("\x2c\x20");
+      PrintF("\x6d\x61\x79\x62\x65\x20\x61\x73\x73\x69\x67\x6e\x65\x64");
     }
-    PrintF("\n");
+    PrintF("\xa");
   }
 }
 
@@ -849,75 +849,75 @@ void Scope::Print(int n) {
   // Print header.
   Indent(n0, Header(scope_type_));
   if (!scope_name_->IsEmpty()) {
-    PrintF(" ");
+    PrintF("\x20");
     PrintName(scope_name_);
   }
 
   // Print parameters, if any.
   if (is_function_scope()) {
-    PrintF(" (");
+    PrintF("\x20\x28");
     for (int i = 0; i < params_.length(); i++) {
-      if (i > 0) PrintF(", ");
+      if (i > 0) PrintF("\x2c\x20");
       PrintName(params_[i]->raw_name());
     }
-    PrintF(")");
+    PrintF("\x29");
   }
 
-  PrintF(" { // (%d, %d)\n", start_position(), end_position());
+  PrintF("\x20\x7b\x20\x2f\x2f\x20\x28\x6c\x84\x2c\x20\x6c\x84\x29\xa", start_position(), end_position());
 
   // Function name, if any (named function literals, only).
   if (function_ != NULL) {
-    Indent(n1, "// (local) function name: ");
+    Indent(n1, "\x2f\x2f\x20\x28\x6c\x6f\x63\x61\x6c\x29\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6e\x61\x6d\x65\x3a\x20");
     PrintName(function_->proxy()->raw_name());
-    PrintF("\n");
+    PrintF("\xa");
   }
 
   // Scope info.
   if (HasTrivialOuterContext()) {
-    Indent(n1, "// scope has trivial outer context\n");
+    Indent(n1, "\x2f\x2f\x20\x73\x63\x6f\x70\x65\x20\x68\x61\x73\x20\x74\x72\x69\x76\x69\x61\x6c\x20\x6f\x75\x74\x65\x72\x20\x63\x6f\x6e\x74\x65\x78\x74\xa");
   }
   if (strict_mode() == STRICT) {
-    Indent(n1, "// strict mode scope\n");
+    Indent(n1, "\x2f\x2f\x20\x73\x74\x72\x69\x63\x74\x20\x6d\x6f\x64\x65\x20\x73\x63\x6f\x70\x65\xa");
   }
-  if (scope_inside_with_) Indent(n1, "// scope inside 'with'\n");
-  if (scope_contains_with_) Indent(n1, "// scope contains 'with'\n");
-  if (scope_calls_eval_) Indent(n1, "// scope calls 'eval'\n");
+  if (scope_inside_with_) Indent(n1, "\x2f\x2f\x20\x73\x63\x6f\x70\x65\x20\x69\x6e\x73\x69\x64\x65\x20\x27\x77\x69\x74\x68\x27\xa");
+  if (scope_contains_with_) Indent(n1, "\x2f\x2f\x20\x73\x63\x6f\x70\x65\x20\x63\x6f\x6e\x74\x61\x69\x6e\x73\x20\x27\x77\x69\x74\x68\x27\xa");
+  if (scope_calls_eval_) Indent(n1, "\x2f\x2f\x20\x73\x63\x6f\x70\x65\x20\x63\x61\x6c\x6c\x73\x20\x27\x65\x76\x61\x6c\x27\xa");
   if (outer_scope_calls_sloppy_eval_) {
-    Indent(n1, "// outer scope calls 'eval' in sloppy context\n");
+    Indent(n1, "\x2f\x2f\x20\x6f\x75\x74\x65\x72\x20\x73\x63\x6f\x70\x65\x20\x63\x61\x6c\x6c\x73\x20\x27\x65\x76\x61\x6c\x27\x20\x69\x6e\x20\x73\x6c\x6f\x70\x70\x79\x20\x63\x6f\x6e\x74\x65\x78\x74\xa");
   }
-  if (inner_scope_calls_eval_) Indent(n1, "// inner scope calls 'eval'\n");
-  if (num_stack_slots_ > 0) { Indent(n1, "// ");
-  PrintF("%d stack slots\n", num_stack_slots_); }
-  if (num_heap_slots_ > 0) { Indent(n1, "// ");
-  PrintF("%d heap slots\n", num_heap_slots_); }
+  if (inner_scope_calls_eval_) Indent(n1, "\x2f\x2f\x20\x69\x6e\x6e\x65\x72\x20\x73\x63\x6f\x70\x65\x20\x63\x61\x6c\x6c\x73\x20\x27\x65\x76\x61\x6c\x27\xa");
+  if (num_stack_slots_ > 0) { Indent(n1, "\x2f\x2f\x20");
+  PrintF("\x6c\x84\x20\x73\x74\x61\x63\x6b\x20\x73\x6c\x6f\x74\x73\xa", num_stack_slots_); }
+  if (num_heap_slots_ > 0) { Indent(n1, "\x2f\x2f\x20");
+  PrintF("\x6c\x84\x20\x68\x65\x61\x70\x20\x73\x6c\x6f\x74\x73\xa", num_heap_slots_); }
 
   // Print locals.
   if (function_ != NULL) {
-    Indent(n1, "// function var:\n");
+    Indent(n1, "\x2f\x2f\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x76\x61\x72\x3a\xa");
     PrintVar(n1, function_->proxy()->var());
   }
 
   if (temps_.length() > 0) {
-    Indent(n1, "// temporary vars:\n");
+    Indent(n1, "\x2f\x2f\x20\x74\x65\x6d\x70\x6f\x72\x61\x72\x79\x20\x76\x61\x72\x73\x3a\xa");
     for (int i = 0; i < temps_.length(); i++) {
       PrintVar(n1, temps_[i]);
     }
   }
 
   if (internals_.length() > 0) {
-    Indent(n1, "// internal vars:\n");
+    Indent(n1, "\x2f\x2f\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x76\x61\x72\x73\x3a\xa");
     for (int i = 0; i < internals_.length(); i++) {
       PrintVar(n1, internals_[i]);
     }
   }
 
   if (variables_.Start() != NULL) {
-    Indent(n1, "// local vars:\n");
+    Indent(n1, "\x2f\x2f\x20\x6c\x6f\x63\x61\x6c\x20\x76\x61\x72\x73\x3a\xa");
     PrintMap(n1, &variables_);
   }
 
   if (dynamics_ != NULL) {
-    Indent(n1, "// dynamic vars:\n");
+    Indent(n1, "\x2f\x2f\x20\x64\x79\x6e\x61\x6d\x69\x63\x20\x76\x61\x72\x73\x3a\xa");
     PrintMap(n1, dynamics_->GetMap(DYNAMIC));
     PrintMap(n1, dynamics_->GetMap(DYNAMIC_LOCAL));
     PrintMap(n1, dynamics_->GetMap(DYNAMIC_GLOBAL));
@@ -926,12 +926,12 @@ void Scope::Print(int n) {
   // Print inner scopes (disable by providing negative n).
   if (n >= 0) {
     for (int i = 0; i < inner_scopes_.length(); i++) {
-      PrintF("\n");
+      PrintF("\xa");
       inner_scopes_[i]->Print(n1);
     }
   }
 
-  Indent(n0, "}\n");
+  Indent(n0, "\x7d\xa");
 }
 #endif  // DEBUG
 
@@ -1082,7 +1082,7 @@ bool Scope::ResolveVariable(CompilationInfo* info,
     Factory* factory = isolate->factory();
     Handle<JSArray> array = factory->NewJSArray(0);
     Handle<Object> result =
-        factory->NewSyntaxError("harmony_const_assign", array);
+        factory->NewSyntaxError("\x68\x61\x72\x6d\x6f\x6e\x79\x5f\x63\x6f\x6e\x73\x74\x5f\x61\x73\x73\x69\x67\x6e", array);
     isolate->Throw(*result, &location);
     return false;
   }
@@ -1091,7 +1091,7 @@ bool Scope::ResolveVariable(CompilationInfo* info,
     bool ok;
 #ifdef DEBUG
     if (FLAG_print_interface_details) {
-      PrintF("# Resolve %.*s:\n", var->raw_name()->length(),
+      PrintF("\x23\x20\x52\x65\x73\x6f\x6c\x76\x65\x20\x25\x2e\x2a\x73\x3a\xa", var->raw_name()->length(),
              var->raw_name()->raw_data());
     }
 #endif
@@ -1099,10 +1099,10 @@ bool Scope::ResolveVariable(CompilationInfo* info,
     if (!ok) {
 #ifdef DEBUG
       if (FLAG_print_interfaces) {
-        PrintF("SCOPES TYPE ERROR\n");
-        PrintF("proxy: ");
+        PrintF("\x53\x43\x4f\x50\x45\x53\x20\x54\x59\x50\x45\x20\x45\x52\x52\x4f\x52\xa");
+        PrintF("\x70\x72\x6f\x78\x79\x3a\x20");
         proxy->interface()->Print();
-        PrintF("var: ");
+        PrintF("\x76\x61\x72\x3a\x20");
         var->interface()->Print();
       }
 #endif
@@ -1116,7 +1116,7 @@ bool Scope::ResolveVariable(CompilationInfo* info,
       Handle<JSArray> array = factory->NewJSArray(1);
       JSObject::SetElement(array, 0, var->name(), NONE, STRICT).Assert();
       Handle<Object> result =
-          factory->NewSyntaxError("module_type_error", array);
+          factory->NewSyntaxError("\x6d\x6f\x64\x75\x6c\x65\x5f\x74\x79\x70\x65\x5f\x65\x72\x72\x6f\x72", array);
       isolate->Throw(*result, &location);
       return false;
     }

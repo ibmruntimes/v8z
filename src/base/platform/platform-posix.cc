@@ -37,7 +37,7 @@
 #undef MAP_TYPE
 
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
-#define LOG_TAG "v8"
+#define LOG_TAG "\x76\x38"
 #include <android/log.h>  // NOLINT
 #endif
 
@@ -120,8 +120,8 @@ uint64_t OS::TotalPhysicalMemory() {
 #elif V8_OS_FREEBSD
   int pages, page_size;
   size_t size = sizeof(pages);
-  sysctlbyname("vm.stats.vm.v_page_count", &pages, &size, NULL, 0);
-  sysctlbyname("vm.stats.vm.v_page_size", &page_size, &size, NULL, 0);
+  sysctlbyname("\x76\x6d\x2e\x73\x74\x61\x74\x73\x2e\x76\x6d\x2e\x76\x5f\x70\x61\x67\x65\x5f\x63\x6f\x75\x6e\x74", &pages, &size, NULL, 0);
+  sysctlbyname("\x76\x6d\x2e\x73\x74\x61\x74\x73\x2e\x76\x6d\x2e\x76\x5f\x70\x61\x67\x65\x5f\x73\x69\x7a\x65", &page_size, &size, NULL, 0);
   if (pages == -1 || page_size == -1) {
     UNREACHABLE();
     return 0;
@@ -137,7 +137,7 @@ uint64_t OS::TotalPhysicalMemory() {
   return static_cast<uint64_t>(memory_info.dwTotalPhys);
 #elif V8_OS_QNX
   struct stat stat_buf;
-  if (stat("/proc", &stat_buf) != 0) {
+  if (stat("\x2f\x70\x72\x6f\x63", &stat_buf) != 0) {
     UNREACHABLE();
     return 0;
   }
@@ -342,30 +342,30 @@ void OS::Abort() {
 
 void OS::DebugBreak() {
 #if V8_HOST_ARCH_ARM
-  asm("bkpt 0");
+  asm("\x62\x6b\x70\x74\x20\x30");
 #elif V8_HOST_ARCH_ARM64
-  asm("brk 0");
+  asm("\x62\x72\x6b\x20\x30");
 #elif V8_HOST_ARCH_MIPS
-  asm("break");
+  asm("\x62\x72\x65\x61\x6b");
 #elif V8_HOST_ARCH_MIPS64
-  asm("break");
+  asm("\x62\x72\x65\x61\x6b");
 #elif V8_HOST_ARCH_S390
 #if V8_OS_ZOS
   // TODO(mcornac):
 #else
   // Software breakpoint instruction is 0x0001
-  asm volatile(".word 0x0001");
+  asm volatile("\x2e\x77\x6f\x72\x64\x20\x30\x78\x30\x30\x30\x31");
 #endif
 #elif V8_HOST_ARCH_PPC
-  asm("twge 2,2");
+  asm("\x74\x77\x67\x65\x20\x32\x2c\x32");
 #elif V8_HOST_ARCH_IA32
 #if defined(__native_client__)
-  asm("hlt");
+  asm("\x68\x6c\x74");
 #else
-  asm("int $3");
+  asm("\x69\x6e\x74\x20\x24\x33");
 #endif  // __native_client__
 #elif V8_HOST_ARCH_X64
-  asm("int $3");
+  asm("\x69\x6e\x74\x20\x24\x33");
 #else
 #error Unsupported host architecture.
 #endif
@@ -486,7 +486,7 @@ FILE* OS::OpenTemporaryFile() {
 }
 
 
-const char* const OS::LogFileOpenMode = "w";
+const char* const OS::LogFileOpenMode = "\x77";
 
 
 void OS::Print(const char* format, ...) {
@@ -557,7 +557,7 @@ int OS::VSNPrintF(char* str,
   if (n < 0 || n >= length) {
     // If the length is zero, the assignment fails.
     if (length > 0)
-      str[length - 1] = '\0';
+      str[length - 1] = '\x0';
     return -1;
   } else {
     return n;
@@ -612,13 +612,13 @@ static void SetThreadName(const char* name) {
   pthread_set_name_np(pthread_self(), name);
 #elif V8_OS_NETBSD
   STATIC_ASSERT(Thread::kMaxThreadNameLength <= PTHREAD_MAX_NAMELEN_NP);
-  pthread_setname_np(pthread_self(), "%s", name);
+  pthread_setname_np(pthread_self(), "\x6c\xa2", name);
 #elif V8_OS_MACOSX
   // pthread_setname_np is only available in 10.6 or later, so test
   // for it at runtime.
   int (*dynamic_pthread_setname_np)(const char*);
   *reinterpret_cast<void**>(&dynamic_pthread_setname_np) =
-    dlsym(RTLD_DEFAULT, "pthread_setname_np");
+    dlsym(RTLD_DEFAULT, "\x70\x74\x68\x72\x65\x61\x64\x5f\x73\x65\x74\x6e\x61\x6d\x65\x5f\x6e\x70");
   if (dynamic_pthread_setname_np == NULL)
     return;
 
@@ -652,7 +652,7 @@ static void* ThreadEntry(void* arg) {
 
 void Thread::set_name(const char* name) {
   strncpy(name_, name, sizeof(name_));
-  name_[sizeof(name_) - 1] = '\0';
+  name_[sizeof(name_) - 1] = '\x0';
 }
 
 
@@ -745,14 +745,14 @@ static void InitializeTlsBaseOffset() {
   size_t buffer_size = kBufferSize;
   int ctl_name[] = { CTL_KERN , KERN_OSRELEASE };
   if (sysctl(ctl_name, 2, buffer, &buffer_size, NULL, 0) != 0) {
-    V8_Fatal(__FILE__, __LINE__, "V8 failed to get kernel version");
+    V8_Fatal(__FILE__, __LINE__, "\x56\x38\x20\x66\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x67\x65\x74\x20\x6b\x65\x72\x6e\x65\x6c\x20\x76\x65\x72\x73\x69\x6f\x6e");
   }
   // The buffer now contains a string of the form XX.YY.ZZ, where
   // XX is the major kernel version component.
   // Make sure the buffer is 0-terminated.
-  buffer[kBufferSize - 1] = '\0';
-  char* period_pos = strchr(buffer, '.');
-  *period_pos = '\0';
+  buffer[kBufferSize - 1] = '\x0';
+  char* period_pos = strchr(buffer, '\x2e');
+  *period_pos = '\x0';
   int kernel_version_major =
       static_cast<int>(strtol(buffer, NULL, 10));  // NOLINT
   // The constants below are taken from pthreads.s from the XNU kernel
@@ -780,7 +780,7 @@ static void CheckFastTls(Thread::LocalStorageKey key) {
   void* actual = Thread::GetExistingThreadLocal(key);
   if (expected != actual) {
     V8_Fatal(__FILE__, __LINE__,
-             "V8 failed to initialize fast TLS on current kernel");
+             "\x56\x38\x20\x66\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x20\x66\x61\x73\x74\x20\x54\x4c\x53\x20\x6f\x6e\x20\x63\x75\x72\x72\x65\x6e\x74\x20\x6b\x65\x72\x6e\x65\x6c");
   }
   Thread::SetThreadLocal(key, NULL);
 }

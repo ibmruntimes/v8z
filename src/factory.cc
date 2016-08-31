@@ -418,7 +418,7 @@ static inline Handle<String> MakeOrFindTwoCharacterString(Isolate* isolate,
                                                           uint16_t c2) {
   // Numeric strings have a different hash algorithm not known by
   // LookupTwoCharsStringIfExists, so we skip this step for such strings.
-  if (!Between(c1, '0', '9') || !Between(c2, '0', '9')) {
+  if (!Between(c1, '\x30', '\x39') || !Between(c2, '\x30', '\x39')) {
     Handle<String> result;
     if (StringTable::LookupTwoCharsStringIfExists(isolate, c1, c2).
         ToHandle(&result)) {
@@ -1039,51 +1039,51 @@ Handle<HeapNumber> Factory::NewHeapNumber(double value,
 
 Handle<Object> Factory::NewTypeError(const char* message,
                                      Vector< Handle<Object> > args) {
-  return NewError("MakeTypeError", message, args);
+  return NewError("\x4d\x61\x6b\x65\x54\x79\x70\x65\x45\x72\x72\x6f\x72", message, args);
 }
 
 
 Handle<Object> Factory::NewTypeError(Handle<String> message) {
-  return NewError("$TypeError", message);
+  return NewError("\x24\x54\x79\x70\x65\x45\x72\x72\x6f\x72", message);
 }
 
 
 Handle<Object> Factory::NewRangeError(const char* message,
                                       Vector< Handle<Object> > args) {
-  return NewError("MakeRangeError", message, args);
+  return NewError("\x4d\x61\x6b\x65\x52\x61\x6e\x67\x65\x45\x72\x72\x6f\x72", message, args);
 }
 
 
 Handle<Object> Factory::NewRangeError(Handle<String> message) {
-  return NewError("$RangeError", message);
+  return NewError("\x24\x52\x61\x6e\x67\x65\x45\x72\x72\x6f\x72", message);
 }
 
 
 Handle<Object> Factory::NewSyntaxError(const char* message,
                                        Handle<JSArray> args) {
-  return NewError("MakeSyntaxError", message, args);
+  return NewError("\x4d\x61\x6b\x65\x53\x79\x6e\x74\x61\x78\x45\x72\x72\x6f\x72", message, args);
 }
 
 
 Handle<Object> Factory::NewSyntaxError(Handle<String> message) {
-  return NewError("$SyntaxError", message);
+  return NewError("\x24\x53\x79\x6e\x74\x61\x78\x45\x72\x72\x6f\x72", message);
 }
 
 
 Handle<Object> Factory::NewReferenceError(const char* message,
                                           Vector< Handle<Object> > args) {
-  return NewError("MakeReferenceError", message, args);
+  return NewError("\x4d\x61\x6b\x65\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72", message, args);
 }
 
 
 Handle<Object> Factory::NewReferenceError(const char* message,
                                           Handle<JSArray> args) {
-  return NewError("MakeReferenceError", message, args);
+  return NewError("\x4d\x61\x6b\x65\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72", message, args);
 }
 
 
 Handle<Object> Factory::NewReferenceError(Handle<String> message) {
-  return NewError("$ReferenceError", message);
+  return NewError("\x24\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72", message);
 }
 
 
@@ -1104,13 +1104,13 @@ Handle<Object> Factory::NewError(const char* maker,
 
 Handle<Object> Factory::NewEvalError(const char* message,
                                      Vector< Handle<Object> > args) {
-  return NewError("MakeEvalError", message, args);
+  return NewError("\x4d\x61\x6b\x65\x45\x76\x61\x6c\x45\x72\x72\x6f\x72", message, args);
 }
 
 
 Handle<Object> Factory::NewError(const char* message,
                                  Vector< Handle<Object> > args) {
-  return NewError("MakeError", message, args);
+  return NewError("\x4d\x61\x6b\x65\x45\x72\x72\x6f\x72", message, args);
 }
 
 
@@ -1128,7 +1128,7 @@ Handle<String> Factory::EmergencyNewError(const char* message,
 
   for (unsigned i = 0; i < ARRAY_SIZE(args); i++) {
     if (space > 0) {
-      *p++ = ' ';
+      *p++ = '\x20';
       space--;
       if (space > 0) {
         Handle<String> arg_str = Handle<String>::cast(
@@ -1142,9 +1142,9 @@ Handle<String> Factory::EmergencyNewError(const char* message,
     }
   }
   if (space > 0) {
-    *p = '\0';
+    *p = '\x0';
   } else {
-    buffer[kBufferSize - 1] = '\0';
+    buffer[kBufferSize - 1] = '\x0';
   }
   return NewStringFromUtf8(CStrVector(buffer), TENURED).ToHandleChecked();
 }
@@ -1181,7 +1181,7 @@ Handle<Object> Factory::NewError(const char* maker,
 
 
 Handle<Object> Factory::NewError(Handle<String> message) {
-  return NewError("$Error", message);
+  return NewError("\x24\x45\x72\x72\x6f\x72", message);
 }
 
 
@@ -1794,7 +1794,7 @@ void Factory::ReinitializeJSReceiver(Handle<JSReceiver> object,
   Heap* heap = isolate()->heap();
   MaybeHandle<SharedFunctionInfo> shared;
   if (type == JS_FUNCTION_TYPE) {
-    OneByteStringKey key(STATIC_ASCII_VECTOR("<freezing call trap>"),
+    OneByteStringKey key(STATIC_ASCII_VECTOR("\x3c\x66\x72\x65\x65\x7a\x69\x6e\x67\x20\x63\x61\x6c\x6c\x20\x74\x72\x61\x70\x3e"),
                          heap->HashSeed());
     Handle<String> name = InternalizeStringWithKey(&key);
     shared = NewSharedFunctionInfo(name, MaybeHandle<Code>());

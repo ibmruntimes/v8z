@@ -89,8 +89,8 @@ class FullCodeGenerator: public AstVisitor {
 
   static const char* State2String(State state) {
     switch (state) {
-      case NO_REGISTERS: return "NO_REGISTERS";
-      case TOS_REG: return "TOS_REG";
+      case NO_REGISTERS: return "\x4e\x4f\x5f\x52\x45\x47\x49\x53\x54\x45\x52\x53";
+      case TOS_REG: return "\x54\x4f\x53\x5f\x52\x45\x47";
     }
     UNREACHABLE();
     return NULL;

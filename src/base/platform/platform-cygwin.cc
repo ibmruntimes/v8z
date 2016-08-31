@@ -74,7 +74,7 @@ class PosixMemoryMappedFile : public OS::MemoryMappedFile {
 
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
-  FILE* file = fopen(name, "r+");
+  FILE* file = fopen(name, "\x72\x2b");
   if (file == NULL) return NULL;
 
   fseek(file, 0, SEEK_END);
@@ -88,7 +88,7 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name, int size,
     void* initial) {
-  FILE* file = fopen(name, "w+");
+  FILE* file = fopen(name, "\x77\x2b");
   if (file == NULL) return NULL;
   int result = fwrite(initial, size, 1, file);
   if (result < 1) {
@@ -112,7 +112,7 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
   // This function assumes that the layout of the file is as follows:
   // hex_start_addr-hex_end_addr rwxp <unused data> [binary_file_name]
   // If we encounter an unexpected situation we abort scanning further entries.
-  FILE* fp = fopen("/proc/self/maps", "r");
+  FILE* fp = fopen("\x2f\x70\x72\x6f\x63\x2f\x73\x65\x6c\x66\x2f\x6d\x61\x70\x73", "\x72");
   if (fp == NULL) return result;
 
   // Allocate enough room to be able to store a full file name.
@@ -124,21 +124,21 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
     uintptr_t start, end;
     char attr_r, attr_w, attr_x, attr_p;
     // Parse the addresses and permission bits at the beginning of the line.
-    if (fscanf(fp, "%" V8PRIxPTR "-%" V8PRIxPTR, &start, &end) != 2) break;
-    if (fscanf(fp, " %c%c%c%c", &attr_r, &attr_w, &attr_x, &attr_p) != 4) break;
+    if (fscanf(fp, "\x25" V8PRIxPTR "\x2d\x25" V8PRIxPTR, &start, &end) != 2) break;
+    if (fscanf(fp, "\x20\x6c\x83\x6c\x83\x6c\x83\x6c\x83", &attr_r, &attr_w, &attr_x, &attr_p) != 4) break;
 
     int c;
-    if (attr_r == 'r' && attr_w != 'w' && attr_x == 'x') {
+    if (attr_r == '\x72' && attr_w != '\x77' && attr_x == '\x78') {
       // Found a read-only executable entry. Skip characters until we reach
       // the beginning of the filename or the end of the line.
       do {
         c = getc(fp);
-      } while ((c != EOF) && (c != '\n') && (c != '/'));
+      } while ((c != EOF) && (c != '\xa') && (c != '\x2f'));
       if (c == EOF) break;  // EOF: Was unexpected, just exit.
 
       // Process the filename if found.
-      if (c == '/') {
-        ungetc(c, fp);  // Push the '/' back into the stream to be read below.
+      if (c == '\x2f') {
+        ungetc(c, fp);  // Push the '\x2f' back into the stream to be read below.
 
         // Read to the end of the line. Exit if the read fails.
         if (fgets(lib_name, kLibNameLen, fp) == NULL) break;
@@ -146,11 +146,11 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
         // Drop the newline character read by fgets. We do not need to check
         // for a zero-length string because we know that we at least read the
         // '/' character.
-        lib_name[strlen(lib_name) - 1] = '\0';
+        lib_name[strlen(lib_name) - 1] = '\x0';
       } else {
         // No library name found, just record the raw address range.
         snprintf(lib_name, kLibNameLen,
-                 "%08" V8PRIxPTR "-%08" V8PRIxPTR, start, end);
+                 "\x25\x30\x38" V8PRIxPTR "\x2d\x25\x30\x38" V8PRIxPTR, start, end);
       }
       result.push_back(SharedLibraryAddress(lib_name, start, end));
     } else {
@@ -158,7 +158,7 @@ std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
       // reading the next entry.
       do {
         c = getc(fp);
-      } while ((c != EOF) && (c != '\n'));
+      } while ((c != EOF) && (c != '\xa'));
       if (c == EOF) break;
     }
   }

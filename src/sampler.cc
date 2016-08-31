@@ -524,7 +524,7 @@ class SamplerThread : public base::Thread {
   static const int kSamplerThreadStackSize = 64 * KB;
 
   explicit SamplerThread(int interval)
-      : Thread(base::Thread::Options("SamplerThread", kSamplerThreadStackSize)),
+      : Thread(base::Thread::Options("\x53\x61\x6d\x70\x6c\x65\x72\x54\x68\x72\x65\x61\x64", kSamplerThreadStackSize)),
         interval_(interval) {}
 
   static void SetUp() { if (!mutex_) mutex_ = new base::Mutex(); }

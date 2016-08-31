@@ -18,13 +18,13 @@ namespace compiler {
 OStream& operator<<(OStream& os, const CallDescriptor::Kind& k) {
   switch (k) {
     case CallDescriptor::kCallCodeObject:
-      os << "Code";
+      os << "\x43\x6f\x64\x65";
       break;
     case CallDescriptor::kCallJSFunction:
-      os << "JS";
+      os << "\x4a\x53";
       break;
     case CallDescriptor::kCallAddress:
-      os << "Addr";
+      os << "\x41\x64\x64\x72";
       break;
   }
   return os;
@@ -33,9 +33,9 @@ OStream& operator<<(OStream& os, const CallDescriptor::Kind& k) {
 
 OStream& operator<<(OStream& os, const CallDescriptor& d) {
   // TODO(svenpanne) Output properties etc. and be less cryptic.
-  return os << d.kind() << ":" << d.debug_name() << ":r" << d.ReturnCount()
-            << "p" << d.ParameterCount() << "i" << d.InputCount()
-            << (d.CanLazilyDeoptimize() ? "deopt" : "");
+  return os << d.kind() << "\x3a" << d.debug_name() << "\x3a\x72" << d.ReturnCount()
+            << "\x70" << d.ParameterCount() << "\x69" << d.InputCount()
+            << (d.CanLazilyDeoptimize() ? "\x64\x65\x6f\x70\x74" : "");
 }
 
 

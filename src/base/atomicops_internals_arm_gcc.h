@@ -77,16 +77,16 @@ inline Atomic32 NoBarrier_CompareAndSwap(volatile Atomic32* ptr,
     //   reloop = 0
     //   if (prev_value != old_value)
     //      reloop = STREX(ptr, new_value)
-    __asm__ __volatile__("    ldrex %0, [%3]\n"
-                         "    mov %1, #0\n"
-                         "    cmp %0, %4\n"
+    __asm__ __volatile__("\x20\x20\x20\x20\x6c\x64\x72\x65\x78\x20\x25\x30\x2c\x20\x5b\x25\x33\x5d\xa"
+                         "\x20\x20\x20\x20\x6d\x6f\x76\x20\x25\x31\x2c\x20\x23\x30\xa"
+                         "\x20\x20\x20\x20\x63\x6d\x70\x20\x25\x30\x2c\x20\x25\x34\xa"
 #ifdef __thumb2__
-                         "    it eq\n"
+                         "\x20\x20\x20\x20\x69\x74\x20\x65\x71\xa"
 #endif
-                         "    strexeq %1, %5, [%3]\n"
-                         : "=&r"(prev_value), "=&r"(reloop), "+m"(*ptr)
-                         : "r"(ptr), "r"(old_value), "r"(new_value)
-                         : "cc", "memory");
+                         "\x20\x20\x20\x20\x73\x74\x72\x65\x78\x65\x71\x20\x25\x31\x2c\x20\x25\x35\x2c\x20\x5b\x25\x33\x5d\xa"
+                         : "\x3d\x26\x72"(prev_value), "\x3d\x26\x72"(reloop), "\x2b\x6d"(*ptr)
+                         : "\x72"(ptr), "\x72"(old_value), "\x72"(new_value)
+                         : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79");
   } while (reloop != 0);
   return prev_value;
 }
@@ -117,12 +117,12 @@ inline Atomic32 NoBarrier_AtomicIncrement(volatile Atomic32* ptr,
     //  value += increment
     //  reloop = STREX(ptr, value)
     //
-    __asm__ __volatile__("    ldrex %0, [%3]\n"
-                         "    add %0, %0, %4\n"
-                         "    strex %1, %0, [%3]\n"
-                         : "=&r"(value), "=&r"(reloop), "+m"(*ptr)
-                         : "r"(ptr), "r"(increment)
-                         : "cc", "memory");
+    __asm__ __volatile__("\x20\x20\x20\x20\x6c\x64\x72\x65\x78\x20\x25\x30\x2c\x20\x5b\x25\x33\x5d\xa"
+                         "\x20\x20\x20\x20\x61\x64\x64\x20\x25\x30\x2c\x20\x25\x30\x2c\x20\x25\x34\xa"
+                         "\x20\x20\x20\x20\x73\x74\x72\x65\x78\x20\x25\x31\x2c\x20\x25\x30\x2c\x20\x5b\x25\x33\x5d\xa"
+                         : "\x3d\x26\x72"(value), "\x3d\x26\x72"(reloop), "\x2b\x6d"(*ptr)
+                         : "\x72"(ptr), "\x72"(increment)
+                         : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79");
   } while (reloop);
   return value;
 }
@@ -145,11 +145,11 @@ inline Atomic32 NoBarrier_AtomicExchange(volatile Atomic32* ptr,
   do {
     // old_value = LDREX(ptr)
     // reloop = STREX(ptr, new_value)
-    __asm__ __volatile__("   ldrex %0, [%3]\n"
-                         "   strex %1, %4, [%3]\n"
-                         : "=&r"(old_value), "=&r"(reloop), "+m"(*ptr)
-                         : "r"(ptr), "r"(new_value)
-                         : "cc", "memory");
+    __asm__ __volatile__("\x20\x20\x20\x6c\x64\x72\x65\x78\x20\x25\x30\x2c\x20\x5b\x25\x33\x5d\xa"
+                         "\x20\x20\x20\x73\x74\x72\x65\x78\x20\x25\x31\x2c\x20\x25\x34\x2c\x20\x5b\x25\x33\x5d\xa"
+                         : "\x3d\x26\x72"(old_value), "\x3d\x26\x72"(reloop), "\x2b\x6d"(*ptr)
+                         : "\x72"(ptr), "\x72"(new_value)
+                         : "\x63\x63", "\x6d\x65\x6d\x6f\x72\x79");
   } while (reloop != 0);
   return old_value;
 }
@@ -255,7 +255,7 @@ inline Atomic32 Release_CompareAndSwap(volatile Atomic32* ptr,
 }
 
 #else
-#  error "Your CPU's ARM architecture is not supported yet"
+#  error "\x59\x6f\x75\x72\x20\x43\x50\x55\x27\x73\x20\x41\x52\x4d\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65\x20\x69\x73\x20\x6e\x6f\x74\x20\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x79\x65\x74"
 #endif
 
 // NOTE: Atomicity of the following load and store operations is only

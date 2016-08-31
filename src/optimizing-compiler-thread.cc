@@ -177,7 +177,7 @@ void OptimizingCompilerThread::Flush() {
   FlushOutputQueue(true);
   if (FLAG_concurrent_osr) FlushOsrBuffer(true);
   if (FLAG_trace_concurrent_recompilation) {
-    PrintF("  ** Flushed concurrent recompilation queues.\n");
+    PrintF("\x20\x20\x2a\x2a\x20\x46\x6c\x75\x73\x68\x65\x64\x20\x63\x6f\x6e\x63\x75\x72\x72\x65\x6e\x74\x20\x72\x65\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x71\x75\x65\x75\x65\x73\x2e\xa");
   }
 }
 
@@ -203,12 +203,12 @@ void OptimizingCompilerThread::Stop() {
 
   if (FLAG_trace_concurrent_recompilation) {
     double percentage = time_spent_compiling_.PercentOf(time_spent_total_);
-    PrintF("  ** Compiler thread did %.2f%% useful work\n", percentage);
+    PrintF("\x20\x20\x2a\x2a\x20\x43\x6f\x6d\x70\x69\x6c\x65\x72\x20\x74\x68\x72\x65\x61\x64\x20\x64\x69\x64\x20\x6c\x4b\xf2\x86\x25\x6c\x40\xa4\xa2\x85\x86\xa4\x6c\x20\x77\x6f\x72\x6b\xa", percentage);
   }
 
   if ((FLAG_trace_osr || FLAG_trace_concurrent_recompilation) &&
       FLAG_concurrent_osr) {
-    PrintF("[COSR hit rate %d / %d]\n", osr_hits_, osr_attempts_);
+    PrintF("\x5b\x43\x4f\x53\x52\x20\x68\x69\x74\x20\x72\x61\x74\x65\x20\x6c\x84\x20\x2f\x20\x6c\x84\x5d\xa", osr_hits_, osr_attempts_);
   }
 
   Join();
@@ -225,9 +225,9 @@ void OptimizingCompilerThread::InstallOptimizedFunctions() {
     Handle<JSFunction> function(*info->closure());
     if (info->is_osr()) {
       if (FLAG_trace_osr) {
-        PrintF("[COSR - ");
+        PrintF("\x5b\x43\x4f\x53\x52\x20\x2d\x20");
         info->closure()->PrintName();
-        PrintF(" is ready for install and entry at AST id %d]\n",
+        PrintF("\x20\x69\x73\x20\x72\x65\x61\x64\x79\x20\x66\x6f\x72\x20\x69\x6e\x73\x74\x61\x6c\x6c\x20\x61\x6e\x64\x20\x65\x6e\x74\x72\x79\x20\x61\x74\x20\x41\x53\x54\x20\x69\x64\x20\x6c\x84\x5d\xa",
                info->osr_ast_id().ToInt());
       }
       job->WaitForInstall();
@@ -344,9 +344,9 @@ void OptimizingCompilerThread::AddToOsrBuffer(OptimizedCompileJob* job) {
     DCHECK(stale->IsWaitingForInstall());
     CompilationInfo* info = stale->info();
     if (FLAG_trace_osr) {
-      PrintF("[COSR - Discarded ");
+      PrintF("\x5b\x43\x4f\x53\x52\x20\x2d\x20\x44\x69\x73\x63\x61\x72\x64\x65\x64\x20");
       info->closure()->PrintName();
-      PrintF(", AST id %d]\n", info->osr_ast_id().ToInt());
+      PrintF("\x2c\x20\x41\x53\x54\x20\x69\x64\x20\x6c\x84\x5d\xa", info->osr_ast_id().ToInt());
     }
     DisposeOptimizedCompileJob(stale, false);
   }

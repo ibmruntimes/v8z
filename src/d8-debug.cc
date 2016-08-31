@@ -8,8 +8,8 @@
 namespace v8 {
 
 void PrintPrompt(bool is_running) {
-  const char* prompt = is_running? "> " : "dbg> ";
-  printf("%s", prompt);
+  const char* prompt = is_running? "\x3e\x20" : "\x64\x62\x67\x3e\x20";
+  printf("\x6c\xa2", prompt);
   fflush(stdout);
 }
 
@@ -29,7 +29,7 @@ void HandleDebugEvent(const Debug::EventDetails& event_details) {
 
   // Get the toJSONProtocol function on the event and get the JSON format.
   Local<String> to_json_fun_name =
-      String::NewFromUtf8(isolate, "toJSONProtocol");
+      String::NewFromUtf8(isolate, "\x74\x6f\x4a\x53\x4f\x4e\x50\x72\x6f\x74\x6f\x63\x6f\x6c");
   Handle<Object> event_data = event_details.GetEventData();
   Local<Function> to_json_fun =
       Local<Function>::Cast(event_data->Get(to_json_fun_name));
@@ -46,16 +46,16 @@ void HandleDebugEvent(const Debug::EventDetails& event_details) {
     Shell::ReportException(isolate, &try_catch);
     return;
   }
-  String::Utf8Value str(details->Get(String::NewFromUtf8(isolate, "text")));
+  String::Utf8Value str(details->Get(String::NewFromUtf8(isolate, "\x74\x65\x78\x74")));
   if (str.length() == 0) {
     // Empty string is used to signal not to process this event.
     return;
   }
-  printf("%s\n", *str);
+  printf("\x6c\xa2\xa", *str);
 
   // Get the debug command processor.
   Local<String> fun_name =
-      String::NewFromUtf8(isolate, "debugCommandProcessor");
+      String::NewFromUtf8(isolate, "\x64\x65\x62\x75\x67\x43\x6f\x6d\x6d\x61\x6e\x64\x50\x72\x6f\x63\x65\x73\x73\x6f\x72");
   Handle<Object> exec_state = event_details.GetExecutionState();
   Local<Function> fun = Local<Function>::Cast(exec_state->Get(fun_name));
   Local<Object> cmd_processor =
@@ -101,7 +101,7 @@ void HandleDebugEvent(const Debug::EventDetails& event_details) {
     // Invoke the JavaScript to convert the debug command line to a JSON
     // request, invoke the JSON request and convert the JSON respose to a text
     // representation.
-    fun_name = String::NewFromUtf8(isolate, "processDebugRequest");
+    fun_name = String::NewFromUtf8(isolate, "\x70\x72\x6f\x63\x65\x73\x73\x44\x65\x62\x75\x67\x52\x65\x71\x75\x65\x73\x74");
     fun = Handle<Function>::Cast(cmd_processor->Get(fun_name));
     args[0] = request;
     Handle<Value> response_val = fun->Call(cmd_processor, kArgc, args);
@@ -119,11 +119,11 @@ void HandleDebugEvent(const Debug::EventDetails& event_details) {
       continue;
     }
     String::Utf8Value text_str(
-        response_details->Get(String::NewFromUtf8(isolate, "text")));
+        response_details->Get(String::NewFromUtf8(isolate, "\x74\x65\x78\x74")));
     if (text_str.length() > 0) {
-      printf("%s\n", *text_str);
+      printf("\x6c\xa2\xa", *text_str);
     }
-    running = response_details->Get(String::NewFromUtf8(isolate, "running"))
+    running = response_details->Get(String::NewFromUtf8(isolate, "\x72\x75\x6e\x6e\x69\x6e\x67"))
                   ->ToBoolean()
                   ->Value();
   }

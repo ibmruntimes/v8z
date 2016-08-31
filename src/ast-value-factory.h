@@ -236,32 +236,32 @@ class AstValue : public ZoneObject {
 
 // For generating string constants.
 #define STRING_CONSTANTS(F) \
-  F(anonymous_function, "(anonymous function)") \
-  F(arguments, "arguments") \
-  F(done, "done") \
-  F(dot, ".") \
-  F(dot_for, ".for") \
-  F(dot_generator, ".generator") \
-  F(dot_generator_object, ".generator_object") \
-  F(dot_iterator, ".iterator") \
-  F(dot_module, ".module") \
-  F(dot_result, ".result") \
+  F(anonymous_function, "\x28\x61\x6e\x6f\x6e\x79\x6d\x6f\x75\x73\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x29") \
+  F(arguments, "\x61\x72\x67\x75\x6d\x65\x6e\x74\x73") \
+  F(done, "\x64\x6f\x6e\x65") \
+  F(dot, "\x2e") \
+  F(dot_for, "\x2e\x66\x6f\x72") \
+  F(dot_generator, "\x2e\x67\x65\x6e\x65\x72\x61\x74\x6f\x72") \
+  F(dot_generator_object, "\x2e\x67\x65\x6e\x65\x72\x61\x74\x6f\x72\x5f\x6f\x62\x6a\x65\x63\x74") \
+  F(dot_iterator, "\x2e\x69\x74\x65\x72\x61\x74\x6f\x72") \
+  F(dot_module, "\x2e\x6d\x6f\x64\x75\x6c\x65") \
+  F(dot_result, "\x2e\x72\x65\x73\x75\x6c\x74") \
   F(empty, "") \
-  F(eval, "eval") \
-  F(initialize_const_global, "initializeConstGlobal") \
-  F(initialize_var_global, "initializeVarGlobal") \
-  F(make_reference_error, "MakeReferenceError") \
-  F(make_syntax_error, "MakeSyntaxError") \
-  F(make_type_error, "MakeTypeError") \
-  F(module, "module") \
-  F(native, "native") \
-  F(next, "next") \
-  F(proto, "__proto__") \
-  F(prototype, "prototype") \
-  F(this, "this") \
-  F(use_asm, "use asm") \
-  F(use_strict, "use strict") \
-  F(value, "value")
+  F(eval, "\x65\x76\x61\x6c") \
+  F(initialize_const_global, "\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x43\x6f\x6e\x73\x74\x47\x6c\x6f\x62\x61\x6c") \
+  F(initialize_var_global, "\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x56\x61\x72\x47\x6c\x6f\x62\x61\x6c") \
+  F(make_reference_error, "\x4d\x61\x6b\x65\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72") \
+  F(make_syntax_error, "\x4d\x61\x6b\x65\x53\x79\x6e\x74\x61\x78\x45\x72\x72\x6f\x72") \
+  F(make_type_error, "\x4d\x61\x6b\x65\x54\x79\x70\x65\x45\x72\x72\x6f\x72") \
+  F(module, "\x6d\x6f\x64\x75\x6c\x65") \
+  F(native, "\x6e\x61\x74\x69\x76\x65") \
+  F(next, "\x6e\x65\x78\x74") \
+  F(proto, "\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f") \
+  F(prototype, "\x70\x72\x6f\x74\x6f\x74\x79\x70\x65") \
+  F(this, "\x74\x68\x69\x73") \
+  F(use_asm, "\x75\x73\x65\x20\x61\x73\x6d") \
+  F(use_strict, "\x75\x73\x65\x20\x73\x74\x72\x69\x63\x74") \
+  F(value, "\x76\x61\x6c\x75\x65")
 
 
 class AstValueFactory {

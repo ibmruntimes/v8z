@@ -187,16 +187,16 @@ static bool RoundWeedCounted(Vector<char> buffer,
     // Increment the last digit recursively until we find a non '9' digit.
     buffer[length - 1]++;
     for (int i = length - 1; i > 0; --i) {
-      if (buffer[i] != '0' + 10) break;
-      buffer[i] = '0';
+      if (buffer[i] != '\x30' + 10) break;
+      buffer[i] = '\x30';
       buffer[i - 1]++;
     }
     // If the first digit is now '0'+ 10 we had a buffer with all '9's. With the
     // exception of the first digit all digits are now '0'. Simply switch the
     // first digit to '1' and adjust the kappa. Example: "99" becomes "10" and
     // the power (the kappa) is increased.
-    if (buffer[0] == '0' + 10) {
-      buffer[0] = '1';
+    if (buffer[0] == '\x30' + 10) {
+      buffer[0] = '\x31';
       (*kappa) += 1;
     }
     return true;
@@ -409,7 +409,7 @@ static bool DigitGen(DiyFp low,
   // that is smaller than integrals.
   while (*kappa > 0) {
     int digit = integrals / divisor;
-    buffer[*length] = '0' + digit;
+    buffer[*length] = '\x30' + digit;
     (*length)++;
     integrals %= divisor;
     (*kappa)--;
@@ -444,7 +444,7 @@ static bool DigitGen(DiyFp low,
     unsafe_interval.set_f(unsafe_interval.f() * 10);
     // Integer division by one.
     int digit = static_cast<int>(fractionals >> -one.e());
-    buffer[*length] = '0' + digit;
+    buffer[*length] = '\x30' + digit;
     (*length)++;
     fractionals &= one.f() - 1;  // Modulo by one.
     (*kappa)--;
@@ -518,7 +518,7 @@ static bool DigitGenCounted(DiyFp w,
   // that is smaller than 'integrals'.
   while (*kappa > 0) {
     int digit = integrals / divisor;
-    buffer[*length] = '0' + digit;
+    buffer[*length] = '\x30' + digit;
     (*length)++;
     requested_digits--;
     integrals %= divisor;
@@ -551,7 +551,7 @@ static bool DigitGenCounted(DiyFp w,
     w_error *= 10;
     // Integer division by one.
     int digit = static_cast<int>(fractionals >> -one.e());
-    buffer[*length] = '0' + digit;
+    buffer[*length] = '\x30' + digit;
     (*length)++;
     requested_digits--;
     fractionals &= one.f() - 1;  // Modulo by one.
@@ -707,7 +707,7 @@ bool FastDtoa(double v,
   }
   if (result) {
     *decimal_point = *length + decimal_exponent;
-    buffer[*length] = '\0';
+    buffer[*length] = '\x0';
   }
   return result;
 }

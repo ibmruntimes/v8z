@@ -19,8 +19,8 @@
 #define ICU_UTIL_DATA_SHARED 1
 #define ICU_UTIL_DATA_STATIC 2
 
-#define ICU_UTIL_DATA_SYMBOL "icudt" U_ICU_VERSION_SHORT "_dat"
-#define ICU_UTIL_DATA_SHARED_MODULE_NAME "icudt.dll"
+#define ICU_UTIL_DATA_SYMBOL "\x69\x63\x75\x64\x74" U_ICU_VERSION_SHORT "\x5f\x64\x61\x74"
+#define ICU_UTIL_DATA_SHARED_MODULE_NAME "\x69\x63\x75\x64\x74\x2e\x64\x6c\x6c"
 #endif
 
 namespace v8 {
@@ -61,7 +61,7 @@ bool InitializeICU(const char* icu_data_file) {
 
   if (g_icu_data_ptr) return true;
 
-  FILE* inf = fopen(icu_data_file, "rb");
+  FILE* inf = fopen(icu_data_file, "\x72\x62");
   if (!inf) return false;
 
   fseek(inf, 0, SEEK_END);

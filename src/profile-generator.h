@@ -57,7 +57,7 @@ class CodeEntry {
 
   bool is_js_function() const { return is_js_function_tag(tag_); }
   const char* name_prefix() const { return name_prefix_; }
-  bool has_name_prefix() const { return name_prefix_[0] != '\0'; }
+  bool has_name_prefix() const { return name_prefix_[0] != '\x0'; }
   const char* name() const { return name_; }
   const char* resource_name() const { return resource_name_; }
   int line_number() const { return line_number_; }

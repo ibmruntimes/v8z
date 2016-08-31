@@ -840,13 +840,13 @@ RUNTIME_FUNCTION(Runtime_ArrayBufferInitialize) {
   size_t allocated_length = 0;
   if (!TryNumberToSize(isolate, *byteLength, &allocated_length)) {
     return isolate->Throw(
-        *isolate->factory()->NewRangeError("invalid_array_buffer_length",
+        *isolate->factory()->NewRangeError("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x61\x72\x72\x61\x79\x5f\x62\x75\x66\x66\x65\x72\x5f\x6c\x65\x6e\x67\x74\x68",
                                            HandleVector<Object>(NULL, 0)));
   }
   if (!Runtime::SetupArrayBufferAllocatingData(isolate,
                                                holder, allocated_length)) {
     return isolate->Throw(
-        *isolate->factory()->NewRangeError("invalid_array_buffer_length",
+        *isolate->factory()->NewRangeError("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x61\x72\x72\x61\x79\x5f\x62\x75\x66\x66\x65\x72\x5f\x6c\x65\x6e\x67\x74\x68",
                                            HandleVector<Object>(NULL, 0)));
   }
   return *holder;
@@ -978,7 +978,7 @@ RUNTIME_FUNCTION(Runtime_TypedArrayInitialize) {
 
   if (length > static_cast<unsigned>(Smi::kMaxValue)) {
     return isolate->Throw(
-        *isolate->factory()->NewRangeError("invalid_typed_array_length",
+        *isolate->factory()->NewRangeError("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x74\x79\x70\x65\x64\x5f\x61\x72\x72\x61\x79\x5f\x6c\x65\x6e\x67\x74\x68",
                                            HandleVector<Object>(NULL, 0)));
   }
 
@@ -1062,7 +1062,7 @@ RUNTIME_FUNCTION(Runtime_TypedArrayInitializeFromArrayLike) {
   if ((length > static_cast<unsigned>(Smi::kMaxValue)) ||
       (length > (kMaxInt / element_size))) {
     return isolate->Throw(*isolate->factory()->
-          NewRangeError("invalid_typed_array_length",
+          NewRangeError("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x74\x79\x70\x65\x64\x5f\x61\x72\x72\x61\x79\x5f\x6c\x65\x6e\x67\x74\x68",
             HandleVector<Object>(NULL, 0)));
   }
   size_t byte_length = length * element_size;
@@ -1092,7 +1092,7 @@ RUNTIME_FUNCTION(Runtime_TypedArrayInitializeFromArrayLike) {
   if (!Runtime::SetupArrayBufferAllocatingData(
         isolate, buffer, byte_length, false)) {
     return isolate->Throw(*isolate->factory()->
-          NewRangeError("invalid_array_buffer_length",
+          NewRangeError("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x61\x72\x72\x61\x79\x5f\x62\x75\x66\x66\x65\x72\x5f\x6c\x65\x6e\x67\x74\x68",
             HandleVector<Object>(NULL, 0)));
   }
 
@@ -1177,7 +1177,7 @@ RUNTIME_FUNCTION(Runtime_TypedArraySetFastCases) {
   DCHECK(args.length() == 3);
   if (!args[0]->IsJSTypedArray())
     return isolate->Throw(*isolate->factory()->NewTypeError(
-        "not_typed_array", HandleVector<Object>(NULL, 0)));
+        "\x6e\x6f\x74\x5f\x74\x79\x70\x65\x64\x5f\x61\x72\x72\x61\x79", HandleVector<Object>(NULL, 0)));
 
   if (!args[1]->IsJSTypedArray())
     return Smi::FromInt(TYPED_ARRAY_SET_NON_TYPED_ARRAY);
@@ -1198,7 +1198,7 @@ RUNTIME_FUNCTION(Runtime_TypedArraySetFastCases) {
       offset + source_length > target_length ||
       offset + source_length < offset)  // overflow
     return isolate->Throw(*isolate->factory()->NewRangeError(
-          "typed_array_set_source_too_large", HandleVector<Object>(NULL, 0)));
+          "\x74\x79\x70\x65\x64\x5f\x61\x72\x72\x61\x79\x5f\x73\x65\x74\x5f\x73\x6f\x75\x72\x63\x65\x5f\x74\x6f\x6f\x5f\x6c\x61\x72\x67\x65", HandleVector<Object>(NULL, 0)));
 
   size_t target_offset = NumberToSize(isolate, target->byte_offset());
   size_t source_offset = NumberToSize(isolate, source->byte_offset());
@@ -1406,7 +1406,7 @@ static bool DataViewSetValue(
       return *isolate->factory()->Converter(result);                          \
     } else {                                                                  \
       return isolate->Throw(*isolate->factory()->NewRangeError(               \
-          "invalid_data_view_accessor_offset",                                \
+          "\x69\x6e\x76\x61\x6c\x69\x64\x5f\x64\x61\x74\x61\x5f\x76\x69\x65\x77\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x6f\x66\x66\x73\x65\x74",                                \
           HandleVector<Object>(NULL, 0)));                                    \
     }                                                                         \
   }
@@ -1489,7 +1489,7 @@ double DataViewConvertValue<double>(double value) {
       return isolate->heap()->undefined_value();                              \
     } else {                                                                  \
       return isolate->Throw(*isolate->factory()->NewRangeError(               \
-          "invalid_data_view_accessor_offset",                                \
+          "\x69\x6e\x76\x61\x6c\x69\x64\x5f\x64\x61\x74\x61\x5f\x76\x69\x65\x77\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x6f\x66\x66\x73\x65\x74",                                \
           HandleVector<Object>(NULL, 0)));                                    \
     }                                                                         \
   }
@@ -1900,7 +1900,7 @@ RUNTIME_FUNCTION(Runtime_SetPrototype) {
 
     Handle<Object> new_value = GetPrototypeSkipHiddenPrototypes(isolate, obj);
     if (!new_value->SameValue(*old_value)) {
-      JSObject::EnqueueChangeRecord(obj, "setPrototype",
+      JSObject::EnqueueChangeRecord(obj, "\x73\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65",
                                     isolate->factory()->proto_string(),
                                     old_value);
     }
@@ -2140,7 +2140,7 @@ static Object* ThrowRedeclarationError(Isolate* isolate, Handle<String> name) {
   HandleScope scope(isolate);
   Handle<Object> args[1] = { name };
   Handle<Object> error = isolate->factory()->NewTypeError(
-      "var_redeclaration", HandleVector(args, 1));
+      "\x76\x61\x72\x5f\x72\x65\x64\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e", HandleVector(args, 1));
   return isolate->Throw(*error);
 }
 
@@ -2600,13 +2600,13 @@ RUNTIME_FUNCTION(Runtime_SpecialArrayFunctions) {
   Handle<JSObject> holder =
       isolate->factory()->NewJSObject(isolate->object_function());
 
-  InstallBuiltin(isolate, holder, "pop", Builtins::kArrayPop);
-  InstallBuiltin(isolate, holder, "push", Builtins::kArrayPush);
-  InstallBuiltin(isolate, holder, "shift", Builtins::kArrayShift);
-  InstallBuiltin(isolate, holder, "unshift", Builtins::kArrayUnshift);
-  InstallBuiltin(isolate, holder, "slice", Builtins::kArraySlice);
-  InstallBuiltin(isolate, holder, "splice", Builtins::kArraySplice);
-  InstallBuiltin(isolate, holder, "concat", Builtins::kArrayConcat);
+  InstallBuiltin(isolate, holder, "\x70\x6f\x70", Builtins::kArrayPop);
+  InstallBuiltin(isolate, holder, "\x70\x75\x73\x68", Builtins::kArrayPush);
+  InstallBuiltin(isolate, holder, "\x73\x68\x69\x66\x74", Builtins::kArrayShift);
+  InstallBuiltin(isolate, holder, "\x75\x6e\x73\x68\x69\x66\x74", Builtins::kArrayUnshift);
+  InstallBuiltin(isolate, holder, "\x73\x6c\x69\x63\x65", Builtins::kArraySlice);
+  InstallBuiltin(isolate, holder, "\x73\x70\x6c\x69\x63\x65", Builtins::kArraySplice);
+  InstallBuiltin(isolate, holder, "\x63\x6f\x6e\x63\x61\x74", Builtins::kArrayConcat);
 
   return *holder;
 }
@@ -3045,7 +3045,7 @@ RUNTIME_FUNCTION(Runtime_ThrowGeneratorStateError) {
   CONVERT_ARG_HANDLE_CHECKED(JSGeneratorObject, generator, 0);
   int continuation = generator->continuation();
   const char* message = continuation == JSGeneratorObject::kGeneratorClosed ?
-      "generator_finished" : "generator_running";
+      "\x67\x65\x6e\x65\x72\x61\x74\x6f\x72\x5f\x66\x69\x6e\x69\x73\x68\x65\x64" : "\x67\x65\x6e\x65\x72\x61\x74\x6f\x72\x5f\x72\x75\x6e\x6e\x69\x6e\x67";
   Vector< Handle<Object> > argv = HandleVector<Object>(NULL, 0);
   Handle<Object> error = isolate->factory()->NewError(message, argv);
   return isolate->Throw(*error);
@@ -3411,26 +3411,26 @@ class CompiledReplacement {
     int last = 0;
     for (int i = 0; i < length; i++) {
       Char c = characters[i];
-      if (c == '$') {
+      if (c == '\x24') {
         int next_index = i + 1;
         if (next_index == length) {  // No next character!
           break;
         }
         Char c2 = characters[next_index];
         switch (c2) {
-        case '$':
+        case '\x24':
           if (i > last) {
             // There is a substring before. Include the first "$".
             parts->Add(ReplacementPart::ReplacementSubString(last, next_index),
                        zone);
-            last = next_index + 1;  // Continue after the second "$".
+            last = next_index + 1;  // Continue after the second "\x24".
           } else {
             // Let the next substring start with the second "$".
             last = next_index;
           }
           i = next_index;
           break;
-        case '`':
+        case '\x60':
           if (i > last) {
             parts->Add(ReplacementPart::ReplacementSubString(last, i), zone);
           }
@@ -3438,7 +3438,7 @@ class CompiledReplacement {
           i = next_index;
           last = i + 1;
           break;
-        case '\'':
+        case '\x27':
           if (i > last) {
             parts->Add(ReplacementPart::ReplacementSubString(last, i), zone);
           }
@@ -3446,7 +3446,7 @@ class CompiledReplacement {
           i = next_index;
           last = i + 1;
           break;
-        case '&':
+        case '\x26':
           if (i > last) {
             parts->Add(ReplacementPart::ReplacementSubString(last, i), zone);
           }
@@ -3454,17 +3454,17 @@ class CompiledReplacement {
           i = next_index;
           last = i + 1;
           break;
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9': {
-          int capture_ref = c2 - '0';
+        case '\x30':
+        case '\x31':
+        case '\x32':
+        case '\x33':
+        case '\x34':
+        case '\x35':
+        case '\x36':
+        case '\x37':
+        case '\x38':
+        case '\x39': {
+          int capture_ref = c2 - '\x30';
           if (capture_ref > capture_count) {
             i = next_index;
             continue;
@@ -3473,8 +3473,8 @@ class CompiledReplacement {
           if (second_digit_index < length) {
             // Peek ahead to see if we have two digits.
             Char c3 = characters[second_digit_index];
-            if ('0' <= c3 && c3 <= '9') {  // Double digits.
-              int double_digit_ref = capture_ref * 10 + c3 - '0';
+            if ('\x30' <= c3 && c3 <= '\x39') {  // Double digits.
+              int double_digit_ref = capture_ref * 10 + c3 - '\x30';
               if (double_digit_ref <= capture_count) {
                 next_index = second_digit_index;
                 capture_ref = double_digit_ref;
@@ -4624,7 +4624,7 @@ RUNTIME_FUNCTION(Runtime_NumberToRadixString) {
     int value = args.smi_at(0);
     if (value >= 0 && value < radix) {
       // Character array used for conversion.
-      static const char kCharTable[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+      static const char kCharTable[] = "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a";
       return *isolate->factory()->
           LookupSingleCharacterStringFromCode(kCharTable[value]);
     }
@@ -4786,7 +4786,7 @@ MaybeHandle<Object> Runtime::GetObjectProperty(Isolate* isolate,
   if (object->IsUndefined() || object->IsNull()) {
     Handle<Object> args[2] = { key, object };
     return isolate->Throw<Object>(
-        isolate->factory()->NewTypeError("non_object_property_load",
+        isolate->factory()->NewTypeError("\x6e\x6f\x6e\x5f\x6f\x62\x6a\x65\x63\x74\x5f\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x6c\x6f\x61\x64",
                                          HandleVector(args, 2)));
   }
 
@@ -5068,7 +5068,7 @@ MaybeHandle<Object> Runtime::SetObjectProperty(Isolate* isolate,
   if (object->IsUndefined() || object->IsNull()) {
     Handle<Object> args[2] = { key, object };
     Handle<Object> error =
-        isolate->factory()->NewTypeError("non_object_property_store",
+        isolate->factory()->NewTypeError("\x6e\x6f\x6e\x5f\x6f\x62\x6a\x65\x63\x74\x5f\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x73\x74\x6f\x72\x65",
                                          HandleVector(args, 2));
     return isolate->Throw<Object>(error);
   }
@@ -5323,7 +5323,7 @@ RUNTIME_FUNCTION(Runtime_AddPropertyForTemplate) {
   if (duplicate) {
     Handle<Object> args[1] = { key };
     Handle<Object> error = isolate->factory()->NewTypeError(
-        "duplicate_template_property", HandleVector(args, 1));
+        "\x64\x75\x70\x6c\x69\x63\x61\x74\x65\x5f\x74\x65\x6d\x70\x6c\x61\x74\x65\x5f\x70\x72\x6f\x70\x65\x72\x74\x79", HandleVector(args, 1));
     return isolate->Throw(*error);
   }
 #endif
@@ -6004,7 +6004,7 @@ RUNTIME_FUNCTION(Runtime_GetArgumentsProperty) {
     JSFunction* function = frame->function();
     if (function->shared()->strict_mode() == STRICT) {
       return isolate->Throw(*isolate->factory()->NewTypeError(
-          "strict_arguments_callee", HandleVector<Object>(NULL, 0)));
+          "\x73\x74\x72\x69\x63\x74\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x5f\x63\x61\x6c\x6c\x65\x65", HandleVector<Object>(NULL, 0)));
     }
     return function;
   }
@@ -6111,7 +6111,7 @@ RUNTIME_FUNCTION(Runtime_Booleanize) {
 
 static bool AreDigits(const uint8_t*s, int from, int to) {
   for (int i = from; i < to; i++) {
-    if (s[i] < '0' || s[i] > '9') return false;
+    if (s[i] < '\x30' || s[i] > '\x39') return false;
   }
 
   return true;
@@ -6121,10 +6121,10 @@ static bool AreDigits(const uint8_t*s, int from, int to) {
 static int ParseDecimalInteger(const uint8_t*s, int from, int to) {
   DCHECK(to - from < 10);  // Overflow is not possible.
   DCHECK(from < to);
-  int d = s[from] - '0';
+  int d = s[from] - '\x30';
 
   for (int i = from + 1; i < to; i++) {
-    d = 10 * d + (s[i] - '0');
+    d = 10 * d + (s[i] - '\x30');
   }
 
   return d;
@@ -6144,17 +6144,17 @@ RUNTIME_FUNCTION(Runtime_StringToNumber) {
 
     DisallowHeapAllocation no_gc;
     uint8_t const* data = Handle<SeqOneByteString>::cast(subject)->GetChars();
-    bool minus = (data[0] == '-');
+    bool minus = (data[0] == '\x2d');
     int start_pos = (minus ? 1 : 0);
 
     if (start_pos == len) {
       return isolate->heap()->nan_value();
-    } else if (data[start_pos] > '9') {
+    } else if (data[start_pos] > '\x39') {
       // Fast check for a junk value. A valid string may start from a
       // whitespace, a sign ('+' or '-'), the decimal point, a decimal digit
       // or the 'I' character ('Infinity'). All of that have codes not greater
       // than '9' except 'I' and &nbsp;.
-      if (data[start_pos] != 'I' && data[start_pos] != 0xa0) {
+      if (data[start_pos] != '\x49' && data[start_pos] != 0xa0) {
         return isolate->heap()->nan_value();
       }
     } else if (len - start_pos < 10 && AreDigits(data, start_pos, len)) {
@@ -6166,7 +6166,7 @@ RUNTIME_FUNCTION(Runtime_StringToNumber) {
         d = -d;
       } else if (!subject->HasHashCode() &&
                  len <= String::kMaxArrayIndexSize &&
-                 (len == 1 || data[0] != '0')) {
+                 (len == 1 || data[0] != '\x30')) {
         // String hash is not calculated yet but all the data are present.
         // Update the hash field to speed up sequential convertions.
         uint32_t hash = StringHasher::MakeArrayIndexHash(d, len);
@@ -6463,11 +6463,11 @@ static bool CheckFastAsciiConvert(char* dst,
     if (dst[i] == src[i]) continue;
     expected_changed = true;
     if (is_to_lower) {
-      DCHECK('A' <= src[i] && src[i] <= 'Z');
-      DCHECK(dst[i] == src[i] + ('a' - 'A'));
+      DCHECK('\x41' <= src[i] && src[i] <= '\x5a');
+      DCHECK(dst[i] == src[i] + ('\x61' - '\x41'));
     } else {
-      DCHECK('a' <= src[i] && src[i] <= 'z');
-      DCHECK(dst[i] == src[i] - ('a' - 'A'));
+      DCHECK('\x61' <= src[i] && src[i] <= '\x7a');
+      DCHECK(dst[i] == src[i] - ('\x61' - '\x41'));
     }
   }
   return (expected_changed == changed);
@@ -6483,13 +6483,13 @@ static bool CheckFastEBCDICConvert(char * dst,
     if (dst[i] == src[i] ) continue;
     expected_changed = true;
     if (is_to_lower) {
-      DCHECK(('A' <= src[i] && src[i] <= 'I')||
-      ('J' <= src[i] && src[i] <= 'R') ||
-      ('S' <= src[i] && src[i] <= 'Z'));
+      DCHECK(('\x41' <= src[i] && src[i] <= '\x49')||
+      ('\x4a' <= src[i] && src[i] <= '\x52') ||
+      ('\x53' <= src[i] && src[i] <= '\x5a'));
     } else {
-      DCHECK(('a' <= src[i] && src[i] <= 'i')||
-      ('j' <= src[i] && src[i] <= 'r')||
-      ('s' <= src[i] && src[i] <= 'z'));
+      DCHECK(('\x61' <= src[i] && src[i] <= '\x69')||
+      ('\x6a' <= src[i] && src[i] <= '\x72')||
+      ('\x73' <= src[i] && src[i] <= '\x7a'));
     }
     DCHECK(dst[i] == (src[i] ^ 0x40));
   }
@@ -6507,14 +6507,14 @@ static bool FastEBCDICConvert(char * dst,
   const char* saved_src = src;
 #endif
   DisallowHeapAllocation no_gc;
-  static const char lo_1   = Converter::kIsToLower ? 'A' - 1 : 'a' - 1;
-  static const char hi_1   = Converter::kIsToLower ? 'I' + 1 : 'i' + 1;
+  static const char lo_1   = Converter::kIsToLower ? '\x41' - 1 : '\x61' - 1;
+  static const char hi_1   = Converter::kIsToLower ? '\x49' + 1 : '\x69' + 1;
 
-  static const char lo_2   = Converter::kIsToLower ? 'J' - 1 : 'j' - 1;
-  static const char hi_2   = Converter::kIsToLower ? 'R' + 1 : 'r' + 1;
+  static const char lo_2   = Converter::kIsToLower ? '\x4a' - 1 : '\x6a' - 1;
+  static const char hi_2   = Converter::kIsToLower ? '\x52' + 1 : '\x72' + 1;
 
-  static const char lo_3   = Converter::kIsToLower ? 'S' - 1 : 's' - 1;
-  static const char hi_3   = Converter::kIsToLower ? 'Z' + 1 : 'z' + 1;
+  static const char lo_3   = Converter::kIsToLower ? '\x53' - 1 : '\x73' - 1;
+  static const char hi_3   = Converter::kIsToLower ? '\x5a' + 1 : '\x7a' + 1;
 
   const char* const limit = src + length;
   bool changed = false;
@@ -6551,10 +6551,10 @@ static bool FastAsciiConvert(char* dst,
   DisallowHeapAllocation no_gc;
   // We rely on the distance between upper and lower case letters
   // being a known power of 2.
-  DCHECK('a' - 'A' == (1 << 5));
+  DCHECK('\x61' - '\x41' == (1 << 5));
   // Boundaries for the range of input characters than require conversion.
-  static const char lo = Converter::kIsToLower ? 'A' - 1 : 'a' - 1;
-  static const char hi = Converter::kIsToLower ? 'Z' + 1 : 'z' + 1;
+  static const char lo = Converter::kIsToLower ? '\x41' - 1 : '\x61' - 1;
+  static const char hi = Converter::kIsToLower ? '\x5a' + 1 : '\x7a' + 1;
   bool changed = false;
   uintptr_t or_acc = 0;
   const char* const limit = src + length;
@@ -6638,7 +6638,7 @@ MUST_USE_RESULT static Object* ConvertCase(
     DCHECK(flat_content.IsFlat());
     bool has_changed_character = false;
     bool is_utf = true;
-    if ('a' == 0x81) {
+    if ('\x61' == 0x81) {
        is_utf = !FastEBCDICConvert<Converter>(
        reinterpret_cast<char*>(result->GetChars()),
        reinterpret_cast<const char*>(flat_content.ToOneByteVector().start()),
@@ -8352,7 +8352,7 @@ static Object* Runtime_NewObjectHelper(Isolate* isolate,
   if (!constructor->IsJSFunction()) {
     Vector< Handle<Object> > arguments = HandleVector(&constructor, 1);
     Handle<Object> type_error =
-        isolate->factory()->NewTypeError("not_constructor", arguments);
+        isolate->factory()->NewTypeError("\x6e\x6f\x74\x5f\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72", arguments);
     return isolate->Throw(*type_error);
   }
 
@@ -8363,7 +8363,7 @@ static Object* Runtime_NewObjectHelper(Isolate* isolate,
   if (!function->should_have_prototype() && !function->shared()->bound()) {
     Vector< Handle<Object> > arguments = HandleVector(&constructor, 1);
     Handle<Object> type_error =
-        isolate->factory()->NewTypeError("not_constructor", arguments);
+        isolate->factory()->NewTypeError("\x6e\x6f\x74\x5f\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72", arguments);
     return isolate->Throw(*type_error);
   }
 
@@ -8449,9 +8449,9 @@ RUNTIME_FUNCTION(Runtime_CompileUnoptimized) {
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
 #ifdef DEBUG
   if (FLAG_trace_lazy && !function->shared()->is_compiled()) {
-    PrintF("[unoptimized: ");
+    PrintF("\x5b\x75\x6e\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x3a\x20");
     function->PrintName();
-    PrintF("]\n");
+    PrintF("\x5d\xa");
   }
 #endif
 
@@ -8491,11 +8491,11 @@ RUNTIME_FUNCTION(Runtime_CompileOptimized) {
     // If the function is not optimizable or debugger is active continue
     // using the code from the full compiler.
     if (FLAG_trace_opt) {
-      PrintF("[failed to optimize ");
+      PrintF("\x5b\x66\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x20");
       function->PrintName();
-      PrintF(": is code optimizable: %s, is debugger enabled: %s]\n",
-          function->shared()->optimization_disabled() ? "F" : "T",
-          isolate->DebuggerHasBreakPoints() ? "T" : "F");
+      PrintF("\x3a\x20\x69\x73\x20\x63\x6f\x64\x65\x20\x6f\x70\x74\x69\x6d\x69\x7a\x61\x62\x6c\x65\x3a\x20\x6c\xa2\x2c\x20\x69\x73\x20\x64\x65\x62\x75\x67\x67\x65\x72\x20\x65\x6e\x61\x62\x6c\x65\x64\x3a\x20\x6c\xa2\x5d\xa",
+          function->shared()->optimization_disabled() ? "\x46" : "\x54",
+          isolate->DebuggerHasBreakPoints() ? "\x54" : "\x46");
     }
     function->ReplaceCode(*unoptimized);
   } else {
@@ -8588,15 +8588,15 @@ RUNTIME_FUNCTION(Runtime_NotifyDeoptimized) {
   if (!activations_finder.has_code_activations_) {
     if (function->code() == *optimized_code) {
       if (FLAG_trace_deopt) {
-        PrintF("[removing optimized code for: ");
+        PrintF("\x5b\x72\x65\x6d\x6f\x76\x69\x6e\x67\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x66\x6f\x72\x3a\x20");
         function->PrintName();
-        PrintF("]\n");
+        PrintF("\x5d\xa");
       }
       function->ReplaceCode(function->shared()->code());
       // Evict optimized code for this function from the cache so that it
       // doesn't get used for new closures.
       function->shared()->EvictFromOptimizedCodeMap(*optimized_code,
-                                                    "notify deoptimized");
+                                                    "\x6e\x6f\x74\x69\x66\x79\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64");
     }
   } else {
     // TODO(titzer): we should probably do DeoptimizeCodeList(code)
@@ -8675,12 +8675,12 @@ RUNTIME_FUNCTION(Runtime_OptimizeFunctionOnNextCall) {
   if (args.length() == 2 &&
       unoptimized->kind() == Code::FUNCTION) {
     CONVERT_ARG_HANDLE_CHECKED(String, type, 1);
-    if (type->IsOneByteEqualTo(STATIC_ASCII_VECTOR("osr")) && FLAG_use_osr) {
+    if (type->IsOneByteEqualTo(STATIC_ASCII_VECTOR("\x6f\x73\x72")) && FLAG_use_osr) {
       // Start patching from the currently patched loop nesting level.
       DCHECK(BackEdgeTable::Verify(isolate, unoptimized));
       isolate->runtime_profiler()->AttemptOnStackReplacement(
           *function, Code::kMaxLoopNestingMarker);
-    } else if (type->IsOneByteEqualTo(STATIC_ASCII_VECTOR("concurrent")) &&
+    } else if (type->IsOneByteEqualTo(STATIC_ASCII_VECTOR("\x63\x6f\x6e\x63\x75\x72\x72\x65\x6e\x74")) &&
                isolate->concurrent_recompilation_enabled()) {
       function->MarkForConcurrentOptimization();
     }
@@ -8703,12 +8703,12 @@ RUNTIME_FUNCTION(Runtime_GetOptimizationStatus) {
   HandleScope scope(isolate);
   RUNTIME_ASSERT(args.length() == 1 || args.length() == 2);
   if (!isolate->use_crankshaft()) {
-    return Smi::FromInt(4);  // 4 == "never".
+    return Smi::FromInt(4);  // 4 == "\x6e\x65\x76\x65\x72".
   }
   bool sync_with_compiler_thread = true;
   if (args.length() == 2) {
     CONVERT_ARG_HANDLE_CHECKED(String, sync, 1);
-    if (sync->IsOneByteEqualTo(STATIC_ASCII_VECTOR("no sync"))) {
+    if (sync->IsOneByteEqualTo(STATIC_ASCII_VECTOR("\x6e\x6f\x20\x73\x79\x6e\x63"))) {
       sync_with_compiler_thread = false;
     }
   }
@@ -8723,17 +8723,17 @@ RUNTIME_FUNCTION(Runtime_GetOptimizationStatus) {
   if (FLAG_always_opt) {
     // We may have always opt, but that is more best-effort than a real
     // promise, so we still say "no" if it is not optimized.
-    return function->IsOptimized() ? Smi::FromInt(3)   // 3 == "always".
-                                   : Smi::FromInt(2);  // 2 == "no".
+    return function->IsOptimized() ? Smi::FromInt(3)   // 3 == "\x61\x6c\x77\x61\x79\x73".
+                                   : Smi::FromInt(2);  // 2 == "\x6e\x6f".
   }
   if (FLAG_deopt_every_n_times) {
-    return Smi::FromInt(6);  // 6 == "maybe deopted".
+    return Smi::FromInt(6);  // 6 == "\x6d\x61\x79\x62\x65\x20\x64\x65\x6f\x70\x74\x65\x64".
   }
   if (function->IsOptimized() && function->code()->is_turbofanned()) {
-    return Smi::FromInt(7);  // 7 == "TurboFan compiler".
+    return Smi::FromInt(7);  // 7 == "\x54\x75\x72\x62\x6f\x46\x61\x6e\x20\x63\x6f\x6d\x70\x69\x6c\x65\x72".
   }
-  return function->IsOptimized() ? Smi::FromInt(1)   // 1 == "yes".
-                                 : Smi::FromInt(2);  // 2 == "no".
+  return function->IsOptimized() ? Smi::FromInt(1)   // 1 == "\x79\x65\x73".
+                                 : Smi::FromInt(2);  // 2 == "\x6e\x6f".
 }
 
 
@@ -8821,9 +8821,9 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
     OptimizingCompilerThread* thread = isolate->optimizing_compiler_thread();
     if (thread->IsQueuedForOSR(function, ast_id)) {
       if (FLAG_trace_osr) {
-        PrintF("[OSR - Still waiting for queued: ");
+        PrintF("\x5b\x4f\x53\x52\x20\x2d\x20\x53\x74\x69\x6c\x6c\x20\x77\x61\x69\x74\x69\x6e\x67\x20\x66\x6f\x72\x20\x71\x75\x65\x75\x65\x64\x3a\x20");
         function->PrintName();
-        PrintF(" at AST id %d]\n", ast_id.ToInt());
+        PrintF("\x20\x61\x74\x20\x41\x53\x54\x20\x69\x64\x20\x6c\x84\x5d\xa", ast_id.ToInt());
       }
       return NULL;
     }
@@ -8833,16 +8833,16 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
 
   if (job != NULL) {
     if (FLAG_trace_osr) {
-      PrintF("[OSR - Found ready: ");
+      PrintF("\x5b\x4f\x53\x52\x20\x2d\x20\x46\x6f\x75\x6e\x64\x20\x72\x65\x61\x64\x79\x3a\x20");
       function->PrintName();
-      PrintF(" at AST id %d]\n", ast_id.ToInt());
+      PrintF("\x20\x61\x74\x20\x41\x53\x54\x20\x69\x64\x20\x6c\x84\x5d\xa", ast_id.ToInt());
     }
     result = Compiler::GetConcurrentlyOptimizedCode(job);
   } else if (IsSuitableForOnStackReplacement(isolate, function, caller_code)) {
     if (FLAG_trace_osr) {
-      PrintF("[OSR - Compiling: ");
+      PrintF("\x5b\x4f\x53\x52\x20\x2d\x20\x43\x6f\x6d\x70\x69\x6c\x69\x6e\x67\x3a\x20");
       function->PrintName();
-      PrintF(" at AST id %d]\n", ast_id.ToInt());
+      PrintF("\x20\x61\x74\x20\x41\x53\x54\x20\x69\x64\x20\x6c\x84\x5d\xa", ast_id.ToInt());
     }
     MaybeHandle<Code> maybe_result = Compiler::GetOptimizedCode(
         function, caller_code, mode, ast_id);
@@ -8864,7 +8864,7 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
     if (data->OsrPcOffset()->value() >= 0) {
       DCHECK(BailoutId(data->OsrAstId()->value()) == ast_id);
       if (FLAG_trace_osr) {
-        PrintF("[OSR - Entry at AST id %d, offset %d in optimized code]\n",
+        PrintF("\x5b\x4f\x53\x52\x20\x2d\x20\x45\x6e\x74\x72\x79\x20\x61\x74\x20\x41\x53\x54\x20\x69\x64\x20\x6c\x84\x2c\x20\x6f\x66\x66\x73\x65\x74\x20\x6c\x84\x20\x69\x6e\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x5d\xa",
                ast_id.ToInt(), data->OsrPcOffset()->value());
       }
       // TODO(titzer): this is a massive hack to make the deopt counts
@@ -8879,9 +8879,9 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
 
   // Failed.
   if (FLAG_trace_osr) {
-    PrintF("[OSR - Failed: ");
+    PrintF("\x5b\x4f\x53\x52\x20\x2d\x20\x46\x61\x69\x6c\x65\x64\x3a\x20");
     function->PrintName();
-    PrintF(" at AST id %d]\n", ast_id.ToInt());
+    PrintF("\x20\x61\x74\x20\x41\x53\x54\x20\x69\x64\x20\x6c\x84\x5d\xa", ast_id.ToInt());
   }
 
   if (!function->IsOptimized()) {
@@ -9059,7 +9059,7 @@ RUNTIME_FUNCTION(Runtime_PushWithContext) {
     if (!maybe_object.ToHandle(&extension_object)) {
       Handle<Object> handle = args.at<Object>(0);
       Handle<Object> result =
-          isolate->factory()->NewTypeError("with_expression",
+          isolate->factory()->NewTypeError("\x77\x69\x74\x68\x5f\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e",
                                            HandleVector(&handle, 1));
       return isolate->Throw(*result);
     }
@@ -9374,7 +9374,7 @@ static ObjectPair LoadLookupSlotHelper(Arguments args, Isolate* isolate,
       case IMMUTABLE_CHECK_INITIALIZED_HARMONY:
         if (value->IsTheHole()) {
           Handle<Object> reference_error =
-              isolate->factory()->NewReferenceError("not_defined",
+              isolate->factory()->NewReferenceError("\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64",
                                                     HandleVector(&name, 1));
           return MakePair(isolate->Throw(*reference_error), NULL);
         }
@@ -9429,7 +9429,7 @@ static ObjectPair LoadLookupSlotHelper(Arguments args, Isolate* isolate,
   if (throw_error) {
     // The property doesn't exist - throw exception.
     Handle<Object> reference_error =
-        isolate->factory()->NewReferenceError("not_defined",
+        isolate->factory()->NewReferenceError("\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64",
                                               HandleVector(&name, 1));
     return MakePair(isolate->Throw(*reference_error), NULL);
   } else {
@@ -9478,7 +9478,7 @@ RUNTIME_FUNCTION(Runtime_StoreLookupSlot) {
     } else if (strict_mode == STRICT) {
       // Setting read only property in strict mode.
       Handle<Object> error =
-          isolate->factory()->NewTypeError("strict_cannot_assign",
+          isolate->factory()->NewTypeError("\x73\x74\x72\x69\x63\x74\x5f\x63\x61\x6e\x6e\x6f\x74\x5f\x61\x73\x73\x69\x67\x6e",
                                            HandleVector(&name, 1));
       return isolate->Throw(*error);
     }
@@ -9495,7 +9495,7 @@ RUNTIME_FUNCTION(Runtime_StoreLookupSlot) {
   } else if (strict_mode == STRICT) {
     // If absent in strict mode: throw.
     Handle<Object> error = isolate->factory()->NewReferenceError(
-        "not_defined", HandleVector(&name, 1));
+        "\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64", HandleVector(&name, 1));
     return isolate->Throw(*error);
   } else {
     // If absent in sloppy mode: add the property to the global object.
@@ -9537,7 +9537,7 @@ RUNTIME_FUNCTION(Runtime_ThrowReferenceError) {
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(Object, name, 0);
   Handle<Object> reference_error =
-    isolate->factory()->NewReferenceError("not_defined",
+    isolate->factory()->NewReferenceError("\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64",
                                           HandleVector(&name, 1));
   return isolate->Throw(*reference_error);
 }
@@ -9547,7 +9547,7 @@ RUNTIME_FUNCTION(Runtime_ThrowNotDateError) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 0);
   return isolate->Throw(*isolate->factory()->NewTypeError(
-      "not_date_object", HandleVector<Object>(NULL, 0)));
+      "\x6e\x6f\x74\x5f\x64\x61\x74\x65\x5f\x6f\x62\x6a\x65\x63\x74", HandleVector<Object>(NULL, 0)));
 }
 
 
@@ -9602,19 +9602,19 @@ static void PrintTransition(Isolate* isolate, Object* result) {
   { const int nmax = 80;
     int n = StackSize(isolate);
     if (n <= nmax)
-      PrintF("%4d:%*s", n, n, "");
+      PrintF("\x6c\xf4\x84\x3a\x25\x2a\x73", n, n, "");
     else
-      PrintF("%4d:%*s", n, nmax, "...");
+      PrintF("\x6c\xf4\x84\x3a\x25\x2a\x73", n, nmax, "\x2e\x2e\x2e");
   }
 
   if (result == NULL) {
     JavaScriptFrame::PrintTop(isolate, stdout, true, false);
-    PrintF(" {\n");
+    PrintF("\x20\x7b\xa");
   } else {
     // function result
-    PrintF("} -> ");
+    PrintF("\x7d\x20\x2d\x3e\x20");
     result->ShortPrint();
-    PrintF("\n");
+    PrintF("\xa");
   }
 }
 
@@ -9647,14 +9647,14 @@ RUNTIME_FUNCTION(Runtime_DebugPrint) {
     // and print some interesting cpu debugging info.
     JavaScriptFrameIterator it(isolate);
     JavaScriptFrame* frame = it.frame();
-    os << "fp = " << frame->fp() << ", sp = " << frame->sp()
-       << ", caller_sp = " << frame->caller_sp() << ": ";
+    os << "\x66\x70\x20\x3d\x20" << frame->fp() << "\x2c\x20\x73\x70\x20\x3d\x20" << frame->sp()
+       << "\x2c\x20\x63\x61\x6c\x6c\x65\x72\x5f\x73\x70\x20\x3d\x20" << frame->caller_sp() << "\x3a\x20";
   } else {
-    os << "DebugPrint: ";
+    os << "\x44\x65\x62\x75\x67\x50\x72\x69\x6e\x74\x3a\x20";
   }
   args[0]->Print(os);
   if (args[0]->IsHeapObject()) {
-    os << "\n";
+    os << "\xa";
     HeapObject::cast(args[0])->map()->Print(os);
   }
 #else
@@ -9848,7 +9848,7 @@ RUNTIME_FUNCTION(Runtime_CompileString) {
     Handle<Object> error_message =
         context->ErrorMessageForCodeGenerationFromStrings();
     return isolate->Throw(*isolate->factory()->NewEvalError(
-        "code_gen_from_strings", HandleVector<Object>(&error_message, 1)));
+        "\x63\x6f\x64\x65\x5f\x67\x65\x6e\x5f\x66\x72\x6f\x6d\x5f\x73\x74\x72\x69\x6e\x67\x73", HandleVector<Object>(&error_message, 1)));
   }
 
   // Compile source string in the native context.
@@ -9878,7 +9878,7 @@ static ObjectPair CompileGlobalEval(Isolate* isolate,
     Handle<Object> error_message =
         native_context->ErrorMessageForCodeGenerationFromStrings();
     isolate->Throw(*isolate->factory()->NewEvalError(
-        "code_gen_from_strings", HandleVector<Object>(&error_message, 1)));
+        "\x63\x6f\x64\x65\x5f\x67\x65\x6e\x5f\x66\x72\x6f\x6d\x5f\x73\x74\x72\x69\x6e\x67\x73", HandleVector<Object>(&error_message, 1)));
     return MakePair(isolate->heap()->exception(), NULL);
   }
 
@@ -10657,7 +10657,7 @@ RUNTIME_FUNCTION(Runtime_ArrayConcat) {
 
   if (visitor.exceeds_array_limit()) {
     return isolate->Throw(
-        *isolate->factory()->NewRangeError("invalid_array_length",
+        *isolate->factory()->NewRangeError("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x61\x72\x72\x61\x79\x5f\x6c\x65\x6e\x67\x74\x68",
                                            HandleVector<Object>(NULL, 0)));
   }
   return *visitor.ToArray();
@@ -10675,7 +10675,7 @@ RUNTIME_FUNCTION(Runtime_GlobalPrint) {
   StringCharacterStream stream(string, &op);
   while (stream.HasMore()) {
     uint16_t character = stream.GetNext();
-    PrintF("%c", character);
+    PrintF("\x6c\x83", character);
   }
   return string;
 }
@@ -12225,12 +12225,12 @@ class ScopeIterator {
     DCHECK(!failed_);
     switch (Type()) {
       case ScopeIterator::ScopeTypeGlobal:
-        os << "Global:\n";
+        os << "\x47\x6c\x6f\x62\x61\x6c\x3a\xa";
         CurrentContext()->Print(os);
         break;
 
       case ScopeIterator::ScopeTypeLocal: {
-        os << "Local:\n";
+        os << "\x4c\x6f\x63\x61\x6c\x3a\xa";
         function_->shared()->scope_info()->Print();
         if (!CurrentContext().is_null()) {
           CurrentContext()->Print(os);
@@ -12245,18 +12245,18 @@ class ScopeIterator {
       }
 
       case ScopeIterator::ScopeTypeWith:
-        os << "With:\n";
+        os << "\x57\x69\x74\x68\x3a\xa";
         CurrentContext()->extension()->Print(os);
         break;
 
       case ScopeIterator::ScopeTypeCatch:
-        os << "Catch:\n";
+        os << "\x43\x61\x74\x63\x68\x3a\xa";
         CurrentContext()->extension()->Print(os);
         CurrentContext()->get(Context::THROWN_OBJECT_INDEX)->Print(os);
         break;
 
       case ScopeIterator::ScopeTypeClosure:
-        os << "Closure:\n";
+        os << "\x43\x6c\x6f\x73\x75\x72\x65\x3a\xa";
         CurrentContext()->Print(os);
         if (CurrentContext()->has_extension()) {
           Handle<Object> extension(CurrentContext()->extension(), isolate_);
@@ -12269,7 +12269,7 @@ class ScopeIterator {
       default:
         UNREACHABLE();
     }
-    PrintF("\n");
+    PrintF("\xa");
   }
 #endif
 
@@ -13210,7 +13210,7 @@ RUNTIME_FUNCTION(Runtime_DebugReferencedBy) {
   // First perform a full GC in order to avoid dead objects and to make the heap
   // iterable.
   Heap* heap = isolate->heap();
-  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask, "%DebugConstructedBy");
+  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask, "\x25\x44\x65\x62\x75\x67\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x65\x64\x42\x79");
   {
     HeapIterator heap_iterator(heap);
     count = DebugReferencedBy(&heap_iterator,
@@ -13288,7 +13288,7 @@ RUNTIME_FUNCTION(Runtime_DebugConstructedBy) {
   // First perform a full GC in order to avoid dead objects and to make the heap
   // iterable.
   Heap* heap = isolate->heap();
-  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask, "%DebugConstructedBy");
+  heap->CollectAllGarbage(Heap::kMakeHeapIterableMask, "\x25\x44\x65\x62\x75\x67\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x65\x64\x42\x79");
   {
     HeapIterator heap_iterator(heap);
     count = DebugConstructedBy(&heap_iterator,
@@ -13761,7 +13761,7 @@ RUNTIME_FUNCTION(Runtime_SetFlags) {
 RUNTIME_FUNCTION(Runtime_CollectGarbage) {
   SealHandleScope shs(isolate);
   DCHECK(args.length() == 1);
-  isolate->heap()->CollectAllGarbage(Heap::kNoGCFlags, "%CollectGarbage");
+  isolate->heap()->CollectAllGarbage(Heap::kNoGCFlags, "\x25\x43\x6f\x6c\x6c\x65\x63\x74\x47\x61\x72\x62\x61\x67\x65");
   return isolate->heap()->undefined_value();
 }
 
@@ -13789,7 +13789,7 @@ RUNTIME_FUNCTION(Runtime_CanonicalizeLanguageTag) {
   v8::String::Utf8Value locale_id(v8::Utils::ToLocal(locale_id_str));
 
   // Return value which denotes invalid language tag.
-  const char* const kInvalidTag = "invalid-tag";
+  const char* const kInvalidTag = "\x69\x6e\x76\x61\x6c\x69\x64\x2d\x74\x61\x67";
 
   UErrorCode error = U_ZERO_ERROR;
   char icu_result[ULOC_FULLNAME_CAPACITY];
@@ -13824,13 +13824,13 @@ RUNTIME_FUNCTION(Runtime_AvailableLocalesOf) {
   const icu::Locale* available_locales = NULL;
   int32_t count = 0;
 
-  if (service->IsUtf8EqualTo(CStrVector("collator"))) {
+  if (service->IsUtf8EqualTo(CStrVector("\x63\x6f\x6c\x6c\x61\x74\x6f\x72"))) {
     available_locales = icu::Collator::getAvailableLocales(count);
-  } else if (service->IsUtf8EqualTo(CStrVector("numberformat"))) {
+  } else if (service->IsUtf8EqualTo(CStrVector("\x6e\x75\x6d\x62\x65\x72\x66\x6f\x72\x6d\x61\x74"))) {
     available_locales = icu::NumberFormat::getAvailableLocales(count);
-  } else if (service->IsUtf8EqualTo(CStrVector("dateformat"))) {
+  } else if (service->IsUtf8EqualTo(CStrVector("\x64\x61\x74\x65\x66\x6f\x72\x6d\x61\x74"))) {
     available_locales = icu::DateFormat::getAvailableLocales(count);
-  } else if (service->IsUtf8EqualTo(CStrVector("breakiterator"))) {
+  } else if (service->IsUtf8EqualTo(CStrVector("\x62\x72\x65\x61\x6b\x69\x74\x65\x72\x61\x74\x6f\x72"))) {
     available_locales = icu::BreakIterator::getAvailableLocales(count);
   }
 
@@ -13879,7 +13879,7 @@ RUNTIME_FUNCTION(Runtime_GetDefaultICULocale) {
     return *factory->NewStringFromAsciiChecked(result);
   }
 
-  return *factory->NewStringFromStaticAscii("und");
+  return *factory->NewStringFromStaticAscii("\x75\x6e\x64");
 }
 
 
@@ -13896,8 +13896,8 @@ RUNTIME_FUNCTION(Runtime_GetLanguageTagVariants) {
   // Can be bumped when callers' requirements change.
   RUNTIME_ASSERT(length < 100);
   Handle<FixedArray> output = factory->NewFixedArray(length);
-  Handle<Name> maximized = factory->NewStringFromStaticAscii("maximized");
-  Handle<Name> base = factory->NewStringFromStaticAscii("base");
+  Handle<Name> maximized = factory->NewStringFromStaticAscii("\x6d\x61\x78\x69\x6d\x69\x7a\x65\x64");
+  Handle<Name> base = factory->NewStringFromStaticAscii("\x62\x61\x73\x65");
   for (unsigned int i = 0; i < length; ++i) {
     Handle<Object> locale_id;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
@@ -14031,7 +14031,7 @@ RUNTIME_FUNCTION(Runtime_GetImplFromInitializedIntlObject) {
   if (!input->IsJSObject()) {
     Vector< Handle<Object> > arguments = HandleVector(&input, 1);
     Handle<Object> type_error =
-        isolate->factory()->NewTypeError("not_intl_object", arguments);
+        isolate->factory()->NewTypeError("\x6e\x6f\x74\x5f\x69\x6e\x74\x6c\x5f\x6f\x62\x6a\x65\x63\x74", arguments);
     return isolate->Throw(*type_error);
   }
 
@@ -14042,7 +14042,7 @@ RUNTIME_FUNCTION(Runtime_GetImplFromInitializedIntlObject) {
   if (impl->IsTheHole()) {
     Vector< Handle<Object> > arguments = HandleVector(&obj, 1);
     Handle<Object> type_error =
-        isolate->factory()->NewTypeError("not_intl_object", arguments);
+        isolate->factory()->NewTypeError("\x6e\x6f\x74\x5f\x69\x6e\x74\x6c\x5f\x6f\x62\x6a\x65\x63\x74", arguments);
     return isolate->Throw(*type_error);
   }
   return *impl;
@@ -14076,8 +14076,8 @@ RUNTIME_FUNCTION(Runtime_CreateDateTimeFormat) {
   local_object->SetInternalField(0, reinterpret_cast<Smi*>(date_format));
 
   Factory* factory = isolate->factory();
-  Handle<String> key = factory->NewStringFromStaticAscii("dateFormat");
-  Handle<String> value = factory->NewStringFromStaticAscii("valid");
+  Handle<String> key = factory->NewStringFromStaticAscii("\x64\x61\x74\x65\x46\x6f\x72\x6d\x61\x74");
+  Handle<String> value = factory->NewStringFromStaticAscii("\x76\x61\x6c\x69\x64");
   JSObject::AddProperty(local_object, key, value, NONE);
 
   // Make object handle weak so we can delete the data format once GC kicks in.
@@ -14173,8 +14173,8 @@ RUNTIME_FUNCTION(Runtime_CreateNumberFormat) {
   local_object->SetInternalField(0, reinterpret_cast<Smi*>(number_format));
 
   Factory* factory = isolate->factory();
-  Handle<String> key = factory->NewStringFromStaticAscii("numberFormat");
-  Handle<String> value = factory->NewStringFromStaticAscii("valid");
+  Handle<String> key = factory->NewStringFromStaticAscii("\x6e\x75\x6d\x62\x65\x72\x46\x6f\x72\x6d\x61\x74");
+  Handle<String> value = factory->NewStringFromStaticAscii("\x76\x61\x6c\x69\x64");
   JSObject::AddProperty(local_object, key, value, NONE);
 
   Handle<Object> wrapper = isolate->global_handles()->Create(*local_object);
@@ -14279,8 +14279,8 @@ RUNTIME_FUNCTION(Runtime_CreateCollator) {
   local_object->SetInternalField(0, reinterpret_cast<Smi*>(collator));
 
   Factory* factory = isolate->factory();
-  Handle<String> key = factory->NewStringFromStaticAscii("collator");
-  Handle<String> value = factory->NewStringFromStaticAscii("valid");
+  Handle<String> key = factory->NewStringFromStaticAscii("\x63\x6f\x6c\x6c\x61\x74\x6f\x72");
+  Handle<String> value = factory->NewStringFromStaticAscii("\x76\x61\x6c\x69\x64");
   JSObject::AddProperty(local_object, key, value, NONE);
 
   Handle<Object> wrapper = isolate->global_handles()->Create(*local_object);
@@ -14383,8 +14383,8 @@ RUNTIME_FUNCTION(Runtime_CreateBreakIterator) {
   local_object->SetInternalField(1, reinterpret_cast<Smi*>(NULL));
 
   Factory* factory = isolate->factory();
-  Handle<String> key = factory->NewStringFromStaticAscii("breakIterator");
-  Handle<String> value = factory->NewStringFromStaticAscii("valid");
+  Handle<String> key = factory->NewStringFromStaticAscii("\x62\x72\x65\x61\x6b\x49\x74\x65\x72\x61\x74\x6f\x72");
+  Handle<String> value = factory->NewStringFromStaticAscii("\x76\x61\x6c\x69\x64");
   JSObject::AddProperty(local_object, key, value, NONE);
 
   // Make object handle weak so we can delete the break iterator once GC kicks
@@ -14486,17 +14486,17 @@ RUNTIME_FUNCTION(Runtime_BreakIteratorBreakType) {
   int32_t status = rule_based_iterator->getRuleStatus();
   // Keep return values in sync with JavaScript BreakType enum.
   if (status >= UBRK_WORD_NONE && status < UBRK_WORD_NONE_LIMIT) {
-    return *isolate->factory()->NewStringFromStaticAscii("none");
+    return *isolate->factory()->NewStringFromStaticAscii("\x6e\x6f\x6e\x65");
   } else if (status >= UBRK_WORD_NUMBER && status < UBRK_WORD_NUMBER_LIMIT) {
-    return *isolate->factory()->NewStringFromStaticAscii("number");
+    return *isolate->factory()->NewStringFromStaticAscii("\x6e\x75\x6d\x62\x65\x72");
   } else if (status >= UBRK_WORD_LETTER && status < UBRK_WORD_LETTER_LIMIT) {
-    return *isolate->factory()->NewStringFromStaticAscii("letter");
+    return *isolate->factory()->NewStringFromStaticAscii("\x6c\x65\x74\x74\x65\x72");
   } else if (status >= UBRK_WORD_KANA && status < UBRK_WORD_KANA_LIMIT) {
-    return *isolate->factory()->NewStringFromStaticAscii("kana");
+    return *isolate->factory()->NewStringFromStaticAscii("\x6b\x61\x6e\x61");
   } else if (status >= UBRK_WORD_IDEO && status < UBRK_WORD_IDEO_LIMIT) {
-    return *isolate->factory()->NewStringFromStaticAscii("ideo");
+    return *isolate->factory()->NewStringFromStaticAscii("\x69\x64\x65\x6f");
   } else {
-    return *isolate->factory()->NewStringFromStaticAscii("unknown");
+    return *isolate->factory()->NewStringFromStaticAscii("\x75\x6e\x6b\x6e\x6f\x77\x6e");
   }
 }
 #endif  // V8_I18N_SUPPORT
@@ -14589,7 +14589,7 @@ RUNTIME_FUNCTION(Runtime_Abort) {
   CONVERT_SMI_ARG_CHECKED(message_id, 0);
   const char* message = GetBailoutReason(
       static_cast<BailoutReason>(message_id));
-  base::OS::PrintError("abort: %s\n", message);
+  base::OS::PrintError("\x61\x62\x6f\x72\x74\x3a\x20\x6c\xa2\xa", message);
   isolate->PrintStack(stderr);
   base::OS::Abort();
   UNREACHABLE();
@@ -14601,7 +14601,7 @@ RUNTIME_FUNCTION(Runtime_AbortJS) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(String, message, 0);
-  base::OS::PrintError("abort: %s\n", message->ToCString().get());
+  base::OS::PrintError("\x61\x62\x6f\x72\x74\x3a\x20\x6c\xa2\xa", message->ToCString().get());
   isolate->PrintStack(stderr);
   base::OS::Abort();
   UNREACHABLE();
@@ -14797,7 +14797,7 @@ RUNTIME_FUNCTION(Runtime_ListNatives) {
     Handle<String> name;                                                     \
     /* Inline runtime functions have an underscore in front of the name. */  \
     if (inline_runtime_functions) {                                          \
-      name = factory->NewStringFromStaticAscii("_" #Name);                   \
+      name = factory->NewStringFromStaticAscii("\x5f" #Name);                   \
     } else {                                                                 \
       name = factory->NewStringFromStaticAscii(#Name);                       \
     }                                                                        \
@@ -15366,7 +15366,7 @@ RUNTIME_FUNCTION(RuntimeReference_DateField) {
   if (!obj->IsJSDate()) {
     HandleScope scope(isolate);
     return isolate->Throw(*isolate->factory()->NewTypeError(
-        "not_date_object", HandleVector<Object>(NULL, 0)));
+        "\x6e\x6f\x74\x5f\x64\x61\x74\x65\x5f\x6f\x62\x6a\x65\x63\x74", HandleVector<Object>(NULL, 0)));
   }
   JSDate* date = JSDate::cast(obj);
   if (index == 0) return date->value();
@@ -15582,7 +15582,7 @@ RUNTIME_FUNCTION(RuntimeReference_DebugIsActive) {
 
 #define I(name, number_of_args, result_size)                                \
   {                                                                         \
-    Runtime::kInline##name, Runtime::INLINE, "_" #name,                     \
+    Runtime::kInline##name, Runtime::INLINE, "\x5f" #name,                     \
         FUNCTION_ADDR(RuntimeReference_##name), number_of_args, result_size \
   }                                                                         \
   ,
@@ -15590,7 +15590,7 @@ RUNTIME_FUNCTION(RuntimeReference_DebugIsActive) {
 
 #define IO(name, number_of_args, result_size)                              \
   {                                                                        \
-    Runtime::kInlineOptimized##name, Runtime::INLINE_OPTIMIZED, "_" #name, \
+    Runtime::kInlineOptimized##name, Runtime::INLINE_OPTIMIZED, "\x5f" #name, \
         FUNCTION_ADDR(Runtime_##name), number_of_args, result_size         \
   }                                                                        \
   ,

@@ -54,15 +54,15 @@ void AllocationTraceNode::AddAllocation(unsigned size) {
 
 
 void AllocationTraceNode::Print(int indent, AllocationTracker* tracker) {
-  base::OS::Print("%10u %10u %*c", total_size_, allocation_count_, indent, ' ');
+  base::OS::Print("\x6c\xf1\xf0\xa4\x20\x6c\xf1\xf0\xa4\x20\x25\x2a\x63", total_size_, allocation_count_, indent, '\x20');
   if (tracker != NULL) {
     AllocationTracker::FunctionInfo* info =
         tracker->function_info_list()[function_info_index_];
-    base::OS::Print("%s #%u", info->name, id_);
+    base::OS::Print("\x6c\xa2\x20\x23\x6c\xa4", info->name, id_);
   } else {
-    base::OS::Print("%u #%u", function_info_index_, id_);
+    base::OS::Print("\x6c\xa4\x20\x23\x6c\xa4", function_info_index_, id_);
   }
-  base::OS::Print("\n");
+  base::OS::Print("\xa");
   indent += 2;
   for (int i = 0; i < children_.length(); i++) {
     children_[i]->Print(indent, tracker);
@@ -93,8 +93,8 @@ AllocationTraceNode* AllocationTraceTree::AddPathFromEnd(
 
 
 void AllocationTraceTree::Print(AllocationTracker* tracker) {
-  base::OS::Print("[AllocationTraceTree:]\n");
-  base::OS::Print("Total size | Allocation count | Function id | id\n");
+  base::OS::Print("\x5b\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x54\x72\x61\x63\x65\x54\x72\x65\x65\x3a\x5d\xa");
+  base::OS::Print("\x54\x6f\x74\x61\x6c\x20\x73\x69\x7a\x65\x20\x7c\x20\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x63\x6f\x75\x6e\x74\x20\x7c\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x64\x20\x7c\x20\x69\x64\xa");
   root()->Print(0, tracker);
 }
 
@@ -149,13 +149,13 @@ void AddressToTraceMap::Clear() {
 
 
 void AddressToTraceMap::Print() {
-  PrintF("[AddressToTraceMap (%" V8PRIuPTR "): \n",
+  PrintF("\x5b\x41\x64\x64\x72\x65\x73\x73\x54\x6f\x54\x72\x61\x63\x65\x4d\x61\x70\x20\x28\x25" V8PRIuPTR "\x29\x3a\x20\xa",
          static_cast<uintptr_t>(ranges_.size()));
   for (RangeMap::iterator it = ranges_.begin(); it != ranges_.end(); ++it) {
-    PrintF("[%p - %p] => %u\n", it->second.start, it->first,
+    PrintF("\x5b\x6c\x97\x20\x2d\x20\x6c\x97\x5d\x20\x3d\x3e\x20\x6c\xa4\xa", it->second.start, it->first,
         it->second.trace_node_id);
   }
-  PrintF("]\n");
+  PrintF("\x5d\xa");
 }
 
 
@@ -200,7 +200,7 @@ AllocationTracker::AllocationTracker(
       id_to_function_info_index_(HashMap::PointersMatch),
       info_index_for_other_state_(0) {
   FunctionInfo* info = new FunctionInfo();
-  info->name = "(root)";
+  info->name = "\x28\x72\x6f\x6f\x74\x29";
   function_info_list_.Add(info);
 }
 
@@ -296,7 +296,7 @@ unsigned AllocationTracker::functionInfoIndexForVMState(StateTag state) {
   if (state != OTHER) return 0;
   if (info_index_for_other_state_ == 0) {
     FunctionInfo* info = new FunctionInfo();
-    info->name = "(V8 API)";
+    info->name = "\x28\x56\x38\x20\x41\x50\x49\x29";
     info_index_for_other_state_ = function_info_list_.length();
     function_info_list_.Add(info);
   }

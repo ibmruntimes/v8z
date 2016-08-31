@@ -52,9 +52,9 @@ void AstTyper::Run(CompilationInfo* info) {
 #ifdef OBJECT_PRINT
   static void PrintObserved(Variable* var, Object* value, Type* type) {
     OFStream os(stdout);
-    os << "  observed " << (var->IsParameter() ? "param" : "local") << "  ";
+    os << "\x20\x20\x6f\x62\x73\x65\x72\x76\x65\x64\x20" << (var->IsParameter() ? "\x70\x61\x72\x61\x6d" : "\x6c\x6f\x63\x61\x6c") << "\x20\x20";
     var->name()->Print(os);
-    os << " : " << Brief(value) << " -> ";
+    os << "\x20\x3a\x20" << Brief(value) << "\x20\x2d\x3e\x20";
     type->PrintTo(os);
     os << endl;
   }

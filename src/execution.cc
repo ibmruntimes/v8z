@@ -237,7 +237,7 @@ MaybeHandle<Object> Execution::TryGetFunctionDelegate(Isolate* isolate,
   // If the Object doesn't have an instance-call handler we should
   // throw a non-callable exception.
   i::Handle<i::Object> error_obj = isolate->factory()->NewTypeError(
-      "called_non_callable", i::HandleVector<i::Object>(&object, 1));
+      "\x63\x61\x6c\x6c\x65\x64\x5f\x6e\x6f\x6e\x5f\x63\x61\x6c\x6c\x61\x62\x6c\x65", i::HandleVector<i::Object>(&object, 1));
 
   return isolate->Throw<Object>(error_obj);
 }
@@ -294,7 +294,7 @@ MaybeHandle<Object> Execution::TryGetConstructorDelegate(
   // If the Object doesn't have an instance-call handler we should
   // throw a non-callable exception.
   i::Handle<i::Object> error_obj = isolate->factory()->NewTypeError(
-      "called_non_callable", i::HandleVector<i::Object>(&object, 1));
+      "\x63\x61\x6c\x6c\x65\x64\x5f\x6e\x6f\x6e\x5f\x63\x61\x6c\x6c\x61\x62\x6c\x65", i::HandleVector<i::Object>(&object, 1));
   return isolate->Throw<Object>(error_obj);
 }
 
@@ -672,7 +672,7 @@ Handle<String> Execution::GetStackTraceLine(Handle<Object> recv,
 
 Object* StackGuard::HandleInterrupts() {
   if (CheckAndClearInterrupt(GC_REQUEST)) {
-    isolate_->heap()->CollectAllGarbage(Heap::kNoGCFlags, "GC interrupt");
+    isolate_->heap()->CollectAllGarbage(Heap::kNoGCFlags, "\x47\x43\x20\x69\x6e\x74\x65\x72\x72\x75\x70\x74");
   }
 
   if (CheckDebugBreak() || CheckDebugCommand()) {

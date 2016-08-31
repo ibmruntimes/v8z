@@ -16,16 +16,16 @@ namespace internal {
 
 const char* Variable::Mode2String(VariableMode mode) {
   switch (mode) {
-    case VAR: return "VAR";
-    case CONST_LEGACY: return "CONST_LEGACY";
-    case LET: return "LET";
-    case CONST: return "CONST";
-    case MODULE: return "MODULE";
-    case DYNAMIC: return "DYNAMIC";
-    case DYNAMIC_GLOBAL: return "DYNAMIC_GLOBAL";
-    case DYNAMIC_LOCAL: return "DYNAMIC_LOCAL";
-    case INTERNAL: return "INTERNAL";
-    case TEMPORARY: return "TEMPORARY";
+    case VAR: return "\x56\x41\x52";
+    case CONST_LEGACY: return "\x43\x4f\x4e\x53\x54\x5f\x4c\x45\x47\x41\x43\x59";
+    case LET: return "\x4c\x45\x54";
+    case CONST: return "\x43\x4f\x4e\x53\x54";
+    case MODULE: return "\x4d\x4f\x44\x55\x4c\x45";
+    case DYNAMIC: return "\x44\x59\x4e\x41\x4d\x49\x43";
+    case DYNAMIC_GLOBAL: return "\x44\x59\x4e\x41\x4d\x49\x43\x5f\x47\x4c\x4f\x42\x41\x4c";
+    case DYNAMIC_LOCAL: return "\x44\x59\x4e\x41\x4d\x49\x43\x5f\x4c\x4f\x43\x41\x4c";
+    case INTERNAL: return "\x49\x4e\x54\x45\x52\x4e\x41\x4c";
+    case TEMPORARY: return "\x54\x45\x4d\x50\x4f\x52\x41\x52\x59";
   }
   UNREACHABLE();
   return NULL;

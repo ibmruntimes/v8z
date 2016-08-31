@@ -72,7 +72,7 @@ OStream& hex(OStream& os);  // NOLINT(runtime/references)
 class OStringStream: public OStream {
  public:
   OStringStream() : size_(0), capacity_(32), data_(allocate(capacity_)) {
-    data_[0] = '\0';
+    data_[0] = '\x0';
   }
   ~OStringStream() { deallocate(data_, capacity_); }
 

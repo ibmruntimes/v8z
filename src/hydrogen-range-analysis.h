@@ -14,7 +14,7 @@ namespace internal {
 class HRangeAnalysisPhase : public HPhase {
  public:
   explicit HRangeAnalysisPhase(HGraph* graph)
-      : HPhase("H_Range analysis", graph), changed_ranges_(16, zone()),
+      : HPhase("\x48\x5f\x52\x61\x6e\x67\x65\x20\x61\x6e\x61\x6c\x79\x73\x69\x73", graph), changed_ranges_(16, zone()),
         in_worklist_(graph->GetMaximumValueID(), zone()),
         worklist_(32, zone()) {}
 

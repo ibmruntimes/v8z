@@ -20,14 +20,14 @@ namespace internal {
 
 char IC::TransitionMarkFromState(IC::State state) {
   switch (state) {
-    case UNINITIALIZED: return '0';
-    case PREMONOMORPHIC: return '.';
-    case MONOMORPHIC: return '1';
+    case UNINITIALIZED: return '\x30';
+    case PREMONOMORPHIC: return '\x2e';
+    case MONOMORPHIC: return '\x31';
     case PROTOTYPE_FAILURE:
-      return '^';
-    case POLYMORPHIC: return 'P';
-    case MEGAMORPHIC: return 'N';
-    case GENERIC: return 'G';
+      return '\x5e';
+    case POLYMORPHIC: return '\x50';
+    case MEGAMORPHIC: return '\x4e';
+    case GENERIC: return '\x47';
 
     // We never see the debugger states here, because the state is
     // computed from the original code - not the patched code. Let
@@ -43,11 +43,11 @@ char IC::TransitionMarkFromState(IC::State state) {
 
 
 const char* GetTransitionMarkModifier(KeyedAccessStoreMode mode) {
-  if (mode == STORE_NO_TRANSITION_HANDLE_COW) return ".COW";
+  if (mode == STORE_NO_TRANSITION_HANDLE_COW) return "\x2e\x43\x4f\x57";
   if (mode == STORE_NO_TRANSITION_IGNORE_OUT_OF_BOUNDS) {
-    return ".IGNORE_OOB";
+    return "\x2e\x49\x47\x4e\x4f\x52\x45\x5f\x4f\x4f\x42";
   }
-  if (IsGrowStoreMode(mode)) return ".GROW";
+  if (IsGrowStoreMode(mode)) return "\x2e\x47\x52\x4f\x57";
   return "";
 }
 
@@ -57,9 +57,9 @@ const char* GetTransitionMarkModifier(KeyedAccessStoreMode mode) {
 #define TRACE_GENERIC_IC(isolate, type, reason)                \
   do {                                                         \
     if (FLAG_trace_ic) {                                       \
-      PrintF("[%s patching generic stub in ", type);           \
+      PrintF("\x5b\x6c\xa2\x20\x70\x61\x74\x63\x68\x69\x6e\x67\x20\x67\x65\x6e\x65\x72\x69\x63\x20\x73\x74\x75\x62\x20\x69\x6e\x20", type);           \
       JavaScriptFrame::PrintTop(isolate, stdout, false, true); \
-      PrintF(" (%s)]\n", reason);                              \
+      PrintF("\x20\x28\x6c\xa2\x29\x5d\xa", reason);                              \
     }                                                          \
   } while (false)
 
@@ -83,7 +83,7 @@ void IC::TraceIC(const char* type, Handle<Object> name, State old_state,
                  State new_state) {
   if (FLAG_trace_ic) {
     Code* new_target = raw_target();
-    PrintF("[%s%s in ", new_target->is_keyed_stub() ? "Keyed" : "", type);
+    PrintF("\x5b\x6c\xa2\x6c\xa2\x20\x69\x6e\x20", new_target->is_keyed_stub() ? "\x4b\x65\x79\x65\x64" : "", type);
 
     // TODO(jkummerow): Add support for "apply". The logic is roughly:
     // marker = [fp_ + kMarkerOffset];
@@ -105,7 +105,7 @@ void IC::TraceIC(const char* type, Handle<Object> name, State old_state,
       modifier = GetTransitionMarkModifier(
           KeyedStoreIC::GetKeyedAccessStoreMode(extra_state));
     }
-    PrintF(" (%c->%c%s)", TransitionMarkFromState(old_state),
+    PrintF("\x20\x28\x6c\x83\x2d\x3e\x6c\x83\x6c\xa2\x29", TransitionMarkFromState(old_state),
            TransitionMarkFromState(new_state), modifier);
 #ifdef OBJECT_PRINT
     OFStream os(stdout);
@@ -113,7 +113,7 @@ void IC::TraceIC(const char* type, Handle<Object> name, State old_state,
 #else
     name->ShortPrint(stdout);
 #endif
-    PrintF("]\n");
+    PrintF("\x5d\xa");
   }
 }
 
@@ -391,8 +391,8 @@ void IC::OnTypeFeedbackChanged(Isolate* isolate, Address address,
   if (FLAG_type_info_threshold > 0 && target_remains_ic_stub &&
       // Not all Code objects have TypeFeedbackInfo.
       host->type_feedback_info()->IsTypeFeedbackInfo()) {
-    int polymorphic_delta = 0;  // "Polymorphic" here includes monomorphic.
-    int generic_delta = 0;      // "Generic" here includes megamorphic.
+    int polymorphic_delta = 0;  // "\x50\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x69\x63" here includes monomorphic.
+    int generic_delta = 0;      // "\x47\x65\x6e\x65\x72\x69\x63" here includes megamorphic.
     ComputeTypeInfoCountDelta(old_state, new_state, &polymorphic_delta,
                               &generic_delta);
     TypeFeedbackInfo* info = TypeFeedbackInfo::cast(host->type_feedback_info());
@@ -594,7 +594,7 @@ MaybeHandle<Object> LoadIC::Load(Handle<Object> object, Handle<Name> name) {
   // If the object is undefined or null it's illegal to try to get any
   // of its properties; throw a TypeError in that case.
   if (object->IsUndefined() || object->IsNull()) {
-    return TypeError("non_object_property_load", object, name);
+    return TypeError("\x6e\x6f\x6e\x5f\x6f\x62\x6a\x65\x63\x74\x5f\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x6c\x6f\x61\x64", object, name);
   }
 
   // Check if the name is trivially convertible to an index and get
@@ -604,8 +604,8 @@ MaybeHandle<Object> LoadIC::Load(Handle<Object> object, Handle<Name> name) {
     // Rewrite to the generic keyed load stub.
     if (FLAG_use_ic) {
       set_target(*KeyedLoadIC::generic_stub(isolate()));
-      TRACE_IC("LoadIC", name);
-      TRACE_GENERIC_IC(isolate(), "LoadIC", "name as array index");
+      TRACE_IC("\x4c\x6f\x61\x64\x49\x43", name);
+      TRACE_GENERIC_IC(isolate(), "\x4c\x6f\x61\x64\x49\x43", "\x6e\x61\x6d\x65\x20\x61\x73\x20\x61\x72\x72\x61\x79\x20\x69\x6e\x64\x65\x78");
     }
     Handle<Object> result;
     ASSIGN_RETURN_ON_EXCEPTION(
@@ -625,7 +625,7 @@ MaybeHandle<Object> LoadIC::Load(Handle<Object> object, Handle<Name> name) {
   // If we did not find a property, check if we need to throw an exception.
   if (!it.IsFound()) {
     if (IsUndeclaredGlobal(object)) {
-      return ReferenceError("not_defined", name);
+      return ReferenceError("\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64", name);
     }
     LOG(isolate(), SuspectReadEvent(*name, *object));
   }
@@ -639,7 +639,7 @@ MaybeHandle<Object> LoadIC::Load(Handle<Object> object, Handle<Name> name) {
       isolate(), result, Object::GetProperty(&it), Object);
   // If the property is not present, check if we need to throw an exception.
   if (!it.IsFound() && IsUndeclaredGlobal(object)) {
-    return ReferenceError("not_defined", name);
+    return ReferenceError("\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64", name);
   }
 
   return result;
@@ -879,7 +879,7 @@ void LoadIC::UpdateCaches(LookupIterator* lookup, Handle<Object> object,
     // Set the target to the pre monomorphic stub to delay
     // setting the monomorphic state.
     set_target(*pre_monomorphic_stub());
-    TRACE_IC("LoadIC", name);
+    TRACE_IC("\x4c\x6f\x61\x64\x49\x43", name);
     return;
   }
 
@@ -901,7 +901,7 @@ void LoadIC::UpdateCaches(LookupIterator* lookup, Handle<Object> object,
   }
 
   PatchCache(name, code);
-  TRACE_IC("LoadIC", name);
+  TRACE_IC("\x4c\x6f\x61\x64\x49\x43", name);
 }
 
 
@@ -1167,7 +1167,7 @@ Handle<Code> KeyedLoadIC::LoadElementStub(Handle<JSObject> receiver) {
   // via megamorphic stubs, since they don't have a map in their relocation info
   // and so the stubs can't be harvested for the object needed for a map check.
   if (target()->type() != Code::NORMAL) {
-    TRACE_GENERIC_IC(isolate(), "KeyedIC", "non-NORMAL target type");
+    TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x49\x43", "\x6e\x6f\x6e\x2d\x4e\x4f\x52\x4d\x41\x4c\x20\x74\x61\x72\x67\x65\x74\x20\x74\x79\x70\x65");
     return generic_stub();
   }
 
@@ -1203,14 +1203,14 @@ Handle<Code> KeyedLoadIC::LoadElementStub(Handle<JSObject> receiver) {
   if (!AddOneReceiverMapIfMissing(&target_receiver_maps, receiver_map)) {
     // If the miss wasn't due to an unseen map, a polymorphic stub
     // won't help, use the generic stub.
-    TRACE_GENERIC_IC(isolate(), "KeyedIC", "same map added twice");
+    TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x49\x43", "\x73\x61\x6d\x65\x20\x6d\x61\x70\x20\x61\x64\x64\x65\x64\x20\x74\x77\x69\x63\x65");
     return generic_stub();
   }
 
   // If the maximum number of receiver maps has been exceeded, use the generic
   // version of the IC.
   if (target_receiver_maps.length() > kMaxKeyedPolymorphism) {
-    TRACE_GENERIC_IC(isolate(), "KeyedIC", "max polymorph exceeded");
+    TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x49\x43", "\x6d\x61\x78\x20\x70\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x20\x65\x78\x63\x65\x65\x64\x65\x64");
     return generic_stub();
   }
 
@@ -1263,10 +1263,10 @@ MaybeHandle<Object> KeyedLoadIC::Load(Handle<Object> object,
   if (!is_target_set()) {
     Code* generic = *generic_stub();
     if (*stub == generic) {
-      TRACE_GENERIC_IC(isolate(), "KeyedLoadIC", "set generic");
+      TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x4c\x6f\x61\x64\x49\x43", "\x73\x65\x74\x20\x67\x65\x6e\x65\x72\x69\x63");
     }
     set_target(*stub);
-    TRACE_IC("LoadIC", key);
+    TRACE_IC("\x4c\x6f\x61\x64\x49\x43", key);
   }
 
   if (!load_handle.is_null()) return load_handle;
@@ -1364,7 +1364,7 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object,
   // If the object is undefined or null it's illegal to try to set any
   // properties on it; throw a TypeError in that case.
   if (object->IsUndefined() || object->IsNull()) {
-    return TypeError("non_object_property_store", object, name);
+    return TypeError("\x6e\x6f\x6e\x5f\x6f\x62\x6a\x65\x63\x74\x5f\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x73\x74\x6f\x72\x65", object, name);
   }
 
   // Check if the given name is an array index.
@@ -1402,13 +1402,13 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object,
       !(lookup.IsProperty() && lookup.IsReadOnly()) &&
       object->IsGlobalObject()) {
     // Strict mode doesn't allow setting non-existent global property.
-    return ReferenceError("not_defined", name);
+    return ReferenceError("\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64", name);
   }
   if (FLAG_use_ic) {
     if (state() == UNINITIALIZED) {
       Handle<Code> stub = pre_monomorphic_stub();
       set_target(*stub);
-      TRACE_IC("StoreIC", name);
+      TRACE_IC("\x53\x74\x6f\x72\x65\x49\x43", name);
     } else if (can_store) {
       UpdateCaches(&lookup, Handle<JSObject>::cast(object), name, value);
     } else if (lookup.IsNormal() ||
@@ -1429,9 +1429,9 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object,
 
 
 OStream& operator<<(OStream& os, const CallIC::State& s) {
-  return os << "(args(" << s.arg_count() << "), "
-            << (s.call_type() == CallIC::METHOD ? "METHOD" : "FUNCTION")
-            << ", ";
+  return os << "\x28\x61\x72\x67\x73\x28" << s.arg_count() << "\x29\x2c\x20"
+            << (s.call_type() == CallIC::METHOD ? "\x4d\x45\x54\x48\x4f\x44" : "\x46\x55\x4e\x43\x54\x49\x4f\x4e")
+            << "\x2c\x20";
 }
 
 
@@ -1483,7 +1483,7 @@ void StoreIC::UpdateCaches(LookupResult* lookup,
   Handle<Code> code = ComputeStoreHandler(lookup, receiver, name, value);
 
   PatchCache(name, code);
-  TRACE_IC("StoreIC", name);
+  TRACE_IC("\x53\x74\x6f\x72\x65\x49\x43", name);
 }
 
 
@@ -1610,7 +1610,7 @@ Handle<Code> KeyedStoreIC::StoreElementStub(Handle<JSObject> receiver,
   // via megamorphic stubs, since they don't have a map in their relocation info
   // and so the stubs can't be harvested for the object needed for a map check.
   if (target()->type() != Code::NORMAL) {
-    TRACE_GENERIC_IC(isolate(), "KeyedIC", "non-NORMAL target type");
+    TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x49\x43", "\x6e\x6f\x6e\x2d\x4e\x4f\x52\x4d\x41\x4c\x20\x74\x61\x72\x67\x65\x74\x20\x74\x79\x70\x65");
     return generic_stub();
   }
 
@@ -1676,14 +1676,14 @@ Handle<Code> KeyedStoreIC::StoreElementStub(Handle<JSObject> receiver,
   if (!map_added) {
     // If the miss wasn't due to an unseen map, a polymorphic stub
     // won't help, use the generic stub.
-    TRACE_GENERIC_IC(isolate(), "KeyedIC", "same map added twice");
+    TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x49\x43", "\x73\x61\x6d\x65\x20\x6d\x61\x70\x20\x61\x64\x64\x65\x64\x20\x74\x77\x69\x63\x65");
     return generic_stub();
   }
 
   // If the maximum number of receiver maps has been exceeded, use the generic
   // version of the IC.
   if (target_receiver_maps.length() > kMaxKeyedPolymorphism) {
-    TRACE_GENERIC_IC(isolate(), "KeyedIC", "max polymorph exceeded");
+    TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x49\x43", "\x6d\x61\x78\x20\x70\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x20\x65\x78\x63\x65\x65\x64\x65\x64");
     return generic_stub();
   }
 
@@ -1694,7 +1694,7 @@ Handle<Code> KeyedStoreIC::StoreElementStub(Handle<JSObject> receiver,
     if (store_mode == STANDARD_STORE) {
       store_mode = old_store_mode;
     } else if (store_mode != old_store_mode) {
-      TRACE_GENERIC_IC(isolate(), "KeyedIC", "store mode mismatch");
+      TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x49\x43", "\x73\x74\x6f\x72\x65\x20\x6d\x6f\x64\x65\x20\x6d\x69\x73\x6d\x61\x74\x63\x68");
       return generic_stub();
     }
   }
@@ -1712,8 +1712,8 @@ Handle<Code> KeyedStoreIC::StoreElementStub(Handle<JSObject> receiver,
     }
     if (external_arrays != 0 &&
         external_arrays != target_receiver_maps.length()) {
-      TRACE_GENERIC_IC(isolate(), "KeyedIC",
-          "unsupported combination of external and normal arrays");
+      TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x49\x43",
+          "\x75\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x63\x6f\x6d\x62\x69\x6e\x61\x74\x69\x6f\x6e\x20\x6f\x66\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x20\x61\x6e\x64\x20\x6e\x6f\x72\x6d\x61\x6c\x20\x61\x72\x72\x61\x79\x73");
       return generic_stub();
     }
   }
@@ -1874,7 +1874,7 @@ MaybeHandle<Object> KeyedStoreIC::Store(Handle<Object> object,
                        value,
                        JSReceiver::MAY_BE_STORE_FROM_KEYED),
         Object);
-    TRACE_GENERIC_IC(isolate(), "KeyedStoreIC", "set generic");
+    TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x53\x74\x6f\x72\x65\x49\x43", "\x73\x65\x74\x20\x67\x65\x6e\x65\x72\x69\x63");
     set_target(*stub);
     return store_handle;
   }
@@ -1928,11 +1928,11 @@ MaybeHandle<Object> KeyedStoreIC::Store(Handle<Object> object,
   DCHECK(!is_target_set());
   Code* generic = *generic_stub();
   if (*stub == generic) {
-    TRACE_GENERIC_IC(isolate(), "KeyedStoreIC", "set generic");
+    TRACE_GENERIC_IC(isolate(), "\x4b\x65\x79\x65\x64\x53\x74\x6f\x72\x65\x49\x43", "\x73\x65\x74\x20\x67\x65\x6e\x65\x72\x69\x63");
   }
   DCHECK(!stub.is_null());
   set_target(*stub);
-  TRACE_IC("StoreIC", key);
+  TRACE_IC("\x53\x74\x6f\x72\x65\x49\x43", key);
 
   return store_handle;
 }
@@ -1982,7 +1982,7 @@ bool CallIC::DoCustomHandler(Handle<Object> receiver,
 
     IC::State new_state = FeedbackToState(vector, slot);
     OnTypeFeedbackChanged(isolate(), address(), old_state, new_state, true);
-    TRACE_VECTOR_IC("CallIC (custom handler)", name, old_state, new_state);
+    TRACE_VECTOR_IC("\x43\x61\x6c\x6c\x49\x43\x20\x28\x63\x75\x73\x74\x6f\x6d\x20\x68\x61\x6e\x64\x6c\x65\x72\x29", name, old_state, new_state);
     return true;
   }
   return false;
@@ -2011,7 +2011,7 @@ void CallIC::PatchMegamorphic(Handle<Object> function,
 
   IC::State new_state = FeedbackToState(vector, slot);
   OnTypeFeedbackChanged(isolate(), address(), old_state, new_state, true);
-  TRACE_VECTOR_IC("CallIC", name, old_state, new_state);
+  TRACE_VECTOR_IC("\x43\x61\x6c\x6c\x49\x43", name, old_state, new_state);
 }
 
 
@@ -2058,7 +2058,7 @@ void CallIC::HandleMiss(Handle<Object> receiver,
 
   IC::State new_state = FeedbackToState(vector, slot);
   OnTypeFeedbackChanged(isolate(), address(), old_state, new_state, true);
-  TRACE_VECTOR_IC("CallIC", name, old_state, new_state);
+  TRACE_VECTOR_IC("\x43\x61\x6c\x6c\x49\x43", name, old_state, new_state);
 }
 
 
@@ -2568,19 +2568,19 @@ Type* BinaryOpIC::State::GetResultType(Zone* zone) const {
 
 
 OStream& operator<<(OStream& os, const BinaryOpIC::State& s) {
-  os << "(" << Token::Name(s.op_);
+  os << "\x28" << Token::Name(s.op_);
   if (s.mode_ == OVERWRITE_LEFT)
-    os << "_ReuseLeft";
+    os << "\x5f\x52\x65\x75\x73\x65\x4c\x65\x66\x74";
   else if (s.mode_ == OVERWRITE_RIGHT)
-    os << "_ReuseRight";
-  if (s.CouldCreateAllocationMementos()) os << "_CreateAllocationMementos";
-  os << ":" << BinaryOpIC::State::KindToString(s.left_kind_) << "*";
+    os << "\x5f\x52\x65\x75\x73\x65\x52\x69\x67\x68\x74";
+  if (s.CouldCreateAllocationMementos()) os << "\x5f\x43\x72\x65\x61\x74\x65\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x4d\x65\x6d\x65\x6e\x74\x6f\x73";
+  os << "\x3a" << BinaryOpIC::State::KindToString(s.left_kind_) << "\x2a";
   if (s.fixed_right_arg_.has_value) {
     os << s.fixed_right_arg_.value;
   } else {
     os << BinaryOpIC::State::KindToString(s.right_kind_);
   }
-  return os << "->" << BinaryOpIC::State::KindToString(s.result_kind_) << ")";
+  return os << "\x2d\x3e" << BinaryOpIC::State::KindToString(s.result_kind_) << "\x29";
 }
 
 
@@ -2678,12 +2678,12 @@ BinaryOpIC::State::Kind BinaryOpIC::State::UpdateKind(Handle<Object> object,
 // static
 const char* BinaryOpIC::State::KindToString(Kind kind) {
   switch (kind) {
-    case NONE: return "None";
-    case SMI: return "Smi";
-    case INT32: return "Int32";
-    case NUMBER: return "Number";
-    case STRING: return "String";
-    case GENERIC: return "Generic";
+    case NONE: return "\x4e\x6f\x6e\x65";
+    case SMI: return "\x53\x6d\x69";
+    case INT32: return "\x49\x6e\x74\x33\x32";
+    case NUMBER: return "\x4e\x75\x6d\x62\x65\x72";
+    case STRING: return "\x53\x74\x72\x69\x6e\x67";
+    case GENERIC: return "\x47\x65\x6e\x65\x72\x69\x63";
   }
   UNREACHABLE();
   return NULL;
@@ -2755,13 +2755,13 @@ MaybeHandle<Object> BinaryOpIC::Transition(
 
   if (FLAG_trace_ic) {
     OFStream os(stdout);
-    os << "[BinaryOpIC" << old_state << " => " << state << " @ "
-       << static_cast<void*>(*target) << " <- ";
+    os << "\x5b\x42\x69\x6e\x61\x72\x79\x4f\x70\x49\x43" << old_state << "\x20\x3d\x3e\x20" << state << "\x20\x40\x20"
+       << static_cast<void*>(*target) << "\x20\x3c\x2d\x20";
     JavaScriptFrame::PrintTop(isolate(), stdout, false, true);
     if (!allocation_site.is_null()) {
-      os << " using allocation site " << static_cast<void*>(*allocation_site);
+      os << "\x20\x75\x73\x69\x6e\x67\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x73\x69\x74\x65\x20" << static_cast<void*>(*allocation_site);
     }
-    os << "]" << endl;
+    os << "\x5d" << endl;
   }
 
   // Patch the inlined smi code as necessary.
@@ -2827,15 +2827,15 @@ Handle<Code> CompareIC::GetUninitialized(Isolate* isolate, Token::Value op) {
 
 const char* CompareIC::GetStateName(State state) {
   switch (state) {
-    case UNINITIALIZED: return "UNINITIALIZED";
-    case SMI: return "SMI";
-    case NUMBER: return "NUMBER";
-    case INTERNALIZED_STRING: return "INTERNALIZED_STRING";
-    case STRING: return "STRING";
-    case UNIQUE_NAME: return "UNIQUE_NAME";
-    case OBJECT: return "OBJECT";
-    case KNOWN_OBJECT: return "KNOWN_OBJECT";
-    case GENERIC: return "GENERIC";
+    case UNINITIALIZED: return "\x55\x4e\x49\x4e\x49\x54\x49\x41\x4c\x49\x5a\x45\x44";
+    case SMI: return "\x53\x4d\x49";
+    case NUMBER: return "\x4e\x55\x4d\x42\x45\x52";
+    case INTERNALIZED_STRING: return "\x49\x4e\x54\x45\x52\x4e\x41\x4c\x49\x5a\x45\x44\x5f\x53\x54\x52\x49\x4e\x47";
+    case STRING: return "\x53\x54\x52\x49\x4e\x47";
+    case UNIQUE_NAME: return "\x55\x4e\x49\x51\x55\x45\x5f\x4e\x41\x4d\x45";
+    case OBJECT: return "\x4f\x42\x4a\x45\x43\x54";
+    case KNOWN_OBJECT: return "\x4b\x4e\x4f\x57\x4e\x5f\x4f\x42\x4a\x45\x43\x54";
+    case GENERIC: return "\x47\x45\x4e\x45\x52\x49\x43";
   }
   UNREACHABLE();
   return NULL;
@@ -2999,9 +2999,9 @@ Code* CompareIC::UpdateCaches(Handle<Object> x, Handle<Object> y) {
   set_target(*new_target);
 
   if (FLAG_trace_ic) {
-    PrintF("[CompareIC in ");
+    PrintF("\x5b\x43\x6f\x6d\x70\x61\x72\x65\x49\x43\x20\x69\x6e\x20");
     JavaScriptFrame::PrintTop(isolate(), stdout, false, true);
-    PrintF(" ((%s+%s=%s)->(%s+%s=%s))#%s @ %p]\n",
+    PrintF("\x20\x28\x28\x6c\xa2\x2b\x6c\xa2\x3d\x6c\xa2\x29\x2d\x3e\x28\x6c\xa2\x2b\x6c\xa2\x3d\x6c\xa2\x29\x29\x23\x6c\xa2\x20\x40\x20\x6c\x97\x5d\xa",
            GetStateName(previous_left),
            GetStateName(previous_right),
            GetStateName(previous_state),

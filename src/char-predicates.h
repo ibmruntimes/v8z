@@ -25,9 +25,9 @@ inline bool IsRegExpNewline(uc32 c);
 struct IdentifierStart {
   static inline bool Is(uc32 c) {
     switch (c) {
-      case '$': 
-      case '_': 
-      case '\\': return true;
+      case '\x24': 
+      case '\x5f': 
+      case '\x5c': return true;
       default: return unibrow::Letter::Is(c);
     }
   }

@@ -45,11 +45,11 @@ void Interface::DoAdd(const void* name, uint32_t hash, Interface* interface,
 
 #ifdef DEBUG
   if (FLAG_print_interface_details) {
-    PrintF("%*s# Adding...\n", Nesting::current(), "");
-    PrintF("%*sthis = ", Nesting::current(), "");
+    PrintF("\x25\x2a\x73\x23\x20\x41\x64\x64\x69\x6e\x67\x2e\x2e\x2e\xa", Nesting::current(), "");
+    PrintF("\x25\x2a\x73\x74\x68\x69\x73\x20\x3d\x20", Nesting::current(), "");
     this->Print(Nesting::current());
     const AstRawString* symbol = static_cast<const AstRawString*>(name);
-    PrintF("%*s%.*s : ", Nesting::current(), "", symbol->length(),
+    PrintF("\x25\x2a\x73\x25\x2e\x2a\x73\x20\x3a\x20", Nesting::current(), "", symbol->length(),
            symbol->raw_data());
     interface->Print(Nesting::current());
   }
@@ -80,9 +80,9 @@ void Interface::DoAdd(const void* name, uint32_t hash, Interface* interface,
 
 #ifdef DEBUG
   if (FLAG_print_interface_details) {
-    PrintF("%*sthis' = ", Nesting::current(), "");
+    PrintF("\x25\x2a\x73\x74\x68\x69\x73\x27\x20\x3d\x20", Nesting::current(), "");
     this->Print(Nesting::current());
-    PrintF("%*s# Added.\n", Nesting::current(), "");
+    PrintF("\x25\x2a\x73\x23\x20\x41\x64\x64\x65\x64\x2e\xa", Nesting::current(), "");
   }
 #endif
 }
@@ -109,10 +109,10 @@ void Interface::Unify(Interface* that, Zone* zone, bool* ok) {
 
 #ifdef DEBUG
   if (FLAG_print_interface_details) {
-    PrintF("%*s# Unifying...\n", Nesting::current(), "");
-    PrintF("%*sthis = ", Nesting::current(), "");
+    PrintF("\x25\x2a\x73\x23\x20\x55\x6e\x69\x66\x79\x69\x6e\x67\x2e\x2e\x2e\xa", Nesting::current(), "");
+    PrintF("\x25\x2a\x73\x74\x68\x69\x73\x20\x3d\x20", Nesting::current(), "");
     this->Print(Nesting::current());
-    PrintF("%*sthat = ", Nesting::current(), "");
+    PrintF("\x25\x2a\x73\x74\x68\x61\x74\x20\x3d\x20", Nesting::current(), "");
     that->Print(Nesting::current());
   }
 #endif
@@ -127,11 +127,11 @@ void Interface::Unify(Interface* that, Zone* zone, bool* ok) {
 
 #ifdef DEBUG
   if (FLAG_print_interface_details) {
-    PrintF("%*sthis' = ", Nesting::current(), "");
+    PrintF("\x25\x2a\x73\x74\x68\x69\x73\x27\x20\x3d\x20", Nesting::current(), "");
     this->Print(Nesting::current());
-    PrintF("%*sthat' = ", Nesting::current(), "");
+    PrintF("\x25\x2a\x73\x74\x68\x61\x74\x27\x20\x3d\x20", Nesting::current(), "");
     that->Print(Nesting::current());
-    PrintF("%*s# Unified.\n", Nesting::current(), "");
+    PrintF("\x25\x2a\x73\x23\x20\x55\x6e\x69\x66\x69\x65\x64\x2e\xa", Nesting::current(), "");
   }
 #endif
 }
@@ -179,35 +179,35 @@ void Interface::Print(int n) {
   int n0 = n > 0 ? n : 0;
 
   if (FLAG_print_interface_details) {
-    PrintF("%p", static_cast<void*>(this));
+    PrintF("\x6c\x97", static_cast<void*>(this));
     for (Interface* link = this->forward_; link != NULL; link = link->forward_)
-      PrintF("->%p", static_cast<void*>(link));
-    PrintF(" ");
+      PrintF("\x2d\x3e\x6c\x97", static_cast<void*>(link));
+    PrintF("\x20");
   }
 
   if (IsUnknown()) {
-    PrintF("unknown\n");
+    PrintF("\x75\x6e\x6b\x6e\x6f\x77\x6e\xa");
   } else if (IsConst()) {
-    PrintF("const\n");
+    PrintF("\x63\x6f\x6e\x73\x74\xa");
   } else if (IsValue()) {
-    PrintF("value\n");
+    PrintF("\x76\x61\x6c\x75\x65\xa");
   } else if (IsModule()) {
-    PrintF("module %d %s{", Index(), IsFrozen() ? "" : "(unresolved) ");
+    PrintF("\x6d\x6f\x64\x75\x6c\x65\x20\x6c\x84\x20\x6c\xa2\x7b", Index(), IsFrozen() ? "" : "\x28\x75\x6e\x72\x65\x73\x6f\x6c\x76\x65\x64\x29\x20");
     ZoneHashMap* map = Chase()->exports_;
     if (map == NULL || map->occupancy() == 0) {
-      PrintF("}\n");
+      PrintF("\x7d\xa");
     } else if (n < 0 || n0 >= 2 * FLAG_print_interface_depth) {
       // Avoid infinite recursion on cyclic types.
-      PrintF("...}\n");
+      PrintF("\x2e\x2e\x2e\x7d\xa");
     } else {
-      PrintF("\n");
+      PrintF("\xa");
       for (ZoneHashMap::Entry* p = map->Start(); p != NULL; p = map->Next(p)) {
         String* name = *static_cast<String**>(p->key);
         Interface* interface = static_cast<Interface*>(p->value);
-        PrintF("%*s%s : ", n0 + 2, "", name->ToAsciiArray());
+        PrintF("\x25\x2a\x73\x6c\xa2\x20\x3a\x20", n0 + 2, "", name->ToAsciiArray());
         interface->Print(n0 + 2);
       }
-      PrintF("%*s}\n", n0, "");
+      PrintF("\x25\x2a\x73\x7d\xa", n0, "");
     }
   }
 }

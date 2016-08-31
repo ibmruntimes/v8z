@@ -20,7 +20,7 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-#define DEAD_COLOR "#999999"
+#define DEAD_COLOR "\x23\x39\x39\x39\x39\x39\x39"
 
 class GraphVisualizer : public NullNodeVisitor {
  public:
@@ -62,12 +62,12 @@ GenericGraphVisit::Control GraphVisualizer::Pre(Node* node) {
   if (all_nodes_.count(node) == 0) {
     Node* control_cluster = GetControlCluster(node);
     if (control_cluster != NULL) {
-      os_ << "  subgraph cluster_BasicBlock" << control_cluster->id() << " {\n";
+      os_ << "\x20\x20\x73\x75\x62\x67\x72\x61\x70\x68\x20\x63\x6c\x75\x73\x74\x65\x72\x5f\x42\x61\x73\x69\x63\x42\x6c\x6f\x63\x6b" << control_cluster->id() << "\x20\x7b\xa";
     }
-    os_ << "  ID" << node->id() << " [\n";
+    os_ << "\x20\x20\x49\x44" << node->id() << "\x20\x5b\xa";
     AnnotateNode(node);
-    os_ << "  ]\n";
-    if (control_cluster != NULL) os_ << "  }\n";
+    os_ << "\x20\x20\x5d\xa";
+    if (control_cluster != NULL) os_ << "\x20\x20\x7d\xa";
     all_nodes_.insert(node);
     if (use_to_def_) white_nodes_.insert(node);
   }
@@ -91,7 +91,7 @@ class Escaped {
   explicit Escaped(const OStringStream& os) : str_(os.c_str()) {}
 
   friend OStream& operator<<(OStream& os, const Escaped& e) {
-    for (const char* s = e.str_; *s != '\0'; ++s) {
+    for (const char* s = e.str_; *s != '\x0'; ++s) {
       if (needs_escape(*s)) os << "\\";
       os << *s;
     }
@@ -101,11 +101,11 @@ class Escaped {
  private:
   static bool needs_escape(char ch) {
     switch (ch) {
-      case '>':
-      case '<':
-      case '|':
-      case '}':
-      case '{':
+      case '\x3e':
+      case '\x3c':
+      case '\x7c':
+      case '\x7d':
+      case '\x7b':
         return true;
       default:
         return false;
@@ -131,22 +131,22 @@ static bool IsLikelyBackEdge(Node* from, int index, Node* to) {
 
 void GraphVisualizer::AnnotateNode(Node* node) {
   if (!use_to_def_) {
-    os_ << "    style=\"filled\"\n"
-        << "    fillcolor=\"" DEAD_COLOR "\"\n";
+    os_ << "\x20\x20\x20\x20\x73\x74\x79\x6c\x65\x3d\x22\x66\x69\x6c\x6c\x65\x64\x22\xa"
+        << "\x20\x20\x20\x20\x66\x69\x6c\x6c\x63\x6f\x6c\x6f\x72\x3d\x22" DEAD_COLOR "\x22\xa";
   }
 
-  os_ << "    shape=\"record\"\n";
+  os_ << "\x20\x20\x20\x20\x73\x68\x61\x70\x65\x3d\x22\x72\x65\x63\x6f\x72\x64\x22\xa";
   switch (node->opcode()) {
     case IrOpcode::kEnd:
     case IrOpcode::kDead:
     case IrOpcode::kStart:
-      os_ << "    style=\"diagonals\"\n";
+      os_ << "\x20\x20\x20\x20\x73\x74\x79\x6c\x65\x3d\x22\x64\x69\x61\x67\x6f\x6e\x61\x6c\x73\x22\xa";
       break;
     case IrOpcode::kMerge:
     case IrOpcode::kIfTrue:
     case IrOpcode::kIfFalse:
     case IrOpcode::kLoop:
-      os_ << "    style=\"rounded\"\n";
+      os_ << "\x20\x20\x20\x20\x73\x74\x79\x6c\x65\x3d\x22\x72\x6f\x75\x6e\x64\x65\x64\x22\xa";
       break;
     default:
       break;
@@ -154,30 +154,30 @@ void GraphVisualizer::AnnotateNode(Node* node) {
 
   OStringStream label;
   label << *node->op();
-  os_ << "    label=\"{{#" << node->id() << ":" << Escaped(label);
+  os_ << "\x20\x20\x20\x20\x6c\x61\x62\x65\x6c\x3d\x22\x7b\x7b\x23" << node->id() << "\x3a" << Escaped(label);
 
   InputIter i = node->inputs().begin();
   for (int j = OperatorProperties::GetValueInputCount(node->op()); j > 0;
        ++i, j--) {
-    os_ << "|<I" << i.index() << ">#" << (*i)->id();
+    os_ << "\x7c\x3c\x49" << i.index() << "\x3e\x23" << (*i)->id();
   }
   for (int j = OperatorProperties::GetContextInputCount(node->op()); j > 0;
        ++i, j--) {
-    os_ << "|<I" << i.index() << ">X #" << (*i)->id();
+    os_ << "\x7c\x3c\x49" << i.index() << "\x3e\x58\x20\x23" << (*i)->id();
   }
   for (int j = OperatorProperties::GetEffectInputCount(node->op()); j > 0;
        ++i, j--) {
-    os_ << "|<I" << i.index() << ">E #" << (*i)->id();
+    os_ << "\x7c\x3c\x49" << i.index() << "\x3e\x45\x20\x23" << (*i)->id();
   }
 
   if (!use_to_def_ || OperatorProperties::IsBasicBlockBegin(node->op()) ||
       GetControlCluster(node) == NULL) {
     for (int j = OperatorProperties::GetControlInputCount(node->op()); j > 0;
          ++i, j--) {
-      os_ << "|<I" << i.index() << ">C #" << (*i)->id();
+      os_ << "\x7c\x3c\x49" << i.index() << "\x3e\x43\x20\x23" << (*i)->id();
     }
   }
-  os_ << "}";
+  os_ << "\x7d";
 
   if (FLAG_trace_turbo_types && !NodeProperties::IsControl(node)) {
     Bounds bounds = NodeProperties::GetBounds(node);
@@ -185,36 +185,36 @@ void GraphVisualizer::AnnotateNode(Node* node) {
     bounds.upper->PrintTo(upper);
     OStringStream lower;
     bounds.lower->PrintTo(lower);
-    os_ << "|" << Escaped(upper) << "|" << Escaped(lower);
+    os_ << "\x7c" << Escaped(upper) << "\x7c" << Escaped(lower);
   }
-  os_ << "}\"\n";
+  os_ << "\x7d\x22\xa";
 }
 
 
 void GraphVisualizer::PrintEdge(Node* from, int index, Node* to) {
   bool unconstrained = IsLikelyBackEdge(from, index, to);
-  os_ << "  ID" << from->id();
+  os_ << "\x20\x20\x49\x44" << from->id();
   if (all_nodes_.count(to) == 0) {
-    os_ << ":I" << index << ":n -> DEAD_INPUT";
+    os_ << "\x3a\x49" << index << "\x3a\x6e\x20\x2d\x3e\x20\x44\x45\x41\x44\x5f\x49\x4e\x50\x55\x54";
   } else if (OperatorProperties::IsBasicBlockBegin(from->op()) ||
              GetControlCluster(from) == NULL ||
              (OperatorProperties::GetControlInputCount(from->op()) > 0 &&
               NodeProperties::GetControlInput(from) != to)) {
-    os_ << ":I" << index << ":n -> ID" << to->id() << ":s";
-    if (unconstrained) os_ << " [constraint=false,style=dotted]";
+    os_ << "\x3a\x49" << index << "\x3a\x6e\x20\x2d\x3e\x20\x49\x44" << to->id() << "\x3a\x73";
+    if (unconstrained) os_ << "\x20\x5b\x63\x6f\x6e\x73\x74\x72\x61\x69\x6e\x74\x3d\x66\x61\x6c\x73\x65\x2c\x73\x74\x79\x6c\x65\x3d\x64\x6f\x74\x74\x65\x64\x5d";
   } else {
-    os_ << " -> ID" << to->id() << ":s [color=transparent"
-        << (unconstrained ? ", constraint=false" : "") << "]";
+    os_ << "\x20\x2d\x3e\x20\x49\x44" << to->id() << "\x3a\x73\x20\x5b\x63\x6f\x6c\x6f\x72\x3d\x74\x72\x61\x6e\x73\x70\x61\x72\x65\x6e\x74"
+        << (unconstrained ? "\x2c\x20\x63\x6f\x6e\x73\x74\x72\x61\x69\x6e\x74\x3d\x66\x61\x6c\x73\x65" : "") << "\x5d";
   }
-  os_ << "\n";
+  os_ << "\xa";
 }
 
 
 void GraphVisualizer::Print() {
-  os_ << "digraph D {\n"
-      << "  node [fontsize=8,height=0.25]\n"
-      << "  rankdir=\"BT\"\n"
-      << "  \n";
+  os_ << "\x64\x69\x67\x72\x61\x70\x68\x20\x44\x20\x7b\xa"
+      << "\x20\x20\x6e\x6f\x64\x65\x20\x5b\x66\x6f\x6e\x74\x73\x69\x7a\x65\x3d\x38\x2c\x68\x65\x69\x67\x68\x74\x3d\x30\x2e\x32\x35\x5d\xa"
+      << "\x20\x20\x72\x61\x6e\x6b\x64\x69\x72\x3d\x22\x42\x54\x22\xa"
+      << "\x20\x20\xa";
 
   // Make sure all nodes have been output before writing out the edges.
   use_to_def_ = true;
@@ -228,11 +228,11 @@ void GraphVisualizer::Print() {
       const_cast<Graph*>(graph_), white_nodes_.begin(), white_nodes_.end(),
       this);
 
-  os_ << "  DEAD_INPUT [\n"
-      << "    style=\"filled\" \n"
-      << "    fillcolor=\"" DEAD_COLOR "\"\n"
-      << "  ]\n"
-      << "\n";
+  os_ << "\x20\x20\x44\x45\x41\x44\x5f\x49\x4e\x50\x55\x54\x20\x5b\xa"
+      << "\x20\x20\x20\x20\x73\x74\x79\x6c\x65\x3d\x22\x66\x69\x6c\x6c\x65\x64\x22\x20\xa"
+      << "\x20\x20\x20\x20\x66\x69\x6c\x6c\x63\x6f\x6c\x6f\x72\x3d\x22" DEAD_COLOR "\x22\xa"
+      << "\x20\x20\x5d\xa"
+      << "\xa";
 
   // With all the nodes written, add the edges.
   for (NodeSetIter i = all_nodes_.begin(); i != all_nodes_.end(); ++i) {
@@ -242,7 +242,7 @@ void GraphVisualizer::Print() {
       PrintEdge(iter.edge().from(), iter.edge().index(), iter.edge().to());
     }
   }
-  os_ << "}\n";
+  os_ << "\x7d\xa";
 }
 
 

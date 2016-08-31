@@ -175,7 +175,7 @@ Handle<SharedFunctionInfo> CompilationCacheScript::Lookup(
 
   if (!script_histogram_initialized_) {
     script_histogram_ = isolate()->stats_table()->CreateHistogram(
-        "V8.ScriptCache",
+        "\x56\x38\x2e\x53\x63\x72\x69\x70\x74\x43\x61\x63\x68\x65",
         0,
         kScriptGenerations,
         kScriptGenerations + 1);

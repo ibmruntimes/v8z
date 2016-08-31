@@ -857,7 +857,7 @@ class SimpleStringBuilder {
   // 0-characters; use the Finalize() method to terminate the string
   // instead.
   void AddCharacter(char c) {
-    DCHECK(c != '\0');
+    DCHECK(c != '\x0');
     DCHECK(!is_finalized() && position_ < buffer_.length());
     buffer_[position_++] = c;
   }
@@ -1238,12 +1238,12 @@ inline void MemsetPointer(T** dest, U* value, int counter) {
   USE(a);
 #endif  // DEBUG
 #if V8_HOST_ARCH_IA32
-#define STOS "stosl"
+#define STOS "\x73\x74\x6f\x73\x6c"
 #elif V8_HOST_ARCH_X64
 #if V8_HOST_ARCH_32_BIT
-#define STOS "addr32 stosl"
+#define STOS "\x61\x64\x64\x72\x33\x32\x20\x73\x74\x6f\x73\x6c"
 #else
-#define STOS "stosq"
+#define STOS "\x73\x74\x6f\x73\x71"
 #endif
 #endif
 #if defined(__native_client__)
@@ -1261,11 +1261,11 @@ inline void MemsetPointer(T** dest, U* value, int counter) {
 
 #if defined(__GNUC__) && defined(STOS)
   asm volatile(
-      "cld;"
-      "rep ; " STOS
-      : "+&c" (counter), "+&D" (dest)
-      : "a" (value)
-      : "memory", "cc");
+      "\x63\x6c\x64\x3b"
+      "\x72\x65\x70\x20\x3b\x20" STOS
+      : "\x2b\x26\x63" (counter), "\x2b\x26\x44" (dest)
+      : "\x61" (value)
+      : "\x6d\x65\x6d\x6f\x72\x79", "\x63\x63");
 #else
   for (int i = 0; i < counter; i++) {
     dest[i] = value;
@@ -1653,17 +1653,17 @@ bool StringToArrayIndex(Stream* stream, uint32_t* index) {
 
   // If the string begins with a '0' character, it must only consist
   // of it to be a legal array index.
-  if (ch == '0') {
+  if (ch == '\x30') {
     *index = 0;
     return !stream->HasMore();
   }
 
   // Convert string to uint32 array index; character by character.
-  int d = ch - '0';
+  int d = ch - '\x30';
   if (d < 0 || d > 9) return false;
   uint32_t result = d;
   while (stream->HasMore()) {
-    d = stream->GetNext() - '0';
+    d = stream->GetNext() - '\x30';
     if (d < 0 || d > 9) return false;
     // Check that the new result is below the 32 bit limit.
     if (result > 429496729U - ((d > 5) ? 1 : 0)) return false;

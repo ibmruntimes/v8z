@@ -32,8 +32,8 @@ static bool BackRefMatchesNoCase(Canonicalize* interp_canonicalize,
     if (old_char == new_char) continue;
     unibrow::uchar old_string[1] = { old_char };
     unibrow::uchar new_string[1] = { new_char };
-    interp_canonicalize->get(old_char, '\0', old_string);
-    interp_canonicalize->get(new_char, '\0', new_string);
+    interp_canonicalize->get(old_char, '\x0', old_string);
+    interp_canonicalize->get(new_char, '\x0', new_string);
     if (old_string[0] != new_string[0]) {
       return false;
     }
@@ -56,7 +56,7 @@ static bool BackRefMatchesNoCase(Canonicalize* interp_canonicalize,
     new_char |= 0x20;
     if (old_char != new_char) return false;
     // Not letters in the ASCII range and Latin-1 range.
-    if (!(old_char - 'a' <= 'z' - 'a') &&
+    if (!(old_char - '\x61' <= '\x7a' - '\x61') &&
         !(old_char - 224 <= 254 - 224 && old_char != 247)) {
       return false;
     }
@@ -77,28 +77,28 @@ static void TraceInterpreter(const byte* code_base,
     bool printable = (current_char < 127 && current_char >= 32);
     const char* format =
         printable ?
-        "pc = %02x, sp = %d, curpos = %d, curchar = %08x (%c), bc = %s" :
-        "pc = %02x, sp = %d, curpos = %d, curchar = %08x .%c., bc = %s";
+        "\x70\x63\x20\x3d\x20\x6c\xf0\xf2\xa7\x2c\x20\x73\x70\x20\x3d\x20\x6c\x84\x2c\x20\x63\x75\x72\x70\x6f\x73\x20\x3d\x20\x6c\x84\x2c\x20\x63\x75\x72\x63\x68\x61\x72\x20\x3d\x20\x6c\xf0\xf8\xa7\x20\x28\x6c\x83\x29\x2c\x20\x62\x63\x20\x3d\x20\x6c\xa2" :
+        "\x70\x63\x20\x3d\x20\x6c\xf0\xf2\xa7\x2c\x20\x73\x70\x20\x3d\x20\x6c\x84\x2c\x20\x63\x75\x72\x70\x6f\x73\x20\x3d\x20\x6c\x84\x2c\x20\x63\x75\x72\x63\x68\x61\x72\x20\x3d\x20\x6c\xf0\xf8\xa7\x20\x2e\x6c\x83\x2e\x2c\x20\x62\x63\x20\x3d\x20\x6c\xa2";
     PrintF(format,
            pc - code_base,
            stack_depth,
            current_position,
            current_char,
-           printable ? current_char : '.',
+           printable ? current_char : '\x2e',
            bytecode_name);
     for (int i = 0; i < bytecode_length; i++) {
-      printf(", %02x", pc[i]);
+      printf("\x2c\x20\x6c\xf0\xf2\xa7", pc[i]);
     }
-    printf(" ");
+    printf("\x20");
     for (int i = 1; i < bytecode_length; i++) {
       unsigned char b = pc[i];
       if (b < 127 && b >= 32) {
-        printf("%c", b);
+        printf("\x6c\x83", b);
       } else {
-        printf(".");
+        printf("\x2e");
       }
     }
-    printf("\n");
+    printf("\xa");
   }
 }
 
@@ -172,7 +172,7 @@ static RegExpImpl::IrregexpResult RawMatch(Isolate* isolate,
   int backtrack_stack_space = backtrack_stack.max_size();
 #ifdef DEBUG
   if (FLAG_trace_regexp_bytecodes) {
-    PrintF("\n\nStart bytecode interpreter\n\n");
+    PrintF("\xa\xa\x53\x74\x61\x72\x74\x20\x62\x79\x74\x65\x63\x6f\x64\x65\x20\x69\x6e\x74\x65\x72\x70\x72\x65\x74\x65\x72\xa\xa");
   }
 #endif
   while (true) {
@@ -582,7 +582,7 @@ RegExpImpl::IrregexpResult IrregexpInterpreter::Match(
 
   DisallowHeapAllocation no_gc;
   const byte* code_base = code_array->GetDataStartAddress();
-  uc16 previous_char = '\n';
+  uc16 previous_char = '\xa';
   String::FlatContent subject_content = subject->GetFlatContent();
   if (subject_content.IsAscii()) {
     Vector<const uint8_t> subject_vector = subject_content.ToOneByteVector();

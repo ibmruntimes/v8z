@@ -43,9 +43,9 @@ struct HCheckTableEntry {
 
   static const char* State2String(State state) {
     switch (state) {
-      case CHECKED: return "checked";
-      case CHECKED_STABLE: return "checked stable";
-      case UNCHECKED_STABLE: return "unchecked stable";
+      case CHECKED: return "\x63\x68\x65\x63\x6b\x65\x64";
+      case CHECKED_STABLE: return "\x63\x68\x65\x63\x6b\x65\x64\x20\x73\x74\x61\x62\x6c\x65";
+      case UNCHECKED_STABLE: return "\x75\x6e\x63\x68\x65\x63\x6b\x65\x64\x20\x73\x74\x61\x62\x6c\x65";
     }
     UNREACHABLE();
     return NULL;
@@ -165,7 +165,7 @@ class HCheckTable : public ZoneObject {
       state = NULL;
     }
     if (FLAG_trace_check_elimination) {
-      PrintF("Processing B%d, checkmaps-table:\n", block->block_id());
+      PrintF("\x50\x72\x6f\x63\x65\x73\x73\x69\x6e\x67\x20\x42\x6c\x84\x2c\x20\x63\x68\x65\x63\x6b\x6d\x61\x70\x73\x2d\x74\x61\x62\x6c\x65\x3a\xa", block->block_id());
       Print(state);
     }
     return state;
@@ -296,9 +296,9 @@ class HCheckTable : public ZoneObject {
     }
 
     if (FLAG_trace_check_elimination) {
-      PrintF("B%d checkmaps-table %s from B%d:\n",
+      PrintF("\x42\x6c\x84\x20\x63\x68\x65\x63\x6b\x6d\x61\x70\x73\x2d\x74\x61\x62\x6c\x65\x20\x6c\xa2\x20\x66\x72\x6f\x6d\x20\x42\x6c\x84\x3a\xa",
              succ->block_id(),
-             learned ? "learned" : "copied",
+             learned ? "\x6c\x65\x61\x72\x6e\x65\x64" : "\x63\x6f\x70\x69\x65\x64",
              from_block->block_id());
       Print(copy);
     }
@@ -351,7 +351,7 @@ class HCheckTable : public ZoneObject {
     }
 
     if (FLAG_trace_check_elimination) {
-      PrintF("B%d checkmaps-table merged with B%d table:\n",
+      PrintF("\x42\x6c\x84\x20\x63\x68\x65\x63\x6b\x6d\x61\x70\x73\x2d\x74\x61\x62\x6c\x65\x20\x6d\x65\x72\x67\x65\x64\x20\x77\x69\x74\x68\x20\x42\x6c\x84\x20\x74\x61\x62\x6c\x65\x3a\xa",
              succ->block_id(), pred_block->block_id());
       Print(this);
     }
@@ -368,19 +368,19 @@ class HCheckTable : public ZoneObject {
         // The first check is more strict; the second is redundant.
         if (entry->check_ != NULL) {
           DCHECK_NE(HCheckTableEntry::UNCHECKED_STABLE, entry->state_);
-          TRACE(("Replacing redundant CheckMaps #%d at B%d with #%d\n",
+          TRACE(("\x52\x65\x70\x6c\x61\x63\x69\x6e\x67\x20\x72\x65\x64\x75\x6e\x64\x61\x6e\x74\x20\x43\x68\x65\x63\x6b\x4d\x61\x70\x73\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x77\x69\x74\x68\x20\x23\x6c\x84\xa",
               instr->id(), instr->block()->block_id(), entry->check_->id()));
           instr->DeleteAndReplaceWith(entry->check_);
           INC_STAT(redundant_);
         } else if (entry->state_ == HCheckTableEntry::UNCHECKED_STABLE) {
           DCHECK_EQ(NULL, entry->check_);
-          TRACE(("Marking redundant CheckMaps #%d at B%d as stability check\n",
+          TRACE(("\x4d\x61\x72\x6b\x69\x6e\x67\x20\x72\x65\x64\x75\x6e\x64\x61\x6e\x74\x20\x43\x68\x65\x63\x6b\x4d\x61\x70\x73\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x61\x73\x20\x73\x74\x61\x62\x69\x6c\x69\x74\x79\x20\x63\x68\x65\x63\x6b\xa",
                  instr->id(), instr->block()->block_id()));
           instr->set_maps(entry->maps_->Copy(graph->zone()));
           instr->MarkAsStabilityCheck();
           entry->state_ = HCheckTableEntry::CHECKED_STABLE;
         } else if (!instr->IsStabilityCheck()) {
-          TRACE(("Marking redundant CheckMaps #%d at B%d as dead\n",
+          TRACE(("\x4d\x61\x72\x6b\x69\x6e\x67\x20\x72\x65\x64\x75\x6e\x64\x61\x6e\x74\x20\x43\x68\x65\x63\x6b\x4d\x61\x70\x73\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x61\x73\x20\x64\x65\x61\x64\xa",
               instr->id(), instr->block()->block_id()));
           // Mark check as dead but leave it in the graph as a checkpoint for
           // subsequent checks.
@@ -414,16 +414,16 @@ class HCheckTable : public ZoneObject {
             // strict check and eliminate the second check entirely.
             HCheckMaps* check = HCheckMaps::cast(entry->check_);
             DCHECK(!check->IsStabilityCheck());
-            TRACE(("CheckMaps #%d at B%d narrowed\n", check->id(),
+            TRACE(("\x43\x68\x65\x63\x6b\x4d\x61\x70\x73\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x6e\x61\x72\x72\x6f\x77\x65\x64\xa", check->id(),
                 check->block()->block_id()));
             // Update map set and ensure that the check is alive.
             check->set_maps(intersection);
             check->ClearFlag(HValue::kIsDead);
-            TRACE(("Replacing redundant CheckMaps #%d at B%d with #%d\n",
+            TRACE(("\x52\x65\x70\x6c\x61\x63\x69\x6e\x67\x20\x72\x65\x64\x75\x6e\x64\x61\x6e\x74\x20\x43\x68\x65\x63\x6b\x4d\x61\x70\x73\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x77\x69\x74\x68\x20\x23\x6c\x84\xa",
                 instr->id(), instr->block()->block_id(), entry->check_->id()));
             instr->DeleteAndReplaceWith(entry->check_);
           } else {
-            TRACE(("CheckMaps #%d at B%d narrowed\n", instr->id(),
+            TRACE(("\x43\x68\x65\x63\x6b\x4d\x61\x70\x73\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x6e\x61\x72\x72\x6f\x77\x65\x64\xa", instr->id(),
                 instr->block()->block_id()));
             instr->set_maps(intersection);
             entry->check_ = instr->IsStabilityCheck() ? NULL : instr;
@@ -476,7 +476,7 @@ class HCheckTable : public ZoneObject {
       }
     }
     if (maps->size() == entry->maps_->size()) {
-      TRACE(("Removing redundant CheckInstanceType #%d at B%d\n",
+      TRACE(("\x52\x65\x6d\x6f\x76\x69\x6e\x67\x20\x72\x65\x64\x75\x6e\x64\x61\x6e\x74\x20\x43\x68\x65\x63\x6b\x49\x6e\x73\x74\x61\x6e\x63\x65\x54\x79\x70\x65\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\xa",
               instr->id(), instr->block()->block_id()));
       EnsureChecked(entry, value, instr);
       instr->DeleteAndReplaceWith(value);
@@ -557,8 +557,8 @@ class HCheckTable : public ZoneObject {
     int succ;
     if (entry->maps_->Contains(instr->map())) {
       if (entry->maps_->size() != 1) {
-        TRACE(("CompareMap #%d for #%d at B%d can't be eliminated: "
-               "ambiguous set of maps\n", instr->id(), instr->value()->id(),
+        TRACE(("\x43\x6f\x6d\x70\x61\x72\x65\x4d\x61\x70\x20\x23\x6c\x84\x20\x66\x6f\x72\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x63\x61\x6e\x27\x74\x20\x62\x65\x20\x65\x6c\x69\x6d\x69\x6e\x61\x74\x65\x64\x3a\x20"
+               "\x61\x6d\x62\x69\x67\x75\x6f\x75\x73\x20\x73\x65\x74\x20\x6f\x66\x20\x6d\x61\x70\x73\xa", instr->id(), instr->value()->id(),
                instr->block()->block_id()));
         return;
       }
@@ -569,9 +569,9 @@ class HCheckTable : public ZoneObject {
       INC_STAT(compares_false_);
     }
 
-    TRACE(("Marking redundant CompareMap #%d for #%d at B%d as %s\n",
+    TRACE(("\x4d\x61\x72\x6b\x69\x6e\x67\x20\x72\x65\x64\x75\x6e\x64\x61\x6e\x74\x20\x43\x6f\x6d\x70\x61\x72\x65\x4d\x61\x70\x20\x23\x6c\x84\x20\x66\x6f\x72\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x61\x73\x20\x6c\xa2\xa",
         instr->id(), instr->value()->id(), instr->block()->block_id(),
-        succ == 0 ? "true" : "false"));
+        succ == 0 ? "\x74\x72\x75\x65" : "\x66\x61\x6c\x73\x65"));
     instr->set_known_successor_index(succ);
 
     int unreachable_succ = 1 - succ;
@@ -593,7 +593,7 @@ class HCheckTable : public ZoneObject {
     MapSet intersection = le->maps_->Intersect(re->maps_, zone());
     if (intersection->size() > 0) return;
 
-    TRACE(("Marking redundant CompareObjectEqAndBranch #%d at B%d as false\n",
+    TRACE(("\x4d\x61\x72\x6b\x69\x6e\x67\x20\x72\x65\x64\x75\x6e\x64\x61\x6e\x74\x20\x43\x6f\x6d\x70\x61\x72\x65\x4f\x62\x6a\x65\x63\x74\x45\x71\x41\x6e\x64\x42\x72\x61\x6e\x63\x68\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x61\x73\x20\x66\x61\x6c\x73\x65\xa",
         instr->id(), instr->block()->block_id()));
     int succ = 1;
     instr->set_known_successor_index(succ);
@@ -609,13 +609,13 @@ class HCheckTable : public ZoneObject {
     EnsureChecked(entry, value, instr);
     int succ;
     if (entry->maps_->IsSubset(string_maps())) {
-      TRACE(("Marking redundant IsStringAndBranch #%d at B%d as true\n",
+      TRACE(("\x4d\x61\x72\x6b\x69\x6e\x67\x20\x72\x65\x64\x75\x6e\x64\x61\x6e\x74\x20\x49\x73\x53\x74\x72\x69\x6e\x67\x41\x6e\x64\x42\x72\x61\x6e\x63\x68\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x61\x73\x20\x74\x72\x75\x65\xa",
              instr->id(), instr->block()->block_id()));
       succ = 0;
     } else {
       MapSet intersection = entry->maps_->Intersect(string_maps(), zone());
       if (intersection->size() > 0) return;
-      TRACE(("Marking redundant IsStringAndBranch #%d at B%d as false\n",
+      TRACE(("\x4d\x61\x72\x6b\x69\x6e\x67\x20\x72\x65\x64\x75\x6e\x64\x61\x6e\x74\x20\x49\x73\x53\x74\x72\x69\x6e\x67\x41\x6e\x64\x42\x72\x61\x6e\x63\x68\x20\x23\x6c\x84\x20\x61\x74\x20\x42\x6c\x84\x20\x61\x73\x20\x66\x61\x6c\x73\x65\xa",
             instr->id(), instr->block()->block_id()));
       succ = 1;
     }
@@ -728,26 +728,26 @@ class HCheckTable : public ZoneObject {
 
   static void Print(HCheckTable* table) {
     if (table == NULL) {
-      PrintF("  unreachable\n");
+      PrintF("\x20\x20\x75\x6e\x72\x65\x61\x63\x68\x61\x62\x6c\x65\xa");
       return;
     }
 
     for (int i = 0; i < table->size_; i++) {
       HCheckTableEntry* entry = &table->entries_[i];
       DCHECK(entry->object_ != NULL);
-      PrintF("  checkmaps-table @%d: %s #%d ", i,
-             entry->object_->IsPhi() ? "phi" : "object", entry->object_->id());
+      PrintF("\x20\x20\x63\x68\x65\x63\x6b\x6d\x61\x70\x73\x2d\x74\x61\x62\x6c\x65\x20\x40\x6c\x84\x3a\x20\x6c\xa2\x20\x23\x6c\x84\x20", i,
+             entry->object_->IsPhi() ? "\x70\x68\x69" : "\x6f\x62\x6a\x65\x63\x74", entry->object_->id());
       if (entry->check_ != NULL) {
-        PrintF("check #%d ", entry->check_->id());
+        PrintF("\x63\x68\x65\x63\x6b\x20\x23\x6c\x84\x20", entry->check_->id());
       }
       MapSet list = entry->maps_;
-      PrintF("%d %s maps { ", list->size(),
+      PrintF("\x6c\x84\x20\x6c\xa2\x20\x6d\x61\x70\x73\x20\x7b\x20", list->size(),
              HCheckTableEntry::State2String(entry->state_));
       for (int j = 0; j < list->size(); j++) {
-        if (j > 0) PrintF(", ");
-        PrintF("%" V8PRIxPTR, list->at(j).Hashcode());
+        if (j > 0) PrintF("\x2c\x20");
+        PrintF("\x25" V8PRIxPTR, list->at(j).Hashcode());
       }
-      PrintF(" }\n");
+      PrintF("\x20\x7d\xa");
     }
   }
 
@@ -884,7 +884,7 @@ void HCheckEliminationPhase::Run() {
 // Are we eliminated yet?
 void HCheckEliminationPhase::PrintStats() {
 #if DEBUG
-  #define PRINT_STAT(x) if (x##_ > 0) PrintF(" %-16s = %2d\n", #x, x##_)
+  #define PRINT_STAT(x) if (x##_ > 0) PrintF("\x20\x6c\x60\xf1\xf6\xa2\x20\x3d\x20\x6c\xf2\x84\xa", #x, x##_)
 #else
   #define PRINT_STAT(x)
 #endif

@@ -50,7 +50,7 @@ int strncasecmp(const char* s1, const char* s2, int n) {
 
 inline void MemoryBarrier() {
   int barrier = 0;
-  __asm__ __volatile__("xchgl %%eax,%0 ":"=r" (barrier));
+  __asm__ __volatile__("\x78\x63\x68\x67\x6c\x20\x25\x6c\x85\x81\xa7\x2c\x25\x30\x20":"\x3d\x72" (barrier));
 }
 
 #endif  // __MINGW64_VERSION_MAJOR
@@ -152,23 +152,23 @@ class TimezoneCache {
     // Make standard and DST timezone names.
     WideCharToMultiByte(CP_UTF8, 0, tzinfo_.StandardName, -1,
                         std_tz_name_, kTzNameSize, NULL, NULL);
-    std_tz_name_[kTzNameSize - 1] = '\0';
+    std_tz_name_[kTzNameSize - 1] = '\x0';
     WideCharToMultiByte(CP_UTF8, 0, tzinfo_.DaylightName, -1,
                         dst_tz_name_, kTzNameSize, NULL, NULL);
-    dst_tz_name_[kTzNameSize - 1] = '\0';
+    dst_tz_name_[kTzNameSize - 1] = '\x0';
 
     // If OS returned empty string or resource id (like "@tzres.dll,-211")
     // simply guess the name from the UTC bias of the timezone.
     // To properly resolve the resource identifier requires a library load,
     // which is not possible in a sandbox.
-    if (std_tz_name_[0] == '\0' || std_tz_name_[0] == '@') {
+    if (std_tz_name_[0] == '\x0' || std_tz_name_[0] == '\x40') {
       OS::SNPrintF(std_tz_name_, kTzNameSize - 1,
-                   "%s Standard Time",
+                   "\x6c\xa2\x20\x53\x74\x61\x6e\x64\x61\x72\x64\x20\x54\x69\x6d\x65",
                    GuessTimezoneNameFromBias(tzinfo_.Bias));
     }
-    if (dst_tz_name_[0] == '\0' || dst_tz_name_[0] == '@') {
+    if (dst_tz_name_[0] == '\x0' || dst_tz_name_[0] == '\x40') {
       OS::SNPrintF(dst_tz_name_, kTzNameSize - 1,
-                   "%s Daylight Time",
+                   "\x6c\xa2\x20\x44\x61\x79\x6c\x69\x67\x68\x74\x20\x54\x69\x6d\x65",
                    GuessTimezoneNameFromBias(tzinfo_.Bias));
     }
     // Timezone information initialized.
@@ -180,21 +180,21 @@ class TimezoneCache {
   const char* GuessTimezoneNameFromBias(int bias) {
     static const int kHour = 60;
     switch (-bias) {
-      case -9*kHour: return "Alaska";
-      case -8*kHour: return "Pacific";
-      case -7*kHour: return "Mountain";
-      case -6*kHour: return "Central";
-      case -5*kHour: return "Eastern";
-      case -4*kHour: return "Atlantic";
-      case  0*kHour: return "GMT";
-      case +1*kHour: return "Central Europe";
-      case +2*kHour: return "Eastern Europe";
-      case +3*kHour: return "Russia";
-      case +5*kHour + 30: return "India";
-      case +8*kHour: return "China";
-      case +9*kHour: return "Japan";
-      case +12*kHour: return "New Zealand";
-      default: return "Local";
+      case -9*kHour: return "\x41\x6c\x61\x73\x6b\x61";
+      case -8*kHour: return "\x50\x61\x63\x69\x66\x69\x63";
+      case -7*kHour: return "\x4d\x6f\x75\x6e\x74\x61\x69\x6e";
+      case -6*kHour: return "\x43\x65\x6e\x74\x72\x61\x6c";
+      case -5*kHour: return "\x45\x61\x73\x74\x65\x72\x6e";
+      case -4*kHour: return "\x41\x74\x6c\x61\x6e\x74\x69\x63";
+      case  0*kHour: return "\x47\x4d\x54";
+      case +1*kHour: return "\x43\x65\x6e\x74\x72\x61\x6c\x20\x45\x75\x72\x6f\x70\x65";
+      case +2*kHour: return "\x45\x61\x73\x74\x65\x72\x6e\x20\x45\x75\x72\x6f\x70\x65";
+      case +3*kHour: return "\x52\x75\x73\x73\x69\x61";
+      case +5*kHour + 30: return "\x49\x6e\x64\x69\x61";
+      case +8*kHour: return "\x43\x68\x69\x6e\x61";
+      case +9*kHour: return "\x4a\x61\x70\x61\x6e";
+      case +12*kHour: return "\x4e\x65\x77\x20\x5a\x65\x61\x6c\x61\x6e\x64";
+      default: return "\x4c\x6f\x63\x61\x6c";
     }
   }
 
@@ -601,7 +601,7 @@ FILE* OS::OpenTemporaryFile() {
   char tempNameBuffer[MAX_PATH];
   name_result = GetTempFileNameA(tempPathBuffer, "", 0, tempNameBuffer);
   if (name_result == 0) return NULL;
-  FILE* result = FOpen(tempNameBuffer, "w+");  // Same mode as tmpfile uses.
+  FILE* result = FOpen(tempNameBuffer, "\x77\x2b");  // Same mode as tmpfile uses.
   if (result != NULL) {
     Remove(tempNameBuffer);  // Delete on close.
   }
@@ -610,7 +610,7 @@ FILE* OS::OpenTemporaryFile() {
 
 
 // Open log file in binary mode to avoid /n -> /r/n conversion.
-const char* const OS::LogFileOpenMode = "wb";
+const char* const OS::LogFileOpenMode = "\x77\x62";
 
 
 // Print (debug) message to console.
@@ -669,7 +669,7 @@ int OS::VSNPrintF(char* str, int length, const char* format, va_list args) {
   // truncated or if there was an error.
   if (n < 0 || n >= length) {
     if (length > 0)
-      str[length - 1] = '\0';
+      str[length - 1] = '\x0';
     return -1;
   } else {
     return n;
@@ -685,7 +685,7 @@ char* OS::StrChr(char* str, int c) {
 void OS::StrNCpy(char* dest, int length, const char* src, size_t n) {
   // Use _TRUNCATE or strncpy_s crashes (by design) if buffer is too small.
   size_t buffer_size = static_cast<size_t>(length);
-  if (n + 1 > buffer_size)  // count for trailing '\0'
+  if (n + 1 > buffer_size)  // count for trailing '\x0'
     n = _TRUNCATE;
   int result = strncpy_s(dest, length, src, n);
   USE(result);
@@ -1029,7 +1029,7 @@ static bool LoadDbgHelpAndTlHelp32() {
   HMODULE module;
 
   // Load functions from the dbghelp.dll module.
-  module = LoadLibrary(TEXT("dbghelp.dll"));
+  module = LoadLibrary(TEXT("\x64\x62\x67\x68\x65\x6c\x70\x2e\x64\x6c\x6c"));
   if (module == NULL) {
     return false;
   }
@@ -1044,7 +1044,7 @@ DBGHELP_FUNCTION_LIST(LOAD_DLL_FUNC)
 
   // Load functions from the kernel32.dll module (the TlHelp32.h function used
   // to be in tlhelp32.dll but are now moved to kernel32.dll).
-  module = LoadLibrary(TEXT("kernel32.dll"));
+  module = LoadLibrary(TEXT("\x6b\x65\x72\x6e\x65\x6c\x33\x32\x2e\x64\x6c\x6c"));
   if (module == NULL) {
     return false;
   }
@@ -1105,7 +1105,7 @@ static std::vector<OS::SharedLibraryAddress> LoadSymbols(
   ok = _SymGetSearchPath(process_handle, buf, OS::kStackWalkMaxNameLen);
   if (!ok) {
     int err = GetLastError();
-    OS::Print("%d\n", err);
+    OS::Print("\x6c\x84\xa", err);
     return result;
   }
 
@@ -1362,7 +1362,7 @@ Thread::Thread(const Options& options)
 
 void Thread::set_name(const char* name) {
   OS::StrNCpy(name_, sizeof(name_), name, strlen(name));
-  name_[sizeof(name_) - 1] = '\0';
+  name_[sizeof(name_) - 1] = '\x0';
 }
 
 

@@ -15,7 +15,7 @@ namespace internal {
 class HEscapeAnalysisPhase : public HPhase {
  public:
   explicit HEscapeAnalysisPhase(HGraph* graph)
-      : HPhase("H_Escape analysis", graph),
+      : HPhase("\x48\x5f\x45\x73\x63\x61\x70\x65\x20\x61\x6e\x61\x6c\x79\x73\x69\x73", graph),
         captured_(0, zone()),
         number_of_objects_(0),
         number_of_values_(0),

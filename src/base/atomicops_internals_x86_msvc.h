@@ -53,7 +53,7 @@ inline Atomic32 NoBarrier_AtomicIncrement(volatile Atomic32* ptr,
 }
 
 #if !(defined(_MSC_VER) && _MSC_VER >= 1400)
-#error "We require at least vs2005 for MemoryBarrier"
+#error "\x57\x65\x20\x72\x65\x71\x75\x69\x72\x65\x20\x61\x74\x20\x6c\x65\x61\x73\x74\x20\x76\x73\x32\x30\x30\x35\x20\x66\x6f\x72\x20\x4d\x65\x6d\x6f\x72\x79\x42\x61\x72\x72\x69\x65\x72"
 #endif
 inline void MemoryBarrier() {
 #if defined(V8_HOST_ARCH_64_BIT)

@@ -84,61 +84,61 @@ struct TickSample;
 
 
 #define LOG_EVENTS_AND_TAGS_LIST(V)                                     \
-  V(CODE_CREATION_EVENT,            "code-creation")                    \
-  V(CODE_DISABLE_OPT_EVENT,         "code-disable-optimization")        \
-  V(CODE_MOVE_EVENT,                "code-move")                        \
-  V(CODE_DELETE_EVENT,              "code-delete")                      \
-  V(CODE_MOVING_GC,                 "code-moving-gc")                   \
-  V(SHARED_FUNC_MOVE_EVENT,         "sfi-move")                         \
-  V(SNAPSHOT_POSITION_EVENT,        "snapshot-pos")                     \
-  V(SNAPSHOT_CODE_NAME_EVENT,       "snapshot-code-name")               \
-  V(TICK_EVENT,                     "tick")                             \
-  V(REPEAT_META_EVENT,              "repeat")                           \
-  V(BUILTIN_TAG,                    "Builtin")                          \
-  V(CALL_DEBUG_BREAK_TAG,           "CallDebugBreak")                   \
-  V(CALL_DEBUG_PREPARE_STEP_IN_TAG, "CallDebugPrepareStepIn")           \
-  V(CALL_INITIALIZE_TAG,            "CallInitialize")                   \
-  V(CALL_MEGAMORPHIC_TAG,           "CallMegamorphic")                  \
-  V(CALL_MISS_TAG,                  "CallMiss")                         \
-  V(CALL_NORMAL_TAG,                "CallNormal")                       \
-  V(CALL_PRE_MONOMORPHIC_TAG,       "CallPreMonomorphic")               \
-  V(LOAD_INITIALIZE_TAG,            "LoadInitialize")                   \
-  V(LOAD_PREMONOMORPHIC_TAG,        "LoadPreMonomorphic")               \
-  V(LOAD_MEGAMORPHIC_TAG,           "LoadMegamorphic")                  \
-  V(STORE_INITIALIZE_TAG,           "StoreInitialize")                  \
-  V(STORE_PREMONOMORPHIC_TAG,       "StorePreMonomorphic")              \
-  V(STORE_GENERIC_TAG,              "StoreGeneric")                     \
-  V(STORE_MEGAMORPHIC_TAG,          "StoreMegamorphic")                 \
-  V(KEYED_CALL_DEBUG_BREAK_TAG,     "KeyedCallDebugBreak")              \
+  V(CODE_CREATION_EVENT,            "\x63\x6f\x64\x65\x2d\x63\x72\x65\x61\x74\x69\x6f\x6e")                    \
+  V(CODE_DISABLE_OPT_EVENT,         "\x63\x6f\x64\x65\x2d\x64\x69\x73\x61\x62\x6c\x65\x2d\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e")        \
+  V(CODE_MOVE_EVENT,                "\x63\x6f\x64\x65\x2d\x6d\x6f\x76\x65")                        \
+  V(CODE_DELETE_EVENT,              "\x63\x6f\x64\x65\x2d\x64\x65\x6c\x65\x74\x65")                      \
+  V(CODE_MOVING_GC,                 "\x63\x6f\x64\x65\x2d\x6d\x6f\x76\x69\x6e\x67\x2d\x67\x63")                   \
+  V(SHARED_FUNC_MOVE_EVENT,         "\x73\x66\x69\x2d\x6d\x6f\x76\x65")                         \
+  V(SNAPSHOT_POSITION_EVENT,        "\x73\x6e\x61\x70\x73\x68\x6f\x74\x2d\x70\x6f\x73")                     \
+  V(SNAPSHOT_CODE_NAME_EVENT,       "\x73\x6e\x61\x70\x73\x68\x6f\x74\x2d\x63\x6f\x64\x65\x2d\x6e\x61\x6d\x65")               \
+  V(TICK_EVENT,                     "\x74\x69\x63\x6b")                             \
+  V(REPEAT_META_EVENT,              "\x72\x65\x70\x65\x61\x74")                           \
+  V(BUILTIN_TAG,                    "\x42\x75\x69\x6c\x74\x69\x6e")                          \
+  V(CALL_DEBUG_BREAK_TAG,           "\x43\x61\x6c\x6c\x44\x65\x62\x75\x67\x42\x72\x65\x61\x6b")                   \
+  V(CALL_DEBUG_PREPARE_STEP_IN_TAG, "\x43\x61\x6c\x6c\x44\x65\x62\x75\x67\x50\x72\x65\x70\x61\x72\x65\x53\x74\x65\x70\x49\x6e")           \
+  V(CALL_INITIALIZE_TAG,            "\x43\x61\x6c\x6c\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65")                   \
+  V(CALL_MEGAMORPHIC_TAG,           "\x43\x61\x6c\x6c\x4d\x65\x67\x61\x6d\x6f\x72\x70\x68\x69\x63")                  \
+  V(CALL_MISS_TAG,                  "\x43\x61\x6c\x6c\x4d\x69\x73\x73")                         \
+  V(CALL_NORMAL_TAG,                "\x43\x61\x6c\x6c\x4e\x6f\x72\x6d\x61\x6c")                       \
+  V(CALL_PRE_MONOMORPHIC_TAG,       "\x43\x61\x6c\x6c\x50\x72\x65\x4d\x6f\x6e\x6f\x6d\x6f\x72\x70\x68\x69\x63")               \
+  V(LOAD_INITIALIZE_TAG,            "\x4c\x6f\x61\x64\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65")                   \
+  V(LOAD_PREMONOMORPHIC_TAG,        "\x4c\x6f\x61\x64\x50\x72\x65\x4d\x6f\x6e\x6f\x6d\x6f\x72\x70\x68\x69\x63")               \
+  V(LOAD_MEGAMORPHIC_TAG,           "\x4c\x6f\x61\x64\x4d\x65\x67\x61\x6d\x6f\x72\x70\x68\x69\x63")                  \
+  V(STORE_INITIALIZE_TAG,           "\x53\x74\x6f\x72\x65\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65")                  \
+  V(STORE_PREMONOMORPHIC_TAG,       "\x53\x74\x6f\x72\x65\x50\x72\x65\x4d\x6f\x6e\x6f\x6d\x6f\x72\x70\x68\x69\x63")              \
+  V(STORE_GENERIC_TAG,              "\x53\x74\x6f\x72\x65\x47\x65\x6e\x65\x72\x69\x63")                     \
+  V(STORE_MEGAMORPHIC_TAG,          "\x53\x74\x6f\x72\x65\x4d\x65\x67\x61\x6d\x6f\x72\x70\x68\x69\x63")                 \
+  V(KEYED_CALL_DEBUG_BREAK_TAG,     "\x4b\x65\x79\x65\x64\x43\x61\x6c\x6c\x44\x65\x62\x75\x67\x42\x72\x65\x61\x6b")              \
   V(KEYED_CALL_DEBUG_PREPARE_STEP_IN_TAG,                               \
-    "KeyedCallDebugPrepareStepIn")                                      \
-  V(KEYED_CALL_INITIALIZE_TAG,      "KeyedCallInitialize")              \
-  V(KEYED_CALL_MEGAMORPHIC_TAG,     "KeyedCallMegamorphic")             \
-  V(KEYED_CALL_MISS_TAG,            "KeyedCallMiss")                    \
-  V(KEYED_CALL_NORMAL_TAG,          "KeyedCallNormal")                  \
-  V(KEYED_CALL_PRE_MONOMORPHIC_TAG, "KeyedCallPreMonomorphic")          \
-  V(CALLBACK_TAG,                   "Callback")                         \
-  V(EVAL_TAG,                       "Eval")                             \
-  V(FUNCTION_TAG,                   "Function")                         \
-  V(HANDLER_TAG,                    "Handler")                          \
-  V(KEYED_LOAD_IC_TAG,              "KeyedLoadIC")                      \
-  V(KEYED_LOAD_POLYMORPHIC_IC_TAG,  "KeyedLoadPolymorphicIC")           \
-  V(KEYED_EXTERNAL_ARRAY_LOAD_IC_TAG, "KeyedExternalArrayLoadIC")       \
-  V(KEYED_STORE_IC_TAG,             "KeyedStoreIC")                     \
-  V(KEYED_STORE_POLYMORPHIC_IC_TAG, "KeyedStorePolymorphicIC")          \
-  V(KEYED_EXTERNAL_ARRAY_STORE_IC_TAG, "KeyedExternalArrayStoreIC")     \
-  V(LAZY_COMPILE_TAG,               "LazyCompile")                      \
-  V(CALL_IC_TAG,                    "CallIC")                           \
-  V(LOAD_IC_TAG,                    "LoadIC")                           \
-  V(LOAD_POLYMORPHIC_IC_TAG,        "LoadPolymorphicIC")                \
-  V(REG_EXP_TAG,                    "RegExp")                           \
-  V(SCRIPT_TAG,                     "Script")                           \
-  V(STORE_IC_TAG,                   "StoreIC")                          \
-  V(STORE_POLYMORPHIC_IC_TAG,       "StorePolymorphicIC")               \
-  V(STUB_TAG,                       "Stub")                             \
-  V(NATIVE_FUNCTION_TAG,            "Function")                         \
-  V(NATIVE_LAZY_COMPILE_TAG,        "LazyCompile")                      \
-  V(NATIVE_SCRIPT_TAG,              "Script")
+    "\x4b\x65\x79\x65\x64\x43\x61\x6c\x6c\x44\x65\x62\x75\x67\x50\x72\x65\x70\x61\x72\x65\x53\x74\x65\x70\x49\x6e")                                      \
+  V(KEYED_CALL_INITIALIZE_TAG,      "\x4b\x65\x79\x65\x64\x43\x61\x6c\x6c\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65")              \
+  V(KEYED_CALL_MEGAMORPHIC_TAG,     "\x4b\x65\x79\x65\x64\x43\x61\x6c\x6c\x4d\x65\x67\x61\x6d\x6f\x72\x70\x68\x69\x63")             \
+  V(KEYED_CALL_MISS_TAG,            "\x4b\x65\x79\x65\x64\x43\x61\x6c\x6c\x4d\x69\x73\x73")                    \
+  V(KEYED_CALL_NORMAL_TAG,          "\x4b\x65\x79\x65\x64\x43\x61\x6c\x6c\x4e\x6f\x72\x6d\x61\x6c")                  \
+  V(KEYED_CALL_PRE_MONOMORPHIC_TAG, "\x4b\x65\x79\x65\x64\x43\x61\x6c\x6c\x50\x72\x65\x4d\x6f\x6e\x6f\x6d\x6f\x72\x70\x68\x69\x63")          \
+  V(CALLBACK_TAG,                   "\x43\x61\x6c\x6c\x62\x61\x63\x6b")                         \
+  V(EVAL_TAG,                       "\x45\x76\x61\x6c")                             \
+  V(FUNCTION_TAG,                   "\x46\x75\x6e\x63\x74\x69\x6f\x6e")                         \
+  V(HANDLER_TAG,                    "\x48\x61\x6e\x64\x6c\x65\x72")                          \
+  V(KEYED_LOAD_IC_TAG,              "\x4b\x65\x79\x65\x64\x4c\x6f\x61\x64\x49\x43")                      \
+  V(KEYED_LOAD_POLYMORPHIC_IC_TAG,  "\x4b\x65\x79\x65\x64\x4c\x6f\x61\x64\x50\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x69\x63\x49\x43")           \
+  V(KEYED_EXTERNAL_ARRAY_LOAD_IC_TAG, "\x4b\x65\x79\x65\x64\x45\x78\x74\x65\x72\x6e\x61\x6c\x41\x72\x72\x61\x79\x4c\x6f\x61\x64\x49\x43")       \
+  V(KEYED_STORE_IC_TAG,             "\x4b\x65\x79\x65\x64\x53\x74\x6f\x72\x65\x49\x43")                     \
+  V(KEYED_STORE_POLYMORPHIC_IC_TAG, "\x4b\x65\x79\x65\x64\x53\x74\x6f\x72\x65\x50\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x69\x63\x49\x43")          \
+  V(KEYED_EXTERNAL_ARRAY_STORE_IC_TAG, "\x4b\x65\x79\x65\x64\x45\x78\x74\x65\x72\x6e\x61\x6c\x41\x72\x72\x61\x79\x53\x74\x6f\x72\x65\x49\x43")     \
+  V(LAZY_COMPILE_TAG,               "\x4c\x61\x7a\x79\x43\x6f\x6d\x70\x69\x6c\x65")                      \
+  V(CALL_IC_TAG,                    "\x43\x61\x6c\x6c\x49\x43")                           \
+  V(LOAD_IC_TAG,                    "\x4c\x6f\x61\x64\x49\x43")                           \
+  V(LOAD_POLYMORPHIC_IC_TAG,        "\x4c\x6f\x61\x64\x50\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x69\x63\x49\x43")                \
+  V(REG_EXP_TAG,                    "\x52\x65\x67\x45\x78\x70")                           \
+  V(SCRIPT_TAG,                     "\x53\x63\x72\x69\x70\x74")                           \
+  V(STORE_IC_TAG,                   "\x53\x74\x6f\x72\x65\x49\x43")                          \
+  V(STORE_POLYMORPHIC_IC_TAG,       "\x53\x74\x6f\x72\x65\x50\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x69\x63\x49\x43")               \
+  V(STUB_TAG,                       "\x53\x74\x75\x62")                             \
+  V(NATIVE_FUNCTION_TAG,            "\x46\x75\x6e\x63\x74\x69\x6f\x6e")                         \
+  V(NATIVE_LAZY_COMPILE_TAG,        "\x4c\x61\x7a\x79\x43\x6f\x6d\x70\x69\x6c\x65")                      \
+  V(NATIVE_SCRIPT_TAG,              "\x53\x63\x72\x69\x70\x74")
 // Note that 'NATIVE_' cases for functions and scripts are mapped onto
 // original tags when writing to the log.
 
@@ -431,7 +431,7 @@ class Logger {
 #define V(TimerName, expose)                                                  \
   class TimerEvent##TimerName : public AllStatic {                            \
    public:                                                                    \
-    static const char* name(void* unused = NULL) { return "V8." #TimerName; } \
+    static const char* name(void* unused = NULL) { return "\x56\x38\x2e" #TimerName; } \
     static bool expose_to_api() { return expose; }                            \
   };
 TIMER_EVENTS_LIST(V)

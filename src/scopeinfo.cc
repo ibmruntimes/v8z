@@ -272,7 +272,7 @@ bool ScopeInfo::LocalIsSynthetic(int var) {
   // with user declarations, the current temporaries like .generator_object and
   // .result start with a dot, so we can use that as a flag. It's a hack!
   Handle<String> name(LocalName(var));
-  return name->length() > 0 && name->Get(0) == '.';
+  return name->length() > 0 && name->Get(0) == '\x2e';
 }
 
 
@@ -500,43 +500,43 @@ static void PrintList(const char* list_name,
                       int end,
                       ScopeInfo* scope_info) {
   if (start < end) {
-    PrintF("\n  // %s\n", list_name);
+    PrintF("\xa\x20\x20\x2f\x2f\x20\x6c\xa2\xa", list_name);
     if (nof_internal_slots > 0) {
-      PrintF("  %2d - %2d [internal slots]\n", 0 , nof_internal_slots - 1);
+      PrintF("\x20\x20\x6c\xf2\x84\x20\x2d\x20\x6c\xf2\x84\x20\x5b\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x73\x6c\x6f\x74\x73\x5d\xa", 0 , nof_internal_slots - 1);
     }
     for (int i = nof_internal_slots; start < end; ++i, ++start) {
-      PrintF("  %2d ", i);
+      PrintF("\x20\x20\x6c\xf2\x84\x20", i);
       String::cast(scope_info->get(start))->ShortPrint();
-      PrintF("\n");
+      PrintF("\xa");
     }
   }
 }
 
 
 void ScopeInfo::Print() {
-  PrintF("ScopeInfo ");
+  PrintF("\x53\x63\x6f\x70\x65\x49\x6e\x66\x6f\x20");
   if (HasFunctionName()) {
     FunctionName()->ShortPrint();
   } else {
-    PrintF("/* no function name */");
+    PrintF("\x2f\x2a\x20\x6e\x6f\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6e\x61\x6d\x65\x20\x2a\x2f");
   }
-  PrintF("{");
+  PrintF("\x7b");
 
-  PrintList("parameters", 0,
+  PrintList("\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x73", 0,
             ParameterEntriesIndex(),
             ParameterEntriesIndex() + ParameterCount(),
             this);
-  PrintList("stack slots", 0,
+  PrintList("\x73\x74\x61\x63\x6b\x20\x73\x6c\x6f\x74\x73", 0,
             StackLocalEntriesIndex(),
             StackLocalEntriesIndex() + StackLocalCount(),
             this);
-  PrintList("context slots",
+  PrintList("\x63\x6f\x6e\x74\x65\x78\x74\x20\x73\x6c\x6f\x74\x73",
             Context::MIN_CONTEXT_SLOTS,
             ContextLocalNameEntriesIndex(),
             ContextLocalNameEntriesIndex() + ContextLocalCount(),
             this);
 
-  PrintF("}\n");
+  PrintF("\x7d\xa");
 }
 #endif  // DEBUG
 

@@ -128,7 +128,7 @@ class SimpleOperator : public Operator {
 template <typename T>
 struct StaticParameterTraits {
   static OStream& PrintTo(OStream& os, T val) {  // NOLINT
-    return os << "??";
+    return os << "\x3f\x3f";
   }
   static int HashCode(T a) { return 0; }
   static bool Equals(T a, T b) {
@@ -143,7 +143,7 @@ struct StaticParameterTraits<ExternalReference> {
     const Runtime::Function* function =
         Runtime::FunctionForEntry(val.address());
     if (function != NULL) {
-      os << " <" << function->name << ".entry>";
+      os << "\x20\x3c" << function->name << "\x2e\x65\x6e\x74\x72\x79\x3e";
     }
     return os;
   }
@@ -257,7 +257,7 @@ class Operator1 : public Operator {
   virtual int InputCount() { return input_count_; }
   virtual int OutputCount() { return output_count_; }
   virtual OStream& PrintParameter(OStream& os) const {  // NOLINT
-    return StaticParameterTraits<T>::PrintTo(os << "[", parameter_) << "]";
+    return StaticParameterTraits<T>::PrintTo(os << "\x5b", parameter_) << "\x5d";
   }
 
  private:

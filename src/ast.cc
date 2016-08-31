@@ -55,7 +55,7 @@ bool Expression::IsUndefinedLiteral(Isolate* isolate) const {
   // The global identifier "undefined" is immutable. Everything
   // else could be reassigned.
   return var != NULL && var->location() == Variable::UNALLOCATED &&
-         var_proxy->raw_name()->IsOneByteEqualTo("undefined");
+         var_proxy->raw_name()->IsOneByteEqualTo("\x75\x6e\x64\x65\x66\x69\x6e\x65\x64");
 }
 
 
@@ -814,23 +814,23 @@ class RegExpUnparser V8_FINAL : public RegExpVisitor {
 
 
 void* RegExpUnparser::VisitDisjunction(RegExpDisjunction* that, void* data) {
-  os_ << "(|";
+  os_ << "\x28\x7c";
   for (int i = 0; i <  that->alternatives()->length(); i++) {
-    os_ << " ";
+    os_ << "\x20";
     that->alternatives()->at(i)->Accept(this, data);
   }
-  os_ << ")";
+  os_ << "\x29";
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitAlternative(RegExpAlternative* that, void* data) {
-  os_ << "(:";
+  os_ << "\x28\x3a";
   for (int i = 0; i <  that->nodes()->length(); i++) {
-    os_ << " ";
+    os_ << "\x20";
     that->nodes()->at(i)->Accept(this, data);
   }
-  os_ << ")";
+  os_ << "\x29";
   return NULL;
 }
 
@@ -838,7 +838,7 @@ void* RegExpUnparser::VisitAlternative(RegExpAlternative* that, void* data) {
 void RegExpUnparser::VisitCharacterRange(CharacterRange that) {
   os_ << AsUC16(that.from());
   if (!that.IsSingleton()) {
-    os_ << "-" << AsUC16(that.to());
+    os_ << "\x2d" << AsUC16(that.to());
   }
 }
 
@@ -846,13 +846,13 @@ void RegExpUnparser::VisitCharacterRange(CharacterRange that) {
 
 void* RegExpUnparser::VisitCharacterClass(RegExpCharacterClass* that,
                                           void* data) {
-  if (that->is_negated()) os_ << "^";
-  os_ << "[";
+  if (that->is_negated()) os_ << "\x5e";
+  os_ << "\x5b";
   for (int i = 0; i < that->ranges(zone_)->length(); i++) {
-    if (i > 0) os_ << " ";
+    if (i > 0) os_ << "\x20";
     VisitCharacterRange(that->ranges(zone_)->at(i));
   }
-  os_ << "]";
+  os_ << "\x5d";
   return NULL;
 }
 
@@ -860,22 +860,22 @@ void* RegExpUnparser::VisitCharacterClass(RegExpCharacterClass* that,
 void* RegExpUnparser::VisitAssertion(RegExpAssertion* that, void* data) {
   switch (that->assertion_type()) {
     case RegExpAssertion::START_OF_INPUT:
-      os_ << "@^i";
+      os_ << "\x40\x5e\x69";
       break;
     case RegExpAssertion::END_OF_INPUT:
-      os_ << "@$i";
+      os_ << "\x40\x24\x69";
       break;
     case RegExpAssertion::START_OF_LINE:
-      os_ << "@^l";
+      os_ << "\x40\x5e\x6c";
       break;
     case RegExpAssertion::END_OF_LINE:
-      os_ << "@$l";
+      os_ << "\x40\x24\x6c";
        break;
     case RegExpAssertion::BOUNDARY:
-      os_ << "@b";
+      os_ << "\x40\x62";
       break;
     case RegExpAssertion::NON_BOUNDARY:
-      os_ << "@B";
+      os_ << "\x40\x42";
       break;
   }
   return NULL;
@@ -883,12 +883,12 @@ void* RegExpUnparser::VisitAssertion(RegExpAssertion* that, void* data) {
 
 
 void* RegExpUnparser::VisitAtom(RegExpAtom* that, void* data) {
-  os_ << "'";
+  os_ << "\x27";
   Vector<const uc16> chardata = that->data();
   for (int i = 0; i < chardata.length(); i++) {
     os_ << AsUC16(chardata[i]);
   }
-  os_ << "'";
+  os_ << "\x27";
   return NULL;
 }
 
@@ -897,56 +897,56 @@ void* RegExpUnparser::VisitText(RegExpText* that, void* data) {
   if (that->elements()->length() == 1) {
     that->elements()->at(0).tree()->Accept(this, data);
   } else {
-    os_ << "(!";
+    os_ << "\x28\x21";
     for (int i = 0; i < that->elements()->length(); i++) {
-      os_ << " ";
+      os_ << "\x20";
       that->elements()->at(i).tree()->Accept(this, data);
     }
-    os_ << ")";
+    os_ << "\x29";
   }
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitQuantifier(RegExpQuantifier* that, void* data) {
-  os_ << "(# " << that->min() << " ";
+  os_ << "\x28\x23\x20" << that->min() << "\x20";
   if (that->max() == RegExpTree::kInfinity) {
-    os_ << "- ";
+    os_ << "\x2d\x20";
   } else {
-    os_ << that->max() << " ";
+    os_ << that->max() << "\x20";
   }
-  os_ << (that->is_greedy() ? "g " : that->is_possessive() ? "p " : "n ");
+  os_ << (that->is_greedy() ? "\x67\x20" : that->is_possessive() ? "\x70\x20" : "\x6e\x20");
   that->body()->Accept(this, data);
-  os_ << ")";
+  os_ << "\x29";
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitCapture(RegExpCapture* that, void* data) {
-  os_ << "(^ ";
+  os_ << "\x28\x5e\x20";
   that->body()->Accept(this, data);
-  os_ << ")";
+  os_ << "\x29";
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitLookahead(RegExpLookahead* that, void* data) {
-  os_ << "(-> " << (that->is_positive() ? "+ " : "- ");
+  os_ << "\x28\x2d\x3e\x20" << (that->is_positive() ? "\x2b\x20" : "\x2d\x20");
   that->body()->Accept(this, data);
-  os_ << ")";
+  os_ << "\x29";
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitBackReference(RegExpBackReference* that,
                                          void* data) {
-  os_ << "(<- " << that->index() << ")";
+  os_ << "\x28\x3c\x2d\x20" << that->index() << "\x29";
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitEmpty(RegExpEmpty* that, void* data) {
-  os_ << '%';
+  os_ << '\x25';
   return NULL;
 }
 
@@ -1133,7 +1133,7 @@ Handle<String> Literal::ToString() {
   const char* str;
   if (value()->IsSmi()) {
     // Optimization only, the heap number case would subsume this.
-    SNPrintF(buffer, "%d", Smi::cast(*value())->value());
+    SNPrintF(buffer, "\x6c\x84", Smi::cast(*value())->value());
     str = arr;
   } else {
     str = DoubleToCString(value()->Number(), buffer);

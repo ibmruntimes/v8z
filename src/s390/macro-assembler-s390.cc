@@ -18,7 +18,7 @@
 #include "src/debug.h"
 #include "src/isolate-inl.h"
 #include "src/runtime.h"
-
+#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -6091,6 +6091,6 @@ void MacroAssembler::Translate(Register result,
                                Length len) {
   tr(MemOperand(result,0),lookup_table,len);     
 }
-
+#pragma convert(pop)
 } }  // namespace v8::internal
 #endif  // V8_TARGET_ARCH_S390

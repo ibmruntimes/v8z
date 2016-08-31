@@ -103,7 +103,7 @@ void CodeGenerator::AssembleInstruction(Instruction* instr) {
     if (FLAG_code_comments) {
       // TODO(titzer): these code comments are a giant memory leak.
       Vector<char> buffer = Vector<char>::New(32);
-      SNPrintF(buffer, "-- B%d start --", block_start->block()->id());
+      SNPrintF(buffer, "\x2d\x2d\x20\x42\x6c\x84\x20\x73\x74\x61\x72\x74\x20\x2d\x2d", block_start->block()->id());
       masm()->RecordComment(buffer.start());
     }
     masm()->bind(block_start->label());
@@ -148,11 +148,11 @@ void CodeGenerator::AssembleSourcePosition(SourcePositionInstruction* instr) {
       int cn = Script::GetColumnNumber(info->script(), code_pos);
       if (info->script()->name()->IsString()) {
         Handle<String> file(String::cast(info->script()->name()));
-        base::OS::SNPrintF(buffer.start(), buffer.length(), "-- %s:%d:%d --",
+        base::OS::SNPrintF(buffer.start(), buffer.length(), "\x2d\x2d\x20\x6c\xa2\x3a\x6c\x84\x3a\x6c\x84\x20\x2d\x2d",
                            file->ToCString().get(), ln, cn);
       } else {
         base::OS::SNPrintF(buffer.start(), buffer.length(),
-                           "-- <unknown>:%d:%d --", ln, cn);
+                           "\x2d\x2d\x20\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e\x3a\x6c\x84\x3a\x6c\x84\x20\x2d\x2d", ln, cn);
       }
       masm()->RecordComment(buffer.start());
     }

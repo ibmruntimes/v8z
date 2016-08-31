@@ -28,8 +28,8 @@ Object** HandleScope::Extend(Isolate* isolate) {
   // Make sure there's at least one scope on the stack and that the
   // top of the scope stack isn't a barrier.
   if (!Utils::ApiCheck(current->level != 0,
-                       "v8::HandleScope::CreateHandle()",
-                       "Cannot create a handle without a HandleScope")) {
+                       "\x76\x38\x3a\x3a\x48\x61\x6e\x64\x6c\x65\x53\x63\x6f\x70\x65\x3a\x3a\x43\x72\x65\x61\x74\x65\x48\x61\x6e\x64\x6c\x65\x28\x29",
+                       "\x43\x61\x6e\x6e\x6f\x74\x20\x63\x72\x65\x61\x74\x65\x20\x61\x20\x68\x61\x6e\x64\x6c\x65\x20\x77\x69\x74\x68\x6f\x75\x74\x20\x61\x20\x48\x61\x6e\x64\x6c\x65\x53\x63\x6f\x70\x65")) {
     return NULL;
   }
   HandleScopeImplementer* impl = isolate->handle_scope_implementer();

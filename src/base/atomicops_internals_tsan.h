@@ -178,7 +178,7 @@ __tsan_atomic128 __tsan_atomic128_compare_exchange_val(
 
 void __tsan_atomic_thread_fence(__tsan_memory_order mo);
 void __tsan_atomic_signal_fence(__tsan_memory_order mo);
-}  // extern "C"
+}  // extern "\x43"
 
 #endif  // #ifndef TSAN_INTERFACE_ATOMIC_H
 

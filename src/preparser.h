@@ -369,7 +369,7 @@ class ParserBase : public Traits {
     Scanner::Location octal = scanner()->octal_position();
     if (octal.IsValid() && beg_pos <= octal.beg_pos &&
         octal.end_pos <= end_pos) {
-      ReportMessageAt(octal, "strict_octal_literal");
+      ReportMessageAt(octal, "\x73\x74\x72\x69\x63\x74\x5f\x6f\x63\x74\x61\x6c\x5f\x6c\x69\x74\x65\x72\x61\x6c");
       scanner()->clear_octal_position();
       *ok = false;
     }
@@ -387,27 +387,27 @@ class ParserBase : public Traits {
       const Scanner::Location& reserved_loc,
       bool* ok) {
     if (this->IsEvalOrArguments(function_name)) {
-      Traits::ReportMessageAt(function_name_loc, "strict_eval_arguments");
+      Traits::ReportMessageAt(function_name_loc, "\x73\x74\x72\x69\x63\x74\x5f\x65\x76\x61\x6c\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x73");
       *ok = false;
       return;
     }
     if (function_name_is_strict_reserved) {
-      Traits::ReportMessageAt(function_name_loc, "unexpected_strict_reserved");
+      Traits::ReportMessageAt(function_name_loc, "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x73\x74\x72\x69\x63\x74\x5f\x72\x65\x73\x65\x72\x76\x65\x64");
       *ok = false;
       return;
     }
     if (eval_args_error_loc.IsValid()) {
-      Traits::ReportMessageAt(eval_args_error_loc, "strict_eval_arguments");
+      Traits::ReportMessageAt(eval_args_error_loc, "\x73\x74\x72\x69\x63\x74\x5f\x65\x76\x61\x6c\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x73");
       *ok = false;
       return;
     }
     if (dupe_error_loc.IsValid()) {
-      Traits::ReportMessageAt(dupe_error_loc, "strict_param_dupe");
+      Traits::ReportMessageAt(dupe_error_loc, "\x73\x74\x72\x69\x63\x74\x5f\x70\x61\x72\x61\x6d\x5f\x64\x75\x70\x65");
       *ok = false;
       return;
     }
     if (reserved_loc.IsValid()) {
-      Traits::ReportMessageAt(reserved_loc, "unexpected_strict_reserved");
+      Traits::ReportMessageAt(reserved_loc, "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x73\x74\x72\x69\x63\x74\x5f\x72\x65\x73\x65\x72\x76\x65\x64");
       *ok = false;
       return;
     }
@@ -1547,24 +1547,24 @@ void ParserBase<Traits>::ReportUnexpectedToken(Token::Value token) {
   // Four of the tokens are treated specially
   switch (token) {
     case Token::EOS:
-      return ReportMessageAt(source_location, "unexpected_eos");
+      return ReportMessageAt(source_location, "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x65\x6f\x73");
     case Token::NUMBER:
-      return ReportMessageAt(source_location, "unexpected_token_number");
+      return ReportMessageAt(source_location, "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x74\x6f\x6b\x65\x6e\x5f\x6e\x75\x6d\x62\x65\x72");
     case Token::STRING:
-      return ReportMessageAt(source_location, "unexpected_token_string");
+      return ReportMessageAt(source_location, "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x74\x6f\x6b\x65\x6e\x5f\x73\x74\x72\x69\x6e\x67");
     case Token::IDENTIFIER:
-      return ReportMessageAt(source_location, "unexpected_token_identifier");
+      return ReportMessageAt(source_location, "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x74\x6f\x6b\x65\x6e\x5f\x69\x64\x65\x6e\x74\x69\x66\x69\x65\x72");
     case Token::FUTURE_RESERVED_WORD:
-      return ReportMessageAt(source_location, "unexpected_reserved");
+      return ReportMessageAt(source_location, "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x72\x65\x73\x65\x72\x76\x65\x64");
     case Token::LET:
     case Token::YIELD:
     case Token::FUTURE_STRICT_RESERVED_WORD:
       return ReportMessageAt(source_location, strict_mode() == SLOPPY
-          ? "unexpected_token_identifier" : "unexpected_strict_reserved");
+          ? "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x74\x6f\x6b\x65\x6e\x5f\x69\x64\x65\x6e\x74\x69\x66\x69\x65\x72" : "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x73\x74\x72\x69\x63\x74\x5f\x72\x65\x73\x65\x72\x76\x65\x64");
     default:
       const char* name = Token::String(token);
       DCHECK(name != NULL);
-      Traits::ReportMessageAt(source_location, "unexpected_token", name);
+      Traits::ReportMessageAt(source_location, "\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x74\x6f\x6b\x65\x6e", name);
   }
 }
 
@@ -1578,7 +1578,7 @@ typename ParserBase<Traits>::IdentifierT ParserBase<Traits>::ParseIdentifier(
     IdentifierT name = this->GetSymbol(scanner());
     if (allow_eval_or_arguments == kDontAllowEvalOrArguments &&
         strict_mode() == STRICT && this->IsEvalOrArguments(name)) {
-      ReportMessage("strict_eval_arguments");
+      ReportMessage("\x73\x74\x72\x69\x63\x74\x5f\x65\x76\x61\x6c\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x73");
       *ok = false;
     }
     return name;
@@ -1648,7 +1648,7 @@ typename ParserBase<Traits>::ExpressionT ParserBase<Traits>::ParseRegExpLiteral(
   int pos = peek_position();
   if (!scanner()->ScanRegExpPattern(seen_equal)) {
     Next();
-    ReportMessage("unterminated_regexp");
+    ReportMessage("\x75\x6e\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x64\x5f\x72\x65\x67\x65\x78\x70");
     *ok = false;
     return Traits::EmptyExpression();
   }
@@ -1658,7 +1658,7 @@ typename ParserBase<Traits>::ExpressionT ParserBase<Traits>::ParseRegExpLiteral(
   IdentifierT js_pattern = this->GetNextSymbol(scanner());
   if (!scanner()->ScanRegExpFlags()) {
     Next();
-    ReportMessage("invalid_regexp_flags");
+    ReportMessage("\x69\x6e\x76\x61\x6c\x69\x64\x5f\x72\x65\x67\x65\x78\x70\x5f\x66\x6c\x61\x67\x73");
     *ok = false;
     return Traits::EmptyExpression();
   }
@@ -2014,7 +2014,7 @@ typename Traits::Type::ExpressionList ParserBase<Traits>::ParseArguments(
         true, CHECK_OK_CUSTOM(NullExpressionList));
     result->Add(argument, zone_);
     if (result->length() > Code::kMaxArguments) {
-      ReportMessage("too_many_arguments");
+      ReportMessage("\x74\x6f\x6f\x5f\x6d\x61\x6e\x79\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x73");
       *ok = false;
       return this->NullExpressionList();
     }
@@ -2063,7 +2063,7 @@ ParserBase<Traits>::ParseAssignmentExpression(bool accept_IN, bool* ok) {
   }
 
   expression = this->CheckAndRewriteReferenceExpression(
-      expression, lhs_location, "invalid_lhs_in_assignment", CHECK_OK);
+      expression, lhs_location, "\x69\x6e\x76\x61\x6c\x69\x64\x5f\x6c\x68\x73\x5f\x69\x6e\x5f\x61\x73\x73\x69\x67\x6e\x6d\x65\x6e\x74", CHECK_OK);
   expression = this->MarkExpressionAsAssigned(expression);
 
   Token::Value op = Next();  // Get assignment operator.
@@ -2238,7 +2238,7 @@ ParserBase<Traits>::ParseUnaryExpression(bool* ok) {
     // "delete identifier" is a syntax error in strict mode.
     if (op == Token::DELETE && strict_mode() == STRICT &&
         this->IsIdentifier(expression)) {
-      ReportMessage("strict_delete");
+      ReportMessage("\x73\x74\x72\x69\x63\x74\x5f\x64\x65\x6c\x65\x74\x65");
       *ok = false;
       return this->EmptyExpression();
     }
@@ -2250,7 +2250,7 @@ ParserBase<Traits>::ParseUnaryExpression(bool* ok) {
     Scanner::Location lhs_location = scanner()->peek_location();
     ExpressionT expression = this->ParseUnaryExpression(CHECK_OK);
     expression = this->CheckAndRewriteReferenceExpression(
-        expression, lhs_location, "invalid_lhs_in_prefix_op", CHECK_OK);
+        expression, lhs_location, "\x69\x6e\x76\x61\x6c\x69\x64\x5f\x6c\x68\x73\x5f\x69\x6e\x5f\x70\x72\x65\x66\x69\x78\x5f\x6f\x70", CHECK_OK);
     this->MarkExpressionAsAssigned(expression);
 
     return factory()->NewCountOperation(op,
@@ -2275,7 +2275,7 @@ ParserBase<Traits>::ParsePostfixExpression(bool* ok) {
   if (!scanner()->HasAnyLineTerminatorBeforeNext() &&
       Token::IsCountOp(peek())) {
     expression = this->CheckAndRewriteReferenceExpression(
-        expression, lhs_location, "invalid_lhs_in_postfix_op", CHECK_OK);
+        expression, lhs_location, "\x69\x6e\x76\x61\x6c\x69\x64\x5f\x6c\x68\x73\x5f\x69\x6e\x5f\x70\x6f\x73\x74\x66\x69\x78\x5f\x6f\x70", CHECK_OK);
     expression = this->MarkExpressionAsAssigned(expression);
 
     Token::Value next = Next();
@@ -2510,13 +2510,13 @@ typename ParserBase<Traits>::ExpressionT ParserBase<
     if (!*ok) {
       ReportMessageAt(
           Scanner::Location(start_pos, scanner()->location().beg_pos),
-          "malformed_arrow_function_parameter_list");
+          "\x6d\x61\x6c\x66\x6f\x72\x6d\x65\x64\x5f\x61\x72\x72\x6f\x77\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x5f\x6c\x69\x73\x74");
       return this->EmptyExpression();
     }
 
     if (num_parameters > Code::kMaxArguments) {
       ReportMessageAt(Scanner::Location(params_ast->position(), position()),
-                      "too_many_parameters");
+                      "\x74\x6f\x6f\x5f\x6d\x61\x6e\x79\x5f\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x73");
       *ok = false;
       return this->EmptyExpression();
     }
@@ -2605,7 +2605,7 @@ ParserBase<Traits>::CheckAndRewriteReferenceExpression(
     Scanner::Location location, const char* message, bool* ok) {
   if (strict_mode() == STRICT && this->IsIdentifier(expression) &&
       this->IsEvalOrArguments(this->AsIdentifier(expression))) {
-    this->ReportMessageAt(location, "strict_eval_arguments", false);
+    this->ReportMessageAt(location, "\x73\x74\x72\x69\x63\x74\x5f\x65\x76\x61\x6c\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x73", false);
     *ok = false;
     return this->EmptyExpression();
   } else if (expression->IsValidReferenceExpression()) {
@@ -2644,14 +2644,14 @@ void ParserBase<Traits>::ObjectLiteralChecker::CheckProperty(
     if (IsDataDataConflict(old_type, type)) {
       // Both are data properties.
       if (strict_mode_ == SLOPPY) return;
-      parser()->ReportMessage("strict_duplicate_property");
+      parser()->ReportMessage("\x73\x74\x72\x69\x63\x74\x5f\x64\x75\x70\x6c\x69\x63\x61\x74\x65\x5f\x70\x72\x6f\x70\x65\x72\x74\x79");
     } else if (IsDataAccessorConflict(old_type, type)) {
       // Both a data and an accessor property with the same name.
-      parser()->ReportMessage("accessor_data_property");
+      parser()->ReportMessage("\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x64\x61\x74\x61\x5f\x70\x72\x6f\x70\x65\x72\x74\x79");
     } else {
       DCHECK(IsAccessorAccessorConflict(old_type, type));
       // Both accessors of the same type.
-      parser()->ReportMessage("accessor_get_set");
+      parser()->ReportMessage("\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x67\x65\x74\x5f\x73\x65\x74");
     }
     *ok = false;
   }

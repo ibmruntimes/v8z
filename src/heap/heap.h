@@ -256,94 +256,94 @@ namespace internal {
   V(neander_map)
 
 #define INTERNALIZED_STRING_LIST(V)                                \
-  V(Array_string, "Array")                                         \
-  V(Object_string, "Object")                                       \
-  V(proto_string, "__proto__")                                     \
-  V(arguments_string, "arguments")                                 \
-  V(Arguments_string, "Arguments")                                 \
-  V(call_string, "call")                                           \
-  V(apply_string, "apply")                                         \
-  V(caller_string, "caller")                                       \
-  V(boolean_string, "boolean")                                     \
-  V(Boolean_string, "Boolean")                                     \
-  V(callee_string, "callee")                                       \
-  V(constructor_string, "constructor")                             \
-  V(dot_result_string, ".result")                                  \
-  V(dot_for_string, ".for.")                                       \
-  V(eval_string, "eval")                                           \
+  V(Array_string, "\x41\x72\x72\x61\x79")                                         \
+  V(Object_string, "\x4f\x62\x6a\x65\x63\x74")                                       \
+  V(proto_string, "\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f")                                     \
+  V(arguments_string, "\x61\x72\x67\x75\x6d\x65\x6e\x74\x73")                                 \
+  V(Arguments_string, "\x41\x72\x67\x75\x6d\x65\x6e\x74\x73")                                 \
+  V(call_string, "\x63\x61\x6c\x6c")                                           \
+  V(apply_string, "\x61\x70\x70\x6c\x79")                                         \
+  V(caller_string, "\x63\x61\x6c\x6c\x65\x72")                                       \
+  V(boolean_string, "\x62\x6f\x6f\x6c\x65\x61\x6e")                                     \
+  V(Boolean_string, "\x42\x6f\x6f\x6c\x65\x61\x6e")                                     \
+  V(callee_string, "\x63\x61\x6c\x6c\x65\x65")                                       \
+  V(constructor_string, "\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72")                             \
+  V(dot_result_string, "\x2e\x72\x65\x73\x75\x6c\x74")                                  \
+  V(dot_for_string, "\x2e\x66\x6f\x72\x2e")                                       \
+  V(eval_string, "\x65\x76\x61\x6c")                                           \
   V(empty_string, "")                                              \
-  V(function_string, "function")                                   \
-  V(length_string, "length")                                       \
-  V(name_string, "name")                                           \
-  V(null_string, "null")                                           \
-  V(number_string, "number")                                       \
-  V(Number_string, "Number")                                       \
-  V(nan_string, "NaN")                                             \
-  V(RegExp_string, "RegExp")                                       \
-  V(source_string, "source")                                       \
-  V(source_url_string, "source_url")                               \
-  V(source_mapping_url_string, "source_mapping_url")               \
-  V(global_string, "global")                                       \
-  V(ignore_case_string, "ignoreCase")                              \
-  V(multiline_string, "multiline")                                 \
-  V(input_string, "input")                                         \
-  V(index_string, "index")                                         \
-  V(last_index_string, "lastIndex")                                \
-  V(object_string, "object")                                       \
-  V(literals_string, "literals")                                   \
-  V(prototype_string, "prototype")                                 \
-  V(string_string, "string")                                       \
-  V(String_string, "String")                                       \
-  V(symbol_string, "symbol")                                       \
-  V(Symbol_string, "Symbol")                                       \
-  V(for_string, "for")                                             \
-  V(for_api_string, "for_api")                                     \
-  V(for_intern_string, "for_intern")                               \
-  V(private_api_string, "private_api")                             \
-  V(private_intern_string, "private_intern")                       \
-  V(Date_string, "Date")                                           \
-  V(to_string_string, "toString")                                  \
-  V(char_at_string, "CharAt")                                      \
-  V(undefined_string, "undefined")                                 \
-  V(value_of_string, "valueOf")                                    \
-  V(stack_string, "stack")                                         \
-  V(toJSON_string, "toJSON")                                       \
-  V(InitializeVarGlobal_string, "InitializeVarGlobal")             \
-  V(InitializeConstGlobal_string, "InitializeConstGlobal")         \
-  V(KeyedLoadMonomorphic_string, "KeyedLoadMonomorphic")           \
-  V(KeyedStoreMonomorphic_string, "KeyedStoreMonomorphic")         \
-  V(stack_overflow_string, "kStackOverflowBoilerplate")            \
-  V(illegal_access_string, "illegal access")                       \
-  V(get_string, "get")                                             \
-  V(set_string, "set")                                             \
-  V(map_field_string, "%map")                                      \
-  V(elements_field_string, "%elements")                            \
-  V(length_field_string, "%length")                                \
-  V(cell_value_string, "%cell_value")                              \
-  V(function_class_string, "Function")                             \
-  V(illegal_argument_string, "illegal argument")                   \
-  V(space_string, " ")                                             \
-  V(exec_string, "exec")                                           \
-  V(zero_string, "0")                                              \
-  V(global_eval_string, "GlobalEval")                              \
-  V(identity_hash_string, "v8::IdentityHash")                      \
-  V(closure_string, "(closure)")                                   \
-  V(dot_string, ".")                                               \
-  V(compare_ic_string, "==")                                       \
-  V(strict_compare_ic_string, "===")                               \
-  V(infinity_string, "Infinity")                                   \
-  V(minus_infinity_string, "-Infinity")                            \
-  V(query_colon_string, "(?:)")                                    \
-  V(Generator_string, "Generator")                                 \
-  V(throw_string, "throw")                                         \
-  V(done_string, "done")                                           \
-  V(value_string, "value")                                         \
-  V(next_string, "next")                                           \
-  V(byte_length_string, "byteLength")                              \
-  V(byte_offset_string, "byteOffset")                              \
-  V(buffer_string, "buffer")                                       \
-  V(intl_initialized_marker_string, "v8::intl_initialized_marker") \
-  V(intl_impl_object_string, "v8::intl_object")
+  V(function_string, "\x66\x75\x6e\x63\x74\x69\x6f\x6e")                                   \
+  V(length_string, "\x6c\x65\x6e\x67\x74\x68")                                       \
+  V(name_string, "\x6e\x61\x6d\x65")                                           \
+  V(null_string, "\x6e\x75\x6c\x6c")                                           \
+  V(number_string, "\x6e\x75\x6d\x62\x65\x72")                                       \
+  V(Number_string, "\x4e\x75\x6d\x62\x65\x72")                                       \
+  V(nan_string, "\x4e\x61\x4e")                                             \
+  V(RegExp_string, "\x52\x65\x67\x45\x78\x70")                                       \
+  V(source_string, "\x73\x6f\x75\x72\x63\x65")                                       \
+  V(source_url_string, "\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c")                               \
+  V(source_mapping_url_string, "\x73\x6f\x75\x72\x63\x65\x5f\x6d\x61\x70\x70\x69\x6e\x67\x5f\x75\x72\x6c")               \
+  V(global_string, "\x67\x6c\x6f\x62\x61\x6c")                                       \
+  V(ignore_case_string, "\x69\x67\x6e\x6f\x72\x65\x43\x61\x73\x65")                              \
+  V(multiline_string, "\x6d\x75\x6c\x74\x69\x6c\x69\x6e\x65")                                 \
+  V(input_string, "\x69\x6e\x70\x75\x74")                                         \
+  V(index_string, "\x69\x6e\x64\x65\x78")                                         \
+  V(last_index_string, "\x6c\x61\x73\x74\x49\x6e\x64\x65\x78")                                \
+  V(object_string, "\x6f\x62\x6a\x65\x63\x74")                                       \
+  V(literals_string, "\x6c\x69\x74\x65\x72\x61\x6c\x73")                                   \
+  V(prototype_string, "\x70\x72\x6f\x74\x6f\x74\x79\x70\x65")                                 \
+  V(string_string, "\x73\x74\x72\x69\x6e\x67")                                       \
+  V(String_string, "\x53\x74\x72\x69\x6e\x67")                                       \
+  V(symbol_string, "\x73\x79\x6d\x62\x6f\x6c")                                       \
+  V(Symbol_string, "\x53\x79\x6d\x62\x6f\x6c")                                       \
+  V(for_string, "\x66\x6f\x72")                                             \
+  V(for_api_string, "\x66\x6f\x72\x5f\x61\x70\x69")                                     \
+  V(for_intern_string, "\x66\x6f\x72\x5f\x69\x6e\x74\x65\x72\x6e")                               \
+  V(private_api_string, "\x70\x72\x69\x76\x61\x74\x65\x5f\x61\x70\x69")                             \
+  V(private_intern_string, "\x70\x72\x69\x76\x61\x74\x65\x5f\x69\x6e\x74\x65\x72\x6e")                       \
+  V(Date_string, "\x44\x61\x74\x65")                                           \
+  V(to_string_string, "\x74\x6f\x53\x74\x72\x69\x6e\x67")                                  \
+  V(char_at_string, "\x43\x68\x61\x72\x41\x74")                                      \
+  V(undefined_string, "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64")                                 \
+  V(value_of_string, "\x76\x61\x6c\x75\x65\x4f\x66")                                    \
+  V(stack_string, "\x73\x74\x61\x63\x6b")                                         \
+  V(toJSON_string, "\x74\x6f\x4a\x53\x4f\x4e")                                       \
+  V(InitializeVarGlobal_string, "\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x56\x61\x72\x47\x6c\x6f\x62\x61\x6c")             \
+  V(InitializeConstGlobal_string, "\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x43\x6f\x6e\x73\x74\x47\x6c\x6f\x62\x61\x6c")         \
+  V(KeyedLoadMonomorphic_string, "\x4b\x65\x79\x65\x64\x4c\x6f\x61\x64\x4d\x6f\x6e\x6f\x6d\x6f\x72\x70\x68\x69\x63")           \
+  V(KeyedStoreMonomorphic_string, "\x4b\x65\x79\x65\x64\x53\x74\x6f\x72\x65\x4d\x6f\x6e\x6f\x6d\x6f\x72\x70\x68\x69\x63")         \
+  V(stack_overflow_string, "\x6b\x53\x74\x61\x63\x6b\x4f\x76\x65\x72\x66\x6c\x6f\x77\x42\x6f\x69\x6c\x65\x72\x70\x6c\x61\x74\x65")            \
+  V(illegal_access_string, "\x69\x6c\x6c\x65\x67\x61\x6c\x20\x61\x63\x63\x65\x73\x73")                       \
+  V(get_string, "\x67\x65\x74")                                             \
+  V(set_string, "\x73\x65\x74")                                             \
+  V(map_field_string, "\x25\x6d\x61\x70")                                      \
+  V(elements_field_string, "\x6c\x85\x6c\x65\x6d\x65\x6e\x74\x73")                            \
+  V(length_field_string, "\x6c\x93\x85\x95\x87\x74\x68")                                \
+  V(cell_value_string, "\x6c\x83\x85\x6c\x6c\x5f\x76\x61\x6c\x75\x65")                              \
+  V(function_class_string, "\x46\x75\x6e\x63\x74\x69\x6f\x6e")                             \
+  V(illegal_argument_string, "\x69\x6c\x6c\x65\x67\x61\x6c\x20\x61\x72\x67\x75\x6d\x65\x6e\x74")                   \
+  V(space_string, "\x20")                                             \
+  V(exec_string, "\x65\x78\x65\x63")                                           \
+  V(zero_string, "\x30")                                              \
+  V(global_eval_string, "\x47\x6c\x6f\x62\x61\x6c\x45\x76\x61\x6c")                              \
+  V(identity_hash_string, "\x76\x38\x3a\x3a\x49\x64\x65\x6e\x74\x69\x74\x79\x48\x61\x73\x68")                      \
+  V(closure_string, "\x28\x63\x6c\x6f\x73\x75\x72\x65\x29")                                   \
+  V(dot_string, "\x2e")                                               \
+  V(compare_ic_string, "\x3d\x3d")                                       \
+  V(strict_compare_ic_string, "\x3d\x3d\x3d")                               \
+  V(infinity_string, "\x49\x6e\x66\x69\x6e\x69\x74\x79")                                   \
+  V(minus_infinity_string, "\x2d\x49\x6e\x66\x69\x6e\x69\x74\x79")                            \
+  V(query_colon_string, "\x28\x3f\x3a\x29")                                    \
+  V(Generator_string, "\x47\x65\x6e\x65\x72\x61\x74\x6f\x72")                                 \
+  V(throw_string, "\x74\x68\x72\x6f\x77")                                         \
+  V(done_string, "\x64\x6f\x6e\x65")                                           \
+  V(value_string, "\x76\x61\x6c\x75\x65")                                         \
+  V(next_string, "\x6e\x65\x78\x74")                                           \
+  V(byte_length_string, "\x62\x79\x74\x65\x4c\x65\x6e\x67\x74\x68")                              \
+  V(byte_offset_string, "\x62\x79\x74\x65\x4f\x66\x66\x73\x65\x74")                              \
+  V(buffer_string, "\x62\x75\x66\x66\x65\x72")                                       \
+  V(intl_initialized_marker_string, "\x76\x38\x3a\x3a\x69\x6e\x74\x6c\x5f\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64\x5f\x6d\x61\x72\x6b\x65\x72") \
+  V(intl_impl_object_string, "\x76\x38\x3a\x3a\x69\x6e\x74\x6c\x5f\x6f\x62\x6a\x65\x63\x74")
 
 // Forward declarations.
 class HeapStats;
@@ -750,14 +750,14 @@ class Heap {
   inline void increment_scan_on_scavenge_pages() {
     scan_on_scavenge_pages_++;
     if (FLAG_gc_verbose) {
-      PrintF("Scan-on-scavenge pages: %d\n", scan_on_scavenge_pages_);
+      PrintF("\x53\x63\x61\x6e\x2d\x6f\x6e\x2d\x73\x63\x61\x76\x65\x6e\x67\x65\x20\x70\x61\x67\x65\x73\x3a\x20\x6c\x84\xa", scan_on_scavenge_pages_);
     }
   }
 
   inline void decrement_scan_on_scavenge_pages() {
     scan_on_scavenge_pages_--;
     if (FLAG_gc_verbose) {
-      PrintF("Scan-on-scavenge pages: %d\n", scan_on_scavenge_pages_);
+      PrintF("\x53\x63\x61\x6e\x2d\x6f\x6e\x2d\x73\x63\x61\x76\x65\x6e\x67\x65\x20\x70\x61\x67\x65\x73\x3a\x20\x6c\x84\xa", scan_on_scavenge_pages_);
     }
   }
 

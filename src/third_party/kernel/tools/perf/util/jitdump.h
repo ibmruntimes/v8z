@@ -14,7 +14,7 @@
 #define JITHEADER_VERSION 1
 
 struct jitheader {
-  uint32_t magic;      /* characters "jItD" */
+  uint32_t magic;      /* characters "\x6a\x49\x74\x44" */
   uint32_t version;    /* header version */
   uint32_t total_size; /* total size of header */
   uint32_t elf_mach;   /* elf mach target */

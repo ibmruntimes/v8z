@@ -74,7 +74,7 @@ class PhaseStats {
 void Pipeline::VerifyAndPrintGraph(Graph* graph, const char* phase) {
   if (FLAG_trace_turbo) {
     OFStream os(stdout);
-    os << "-- " << phase << " graph -----------------------------------\n"
+    os << "\x2d\x2d\x20" << phase << "\x20\x67\x72\x61\x70\x68\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa"
        << AsDOT(*graph);
   }
   if (VerifyGraphs()) Verifier::Run(graph);
@@ -110,7 +110,7 @@ class AstGraphBuilderWithPositions : public AstGraphBuilder {
 static void TraceSchedule(Schedule* schedule) {
   if (!FLAG_trace_turbo) return;
   OFStream os(stdout);
-  os << "-- Schedule --------------------------------------\n" << *schedule;
+  os << "\x2d\x2d\x20\x53\x63\x68\x65\x64\x75\x6c\x65\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa" << *schedule;
 }
 
 
@@ -119,10 +119,10 @@ Handle<Code> Pipeline::GenerateCode() {
 
   if (FLAG_trace_turbo) {
     OFStream os(stdout);
-    os << "---------------------------------------------------\n"
-       << "Begin compiling method "
+    os << "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa"
+       << "\x42\x65\x67\x69\x6e\x20\x63\x6f\x6d\x70\x69\x6c\x69\x6e\x67\x20\x6d\x65\x74\x68\x6f\x64\x20"
        << info()->function()->debug_name()->ToCString().get()
-       << " using Turbofan" << endl;
+       << "\x20\x75\x73\x69\x6e\x67\x20\x54\x75\x72\x62\x6f\x66\x61\x6e" << endl;
   }
 
   // Build the graph.
@@ -138,14 +138,14 @@ Handle<Code> Pipeline::GenerateCode() {
   Node* context_node;
   {
     PhaseStats graph_builder_stats(info(), PhaseStats::CREATE_GRAPH,
-                                   "graph builder");
+                                   "\x67\x72\x61\x70\x68\x20\x62\x75\x69\x6c\x64\x65\x72");
     AstGraphBuilderWithPositions graph_builder(info(), &jsgraph,
                                                &source_positions);
     graph_builder.CreateGraph();
     context_node = graph_builder.GetFunctionContext();
   }
 
-  VerifyAndPrintGraph(&graph, "Initial untyped");
+  VerifyAndPrintGraph(&graph, "\x49\x6e\x69\x74\x69\x61\x6c\x20\x75\x6e\x74\x79\x70\x65\x64");
 
   if (FLAG_context_specialization) {
     SourcePositionTable::Scope pos_(&source_positions,
@@ -153,7 +153,7 @@ Handle<Code> Pipeline::GenerateCode() {
     // Specialize the code to the context as aggressively as possible.
     JSContextSpecializer spec(info(), &jsgraph, context_node);
     spec.SpecializeToContext();
-    VerifyAndPrintGraph(&graph, "Context specialized");
+    VerifyAndPrintGraph(&graph, "\x43\x6f\x6e\x74\x65\x78\x74\x20\x73\x70\x65\x63\x69\x61\x6c\x69\x7a\x65\x64");
   }
 
   // Print a replay of the initial graph.
@@ -164,7 +164,7 @@ Handle<Code> Pipeline::GenerateCode() {
   if (FLAG_turbo_types) {
     {
       // Type the graph.
-      PhaseStats typer_stats(info(), PhaseStats::CREATE_GRAPH, "typer");
+      PhaseStats typer_stats(info(), PhaseStats::CREATE_GRAPH, "\x74\x79\x70\x65\x72");
       typer.Run(&graph, info()->context());
     }
     // All new nodes must be typed.
@@ -172,11 +172,11 @@ Handle<Code> Pipeline::GenerateCode() {
     {
       // Lower JSOperators where we can determine types.
       PhaseStats lowering_stats(info(), PhaseStats::CREATE_GRAPH,
-                                "typed lowering");
+                                "\x74\x79\x70\x65\x64\x20\x6c\x6f\x77\x65\x72\x69\x6e\x67");
       JSTypedLowering lowering(&jsgraph, &source_positions);
       lowering.LowerAllNodes();
 
-      VerifyAndPrintGraph(&graph, "Lowered typed");
+      VerifyAndPrintGraph(&graph, "\x4c\x6f\x77\x65\x72\x65\x64\x20\x74\x79\x70\x65\x64");
     }
   }
 
@@ -185,12 +185,12 @@ Handle<Code> Pipeline::GenerateCode() {
     {
       // Lower any remaining generic JSOperators.
       PhaseStats lowering_stats(info(), PhaseStats::CREATE_GRAPH,
-                                "generic lowering");
+                                "\x67\x65\x6e\x65\x72\x69\x63\x20\x6c\x6f\x77\x65\x72\x69\x6e\x67");
       MachineOperatorBuilder machine(zone());
       JSGenericLowering lowering(info(), &jsgraph, &machine, &source_positions);
       lowering.LowerAllNodes();
 
-      VerifyAndPrintGraph(&graph, "Lowered generic");
+      VerifyAndPrintGraph(&graph, "\x4c\x6f\x77\x65\x72\x65\x64\x20\x67\x65\x6e\x65\x72\x69\x63");
     }
 
     // Compute a schedule.
@@ -199,7 +199,7 @@ Handle<Code> Pipeline::GenerateCode() {
 
     {
       // Generate optimized code.
-      PhaseStats codegen_stats(info(), PhaseStats::CODEGEN, "codegen");
+      PhaseStats codegen_stats(info(), PhaseStats::CODEGEN, "\x63\x6f\x64\x65\x67\x65\x6e");
       Linkage linkage(info());
       code = GenerateCode(&linkage, &graph, schedule, &source_positions);
       info()->SetCode(code);
@@ -211,10 +211,10 @@ Handle<Code> Pipeline::GenerateCode() {
 
   if (FLAG_trace_turbo) {
     OFStream os(stdout);
-    os << "--------------------------------------------------\n"
-       << "Finished compiling method "
+    os << "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa"
+       << "\x46\x69\x6e\x69\x73\x68\x65\x64\x20\x63\x6f\x6d\x70\x69\x6c\x69\x6e\x67\x20\x6d\x65\x74\x68\x6f\x64\x20"
        << info()->function()->debug_name()->ToCString().get()
-       << " using Turbofan" << endl;
+       << "\x20\x75\x73\x69\x6e\x67\x20\x54\x75\x72\x62\x6f\x66\x61\x6e" << endl;
   }
 
   return code;
@@ -222,7 +222,7 @@ Handle<Code> Pipeline::GenerateCode() {
 
 
 Schedule* Pipeline::ComputeSchedule(Graph* graph) {
-  PhaseStats schedule_stats(info(), PhaseStats::CODEGEN, "scheduling");
+  PhaseStats schedule_stats(info(), PhaseStats::CODEGEN, "\x73\x63\x68\x65\x64\x75\x6c\x69\x6e\x67");
   return Scheduler::ComputeSchedule(graph);
 }
 
@@ -232,7 +232,7 @@ Handle<Code> Pipeline::GenerateCodeForMachineGraph(Linkage* linkage,
                                                    Schedule* schedule) {
   CHECK(SupportedBackend());
   if (schedule == NULL) {
-    VerifyAndPrintGraph(graph, "Machine");
+    VerifyAndPrintGraph(graph, "\x4d\x61\x63\x68\x69\x6e\x65");
     schedule = ComputeSchedule(graph);
   }
   TraceSchedule(schedule);
@@ -243,7 +243,7 @@ Handle<Code> Pipeline::GenerateCodeForMachineGraph(Linkage* linkage,
   if (!code.is_null() && FLAG_print_opt_code) {
     CodeTracer::Scope tracing_scope(isolate()->GetCodeTracer());
     OFStream os(tracing_scope.file());
-    code->Disassemble("test code", os);
+    code->Disassemble("\x74\x65\x73\x74\x20\x63\x6f\x64\x65", os);
   }
 #endif
   return code;
@@ -268,7 +268,7 @@ Handle<Code> Pipeline::GenerateCode(Linkage* linkage, Graph* graph,
 
   if (FLAG_trace_turbo) {
     OFStream os(stdout);
-    os << "----- Instruction sequence before register allocation -----\n"
+    os << "\x2d\x2d\x2d\x2d\x2d\x20\x49\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x20\x73\x65\x71\x75\x65\x6e\x63\x65\x20\x62\x65\x66\x6f\x72\x65\x20\x72\x65\x67\x69\x73\x74\x65\x72\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x2d\x2d\x2d\x2d\x2d\xa"
        << sequence;
   }
 
@@ -288,7 +288,7 @@ Handle<Code> Pipeline::GenerateCode(Linkage* linkage, Graph* graph,
 
   if (FLAG_trace_turbo) {
     OFStream os(stdout);
-    os << "----- Instruction sequence after register allocation -----\n"
+    os << "\x2d\x2d\x2d\x2d\x2d\x20\x49\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x20\x73\x65\x71\x75\x65\x6e\x63\x65\x20\x61\x66\x74\x65\x72\x20\x72\x65\x67\x69\x73\x74\x65\x72\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x2d\x2d\x2d\x2d\x2d\xa"
        << sequence;
   }
 

@@ -4,6 +4,7 @@
 
 #include <ctype.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "src/v8.h"
 #ifdef IBM_TAG
@@ -341,6 +342,7 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
   // parse arguments
   for (int i = 1; i < *argc;) {
     int j = i;  // j > 0
+    __a2e_s(argv[i]);
     const char* arg = argv[i++];
 
     // split arg into flag components
@@ -453,6 +455,10 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
   if (FLAG_help) {
     PrintHelp();
     exit(0);
+  }
+  
+  for (int i =1 ; i < *argc; i++) {
+    __e2a_s(argv[i]); 
   }
   // parsed all flags successfully
   return return_code;

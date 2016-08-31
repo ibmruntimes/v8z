@@ -21,34 +21,34 @@ void LookupResult::Iterate(ObjectVisitor* visitor) {
 
 
 OStream& operator<<(OStream& os, const LookupResult& r) {
-  if (!r.IsFound()) return os << "Not Found\n";
+  if (!r.IsFound()) return os << "\x4e\x6f\x74\x20\x46\x6f\x75\x6e\x64\xa";
 
-  os << "LookupResult:\n";
-  os << " -cacheable = " << (r.IsCacheable() ? "true" : "false") << "\n";
-  os << " -attributes = " << hex << r.GetAttributes() << dec << "\n";
+  os << "\x4c\x6f\x6f\x6b\x75\x70\x52\x65\x73\x75\x6c\x74\x3a\xa";
+  os << "\x20\x2d\x63\x61\x63\x68\x65\x61\x62\x6c\x65\x20\x3d\x20" << (r.IsCacheable() ? "\x74\x72\x75\x65" : "\x66\x61\x6c\x73\x65") << "\xa";
+  os << "\x20\x2d\x61\x74\x74\x72\x69\x62\x75\x74\x65\x73\x20\x3d\x20" << hex << r.GetAttributes() << dec << "\xa";
   if (r.IsTransition()) {
-    os << " -transition target:\n" << Brief(r.GetTransitionTarget()) << "\n";
+    os << "\x20\x2d\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x74\x61\x72\x67\x65\x74\x3a\xa" << Brief(r.GetTransitionTarget()) << "\xa";
   }
   switch (r.type()) {
     case NORMAL:
-      return os << " -type = normal\n"
-                << " -entry = " << r.GetDictionaryEntry() << "\n";
+      return os << "\x20\x2d\x74\x79\x70\x65\x20\x3d\x20\x6e\x6f\x72\x6d\x61\x6c\xa"
+                << "\x20\x2d\x65\x6e\x74\x72\x79\x20\x3d\x20" << r.GetDictionaryEntry() << "\xa";
     case CONSTANT:
-      return os << " -type = constant\n"
-                << " -value:\n" << Brief(r.GetConstant()) << "\n";
+      return os << "\x20\x2d\x74\x79\x70\x65\x20\x3d\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\xa"
+                << "\x20\x2d\x76\x61\x6c\x75\x65\x3a\xa" << Brief(r.GetConstant()) << "\xa";
     case FIELD:
-      os << " -type = field\n"
-         << " -index = " << r.GetFieldIndex().property_index() << "\n"
-         << " -field type:";
+      os << "\x20\x2d\x74\x79\x70\x65\x20\x3d\x20\x66\x69\x65\x6c\x64\xa"
+         << "\x20\x2d\x69\x6e\x64\x65\x78\x20\x3d\x20" << r.GetFieldIndex().property_index() << "\xa"
+         << "\x20\x2d\x66\x69\x65\x6c\x64\x20\x74\x79\x70\x65\x3a";
       r.GetFieldType()->PrintTo(os);
-      return os << "\n";
+      return os << "\xa";
     case CALLBACKS:
-      return os << " -type = call backs\n"
-                << " -callback object:\n" << Brief(r.GetCallbackObject());
+      return os << "\x20\x2d\x74\x79\x70\x65\x20\x3d\x20\x63\x61\x6c\x6c\x20\x62\x61\x63\x6b\x73\xa"
+                << "\x20\x2d\x63\x61\x6c\x6c\x62\x61\x63\x6b\x20\x6f\x62\x6a\x65\x63\x74\x3a\xa" << Brief(r.GetCallbackObject());
     case HANDLER:
-      return os << " -type = lookup proxy\n";
+      return os << "\x20\x2d\x74\x79\x70\x65\x20\x3d\x20\x6c\x6f\x6f\x6b\x75\x70\x20\x70\x72\x6f\x78\x79\xa";
     case INTERCEPTOR:
-      return os << " -type = lookup interceptor\n";
+      return os << "\x20\x2d\x74\x79\x70\x65\x20\x3d\x20\x6c\x6f\x6f\x6b\x75\x70\x20\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\xa";
     case NONEXISTENT:
       UNREACHABLE();
       break;
@@ -58,7 +58,7 @@ OStream& operator<<(OStream& os, const LookupResult& r) {
 
 
 OStream& operator<<(OStream& os, const Descriptor& d) {
-  return os << "Descriptor " << Brief(*d.GetKey()) << " @ "
+  return os << "\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x20" << Brief(*d.GetKey()) << "\x20\x40\x20"
             << Brief(*d.GetValue());
 }
 

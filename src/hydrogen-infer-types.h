@@ -14,7 +14,7 @@ namespace internal {
 class HInferTypesPhase : public HPhase {
  public:
   explicit HInferTypesPhase(HGraph* graph)
-      : HPhase("H_Inferring types", graph), worklist_(8, zone()),
+      : HPhase("\x48\x5f\x49\x6e\x66\x65\x72\x72\x69\x6e\x67\x20\x74\x79\x70\x65\x73", graph), worklist_(8, zone()),
         in_worklist_(graph->GetMaximumValueID(), zone()) { }
 
   void Run() {

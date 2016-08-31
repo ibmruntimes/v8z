@@ -11,7 +11,7 @@ namespace v8 {
 namespace platform {
 
 WorkerThread::WorkerThread(TaskQueue* queue)
-    : Thread(Options("V8 WorkerThread")), queue_(queue) {
+    : Thread(Options("\x56\x38\x20\x57\x6f\x72\x6b\x65\x72\x54\x68\x72\x65\x61\x64")), queue_(queue) {
   Start();
 }
 

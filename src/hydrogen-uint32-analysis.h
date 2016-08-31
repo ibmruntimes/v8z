@@ -16,7 +16,7 @@ namespace internal {
 class HUint32AnalysisPhase : public HPhase {
  public:
   explicit HUint32AnalysisPhase(HGraph* graph)
-      : HPhase("H_Compute safe UInt32 operations", graph), phis_(4, zone()) { }
+      : HPhase("\x48\x5f\x43\x6f\x6d\x70\x75\x74\x65\x20\x73\x61\x66\x65\x20\x55\x49\x6e\x74\x33\x32\x20\x6f\x70\x65\x72\x61\x74\x69\x6f\x6e\x73", graph), phis_(4, zone()) { }
 
   void Run();
 

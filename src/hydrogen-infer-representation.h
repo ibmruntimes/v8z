@@ -14,7 +14,7 @@ namespace internal {
 class HInferRepresentationPhase : public HPhase {
  public:
   explicit HInferRepresentationPhase(HGraph* graph)
-      : HPhase("H_Infer representations", graph),
+      : HPhase("\x48\x5f\x49\x6e\x66\x65\x72\x20\x72\x65\x70\x72\x65\x73\x65\x6e\x74\x61\x74\x69\x6f\x6e\x73", graph),
         worklist_(8, zone()),
         in_worklist_(graph->GetMaximumValueID(), zone()) { }
 

@@ -26,7 +26,7 @@
 #elif V8_TARGET_ARCH_X87
 #include "src/x87/lithium-x87.h" // NOLINT
 #else
-#error "Unknown architecture."
+#error "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65\x2e"
 #endif
 
 namespace v8 {

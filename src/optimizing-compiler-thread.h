@@ -23,7 +23,7 @@ class SharedFunctionInfo;
 class OptimizingCompilerThread : public base::Thread {
  public:
   explicit OptimizingCompilerThread(Isolate* isolate)
-      : Thread(Options("OptimizingCompilerThread")),
+      : Thread(Options("\x4f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x43\x6f\x6d\x70\x69\x6c\x65\x72\x54\x68\x72\x65\x61\x64")),
 #ifdef DEBUG
         thread_id_(0),
 #endif

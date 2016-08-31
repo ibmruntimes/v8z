@@ -165,9 +165,9 @@ void i::V8::FatalProcessOutOfMemory(const char* location, bool take_snapshot) {
     // HeapIterator here without doing a special GC.
     isolate->heap()->RecordStats(&heap_stats, false);
   }
-  Utils::ApiCheck(false, location, "Allocation failed - process out of memory");
+  Utils::ApiCheck(false, location, "\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x66\x61\x69\x6c\x65\x64\x20\x2d\x20\x70\x72\x6f\x63\x65\x73\x73\x20\x6f\x75\x74\x20\x6f\x66\x20\x6d\x65\x6d\x6f\x72\x79");
   // If the fatal error handler returns, we stop execution.
-  FATAL("API fatal error handler returned after process out of memory");
+  FATAL("\x41\x50\x49\x20\x66\x61\x74\x61\x6c\x20\x65\x72\x72\x6f\x72\x20\x68\x61\x6e\x64\x6c\x65\x72\x20\x72\x65\x74\x75\x72\x6e\x65\x64\x20\x61\x66\x74\x65\x72\x20\x70\x72\x6f\x63\x65\x73\x73\x20\x6f\x75\x74\x20\x6f\x66\x20\x6d\x65\x6d\x6f\x72\x79");
 }
 
 
@@ -175,7 +175,7 @@ void Utils::ReportApiFailure(const char* location, const char* message) {
   i::Isolate* isolate = i::Isolate::Current();
   FatalErrorCallback callback = isolate->exception_behavior();
   if (callback == NULL) {
-    base::OS::PrintError("\n#\n# Fatal error in %s\n# %s\n#\n\n", location,
+    base::OS::PrintError("\xa\x23\xa\x23\x20\x46\x61\x74\x61\x6c\x20\x65\x72\x72\x6f\x72\x20\x69\x6e\x20\x6c\xa2\xa\x23\x20\x6c\xa2\xa\x23\xa\xa", location,
                          message);
     base::OS::Abort();
   } else {
@@ -220,7 +220,7 @@ static inline bool EnsureInitializedForIsolate(i::Isolate* isolate,
   return (isolate != NULL && isolate->IsInitialized()) ||
       Utils::ApiCheck(InitializeHelper(isolate),
                       location,
-                      "Error initializing V8");
+                      "\x45\x72\x72\x6f\x72\x20\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x69\x6e\x67\x20\x56\x38");
 }
 
 
@@ -520,7 +520,7 @@ bool SetResourceConstraints(Isolate* v8_isolate,
 
 
 i::Object** V8::GlobalizeReference(i::Isolate* isolate, i::Object** obj) {
-  LOG_API(isolate, "Persistent::New");
+  LOG_API(isolate, "\x50\x65\x72\x73\x69\x73\x74\x65\x6e\x74\x3a\x3a\x4e\x65\x77");
   i::Handle<i::Object> result = isolate->global_handles()->Create(*obj);
 #ifdef DEBUG
   (*obj)->ObjectVerify();
@@ -583,8 +583,8 @@ void HandleScope::Initialize(Isolate* isolate) {
   // almost nothing, so it is enough to check in this central place.
   Utils::ApiCheck(!v8::Locker::IsActive() ||
                   internal_isolate->thread_manager()->IsLockedByCurrentThread(),
-                  "HandleScope::HandleScope",
-                  "Entering the V8 API without proper locking in place");
+                  "\x48\x61\x6e\x64\x6c\x65\x53\x63\x6f\x70\x65\x3a\x3a\x48\x61\x6e\x64\x6c\x65\x53\x63\x6f\x70\x65",
+                  "\x45\x6e\x74\x65\x72\x69\x6e\x67\x20\x74\x68\x65\x20\x56\x38\x20\x41\x50\x49\x20\x77\x69\x74\x68\x6f\x75\x74\x20\x70\x72\x6f\x70\x65\x72\x20\x6c\x6f\x63\x6b\x69\x6e\x67\x20\x69\x6e\x20\x70\x6c\x61\x63\x65");
   i::HandleScopeData* current = internal_isolate->handle_scope_data();
   isolate_ = internal_isolate;
   prev_next_ = current->next;
@@ -626,8 +626,8 @@ EscapableHandleScope::EscapableHandleScope(Isolate* v8_isolate) {
 i::Object** EscapableHandleScope::Escape(i::Object** escape_value) {
   i::Heap* heap = reinterpret_cast<i::Isolate*>(GetIsolate())->heap();
   Utils::ApiCheck(*escape_slot_ == heap->the_hole_value(),
-                  "EscapeableHandleScope::Escape",
-                  "Escape value set twice");
+                  "\x45\x73\x63\x61\x70\x65\x61\x62\x6c\x65\x48\x61\x6e\x64\x6c\x65\x53\x63\x6f\x70\x65\x3a\x3a\x45\x73\x63\x61\x70\x65",
+                  "\x45\x73\x63\x61\x70\x65\x20\x76\x61\x6c\x75\x65\x20\x73\x65\x74\x20\x74\x77\x69\x63\x65");
   if (escape_value == NULL) {
     *escape_slot_ = heap->undefined_value();
     return NULL;
@@ -654,8 +654,8 @@ void Context::Exit() {
   ENTER_V8(isolate);
   i::HandleScopeImplementer* impl = isolate->handle_scope_implementer();
   if (!Utils::ApiCheck(impl->LastEnteredContextWas(env),
-                       "v8::Context::Exit()",
-                       "Cannot exit non-entered context")) {
+                       "\x76\x38\x3a\x3a\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x45\x78\x69\x74\x28\x29",
+                       "\x43\x61\x6e\x6e\x6f\x74\x20\x65\x78\x69\x74\x20\x6e\x6f\x6e\x2d\x65\x6e\x74\x65\x72\x65\x64\x20\x63\x6f\x6e\x74\x65\x78\x74")) {
     return;
   }
   impl->LeaveContext();
@@ -664,14 +664,14 @@ void Context::Exit() {
 
 
 static void* DecodeSmiToAligned(i::Object* value, const char* location) {
-  Utils::ApiCheck(value->IsSmi(), location, "Not a Smi");
+  Utils::ApiCheck(value->IsSmi(), location, "\x4e\x6f\x74\x20\x61\x20\x53\x6d\x69");
   return reinterpret_cast<void*>(value);
 }
 
 
 static i::Smi* EncodeAlignedAsSmi(void* value, const char* location) {
   i::Smi* smi = reinterpret_cast<i::Smi*>(value);
-  Utils::ApiCheck(smi->IsSmi(), location, "Pointer is not aligned");
+  Utils::ApiCheck(smi->IsSmi(), location, "\x50\x6f\x69\x6e\x74\x65\x72\x20\x69\x73\x20\x6e\x6f\x74\x20\x61\x6c\x69\x67\x6e\x65\x64");
   return smi;
 }
 
@@ -684,12 +684,12 @@ static i::Handle<i::FixedArray> EmbedderDataFor(Context* context,
   bool ok =
       Utils::ApiCheck(env->IsNativeContext(),
                       location,
-                      "Not a native context") &&
-      Utils::ApiCheck(index >= 0, location, "Negative index");
+                      "\x4e\x6f\x74\x20\x61\x20\x6e\x61\x74\x69\x76\x65\x20\x63\x6f\x6e\x74\x65\x78\x74") &&
+      Utils::ApiCheck(index >= 0, location, "\x4e\x65\x67\x61\x74\x69\x76\x65\x20\x69\x6e\x64\x65\x78");
   if (!ok) return i::Handle<i::FixedArray>();
   i::Handle<i::FixedArray> data(env->embedder_data());
   if (index < data->length()) return data;
-  if (!Utils::ApiCheck(can_grow, location, "Index too large")) {
+  if (!Utils::ApiCheck(can_grow, location, "\x49\x6e\x64\x65\x78\x20\x74\x6f\x6f\x20\x6c\x61\x72\x67\x65")) {
     return i::Handle<i::FixedArray>();
   }
   int new_size = i::Max(index, data->length() << 1) + 1;
@@ -700,7 +700,7 @@ static i::Handle<i::FixedArray> EmbedderDataFor(Context* context,
 
 
 v8::Local<v8::Value> Context::SlowGetEmbedderData(int index) {
-  const char* location = "v8::Context::GetEmbedderData()";
+  const char* location = "\x76\x38\x3a\x3a\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x47\x65\x74\x45\x6d\x62\x65\x64\x64\x65\x72\x44\x61\x74\x61\x28\x29";
   i::Handle<i::FixedArray> data = EmbedderDataFor(this, index, false, location);
   if (data.is_null()) return Local<Value>();
   i::Handle<i::Object> result(data->get(index), data->GetIsolate());
@@ -709,7 +709,7 @@ v8::Local<v8::Value> Context::SlowGetEmbedderData(int index) {
 
 
 void Context::SetEmbedderData(int index, v8::Handle<Value> value) {
-  const char* location = "v8::Context::SetEmbedderData()";
+  const char* location = "\x76\x38\x3a\x3a\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x53\x65\x74\x45\x6d\x62\x65\x64\x64\x65\x72\x44\x61\x74\x61\x28\x29";
   i::Handle<i::FixedArray> data = EmbedderDataFor(this, index, true, location);
   if (data.is_null()) return;
   i::Handle<i::Object> val = Utils::OpenHandle(*value);
@@ -720,7 +720,7 @@ void Context::SetEmbedderData(int index, v8::Handle<Value> value) {
 
 
 void* Context::SlowGetAlignedPointerFromEmbedderData(int index) {
-  const char* location = "v8::Context::GetAlignedPointerFromEmbedderData()";
+  const char* location = "\x76\x38\x3a\x3a\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x47\x65\x74\x41\x6c\x69\x67\x6e\x65\x64\x50\x6f\x69\x6e\x74\x65\x72\x46\x72\x6f\x6d\x45\x6d\x62\x65\x64\x64\x65\x72\x44\x61\x74\x61\x28\x29";
   i::Handle<i::FixedArray> data = EmbedderDataFor(this, index, false, location);
   if (data.is_null()) return NULL;
   return DecodeSmiToAligned(data->get(index), location);
@@ -728,7 +728,7 @@ void* Context::SlowGetAlignedPointerFromEmbedderData(int index) {
 
 
 void Context::SetAlignedPointerInEmbedderData(int index, void* value) {
-  const char* location = "v8::Context::SetAlignedPointerInEmbedderData()";
+  const char* location = "\x76\x38\x3a\x3a\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x53\x65\x74\x41\x6c\x69\x67\x6e\x65\x64\x50\x6f\x69\x6e\x74\x65\x72\x49\x6e\x45\x6d\x62\x65\x64\x64\x65\x72\x44\x61\x74\x61\x28\x29";
   i::Handle<i::FixedArray> data = EmbedderDataFor(this, index, true, location);
   data->set(index, EncodeAlignedAsSmi(value, location));
   DCHECK_EQ(value, GetAlignedPointerFromEmbedderData(index));
@@ -744,7 +744,7 @@ void Context::SetAlignedPointerInEmbedderData(int index, void* value) {
 // NeanderObject constructor.  When you add one to the site calling the
 // constructor you should check that you ensured the VM was not dead first.
 NeanderObject::NeanderObject(v8::internal::Isolate* isolate, int size) {
-  EnsureInitializedForIsolate(isolate, "v8::Nowhere");
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x4e\x6f\x77\x68\x65\x72\x65");
   ENTER_V8(isolate);
   value_ = isolate->factory()->NewNeanderObject();
   i::Handle<i::FixedArray> elements = isolate->factory()->NewFixedArray(size);
@@ -937,8 +937,8 @@ Local<FunctionTemplate> FunctionTemplate::New(
     v8::Handle<Signature> signature,
     int length) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::FunctionTemplate::New()");
-  LOG_API(i_isolate, "FunctionTemplate::New");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x46\x75\x6e\x63\x74\x69\x6f\x6e\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(i_isolate, "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x4e\x65\x77");
   ENTER_V8(i_isolate);
   return FunctionTemplateNew(
       i_isolate, callback, data, signature, length, false);
@@ -949,8 +949,8 @@ Local<Signature> Signature::New(Isolate* isolate,
                                 Handle<FunctionTemplate> receiver, int argc,
                                 Handle<FunctionTemplate> argv[]) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::Signature::New()");
-  LOG_API(i_isolate, "Signature::New");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x53\x69\x67\x6e\x61\x74\x75\x72\x65\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(i_isolate, "\x53\x69\x67\x6e\x61\x74\x75\x72\x65\x3a\x3a\x4e\x65\x77");
   ENTER_V8(i_isolate);
   i::Handle<i::Struct> struct_obj =
       i_isolate->factory()->NewStruct(i::SIGNATURE_INFO_TYPE);
@@ -1100,8 +1100,8 @@ Local<TypeSwitch> TypeSwitch::New(Handle<FunctionTemplate> type) {
 
 Local<TypeSwitch> TypeSwitch::New(int argc, Handle<FunctionTemplate> types[]) {
   i::Isolate* isolate = i::Isolate::Current();
-  EnsureInitializedForIsolate(isolate, "v8::TypeSwitch::New()");
-  LOG_API(isolate, "TypeSwitch::New");
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x54\x79\x70\x65\x53\x77\x69\x74\x63\x68\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(isolate, "\x54\x79\x70\x65\x53\x77\x69\x74\x63\x68\x3a\x3a\x4e\x65\x77");
   ENTER_V8(isolate);
   i::Handle<i::FixedArray> vector = isolate->factory()->NewFixedArray(argc);
   for (int i = 0; i < argc; i++)
@@ -1117,7 +1117,7 @@ Local<TypeSwitch> TypeSwitch::New(int argc, Handle<FunctionTemplate> types[]) {
 
 int TypeSwitch::match(v8::Handle<Value> value) {
   i::Isolate* isolate = i::Isolate::Current();
-  LOG_API(isolate, "TypeSwitch::match");
+  LOG_API(isolate, "\x54\x79\x70\x65\x53\x77\x69\x74\x63\x68\x3a\x3a\x6d\x61\x74\x63\x68");
   USE(isolate);
   i::Handle<i::Object> obj = Utils::OpenHandle(*value);
   i::Handle<i::TypeSwitchInfo> info = Utils::OpenHandle(this);
@@ -1213,8 +1213,8 @@ static i::Handle<i::AccessorInfo> MakeAccessorInfo(
 Local<ObjectTemplate> FunctionTemplate::InstanceTemplate() {
   i::Handle<i::FunctionTemplateInfo> handle = Utils::OpenHandle(this, true);
   if (!Utils::ApiCheck(!handle.is_null(),
-                       "v8::FunctionTemplate::InstanceTemplate()",
-                       "Reading from empty handle")) {
+                       "\x76\x38\x3a\x3a\x46\x75\x6e\x63\x74\x69\x6f\x6e\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x49\x6e\x73\x74\x61\x6e\x63\x65\x54\x65\x6d\x70\x6c\x61\x74\x65\x28\x29",
+                       "\x52\x65\x61\x64\x69\x6e\x67\x20\x66\x72\x6f\x6d\x20\x65\x6d\x70\x74\x79\x20\x68\x61\x6e\x64\x6c\x65")) {
     return Local<ObjectTemplate>();
   }
   i::Isolate* isolate = handle->GetIsolate();
@@ -1281,8 +1281,8 @@ Local<ObjectTemplate> ObjectTemplate::New() {
 Local<ObjectTemplate> ObjectTemplate::New(
     i::Isolate* isolate,
     v8::Handle<FunctionTemplate> constructor) {
-  EnsureInitializedForIsolate(isolate, "v8::ObjectTemplate::New()");
-  LOG_API(isolate, "ObjectTemplate::New");
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(isolate, "\x4f\x62\x6a\x65\x63\x74\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x4e\x65\x77");
   ENTER_V8(isolate);
   i::Handle<i::Struct> struct_obj =
       isolate->factory()->NewStruct(i::OBJECT_TEMPLATE_INFO_TYPE);
@@ -1542,8 +1542,8 @@ int ObjectTemplate::InternalFieldCount() {
 void ObjectTemplate::SetInternalFieldCount(int value) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
   if (!Utils::ApiCheck(i::Smi::IsValid(value),
-                       "v8::ObjectTemplate::SetInternalFieldCount()",
-                       "Invalid internal field count")) {
+                       "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x53\x65\x74\x49\x6e\x74\x65\x72\x6e\x61\x6c\x46\x69\x65\x6c\x64\x43\x6f\x75\x6e\x74\x28\x29",
+                       "\x49\x6e\x76\x61\x6c\x69\x64\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x66\x69\x65\x6c\x64\x20\x63\x6f\x75\x6e\x74")) {
     return;
   }
   ENTER_V8(isolate);
@@ -1591,8 +1591,8 @@ int UnboundScript::GetId() {
   i::Handle<i::HeapObject> obj =
       i::Handle<i::HeapObject>::cast(Utils::OpenHandle(this));
   i::Isolate* isolate = obj->GetIsolate();
-  ON_BAILOUT(isolate, "v8::UnboundScript::GetId()", return -1);
-  LOG_API(isolate, "v8::UnboundScript::GetId");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x55\x6e\x62\x6f\x75\x6e\x64\x53\x63\x72\x69\x70\x74\x3a\x3a\x47\x65\x74\x49\x64\x28\x29", return -1);
+  LOG_API(isolate, "\x76\x38\x3a\x3a\x55\x6e\x62\x6f\x75\x6e\x64\x53\x63\x72\x69\x70\x74\x3a\x3a\x47\x65\x74\x49\x64");
   {
     i::HandleScope scope(isolate);
     i::Handle<i::SharedFunctionInfo> function_info(
@@ -1607,8 +1607,8 @@ int UnboundScript::GetLineNumber(int code_pos) {
   i::Handle<i::SharedFunctionInfo> obj =
       i::Handle<i::SharedFunctionInfo>::cast(Utils::OpenHandle(this));
   i::Isolate* isolate = obj->GetIsolate();
-  ON_BAILOUT(isolate, "v8::UnboundScript::GetLineNumber()", return -1);
-  LOG_API(isolate, "UnboundScript::GetLineNumber");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x55\x6e\x62\x6f\x75\x6e\x64\x53\x63\x72\x69\x70\x74\x3a\x3a\x47\x65\x74\x4c\x69\x6e\x65\x4e\x75\x6d\x62\x65\x72\x28\x29", return -1);
+  LOG_API(isolate, "\x55\x6e\x62\x6f\x75\x6e\x64\x53\x63\x72\x69\x70\x74\x3a\x3a\x47\x65\x74\x4c\x69\x6e\x65\x4e\x75\x6d\x62\x65\x72");
   if (obj->script()->IsScript()) {
     i::Handle<i::Script> script(i::Script::cast(obj->script()));
     return i::Script::GetLineNumber(script, code_pos);
@@ -1622,9 +1622,9 @@ Handle<Value> UnboundScript::GetScriptName() {
   i::Handle<i::SharedFunctionInfo> obj =
       i::Handle<i::SharedFunctionInfo>::cast(Utils::OpenHandle(this));
   i::Isolate* isolate = obj->GetIsolate();
-  ON_BAILOUT(isolate, "v8::UnboundScript::GetName()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x55\x6e\x62\x6f\x75\x6e\x64\x53\x63\x72\x69\x70\x74\x3a\x3a\x47\x65\x74\x4e\x61\x6d\x65\x28\x29",
              return Handle<String>());
-  LOG_API(isolate, "UnboundScript::GetName");
+  LOG_API(isolate, "\x55\x6e\x62\x6f\x75\x6e\x64\x53\x63\x72\x69\x70\x74\x3a\x3a\x47\x65\x74\x4e\x61\x6d\x65");
   if (obj->script()->IsScript()) {
     i::Object* name = i::Script::cast(obj->script())->name();
     return Utils::ToLocal(i::Handle<i::Object>(name, isolate));
@@ -1638,9 +1638,9 @@ Handle<Value> UnboundScript::GetSourceURL() {
   i::Handle<i::SharedFunctionInfo> obj =
       i::Handle<i::SharedFunctionInfo>::cast(Utils::OpenHandle(this));
   i::Isolate* isolate = obj->GetIsolate();
-  ON_BAILOUT(isolate, "v8::UnboundScript::GetSourceURL()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x55\x6e\x62\x6f\x75\x6e\x64\x53\x63\x72\x69\x70\x74\x3a\x3a\x47\x65\x74\x53\x6f\x75\x72\x63\x65\x55\x52\x4c\x28\x29",
              return Handle<String>());
-  LOG_API(isolate, "UnboundScript::GetSourceURL");
+  LOG_API(isolate, "\x55\x6e\x62\x6f\x75\x6e\x64\x53\x63\x72\x69\x70\x74\x3a\x3a\x47\x65\x74\x53\x6f\x75\x72\x63\x65\x55\x52\x4c");
   if (obj->script()->IsScript()) {
     i::Object* url = i::Script::cast(obj->script())->source_url();
     return Utils::ToLocal(i::Handle<i::Object>(url, isolate));
@@ -1654,9 +1654,9 @@ Handle<Value> UnboundScript::GetSourceMappingURL() {
   i::Handle<i::SharedFunctionInfo> obj =
       i::Handle<i::SharedFunctionInfo>::cast(Utils::OpenHandle(this));
   i::Isolate* isolate = obj->GetIsolate();
-  ON_BAILOUT(isolate, "v8::UnboundScript::GetSourceMappingURL()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x55\x6e\x62\x6f\x75\x6e\x64\x53\x63\x72\x69\x70\x74\x3a\x3a\x47\x65\x74\x53\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x28\x29",
              return Handle<String>());
-  LOG_API(isolate, "UnboundScript::GetSourceMappingURL");
+  LOG_API(isolate, "\x55\x6e\x62\x6f\x75\x6e\x64\x53\x63\x72\x69\x70\x74\x3a\x3a\x47\x65\x74\x53\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c");
   if (obj->script()->IsScript()) {
     i::Object* url = i::Script::cast(obj->script())->source_mapping_url();
     return Utils::ToLocal(i::Handle<i::Object>(url, isolate));
@@ -1672,8 +1672,8 @@ Local<Value> Script::Run() {
   // check.
   if (obj.is_null()) return Local<Value>();
   i::Isolate* isolate = i::Handle<i::HeapObject>::cast(obj)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Script::Run()", return Local<Value>());
-  LOG_API(isolate, "Script::Run");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x53\x63\x72\x69\x70\x74\x3a\x3a\x52\x75\x6e\x28\x29", return Local<Value>());
+  LOG_API(isolate, "\x53\x63\x72\x69\x70\x74\x3a\x3a\x52\x75\x6e");
   ENTER_V8(isolate);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
   i::HandleScope scope(isolate);
@@ -1700,7 +1700,7 @@ Local<UnboundScript> ScriptCompiler::CompileUnbound(
     Source* source,
     CompileOptions options) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
-  ON_BAILOUT(isolate, "v8::ScriptCompiler::CompileUnbound()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x53\x63\x72\x69\x70\x74\x43\x6f\x6d\x70\x69\x6c\x65\x72\x3a\x3a\x43\x6f\x6d\x70\x69\x6c\x65\x55\x6e\x62\x6f\x75\x6e\x64\x28\x29",
              return Local<UnboundScript>());
 
   // Support the old API for a transition period:
@@ -1721,7 +1721,7 @@ Local<UnboundScript> ScriptCompiler::CompileUnbound(
   }
 
   i::Handle<i::String> str = Utils::OpenHandle(*(source->source_string));
-  LOG_API(isolate, "ScriptCompiler::CompileUnbound");
+  LOG_API(isolate, "\x53\x63\x72\x69\x70\x74\x43\x6f\x6d\x70\x69\x6c\x65\x72\x3a\x3a\x43\x6f\x6d\x70\x69\x6c\x65\x55\x6e\x62\x6f\x75\x6e\x64");
   ENTER_V8(isolate);
   i::SharedFunctionInfo* raw_result = NULL;
   { i::HandleScope scope(isolate);
@@ -1780,8 +1780,8 @@ Local<Script> ScriptCompiler::Compile(
     Source* source,
     CompileOptions options) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
-  ON_BAILOUT(isolate, "v8::ScriptCompiler::Compile()", return Local<Script>());
-  LOG_API(isolate, "ScriptCompiler::CompiletBound()");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x53\x63\x72\x69\x70\x74\x43\x6f\x6d\x70\x69\x6c\x65\x72\x3a\x3a\x43\x6f\x6d\x70\x69\x6c\x65\x28\x29", return Local<Script>());
+  LOG_API(isolate, "\x53\x63\x72\x69\x70\x74\x43\x6f\x6d\x70\x69\x6c\x65\x72\x3a\x3a\x43\x6f\x6d\x70\x69\x6c\x65\x74\x42\x6f\x75\x6e\x64\x28\x29");
   ENTER_V8(isolate);
   Local<UnboundScript> generic = CompileUnbound(v8_isolate, source, options);
   if (generic.IsEmpty()) return Local<Script>();
@@ -1970,7 +1970,7 @@ void v8::TryCatch::SetCaptureMessage(bool value) {
 
 Local<String> Message::Get() const {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Message::Get()", return Local<String>());
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4d\x65\x73\x73\x61\x67\x65\x3a\x3a\x47\x65\x74\x28\x29", return Local<String>());
   ENTER_V8(isolate);
   EscapableHandleScope scope(reinterpret_cast<Isolate*>(isolate));
   i::Handle<i::Object> obj = Utils::OpenHandle(this);
@@ -2048,14 +2048,14 @@ MUST_USE_RESULT static i::MaybeHandle<i::Object> CallV8HeapFunction(
 
 int Message::GetLineNumber() const {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Message::GetLineNumber()", return kNoLineNumberInfo);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4d\x65\x73\x73\x61\x67\x65\x3a\x3a\x47\x65\x74\x4c\x69\x6e\x65\x4e\x75\x6d\x62\x65\x72\x28\x29", return kNoLineNumberInfo);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
 
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> result;
   has_pending_exception = !CallV8HeapFunction(
-      "GetLineNumber", Utils::OpenHandle(this)).ToHandle(&result);
+      "\x47\x65\x74\x4c\x69\x6e\x65\x4e\x75\x6d\x62\x65\x72", Utils::OpenHandle(this)).ToHandle(&result);
   EXCEPTION_BAILOUT_CHECK(isolate, 0);
   return static_cast<int>(result->Number());
 }
@@ -2083,14 +2083,14 @@ int Message::GetEndPosition() const {
 
 int Message::GetStartColumn() const {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Message::GetStartColumn()", return kNoColumnInfo);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4d\x65\x73\x73\x61\x67\x65\x3a\x3a\x47\x65\x74\x53\x74\x61\x72\x74\x43\x6f\x6c\x75\x6d\x6e\x28\x29", return kNoColumnInfo);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::JSObject> data_obj = Utils::OpenHandle(this);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> start_col_obj;
   has_pending_exception = !CallV8HeapFunction(
-      "GetPositionInLine", data_obj).ToHandle(&start_col_obj);
+      "\x47\x65\x74\x50\x6f\x73\x69\x74\x69\x6f\x6e\x49\x6e\x4c\x69\x6e\x65", data_obj).ToHandle(&start_col_obj);
   EXCEPTION_BAILOUT_CHECK(isolate, 0);
   return static_cast<int>(start_col_obj->Number());
 }
@@ -2098,14 +2098,14 @@ int Message::GetStartColumn() const {
 
 int Message::GetEndColumn() const {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Message::GetEndColumn()", return kNoColumnInfo);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4d\x65\x73\x73\x61\x67\x65\x3a\x3a\x47\x65\x74\x45\x6e\x64\x43\x6f\x6c\x75\x6d\x6e\x28\x29", return kNoColumnInfo);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::JSObject> data_obj = Utils::OpenHandle(this);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> start_col_obj;
   has_pending_exception = !CallV8HeapFunction(
-      "GetPositionInLine", data_obj).ToHandle(&start_col_obj);
+      "\x47\x65\x74\x50\x6f\x73\x69\x74\x69\x6f\x6e\x49\x6e\x4c\x69\x6e\x65", data_obj).ToHandle(&start_col_obj);
   EXCEPTION_BAILOUT_CHECK(isolate, 0);
   i::Handle<i::JSMessageObject> message =
       i::Handle<i::JSMessageObject>::cast(data_obj);
@@ -2130,13 +2130,13 @@ bool Message::IsSharedCrossOrigin() const {
 
 Local<String> Message::GetSourceLine() const {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Message::GetSourceLine()", return Local<String>());
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4d\x65\x73\x73\x61\x67\x65\x3a\x3a\x47\x65\x74\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x28\x29", return Local<String>());
   ENTER_V8(isolate);
   EscapableHandleScope scope(reinterpret_cast<Isolate*>(isolate));
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> result;
   has_pending_exception = !CallV8HeapFunction(
-      "GetSourceLine", Utils::OpenHandle(this)).ToHandle(&result);
+      "\x47\x65\x74\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65", Utils::OpenHandle(this)).ToHandle(&result);
   EXCEPTION_BAILOUT_CHECK(isolate, Local<v8::String>());
   if (result->IsString()) {
     return scope.Escape(Utils::ToLocal(i::Handle<i::String>::cast(result)));
@@ -2211,17 +2211,17 @@ static int getIntProperty(const StackFrame* f, const char* propertyName,
 
 
 int StackFrame::GetLineNumber() const {
-  return getIntProperty(this, "lineNumber", Message::kNoLineNumberInfo);
+  return getIntProperty(this, "\x6c\x69\x6e\x65\x4e\x75\x6d\x62\x65\x72", Message::kNoLineNumberInfo);
 }
 
 
 int StackFrame::GetColumn() const {
-  return getIntProperty(this, "column", Message::kNoColumnInfo);
+  return getIntProperty(this, "\x63\x6f\x6c\x75\x6d\x6e", Message::kNoColumnInfo);
 }
 
 
 int StackFrame::GetScriptId() const {
-  return getIntProperty(this, "scriptId", Message::kNoScriptIdInfo);
+  return getIntProperty(this, "\x73\x63\x72\x69\x70\x74\x49\x64", Message::kNoScriptIdInfo);
 }
 
 
@@ -2240,17 +2240,17 @@ static Local<String> getStringProperty(const StackFrame* f,
 
 
 Local<String> StackFrame::GetScriptName() const {
-  return getStringProperty(this, "scriptName");
+  return getStringProperty(this, "\x73\x63\x72\x69\x70\x74\x4e\x61\x6d\x65");
 }
 
 
 Local<String> StackFrame::GetScriptNameOrSourceURL() const {
-  return getStringProperty(this, "scriptNameOrSourceURL");
+  return getStringProperty(this, "\x73\x63\x72\x69\x70\x74\x4e\x61\x6d\x65\x4f\x72\x53\x6f\x75\x72\x63\x65\x55\x52\x4c");
 }
 
 
 Local<String> StackFrame::GetFunctionName() const {
-  return getStringProperty(this, "functionName");
+  return getStringProperty(this, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x4e\x61\x6d\x65");
 }
 
 
@@ -2264,11 +2264,11 @@ static bool getBoolProperty(const StackFrame* f, const char* propertyName) {
   return obj->IsTrue();
 }
 
-bool StackFrame::IsEval() const { return getBoolProperty(this, "isEval"); }
+bool StackFrame::IsEval() const { return getBoolProperty(this, "\x69\x73\x45\x76\x61\x6c"); }
 
 
 bool StackFrame::IsConstructor() const {
-  return getBoolProperty(this, "isConstructor");
+  return getBoolProperty(this, "\x69\x73\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72");
 }
 
 
@@ -2277,7 +2277,7 @@ bool StackFrame::IsConstructor() const {
 Local<Value> JSON::Parse(Local<String> json_string) {
   i::Handle<i::String> string = Utils::OpenHandle(*json_string);
   i::Isolate* isolate = string->GetIsolate();
-  EnsureInitializedForIsolate(isolate, "v8::JSON::Parse");
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x4a\x53\x4f\x4e\x3a\x3a\x50\x61\x72\x73\x65");
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::String> source = i::String::Flatten(string);
@@ -2467,13 +2467,13 @@ bool Value::IsNativeError() const {
   if (obj->IsJSObject()) {
     i::Handle<i::JSObject> js_obj(i::JSObject::cast(*obj));
     i::Isolate* isolate = js_obj->GetIsolate();
-    return CheckConstructor(isolate, js_obj, "$Error") ||
-        CheckConstructor(isolate, js_obj, "$EvalError") ||
-        CheckConstructor(isolate, js_obj, "$RangeError") ||
-        CheckConstructor(isolate, js_obj, "$ReferenceError") ||
-        CheckConstructor(isolate, js_obj, "$SyntaxError") ||
-        CheckConstructor(isolate, js_obj, "$TypeError") ||
-        CheckConstructor(isolate, js_obj, "$URIError");
+    return CheckConstructor(isolate, js_obj, "\x24\x45\x72\x72\x6f\x72") ||
+        CheckConstructor(isolate, js_obj, "\x24\x45\x76\x61\x6c\x45\x72\x72\x6f\x72") ||
+        CheckConstructor(isolate, js_obj, "\x24\x52\x61\x6e\x67\x65\x45\x72\x72\x6f\x72") ||
+        CheckConstructor(isolate, js_obj, "\x24\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72") ||
+        CheckConstructor(isolate, js_obj, "\x24\x53\x79\x6e\x74\x61\x78\x45\x72\x72\x6f\x72") ||
+        CheckConstructor(isolate, js_obj, "\x24\x54\x79\x70\x65\x45\x72\x72\x6f\x72") ||
+        CheckConstructor(isolate, js_obj, "\x24\x55\x52\x49\x45\x72\x72\x6f\x72");
   } else {
     return false;
   }
@@ -2501,7 +2501,7 @@ Local<String> Value::ToString() const {
     str = obj;
   } else {
     i::Isolate* isolate = i::Isolate::Current();
-    LOG_API(isolate, "ToString");
+    LOG_API(isolate, "\x54\x6f\x53\x74\x72\x69\x6e\x67");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     has_pending_exception = !i::Execution::ToString(
@@ -2519,7 +2519,7 @@ Local<String> Value::ToDetailString() const {
     str = obj;
   } else {
     i::Isolate* isolate = i::Isolate::Current();
-    LOG_API(isolate, "ToDetailString");
+    LOG_API(isolate, "\x54\x6f\x44\x65\x74\x61\x69\x6c\x53\x74\x72\x69\x6e\x67");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     has_pending_exception = !i::Execution::ToDetailString(
@@ -2537,7 +2537,7 @@ Local<v8::Object> Value::ToObject() const {
     val = obj;
   } else {
     i::Isolate* isolate = i::Isolate::Current();
-    LOG_API(isolate, "ToObject");
+    LOG_API(isolate, "\x54\x6f\x4f\x62\x6a\x65\x63\x74");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     has_pending_exception = !i::Execution::ToObject(
@@ -2554,7 +2554,7 @@ Local<Boolean> Value::ToBoolean() const {
     return ToApiHandle<Boolean>(obj);
   } else {
     i::Isolate* isolate = i::Isolate::Current();
-    LOG_API(isolate, "ToBoolean");
+    LOG_API(isolate, "\x54\x6f\x42\x6f\x6f\x6c\x65\x61\x6e");
     ENTER_V8(isolate);
     i::Handle<i::Object> val =
         isolate->factory()->ToBoolean(obj->BooleanValue());
@@ -2570,7 +2570,7 @@ Local<Number> Value::ToNumber() const {
     num = obj;
   } else {
     i::Isolate* isolate = i::HeapObject::cast(*obj)->GetIsolate();
-    LOG_API(isolate, "ToNumber");
+    LOG_API(isolate, "\x54\x6f\x4e\x75\x6d\x62\x65\x72");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     has_pending_exception = !i::Execution::ToNumber(
@@ -2588,7 +2588,7 @@ Local<Integer> Value::ToInteger() const {
     num = obj;
   } else {
     i::Isolate* isolate = i::HeapObject::cast(*obj)->GetIsolate();
-    LOG_API(isolate, "ToInteger");
+    LOG_API(isolate, "\x54\x6f\x49\x6e\x74\x65\x67\x65\x72");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     has_pending_exception = !i::Execution::ToInteger(
@@ -2604,109 +2604,109 @@ void i::Internals::CheckInitializedImpl(v8::Isolate* external_isolate) {
   Utils::ApiCheck(isolate != NULL &&
                   isolate->IsInitialized() &&
                   !isolate->IsDead(),
-                  "v8::internal::Internals::CheckInitialized()",
-                  "Isolate is not initialized or V8 has died");
+                  "\x76\x38\x3a\x3a\x69\x6e\x74\x65\x72\x6e\x61\x6c\x3a\x3a\x49\x6e\x74\x65\x72\x6e\x61\x6c\x73\x3a\x3a\x43\x68\x65\x63\x6b\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64\x28\x29",
+                  "\x49\x73\x6f\x6c\x61\x74\x65\x20\x69\x73\x20\x6e\x6f\x74\x20\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64\x20\x6f\x72\x20\x56\x38\x20\x68\x61\x73\x20\x64\x69\x65\x64");
 }
 
 
 void External::CheckCast(v8::Value* that) {
   Utils::ApiCheck(Utils::OpenHandle(that)->IsExternal(),
-                  "v8::External::Cast()",
-                  "Could not convert to external");
+                  "\x76\x38\x3a\x3a\x45\x78\x74\x65\x72\x6e\x61\x6c\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x65\x78\x74\x65\x72\x6e\x61\x6c");
 }
 
 
 void v8::Object::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSObject(),
-                  "v8::Object::Cast()",
-                  "Could not convert to object");
+                  "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x6f\x62\x6a\x65\x63\x74");
 }
 
 
 void v8::Function::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSFunction(),
-                  "v8::Function::Cast()",
-                  "Could not convert to function");
+                  "\x76\x38\x3a\x3a\x46\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e");
 }
 
 
 void v8::String::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsString(),
-                  "v8::String::Cast()",
-                  "Could not convert to string");
+                  "\x76\x38\x3a\x3a\x53\x74\x72\x69\x6e\x67\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x73\x74\x72\x69\x6e\x67");
 }
 
 
 void v8::Symbol::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsSymbol(),
-                  "v8::Symbol::Cast()",
-                  "Could not convert to symbol");
+                  "\x76\x38\x3a\x3a\x53\x79\x6d\x62\x6f\x6c\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x73\x79\x6d\x62\x6f\x6c");
 }
 
 
 void v8::Number::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsNumber(),
-                  "v8::Number::Cast()",
-                  "Could not convert to number");
+                  "\x76\x38\x3a\x3a\x4e\x75\x6d\x62\x65\x72\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x6e\x75\x6d\x62\x65\x72");
 }
 
 
 void v8::Integer::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsNumber(),
-                  "v8::Integer::Cast()",
-                  "Could not convert to number");
+                  "\x76\x38\x3a\x3a\x49\x6e\x74\x65\x67\x65\x72\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x6e\x75\x6d\x62\x65\x72");
 }
 
 
 void v8::Array::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSArray(),
-                  "v8::Array::Cast()",
-                  "Could not convert to array");
+                  "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x61\x72\x72\x61\x79");
 }
 
 
 void v8::Promise::CheckCast(Value* that) {
   Utils::ApiCheck(that->IsPromise(),
-                  "v8::Promise::Cast()",
-                  "Could not convert to promise");
+                  "\x76\x38\x3a\x3a\x50\x72\x6f\x6d\x69\x73\x65\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x70\x72\x6f\x6d\x69\x73\x65");
 }
 
 
 void v8::Promise::Resolver::CheckCast(Value* that) {
   Utils::ApiCheck(that->IsPromise(),
-                  "v8::Promise::Resolver::Cast()",
-                  "Could not convert to promise resolver");
+                  "\x76\x38\x3a\x3a\x50\x72\x6f\x6d\x69\x73\x65\x3a\x3a\x52\x65\x73\x6f\x6c\x76\x65\x72\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x70\x72\x6f\x6d\x69\x73\x65\x20\x72\x65\x73\x6f\x6c\x76\x65\x72");
 }
 
 
 void v8::ArrayBuffer::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSArrayBuffer(),
-                  "v8::ArrayBuffer::Cast()",
-                  "Could not convert to ArrayBuffer");
+                  "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72");
 }
 
 
 void v8::ArrayBufferView::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSArrayBufferView(),
-                  "v8::ArrayBufferView::Cast()",
-                  "Could not convert to ArrayBufferView");
+                  "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x56\x69\x65\x77\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x56\x69\x65\x77");
 }
 
 
 void v8::TypedArray::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSTypedArray(),
-                  "v8::TypedArray::Cast()",
-                  "Could not convert to TypedArray");
+                  "\x76\x38\x3a\x3a\x54\x79\x70\x65\x64\x41\x72\x72\x61\x79\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x54\x79\x70\x65\x64\x41\x72\x72\x61\x79");
 }
 
 
@@ -2716,8 +2716,8 @@ void v8::TypedArray::CheckCast(Value* that) {
     Utils::ApiCheck(obj->IsJSTypedArray() &&                                  \
                     i::JSTypedArray::cast(*obj)->type() ==                    \
                         kExternal##Type##Array,                               \
-                    "v8::" #Type "Array::Cast()",                             \
-                    "Could not convert to " #Type "Array");                   \
+                    "\x76\x38\x3a\x3a" #Type "\x41\x72\x72\x61\x79\x3a\x3a\x43\x61\x73\x74\x28\x29",                             \
+                    "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20" #Type "\x41\x72\x72\x61\x79");                   \
   }
 
 
@@ -2729,8 +2729,8 @@ TYPED_ARRAYS(CHECK_TYPED_ARRAY_CAST)
 void v8::DataView::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSDataView(),
-                  "v8::DataView::Cast()",
-                  "Could not convert to DataView");
+                  "\x76\x38\x3a\x3a\x44\x61\x74\x61\x56\x69\x65\x77\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x44\x61\x74\x61\x56\x69\x65\x77");
 }
 
 
@@ -2740,8 +2740,8 @@ void v8::Date::CheckCast(v8::Value* that) {
   if (obj->IsHeapObject()) isolate = i::HeapObject::cast(*obj)->GetIsolate();
   Utils::ApiCheck(isolate != NULL &&
                   obj->HasSpecificClassOf(isolate->heap()->Date_string()),
-                  "v8::Date::Cast()",
-                  "Could not convert to date");
+                  "\x76\x38\x3a\x3a\x44\x61\x74\x65\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x64\x61\x74\x65");
 }
 
 
@@ -2751,8 +2751,8 @@ void v8::StringObject::CheckCast(v8::Value* that) {
   if (obj->IsHeapObject()) isolate = i::HeapObject::cast(*obj)->GetIsolate();
   Utils::ApiCheck(isolate != NULL &&
                   obj->HasSpecificClassOf(isolate->heap()->String_string()),
-                  "v8::StringObject::Cast()",
-                  "Could not convert to StringObject");
+                  "\x76\x38\x3a\x3a\x53\x74\x72\x69\x6e\x67\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x53\x74\x72\x69\x6e\x67\x4f\x62\x6a\x65\x63\x74");
 }
 
 
@@ -2762,8 +2762,8 @@ void v8::SymbolObject::CheckCast(v8::Value* that) {
   if (obj->IsHeapObject()) isolate = i::HeapObject::cast(*obj)->GetIsolate();
   Utils::ApiCheck(isolate != NULL &&
                   obj->HasSpecificClassOf(isolate->heap()->Symbol_string()),
-                  "v8::SymbolObject::Cast()",
-                  "Could not convert to SymbolObject");
+                  "\x76\x38\x3a\x3a\x53\x79\x6d\x62\x6f\x6c\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x53\x79\x6d\x62\x6f\x6c\x4f\x62\x6a\x65\x63\x74");
 }
 
 
@@ -2773,8 +2773,8 @@ void v8::NumberObject::CheckCast(v8::Value* that) {
   if (obj->IsHeapObject()) isolate = i::HeapObject::cast(*obj)->GetIsolate();
   Utils::ApiCheck(isolate != NULL &&
                   obj->HasSpecificClassOf(isolate->heap()->Number_string()),
-                  "v8::NumberObject::Cast()",
-                  "Could not convert to NumberObject");
+                  "\x76\x38\x3a\x3a\x4e\x75\x6d\x62\x65\x72\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x4e\x75\x6d\x62\x65\x72\x4f\x62\x6a\x65\x63\x74");
 }
 
 
@@ -2784,16 +2784,16 @@ void v8::BooleanObject::CheckCast(v8::Value* that) {
   if (obj->IsHeapObject()) isolate = i::HeapObject::cast(*obj)->GetIsolate();
   Utils::ApiCheck(isolate != NULL &&
                   obj->HasSpecificClassOf(isolate->heap()->Boolean_string()),
-                  "v8::BooleanObject::Cast()",
-                  "Could not convert to BooleanObject");
+                  "\x76\x38\x3a\x3a\x42\x6f\x6f\x6c\x65\x61\x6e\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x42\x6f\x6f\x6c\x65\x61\x6e\x4f\x62\x6a\x65\x63\x74");
 }
 
 
 void v8::RegExp::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSRegExp(),
-                  "v8::RegExp::Cast()",
-                  "Could not convert to regular expression");
+                  "\x76\x38\x3a\x3a\x52\x65\x67\x45\x78\x70\x3a\x3a\x43\x61\x73\x74\x28\x29",
+                  "\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x63\x6f\x6e\x76\x65\x72\x74\x20\x74\x6f\x20\x72\x65\x67\x75\x6c\x61\x72\x20\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e");
 }
 
 
@@ -2809,7 +2809,7 @@ double Value::NumberValue() const {
     num = obj;
   } else {
     i::Isolate* isolate = i::HeapObject::cast(*obj)->GetIsolate();
-    LOG_API(isolate, "NumberValue");
+    LOG_API(isolate, "\x4e\x75\x6d\x62\x65\x72\x56\x61\x6c\x75\x65");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     has_pending_exception = !i::Execution::ToNumber(
@@ -2827,7 +2827,7 @@ int64_t Value::IntegerValue() const {
     num = obj;
   } else {
     i::Isolate* isolate = i::HeapObject::cast(*obj)->GetIsolate();
-    LOG_API(isolate, "IntegerValue");
+    LOG_API(isolate, "\x49\x6e\x74\x65\x67\x65\x72\x56\x61\x6c\x75\x65");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     has_pending_exception = !i::Execution::ToInteger(
@@ -2849,7 +2849,7 @@ Local<Int32> Value::ToInt32() const {
     num = obj;
   } else {
     i::Isolate* isolate = i::HeapObject::cast(*obj)->GetIsolate();
-    LOG_API(isolate, "ToInt32");
+    LOG_API(isolate, "\x54\x6f\x49\x6e\x74\x33\x32");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     has_pending_exception = !i::Execution::ToInt32(isolate, obj).ToHandle(&num);
@@ -2866,7 +2866,7 @@ Local<Uint32> Value::ToUint32() const {
     num = obj;
   } else {
     i::Isolate* isolate = i::HeapObject::cast(*obj)->GetIsolate();
-    LOG_API(isolate, "ToUInt32");
+    LOG_API(isolate, "\x54\x6f\x55\x49\x6e\x74\x33\x32");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     has_pending_exception = !i::Execution::ToUint32(
@@ -2884,7 +2884,7 @@ Local<Uint32> Value::ToArrayIndex() const {
     return Local<Uint32>();
   }
   i::Isolate* isolate = i::HeapObject::cast(*obj)->GetIsolate();
-  LOG_API(isolate, "ToArrayIndex");
+  LOG_API(isolate, "\x54\x6f\x41\x72\x72\x61\x79\x49\x6e\x64\x65\x78");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> string_obj;
@@ -2912,7 +2912,7 @@ int32_t Value::Int32Value() const {
     return i::Smi::cast(*obj)->value();
   } else {
     i::Isolate* isolate = i::HeapObject::cast(*obj)->GetIsolate();
-    LOG_API(isolate, "Int32Value (slow)");
+    LOG_API(isolate, "\x49\x6e\x74\x33\x32\x56\x61\x6c\x75\x65\x20\x28\x73\x6c\x6f\x77\x29");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     i::Handle<i::Object> num;
@@ -2931,11 +2931,11 @@ bool Value::Equals(Handle<Value> that) const {
   i::Isolate* isolate = i::Isolate::Current();
   i::Handle<i::Object> obj = Utils::OpenHandle(this, true);
   if (!Utils::ApiCheck(!obj.is_null() && !that.IsEmpty(),
-                       "v8::Value::Equals()",
-                       "Reading from empty handle")) {
+                       "\x76\x38\x3a\x3a\x56\x61\x6c\x75\x65\x3a\x3a\x45\x71\x75\x61\x6c\x73\x28\x29",
+                       "\x52\x65\x61\x64\x69\x6e\x67\x20\x66\x72\x6f\x6d\x20\x65\x6d\x70\x74\x79\x20\x68\x61\x6e\x64\x6c\x65")) {
     return false;
   }
-  LOG_API(isolate, "Equals");
+  LOG_API(isolate, "\x45\x71\x75\x61\x6c\x73");
   ENTER_V8(isolate);
   i::Handle<i::Object> other = Utils::OpenHandle(*that);
   // If both obj and other are JSObjects, we'd better compare by identity
@@ -2948,7 +2948,7 @@ bool Value::Equals(Handle<Value> that) const {
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> result;
   has_pending_exception = !CallV8HeapFunction(
-      "EQUALS", obj, ARRAY_SIZE(args), args).ToHandle(&result);
+      "\x45\x51\x55\x41\x4c\x53", obj, ARRAY_SIZE(args), args).ToHandle(&result);
   EXCEPTION_BAILOUT_CHECK(isolate, false);
   return *result == i::Smi::FromInt(i::EQUAL);
 }
@@ -2958,11 +2958,11 @@ bool Value::StrictEquals(Handle<Value> that) const {
   i::Isolate* isolate = i::Isolate::Current();
   i::Handle<i::Object> obj = Utils::OpenHandle(this, true);
   if (!Utils::ApiCheck(!obj.is_null() && !that.IsEmpty(),
-                       "v8::Value::StrictEquals()",
-                       "Reading from empty handle")) {
+                       "\x76\x38\x3a\x3a\x56\x61\x6c\x75\x65\x3a\x3a\x53\x74\x72\x69\x63\x74\x45\x71\x75\x61\x6c\x73\x28\x29",
+                       "\x52\x65\x61\x64\x69\x6e\x67\x20\x66\x72\x6f\x6d\x20\x65\x6d\x70\x74\x79\x20\x68\x61\x6e\x64\x6c\x65")) {
     return false;
   }
-  LOG_API(isolate, "StrictEquals");
+  LOG_API(isolate, "\x53\x74\x72\x69\x63\x74\x45\x71\x75\x61\x6c\x73");
   i::Handle<i::Object> other = Utils::OpenHandle(*that);
   // Must check HeapNumber first, since NaN !== NaN.
   if (obj->IsHeapNumber()) {
@@ -2990,8 +2990,8 @@ bool Value::StrictEquals(Handle<Value> that) const {
 bool Value::SameValue(Handle<Value> that) const {
   i::Handle<i::Object> obj = Utils::OpenHandle(this, true);
   if (!Utils::ApiCheck(!obj.is_null() && !that.IsEmpty(),
-                       "v8::Value::SameValue()",
-                       "Reading from empty handle")) {
+                       "\x76\x38\x3a\x3a\x56\x61\x6c\x75\x65\x3a\x3a\x53\x61\x6d\x65\x56\x61\x6c\x75\x65\x28\x29",
+                       "\x52\x65\x61\x64\x69\x6e\x67\x20\x66\x72\x6f\x6d\x20\x65\x6d\x70\x74\x79\x20\x68\x61\x6e\x64\x6c\x65")) {
     return false;
   }
   i::Handle<i::Object> other = Utils::OpenHandle(*that);
@@ -3005,7 +3005,7 @@ uint32_t Value::Uint32Value() const {
     return i::Smi::cast(*obj)->value();
   } else {
     i::Isolate* isolate = i::HeapObject::cast(*obj)->GetIsolate();
-    LOG_API(isolate, "Uint32Value");
+    LOG_API(isolate, "\x55\x69\x6e\x74\x33\x32\x56\x61\x6c\x75\x65");
     ENTER_V8(isolate);
     EXCEPTION_PREAMBLE(isolate);
     i::Handle<i::Object> num;
@@ -3023,7 +3023,7 @@ uint32_t Value::Uint32Value() const {
 
 bool v8::Object::Set(v8::Handle<Value> key, v8::Handle<Value> value) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::Set()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x28\x29", return false);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::Object> self = Utils::OpenHandle(this);
@@ -3040,7 +3040,7 @@ bool v8::Object::Set(v8::Handle<Value> key, v8::Handle<Value> value) {
 
 bool v8::Object::Set(uint32_t index, v8::Handle<Value> value) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::Set()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x28\x29", return false);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
@@ -3057,7 +3057,7 @@ bool v8::Object::ForceSet(v8::Handle<Value> key,
                           v8::Handle<Value> value,
                           v8::PropertyAttribute attribs) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::ForceSet()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x46\x6f\x72\x63\x65\x53\x65\x74\x28\x29", return false);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
@@ -3082,7 +3082,7 @@ bool v8::Object::SetPrivate(v8::Handle<Private> key, v8::Handle<Value> value) {
 
 bool v8::Object::ForceDelete(v8::Handle<Value> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::ForceDelete()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x46\x6f\x72\x63\x65\x44\x65\x6c\x65\x74\x65\x28\x29", return false);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
@@ -3107,7 +3107,7 @@ bool v8::Object::ForceDelete(v8::Handle<Value> key) {
 
 Local<Value> v8::Object::Get(v8::Handle<Value> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::Get()", return Local<v8::Value>());
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x28\x29", return Local<v8::Value>());
   ENTER_V8(isolate);
   i::Handle<i::Object> self = Utils::OpenHandle(this);
   i::Handle<i::Object> key_obj = Utils::OpenHandle(*key);
@@ -3122,7 +3122,7 @@ Local<Value> v8::Object::Get(v8::Handle<Value> key) {
 
 Local<Value> v8::Object::Get(uint32_t index) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::Get()", return Local<v8::Value>());
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x28\x29", return Local<v8::Value>());
   ENTER_V8(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   EXCEPTION_PREAMBLE(isolate);
@@ -3141,7 +3141,7 @@ Local<Value> v8::Object::GetPrivate(v8::Handle<Private> key) {
 
 PropertyAttribute v8::Object::GetPropertyAttributes(v8::Handle<Value> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::GetPropertyAttributes()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x50\x72\x6f\x70\x65\x72\x74\x79\x41\x74\x74\x72\x69\x62\x75\x74\x65\x73\x28\x29",
              return static_cast<PropertyAttribute>(NONE));
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
@@ -3166,7 +3166,7 @@ PropertyAttribute v8::Object::GetPropertyAttributes(v8::Handle<Value> key) {
 
 Local<Value> v8::Object::GetOwnPropertyDescriptor(Local<String> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::GetOwnPropertyDescriptor()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x29",
              return Local<Value>());
   ENTER_V8(isolate);
   i::Handle<i::JSObject> obj = Utils::OpenHandle(this);
@@ -3175,7 +3175,7 @@ Local<Value> v8::Object::GetOwnPropertyDescriptor(Local<String> key) {
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> result;
   has_pending_exception = !CallV8HeapFunction(
-      "ObjectGetOwnPropertyDescriptor",
+      "\x4f\x62\x6a\x65\x63\x74\x47\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72",
       isolate->factory()->undefined_value(),
       ARRAY_SIZE(args),
       args).ToHandle(&result);
@@ -3186,7 +3186,7 @@ Local<Value> v8::Object::GetOwnPropertyDescriptor(Local<String> key) {
 
 Local<Value> v8::Object::GetPrototype() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::GetPrototype()", return Local<v8::Value>());
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x28\x29", return Local<v8::Value>());
   ENTER_V8(isolate);
   i::Handle<i::Object> self = Utils::OpenHandle(this);
   i::PrototypeIterator iter(isolate, self);
@@ -3196,7 +3196,7 @@ Local<Value> v8::Object::GetPrototype() {
 
 bool v8::Object::SetPrototype(Handle<Value> value) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::SetPrototype()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x28\x29", return false);
   ENTER_V8(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   i::Handle<i::Object> value_obj = Utils::OpenHandle(*value);
@@ -3216,7 +3216,7 @@ Local<Object> v8::Object::FindInstanceInPrototypeChain(
     v8::Handle<FunctionTemplate> tmpl) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
   ON_BAILOUT(isolate,
-             "v8::Object::FindInstanceInPrototypeChain()",
+             "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x46\x69\x6e\x64\x49\x6e\x73\x74\x61\x6e\x63\x65\x49\x6e\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x43\x68\x61\x69\x6e\x28\x29",
              return Local<v8::Object>());
   ENTER_V8(isolate);
   i::PrototypeIterator iter(isolate, *Utils::OpenHandle(this),
@@ -3235,7 +3235,7 @@ Local<Object> v8::Object::FindInstanceInPrototypeChain(
 
 Local<Array> v8::Object::GetPropertyNames() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::GetPropertyNames()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x50\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29",
              return Local<v8::Array>());
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
@@ -3257,7 +3257,7 @@ Local<Array> v8::Object::GetPropertyNames() {
 
 Local<Array> v8::Object::GetOwnPropertyNames() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::GetOwnPropertyNames()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29",
              return Local<v8::Array>());
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
@@ -3280,7 +3280,7 @@ Local<Array> v8::Object::GetOwnPropertyNames() {
 Local<String> v8::Object::ObjectProtoToString() {
   i::Isolate* i_isolate = Utils::OpenHandle(this)->GetIsolate();
   Isolate* isolate = reinterpret_cast<Isolate*>(i_isolate);
-  ON_BAILOUT(i_isolate, "v8::Object::ObjectProtoToString()",
+  ON_BAILOUT(i_isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x50\x72\x6f\x74\x6f\x54\x6f\x53\x74\x72\x69\x6e\x67\x28\x29",
              return Local<v8::String>());
   ENTER_V8(i_isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
@@ -3293,15 +3293,15 @@ Local<String> v8::Object::ObjectProtoToString() {
   //   return "[object " + c + "]";
 
   if (!name->IsString()) {
-    return v8::String::NewFromUtf8(isolate, "[object ]");
+    return v8::String::NewFromUtf8(isolate, "\x5b\x6f\x62\x6a\x65\x63\x74\x20\x5d");
   } else {
     i::Handle<i::String> class_name = i::Handle<i::String>::cast(name);
-    if (class_name->IsOneByteEqualTo(STATIC_ASCII_VECTOR("Arguments"))) {
-      return v8::String::NewFromUtf8(isolate, "[object Object]");
+    if (class_name->IsOneByteEqualTo(STATIC_ASCII_VECTOR("\x41\x72\x67\x75\x6d\x65\x6e\x74\x73"))) {
+      return v8::String::NewFromUtf8(isolate, "\x5b\x6f\x62\x6a\x65\x63\x74\x20\x4f\x62\x6a\x65\x63\x74\x5d");
     } else {
-      const char* prefix = "[object ";
+      const char* prefix = "\x5b\x6f\x62\x6a\x65\x63\x74\x20";
       Local<String> str = Utils::ToLocal(class_name);
-      const char* postfix = "]";
+      const char* postfix = "\x5d";
 
       int prefix_len = i::StrLength(prefix);
       int str_len = str->Utf8Length();
@@ -3333,7 +3333,7 @@ Local<String> v8::Object::ObjectProtoToString() {
 
 Local<String> v8::Object::GetConstructorName() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::GetConstructorName()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x4e\x61\x6d\x65\x28\x29",
              return Local<v8::String>());
   ENTER_V8(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
@@ -3344,7 +3344,7 @@ Local<String> v8::Object::GetConstructorName() {
 
 bool v8::Object::Delete(v8::Handle<Value> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::Delete()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x44\x65\x6c\x65\x74\x65\x28\x29", return false);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
@@ -3365,7 +3365,7 @@ bool v8::Object::DeletePrivate(v8::Handle<Private> key) {
 
 bool v8::Object::Has(v8::Handle<Value> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::Has()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x48\x61\x73\x28\x29", return false);
   ENTER_V8(isolate);
   i::Handle<i::JSReceiver> self = Utils::OpenHandle(this);
   i::Handle<i::Object> key_obj = Utils::OpenHandle(*key);
@@ -3387,7 +3387,7 @@ bool v8::Object::HasPrivate(v8::Handle<Private> key) {
 
 bool v8::Object::Delete(uint32_t index) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::DeleteProperty()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x44\x65\x6c\x65\x74\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x29",
              return false);
   ENTER_V8(isolate);
   HandleScope scope(reinterpret_cast<Isolate*>(isolate));
@@ -3404,7 +3404,7 @@ bool v8::Object::Delete(uint32_t index) {
 
 bool v8::Object::Has(uint32_t index) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::HasProperty()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x48\x61\x73\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x29", return false);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   EXCEPTION_PREAMBLE(isolate);
   Maybe<bool> maybe = i::JSReceiver::HasElement(self, index);
@@ -3423,7 +3423,7 @@ static inline bool ObjectSetAccessor(Object* obj,
                                      AccessControl settings,
                                      PropertyAttribute attributes) {
   i::Isolate* isolate = Utils::OpenHandle(obj)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::SetAccessor()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x41\x63\x63\x65\x73\x73\x6f\x72\x28\x29", return false);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   v8::Handle<AccessorSignature> signature;
@@ -3471,7 +3471,7 @@ void Object::SetAccessorProperty(Local<String> name,
   // TODO(verwaest): Remove |settings|.
   DCHECK_EQ(v8::DEFAULT, settings);
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::SetAccessorProperty()", return);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x41\x63\x63\x65\x73\x73\x6f\x72\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x29", return);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::Object> getter_i = v8::Utils::OpenHandle(*getter);
@@ -3487,7 +3487,7 @@ void Object::SetAccessorProperty(Local<String> name,
 
 bool v8::Object::HasOwnProperty(Handle<String> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::HasOwnProperty()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x48\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x29",
              return false);
   EXCEPTION_PREAMBLE(isolate);
   Maybe<bool> maybe = i::JSReceiver::HasOwnProperty(Utils::OpenHandle(this),
@@ -3500,7 +3500,7 @@ bool v8::Object::HasOwnProperty(Handle<String> key) {
 
 bool v8::Object::HasRealNamedProperty(Handle<String> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::HasRealNamedProperty()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x48\x61\x73\x52\x65\x61\x6c\x4e\x61\x6d\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x29",
              return false);
   EXCEPTION_PREAMBLE(isolate);
   Maybe<bool> maybe = i::JSObject::HasRealNamedProperty(
@@ -3513,7 +3513,7 @@ bool v8::Object::HasRealNamedProperty(Handle<String> key) {
 
 bool v8::Object::HasRealIndexedProperty(uint32_t index) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::HasRealIndexedProperty()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x48\x61\x73\x52\x65\x61\x6c\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x29",
              return false);
   EXCEPTION_PREAMBLE(isolate);
   Maybe<bool> maybe =
@@ -3527,7 +3527,7 @@ bool v8::Object::HasRealIndexedProperty(uint32_t index) {
 bool v8::Object::HasRealNamedCallbackProperty(Handle<String> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
   ON_BAILOUT(isolate,
-             "v8::Object::HasRealNamedCallbackProperty()",
+             "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x48\x61\x73\x52\x65\x61\x6c\x4e\x61\x6d\x65\x64\x43\x61\x6c\x6c\x62\x61\x63\x6b\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x29",
              return false);
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
@@ -3541,7 +3541,7 @@ bool v8::Object::HasRealNamedCallbackProperty(Handle<String> key) {
 
 bool v8::Object::HasNamedLookupInterceptor() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::HasNamedLookupInterceptor()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x48\x61\x73\x4e\x61\x6d\x65\x64\x4c\x6f\x6f\x6b\x75\x70\x49\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x28\x29",
              return false);
   return Utils::OpenHandle(this)->HasNamedInterceptor();
 }
@@ -3549,7 +3549,7 @@ bool v8::Object::HasNamedLookupInterceptor() {
 
 bool v8::Object::HasIndexedLookupInterceptor() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::HasIndexedLookupInterceptor()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x48\x61\x73\x49\x6e\x64\x65\x78\x65\x64\x4c\x6f\x6f\x6b\x75\x70\x49\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x28\x29",
              return false);
   return Utils::OpenHandle(this)->HasIndexedInterceptor();
 }
@@ -3582,7 +3582,7 @@ Local<Value> v8::Object::GetRealNamedPropertyInPrototypeChain(
     Handle<String> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
   ON_BAILOUT(isolate,
-             "v8::Object::GetRealNamedPropertyInPrototypeChain()",
+             "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x52\x65\x61\x6c\x4e\x61\x6d\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x79\x49\x6e\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x43\x68\x61\x69\x6e\x28\x29",
              return Local<Value>());
   ENTER_V8(isolate);
   i::Handle<i::JSObject> self_obj = Utils::OpenHandle(this);
@@ -3595,7 +3595,7 @@ Local<Value> v8::Object::GetRealNamedPropertyInPrototypeChain(
 
 Local<Value> v8::Object::GetRealNamedProperty(Handle<String> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::GetRealNamedProperty()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x52\x65\x61\x6c\x4e\x61\x6d\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x29",
              return Local<Value>());
   ENTER_V8(isolate);
   i::Handle<i::JSObject> self_obj = Utils::OpenHandle(this);
@@ -3611,7 +3611,7 @@ Local<Value> v8::Object::GetRealNamedProperty(Handle<String> key) {
 // the old map of this object will fail.
 void v8::Object::TurnOnAccessCheck() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::TurnOnAccessCheck()", return);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x54\x75\x72\x6e\x4f\x6e\x41\x63\x63\x65\x73\x73\x43\x68\x65\x63\x6b\x28\x29", return);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::JSObject> obj = Utils::OpenHandle(this);
@@ -3633,7 +3633,7 @@ bool v8::Object::IsDirty() {
 
 Local<v8::Object> v8::Object::Clone() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::Clone()", return Local<Object>());
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x6c\x6f\x6e\x65\x28\x29", return Local<Object>());
   ENTER_V8(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   EXCEPTION_PREAMBLE(isolate);
@@ -3647,7 +3647,7 @@ Local<v8::Object> v8::Object::Clone() {
 Local<v8::Context> v8::Object::CreationContext() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
   ON_BAILOUT(isolate,
-             "v8::Object::CreationContext()", return Local<v8::Context>());
+             "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x72\x65\x61\x74\x69\x6f\x6e\x43\x6f\x6e\x74\x65\x78\x74\x28\x29", return Local<v8::Context>());
   ENTER_V8(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   i::Context* context = self->GetCreationContext();
@@ -3657,7 +3657,7 @@ Local<v8::Context> v8::Object::CreationContext() {
 
 int v8::Object::GetIdentityHash() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::GetIdentityHash()", return 0);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x49\x64\x65\x6e\x74\x69\x74\x79\x48\x61\x73\x68\x28\x29", return 0);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
@@ -3668,7 +3668,7 @@ int v8::Object::GetIdentityHash() {
 bool v8::Object::SetHiddenValue(v8::Handle<v8::String> key,
                                 v8::Handle<v8::Value> value) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::SetHiddenValue()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x48\x69\x64\x64\x65\x6e\x56\x61\x6c\x75\x65\x28\x29", return false);
   if (value.IsEmpty()) return DeleteHiddenValue(key);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
@@ -3685,7 +3685,7 @@ bool v8::Object::SetHiddenValue(v8::Handle<v8::String> key,
 
 v8::Local<v8::Value> v8::Object::GetHiddenValue(v8::Handle<v8::String> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::GetHiddenValue()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x48\x69\x64\x64\x65\x6e\x56\x61\x6c\x75\x65\x28\x29",
              return Local<v8::Value>());
   ENTER_V8(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
@@ -3700,7 +3700,7 @@ v8::Local<v8::Value> v8::Object::GetHiddenValue(v8::Handle<v8::String> key) {
 
 bool v8::Object::DeleteHiddenValue(v8::Handle<v8::String> key) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::DeleteHiddenValue()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x44\x65\x6c\x65\x74\x65\x48\x69\x64\x64\x65\x6e\x56\x61\x6c\x75\x65\x28\x29", return false);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
@@ -3750,19 +3750,19 @@ void PrepareExternalArrayElements(i::Handle<i::JSObject> object,
 
 void v8::Object::SetIndexedPropertiesToPixelData(uint8_t* data, int length) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::SetElementsToPixelData()", return);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x53\x65\x74\x45\x6c\x65\x6d\x65\x6e\x74\x73\x54\x6f\x50\x69\x78\x65\x6c\x44\x61\x74\x61\x28\x29", return);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   if (!Utils::ApiCheck(length >= 0 &&
                        length <= i::ExternalUint8ClampedArray::kMaxLength,
-                       "v8::Object::SetIndexedPropertiesToPixelData()",
-                       "length exceeds max acceptable value")) {
+                       "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x54\x6f\x50\x69\x78\x65\x6c\x44\x61\x74\x61\x28\x29",
+                       "\x6c\x65\x6e\x67\x74\x68\x20\x65\x78\x63\x65\x65\x64\x73\x20\x6d\x61\x78\x20\x61\x63\x63\x65\x70\x74\x61\x62\x6c\x65\x20\x76\x61\x6c\x75\x65")) {
     return;
   }
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   if (!Utils::ApiCheck(!self->IsJSArray(),
-                       "v8::Object::SetIndexedPropertiesToPixelData()",
-                       "JSArray is not supported")) {
+                       "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x54\x6f\x50\x69\x78\x65\x6c\x44\x61\x74\x61\x28\x29",
+                       "\x4a\x53\x41\x72\x72\x61\x79\x20\x69\x73\x20\x6e\x6f\x74\x20\x73\x75\x70\x70\x6f\x72\x74\x65\x64")) {
     return;
   }
   PrepareExternalArrayElements(self, data, kExternalUint8ClampedArray, length);
@@ -3771,7 +3771,7 @@ void v8::Object::SetIndexedPropertiesToPixelData(uint8_t* data, int length) {
 
 bool v8::Object::HasIndexedPropertiesInPixelData() {
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
-  ON_BAILOUT(self->GetIsolate(), "v8::HasIndexedPropertiesInPixelData()",
+  ON_BAILOUT(self->GetIsolate(), "\x76\x38\x3a\x3a\x48\x61\x73\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x49\x6e\x50\x69\x78\x65\x6c\x44\x61\x74\x61\x28\x29",
              return false);
   return self->HasExternalUint8ClampedElements();
 }
@@ -3779,7 +3779,7 @@ bool v8::Object::HasIndexedPropertiesInPixelData() {
 
 uint8_t* v8::Object::GetIndexedPropertiesPixelData() {
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
-  ON_BAILOUT(self->GetIsolate(), "v8::GetIndexedPropertiesPixelData()",
+  ON_BAILOUT(self->GetIsolate(), "\x76\x38\x3a\x3a\x47\x65\x74\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x50\x69\x78\x65\x6c\x44\x61\x74\x61\x28\x29",
              return NULL);
   if (self->HasExternalUint8ClampedElements()) {
     return i::ExternalUint8ClampedArray::cast(self->elements())->
@@ -3792,7 +3792,7 @@ uint8_t* v8::Object::GetIndexedPropertiesPixelData() {
 
 int v8::Object::GetIndexedPropertiesPixelDataLength() {
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
-  ON_BAILOUT(self->GetIsolate(), "v8::GetIndexedPropertiesPixelDataLength()",
+  ON_BAILOUT(self->GetIsolate(), "\x76\x38\x3a\x3a\x47\x65\x74\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x50\x69\x78\x65\x6c\x44\x61\x74\x61\x4c\x65\x6e\x67\x74\x68\x28\x29",
              return -1);
   if (self->HasExternalUint8ClampedElements()) {
     return i::ExternalUint8ClampedArray::cast(self->elements())->length();
@@ -3807,18 +3807,18 @@ void v8::Object::SetIndexedPropertiesToExternalArrayData(
     ExternalArrayType array_type,
     int length) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::SetIndexedPropertiesToExternalArrayData()", return);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x53\x65\x74\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x54\x6f\x45\x78\x74\x65\x72\x6e\x61\x6c\x41\x72\x72\x61\x79\x44\x61\x74\x61\x28\x29", return);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   if (!Utils::ApiCheck(length >= 0 && length <= i::ExternalArray::kMaxLength,
-                       "v8::Object::SetIndexedPropertiesToExternalArrayData()",
-                       "length exceeds max acceptable value")) {
+                       "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x54\x6f\x45\x78\x74\x65\x72\x6e\x61\x6c\x41\x72\x72\x61\x79\x44\x61\x74\x61\x28\x29",
+                       "\x6c\x65\x6e\x67\x74\x68\x20\x65\x78\x63\x65\x65\x64\x73\x20\x6d\x61\x78\x20\x61\x63\x63\x65\x70\x74\x61\x62\x6c\x65\x20\x76\x61\x6c\x75\x65")) {
     return;
   }
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   if (!Utils::ApiCheck(!self->IsJSArray(),
-                       "v8::Object::SetIndexedPropertiesToExternalArrayData()",
-                       "JSArray is not supported")) {
+                       "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x54\x6f\x45\x78\x74\x65\x72\x6e\x61\x6c\x41\x72\x72\x61\x79\x44\x61\x74\x61\x28\x29",
+                       "\x4a\x53\x41\x72\x72\x61\x79\x20\x69\x73\x20\x6e\x6f\x74\x20\x73\x75\x70\x70\x6f\x72\x74\x65\x64")) {
     return;
   }
   PrepareExternalArrayElements(self, data, array_type, length);
@@ -3828,7 +3828,7 @@ void v8::Object::SetIndexedPropertiesToExternalArrayData(
 bool v8::Object::HasIndexedPropertiesInExternalArrayData() {
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   ON_BAILOUT(self->GetIsolate(),
-             "v8::HasIndexedPropertiesInExternalArrayData()",
+             "\x76\x38\x3a\x3a\x48\x61\x73\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x49\x6e\x45\x78\x74\x65\x72\x6e\x61\x6c\x41\x72\x72\x61\x79\x44\x61\x74\x61\x28\x29",
              return false);
   return self->HasExternalArrayElements();
 }
@@ -3837,7 +3837,7 @@ bool v8::Object::HasIndexedPropertiesInExternalArrayData() {
 void* v8::Object::GetIndexedPropertiesExternalArrayData() {
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   ON_BAILOUT(self->GetIsolate(),
-             "v8::GetIndexedPropertiesExternalArrayData()",
+             "\x76\x38\x3a\x3a\x47\x65\x74\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x45\x78\x74\x65\x72\x6e\x61\x6c\x41\x72\x72\x61\x79\x44\x61\x74\x61\x28\x29",
              return NULL);
   if (self->HasExternalArrayElements()) {
     return i::ExternalArray::cast(self->elements())->external_pointer();
@@ -3850,7 +3850,7 @@ void* v8::Object::GetIndexedPropertiesExternalArrayData() {
 ExternalArrayType v8::Object::GetIndexedPropertiesExternalArrayDataType() {
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   ON_BAILOUT(self->GetIsolate(),
-             "v8::GetIndexedPropertiesExternalArrayDataType()",
+             "\x76\x38\x3a\x3a\x47\x65\x74\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x45\x78\x74\x65\x72\x6e\x61\x6c\x41\x72\x72\x61\x79\x44\x61\x74\x61\x54\x79\x70\x65\x28\x29",
              return static_cast<ExternalArrayType>(-1));
   switch (self->elements()->map()->instance_type()) {
 #define INSTANCE_TYPE_TO_ARRAY_TYPE(Type, type, TYPE, ctype, size)            \
@@ -3867,7 +3867,7 @@ ExternalArrayType v8::Object::GetIndexedPropertiesExternalArrayDataType() {
 int v8::Object::GetIndexedPropertiesExternalArrayDataLength() {
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   ON_BAILOUT(self->GetIsolate(),
-             "v8::GetIndexedPropertiesExternalArrayDataLength()",
+             "\x76\x38\x3a\x3a\x47\x65\x74\x49\x6e\x64\x65\x78\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x45\x78\x74\x65\x72\x6e\x61\x6c\x41\x72\x72\x61\x79\x44\x61\x74\x61\x4c\x65\x6e\x67\x74\x68\x28\x29",
              return 0);
   if (self->HasExternalArrayElements()) {
     return i::ExternalArray::cast(self->elements())->length();
@@ -3879,7 +3879,7 @@ int v8::Object::GetIndexedPropertiesExternalArrayDataLength() {
 
 bool v8::Object::IsCallable() {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::IsCallable()", return false);
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x49\x73\x43\x61\x6c\x6c\x61\x62\x6c\x65\x28\x29", return false);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::JSObject> obj = Utils::OpenHandle(this);
@@ -3891,9 +3891,9 @@ Local<v8::Value> Object::CallAsFunction(v8::Handle<v8::Value> recv,
                                         int argc,
                                         v8::Handle<v8::Value> argv[]) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::CallAsFunction()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x61\x6c\x6c\x41\x73\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29",
              return Local<v8::Value>());
-  LOG_API(isolate, "Object::CallAsFunction");
+  LOG_API(isolate, "\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x61\x6c\x6c\x41\x73\x46\x75\x6e\x63\x74\x69\x6f\x6e");
   ENTER_V8(isolate);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
   i::HandleScope scope(isolate);
@@ -3925,9 +3925,9 @@ Local<v8::Value> Object::CallAsFunction(v8::Handle<v8::Value> recv,
 Local<v8::Value> Object::CallAsConstructor(int argc,
                                            v8::Handle<v8::Value> argv[]) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Object::CallAsConstructor()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x61\x6c\x6c\x41\x73\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x28\x29",
              return Local<v8::Object>());
-  LOG_API(isolate, "Object::CallAsConstructor");
+  LOG_API(isolate, "\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x43\x61\x6c\x6c\x41\x73\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72");
   ENTER_V8(isolate);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
   i::HandleScope scope(isolate);
@@ -3968,7 +3968,7 @@ Local<Function> Function::New(Isolate* v8_isolate,
                               Local<Value> data,
                               int length) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
-  LOG_API(isolate, "Function::New");
+  LOG_API(isolate, "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x3a\x4e\x65\x77");
   ENTER_V8(isolate);
   return FunctionTemplateNew(
       isolate, callback, data, Local<Signature>(), length, true)->
@@ -3984,9 +3984,9 @@ Local<v8::Object> Function::NewInstance() const {
 Local<v8::Object> Function::NewInstance(int argc,
                                         v8::Handle<v8::Value> argv[]) const {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Function::NewInstance()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x46\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x3a\x4e\x65\x77\x49\x6e\x73\x74\x61\x6e\x63\x65\x28\x29",
              return Local<v8::Object>());
-  LOG_API(isolate, "Function::NewInstance");
+  LOG_API(isolate, "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x3a\x4e\x65\x77\x49\x6e\x73\x74\x61\x6e\x63\x65");
   ENTER_V8(isolate);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
   EscapableHandleScope scope(reinterpret_cast<Isolate*>(isolate));
@@ -4005,8 +4005,8 @@ Local<v8::Object> Function::NewInstance(int argc,
 Local<v8::Value> Function::Call(v8::Handle<v8::Value> recv, int argc,
                                 v8::Handle<v8::Value> argv[]) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Function::Call()", return Local<v8::Value>());
-  LOG_API(isolate, "Function::Call");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x46\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x3a\x43\x61\x6c\x6c\x28\x29", return Local<v8::Value>());
+  LOG_API(isolate, "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x3a\x43\x61\x6c\x6c");
   ENTER_V8(isolate);
   i::TimerEventScope<i::TimerEventExecute> timer_scope(isolate);
   i::HandleScope scope(isolate);
@@ -4048,14 +4048,14 @@ Handle<Value> Function::GetInferredName() const {
 
 Handle<Value> Function::GetDisplayName() const {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Function::GetDisplayName()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x46\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x3a\x47\x65\x74\x44\x69\x73\x70\x6c\x61\x79\x4e\x61\x6d\x65\x28\x29",
              return ToApiHandle<Primitive>(
                  isolate->factory()->undefined_value()));
   ENTER_V8(isolate);
   i::Handle<i::JSFunction> func = Utils::OpenHandle(this);
   i::Handle<i::String> property_name =
       isolate->factory()->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("displayName"));
+          STATIC_ASCII_VECTOR("\x64\x69\x73\x70\x6c\x61\x79\x4e\x61\x6d\x65"));
   i::LookupResult lookup(isolate);
   func->LookupRealNamedProperty(property_name, &lookup);
   if (lookup.IsFound()) {
@@ -4633,7 +4633,7 @@ class Utf8WriterVisitor {
     if (write_null &&
         !early_termination_ &&
         (capacity_ == -1 || (buffer_ - start_) < capacity_)) {
-      *buffer_++ = '\0';
+      *buffer_++ = '\x0';
     }
     return static_cast<int>(buffer_ - start_);
   }
@@ -4676,7 +4676,7 @@ int String::WriteUtf8(char* buffer,
                       int* nchars_ref,
                       int options) const {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  LOG_API(isolate, "String::WriteUtf8");
+  LOG_API(isolate, "\x53\x74\x72\x69\x6e\x67\x3a\x3a\x57\x72\x69\x74\x65\x55\x74\x66\x38");
   ENTER_V8(isolate);
   i::Handle<i::String> str = Utils::OpenHandle(this);
   if (options & HINT_MANY_WRITES_EXPECTED) {
@@ -4729,7 +4729,7 @@ static inline int WriteHelper(const String* string,
                               int length,
                               int options) {
   i::Isolate* isolate = Utils::OpenHandle(string)->GetIsolate();
-  LOG_API(isolate, "String::Write");
+  LOG_API(isolate, "\x53\x74\x72\x69\x6e\x67\x3a\x3a\x57\x72\x69\x74\x65");
   ENTER_V8(isolate);
   DCHECK(start >= 0 && length >= -1);
   i::Handle<i::String> str = Utils::OpenHandle(string);
@@ -4746,7 +4746,7 @@ static inline int WriteHelper(const String* string,
   i::String::WriteToFlat(*str, buffer, start, end);
   if (!(options & String::NO_NULL_TERMINATION) &&
       (length == -1 || end - start < length)) {
-    buffer[end - start] = '\0';
+    buffer[end - start] = '\x0';
   }
   return end - start;
 }
@@ -4770,7 +4770,7 @@ int String::Write(uint16_t* buffer,
 
 bool v8::String::IsExternal() const {
   i::Handle<i::String> str = Utils::OpenHandle(this);
-  EnsureInitializedForIsolate(str->GetIsolate(), "v8::String::IsExternal()");
+  EnsureInitializedForIsolate(str->GetIsolate(), "\x76\x38\x3a\x3a\x53\x74\x72\x69\x6e\x67\x3a\x3a\x49\x73\x45\x78\x74\x65\x72\x6e\x61\x6c\x28\x29");
   return i::StringShape(*str).IsExternalTwoByte();
 }
 
@@ -4897,13 +4897,13 @@ static bool InternalFieldOK(i::Handle<i::JSObject> obj,
                             const char* location) {
   return Utils::ApiCheck(index < obj->GetInternalFieldCount(),
                          location,
-                         "Internal field out of bounds");
+                         "\x49\x6e\x74\x65\x72\x6e\x61\x6c\x20\x66\x69\x65\x6c\x64\x20\x6f\x75\x74\x20\x6f\x66\x20\x62\x6f\x75\x6e\x64\x73");
 }
 
 
 Local<Value> v8::Object::SlowGetInternalField(int index) {
   i::Handle<i::JSObject> obj = Utils::OpenHandle(this);
-  const char* location = "v8::Object::GetInternalField()";
+  const char* location = "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x49\x6e\x74\x65\x72\x6e\x61\x6c\x46\x69\x65\x6c\x64\x28\x29";
   if (!InternalFieldOK(obj, index, location)) return Local<Value>();
   i::Handle<i::Object> value(obj->GetInternalField(index), obj->GetIsolate());
   return Utils::ToLocal(value);
@@ -4912,7 +4912,7 @@ Local<Value> v8::Object::SlowGetInternalField(int index) {
 
 void v8::Object::SetInternalField(int index, v8::Handle<Value> value) {
   i::Handle<i::JSObject> obj = Utils::OpenHandle(this);
-  const char* location = "v8::Object::SetInternalField()";
+  const char* location = "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x49\x6e\x74\x65\x72\x6e\x61\x6c\x46\x69\x65\x6c\x64\x28\x29";
   if (!InternalFieldOK(obj, index, location)) return;
   i::Handle<i::Object> val = Utils::OpenHandle(*value);
   obj->SetInternalField(index, *val);
@@ -4922,7 +4922,7 @@ void v8::Object::SetInternalField(int index, v8::Handle<Value> value) {
 
 void* v8::Object::SlowGetAlignedPointerFromInternalField(int index) {
   i::Handle<i::JSObject> obj = Utils::OpenHandle(this);
-  const char* location = "v8::Object::GetAlignedPointerFromInternalField()";
+  const char* location = "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x47\x65\x74\x41\x6c\x69\x67\x6e\x65\x64\x50\x6f\x69\x6e\x74\x65\x72\x46\x72\x6f\x6d\x49\x6e\x74\x65\x72\x6e\x61\x6c\x46\x69\x65\x6c\x64\x28\x29";
   if (!InternalFieldOK(obj, index, location)) return NULL;
   return DecodeSmiToAligned(obj->GetInternalField(index), location);
 }
@@ -4930,7 +4930,7 @@ void* v8::Object::SlowGetAlignedPointerFromInternalField(int index) {
 
 void v8::Object::SetAlignedPointerInInternalField(int index, void* value) {
   i::Handle<i::JSObject> obj = Utils::OpenHandle(this);
-  const char* location = "v8::Object::SetAlignedPointerInInternalField()";
+  const char* location = "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x65\x74\x41\x6c\x69\x67\x6e\x65\x64\x50\x6f\x69\x6e\x74\x65\x72\x49\x6e\x49\x6e\x74\x65\x72\x6e\x61\x6c\x46\x69\x65\x6c\x64\x28\x29";
   if (!InternalFieldOK(obj, index, location)) return;
   obj->SetInternalField(index, EncodeAlignedAsSmi(value, location));
   DCHECK_EQ(value, GetAlignedPointerFromInternalField(index));
@@ -5012,8 +5012,8 @@ void v8::V8::SetJitCodeEventHandler(
 void v8::V8::SetArrayBufferAllocator(
     ArrayBuffer::Allocator* allocator) {
   if (!Utils::ApiCheck(i::V8::ArrayBufferAllocator() == NULL,
-                       "v8::V8::SetArrayBufferAllocator",
-                       "ArrayBufferAllocator might only be set once"))
+                       "\x76\x38\x3a\x3a\x56\x38\x3a\x3a\x53\x65\x74\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x41\x6c\x6c\x6f\x63\x61\x74\x6f\x72",
+                       "\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x41\x6c\x6c\x6f\x63\x61\x74\x6f\x72\x20\x6d\x69\x67\x68\x74\x20\x6f\x6e\x6c\x79\x20\x62\x65\x20\x73\x65\x74\x20\x6f\x6e\x63\x65"))
     return;
   i::V8::SetArrayBufferAllocator(allocator);
 }
@@ -5158,9 +5158,9 @@ Local<Context> v8::Context::New(
     v8::Handle<ObjectTemplate> global_template,
     v8::Handle<Value> global_object) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(external_isolate);
-  EnsureInitializedForIsolate(isolate, "v8::Context::New()");
-  LOG_API(isolate, "Context::New");
-  ON_BAILOUT(isolate, "v8::Context::New()", return Local<Context>());
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(isolate, "\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x4e\x65\x77");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x4e\x65\x77\x28\x29", return Local<Context>());
   i::HandleScope scope(isolate);
   ExtensionConfiguration no_extensions;
   if (extensions == NULL) extensions = &no_extensions;
@@ -5250,9 +5250,9 @@ void Context::SetErrorMessageForCodeGenerationFromStrings(
 
 Local<v8::Object> ObjectTemplate::NewInstance() {
   i::Isolate* isolate = i::Isolate::Current();
-  ON_BAILOUT(isolate, "v8::ObjectTemplate::NewInstance()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x4e\x65\x77\x49\x6e\x73\x74\x61\x6e\x63\x65\x28\x29",
              return Local<v8::Object>());
-  LOG_API(isolate, "ObjectTemplate::NewInstance");
+  LOG_API(isolate, "\x4f\x62\x6a\x65\x63\x74\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x4e\x65\x77\x49\x6e\x73\x74\x61\x6e\x63\x65");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> obj;
@@ -5265,9 +5265,9 @@ Local<v8::Object> ObjectTemplate::NewInstance() {
 
 Local<v8::Function> FunctionTemplate::GetFunction() {
   i::Isolate* isolate = i::Isolate::Current();
-  ON_BAILOUT(isolate, "v8::FunctionTemplate::GetFunction()",
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x46\x75\x6e\x63\x74\x69\x6f\x6e\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x47\x65\x74\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29",
              return Local<v8::Function>());
-  LOG_API(isolate, "FunctionTemplate::GetFunction");
+  LOG_API(isolate, "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x47\x65\x74\x46\x75\x6e\x63\x74\x69\x6f\x6e");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> obj;
@@ -5279,7 +5279,7 @@ Local<v8::Function> FunctionTemplate::GetFunction() {
 
 
 bool FunctionTemplate::HasInstance(v8::Handle<v8::Value> value) {
-  ON_BAILOUT(i::Isolate::Current(), "v8::FunctionTemplate::HasInstanceOf()",
+  ON_BAILOUT(i::Isolate::Current(), "\x76\x38\x3a\x3a\x46\x75\x6e\x63\x74\x69\x6f\x6e\x54\x65\x6d\x70\x6c\x61\x74\x65\x3a\x3a\x48\x61\x73\x49\x6e\x73\x74\x61\x6e\x63\x65\x4f\x66\x28\x29",
              return false);
   i::Object* obj = *Utils::OpenHandle(*value);
   return Utils::OpenHandle(this)->IsTemplateFor(obj);
@@ -5289,8 +5289,8 @@ bool FunctionTemplate::HasInstance(v8::Handle<v8::Value> value) {
 Local<External> v8::External::New(Isolate* isolate, void* value) {
   STATIC_ASSERT(sizeof(value) == sizeof(i::Address));
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::External::New()");
-  LOG_API(i_isolate, "External::New");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x45\x78\x74\x65\x72\x6e\x61\x6c\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(i_isolate, "\x45\x78\x74\x65\x72\x6e\x61\x6c\x3a\x3a\x4e\x65\x77");
   ENTER_V8(i_isolate);
   i::Handle<i::JSObject> external = i_isolate->factory()->NewExternal(value);
   return Utils::ExternalToLocal(external);
@@ -5317,7 +5317,7 @@ inline int StringLength(const uint8_t* string) {
 
 inline int StringLength(const uint16_t* string) {
   int length = 0;
-  while (string[length] != '\0')
+  while (string[length] != '\x0')
     length++;
   return length;
 }
@@ -5390,8 +5390,8 @@ Local<String> String::NewFromUtf8(Isolate* isolate,
                                   NewStringType type,
                                   int length) {
   return NewString(isolate,
-                   "v8::String::NewFromUtf8()",
-                   "String::NewFromUtf8",
+                   "\x76\x38\x3a\x3a\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x46\x72\x6f\x6d\x55\x74\x66\x38\x28\x29",
+                   "\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x46\x72\x6f\x6d\x55\x74\x66\x38",
                    data,
                    type,
                    length);
@@ -5403,8 +5403,8 @@ Local<String> String::NewFromOneByte(Isolate* isolate,
                                      NewStringType type,
                                      int length) {
   return NewString(isolate,
-                   "v8::String::NewFromOneByte()",
-                   "String::NewFromOneByte",
+                   "\x76\x38\x3a\x3a\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x46\x72\x6f\x6d\x4f\x6e\x65\x42\x79\x74\x65\x28\x29",
+                   "\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x46\x72\x6f\x6d\x4f\x6e\x65\x42\x79\x74\x65",
                    data,
                    type,
                    length);
@@ -5416,8 +5416,8 @@ Local<String> String::NewFromTwoByte(Isolate* isolate,
                                      NewStringType type,
                                      int length) {
   return NewString(isolate,
-                   "v8::String::NewFromTwoByte()",
-                   "String::NewFromTwoByte",
+                   "\x76\x38\x3a\x3a\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x46\x72\x6f\x6d\x54\x77\x6f\x42\x79\x74\x65\x28\x29",
+                   "\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x46\x72\x6f\x6d\x54\x77\x6f\x42\x79\x74\x65",
                    data,
                    type,
                    length);
@@ -5427,8 +5427,8 @@ Local<String> String::NewFromTwoByte(Isolate* isolate,
 Local<String> v8::String::Concat(Handle<String> left, Handle<String> right) {
   i::Handle<i::String> left_string = Utils::OpenHandle(*left);
   i::Isolate* isolate = left_string->GetIsolate();
-  EnsureInitializedForIsolate(isolate, "v8::String::New()");
-  LOG_API(isolate, "String::New(char)");
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(isolate, "\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x28\x63\x68\x61\x72\x29");
   ENTER_V8(isolate);
   i::Handle<i::String> right_string = Utils::OpenHandle(*right);
   // We do not expect this to fail. Change this if it does.
@@ -5460,8 +5460,8 @@ Local<String> v8::String::NewExternal(
     Isolate* isolate,
     v8::String::ExternalStringResource* resource) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::String::NewExternal()");
-  LOG_API(i_isolate, "String::NewExternal");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x45\x78\x74\x65\x72\x6e\x61\x6c\x28\x29");
+  LOG_API(i_isolate, "\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x45\x78\x74\x65\x72\x6e\x61\x6c");
   ENTER_V8(i_isolate);
   CHECK(resource && resource->data());
   i::Handle<i::String> result = NewExternalStringHandle(i_isolate, resource);
@@ -5500,8 +5500,8 @@ Local<String> v8::String::NewExternal(
     Isolate* isolate,
     v8::String::ExternalAsciiStringResource* resource) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::String::NewExternal()");
-  LOG_API(i_isolate, "String::NewExternal");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x45\x78\x74\x65\x72\x6e\x61\x6c\x28\x29");
+  LOG_API(i_isolate, "\x53\x74\x72\x69\x6e\x67\x3a\x3a\x4e\x65\x77\x45\x78\x74\x65\x72\x6e\x61\x6c");
   ENTER_V8(i_isolate);
   CHECK(resource && resource->data());
   i::Handle<i::String> result =
@@ -5558,8 +5558,8 @@ bool v8::String::CanMakeExternal() {
 
 Local<v8::Object> v8::Object::New(Isolate* isolate) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::Object::New()");
-  LOG_API(i_isolate, "Object::New");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(i_isolate, "\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x65\x77");
   ENTER_V8(i_isolate);
   i::Handle<i::JSObject> obj =
       i_isolate->factory()->NewJSObject(i_isolate->object_function());
@@ -5569,8 +5569,8 @@ Local<v8::Object> v8::Object::New(Isolate* isolate) {
 
 Local<v8::Value> v8::NumberObject::New(Isolate* isolate, double value) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::NumberObject::New()");
-  LOG_API(i_isolate, "NumberObject::New");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x4e\x75\x6d\x62\x65\x72\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(i_isolate, "\x4e\x75\x6d\x62\x65\x72\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x65\x77");
   ENTER_V8(i_isolate);
   i::Handle<i::Object> number = i_isolate->factory()->NewNumber(value);
   i::Handle<i::Object> obj =
@@ -5583,15 +5583,15 @@ double v8::NumberObject::ValueOf() const {
   i::Handle<i::Object> obj = Utils::OpenHandle(this);
   i::Handle<i::JSValue> jsvalue = i::Handle<i::JSValue>::cast(obj);
   i::Isolate* isolate = jsvalue->GetIsolate();
-  LOG_API(isolate, "NumberObject::NumberValue");
+  LOG_API(isolate, "\x4e\x75\x6d\x62\x65\x72\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x75\x6d\x62\x65\x72\x56\x61\x6c\x75\x65");
   return jsvalue->value()->Number();
 }
 
 
 Local<v8::Value> v8::BooleanObject::New(bool value) {
   i::Isolate* isolate = i::Isolate::Current();
-  EnsureInitializedForIsolate(isolate, "v8::BooleanObject::New()");
-  LOG_API(isolate, "BooleanObject::New");
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x42\x6f\x6f\x6c\x65\x61\x6e\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(isolate, "\x42\x6f\x6f\x6c\x65\x61\x6e\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x65\x77");
   ENTER_V8(isolate);
   i::Handle<i::Object> boolean(value
                                ? isolate->heap()->true_value()
@@ -5607,7 +5607,7 @@ bool v8::BooleanObject::ValueOf() const {
   i::Handle<i::Object> obj = Utils::OpenHandle(this);
   i::Handle<i::JSValue> jsvalue = i::Handle<i::JSValue>::cast(obj);
   i::Isolate* isolate = jsvalue->GetIsolate();
-  LOG_API(isolate, "BooleanObject::BooleanValue");
+  LOG_API(isolate, "\x42\x6f\x6f\x6c\x65\x61\x6e\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x42\x6f\x6f\x6c\x65\x61\x6e\x56\x61\x6c\x75\x65");
   return jsvalue->value()->IsTrue();
 }
 
@@ -5615,8 +5615,8 @@ bool v8::BooleanObject::ValueOf() const {
 Local<v8::Value> v8::StringObject::New(Handle<String> value) {
   i::Handle<i::String> string = Utils::OpenHandle(*value);
   i::Isolate* isolate = string->GetIsolate();
-  EnsureInitializedForIsolate(isolate, "v8::StringObject::New()");
-  LOG_API(isolate, "StringObject::New");
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x53\x74\x72\x69\x6e\x67\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(isolate, "\x53\x74\x72\x69\x6e\x67\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x65\x77");
   ENTER_V8(isolate);
   i::Handle<i::Object> obj =
       i::Object::ToObject(isolate, string).ToHandleChecked();
@@ -5628,7 +5628,7 @@ Local<v8::String> v8::StringObject::ValueOf() const {
   i::Handle<i::Object> obj = Utils::OpenHandle(this);
   i::Handle<i::JSValue> jsvalue = i::Handle<i::JSValue>::cast(obj);
   i::Isolate* isolate = jsvalue->GetIsolate();
-  LOG_API(isolate, "StringObject::StringValue");
+  LOG_API(isolate, "\x53\x74\x72\x69\x6e\x67\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x74\x72\x69\x6e\x67\x56\x61\x6c\x75\x65");
   return Utils::ToLocal(
       i::Handle<i::String>(i::String::cast(jsvalue->value())));
 }
@@ -5636,8 +5636,8 @@ Local<v8::String> v8::StringObject::ValueOf() const {
 
 Local<v8::Value> v8::SymbolObject::New(Isolate* isolate, Handle<Symbol> value) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::SymbolObject::New()");
-  LOG_API(i_isolate, "SymbolObject::New");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x53\x79\x6d\x62\x6f\x6c\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(i_isolate, "\x53\x79\x6d\x62\x6f\x6c\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x4e\x65\x77");
   ENTER_V8(i_isolate);
   i::Handle<i::Object> obj = i::Object::ToObject(
       i_isolate, Utils::OpenHandle(*value)).ToHandleChecked();
@@ -5649,7 +5649,7 @@ Local<v8::Symbol> v8::SymbolObject::ValueOf() const {
   i::Handle<i::Object> obj = Utils::OpenHandle(this);
   i::Handle<i::JSValue> jsvalue = i::Handle<i::JSValue>::cast(obj);
   i::Isolate* isolate = jsvalue->GetIsolate();
-  LOG_API(isolate, "SymbolObject::SymbolValue");
+  LOG_API(isolate, "\x53\x79\x6d\x62\x6f\x6c\x4f\x62\x6a\x65\x63\x74\x3a\x3a\x53\x79\x6d\x62\x6f\x6c\x56\x61\x6c\x75\x65");
   return Utils::ToLocal(
       i::Handle<i::Symbol>(i::Symbol::cast(jsvalue->value())));
 }
@@ -5657,8 +5657,8 @@ Local<v8::Symbol> v8::SymbolObject::ValueOf() const {
 
 Local<v8::Value> v8::Date::New(Isolate* isolate, double time) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::Date::New()");
-  LOG_API(i_isolate, "Date::New");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x44\x61\x74\x65\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(i_isolate, "\x44\x61\x74\x65\x3a\x3a\x4e\x65\x77");
   if (isnan(time)) {
     // Introduce only canonical NaN value into the VM, to avoid signaling NaNs.
     time = base::OS::nan_value();
@@ -5677,7 +5677,7 @@ double v8::Date::ValueOf() const {
   i::Handle<i::Object> obj = Utils::OpenHandle(this);
   i::Handle<i::JSDate> jsdate = i::Handle<i::JSDate>::cast(obj);
   i::Isolate* isolate = jsdate->GetIsolate();
-  LOG_API(isolate, "Date::NumberValue");
+  LOG_API(isolate, "\x44\x61\x74\x65\x3a\x3a\x4e\x75\x6d\x62\x65\x72\x56\x61\x6c\x75\x65");
   return jsdate->value()->Number();
 }
 
@@ -5685,9 +5685,9 @@ double v8::Date::ValueOf() const {
 void v8::Date::DateTimeConfigurationChangeNotification(Isolate* isolate) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   if (!i_isolate->IsInitialized()) return;
-  ON_BAILOUT(i_isolate, "v8::Date::DateTimeConfigurationChangeNotification()",
+  ON_BAILOUT(i_isolate, "\x76\x38\x3a\x3a\x44\x61\x74\x65\x3a\x3a\x44\x61\x74\x65\x54\x69\x6d\x65\x43\x6f\x6e\x66\x69\x67\x75\x72\x61\x74\x69\x6f\x6e\x43\x68\x61\x6e\x67\x65\x4e\x6f\x74\x69\x66\x69\x63\x61\x74\x69\x6f\x6e\x28\x29",
              return);
-  LOG_API(i_isolate, "Date::DateTimeConfigurationChangeNotification");
+  LOG_API(i_isolate, "\x44\x61\x74\x65\x3a\x3a\x44\x61\x74\x65\x54\x69\x6d\x65\x43\x6f\x6e\x66\x69\x67\x75\x72\x61\x74\x69\x6f\x6e\x43\x68\x61\x6e\x67\x65\x4e\x6f\x74\x69\x66\x69\x63\x61\x74\x69\x6f\x6e");
   ENTER_V8(i_isolate);
 
   i_isolate->date_cache()->ResetDateCache();
@@ -5711,9 +5711,9 @@ static i::Handle<i::String> RegExpFlagsToString(RegExp::Flags flags) {
   i::Isolate* isolate = i::Isolate::Current();
   uint8_t flags_buf[3];
   int num_flags = 0;
-  if ((flags & RegExp::kGlobal) != 0) flags_buf[num_flags++] = 'g';
-  if ((flags & RegExp::kMultiline) != 0) flags_buf[num_flags++] = 'm';
-  if ((flags & RegExp::kIgnoreCase) != 0) flags_buf[num_flags++] = 'i';
+  if ((flags & RegExp::kGlobal) != 0) flags_buf[num_flags++] = '\x67';
+  if ((flags & RegExp::kMultiline) != 0) flags_buf[num_flags++] = '\x6d';
+  if ((flags & RegExp::kIgnoreCase) != 0) flags_buf[num_flags++] = '\x69';
   DCHECK(num_flags <= static_cast<int>(ARRAY_SIZE(flags_buf)));
   return isolate->factory()->InternalizeOneByteString(
       i::Vector<const uint8_t>(flags_buf, num_flags));
@@ -5723,8 +5723,8 @@ static i::Handle<i::String> RegExpFlagsToString(RegExp::Flags flags) {
 Local<v8::RegExp> v8::RegExp::New(Handle<String> pattern,
                                   Flags flags) {
   i::Isolate* isolate = Utils::OpenHandle(*pattern)->GetIsolate();
-  EnsureInitializedForIsolate(isolate, "v8::RegExp::New()");
-  LOG_API(isolate, "RegExp::New");
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x52\x65\x67\x45\x78\x70\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(isolate, "\x52\x65\x67\x45\x78\x70\x3a\x3a\x4e\x65\x77");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::JSRegExp> obj;
@@ -5760,8 +5760,8 @@ v8::RegExp::Flags v8::RegExp::GetFlags() const {
 
 Local<v8::Array> v8::Array::New(Isolate* isolate, int length) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::Array::New()");
-  LOG_API(i_isolate, "Array::New");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(i_isolate, "\x41\x72\x72\x61\x79\x3a\x3a\x4e\x65\x77");
   ENTER_V8(i_isolate);
   int real_length = length > 0 ? length : 0;
   i::Handle<i::JSArray> obj = i_isolate->factory()->NewJSArray(real_length);
@@ -5785,7 +5785,7 @@ uint32_t v8::Array::Length() const {
 
 Local<Object> Array::CloneElementAt(uint32_t index) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
-  ON_BAILOUT(isolate, "v8::Array::CloneElementAt()", return Local<Object>());
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x3a\x3a\x43\x6c\x6f\x6e\x65\x45\x6c\x65\x6d\x65\x6e\x74\x41\x74\x28\x29", return Local<Object>());
   i::Handle<i::JSObject> self = Utils::OpenHandle(this);
   if (!self->HasFastObjectElements()) {
     return Local<Object>();
@@ -5811,7 +5811,7 @@ bool Value::IsPromise() const {
   if (!val->IsJSObject()) return false;
   i::Handle<i::JSObject> obj = i::Handle<i::JSObject>::cast(val);
   i::Isolate* isolate = obj->GetIsolate();
-  LOG_API(isolate, "IsPromise");
+  LOG_API(isolate, "\x49\x73\x50\x72\x6f\x6d\x69\x73\x65");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> argv[] = { obj };
@@ -5829,7 +5829,7 @@ bool Value::IsPromise() const {
 
 Local<Promise::Resolver> Promise::Resolver::New(Isolate* v8_isolate) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
-  LOG_API(isolate, "Promise::Resolver::New");
+  LOG_API(isolate, "\x50\x72\x6f\x6d\x69\x73\x65\x3a\x3a\x52\x65\x73\x6f\x6c\x76\x65\x72\x3a\x3a\x4e\x65\x77");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> result;
@@ -5853,7 +5853,7 @@ Local<Promise> Promise::Resolver::GetPromise() {
 void Promise::Resolver::Resolve(Handle<Value> value) {
   i::Handle<i::JSObject> promise = Utils::OpenHandle(this);
   i::Isolate* isolate = promise->GetIsolate();
-  LOG_API(isolate, "Promise::Resolver::Resolve");
+  LOG_API(isolate, "\x50\x72\x6f\x6d\x69\x73\x65\x3a\x3a\x52\x65\x73\x6f\x6c\x76\x65\x72\x3a\x3a\x52\x65\x73\x6f\x6c\x76\x65");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> argv[] = { promise, Utils::OpenHandle(*value) };
@@ -5870,7 +5870,7 @@ void Promise::Resolver::Resolve(Handle<Value> value) {
 void Promise::Resolver::Reject(Handle<Value> value) {
   i::Handle<i::JSObject> promise = Utils::OpenHandle(this);
   i::Isolate* isolate = promise->GetIsolate();
-  LOG_API(isolate, "Promise::Resolver::Reject");
+  LOG_API(isolate, "\x50\x72\x6f\x6d\x69\x73\x65\x3a\x3a\x52\x65\x73\x6f\x6c\x76\x65\x72\x3a\x3a\x52\x65\x6a\x65\x63\x74");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> argv[] = { promise, Utils::OpenHandle(*value) };
@@ -5887,7 +5887,7 @@ void Promise::Resolver::Reject(Handle<Value> value) {
 Local<Promise> Promise::Chain(Handle<Function> handler) {
   i::Handle<i::JSObject> promise = Utils::OpenHandle(this);
   i::Isolate* isolate = promise->GetIsolate();
-  LOG_API(isolate, "Promise::Chain");
+  LOG_API(isolate, "\x50\x72\x6f\x6d\x69\x73\x65\x3a\x3a\x43\x68\x61\x69\x6e");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> argv[] = { Utils::OpenHandle(*handler) };
@@ -5906,7 +5906,7 @@ Local<Promise> Promise::Chain(Handle<Function> handler) {
 Local<Promise> Promise::Catch(Handle<Function> handler) {
   i::Handle<i::JSObject> promise = Utils::OpenHandle(this);
   i::Isolate* isolate = promise->GetIsolate();
-  LOG_API(isolate, "Promise::Catch");
+  LOG_API(isolate, "\x50\x72\x6f\x6d\x69\x73\x65\x3a\x3a\x43\x61\x74\x63\x68");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> argv[] = { Utils::OpenHandle(*handler) };
@@ -5925,7 +5925,7 @@ Local<Promise> Promise::Catch(Handle<Function> handler) {
 Local<Promise> Promise::Then(Handle<Function> handler) {
   i::Handle<i::JSObject> promise = Utils::OpenHandle(this);
   i::Isolate* isolate = promise->GetIsolate();
-  LOG_API(isolate, "Promise::Then");
+  LOG_API(isolate, "\x50\x72\x6f\x6d\x69\x73\x65\x3a\x3a\x54\x68\x65\x6e");
   ENTER_V8(isolate);
   EXCEPTION_PREAMBLE(isolate);
   i::Handle<i::Object> argv[] = { Utils::OpenHandle(*handler) };
@@ -5949,8 +5949,8 @@ bool v8::ArrayBuffer::IsExternal() const {
 v8::ArrayBuffer::Contents v8::ArrayBuffer::Externalize() {
   i::Handle<i::JSArrayBuffer> obj = Utils::OpenHandle(this);
   Utils::ApiCheck(!obj->is_external(),
-                  "v8::ArrayBuffer::Externalize",
-                  "ArrayBuffer already externalized");
+                  "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3a\x3a\x45\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65",
+                  "\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x20\x61\x6c\x72\x65\x61\x64\x79\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x64");
   obj->set_is_external(true);
   size_t byte_length = static_cast<size_t>(obj->byte_length()->Number());
   Contents contents;
@@ -5964,9 +5964,9 @@ void v8::ArrayBuffer::Neuter() {
   i::Handle<i::JSArrayBuffer> obj = Utils::OpenHandle(this);
   i::Isolate* isolate = obj->GetIsolate();
   Utils::ApiCheck(obj->is_external(),
-                  "v8::ArrayBuffer::Neuter",
-                  "Only externalized ArrayBuffers can be neutered");
-  LOG_API(obj->GetIsolate(), "v8::ArrayBuffer::Neuter()");
+                  "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3a\x3a\x4e\x65\x75\x74\x65\x72",
+                  "\x4f\x6e\x6c\x79\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x64\x20\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x73\x20\x63\x61\x6e\x20\x62\x65\x20\x6e\x65\x75\x74\x65\x72\x65\x64");
+  LOG_API(obj->GetIsolate(), "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3a\x3a\x4e\x65\x75\x74\x65\x72\x28\x29");
   ENTER_V8(isolate);
   i::Runtime::NeuterArrayBuffer(obj);
 }
@@ -5980,8 +5980,8 @@ size_t v8::ArrayBuffer::ByteLength() const {
 
 Local<ArrayBuffer> v8::ArrayBuffer::New(Isolate* isolate, size_t byte_length) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::ArrayBuffer::New(size_t)");
-  LOG_API(i_isolate, "v8::ArrayBuffer::New(size_t)");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3a\x3a\x4e\x65\x77\x28\x73\x69\x7a\x65\x5f\x74\x29");
+  LOG_API(i_isolate, "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3a\x3a\x4e\x65\x77\x28\x73\x69\x7a\x65\x5f\x74\x29");
   ENTER_V8(i_isolate);
   i::Handle<i::JSArrayBuffer> obj =
       i_isolate->factory()->NewJSArrayBuffer();
@@ -5993,8 +5993,8 @@ Local<ArrayBuffer> v8::ArrayBuffer::New(Isolate* isolate, size_t byte_length) {
 Local<ArrayBuffer> v8::ArrayBuffer::New(Isolate* isolate, void* data,
                                         size_t byte_length) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::ArrayBuffer::New(void*, size_t)");
-  LOG_API(i_isolate, "v8::ArrayBuffer::New(void*, size_t)");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3a\x3a\x4e\x65\x77\x28\x76\x6f\x69\x64\x2a\x2c\x20\x73\x69\x7a\x65\x5f\x74\x29");
+  LOG_API(i_isolate, "\x76\x38\x3a\x3a\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3a\x3a\x4e\x65\x77\x28\x76\x6f\x69\x64\x2a\x2c\x20\x73\x69\x7a\x65\x5f\x74\x29");
   ENTER_V8(i_isolate);
   i::Handle<i::JSArrayBuffer> obj =
       i_isolate->factory()->NewJSArrayBuffer();
@@ -6097,13 +6097,13 @@ i::Handle<i::JSTypedArray> NewTypedArray(
                                     size_t byte_offset, size_t length) {     \
     i::Isolate* isolate = Utils::OpenHandle(*array_buffer)->GetIsolate();    \
     EnsureInitializedForIsolate(isolate,                                     \
-        "v8::" #Type "Array::New(Handle<ArrayBuffer>, size_t, size_t)");     \
+        "\x76\x38\x3a\x3a" #Type "\x41\x72\x72\x61\x79\x3a\x3a\x4e\x65\x77\x28\x48\x61\x6e\x64\x6c\x65\x3c\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3e\x2c\x20\x73\x69\x7a\x65\x5f\x74\x2c\x20\x73\x69\x7a\x65\x5f\x74\x29");     \
     LOG_API(isolate,                                                         \
-        "v8::" #Type "Array::New(Handle<ArrayBuffer>, size_t, size_t)");     \
+        "\x76\x38\x3a\x3a" #Type "\x41\x72\x72\x61\x79\x3a\x3a\x4e\x65\x77\x28\x48\x61\x6e\x64\x6c\x65\x3c\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3e\x2c\x20\x73\x69\x7a\x65\x5f\x74\x2c\x20\x73\x69\x7a\x65\x5f\x74\x29");     \
     ENTER_V8(isolate);                                                       \
     if (!Utils::ApiCheck(length <= static_cast<size_t>(i::Smi::kMaxValue),   \
-            "v8::" #Type "Array::New(Handle<ArrayBuffer>, size_t, size_t)",  \
-            "length exceeds max allowed value")) {                           \
+            "\x76\x38\x3a\x3a" #Type "\x41\x72\x72\x61\x79\x3a\x3a\x4e\x65\x77\x28\x48\x61\x6e\x64\x6c\x65\x3c\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x3e\x2c\x20\x73\x69\x7a\x65\x5f\x74\x2c\x20\x73\x69\x7a\x65\x5f\x74\x29",  \
+            "\x6c\x65\x6e\x67\x74\x68\x20\x65\x78\x63\x65\x65\x64\x73\x20\x6d\x61\x78\x20\x61\x6c\x6c\x6f\x77\x65\x64\x20\x76\x61\x6c\x75\x65")) {                           \
       return Local<Type##Array>();                                          \
     }                                                                        \
     i::Handle<i::JSTypedArray> obj =                                         \
@@ -6122,8 +6122,8 @@ Local<DataView> DataView::New(Handle<ArrayBuffer> array_buffer,
   i::Handle<i::JSArrayBuffer> buffer = Utils::OpenHandle(*array_buffer);
   i::Isolate* isolate = buffer->GetIsolate();
   EnsureInitializedForIsolate(
-      isolate, "v8::DataView::New(void*, size_t, size_t)");
-  LOG_API(isolate, "v8::DataView::New(void*, size_t, size_t)");
+      isolate, "\x76\x38\x3a\x3a\x44\x61\x74\x61\x56\x69\x65\x77\x3a\x3a\x4e\x65\x77\x28\x76\x6f\x69\x64\x2a\x2c\x20\x73\x69\x7a\x65\x5f\x74\x2c\x20\x73\x69\x7a\x65\x5f\x74\x29");
+  LOG_API(isolate, "\x76\x38\x3a\x3a\x44\x61\x74\x61\x56\x69\x65\x77\x3a\x3a\x4e\x65\x77\x28\x76\x6f\x69\x64\x2a\x2c\x20\x73\x69\x7a\x65\x5f\x74\x2c\x20\x73\x69\x7a\x65\x5f\x74\x29");
   ENTER_V8(isolate);
   i::Handle<i::JSDataView> obj = isolate->factory()->NewJSDataView();
   SetupArrayBufferView(
@@ -6134,8 +6134,8 @@ Local<DataView> DataView::New(Handle<ArrayBuffer> array_buffer,
 
 Local<Symbol> v8::Symbol::New(Isolate* isolate, Local<String> name) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::Symbol::New()");
-  LOG_API(i_isolate, "Symbol::New()");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x53\x79\x6d\x62\x6f\x6c\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(i_isolate, "\x53\x79\x6d\x62\x6f\x6c\x3a\x3a\x4e\x65\x77\x28\x29");
   ENTER_V8(i_isolate);
   i::Handle<i::Symbol> result = i_isolate->factory()->NewSymbol();
   if (!name.IsEmpty()) result->set_name(*Utils::OpenHandle(*name));
@@ -6185,8 +6185,8 @@ Local<Symbol> v8::Symbol::ForApi(Isolate* isolate, Local<String> name) {
 
 Local<Private> v8::Private::New(Isolate* isolate, Local<String> name) {
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
-  EnsureInitializedForIsolate(i_isolate, "v8::Private::New()");
-  LOG_API(i_isolate, "Private::New()");
+  EnsureInitializedForIsolate(i_isolate, "\x76\x38\x3a\x3a\x50\x72\x69\x76\x61\x74\x65\x3a\x3a\x4e\x65\x77\x28\x29");
+  LOG_API(i_isolate, "\x50\x72\x69\x76\x61\x74\x65\x3a\x3a\x4e\x65\x77\x28\x29");
   ENTER_V8(i_isolate);
   i::Handle<i::Symbol> symbol = i_isolate->factory()->NewPrivateSymbol();
   if (!name.IsEmpty()) symbol->set_name(*Utils::OpenHandle(*name));
@@ -6257,8 +6257,8 @@ Local<Integer> v8::Integer::NewFromUnsigned(Isolate* isolate, uint32_t value) {
 
 bool V8::AddMessageListener(MessageCallback that, Handle<Value> data) {
   i::Isolate* isolate = i::Isolate::Current();
-  EnsureInitializedForIsolate(isolate, "v8::V8::AddMessageListener()");
-  ON_BAILOUT(isolate, "v8::V8::AddMessageListener()", return false);
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x56\x38\x3a\x3a\x41\x64\x64\x4d\x65\x73\x73\x61\x67\x65\x4c\x69\x73\x74\x65\x6e\x65\x72\x28\x29");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x56\x38\x3a\x3a\x41\x64\x64\x4d\x65\x73\x73\x61\x67\x65\x4c\x69\x73\x74\x65\x6e\x65\x72\x28\x29", return false);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   NeanderArray listeners(isolate->factory()->message_listeners());
@@ -6273,8 +6273,8 @@ bool V8::AddMessageListener(MessageCallback that, Handle<Value> data) {
 
 void V8::RemoveMessageListeners(MessageCallback that) {
   i::Isolate* isolate = i::Isolate::Current();
-  EnsureInitializedForIsolate(isolate, "v8::V8::RemoveMessageListener()");
-  ON_BAILOUT(isolate, "v8::V8::RemoveMessageListeners()", return);
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x56\x38\x3a\x3a\x52\x65\x6d\x6f\x76\x65\x4d\x65\x73\x73\x61\x67\x65\x4c\x69\x73\x74\x65\x6e\x65\x72\x28\x29");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x56\x38\x3a\x3a\x52\x65\x6d\x6f\x76\x65\x4d\x65\x73\x73\x61\x67\x65\x4c\x69\x73\x74\x65\x6e\x65\x72\x73\x28\x29", return);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   NeanderArray listeners(isolate->factory()->message_listeners());
@@ -6516,13 +6516,13 @@ void Isolate::RequestGarbageCollectionForTesting(GarbageCollectionType type) {
   CHECK(i::FLAG_expose_gc);
   if (type == kMinorGarbageCollection) {
     reinterpret_cast<i::Isolate*>(this)->heap()->CollectGarbage(
-        i::NEW_SPACE, "Isolate::RequestGarbageCollection",
+        i::NEW_SPACE, "\x49\x73\x6f\x6c\x61\x74\x65\x3a\x3a\x52\x65\x71\x75\x65\x73\x74\x47\x61\x72\x62\x61\x67\x65\x43\x6f\x6c\x6c\x65\x63\x74\x69\x6f\x6e",
         kGCCallbackFlagForced);
   } else {
     DCHECK_EQ(kFullGarbageCollection, type);
     reinterpret_cast<i::Isolate*>(this)->heap()->CollectAllGarbage(
         i::Heap::kAbortIncrementalMarkingMask,
-        "Isolate::RequestGarbageCollection", kGCCallbackFlagForced);
+        "\x49\x73\x6f\x6c\x61\x74\x65\x3a\x3a\x52\x65\x71\x75\x65\x73\x74\x47\x61\x72\x62\x61\x67\x65\x43\x6f\x6c\x6c\x65\x63\x74\x69\x6f\x6e", kGCCallbackFlagForced);
   }
 }
 
@@ -6542,8 +6542,8 @@ Isolate* Isolate::New() {
 void Isolate::Dispose() {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
   if (!Utils::ApiCheck(!isolate->IsInUse(),
-                       "v8::Isolate::Dispose()",
-                       "Disposing the isolate that is entered by a thread.")) {
+                       "\x76\x38\x3a\x3a\x49\x73\x6f\x6c\x61\x74\x65\x3a\x3a\x44\x69\x73\x70\x6f\x73\x65\x28\x29",
+                       "\x44\x69\x73\x70\x6f\x73\x69\x6e\x67\x20\x74\x68\x65\x20\x69\x73\x6f\x6c\x61\x74\x65\x20\x74\x68\x61\x74\x20\x69\x73\x20\x65\x6e\x74\x65\x72\x65\x64\x20\x62\x79\x20\x61\x20\x74\x68\x72\x65\x61\x64\x2e")) {
     return;
   }
   isolate->TearDown();
@@ -6732,7 +6732,7 @@ void v8::Isolate::LowMemoryNotification() {
   {
     i::HistogramTimerScope idle_notification_scope(
         isolate->counters()->gc_low_memory_notification());
-    isolate->heap()->CollectAllAvailableGarbage("low memory notification");
+    isolate->heap()->CollectAllAvailableGarbage("\x6c\x6f\x77\x20\x6d\x65\x6d\x6f\x72\x79\x20\x6e\x6f\x74\x69\x66\x69\x63\x61\x74\x69\x6f\x6e");
   }
 }
 
@@ -6786,8 +6786,8 @@ String::Value::~Value() {
 
 Local<Value> Exception::RangeError(v8::Handle<v8::String> raw_message) {
   i::Isolate* isolate = i::Isolate::Current();
-  LOG_API(isolate, "RangeError");
-  ON_BAILOUT(isolate, "v8::Exception::RangeError()", return Local<Value>());
+  LOG_API(isolate, "\x52\x61\x6e\x67\x65\x45\x72\x72\x6f\x72");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x3a\x3a\x52\x61\x6e\x67\x65\x45\x72\x72\x6f\x72\x28\x29", return Local<Value>());
   ENTER_V8(isolate);
   i::Object* error;
   {
@@ -6803,8 +6803,8 @@ Local<Value> Exception::RangeError(v8::Handle<v8::String> raw_message) {
 
 Local<Value> Exception::ReferenceError(v8::Handle<v8::String> raw_message) {
   i::Isolate* isolate = i::Isolate::Current();
-  LOG_API(isolate, "ReferenceError");
-  ON_BAILOUT(isolate, "v8::Exception::ReferenceError()", return Local<Value>());
+  LOG_API(isolate, "\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x3a\x3a\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x28\x29", return Local<Value>());
   ENTER_V8(isolate);
   i::Object* error;
   {
@@ -6821,8 +6821,8 @@ Local<Value> Exception::ReferenceError(v8::Handle<v8::String> raw_message) {
 
 Local<Value> Exception::SyntaxError(v8::Handle<v8::String> raw_message) {
   i::Isolate* isolate = i::Isolate::Current();
-  LOG_API(isolate, "SyntaxError");
-  ON_BAILOUT(isolate, "v8::Exception::SyntaxError()", return Local<Value>());
+  LOG_API(isolate, "\x53\x79\x6e\x74\x61\x78\x45\x72\x72\x6f\x72");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x3a\x3a\x53\x79\x6e\x74\x61\x78\x45\x72\x72\x6f\x72\x28\x29", return Local<Value>());
   ENTER_V8(isolate);
   i::Object* error;
   {
@@ -6838,8 +6838,8 @@ Local<Value> Exception::SyntaxError(v8::Handle<v8::String> raw_message) {
 
 Local<Value> Exception::TypeError(v8::Handle<v8::String> raw_message) {
   i::Isolate* isolate = i::Isolate::Current();
-  LOG_API(isolate, "TypeError");
-  ON_BAILOUT(isolate, "v8::Exception::TypeError()", return Local<Value>());
+  LOG_API(isolate, "\x54\x79\x70\x65\x45\x72\x72\x6f\x72");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x3a\x3a\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x28\x29", return Local<Value>());
   ENTER_V8(isolate);
   i::Object* error;
   {
@@ -6855,8 +6855,8 @@ Local<Value> Exception::TypeError(v8::Handle<v8::String> raw_message) {
 
 Local<Value> Exception::Error(v8::Handle<v8::String> raw_message) {
   i::Isolate* isolate = i::Isolate::Current();
-  LOG_API(isolate, "Error");
-  ON_BAILOUT(isolate, "v8::Exception::Error()", return Local<Value>());
+  LOG_API(isolate, "\x45\x72\x72\x6f\x72");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x3a\x3a\x45\x72\x72\x6f\x72\x28\x29", return Local<Value>());
   ENTER_V8(isolate);
   i::Object* error;
   {
@@ -6874,8 +6874,8 @@ Local<Value> Exception::Error(v8::Handle<v8::String> raw_message) {
 
 bool Debug::SetDebugEventListener(EventCallback that, Handle<Value> data) {
   i::Isolate* isolate = i::Isolate::Current();
-  EnsureInitializedForIsolate(isolate, "v8::Debug::SetDebugEventListener()");
-  ON_BAILOUT(isolate, "v8::Debug::SetDebugEventListener()", return false);
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x44\x65\x62\x75\x67\x3a\x3a\x53\x65\x74\x44\x65\x62\x75\x67\x45\x76\x65\x6e\x74\x4c\x69\x73\x74\x65\x6e\x65\x72\x28\x29");
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x44\x65\x62\x75\x67\x3a\x3a\x53\x65\x74\x44\x65\x62\x75\x67\x45\x76\x65\x6e\x74\x4c\x69\x73\x74\x65\x6e\x65\x72\x28\x29", return false);
   ENTER_V8(isolate);
   i::HandleScope scope(isolate);
   i::Handle<i::Object> foreign = isolate->factory()->undefined_value();
@@ -6907,7 +6907,7 @@ void Debug::DebugBreakForCommand(Isolate* isolate, ClientData* data) {
 
 void Debug::SetMessageHandler(v8::Debug::MessageHandler handler) {
   i::Isolate* isolate = i::Isolate::Current();
-  EnsureInitializedForIsolate(isolate, "v8::Debug::SetMessageHandler");
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x44\x65\x62\x75\x67\x3a\x3a\x53\x65\x74\x4d\x65\x73\x73\x61\x67\x65\x48\x61\x6e\x64\x6c\x65\x72");
   ENTER_V8(isolate);
   isolate->debug()->SetMessageHandler(handler);
 }
@@ -6927,7 +6927,7 @@ Local<Value> Debug::Call(v8::Handle<v8::Function> fun,
                          v8::Handle<v8::Value> data) {
   i::Isolate* isolate = i::Isolate::Current();
   if (!isolate->IsInitialized()) return Local<Value>();
-  ON_BAILOUT(isolate, "v8::Debug::Call()", return Local<Value>());
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x44\x65\x62\x75\x67\x3a\x3a\x43\x61\x6c\x6c\x28\x29", return Local<Value>());
   ENTER_V8(isolate);
   i::MaybeHandle<i::Object> maybe_result;
   EXCEPTION_PREAMBLE(isolate);
@@ -6948,7 +6948,7 @@ Local<Value> Debug::Call(v8::Handle<v8::Function> fun,
 Local<Value> Debug::GetMirror(v8::Handle<v8::Value> obj) {
   i::Isolate* isolate = i::Isolate::Current();
   if (!isolate->IsInitialized()) return Local<Value>();
-  ON_BAILOUT(isolate, "v8::Debug::GetMirror()", return Local<Value>());
+  ON_BAILOUT(isolate, "\x76\x38\x3a\x3a\x44\x65\x62\x75\x67\x3a\x3a\x47\x65\x74\x4d\x69\x72\x72\x6f\x72\x28\x29", return Local<Value>());
   ENTER_V8(isolate);
   v8::EscapableHandleScope scope(reinterpret_cast<Isolate*>(isolate));
   i::Debug* isolate_debug = isolate->debug();
@@ -6959,7 +6959,7 @@ Local<Value> Debug::GetMirror(v8::Handle<v8::Value> obj) {
     i::Handle<i::JSObject> debug(
         isolate_debug->debug_context()->global_object());
     i::Handle<i::String> name = isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("MakeMirror"));
+        STATIC_ASCII_VECTOR("\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72"));
     i::Handle<i::Object> fun_obj =
         i::Object::GetProperty(debug, name).ToHandleChecked();
     i::Handle<i::JSFunction> fun = i::Handle<i::JSFunction>::cast(fun_obj);
@@ -6981,7 +6981,7 @@ void Debug::ProcessDebugMessages() {
 
 Local<Context> Debug::GetDebugContext() {
   i::Isolate* isolate = i::Isolate::Current();
-  EnsureInitializedForIsolate(isolate, "v8::Debug::GetDebugContext()");
+  EnsureInitializedForIsolate(isolate, "\x76\x38\x3a\x3a\x44\x65\x62\x75\x67\x3a\x3a\x47\x65\x74\x44\x65\x62\x75\x67\x43\x6f\x6e\x74\x65\x78\x74\x28\x29");
   ENTER_V8(isolate);
   return Utils::ToLocal(i::Isolate::Current()->debug()->GetDebugContext());
 }
@@ -7314,11 +7314,11 @@ SnapshotObjectId HeapSnapshot::GetMaxSnapshotJSObjectId() const {
 void HeapSnapshot::Serialize(OutputStream* stream,
                              HeapSnapshot::SerializationFormat format) const {
   Utils::ApiCheck(format == kJSON,
-                  "v8::HeapSnapshot::Serialize",
-                  "Unknown serialization format");
+                  "\x76\x38\x3a\x3a\x48\x65\x61\x70\x53\x6e\x61\x70\x73\x68\x6f\x74\x3a\x3a\x53\x65\x72\x69\x61\x6c\x69\x7a\x65",
+                  "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x73\x65\x72\x69\x61\x6c\x69\x7a\x61\x74\x69\x6f\x6e\x20\x66\x6f\x72\x6d\x61\x74");
   Utils::ApiCheck(stream->GetChunkSize() > 0,
-                  "v8::HeapSnapshot::Serialize",
-                  "Invalid stream chunk size");
+                  "\x76\x38\x3a\x3a\x48\x65\x61\x70\x53\x6e\x61\x70\x73\x68\x6f\x74\x3a\x3a\x53\x65\x72\x69\x61\x6c\x69\x7a\x65",
+                  "\x49\x6e\x76\x61\x6c\x69\x64\x20\x73\x74\x72\x65\x61\x6d\x20\x63\x68\x75\x6e\x6b\x20\x73\x69\x7a\x65");
   i::HeapSnapshotJSONSerializer serializer(ToInternal(this));
   serializer.Serialize(stream);
 }
@@ -7432,16 +7432,16 @@ static void SetFlagsFromString(const char* flags) {
 
 void Testing::PrepareStressRun(int run) {
   static const char* kLazyOptimizations =
-      "--prepare-always-opt "
-      "--max-inlined-source-size=999999 "
-      "--max-inlined-nodes=999999 "
-      "--max-inlined-nodes-cumulative=999999 "
-      "--noalways-opt";
-  static const char* kForcedOptimizations = "--always-opt";
+      "\x2d\x2d\x70\x72\x65\x70\x61\x72\x65\x2d\x61\x6c\x77\x61\x79\x73\x2d\x6f\x70\x74\x20"
+      "\x2d\x2d\x6d\x61\x78\x2d\x69\x6e\x6c\x69\x6e\x65\x64\x2d\x73\x6f\x75\x72\x63\x65\x2d\x73\x69\x7a\x65\x3d\x39\x39\x39\x39\x39\x39\x20"
+      "\x2d\x2d\x6d\x61\x78\x2d\x69\x6e\x6c\x69\x6e\x65\x64\x2d\x6e\x6f\x64\x65\x73\x3d\x39\x39\x39\x39\x39\x39\x20"
+      "\x2d\x2d\x6d\x61\x78\x2d\x69\x6e\x6c\x69\x6e\x65\x64\x2d\x6e\x6f\x64\x65\x73\x2d\x63\x75\x6d\x75\x6c\x61\x74\x69\x76\x65\x3d\x39\x39\x39\x39\x39\x39\x20"
+      "\x2d\x2d\x6e\x6f\x61\x6c\x77\x61\x79\x73\x2d\x6f\x70\x74";
+  static const char* kForcedOptimizations = "\x2d\x2d\x61\x6c\x77\x61\x79\x73\x2d\x6f\x70\x74";
 
   // If deoptimization stressed turn on frequent deoptimization. If no value
   // is spefified through --deopt-every-n-times use a default default value.
-  static const char* kDeoptEvery13Times = "--deopt-every-n-times=13";
+  static const char* kDeoptEvery13Times = "\x2d\x2d\x64\x65\x6f\x70\x74\x2d\x65\x76\x65\x72\x79\x2d\x6e\x2d\x74\x69\x6d\x65\x73\x3d\x31\x33";
   if (internal::Testing::stress_type() == Testing::kStressTypeDeopt &&
       internal::FLAG_deopt_every_n_times == 0) {
     SetFlagsFromString(kDeoptEvery13Times);

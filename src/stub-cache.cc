@@ -511,7 +511,7 @@ RUNTIME_FUNCTION(StoreCallbackProperty) {
   if (name->IsSymbol()) return *value;
   Handle<String> str = Handle<String>::cast(name);
 
-  LOG(isolate, ApiNamedPropertyAccess("store", *receiver, *name));
+  LOG(isolate, ApiNamedPropertyAccess("\x73\x74\x6f\x72\x65", *receiver, *name));
   PropertyCallbackArguments custom_args(isolate, callback->data(), *receiver,
                                         *holder);
   custom_args.Call(fun, v8::Utils::ToLocal(str), v8::Utils::ToLocal(value));
@@ -579,7 +579,7 @@ static Object* ThrowReferenceError(Isolate* isolate, Name* name) {
   // Throw a reference error.
   Handle<Name> name_handle(name);
   Handle<Object> error =
-      isolate->factory()->NewReferenceError("not_defined",
+      isolate->factory()->NewReferenceError("\x6e\x6f\x74\x5f\x64\x65\x66\x69\x6e\x65\x64",
                                             HandleVector(&name_handle, 1));
   return isolate->Throw(*error);
 }
@@ -650,7 +650,7 @@ RUNTIME_FUNCTION(LoadElementWithInterceptor) {
 
 Handle<Code> PropertyICCompiler::CompileLoadInitialize(Code::Flags flags) {
   LoadIC::GenerateInitialize(masm());
-  Handle<Code> code = GetCodeWithFlags(flags, "CompileLoadInitialize");
+  Handle<Code> code = GetCodeWithFlags(flags, "\x43\x6f\x6d\x70\x69\x6c\x65\x4c\x6f\x61\x64\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65");
   PROFILE(isolate(),
           CodeCreateEvent(Logger::LOAD_INITIALIZE_TAG, *code, 0));
   return code;
@@ -659,7 +659,7 @@ Handle<Code> PropertyICCompiler::CompileLoadInitialize(Code::Flags flags) {
 
 Handle<Code> PropertyICCompiler::CompileLoadPreMonomorphic(Code::Flags flags) {
   LoadIC::GeneratePreMonomorphic(masm());
-  Handle<Code> code = GetCodeWithFlags(flags, "CompileLoadPreMonomorphic");
+  Handle<Code> code = GetCodeWithFlags(flags, "\x43\x6f\x6d\x70\x69\x6c\x65\x4c\x6f\x61\x64\x50\x72\x65\x4d\x6f\x6e\x6f\x6d\x6f\x72\x70\x68\x69\x63");
   PROFILE(isolate(),
           CodeCreateEvent(Logger::LOAD_PREMONOMORPHIC_TAG, *code, 0));
   return code;
@@ -668,7 +668,7 @@ Handle<Code> PropertyICCompiler::CompileLoadPreMonomorphic(Code::Flags flags) {
 
 Handle<Code> PropertyICCompiler::CompileLoadMegamorphic(Code::Flags flags) {
   LoadIC::GenerateMegamorphic(masm());
-  Handle<Code> code = GetCodeWithFlags(flags, "CompileLoadMegamorphic");
+  Handle<Code> code = GetCodeWithFlags(flags, "\x43\x6f\x6d\x70\x69\x6c\x65\x4c\x6f\x61\x64\x4d\x65\x67\x61\x6d\x6f\x72\x70\x68\x69\x63");
   PROFILE(isolate(),
           CodeCreateEvent(Logger::LOAD_MEGAMORPHIC_TAG, *code, 0));
   return code;
@@ -677,7 +677,7 @@ Handle<Code> PropertyICCompiler::CompileLoadMegamorphic(Code::Flags flags) {
 
 Handle<Code> PropertyICCompiler::CompileStoreInitialize(Code::Flags flags) {
   StoreIC::GenerateInitialize(masm());
-  Handle<Code> code = GetCodeWithFlags(flags, "CompileStoreInitialize");
+  Handle<Code> code = GetCodeWithFlags(flags, "\x43\x6f\x6d\x70\x69\x6c\x65\x53\x74\x6f\x72\x65\x49\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65");
   PROFILE(isolate(),
           CodeCreateEvent(Logger::STORE_INITIALIZE_TAG, *code, 0));
   return code;
@@ -686,7 +686,7 @@ Handle<Code> PropertyICCompiler::CompileStoreInitialize(Code::Flags flags) {
 
 Handle<Code> PropertyICCompiler::CompileStorePreMonomorphic(Code::Flags flags) {
   StoreIC::GeneratePreMonomorphic(masm());
-  Handle<Code> code = GetCodeWithFlags(flags, "CompileStorePreMonomorphic");
+  Handle<Code> code = GetCodeWithFlags(flags, "\x43\x6f\x6d\x70\x69\x6c\x65\x53\x74\x6f\x72\x65\x50\x72\x65\x4d\x6f\x6e\x6f\x6d\x6f\x72\x70\x68\x69\x63");
   PROFILE(isolate(),
           CodeCreateEvent(Logger::STORE_PREMONOMORPHIC_TAG, *code, 0));
   return code;
@@ -697,7 +697,7 @@ Handle<Code> PropertyICCompiler::CompileStoreGeneric(Code::Flags flags) {
   ExtraICState extra_state = Code::ExtractExtraICStateFromFlags(flags);
   StrictMode strict_mode = StoreIC::GetStrictMode(extra_state);
   StoreIC::GenerateRuntimeSetProperty(masm(), strict_mode);
-  Handle<Code> code = GetCodeWithFlags(flags, "CompileStoreGeneric");
+  Handle<Code> code = GetCodeWithFlags(flags, "\x43\x6f\x6d\x70\x69\x6c\x65\x53\x74\x6f\x72\x65\x47\x65\x6e\x65\x72\x69\x63");
   PROFILE(isolate(),
           CodeCreateEvent(Logger::STORE_GENERIC_TAG, *code, 0));
   return code;
@@ -706,7 +706,7 @@ Handle<Code> PropertyICCompiler::CompileStoreGeneric(Code::Flags flags) {
 
 Handle<Code> PropertyICCompiler::CompileStoreMegamorphic(Code::Flags flags) {
   StoreIC::GenerateMegamorphic(masm());
-  Handle<Code> code = GetCodeWithFlags(flags, "CompileStoreMegamorphic");
+  Handle<Code> code = GetCodeWithFlags(flags, "\x43\x6f\x6d\x70\x69\x6c\x65\x53\x74\x6f\x72\x65\x4d\x65\x67\x61\x6d\x6f\x72\x70\x68\x69\x63");
   PROFILE(isolate(),
           CodeCreateEvent(Logger::STORE_MEGAMORPHIC_TAG, *code, 0));
   return code;

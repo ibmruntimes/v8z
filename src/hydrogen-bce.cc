@@ -170,7 +170,7 @@ class BoundsCheckBbData: public ZoneObject {
 
     if (!keep_new_check) {
       if (FLAG_trace_bce) {
-        base::OS::Print("Eliminating check #%d after tightening\n",
+        base::OS::Print("\x45\x6c\x69\x6d\x69\x6e\x61\x74\x69\x6e\x67\x20\x63\x68\x65\x63\x6b\x20\x23\x6c\x84\x20\x61\x66\x74\x65\x72\x20\x74\x69\x67\x68\x74\x65\x6e\x69\x6e\x67\xa",
                         new_check->id());
       }
       new_check->block()->graph()->isolate()->counters()->
@@ -180,7 +180,7 @@ class BoundsCheckBbData: public ZoneObject {
       HBoundsCheck* first_check = new_check == lower_check_ ? upper_check_
                                                             : lower_check_;
       if (FLAG_trace_bce) {
-        base::OS::Print("Moving second check #%d after first check #%d\n",
+        base::OS::Print("\x4d\x6f\x76\x69\x6e\x67\x20\x73\x65\x63\x6f\x6e\x64\x20\x63\x68\x65\x63\x6b\x20\x23\x6c\x84\x20\x61\x66\x74\x65\x72\x20\x66\x69\x72\x73\x74\x20\x63\x68\x65\x63\x6b\x20\x23\x6c\x84\xa",
                         new_check->id(), first_check->id());
       }
       // The length is guaranteed to be live at first_check.
@@ -283,7 +283,7 @@ class BoundsCheckBbData: public ZoneObject {
     original_check->ReplaceAllUsesWith(original_check->index());
     original_check->SetOperandAt(0, tighter_check->index());
     if (FLAG_trace_bce) {
-      base::OS::Print("Tightened check #%d with offset %d from #%d\n",
+      base::OS::Print("\x54\x69\x67\x68\x74\x65\x6e\x65\x64\x20\x63\x68\x65\x63\x6b\x20\x23\x6c\x84\x20\x77\x69\x74\x68\x20\x6f\x66\x66\x73\x65\x74\x20\x6c\x84\x20\x66\x72\x6f\x6d\x20\x23\x6c\x84\xa",
                       original_check->id(), new_offset, tighter_check->id());
     }
   }
@@ -396,14 +396,14 @@ BoundsCheckBbData* HBoundsCheckEliminationPhase::PreProcessBlock(
                                                    NULL);
       *data_p = bb_data_list;
       if (FLAG_trace_bce) {
-        base::OS::Print("Fresh bounds check data for block #%d: [%d]\n",
+        base::OS::Print("\x46\x72\x65\x73\x68\x20\x62\x6f\x75\x6e\x64\x73\x20\x63\x68\x65\x63\x6b\x20\x64\x61\x74\x61\x20\x66\x6f\x72\x20\x62\x6c\x6f\x63\x6b\x20\x23\x6c\x84\x3a\x20\x5b\x6c\x84\x5d\xa",
                         bb->block_id(), offset);
       }
     } else if (data->OffsetIsCovered(offset)) {
       bb->graph()->isolate()->counters()->
           bounds_checks_eliminated()->Increment();
       if (FLAG_trace_bce) {
-        base::OS::Print("Eliminating bounds check #%d, offset %d is covered\n",
+        base::OS::Print("\x45\x6c\x69\x6d\x69\x6e\x61\x74\x69\x6e\x67\x20\x62\x6f\x75\x6e\x64\x73\x20\x63\x68\x65\x63\x6b\x20\x23\x6c\x84\x2c\x20\x6f\x66\x66\x73\x65\x74\x20\x6c\x84\x20\x69\x73\x20\x63\x6f\x76\x65\x72\x65\x64\xa",
                         check->id(), offset);
       }
       check->DeleteAndReplaceWith(check->ActualValue());
@@ -439,7 +439,7 @@ BoundsCheckBbData* HBoundsCheckEliminationPhase::PreProcessBlock(
                                                    bb_data_list,
                                                    data);
       if (FLAG_trace_bce) {
-        base::OS::Print("Updated bounds check data for block #%d: [%d - %d]\n",
+        base::OS::Print("\x55\x70\x64\x61\x74\x65\x64\x20\x62\x6f\x75\x6e\x64\x73\x20\x63\x68\x65\x63\x6b\x20\x64\x61\x74\x61\x20\x66\x6f\x72\x20\x62\x6c\x6f\x63\x6b\x20\x23\x6c\x84\x3a\x20\x5b\x6c\x84\x20\x2d\x20\x6c\x84\x5d\xa",
                         bb->block_id(), new_lower_offset, new_upper_offset);
       }
       table_.Insert(key, bb_data_list, zone());

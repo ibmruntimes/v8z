@@ -13,44 +13,44 @@ namespace compiler {
 OStream& operator<<(OStream& os, const InstructionOperand& op) {
   switch (op.kind()) {
     case InstructionOperand::INVALID:
-      return os << "(0)";
+      return os << "\x28\x30\x29";
     case InstructionOperand::UNALLOCATED: {
       const UnallocatedOperand* unalloc = UnallocatedOperand::cast(&op);
-      os << "v" << unalloc->virtual_register();
+      os << "\x76" << unalloc->virtual_register();
       if (unalloc->basic_policy() == UnallocatedOperand::FIXED_SLOT) {
-        return os << "(=" << unalloc->fixed_slot_index() << "S)";
+        return os << "\x28\x3d" << unalloc->fixed_slot_index() << "\x53\x29";
       }
       switch (unalloc->extended_policy()) {
         case UnallocatedOperand::NONE:
           return os;
         case UnallocatedOperand::FIXED_REGISTER:
-          return os << "(=" << Register::AllocationIndexToString(
-                                   unalloc->fixed_register_index()) << ")";
+          return os << "\x28\x3d" << Register::AllocationIndexToString(
+                                   unalloc->fixed_register_index()) << "\x29";
         case UnallocatedOperand::FIXED_DOUBLE_REGISTER:
-          return os << "(=" << DoubleRegister::AllocationIndexToString(
-                                   unalloc->fixed_register_index()) << ")";
+          return os << "\x28\x3d" << DoubleRegister::AllocationIndexToString(
+                                   unalloc->fixed_register_index()) << "\x29";
         case UnallocatedOperand::MUST_HAVE_REGISTER:
-          return os << "(R)";
+          return os << "\x28\x52\x29";
         case UnallocatedOperand::SAME_AS_FIRST_INPUT:
-          return os << "(1)";
+          return os << "\x28\x31\x29";
         case UnallocatedOperand::ANY:
-          return os << "(-)";
+          return os << "\x28\x2d\x29";
       }
     }
     case InstructionOperand::CONSTANT:
-      return os << "[constant:" << op.index() << "]";
+      return os << "\x5b\x63\x6f\x6e\x73\x74\x61\x6e\x74\x3a" << op.index() << "\x5d";
     case InstructionOperand::IMMEDIATE:
-      return os << "[immediate:" << op.index() << "]";
+      return os << "\x5b\x69\x6d\x6d\x65\x64\x69\x61\x74\x65\x3a" << op.index() << "\x5d";
     case InstructionOperand::STACK_SLOT:
-      return os << "[stack:" << op.index() << "]";
+      return os << "\x5b\x73\x74\x61\x63\x6b\x3a" << op.index() << "\x5d";
     case InstructionOperand::DOUBLE_STACK_SLOT:
-      return os << "[double_stack:" << op.index() << "]";
+      return os << "\x5b\x64\x6f\x75\x62\x6c\x65\x5f\x73\x74\x61\x63\x6b\x3a" << op.index() << "\x5d";
     case InstructionOperand::REGISTER:
-      return os << "[" << Register::AllocationIndexToString(op.index())
-                << "|R]";
+      return os << "\x5b" << Register::AllocationIndexToString(op.index())
+                << "\x7c\x52\x5d";
     case InstructionOperand::DOUBLE_REGISTER:
-      return os << "[" << DoubleRegister::AllocationIndexToString(op.index())
-                << "|R]";
+      return os << "\x5b" << DoubleRegister::AllocationIndexToString(op.index())
+                << "\x7c\x52\x5d";
   }
   UNREACHABLE();
   return os;
@@ -96,8 +96,8 @@ void InstructionOperand::TearDownCaches() {
 
 OStream& operator<<(OStream& os, const MoveOperands& mo) {
   os << *mo.destination();
-  if (!mo.source()->Equals(mo.destination())) os << " = " << *mo.source();
-  return os << ";";
+  if (!mo.source()->Equals(mo.destination())) os << "\x20\x3d\x20" << *mo.source();
+  return os << "\x3b";
 }
 
 
@@ -114,7 +114,7 @@ OStream& operator<<(OStream& os, const ParallelMove& pm) {
   for (ZoneList<MoveOperands>::iterator move = pm.move_operands()->begin();
        move != pm.move_operands()->end(); ++move) {
     if (move->IsEliminated()) continue;
-    if (!first) os << " ";
+    if (!first) os << "\x20";
     first = false;
     os << *move;
   }
@@ -152,14 +152,14 @@ void PointerMap::RecordUntagged(InstructionOperand* op, Zone* zone) {
 
 
 OStream& operator<<(OStream& os, const PointerMap& pm) {
-  os << "{";
+  os << "\x7b";
   for (ZoneList<InstructionOperand*>::iterator op =
            pm.pointer_operands_.begin();
        op != pm.pointer_operands_.end(); ++op) {
-    if (op != pm.pointer_operands_.begin()) os << ";";
+    if (op != pm.pointer_operands_.begin()) os << "\x3b";
     os << *op;
   }
-  return os << "}";
+  return os << "\x7d";
 }
 
 
@@ -196,9 +196,9 @@ OStream& operator<<(OStream& os, const FlagsMode& fm) {
     case kFlags_none:
       return os;
     case kFlags_branch:
-      return os << "branch";
+      return os << "\x62\x72\x61\x6e\x63\x68";
     case kFlags_set:
-      return os << "set";
+      return os << "\x73\x65\x74";
   }
   UNREACHABLE();
   return os;
@@ -208,41 +208,41 @@ OStream& operator<<(OStream& os, const FlagsMode& fm) {
 OStream& operator<<(OStream& os, const FlagsCondition& fc) {
   switch (fc) {
     case kEqual:
-      return os << "equal";
+      return os << "\x65\x71\x75\x61\x6c";
     case kNotEqual:
-      return os << "not equal";
+      return os << "\x6e\x6f\x74\x20\x65\x71\x75\x61\x6c";
     case kSignedLessThan:
-      return os << "signed less than";
+      return os << "\x73\x69\x67\x6e\x65\x64\x20\x6c\x65\x73\x73\x20\x74\x68\x61\x6e";
     case kSignedGreaterThanOrEqual:
-      return os << "signed greater than or equal";
+      return os << "\x73\x69\x67\x6e\x65\x64\x20\x67\x72\x65\x61\x74\x65\x72\x20\x74\x68\x61\x6e\x20\x6f\x72\x20\x65\x71\x75\x61\x6c";
     case kSignedLessThanOrEqual:
-      return os << "signed less than or equal";
+      return os << "\x73\x69\x67\x6e\x65\x64\x20\x6c\x65\x73\x73\x20\x74\x68\x61\x6e\x20\x6f\x72\x20\x65\x71\x75\x61\x6c";
     case kSignedGreaterThan:
-      return os << "signed greater than";
+      return os << "\x73\x69\x67\x6e\x65\x64\x20\x67\x72\x65\x61\x74\x65\x72\x20\x74\x68\x61\x6e";
     case kUnsignedLessThan:
-      return os << "unsigned less than";
+      return os << "\x75\x6e\x73\x69\x67\x6e\x65\x64\x20\x6c\x65\x73\x73\x20\x74\x68\x61\x6e";
     case kUnsignedGreaterThanOrEqual:
-      return os << "unsigned greater than or equal";
+      return os << "\x75\x6e\x73\x69\x67\x6e\x65\x64\x20\x67\x72\x65\x61\x74\x65\x72\x20\x74\x68\x61\x6e\x20\x6f\x72\x20\x65\x71\x75\x61\x6c";
     case kUnsignedLessThanOrEqual:
-      return os << "unsigned less than or equal";
+      return os << "\x75\x6e\x73\x69\x67\x6e\x65\x64\x20\x6c\x65\x73\x73\x20\x74\x68\x61\x6e\x20\x6f\x72\x20\x65\x71\x75\x61\x6c";
     case kUnsignedGreaterThan:
-      return os << "unsigned greater than";
+      return os << "\x75\x6e\x73\x69\x67\x6e\x65\x64\x20\x67\x72\x65\x61\x74\x65\x72\x20\x74\x68\x61\x6e";
     case kUnorderedEqual:
-      return os << "unordered equal";
+      return os << "\x75\x6e\x6f\x72\x64\x65\x72\x65\x64\x20\x65\x71\x75\x61\x6c";
     case kUnorderedNotEqual:
-      return os << "unordered not equal";
+      return os << "\x75\x6e\x6f\x72\x64\x65\x72\x65\x64\x20\x6e\x6f\x74\x20\x65\x71\x75\x61\x6c";
     case kUnorderedLessThan:
-      return os << "unordered less than";
+      return os << "\x75\x6e\x6f\x72\x64\x65\x72\x65\x64\x20\x6c\x65\x73\x73\x20\x74\x68\x61\x6e";
     case kUnorderedGreaterThanOrEqual:
-      return os << "unordered greater than or equal";
+      return os << "\x75\x6e\x6f\x72\x64\x65\x72\x65\x64\x20\x67\x72\x65\x61\x74\x65\x72\x20\x74\x68\x61\x6e\x20\x6f\x72\x20\x65\x71\x75\x61\x6c";
     case kUnorderedLessThanOrEqual:
-      return os << "unordered less than or equal";
+      return os << "\x75\x6e\x6f\x72\x64\x65\x72\x65\x64\x20\x6c\x65\x73\x73\x20\x74\x68\x61\x6e\x20\x6f\x72\x20\x65\x71\x75\x61\x6c";
     case kUnorderedGreaterThan:
-      return os << "unordered greater than";
+      return os << "\x75\x6e\x6f\x72\x64\x65\x72\x65\x64\x20\x67\x72\x65\x61\x74\x65\x72\x20\x74\x68\x61\x6e";
     case kOverflow:
-      return os << "overflow";
+      return os << "\x6f\x76\x65\x72\x66\x6c\x6f\x77";
     case kNotOverflow:
-      return os << "not overflow";
+      return os << "\x6e\x6f\x74\x20\x6f\x76\x65\x72\x66\x6c\x6f\x77";
   }
   UNREACHABLE();
   return os;
@@ -250,46 +250,46 @@ OStream& operator<<(OStream& os, const FlagsCondition& fc) {
 
 
 OStream& operator<<(OStream& os, const Instruction& instr) {
-  if (instr.OutputCount() > 1) os << "(";
+  if (instr.OutputCount() > 1) os << "\x28";
   for (size_t i = 0; i < instr.OutputCount(); i++) {
-    if (i > 0) os << ", ";
+    if (i > 0) os << "\x2c\x20";
     os << *instr.OutputAt(i);
   }
 
-  if (instr.OutputCount() > 1) os << ") = ";
-  if (instr.OutputCount() == 1) os << " = ";
+  if (instr.OutputCount() > 1) os << "\x29\x20\x3d\x20";
+  if (instr.OutputCount() == 1) os << "\x20\x3d\x20";
 
   if (instr.IsGapMoves()) {
     const GapInstruction* gap = GapInstruction::cast(&instr);
-    os << (instr.IsBlockStart() ? " block-start" : "gap ");
+    os << (instr.IsBlockStart() ? "\x20\x62\x6c\x6f\x63\x6b\x2d\x73\x74\x61\x72\x74" : "\x67\x61\x70\x20");
     for (int i = GapInstruction::FIRST_INNER_POSITION;
          i <= GapInstruction::LAST_INNER_POSITION; i++) {
-      os << "(";
+      os << "\x28";
       if (gap->parallel_moves_[i] != NULL) os << *gap->parallel_moves_[i];
-      os << ") ";
+      os << "\x29\x20";
     }
   } else if (instr.IsSourcePosition()) {
     const SourcePositionInstruction* pos =
         SourcePositionInstruction::cast(&instr);
-    os << "position (" << pos->source_position().raw() << ")";
+    os << "\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x28" << pos->source_position().raw() << "\x29";
   } else {
     os << ArchOpcodeField::decode(instr.opcode());
     AddressingMode am = AddressingModeField::decode(instr.opcode());
     if (am != kMode_None) {
-      os << " : " << AddressingModeField::decode(instr.opcode());
+      os << "\x20\x3a\x20" << AddressingModeField::decode(instr.opcode());
     }
     FlagsMode fm = FlagsModeField::decode(instr.opcode());
     if (fm != kFlags_none) {
-      os << " && " << fm << " if "
+      os << "\x20\x26\x26\x20" << fm << "\x20\x69\x66\x20"
          << FlagsConditionField::decode(instr.opcode());
     }
   }
   if (instr.InputCount() > 0) {
     for (size_t i = 0; i < instr.InputCount(); i++) {
-      os << " " << *instr.InputAt(i);
+      os << "\x20" << *instr.InputAt(i);
     }
   }
-  return os << "\n";
+  return os << "\xa";
 }
 
 
@@ -298,7 +298,7 @@ OStream& operator<<(OStream& os, const Constant& constant) {
     case Constant::kInt32:
       return os << constant.ToInt32();
     case Constant::kInt64:
-      return os << constant.ToInt64() << "l";
+      return os << constant.ToInt64() << "\x6c";
     case Constant::kFloat64:
       return os << constant.ToFloat64();
     case Constant::kExternalReference:
@@ -414,66 +414,66 @@ int InstructionSequence::GetDeoptimizationEntryCount() {
 OStream& operator<<(OStream& os, const InstructionSequence& code) {
   for (size_t i = 0; i < code.immediates_.size(); ++i) {
     Constant constant = code.immediates_[i];
-    os << "IMM#" << i << ": " << constant << "\n";
+    os << "\x49\x4d\x4d\x23" << i << "\x3a\x20" << constant << "\xa";
   }
   int i = 0;
   for (ConstantMap::const_iterator it = code.constants_.begin();
        it != code.constants_.end(); ++i, ++it) {
-    os << "CST#" << i << ": v" << it->first << " = " << it->second << "\n";
+    os << "\x43\x53\x54\x23" << i << "\x3a\x20\x76" << it->first << "\x20\x3d\x20" << it->second << "\xa";
   }
   for (int i = 0; i < code.BasicBlockCount(); i++) {
     BasicBlock* block = code.BlockAt(i);
 
     int bid = block->id();
-    os << "RPO#" << block->rpo_number_ << ": B" << bid;
+    os << "\x52\x50\x4f\x23" << block->rpo_number_ << "\x3a\x20\x42" << bid;
     CHECK(block->rpo_number_ == i);
     if (block->IsLoopHeader()) {
-      os << " loop blocks: [" << block->rpo_number_ << ", " << block->loop_end_
-         << ")";
+      os << "\x20\x6c\x6f\x6f\x70\x20\x62\x6c\x6f\x63\x6b\x73\x3a\x20\x5b" << block->rpo_number_ << "\x2c\x20" << block->loop_end_
+         << "\x29";
     }
-    os << "  instructions: [" << block->code_start_ << ", " << block->code_end_
-       << ")\n  predecessors:";
+    os << "\x20\x20\x69\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x73\x3a\x20\x5b" << block->code_start_ << "\x2c\x20" << block->code_end_
+       << "\x29\xa\x20\x20\x70\x72\x65\x64\x65\x63\x65\x73\x73\x6f\x72\x73\x3a";
 
     BasicBlock::Predecessors predecessors = block->predecessors();
     for (BasicBlock::Predecessors::iterator iter = predecessors.begin();
          iter != predecessors.end(); ++iter) {
-      os << " B" << (*iter)->id();
+      os << "\x20\x42" << (*iter)->id();
     }
-    os << "\n";
+    os << "\xa";
 
     for (BasicBlock::const_iterator j = block->begin(); j != block->end();
          ++j) {
       Node* phi = *j;
       if (phi->opcode() != IrOpcode::kPhi) continue;
-      os << "     phi: v" << phi->id() << " =";
+      os << "\x20\x20\x20\x20\x20\x70\x68\x69\x3a\x20\x76" << phi->id() << "\x20\x3d";
       Node::Inputs inputs = phi->inputs();
       for (Node::Inputs::iterator iter(inputs.begin()); iter != inputs.end();
            ++iter) {
-        os << " v" << (*iter)->id();
+        os << "\x20\x76" << (*iter)->id();
       }
-      os << "\n";
+      os << "\xa";
     }
 
     ScopedVector<char> buf(32);
     for (int j = block->first_instruction_index();
          j <= block->last_instruction_index(); j++) {
       // TODO(svenpanne) Add some basic formatting to our streams.
-      SNPrintF(buf, "%5d", j);
-      os << "   " << buf.start() << ": " << *code.InstructionAt(j);
+      SNPrintF(buf, "\x6c\xf5\x84", j);
+      os << "\x20\x20\x20" << buf.start() << "\x3a\x20" << *code.InstructionAt(j);
     }
 
-    os << "  " << block->control_;
+    os << "\x20\x20" << block->control_;
 
     if (block->control_input_ != NULL) {
-      os << " v" << block->control_input_->id();
+      os << "\x20\x76" << block->control_input_->id();
     }
 
     BasicBlock::Successors successors = block->successors();
     for (BasicBlock::Successors::iterator iter = successors.begin();
          iter != successors.end(); ++iter) {
-      os << " B" << (*iter)->id();
+      os << "\x20\x42" << (*iter)->id();
     }
-    os << "\n";
+    os << "\xa";
   }
   return os;
 }

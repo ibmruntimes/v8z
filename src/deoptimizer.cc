@@ -317,10 +317,10 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
 
       if (FLAG_trace_deopt) {
         CodeTracer::Scope scope(code->GetHeap()->isolate()->GetCodeTracer());
-        PrintF(scope.file(), "[deoptimizer unlinked: ");
+        PrintF(scope.file(), "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x72\x20\x75\x6e\x6c\x69\x6e\x6b\x65\x64\x3a\x20");
         function->PrintName(scope.file());
         PrintF(scope.file(),
-               " / %" V8PRIxPTR "]\n", reinterpret_cast<intptr_t>(function));
+               "\x20\x2f\x20\x25" V8PRIxPTR "\x5d\xa", reinterpret_cast<intptr_t>(function));
       }
     }
   };
@@ -345,10 +345,10 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
         JSFunction* function =
             static_cast<OptimizedFrame*>(it.frame())->function();
         CodeTracer::Scope scope(isolate->GetCodeTracer());
-        PrintF(scope.file(), "[deoptimizer found activation of function: ");
+        PrintF(scope.file(), "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x72\x20\x66\x6f\x75\x6e\x64\x20\x61\x63\x74\x69\x76\x61\x74\x69\x6f\x6e\x20\x6f\x66\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20");
         function->PrintName(scope.file());
         PrintF(scope.file(),
-               " / %" V8PRIxPTR "]\n", reinterpret_cast<intptr_t>(function));
+               "\x20\x2f\x20\x25" V8PRIxPTR "\x5d\xa", reinterpret_cast<intptr_t>(function));
       }
       SafepointEntry safepoint = code->GetSafepointEntry(it.frame()->pc());
       int deopt_index = safepoint.deoptimization_index();
@@ -422,7 +422,7 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
         DeoptimizationInputData::cast(codes[i]->deoptimization_data());
     SharedFunctionInfo* shared =
         SharedFunctionInfo::cast(deopt_data->SharedFunctionInfo());
-    shared->EvictFromOptimizedCodeMap(codes[i], "deoptimized code");
+    shared->EvictFromOptimizedCodeMap(codes[i], "\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65");
 
     // Do platform-specific patching to force any activations to lazy deopt.
     //
@@ -477,9 +477,9 @@ void Deoptimizer::PatchStackForMarkedCode(Isolate* isolate) {
 
         if (FLAG_trace_deopt) {
           CodeTracer::Scope scope(isolate->GetCodeTracer());
-          PrintF(scope.file(), "[patching stack address for function: ");
+          PrintF(scope.file(), "\x5b\x70\x61\x74\x63\x68\x69\x6e\x67\x20\x73\x74\x61\x63\x6b\x20\x61\x64\x64\x72\x65\x73\x73\x20\x66\x6f\x72\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20");
           function->PrintName(scope.file());
-          PrintF(scope.file(), " (Pc offset %i -> %i)]\n", pc_offset,
+          PrintF(scope.file(), "\x20\x28\x50\x63\x20\x6f\x66\x66\x73\x65\x74\x20\x6c\x89\x20\x2d\x3e\x20\x6c\x89\x29\x5d\xa", pc_offset,
                  new_pc_offset);
         }
 
@@ -494,7 +494,7 @@ void Deoptimizer::PatchStackForMarkedCode(Isolate* isolate) {
 void Deoptimizer::DeoptimizeAll(Isolate* isolate) {
   if (FLAG_trace_deopt) {
     CodeTracer::Scope scope(isolate->GetCodeTracer());
-    PrintF(scope.file(), "[deoptimize all code in all contexts]\n");
+    PrintF(scope.file(), "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x20\x61\x6c\x6c\x20\x63\x6f\x64\x65\x20\x69\x6e\x20\x61\x6c\x6c\x20\x63\x6f\x6e\x74\x65\x78\x74\x73\x5d\xa");
   }
   DisallowHeapAllocation no_allocation;
   // For all contexts, mark all code, then deoptimize.
@@ -511,7 +511,7 @@ void Deoptimizer::DeoptimizeAll(Isolate* isolate) {
 void Deoptimizer::DeoptimizeMarkedCode(Isolate* isolate) {
   if (FLAG_trace_deopt) {
     CodeTracer::Scope scope(isolate->GetCodeTracer());
-    PrintF(scope.file(), "[deoptimize marked code in all contexts]\n");
+    PrintF(scope.file(), "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x20\x6d\x61\x72\x6b\x65\x64\x20\x63\x6f\x64\x65\x20\x69\x6e\x20\x61\x6c\x6c\x20\x63\x6f\x6e\x74\x65\x78\x74\x73\x5d\xa");
   }
   DisallowHeapAllocation no_allocation;
   // For all contexts, deoptimize code already marked.
@@ -527,7 +527,7 @@ void Deoptimizer::DeoptimizeMarkedCode(Isolate* isolate) {
 void Deoptimizer::DeoptimizeGlobalObject(JSObject* object) {
   if (FLAG_trace_deopt) {
     CodeTracer::Scope scope(object->GetHeap()->isolate()->GetCodeTracer());
-    PrintF(scope.file(), "[deoptimize global object @ 0x%08" V8PRIxPTR "]\n",
+    PrintF(scope.file(), "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x20\x67\x6c\x6f\x62\x61\x6c\x20\x6f\x62\x6a\x65\x63\x74\x20\x40\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x5d\xa",
         reinterpret_cast<intptr_t>(object));
   }
   if (object->IsJSGlobalProxy()) {
@@ -585,19 +585,19 @@ bool Deoptimizer::TraceEnabledFor(BailoutType deopt_type,
           ? FLAG_trace_stub_failures
           : FLAG_trace_deopt;
   }
-  FATAL("Unsupported deopt type");
+  FATAL("\x55\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x74\x79\x70\x65");
   return false;
 }
 
 
 const char* Deoptimizer::MessageFor(BailoutType type) {
   switch (type) {
-    case EAGER: return "eager";
-    case SOFT: return "soft";
-    case LAZY: return "lazy";
-    case DEBUGGER: return "debugger";
+    case EAGER: return "\x65\x61\x67\x65\x72";
+    case SOFT: return "\x73\x6f\x66\x74";
+    case LAZY: return "\x6c\x61\x7a\x79";
+    case DEBUGGER: return "\x64\x65\x62\x75\x67\x67\x65\x72";
   }
-  FATAL("Unsupported deopt type");
+  FATAL("\x55\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x74\x79\x70\x65");
   return NULL;
 }
 
@@ -687,7 +687,7 @@ Code* Deoptimizer::FindOptimizedCode(JSFunction* function,
       DCHECK(optimized_code->contains(from_));
       return optimized_code;
   }
-  FATAL("Could not find code for optimized function");
+  FATAL("\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x66\x69\x6e\x64\x20\x63\x6f\x64\x65\x20\x66\x6f\x72\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e");
   return NULL;
 }
 
@@ -697,7 +697,7 @@ void Deoptimizer::PrintFunctionName() {
     function_->PrintName(trace_scope_->file());
   } else {
     PrintF(trace_scope_->file(),
-           "%s", Code::Kind2String(compiled_code_->kind()));
+           "\x6c\xa2", Code::Kind2String(compiled_code_->kind()));
   }
 }
 
@@ -774,11 +774,11 @@ int Deoptimizer::GetOutputInfo(DeoptimizationOutputData* data,
     }
   }
   OFStream os(stderr);
-  os << "[couldn't find pc offset for node=" << id.ToInt() << "]\n"
-     << "[method: " << shared->DebugName()->ToCString().get() << "]\n"
-     << "[source:\n" << SourceCodeOf(shared) << "\n]" << endl;
+  os << "\x5b\x63\x6f\x75\x6c\x64\x6e\x27\x74\x20\x66\x69\x6e\x64\x20\x70\x63\x20\x6f\x66\x66\x73\x65\x74\x20\x66\x6f\x72\x20\x6e\x6f\x64\x65\x3d" << id.ToInt() << "\x5d\xa"
+     << "\x5b\x6d\x65\x74\x68\x6f\x64\x3a\x20" << shared->DebugName()->ToCString().get() << "\x5d\xa"
+     << "\x5b\x73\x6f\x75\x72\x63\x65\x3a\xa" << SourceCodeOf(shared) << "\xa\x5d" << endl;
 
-  FATAL("unable to find pc offset during deoptimization");
+  FATAL("\x75\x6e\x61\x62\x6c\x65\x20\x74\x6f\x20\x66\x69\x6e\x64\x20\x70\x63\x20\x6f\x66\x66\x73\x65\x74\x20\x64\x75\x72\x69\x6e\x67\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e");
   return -1;
 }
 
@@ -820,12 +820,12 @@ void Deoptimizer::DoComputeOutputFrames() {
   if (trace_scope_ != NULL) {
     timer.Start();
     PrintF(trace_scope_->file(),
-           "[deoptimizing (DEOPT %s): begin 0x%08" V8PRIxPTR " ",
+           "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x20\x28\x44\x45\x4f\x50\x54\x20\x6c\xa2\x29\x3a\x20\x62\x65\x67\x69\x6e\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x20",
            MessageFor(bailout_type_),
            reinterpret_cast<intptr_t>(function_));
     PrintFunctionName();
     PrintF(trace_scope_->file(),
-           " (opt #%d) @%d, FP to SP delta: %d]\n",
+           "\x20\x28\x6f\x70\x74\x20\x23\x6c\x84\x29\x20\x40\x6c\x84\x2c\x20\x46\x50\x20\x74\x6f\x20\x53\x50\x20\x64\x65\x6c\x74\x61\x3a\x20\x6c\x84\x5d\xa",
            input_data->OptimizationId()->value(),
            bailout_id_,
            fp_to_sp_delta_);
@@ -899,7 +899,7 @@ void Deoptimizer::DoComputeOutputFrames() {
       case Translation::LITERAL:
       case Translation::ARGUMENTS_OBJECT:
       default:
-        FATAL("Unsupported translation");
+        FATAL("\x55\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6f\x6e");
         break;
     }
   }
@@ -910,20 +910,20 @@ void Deoptimizer::DoComputeOutputFrames() {
     int index = output_count_ - 1;  // Index of the topmost frame.
     JSFunction* function = output_[index]->GetFunction();
     PrintF(trace_scope_->file(),
-           "[deoptimizing (%s): end 0x%08" V8PRIxPTR " ",
+           "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x20\x28\x6c\xa2\x29\x3a\x20\x65\x6e\x64\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x20",
            MessageFor(bailout_type_),
            reinterpret_cast<intptr_t>(function));
     PrintFunctionName();
     PrintF(trace_scope_->file(),
-           " @%d => node=%d, pc=0x%08" V8PRIxPTR ", state=%s, alignment=%s,"
-           " took %0.3f ms]\n",
+           "\x20\x40\x6c\x84\x20\x3d\x3e\x20\x6e\x6f\x64\x65\x3d\x6c\x84\x2c\x20\x70\x63\x3d\x30\x78\x25\x30\x38" V8PRIxPTR "\x2c\x20\x73\x74\x61\x74\x65\x3d\x6c\xa2\x2c\x20\x61\x6c\x69\x67\x6e\x6d\x65\x6e\x74\x3d\x6c\xa2\x2c"
+           "\x20\x74\x6f\x6f\x6b\x20\x6c\xf0\x4b\xf3\x86\x20\x6d\x73\x5d\xa",
            bailout_id_,
            node_id.ToInt(),
            output_[index]->GetPc(),
            FullCodeGenerator::State2String(
                static_cast<FullCodeGenerator::State>(
                    output_[index]->GetState()->value())),
-           has_alignment_padding_ ? "with padding" : "no padding",
+           has_alignment_padding_ ? "\x77\x69\x74\x68\x20\x70\x61\x64\x64\x69\x6e\x67" : "\x6e\x6f\x20\x70\x61\x64\x64\x69\x6e\x67",
            ms);
   }
 }
@@ -944,10 +944,10 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
   unsigned height = iterator->Next();
   unsigned height_in_bytes = height * kPointerSize;
   if (trace_scope_ != NULL) {
-    PrintF(trace_scope_->file(), "  translating ");
+    PrintF(trace_scope_->file(), "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20");
     function->PrintName(trace_scope_->file());
     PrintF(trace_scope_->file(),
-           " => node=%d, height=%d\n", node_id.ToInt(), height_in_bytes);
+           "\x20\x3d\x3e\x20\x6e\x6f\x64\x65\x3d\x6c\x84\x2c\x20\x68\x65\x69\x67\x68\x74\x3d\x6c\x84\xa", node_id.ToInt(), height_in_bytes);
   }
 
   // The 'fixed' part of the frame consists of the incoming parameters and
@@ -1020,8 +1020,8 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
   output_frame->SetCallerPc(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR  " ; caller's pc\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR  "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa",
            top_address + output_offset, output_offset, value);
   }
 
@@ -1044,8 +1044,8 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
   if (is_topmost) output_frame->SetRegister(fp_reg.code(), fp_value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; caller's fp\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa",
            fp_value, output_offset, value);
   }
   DCHECK(!is_bottommost || !has_alignment_padding_ ||
@@ -1064,8 +1064,8 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
     }
     output_frame->SetCallerConstantPool(output_offset, value);
     if (trace_scope_) {
-      PrintF("    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-             V8PRIxPTR "; caller's constant_pool\n",
+      PrintF("\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+             V8PRIxPTR "\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x5f\x70\x6f\x6f\x6c\xa",
              top_address + output_offset, output_offset, value);
     }
   }
@@ -1086,8 +1086,8 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
   if (is_topmost) output_frame->SetRegister(context_reg.code(), value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR "; context\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x3b\x20\x63\x6f\x6e\x74\x65\x78\x74\xa",
            top_address + output_offset, output_offset, value);
   }
 
@@ -1101,8 +1101,8 @@ void Deoptimizer::DoComputeJSFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR "; function\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x3b\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\xa",
            top_address + output_offset, output_offset, value);
   }
 
@@ -1163,7 +1163,7 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(TranslationIterator* iterator,
   unsigned height_in_bytes = height * kPointerSize;
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "  translating arguments adaptor => height=%d\n", height_in_bytes);
+           "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x61\x64\x61\x70\x74\x6f\x72\x20\x3d\x3e\x20\x68\x65\x69\x67\x68\x74\x3d\x6c\x84\xa", height_in_bytes);
   }
 
   unsigned fixed_frame_size = ArgumentsAdaptorFrameConstants::kFrameSize;
@@ -1199,8 +1199,8 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(TranslationIterator* iterator,
   output_frame->SetCallerPc(output_offset, callers_pc);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; caller's pc\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa",
            top_address + output_offset, output_offset, callers_pc);
   }
 
@@ -1212,8 +1212,8 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(TranslationIterator* iterator,
   output_frame->SetFp(fp_value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; caller's fp\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa",
            fp_value, output_offset, value);
   }
 
@@ -1223,8 +1223,8 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(TranslationIterator* iterator,
     value = output_[frame_index - 1]->GetConstantPool();
     output_frame->SetCallerConstantPool(output_offset, value);
     if (trace_scope_) {
-      PrintF("    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-             V8PRIxPTR "; caller's constant_pool\n",
+      PrintF("\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+             V8PRIxPTR "\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x5f\x70\x6f\x6f\x6c\xa",
              top_address + output_offset, output_offset, value);
     }
   }
@@ -1236,8 +1236,8 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, context);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; context (adaptor sentinel)\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x28\x61\x64\x61\x70\x74\x6f\x72\x20\x73\x65\x6e\x74\x69\x6e\x65\x6c\x29\xa",
            top_address + output_offset, output_offset, context);
   }
 
@@ -1247,8 +1247,8 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; function\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\xa",
            top_address + output_offset, output_offset, value);
   }
 
@@ -1258,8 +1258,8 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; argc (%d)\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x61\x72\x67\x63\x20\x28\x6c\x84\x29\xa",
            top_address + output_offset, output_offset, value, height - 1);
   }
 
@@ -1289,7 +1289,7 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
   unsigned height_in_bytes = height * kPointerSize;
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "  translating construct stub => height=%d\n", height_in_bytes);
+           "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x20\x73\x74\x75\x62\x20\x3d\x3e\x20\x68\x65\x69\x67\x68\x74\x3d\x6c\x84\xa", height_in_bytes);
   }
 
   unsigned fixed_frame_size = ConstructFrameConstants::kFrameSize;
@@ -1333,8 +1333,8 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
   output_frame->SetCallerPc(output_offset, callers_pc);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; caller's pc\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa",
            top_address + output_offset, output_offset, callers_pc);
   }
 
@@ -1346,8 +1346,8 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
   output_frame->SetFp(fp_value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; caller's fp\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa",
            fp_value, output_offset, value);
   }
 
@@ -1357,8 +1357,8 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
     value = output_[frame_index - 1]->GetConstantPool();
     output_frame->SetCallerConstantPool(output_offset, value);
     if (trace_scope_) {
-      PrintF("    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-             V8PRIxPTR " ; caller's constant pool\n",
+      PrintF("\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+             V8PRIxPTR "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x20\x70\x6f\x6f\x6c\xa",
              top_address + output_offset, output_offset, value);
     }
   }
@@ -1369,8 +1369,8 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; context\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x6f\x6e\x74\x65\x78\x74\xa",
            top_address + output_offset, output_offset, value);
   }
 
@@ -1380,8 +1380,8 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; function (construct sentinel)\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x20\x73\x65\x6e\x74\x69\x6e\x65\x6c\x29\xa",
            top_address + output_offset, output_offset, value);
   }
 
@@ -1391,8 +1391,8 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; code object\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x6f\x64\x65\x20\x6f\x62\x6a\x65\x63\x74\xa",
            top_address + output_offset, output_offset, value);
   }
 
@@ -1402,8 +1402,8 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; argc (%d)\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x61\x72\x67\x63\x20\x28\x6c\x84\x29\xa",
            top_address + output_offset, output_offset, value, height - 1);
   }
 
@@ -1415,8 +1415,8 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
     output_frame->SetFrameSlot(output_offset, value);
     if (trace_scope_ != NULL) {
       PrintF(trace_scope_->file(),
-             "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-             V8PRIxPTR " ; constructor function\n",
+             "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+             V8PRIxPTR "\x20\x3b\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\xa",
              top_address + output_offset, output_offset, value);
     }
   }
@@ -1428,8 +1428,8 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; allocated receiver\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x61\x6c\x6c\x6f\x63\x61\x74\x65\x64\x20\x72\x65\x63\x65\x69\x76\x65\x72\xa",
            top_address + output_offset, output_offset, value);
   }
 
@@ -1456,10 +1456,10 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslationIterator* iterator,
   // frame. This means that we have to use a height of 0.
   unsigned height = 0;
   unsigned height_in_bytes = height * kPointerSize;
-  const char* kind = is_setter_stub_frame ? "setter" : "getter";
+  const char* kind = is_setter_stub_frame ? "\x73\x65\x74\x74\x65\x72" : "\x67\x65\x74\x74\x65\x72";
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "  translating %s stub => height=%u\n", kind, height_in_bytes);
+           "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x6c\xa2\x20\x73\x74\x75\x62\x20\x3d\x3e\x20\x68\x65\x69\x67\x68\x74\x3d\x6c\xa4\xa", kind, height_in_bytes);
   }
 
   // We need 1 stack entry for the return address and enough entries for the
@@ -1496,8 +1496,8 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslationIterator* iterator,
   output_frame->SetCallerPc(output_offset, callers_pc);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %u] <- 0x%08" V8PRIxPTR
-           " ; caller's pc\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\xa4\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38" V8PRIxPTR
+           "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa",
            top_address + output_offset, output_offset, callers_pc);
   }
 
@@ -1509,8 +1509,8 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslationIterator* iterator,
   output_frame->SetFp(fp_value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %u] <- 0x%08" V8PRIxPTR
-           " ; caller's fp\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\xa4\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38" V8PRIxPTR
+           "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa",
            fp_value, output_offset, value);
   }
 
@@ -1520,8 +1520,8 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslationIterator* iterator,
     value = output_[frame_index - 1]->GetConstantPool();
     output_frame->SetCallerConstantPool(output_offset, value);
     if (trace_scope_) {
-      PrintF("    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-             V8PRIxPTR " ; caller's constant pool\n",
+      PrintF("\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+             V8PRIxPTR "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x20\x70\x6f\x6f\x6c\xa",
              top_address + output_offset, output_offset, value);
     }
   }
@@ -1532,8 +1532,8 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %u] <- 0x%08" V8PRIxPTR
-           " ; context\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\xa4\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38" V8PRIxPTR
+           "\x20\x3b\x20\x63\x6f\x6e\x74\x65\x78\x74\xa",
            top_address + output_offset, output_offset, value);
   }
 
@@ -1543,8 +1543,8 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %u] <- 0x%08" V8PRIxPTR
-           " ; function (%s sentinel)\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\xa4\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38" V8PRIxPTR
+           "\x20\x3b\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x6c\xa2\x20\x73\x65\x6e\x74\x69\x6e\x65\x6c\x29\xa",
            top_address + output_offset, output_offset, value, kind);
   }
 
@@ -1558,8 +1558,8 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %u] <- 0x%08" V8PRIxPTR
-           " ; code object\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\xa4\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38" V8PRIxPTR
+           "\x20\x3b\x20\x63\x6f\x64\x65\x20\x6f\x62\x6a\x65\x63\x74\xa",
            top_address + output_offset, output_offset, value);
   }
 
@@ -1645,7 +1645,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   int output_frame_size = height_in_bytes + fixed_frame_size;
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "  translating %s => StubFailureTrampolineStub, height=%d\n",
+           "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x6c\xa2\x20\x3d\x3e\x20\x53\x74\x75\x62\x46\x61\x69\x6c\x75\x72\x65\x54\x72\x61\x6d\x70\x6f\x6c\x69\x6e\x65\x53\x74\x75\x62\x2c\x20\x68\x65\x69\x67\x68\x74\x3d\x6c\x84\xa",
            CodeStub::MajorName(static_cast<CodeStub::Major>(major_key), false),
            height_in_bytes);
   }
@@ -1672,8 +1672,8 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   output_frame->SetCallerPc(output_frame_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; caller's pc\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa",
            top_address + output_frame_offset, output_frame_offset, value);
   }
 
@@ -1687,8 +1687,8 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   output_frame->SetFp(frame_ptr);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; caller's fp\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa",
            top_address + output_frame_offset, output_frame_offset, value);
   }
 
@@ -1699,8 +1699,8 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
     output_frame_offset -= kPointerSize;
     output_frame->SetCallerConstantPool(output_frame_offset, value);
     if (trace_scope_) {
-      PrintF("    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-             V8PRIxPTR " ; caller's constant_pool\n",
+      PrintF("\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+             V8PRIxPTR "\x20\x3b\x20\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x5f\x70\x6f\x6f\x6c\xa",
              top_address + output_frame_offset, output_frame_offset, value);
     }
   }
@@ -1715,8 +1715,8 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   CHECK(reinterpret_cast<Object*>(value)->IsContext());
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; context\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x63\x6f\x6e\x74\x65\x78\x74\xa",
            top_address + output_frame_offset, output_frame_offset, value);
   }
 
@@ -1727,8 +1727,8 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_frame_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; function (stub failure sentinel)\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x73\x74\x75\x62\x20\x66\x61\x69\x6c\x75\x72\x65\x20\x73\x65\x6e\x74\x69\x6e\x65\x6c\x29\xa",
            top_address + output_frame_offset, output_frame_offset, value);
   }
 
@@ -1750,10 +1750,10 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(args_arguments_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; args.arguments %s\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x61\x72\x67\x73\x2e\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x6c\xa2\xa",
            top_address + args_arguments_offset, args_arguments_offset, value,
-           arg_count_known ? "" : "(the hole)");
+           arg_count_known ? "" : "\x28\x74\x68\x65\x20\x68\x6f\x6c\x65\x29");
   }
 
   output_frame_offset -= kPointerSize;
@@ -1762,10 +1762,10 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(length_frame_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; args.length %s\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x61\x72\x67\x73\x2e\x6c\x65\x6e\x67\x74\x68\x20\x6c\xa2\xa",
            top_address + length_frame_offset, length_frame_offset, value,
-           arg_count_known ? "" : "(the hole)");
+           arg_count_known ? "" : "\x28\x74\x68\x65\x20\x68\x6f\x6c\x65\x29");
   }
 
   output_frame_offset -= kPointerSize;
@@ -1774,8 +1774,8 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
   output_frame->SetFrameSlot(output_frame_offset, value);
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-           V8PRIxPTR " ; args*\n",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+           V8PRIxPTR "\x20\x3b\x20\x61\x72\x67\x73\x2a\xa",
            top_address + output_frame_offset, output_frame_offset, value);
   }
 
@@ -1804,8 +1804,8 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
     output_frame->SetFrameSlot(length_frame_offset, caller_arg_count);
     if (trace_scope_ != NULL) {
       PrintF(trace_scope_->file(),
-             "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-             V8PRIxPTR " ; args.length\n",
+             "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+             V8PRIxPTR "\x20\x3b\x20\x61\x72\x67\x73\x2e\x6c\x65\x6e\x67\x74\x68\xa",
              top_address + length_frame_offset, length_frame_offset,
              caller_arg_count);
     }
@@ -1814,8 +1814,8 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslationIterator* iterator,
     output_frame->SetFrameSlot(args_arguments_offset, value);
     if (trace_scope_ != NULL) {
       PrintF(trace_scope_->file(),
-             "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08"
-             V8PRIxPTR " ; args.arguments\n",
+             "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38"
+             V8PRIxPTR "\x20\x3b\x20\x61\x72\x67\x73\x2e\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\xa",
              top_address + args_arguments_offset, args_arguments_offset,
              value);
     }
@@ -1947,8 +1947,8 @@ Handle<Object> Deoptimizer::MaterializeNextHeapObject() {
       }
       default:
         PrintF(stderr,
-               "[couldn't handle instance type %d]\n", map->instance_type());
-        FATAL("Unsupported instance type");
+               "\x5b\x63\x6f\x75\x6c\x64\x6e\x27\x74\x20\x68\x61\x6e\x64\x6c\x65\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x74\x79\x70\x65\x20\x6c\x84\x5d\xa", map->instance_type());
+        FATAL("\x55\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x74\x79\x70\x65");
     }
   }
 
@@ -2003,7 +2003,7 @@ void Deoptimizer::MaterializeHeapObjects(JavaScriptFrameIterator* it) {
     Handle<Object> num = isolate_->factory()->NewNumber(d.value());
     if (trace_scope_ != NULL) {
       PrintF(trace_scope_->file(),
-             "Materialized a new heap number %p [%e] in slot %p\n",
+             "\x4d\x61\x74\x65\x72\x69\x61\x6c\x69\x7a\x65\x64\x20\x61\x20\x6e\x65\x77\x20\x68\x65\x61\x70\x20\x6e\x75\x6d\x62\x65\x72\x20\x6c\x97\x20\x5b\x6c\x85\x5d\x20\x69\x6e\x20\x73\x6c\x6f\x74\x20\x6c\x97\xa",
              reinterpret_cast<void*>(*num),
              d.value(),
              d.destination());
@@ -2018,7 +2018,7 @@ void Deoptimizer::MaterializeHeapObjects(JavaScriptFrameIterator* it) {
     Handle<Object> num = isolate_->factory()->NewNumber(d.value());
     if (trace_scope_ != NULL) {
       PrintF(trace_scope_->file(),
-             "Materialized a new heap number %p [%e] for object at %d\n",
+             "\x4d\x61\x74\x65\x72\x69\x61\x6c\x69\x7a\x65\x64\x20\x61\x20\x6e\x65\x77\x20\x68\x65\x61\x70\x20\x6e\x75\x6d\x62\x65\x72\x20\x6c\x97\x20\x5b\x6c\x85\x5d\x20\x66\x6f\x72\x20\x6f\x62\x6a\x65\x63\x74\x20\x61\x74\x20\x6c\x84\xa",
              reinterpret_cast<void*>(*num),
              d.value(),
              d.destination());
@@ -2051,18 +2051,18 @@ void Deoptimizer::MaterializeHeapObjects(JavaScriptFrameIterator* it) {
       if (trace_scope_ != NULL) {
         if (descriptor.is_arguments()) {
           PrintF(trace_scope_->file(),
-                 "Materialized %sarguments object of length %d for %p: ",
-                 ArgumentsObjectIsAdapted(object_index) ? "(adapted) " : "",
+                 "\x4d\x61\x74\x65\x72\x69\x61\x6c\x69\x7a\x65\x64\x20\x6c\xa2\x81\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x6f\x62\x6a\x65\x63\x74\x20\x6f\x66\x20\x6c\x65\x6e\x67\x74\x68\x20\x6c\x84\x20\x66\x6f\x72\x20\x6c\x97\x3a\x20",
+                 ArgumentsObjectIsAdapted(object_index) ? "\x28\x61\x64\x61\x70\x74\x65\x64\x29\x20" : "",
                  Handle<JSObject>::cast(object)->elements()->length(),
                  reinterpret_cast<void*>(descriptor.slot_address()));
         } else {
           PrintF(trace_scope_->file(),
-                 "Materialized captured object of size %d for %p: ",
+                 "\x4d\x61\x74\x65\x72\x69\x61\x6c\x69\x7a\x65\x64\x20\x63\x61\x70\x74\x75\x72\x65\x64\x20\x6f\x62\x6a\x65\x63\x74\x20\x6f\x66\x20\x73\x69\x7a\x65\x20\x6c\x84\x20\x66\x6f\x72\x20\x6c\x97\x3a\x20",
                  Handle<HeapObject>::cast(object)->Size(),
                  reinterpret_cast<void*>(descriptor.slot_address()));
         }
         object->ShortPrint(trace_scope_->file());
-        PrintF(trace_scope_->file(), "\n");
+        PrintF(trace_scope_->file(), "\xa");
       }
     }
 
@@ -2099,8 +2099,8 @@ void Deoptimizer::MaterializeHeapNumbersForDebuggerInspectableFrame(
 
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "Materializing a new heap number %p [%e] in slot %p"
-               "for parameter slot #%d\n",
+               "\x4d\x61\x74\x65\x72\x69\x61\x6c\x69\x7a\x69\x6e\x67\x20\x61\x20\x6e\x65\x77\x20\x68\x65\x61\x70\x20\x6e\x75\x6d\x62\x65\x72\x20\x6c\x97\x20\x5b\x6c\x85\x5d\x20\x69\x6e\x20\x73\x6c\x6f\x74\x20\x6c\x97"
+               "\x66\x6f\x72\x20\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x20\x73\x6c\x6f\x74\x20\x23\x6c\x84\xa",
                reinterpret_cast<void*>(*num),
                d.value(),
                d.destination(),
@@ -2116,8 +2116,8 @@ void Deoptimizer::MaterializeHeapNumbersForDebuggerInspectableFrame(
 
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "Materializing a new heap number %p [%e] in slot %p"
-               "for expression slot #%d\n",
+               "\x4d\x61\x74\x65\x72\x69\x61\x6c\x69\x7a\x69\x6e\x67\x20\x61\x20\x6e\x65\x77\x20\x68\x65\x61\x70\x20\x6e\x75\x6d\x62\x65\x72\x20\x6c\x97\x20\x5b\x6c\x85\x5d\x20\x69\x6e\x20\x73\x6c\x6f\x74\x20\x6c\x97"
+               "\x66\x6f\x72\x20\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x20\x73\x6c\x6f\x74\x20\x23\x6c\x84\xa",
                reinterpret_cast<void*>(*num),
                d.value(),
                d.destination(),
@@ -2132,10 +2132,10 @@ void Deoptimizer::MaterializeHeapNumbersForDebuggerInspectableFrame(
 
 static const char* TraceValueType(bool is_smi) {
   if (is_smi) {
-    return "smi";
+    return "\x73\x6d\x69";
   }
 
-  return "heap number";
+  return "\x68\x65\x61\x70\x20\x6e\x75\x6d\x62\x65\x72";
 }
 
 
@@ -2151,7 +2151,7 @@ void Deoptimizer::DoTranslateObjectAndSkip(TranslationIterator* iterator) {
     case Translation::GETTER_STUB_FRAME:
     case Translation::SETTER_STUB_FRAME:
     case Translation::COMPILED_STUB_FRAME: {
-      FATAL("Unexpected frame start translation opcode");
+      FATAL("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x66\x72\x61\x6d\x65\x20\x73\x74\x61\x72\x74\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6f\x6e\x20\x6f\x70\x63\x6f\x64\x65");
       return;
     }
 
@@ -2172,9 +2172,9 @@ void Deoptimizer::DoTranslateObjectAndSkip(TranslationIterator* iterator) {
     case Translation::DUPLICATED_OBJECT: {
       int object_index = iterator->Next();
       if (trace_scope_ != NULL) {
-        PrintF(trace_scope_->file(), "      skipping object ");
+        PrintF(trace_scope_->file(), "\x20\x20\x20\x20\x20\x20\x73\x6b\x69\x70\x70\x69\x6e\x67\x20\x6f\x62\x6a\x65\x63\x74\x20");
         PrintF(trace_scope_->file(),
-               " ; duplicate of object #%d\n", object_index);
+               "\x20\x3b\x20\x64\x75\x70\x6c\x69\x63\x61\x74\x65\x20\x6f\x66\x20\x6f\x62\x6a\x65\x63\x74\x20\x23\x6c\x84\xa", object_index);
       }
       AddObjectDuplication(0, object_index);
       return;
@@ -2185,9 +2185,9 @@ void Deoptimizer::DoTranslateObjectAndSkip(TranslationIterator* iterator) {
       int length = iterator->Next();
       bool is_args = opcode == Translation::ARGUMENTS_OBJECT;
       if (trace_scope_ != NULL) {
-        PrintF(trace_scope_->file(), "    skipping object ");
+        PrintF(trace_scope_->file(), "\x20\x20\x20\x20\x73\x6b\x69\x70\x70\x69\x6e\x67\x20\x6f\x62\x6a\x65\x63\x74\x20");
         PrintF(trace_scope_->file(),
-               " ; object (length = %d, is_args = %d)\n", length, is_args);
+               "\x20\x3b\x20\x6f\x62\x6a\x65\x63\x74\x20\x28\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20\x6c\x84\x2c\x20\x69\x73\x5f\x61\x72\x67\x73\x20\x3d\x20\x6c\x84\x29\xa", length, is_args);
       }
 
       AddObjectStart(0, length, is_args);
@@ -2202,7 +2202,7 @@ void Deoptimizer::DoTranslateObjectAndSkip(TranslationIterator* iterator) {
     }
   }
 
-  FATAL("Unexpected translation opcode");
+  FATAL("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6f\x6e\x20\x6f\x70\x63\x6f\x64\x65");
 }
 
 
@@ -2223,7 +2223,7 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
     case Translation::GETTER_STUB_FRAME:
     case Translation::SETTER_STUB_FRAME:
     case Translation::COMPILED_STUB_FRAME:
-      FATAL("Unexpected frame start translation opcode");
+      FATAL("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x66\x72\x61\x6d\x65\x20\x73\x74\x61\x72\x74\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6f\x6e\x20\x6f\x70\x63\x6f\x64\x65");
       return;
 
     case Translation::REGISTER: {
@@ -2231,16 +2231,16 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       intptr_t input_value = input_->GetRegister(input_reg);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      object @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x65\x63\x74\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         PrintF(trace_scope_->file(),
-               "0x%08" V8PRIxPTR " ; %s ", input_value,
+               "\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x3b\x20\x6c\xa2\x20", input_value,
                converter.NameOfCPURegister(input_reg));
         reinterpret_cast<Object*>(input_value)->ShortPrint(
             trace_scope_->file());
         PrintF(trace_scope_->file(),
-               "\n");
+               "\xa");
       }
       AddObjectTaggedValue(input_value);
       return;
@@ -2252,11 +2252,11 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       bool is_smi = Smi::IsValid(value);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      object @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x65\x63\x74\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         PrintF(trace_scope_->file(),
-               "%" V8PRIdPTR " ; %s (%s)\n", value,
+               "\x25" V8PRIdPTR "\x20\x3b\x20\x6c\xa2\x20\x28\x6c\xa2\x29\xa", value,
                converter.NameOfCPURegister(input_reg),
                TraceValueType(is_smi));
       }
@@ -2277,11 +2277,11 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       bool is_smi = (value <= static_cast<uintptr_t>(Smi::kMaxValue));
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      object @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x65\x63\x74\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         PrintF(trace_scope_->file(),
-               "%" V8PRIdPTR " ; uint %s (%s)\n", value,
+               "\x25" V8PRIdPTR "\x20\x3b\x20\x75\x69\x6e\x74\x20\x6c\xa2\x20\x28\x6c\xa2\x29\xa", value,
                converter.NameOfCPURegister(input_reg),
                TraceValueType(is_smi));
       }
@@ -2301,11 +2301,11 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       double value = input_->GetDoubleRegister(input_reg);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      object @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x65\x63\x74\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         PrintF(trace_scope_->file(),
-               "%e ; %s\n", value,
+               "\x6c\x85\x20\x3b\x20\x6c\xa2\xa", value,
                DoubleRegister::AllocationIndexToString(input_reg));
       }
       AddObjectDoubleValue(value);
@@ -2318,15 +2318,15 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       intptr_t input_value = input_->GetFrameSlot(input_offset);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      object @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x65\x63\x74\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         PrintF(trace_scope_->file(),
-               "0x%08" V8PRIxPTR " ; [sp + %d] ", input_value, input_offset);
+               "\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x3b\x20\x5b\x73\x70\x20\x2b\x20\x6c\x84\x5d\x20", input_value, input_offset);
         reinterpret_cast<Object*>(input_value)->ShortPrint(
             trace_scope_->file());
         PrintF(trace_scope_->file(),
-               "\n");
+               "\xa");
       }
       AddObjectTaggedValue(input_value);
       return;
@@ -2339,11 +2339,11 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       bool is_smi = Smi::IsValid(value);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      object @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x65\x63\x74\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         PrintF(trace_scope_->file(),
-               "%" V8PRIdPTR " ; [sp + %d] (%s)\n",
+               "\x25" V8PRIdPTR "\x20\x3b\x20\x5b\x73\x70\x20\x2b\x20\x6c\x84\x5d\x20\x28\x6c\xa2\x29\xa",
                value, input_offset, TraceValueType(is_smi));
       }
       if (is_smi) {
@@ -2365,11 +2365,11 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       bool is_smi = (value <= static_cast<uintptr_t>(Smi::kMaxValue));
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      object @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x65\x63\x74\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         PrintF(trace_scope_->file(),
-               "%" V8PRIdPTR " ; [sp + %d] (uint %s)\n",
+               "\x25" V8PRIdPTR "\x20\x3b\x20\x5b\x73\x70\x20\x2b\x20\x6c\x84\x5d\x20\x28\x75\x69\x6e\x74\x20\x6c\xa2\x29\xa",
                value, input_offset, TraceValueType(is_smi));
       }
       if (is_smi) {
@@ -2389,11 +2389,11 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       double value = input_->GetDoubleFrameSlot(input_offset);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      object @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x65\x63\x74\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         PrintF(trace_scope_->file(),
-               "%e ; [sp + %d]\n", value, input_offset);
+               "\x6c\x85\x20\x3b\x20\x5b\x73\x70\x20\x2b\x20\x6c\x84\x5d\xa", value, input_offset);
       }
       AddObjectDoubleValue(value);
       return;
@@ -2403,12 +2403,12 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       Object* literal = ComputeLiteral(iterator->Next());
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      object @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x65\x63\x74\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         literal->ShortPrint(trace_scope_->file());
         PrintF(trace_scope_->file(),
-               " ; literal\n");
+               "\x20\x3b\x20\x6c\x69\x74\x65\x72\x61\x6c\xa");
       }
       intptr_t value = reinterpret_cast<intptr_t>(literal);
       AddObjectTaggedValue(value);
@@ -2419,12 +2419,12 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       int object_index = iterator->Next();
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      nested @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6e\x65\x73\x74\x65\x64\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         isolate_->heap()->arguments_marker()->ShortPrint(trace_scope_->file());
         PrintF(trace_scope_->file(),
-               " ; duplicate of object #%d\n", object_index);
+               "\x20\x3b\x20\x64\x75\x70\x6c\x69\x63\x61\x74\x65\x20\x6f\x66\x20\x6f\x62\x6a\x65\x63\x74\x20\x23\x6c\x84\xa", object_index);
       }
       // Use the materialization marker value as a sentinel and fill in
       // the object after the deoptimized frame is built.
@@ -2441,12 +2441,12 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
       bool is_args = opcode == Translation::ARGUMENTS_OBJECT;
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "      nested @0x%08" V8PRIxPTR ": [field #%d] <- ",
+               "\x20\x20\x20\x20\x20\x20\x6e\x65\x73\x74\x65\x64\x20\x40\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x66\x69\x65\x6c\x64\x20\x23\x6c\x84\x5d\x20\x3c\x2d\x20",
                reinterpret_cast<intptr_t>(object_slot),
                field_index);
         isolate_->heap()->arguments_marker()->ShortPrint(trace_scope_->file());
         PrintF(trace_scope_->file(),
-               " ; object (length = %d, is_args = %d)\n", length, is_args);
+               "\x20\x3b\x20\x6f\x62\x6a\x65\x63\x74\x20\x28\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20\x6c\x84\x2c\x20\x69\x73\x5f\x61\x72\x67\x73\x20\x3d\x20\x6c\x84\x29\xa", length, is_args);
       }
       // Use the materialization marker value as a sentinel and fill in
       // the object after the deoptimized frame is built.
@@ -2464,7 +2464,7 @@ void Deoptimizer::DoTranslateObject(TranslationIterator* iterator,
     }
   }
 
-  FATAL("Unexpected translation opcode");
+  FATAL("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6f\x6e\x20\x6f\x70\x63\x6f\x64\x65");
 }
 
 
@@ -2486,7 +2486,7 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
     case Translation::GETTER_STUB_FRAME:
     case Translation::SETTER_STUB_FRAME:
     case Translation::COMPILED_STUB_FRAME:
-      FATAL("Unexpected translation opcode");
+      FATAL("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6f\x6e\x20\x6f\x70\x63\x6f\x64\x65");
       return;
 
     case Translation::REGISTER: {
@@ -2495,14 +2495,14 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       if (trace_scope_ != NULL) {
         PrintF(
             trace_scope_->file(),
-            "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08" V8PRIxPTR " ; %s ",
+            "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x3b\x20\x6c\xa2\x20",
             output_[frame_index]->GetTop() + output_offset,
             output_offset,
             input_value,
             converter.NameOfCPURegister(input_reg));
         reinterpret_cast<Object*>(input_value)->ShortPrint(
             trace_scope_->file());
-        PrintF(trace_scope_->file(), "\n");
+        PrintF(trace_scope_->file(), "\xa");
       }
       output_[frame_index]->SetFrameSlot(output_offset, input_value);
       return;
@@ -2515,7 +2515,7 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       if (trace_scope_ != NULL) {
         PrintF(
             trace_scope_->file(),
-            "    0x%08" V8PRIxPTR ": [top + %d] <- %" V8PRIdPTR " ; %s (%s)\n",
+            "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x25" V8PRIdPTR "\x20\x3b\x20\x6c\xa2\x20\x28\x6c\xa2\x29\xa",
             output_[frame_index]->GetTop() + output_offset,
             output_offset,
             value,
@@ -2543,8 +2543,8 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       if (trace_scope_ != NULL) {
         PrintF(
             trace_scope_->file(),
-            "    0x%08" V8PRIxPTR ": [top + %d] <- %" V8PRIuPTR
-            " ; uint %s (%s)\n",
+            "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x25" V8PRIuPTR
+            "\x20\x3b\x20\x75\x69\x6e\x74\x20\x6c\xa2\x20\x28\x6c\xa2\x29\xa",
             output_[frame_index]->GetTop() + output_offset,
             output_offset,
             value,
@@ -2570,7 +2570,7 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       double value = input_->GetDoubleRegister(input_reg);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "    0x%08" V8PRIxPTR ": [top + %d] <- %e ; %s\n",
+               "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x6c\x85\x20\x3b\x20\x6c\xa2\xa",
                output_[frame_index]->GetTop() + output_offset,
                output_offset,
                value,
@@ -2589,16 +2589,16 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       intptr_t input_value = input_->GetFrameSlot(input_offset);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "    0x%08" V8PRIxPTR ": ",
+               "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20",
                output_[frame_index]->GetTop() + output_offset);
         PrintF(trace_scope_->file(),
-               "[top + %d] <- 0x%08" V8PRIxPTR " ; [sp + %d] ",
+               "\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x3b\x20\x5b\x73\x70\x20\x2b\x20\x6c\x84\x5d\x20",
                output_offset,
                input_value,
                input_offset);
         reinterpret_cast<Object*>(input_value)->ShortPrint(
             trace_scope_->file());
-        PrintF(trace_scope_->file(), "\n");
+        PrintF(trace_scope_->file(), "\xa");
       }
       output_[frame_index]->SetFrameSlot(output_offset, input_value);
       return;
@@ -2611,10 +2611,10 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       bool is_smi = Smi::IsValid(value);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "    0x%08" V8PRIxPTR ": ",
+               "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20",
                output_[frame_index]->GetTop() + output_offset);
         PrintF(trace_scope_->file(),
-               "[top + %d] <- %" V8PRIdPTR " ; [sp + %d] (%s)\n",
+               "\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x25" V8PRIdPTR "\x20\x3b\x20\x5b\x73\x70\x20\x2b\x20\x6c\x84\x5d\x20\x28\x6c\xa2\x29\xa",
                output_offset,
                value,
                input_offset,
@@ -2642,10 +2642,10 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       bool is_smi = value <= static_cast<uintptr_t>(Smi::kMaxValue);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "    0x%08" V8PRIxPTR ": ",
+               "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20",
                output_[frame_index]->GetTop() + output_offset);
         PrintF(trace_scope_->file(),
-               "[top + %d] <- %" V8PRIuPTR " ; [sp + %d] (uint32 %s)\n",
+               "\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x25" V8PRIuPTR "\x20\x3b\x20\x5b\x73\x70\x20\x2b\x20\x6c\x84\x5d\x20\x28\x75\x69\x6e\x74\x33\x32\x20\x6c\xa2\x29\xa",
                output_offset,
                value,
                input_offset,
@@ -2671,7 +2671,7 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       double value = input_->GetDoubleFrameSlot(input_offset);
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "    0x%08" V8PRIxPTR ": [top + %d] <- %e ; [sp + %d]\n",
+               "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20\x6c\x85\x20\x3b\x20\x5b\x73\x70\x20\x2b\x20\x6c\x84\x5d\xa",
                output_[frame_index]->GetTop() + output_offset,
                output_offset,
                value,
@@ -2688,11 +2688,11 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       Object* literal = ComputeLiteral(iterator->Next());
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "    0x%08" V8PRIxPTR ": [top + %d] <- ",
+               "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20",
                output_[frame_index]->GetTop() + output_offset,
                output_offset);
         literal->ShortPrint(trace_scope_->file());
-        PrintF(trace_scope_->file(), " ; literal\n");
+        PrintF(trace_scope_->file(), "\x20\x3b\x20\x6c\x69\x74\x65\x72\x61\x6c\xa");
       }
       intptr_t value = reinterpret_cast<intptr_t>(literal);
       output_[frame_index]->SetFrameSlot(output_offset, value);
@@ -2703,12 +2703,12 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       int object_index = iterator->Next();
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "    0x%08" V8PRIxPTR ": [top + %d] <- ",
+               "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20",
                output_[frame_index]->GetTop() + output_offset,
                output_offset);
         isolate_->heap()->arguments_marker()->ShortPrint(trace_scope_->file());
         PrintF(trace_scope_->file(),
-               " ; duplicate of object #%d\n", object_index);
+               "\x20\x3b\x20\x64\x75\x70\x6c\x69\x63\x61\x74\x65\x20\x6f\x66\x20\x6f\x62\x6a\x65\x63\x74\x20\x23\x6c\x84\xa", object_index);
       }
       // Use the materialization marker value as a sentinel and fill in
       // the object after the deoptimized frame is built.
@@ -2726,12 +2726,12 @@ void Deoptimizer::DoTranslateCommand(TranslationIterator* iterator,
       bool is_args = opcode == Translation::ARGUMENTS_OBJECT;
       if (trace_scope_ != NULL) {
         PrintF(trace_scope_->file(),
-               "    0x%08" V8PRIxPTR ": [top + %d] <- ",
+               "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x6c\x84\x5d\x20\x3c\x2d\x20",
                output_[frame_index]->GetTop() + output_offset,
                output_offset);
         isolate_->heap()->arguments_marker()->ShortPrint(trace_scope_->file());
         PrintF(trace_scope_->file(),
-               " ; object (length = %d, is_args = %d)\n", length, is_args);
+               "\x20\x3b\x20\x6f\x62\x6a\x65\x63\x74\x20\x28\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20\x6c\x84\x2c\x20\x69\x73\x5f\x61\x72\x67\x73\x20\x3d\x20\x6c\x84\x29\xa", length, is_args);
       }
       // Use the materialization marker value as a sentinel and fill in
       // the object after the deoptimized frame is built.
@@ -2928,7 +2928,7 @@ int FrameDescription::ComputeParametersCount() {
     case StackFrame::STUB:
       return -1;  // Minus receiver.
     default:
-      FATAL("Unexpected stack frame type");
+      FATAL("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x73\x74\x61\x63\x6b\x20\x66\x72\x61\x6d\x65\x20\x74\x79\x70\x65");
       return 0;
   }
 }
@@ -3145,7 +3145,7 @@ int Translation::NumberOfOperandsFor(Opcode opcode) {
     case JS_FRAME:
       return 3;
   }
-  FATAL("Unexpected translation type");
+  FATAL("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6f\x6e\x20\x74\x79\x70\x65");
   return -1;
 }
 
@@ -3238,7 +3238,7 @@ SlotRef SlotRefValueBuilder::ComputeSlotForNextArgument(
       break;
   }
 
-  FATAL("We should never get here - unexpected deopt info.");
+  FATAL("\x57\x65\x20\x73\x68\x6f\x75\x6c\x64\x20\x6e\x65\x76\x65\x72\x20\x67\x65\x74\x20\x68\x65\x72\x65\x20\x2d\x20\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x69\x6e\x66\x6f\x2e");
   return SlotRef();
 }
 
@@ -3380,7 +3380,7 @@ Handle<Object> SlotRef::GetValue(Isolate* isolate) {
       return literal_;
 
     default:
-      FATAL("We should never get here - unexpected deopt info.");
+      FATAL("\x57\x65\x20\x73\x68\x6f\x75\x6c\x64\x20\x6e\x65\x76\x65\x72\x20\x67\x65\x74\x20\x68\x65\x72\x65\x20\x2d\x20\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x69\x6e\x66\x6f\x2e");
       return Handle<Object>::null();
   }
 }
@@ -3520,7 +3520,7 @@ Handle<Object> SlotRefValueBuilder::GetNext(Isolate* isolate, int lvl) {
         }
         default:
           PrintF(stderr,
-                 "[couldn't handle instance type %d]\n", map->instance_type());
+                 "\x5b\x63\x6f\x75\x6c\x64\x6e\x27\x74\x20\x68\x61\x6e\x64\x6c\x65\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x74\x79\x70\x65\x20\x6c\x84\x5d\xa", map->instance_type());
           UNREACHABLE();
           break;
       }
@@ -3539,7 +3539,7 @@ Handle<Object> SlotRefValueBuilder::GetNext(Isolate* isolate, int lvl) {
       break;
   }
 
-  FATAL("We should never get here - unexpected deopt slot kind.");
+  FATAL("\x57\x65\x20\x73\x68\x6f\x75\x6c\x64\x20\x6e\x65\x76\x65\x72\x20\x67\x65\x74\x20\x68\x65\x72\x65\x20\x2d\x20\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x73\x6c\x6f\x74\x20\x6b\x69\x6e\x64\x2e");
   return Handle<Object>::null();
 }
 

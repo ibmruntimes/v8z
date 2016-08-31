@@ -14,7 +14,7 @@ namespace internal {
 class HStoreEliminationPhase : public HPhase {
  public:
   explicit HStoreEliminationPhase(HGraph* graph)
-    : HPhase("H_Store elimination", graph),
+    : HPhase("\x48\x5f\x53\x74\x6f\x72\x65\x20\x65\x6c\x69\x6d\x69\x6e\x61\x74\x69\x6f\x6e", graph),
       unobserved_(10, zone()),
       aliasing_() { }
 

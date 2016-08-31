@@ -19,7 +19,7 @@ namespace internal {
 void* Malloced::New(size_t size) {
   void* result = malloc(size);
   if (result == NULL) {
-    v8::internal::FatalProcessOutOfMemory("Malloced operator new");
+    v8::internal::FatalProcessOutOfMemory("\x4d\x61\x6c\x6c\x6f\x63\x65\x64\x20\x6f\x70\x65\x72\x61\x74\x6f\x72\x20\x6e\x65\x77");
   }
   return result;
 }
@@ -31,7 +31,7 @@ void Malloced::Delete(void* p) {
 
 
 void Malloced::FatalProcessOutOfMemory() {
-  v8::internal::FatalProcessOutOfMemory("Out of memory");
+  v8::internal::FatalProcessOutOfMemory("\x4f\x75\x74\x20\x6f\x66\x20\x6d\x65\x6d\x6f\x72\x79");
 }
 
 
@@ -67,7 +67,7 @@ char* StrDup(const char* str) {
   int length = StrLength(str);
   char* result = NewArray<char>(length + 1);
   MemCopy(result, str, length);
-  result[length] = '\0';
+  result[length] = '\x0';
   return result;
 }
 
@@ -77,7 +77,7 @@ char* StrNDup(const char* str, int n) {
   if (n < length) length = n;
   char* result = NewArray<char>(length + 1);
   MemCopy(result, str, length);
-  result[length] = '\0';
+  result[length] = '\x0';
   return result;
 }
 
@@ -107,7 +107,7 @@ void* AlignedAlloc(size_t size, size_t alignment) {
 #else
   if (posix_memalign(&ptr, alignment, size)) ptr = NULL;
 #endif
-  if (ptr == NULL) FatalProcessOutOfMemory("AlignedAlloc");
+  if (ptr == NULL) FatalProcessOutOfMemory("\x41\x6c\x69\x67\x6e\x65\x64\x41\x6c\x6c\x6f\x63");
   return ptr;
 }
 

@@ -20,16 +20,16 @@
 // must preserve that register's value across cpuid instructions.
 #if defined(__i386__)
 #define cpuid(a, b, c, d, inp) \
-  asm("mov %%ebx, %%edi\n"     \
-      "cpuid\n"                \
-      "xchg %%edi, %%ebx\n"    \
-      : "=a" (a), "=D" (b), "=c" (c), "=d" (d) : "a" (inp))
+  asm("\x6d\x6f\x76\x20\x25\x6c\x85\x62\x78\x2c\x20\x25\x6c\x85\x84\x89\xa"     \
+      "\x63\x70\x75\x69\x64\xa"                \
+      "\x78\x63\x68\x67\x20\x25\x6c\x85\x84\x89\x2c\x20\x25\x6c\x85\x62\x78\xa"    \
+      : "\x3d\x61" (a), "\x3d\x44" (b), "\x3d\x63" (c), "\x3d\x64" (d) : "\x61" (inp))
 #elif defined(__x86_64__)
 #define cpuid(a, b, c, d, inp) \
-  asm("mov %%rbx, %%rdi\n"     \
-      "cpuid\n"                \
-      "xchg %%rdi, %%rbx\n"    \
-      : "=a" (a), "=D" (b), "=c" (c), "=d" (d) : "a" (inp))
+  asm("\x6d\x6f\x76\x20\x25\x25\x72\x62\x78\x2c\x20\x25\x25\x72\x64\x69\xa"     \
+      "\x63\x70\x75\x69\x64\xa"                \
+      "\x78\x63\x68\x67\x20\x25\x25\x72\x64\x69\x2c\x20\x25\x25\x72\x62\x78\xa"    \
+      : "\x3d\x61" (a), "\x3d\x44" (b), "\x3d\x63" (c), "\x3d\x64" (d) : "\x61" (inp))
 #endif
 
 #if defined(cpuid)        // initialize the struct only on x86
@@ -83,7 +83,7 @@ void AtomicOps_Internalx86CPUFeaturesInit() {
   // non-locked read-modify-write instruction.  Rev F has this bug in
   // pre-release versions, but not in versions released to customers,
   // so we test only for Rev E, which is family 15, model 32..63 inclusive.
-  if (strcmp(vendor, "AuthenticAMD") == 0 &&       // AMD
+  if (strcmp(vendor, "\x41\x75\x74\x68\x65\x6e\x74\x69\x63\x41\x4d\x44") == 0 &&       // AMD
       family == 15 &&
       32 <= model && model <= 63) {
     AtomicOps_Internalx86CPUFeatures.has_amd_lock_mb_bug = true;

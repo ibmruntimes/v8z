@@ -97,7 +97,7 @@ void IncrementalMarking::BlackToGreyAndUnshift(HeapObject* obj,
       // trace it.  In this case we switch to non-incremental marking in
       // order to finish off this marking phase.
       if (FLAG_trace_gc) {
-        PrintPID("Hurrying incremental marking because of lack of progress\n");
+        PrintPID("\x48\x75\x72\x72\x79\x69\x6e\x67\x20\x69\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x20\x6d\x61\x72\x6b\x69\x6e\x67\x20\x62\x65\x63\x61\x75\x73\x65\x20\x6f\x66\x20\x6c\x61\x63\x6b\x20\x6f\x66\x20\x70\x72\x6f\x67\x72\x65\x73\x73\xa");
       }
       marking_speed_ = kMaxMarkingSpeed;
     }

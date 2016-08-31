@@ -20,15 +20,15 @@ namespace internal {
 inline const char* StateToString(StateTag state) {
   switch (state) {
     case JS:
-      return "JS";
+      return "\x4a\x53";
     case GC:
-      return "GC";
+      return "\x47\x43";
     case COMPILER:
-      return "COMPILER";
+      return "\x43\x4f\x4d\x50\x49\x4c\x45\x52";
     case OTHER:
-      return "OTHER";
+      return "\x4f\x54\x48\x45\x52";
     case EXTERNAL:
-      return "EXTERNAL";
+      return "\x45\x58\x54\x45\x52\x4e\x41\x4c";
     default:
       UNREACHABLE();
       return NULL;

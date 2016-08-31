@@ -483,7 +483,7 @@ struct CreateHighResTickClockTrait {
     // On Athlon X2 CPUs (e.g. model 15) the QueryPerformanceCounter
     // is unreliable, fallback to the low-resolution tick clock.
     CPU cpu;
-    if (strcmp(cpu.vendor(), "AuthenticAMD") == 0 && cpu.family() == 15) {
+    if (strcmp(cpu.vendor(), "\x41\x75\x74\x68\x65\x6e\x74\x69\x63\x41\x4d\x44") == 0 && cpu.family() == 15) {
       return tick_clock.Pointer();
     }
 
@@ -620,7 +620,7 @@ class KernelTimestampClock {
 
 
 // Timestamp module name
-const char KernelTimestampClock::kTraceClockDevice[] = "/dev/trace_clock";
+const char KernelTimestampClock::kTraceClockDevice[] = "\x2f\x64\x65\x76\x2f\x74\x72\x61\x63\x65\x5f\x63\x6c\x6f\x63\x6b";
 
 #else
 

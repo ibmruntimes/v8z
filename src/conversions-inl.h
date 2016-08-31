@@ -102,7 +102,7 @@ bool SubStringEquals(Iterator* current,
                      EndMark end,
                      const char* substring) {
   DCHECK(**current == *substring);
-  for (substring++; *substring != '\0'; substring++) {
+  for (substring++; *substring != '\x0'; substring++) {
     ++*current;
     if (*current == end || **current != *substring) return false;
   }
@@ -135,7 +135,7 @@ double InternalStringToIntDouble(UnicodeCache* unicode_cache,
   DCHECK(current != end);
 
   // Skip leading 0s.
-  while (*current == '0') {
+  while (*current == '\x30') {
     ++current;
     if (current == end) return SignedZero(negative);
   }
@@ -146,12 +146,12 @@ double InternalStringToIntDouble(UnicodeCache* unicode_cache,
 
   do {
     int digit;
-    if (*current >= '0' && *current <= '9' && *current < '0' + radix) {
-      digit = static_cast<char>(*current) - '0';
-    } else if (radix > 10 && *current >= 'a' && *current < 'a' + radix - 10) {
-      digit = static_cast<char>(*current) - 'a' + 10;
-    } else if (radix > 10 && *current >= 'A' && *current < 'A' + radix - 10) {
-      digit = static_cast<char>(*current) - 'A' + 10;
+    if (*current >= '\x30' && *current <= '\x39' && *current < '\x30' + radix) {
+      digit = static_cast<char>(*current) - '\x30';
+    } else if (radix > 10 && *current >= '\x61' && *current < '\x61' + radix - 10) {
+      digit = static_cast<char>(*current) - '\x61' + 10;
+    } else if (radix > 10 && *current >= '\x41' && *current < '\x41' + radix - 10) {
+      digit = static_cast<char>(*current) - '\x41' + 10;
     } else {
       if (allow_trailing_junk ||
           !AdvanceToNonspace(unicode_cache, &current, end)) {
@@ -181,7 +181,7 @@ double InternalStringToIntDouble(UnicodeCache* unicode_cache,
       while (true) {
         ++current;
         if (current == end || !isDigit(*current, radix)) break;
-        zero_tail = zero_tail && *current == '0';
+        zero_tail = zero_tail && *current == '\x30';
         exponent += radix_log_2;
       }
 
@@ -242,13 +242,13 @@ double InternalStringToInt(UnicodeCache* unicode_cache,
   bool negative = false;
   bool leading_zero = false;
 
-  if (*current == '+') {
+  if (*current == '\x2b') {
     // Ignore leading sign; skip following spaces.
     ++current;
     if (current == end) {
       return JunkStringValue();
     }
-  } else if (*current == '-') {
+  } else if (*current == '\x2d') {
     ++current;
     if (current == end) {
       return JunkStringValue();
@@ -259,10 +259,10 @@ double InternalStringToInt(UnicodeCache* unicode_cache,
   if (radix == 0) {
     // Radix detection.
     radix = 10;
-    if (*current == '0') {
+    if (*current == '\x30') {
       ++current;
       if (current == end) return SignedZero(negative);
-      if (*current == 'x' || *current == 'X') {
+      if (*current == '\x78' || *current == '\x58') {
         radix = 16;
         ++current;
         if (current == end) return JunkStringValue();
@@ -271,11 +271,11 @@ double InternalStringToInt(UnicodeCache* unicode_cache,
       }
     }
   } else if (radix == 16) {
-    if (*current == '0') {
+    if (*current == '\x30') {
       // Allow "0x" prefix.
       ++current;
       if (current == end) return SignedZero(negative);
-      if (*current == 'x' || *current == 'X') {
+      if (*current == '\x78' || *current == '\x58') {
         ++current;
         if (current == end) return JunkStringValue();
       } else {
@@ -287,7 +287,7 @@ double InternalStringToInt(UnicodeCache* unicode_cache,
   if (radix < 2 || radix > 36) return JunkStringValue();
 
   // Skip leading zeros.
-  while (*current == '0') {
+  while (*current == '\x30') {
     leading_zero = true;
     ++current;
     if (current == end) return SignedZero(negative);
@@ -329,7 +329,7 @@ double InternalStringToInt(UnicodeCache* unicode_cache,
     const int kBufferSize = kMaxSignificantDigits + 2;
     char buffer[kBufferSize];
     int buffer_pos = 0;
-    while (*current >= '0' && *current <= '9') {
+    while (*current >= '\x30' && *current <= '\x39') {
       if (buffer_pos <= kMaxSignificantDigits) {
         // If the number has more than kMaxSignificantDigits it will be parsed
         // as infinity.
@@ -346,7 +346,7 @@ double InternalStringToInt(UnicodeCache* unicode_cache,
     }
 
     SLOW_DCHECK(buffer_pos < kBufferSize);
-    buffer[buffer_pos] = '\0';
+    buffer[buffer_pos] = '\x0';
     Vector<const char> buffer_vector(buffer, buffer_pos);
     return negative ? -Strtod(buffer_vector, 0) : Strtod(buffer_vector, 0);
   }
@@ -356,9 +356,9 @@ double InternalStringToInt(UnicodeCache* unicode_cache,
   // 16, or 32, then mathInt may be an implementation-dependent approximation to
   // the mathematical integer value" (15.1.2.2).
 
-  int lim_0 = '0' + (radix < 10 ? radix : 10);
-  int lim_a = 'a' + (radix - 10);
-  int lim_A = 'A' + (radix - 10);
+  int lim_0 = '\x30' + (radix < 10 ? radix : 10);
+  int lim_a = '\x61' + (radix - 10);
+  int lim_A = '\x41' + (radix - 10);
 
   // NOTE: The code for computing the value may seem a bit complex at
   // first glance. It is structured to use 32-bit multiply-and-add
@@ -373,12 +373,12 @@ double InternalStringToInt(UnicodeCache* unicode_cache,
     unsigned int part = 0, multiplier = 1;
     while (true) {
       int d;
-      if (*current >= '0' && *current < lim_0) {
-        d = *current - '0';
-      } else if (*current >= 'a' && *current < lim_a) {
-        d = *current - 'a' + 10;
-      } else if (*current >= 'A' && *current < lim_A) {
-        d = *current - 'A' + 10;
+      if (*current >= '\x30' && *current < lim_0) {
+        d = *current - '\x30';
+      } else if (*current >= '\x61' && *current < lim_a) {
+        d = *current - '\x61' + 10;
+      } else if (*current >= '\x41' && *current < lim_A) {
+        d = *current - '\x41' + 10;
       } else {
         done = true;
         break;
@@ -460,18 +460,18 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
 
   Sign sign = NONE;
 
-  if (*current == '+') {
+  if (*current == '\x2b') {
     // Ignore leading sign.
     ++current;
     if (current == end) return JunkStringValue();
     sign = POSITIVE;
-  } else if (*current == '-') {
+  } else if (*current == '\x2d') {
     ++current;
     if (current == end) return JunkStringValue();
     sign = NEGATIVE;
   }
 
-  static const char kInfinityString[] = "Infinity";
+  static const char kInfinityString[] = "\x49\x6e\x66\x69\x6e\x69\x74\x79";
   if (*current == kInfinityString[0]) {
     if (!SubStringEquals(&current, end, kInfinityString)) {
       return JunkStringValue();
@@ -487,17 +487,17 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
   }
 
   bool leading_zero = false;
-  if (*current == '0') {
+  if (*current == '\x30') {
     ++current;
     if (current == end) return SignedZero(sign == NEGATIVE);
 
     leading_zero = true;
 
     // It could be hexadecimal value.
-    if ((flags & ALLOW_HEX) && (*current == 'x' || *current == 'X')) {
+    if ((flags & ALLOW_HEX) && (*current == '\x78' || *current == '\x58')) {
       ++current;
       if (current == end || !isDigit(*current, 16) || sign != NONE) {
-        return JunkStringValue();  // "0x".
+        return JunkStringValue();  // "\x30\x78".
       }
 
       return InternalStringToIntDouble<4>(unicode_cache,
@@ -507,10 +507,10 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
                                           allow_trailing_junk);
 
     // It could be an explicit octal value.
-    } else if ((flags & ALLOW_OCTAL) && (*current == 'o' || *current == 'O')) {
+    } else if ((flags & ALLOW_OCTAL) && (*current == '\x6f' || *current == '\x4f')) {
       ++current;
       if (current == end || !isDigit(*current, 8) || sign != NONE) {
-        return JunkStringValue();  // "0o".
+        return JunkStringValue();  // "\x30\x6f".
       }
 
       return InternalStringToIntDouble<3>(unicode_cache,
@@ -520,10 +520,10 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
                                           allow_trailing_junk);
 
     // It could be a binary value.
-    } else if ((flags & ALLOW_BINARY) && (*current == 'b' || *current == 'B')) {
+    } else if ((flags & ALLOW_BINARY) && (*current == '\x62' || *current == '\x42')) {
       ++current;
       if (current == end || !isBinaryDigit(*current) || sign != NONE) {
-        return JunkStringValue();  // "0b".
+        return JunkStringValue();  // "\x30\x62".
       }
 
       return InternalStringToIntDouble<1>(unicode_cache,
@@ -534,7 +534,7 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
     }
 
     // Ignore leading zeros in the integer part.
-    while (*current == '0') {
+    while (*current == '\x30') {
       ++current;
       if (current == end) return SignedZero(sign == NEGATIVE);
     }
@@ -543,7 +543,7 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
   bool octal = leading_zero && (flags & ALLOW_IMPLICIT_OCTAL) != 0;
 
   // Copy significant digits of the integer part (if any) to the buffer.
-  while (*current >= '0' && *current <= '9') {
+  while (*current >= '\x30' && *current <= '\x39') {
     if (significant_digits < kMaxSignificantDigits) {
       DCHECK(buffer_pos < kBufferSize);
       buffer[buffer_pos++] = static_cast<char>(*current);
@@ -551,9 +551,9 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
       // Will later check if it's an octal in the buffer.
     } else {
       insignificant_digits++;  // Move the digit into the exponential part.
-      nonzero_digit_dropped = nonzero_digit_dropped || *current != '0';
+      nonzero_digit_dropped = nonzero_digit_dropped || *current != '\x30';
     }
-    octal = octal && *current < '8';
+    octal = octal && *current < '\x38';
     ++current;
     if (current == end) goto parsing_done;
   }
@@ -562,7 +562,7 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
     octal = false;
   }
 
-  if (*current == '.') {
+  if (*current == '\x2e') {
     if (octal && !allow_trailing_junk) return JunkStringValue();
     if (octal) goto parsing_done;
 
@@ -579,7 +579,7 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
       // octal = false;
       // Integer part consists of 0 or is absent. Significant digits start after
       // leading zeros (if any).
-      while (*current == '0') {
+      while (*current == '\x30') {
         ++current;
         if (current == end) return SignedZero(sign == NEGATIVE);
         exponent--;  // Move this 0 into the exponent.
@@ -588,7 +588,7 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
 
     // There is a fractional part.  We don't emit a '.', but adjust the exponent
     // instead.
-    while (*current >= '0' && *current <= '9') {
+    while (*current >= '\x30' && *current <= '\x39') {
       if (significant_digits < kMaxSignificantDigits) {
         DCHECK(buffer_pos < kBufferSize);
         buffer[buffer_pos++] = static_cast<char>(*current);
@@ -596,7 +596,7 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
         exponent--;
       } else {
         // Ignore insignificant digits in the fractional part.
-        nonzero_digit_dropped = nonzero_digit_dropped || *current != '0';
+        nonzero_digit_dropped = nonzero_digit_dropped || *current != '\x30';
       }
       ++current;
       if (current == end) goto parsing_done;
@@ -612,7 +612,7 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
   }
 
   // Parse exponential part.
-  if (*current == 'e' || *current == 'E') {
+  if (*current == '\x65' || *current == '\x45') {
     if (octal) return JunkStringValue();
     ++current;
     if (current == end) {
@@ -622,8 +622,8 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
         return JunkStringValue();
       }
     }
-    char sign = '+';
-    if (*current == '+' || *current == '-') {
+    char sign = '\x2b';
+    if (*current == '\x2b' || *current == '\x2d') {
       sign = static_cast<char>(*current);
       ++current;
       if (current == end) {
@@ -635,7 +635,7 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
       }
     }
 
-    if (current == end || *current < '0' || *current > '9') {
+    if (current == end || *current < '\x30' || *current > '\x39') {
       if (allow_trailing_junk) {
         goto parsing_done;
       } else {
@@ -648,7 +648,7 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
     int num = 0;
     do {
       // Check overflow.
-      int digit = *current - '0';
+      int digit = *current - '\x30';
       if (num >= max_exponent / 10
           && !(num == max_exponent / 10 && digit <= max_exponent % 10)) {
         num = max_exponent;
@@ -656,9 +656,9 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
         num = num * 10 + digit;
       }
       ++current;
-    } while (current != end && *current >= '0' && *current <= '9');
+    } while (current != end && *current >= '\x30' && *current <= '\x39');
 
-    exponent += (sign == '-' ? -num : num);
+    exponent += (sign == '\x2d' ? -num : num);
   }
 
   if (!allow_trailing_junk &&
@@ -678,12 +678,12 @@ double InternalStringToDouble(UnicodeCache* unicode_cache,
   }
 
   if (nonzero_digit_dropped) {
-    buffer[buffer_pos++] = '1';
+    buffer[buffer_pos++] = '\x31';
     exponent--;
   }
 
   SLOW_DCHECK(buffer_pos < kBufferSize);
-  buffer[buffer_pos] = '\0';
+  buffer[buffer_pos] = '\x0';
 
   double converted = Strtod(Vector<const char>(buffer, buffer_pos), exponent);
   return (sign == NEGATIVE) ? -converted : converted;

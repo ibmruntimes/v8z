@@ -38,34 +38,34 @@ inline bool IsInRange(int value, int lower_limit, int higher_limit) {
 
 inline bool IsDecimalDigit(uc32 c) {
   // ECMA-262, 3rd, 7.8.3 (p 16)
-  return IsInRange(c, GET_ASCII_CODE('0'), GET_ASCII_CODE('9'));
+  return IsInRange(c, GET_ASCII_CODE('\x30'), GET_ASCII_CODE('\x39'));
 }
 
 
 inline bool IsHexDigit(uc32 c) {
   // ECMA-262, 3rd, 7.6 (p 15)
   return IsDecimalDigit(c) ||
-         IsInRange(c, GET_ASCII_CODE('a'), GET_ASCII_CODE('f'))||
-         IsInRange(c, GET_ASCII_CODE('A'), GET_ASCII_CODE('F'));
+         IsInRange(c, GET_ASCII_CODE('\x61'), GET_ASCII_CODE('\x66'))||
+         IsInRange(c, GET_ASCII_CODE('\x41'), GET_ASCII_CODE('\x46'));
 }
 
 
 inline bool IsOctalDigit(uc32 c) {
   // ECMA-262, 6th, 7.8.3
-  return IsInRange(c, GET_ASCII_CODE('0'), GET_ASCII_CODE('7'));
+  return IsInRange(c, GET_ASCII_CODE('\x30'), GET_ASCII_CODE('\x37'));
 }
 
 
 inline bool IsBinaryDigit(uc32 c) {
   // ECMA-262, 6th, 7.8.3
-  return c == GET_ASCII_CODE('0') || c == GET_ASCII_CODE('1');
+  return c == GET_ASCII_CODE('\x30') || c == GET_ASCII_CODE('\x31');
 }
 
 
 inline bool IsRegExpWord(uc16 c) {
-  return IsInRange(AsciiAlphaToLower(c), GET_ASCII_CODE('a'), GET_ASCII_CODE('z'))
+  return IsInRange(AsciiAlphaToLower(c), GET_ASCII_CODE('\x61'), GET_ASCII_CODE('\x7a'))
       || IsDecimalDigit(c)
-      || (c == GET_ASCII_CODE('_'));
+      || (c == GET_ASCII_CODE('\x5f'));
 }
 
 

@@ -39,7 +39,7 @@ class CallOperator : public Operator1<CallDescriptor*> {
             descriptor->ReturnCount(), mnemonic, descriptor) {}
 
   virtual OStream& PrintParameter(OStream& os) const {  // NOLINT
-    return os << "[" << *parameter() << "]";
+    return os << "\x5b" << *parameter() << "\x5d";
   }
 };
 
@@ -58,7 +58,7 @@ class CommonOperatorBuilder {
     // Outputs are formal parameters, plus context, receiver, and JSFunction.
     int outputs = num_formal_parameters + 3;
     return new (zone_) ControlOperator(IrOpcode::kStart, Operator::kFoldable, 0,
-                                       outputs, 0, "Start");
+                                       outputs, 0, "\x53\x74\x61\x72\x74");
   }
   Operator* Dead() { CONTROL_OP(Dead, 0, 0); }
   Operator* End() { CONTROL_OP(End, 0, 1); }
@@ -71,79 +71,79 @@ class CommonOperatorBuilder {
 
   Operator* Deoptimize() {
     return new (zone_)
-        ControlOperator(IrOpcode::kDeoptimize, 0, 1, 0, 1, "Deoptimize");
+        ControlOperator(IrOpcode::kDeoptimize, 0, 1, 0, 1, "\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65");
   }
 
   Operator* Return() {
-    return new (zone_) ControlOperator(IrOpcode::kReturn, 0, 1, 0, 1, "Return");
+    return new (zone_) ControlOperator(IrOpcode::kReturn, 0, 1, 0, 1, "\x52\x65\x74\x75\x72\x6e");
   }
 
   Operator* Merge(int controls) {
     return new (zone_) ControlOperator(IrOpcode::kMerge, Operator::kFoldable, 0,
-                                       0, controls, "Merge");
+                                       0, controls, "\x4d\x65\x72\x67\x65");
   }
 
   Operator* Loop(int controls) {
     return new (zone_) ControlOperator(IrOpcode::kLoop, Operator::kFoldable, 0,
-                                       0, controls, "Loop");
+                                       0, controls, "\x4c\x6f\x6f\x70");
   }
 
   Operator* Parameter(int index) {
     return new (zone_) Operator1<int>(IrOpcode::kParameter, Operator::kPure, 1,
-                                      1, "Parameter", index);
+                                      1, "\x50\x61\x72\x61\x6d\x65\x74\x65\x72", index);
   }
   Operator* Int32Constant(int32_t value) {
     return new (zone_) Operator1<int>(IrOpcode::kInt32Constant, Operator::kPure,
-                                      0, 1, "Int32Constant", value);
+                                      0, 1, "\x49\x6e\x74\x33\x32\x43\x6f\x6e\x73\x74\x61\x6e\x74", value);
   }
   Operator* Int64Constant(int64_t value) {
     return new (zone_)
         Operator1<int64_t>(IrOpcode::kInt64Constant, Operator::kPure, 0, 1,
-                           "Int64Constant", value);
+                           "\x49\x6e\x74\x36\x34\x43\x6f\x6e\x73\x74\x61\x6e\x74", value);
   }
   Operator* Float64Constant(double value) {
     return new (zone_)
         Operator1<double>(IrOpcode::kFloat64Constant, Operator::kPure, 0, 1,
-                          "Float64Constant", value);
+                          "\x46\x6c\x6f\x61\x74\x36\x34\x43\x6f\x6e\x73\x74\x61\x6e\x74", value);
   }
   Operator* ExternalConstant(ExternalReference value) {
     return new (zone_) Operator1<ExternalReference>(IrOpcode::kExternalConstant,
                                                     Operator::kPure, 0, 1,
-                                                    "ExternalConstant", value);
+                                                    "\x45\x78\x74\x65\x72\x6e\x61\x6c\x43\x6f\x6e\x73\x74\x61\x6e\x74", value);
   }
   Operator* NumberConstant(double value) {
     return new (zone_)
         Operator1<double>(IrOpcode::kNumberConstant, Operator::kPure, 0, 1,
-                          "NumberConstant", value);
+                          "\x4e\x75\x6d\x62\x65\x72\x43\x6f\x6e\x73\x74\x61\x6e\x74", value);
   }
   Operator* HeapConstant(PrintableUnique<Object> value) {
     return new (zone_) Operator1<PrintableUnique<Object> >(
-        IrOpcode::kHeapConstant, Operator::kPure, 0, 1, "HeapConstant", value);
+        IrOpcode::kHeapConstant, Operator::kPure, 0, 1, "\x48\x65\x61\x70\x43\x6f\x6e\x73\x74\x61\x6e\x74", value);
   }
   Operator* Phi(int arguments) {
     DCHECK(arguments > 0);  // Disallow empty phis.
     return new (zone_) Operator1<int>(IrOpcode::kPhi, Operator::kPure,
-                                      arguments, 1, "Phi", arguments);
+                                      arguments, 1, "\x50\x68\x69", arguments);
   }
   Operator* EffectPhi(int arguments) {
     DCHECK(arguments > 0);  // Disallow empty phis.
     return new (zone_) Operator1<int>(IrOpcode::kEffectPhi, Operator::kPure, 0,
-                                      0, "EffectPhi", arguments);
+                                      0, "\x45\x66\x66\x65\x63\x74\x50\x68\x69", arguments);
   }
   Operator* StateValues(int arguments) {
     return new (zone_) Operator1<int>(IrOpcode::kStateValues, Operator::kPure,
-                                      arguments, 1, "StateValues", arguments);
+                                      arguments, 1, "\x53\x74\x61\x74\x65\x56\x61\x6c\x75\x65\x73", arguments);
   }
   Operator* FrameState(BailoutId ast_id) {
     return new (zone_) Operator1<BailoutId>(
-        IrOpcode::kFrameState, Operator::kPure, 3, 1, "FrameState", ast_id);
+        IrOpcode::kFrameState, Operator::kPure, 3, 1, "\x46\x72\x61\x6d\x65\x53\x74\x61\x74\x65", ast_id);
   }
   Operator* Call(CallDescriptor* descriptor) {
-    return new (zone_) CallOperator(descriptor, "Call");
+    return new (zone_) CallOperator(descriptor, "\x43\x61\x6c\x6c");
   }
   Operator* Projection(int index) {
     return new (zone_) Operator1<int>(IrOpcode::kProjection, Operator::kPure, 1,
-                                      1, "Projection", index);
+                                      1, "\x50\x72\x6f\x6a\x65\x63\x74\x69\x6f\x6e", index);
   }
 
  private:

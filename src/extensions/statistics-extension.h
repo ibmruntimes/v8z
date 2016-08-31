@@ -12,7 +12,7 @@ namespace internal {
 
 class StatisticsExtension : public v8::Extension {
  public:
-  StatisticsExtension() : v8::Extension("v8/statistics", kSource) {}
+  StatisticsExtension() : v8::Extension("\x76\x38\x2f\x73\x74\x61\x74\x69\x73\x74\x69\x63\x73", kSource) {}
   virtual v8::Handle<v8::FunctionTemplate> GetNativeFunctionTemplate(
       v8::Isolate* isolate,
       v8::Handle<v8::String> name);

@@ -186,7 +186,7 @@ class RegExpBuilder: public ZoneObject {
   void AddEmpty();
   void AddAtom(RegExpTree* tree);
   void AddAssertion(RegExpTree* tree);
-  void NewAlternative();  // '|'
+  void NewAlternative();  // '\x7c'
   void AddQuantifierToAtom(
       int min, int max, RegExpQuantifier::QuantifierType type);
   RegExpTree* ToRegExp();
@@ -832,7 +832,7 @@ class Parser : public ParserBase<ParserTraits> {
 
 bool ParserTraits::IsFutureStrictReserved(
     const AstRawString* identifier) const {
-  return identifier->IsOneByteEqualTo("yield") ||
+  return identifier->IsOneByteEqualTo("\x79\x69\x65\x6c\x64") ||
          parser_->scanner()->IdentifierIsFutureStrictReserved(identifier);
 }
 

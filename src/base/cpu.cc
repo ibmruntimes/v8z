@@ -48,17 +48,17 @@ static V8_INLINE void __cpuid(int cpu_info[4], int info_type) {
   // Make sure to preserve ebx, which contains the pointer
   // to the GOT in case we're generating PIC.
   __asm__ volatile (
-    "mov %%ebx, %%edi\n\t"
-    "cpuid\n\t"
-    "xchg %%edi, %%ebx\n\t"
-    : "=a"(cpu_info[0]), "=D"(cpu_info[1]), "=c"(cpu_info[2]), "=d"(cpu_info[3])
-    : "a"(info_type)
+    "\x6d\x6f\x76\x20\x25\x6c\x85\x62\x78\x2c\x20\x25\x6c\x85\x84\x89\xa\x9"
+    "\x63\x70\x75\x69\x64\xa\x9"
+    "\x78\x63\x68\x67\x20\x25\x6c\x85\x84\x89\x2c\x20\x25\x6c\x85\x62\x78\xa\x9"
+    : "\x3d\x61"(cpu_info[0]), "\x3d\x44"(cpu_info[1]), "\x3d\x63"(cpu_info[2]), "\x3d\x64"(cpu_info[3])
+    : "\x61"(info_type)
   );
 #else
   __asm__ volatile (
-    "cpuid \n\t"
-    : "=a"(cpu_info[0]), "=b"(cpu_info[1]), "=c"(cpu_info[2]), "=d"(cpu_info[3])
-    : "a"(info_type)
+    "\x63\x70\x75\x69\x64\x20\xa\x9"
+    : "\x3d\x61"(cpu_info[0]), "\x3d\x62"(cpu_info[1]), "\x3d\x63"(cpu_info[2]), "\x3d\x64"(cpu_info[3])
+    : "\x61"(info_type)
   );
 #endif  // defined(__i386__) && defined(__pic__)
 }
@@ -104,7 +104,7 @@ static V8_INLINE void __cpuid(int cpu_info[4], int info_type) {
 // Read the ELF HWCAP flags by parsing /proc/self/auxv.
 static uint32_t ReadELFHWCaps() {
   uint32_t result = 0;
-  FILE* fp = fopen("/proc/self/auxv", "r");
+  FILE* fp = fopen("\x2f\x70\x72\x6f\x63\x2f\x73\x65\x6c\x66\x2f\x61\x75\x78\x76", "\x72");
   if (fp != NULL) {
     struct { uint32_t tag; uint32_t value; } entry;
     for (;;) {
@@ -131,8 +131,8 @@ class CPUInfo V8_FINAL {
     // Get the size of the cpuinfo file by reading it until the end. This is
     // required because files under /proc do not always return a valid size
     // when using fseek(0, SEEK_END) + ftell(). Nor can the be mmap()-ed.
-    static const char PATHNAME[] = "/proc/cpuinfo";
-    FILE* fp = fopen(PATHNAME, "r");
+    static const char PATHNAME[] = "\x2f\x70\x72\x6f\x63\x2f\x63\x70\x75\x69\x6e\x66\x6f";
+    FILE* fp = fopen(PATHNAME, "\x72");
     if (fp != NULL) {
       for (;;) {
         char buffer[256];
@@ -147,7 +147,7 @@ class CPUInfo V8_FINAL {
 
     // Read the contents of the cpuinfo file.
     data_ = new char[datalen_ + 1];
-    fp = fopen(PATHNAME, "r");
+    fp = fopen(PATHNAME, "\x72");
     if (fp != NULL) {
       for (size_t offset = 0; offset < datalen_; ) {
         size_t n = fread(data_ + offset, 1, datalen_ - offset, fp);
@@ -160,7 +160,7 @@ class CPUInfo V8_FINAL {
     }
 
     // Zero-terminate the data.
-    data_[datalen_] = '\0';
+    data_[datalen_] = '\x0';
   }
 
   ~CPUInfo() {
@@ -182,21 +182,21 @@ class CPUInfo V8_FINAL {
       if (p == NULL) {
         return NULL;
       }
-      if (p == data_ || p[-1] == '\n') {
+      if (p == data_ || p[-1] == '\xa') {
         break;
       }
       p += fieldlen;
     }
 
     // Skip to the first colon followed by a space.
-    p = strchr(p + fieldlen, ':');
+    p = strchr(p + fieldlen, '\x3a');
     if (p == NULL || !isspace(p[1])) {
       return NULL;
     }
     p += 2;
 
     // Find the end of the line.
-    char* q = strchr(p, '\n');
+    char* q = strchr(p, '\xa');
     if (q == NULL) {
       q = data_ + datalen_;
     }
@@ -206,7 +206,7 @@ class CPUInfo V8_FINAL {
     char* result = new char[len + 1];
     if (result != NULL) {
       memcpy(result, p, len);
-      result[len] = '\0';
+      result[len] = '\x0';
     }
     return result;
   }
@@ -223,13 +223,13 @@ static bool HasListItem(const char* list, const char* item) {
   ssize_t item_len = strlen(item);
   const char* p = list;
   if (p != NULL) {
-    while (*p != '\0') {
+    while (*p != '\x0') {
       // Skip whitespace.
       while (isspace(*p)) ++p;
 
       // Find end of current list item.
       const char* q = p;
-      while (*q != '\0' && !isspace(*q)) ++q;
+      while (*q != '\x0' && !isspace(*q)) ++q;
 
       if (item_len == q - p && memcmp(p, item, item_len) == 0) {
         return true;
@@ -276,7 +276,7 @@ CPU::CPU() : stepping_(0),
              has_vfp_(false),
              has_vfp3_(false),
              has_vfp3_d32_(false) {
-  memcpy(vendor_, "Unknown", 8);
+  memcpy(vendor_, "\x55\x6e\x6b\x6e\x6f\x77\x6e", 8);
 #if V8_HOST_ARCH_IA32 || V8_HOST_ARCH_X64
   int cpu_info[4];
 
@@ -291,7 +291,7 @@ CPU::CPU() : stepping_(0),
   unsigned num_ids = cpu_info[0];
   std::swap(cpu_info[2], cpu_info[3]);
   memcpy(vendor_, cpu_info + 1, 12);
-  vendor_[12] = '\0';
+  vendor_[12] = '\x0';
 
   // Interpret CPU feature information.
   if (num_ids > 0) {
@@ -336,7 +336,7 @@ CPU::CPU() : stepping_(0),
   CPUInfo cpu_info;
 
   // Extract implementor from the "CPU implementer" field.
-  char* implementer = cpu_info.ExtractField("CPU implementer");
+  char* implementer = cpu_info.ExtractField("\x43\x50\x55\x20\x69\x6d\x70\x6c\x65\x6d\x65\x6e\x74\x65\x72");
   if (implementer != NULL) {
     char* end ;
     implementer_ = strtol(implementer, &end, 0);
@@ -347,7 +347,7 @@ CPU::CPU() : stepping_(0),
   }
 
   // Extract part number from the "CPU part" field.
-  char* part = cpu_info.ExtractField("CPU part");
+  char* part = cpu_info.ExtractField("\x43\x50\x55\x20\x70\x61\x72\x74");
   if (part != NULL) {
     char* end ;
     part_ = strtol(part, &end, 0);
@@ -363,7 +363,7 @@ CPU::CPU() : stepping_(0),
   // See the definition of the 'proc_arch' array in
   // $KERNEL/arch/arm/kernel/setup.c and the 'c_show' function in
   // same file.
-  char* architecture = cpu_info.ExtractField("CPU architecture");
+  char* architecture = cpu_info.ExtractField("\x43\x50\x55\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65");
   if (architecture != NULL) {
     char* end;
     architecture_ = strtol(architecture, &end, 10);
@@ -383,8 +383,8 @@ CPU::CPU() : stepping_(0),
     // an ARMv6-one. For example, the Raspberry Pi is one popular
     // ARMv6 device that reports architecture 7.
     if (architecture_ == 7) {
-      char* processor = cpu_info.ExtractField("Processor");
-      if (HasListItem(processor, "(v6l)")) {
+      char* processor = cpu_info.ExtractField("\x50\x72\x6f\x63\x65\x73\x73\x6f\x72");
+      if (HasListItem(processor, "\x28\x76\x36\x6c\x29")) {
         architecture_ = 6;
       }
       delete[] processor;
@@ -402,14 +402,14 @@ CPU::CPU() : stepping_(0),
                                    (hwcaps & HWCAP_VFPD32) != 0));
   } else {
     // Try to fallback to "Features" CPUInfo field.
-    char* features = cpu_info.ExtractField("Features");
-    has_idiva_ = HasListItem(features, "idiva");
-    has_neon_ = HasListItem(features, "neon");
-    has_thumb2_ = HasListItem(features, "thumb2");
-    has_vfp_ = HasListItem(features, "vfp");
-    if (HasListItem(features, "vfpv3d16")) {
+    char* features = cpu_info.ExtractField("\x46\x65\x61\x74\x75\x72\x65\x73");
+    has_idiva_ = HasListItem(features, "\x69\x64\x69\x76\x61");
+    has_neon_ = HasListItem(features, "\x6e\x65\x6f\x6e");
+    has_thumb2_ = HasListItem(features, "\x74\x68\x75\x6d\x62\x32");
+    has_vfp_ = HasListItem(features, "\x76\x66\x70");
+    if (HasListItem(features, "\x76\x66\x70\x76\x33\x64\x31\x36")) {
       has_vfp3_ = true;
-    } else if (HasListItem(features, "vfpv3")) {
+    } else if (HasListItem(features, "\x76\x66\x70\x76\x33")) {
       has_vfp3_ = true;
       has_vfp3_d32_ = true;
     }
@@ -475,8 +475,8 @@ CPU::CPU() : stepping_(0),
   // facility is universally available on the MIPS architectures,
   // so it's up to individual OSes to provide such.
   CPUInfo cpu_info;
-  char* cpu_model = cpu_info.ExtractField("cpu model");
-  has_fpu_ = HasListItem(cpu_model, "FPU");
+  char* cpu_model = cpu_info.ExtractField("\x63\x70\x75\x20\x6d\x6f\x64\x65\x6c");
+  has_fpu_ = HasListItem(cpu_model, "\x46\x50\x55");
   delete[] cpu_model;
 
 #elif V8_HOST_ARCH_ARM64
@@ -484,7 +484,7 @@ CPU::CPU() : stepping_(0),
   CPUInfo cpu_info;
 
   // Extract implementor from the "CPU implementer" field.
-  char* implementer = cpu_info.ExtractField("CPU implementer");
+  char* implementer = cpu_info.ExtractField("\x43\x50\x55\x20\x69\x6d\x70\x6c\x65\x6d\x65\x6e\x74\x65\x72");
   if (implementer != NULL) {
     char* end ;
     implementer_ = strtol(implementer, &end, 0);
@@ -495,7 +495,7 @@ CPU::CPU() : stepping_(0),
   }
 
   // Extract part number from the "CPU part" field.
-  char* part = cpu_info.ExtractField("CPU part");
+  char* part = cpu_info.ExtractField("\x43\x50\x55\x20\x70\x61\x72\x74");
   if (part != NULL) {
     char* end ;
     part_ = strtol(part, &end, 0);
@@ -512,7 +512,7 @@ CPU::CPU() : stepping_(0),
   // Read processor info from /proc/self/auxv.
   char *auxv_cpu_type = NULL;
   unsigned auxv_cache_line_size = 0;
-  FILE* fp = fopen("/proc/self/auxv", "r");
+  FILE* fp = fopen("\x2f\x70\x72\x6f\x63\x2f\x73\x65\x6c\x66\x2f\x61\x75\x78\x76", "\x72");
   if (fp != NULL) {
 #if V8_TARGET_ARCH_PPC64
     Elf64_auxv_t entry;
@@ -542,19 +542,19 @@ CPU::CPU() : stepping_(0),
 
   part_ = -1;
   if (auxv_cpu_type) {
-    if (strcmp(auxv_cpu_type, "power8") == 0) {
+    if (strcmp(auxv_cpu_type, "\x70\x6f\x77\x65\x72\x38") == 0) {
       part_ = PPC_POWER8;
-    } else if (strcmp(auxv_cpu_type, "power7") == 0) {
+    } else if (strcmp(auxv_cpu_type, "\x70\x6f\x77\x65\x72\x37") == 0) {
       part_ = PPC_POWER7;
-    } else if (strcmp(auxv_cpu_type, "power6") == 0) {
+    } else if (strcmp(auxv_cpu_type, "\x70\x6f\x77\x65\x72\x36") == 0) {
       part_ = PPC_POWER6;
-    } else if (strcmp(auxv_cpu_type, "power5") == 0) {
+    } else if (strcmp(auxv_cpu_type, "\x70\x6f\x77\x65\x72\x35") == 0) {
       part_ = PPC_POWER5;
-    } else if (strcmp(auxv_cpu_type, "ppc970") == 0) {
+    } else if (strcmp(auxv_cpu_type, "\x70\x70\x63\x39\x37\x30") == 0) {
       part_ = PPC_G5;
-    } else if (strcmp(auxv_cpu_type, "ppc7450") == 0) {
+    } else if (strcmp(auxv_cpu_type, "\x70\x70\x63\x37\x34\x35\x30") == 0) {
       part_ = PPC_G4;
-    } else if (strcmp(auxv_cpu_type, "pa6t") == 0) {
+    } else if (strcmp(auxv_cpu_type, "\x70\x61\x36\x74") == 0) {
       part_ = PPC_PA6T;
     }
   }

@@ -65,7 +65,7 @@ inline void NoBarrier_Store(volatile Atomic32* ptr, Atomic32 value) {
 }
 
 inline void MemoryBarrier() {
-  __asm__ __volatile__("sync" : : : "memory");
+  __asm__ __volatile__("\x73\x79\x6e\x63" : : : "\x6d\x65\x6d\x6f\x72\x79");
 }
 
 inline void Acquire_Store(volatile Atomic32* ptr, Atomic32 value) {

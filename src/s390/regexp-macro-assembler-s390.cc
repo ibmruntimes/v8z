@@ -18,7 +18,7 @@
 #include "src/regexp-stack.h"
 #include "src/s390/regexp-macro-assembler-s390.h"
 #include "src/unicode.h"
-
+#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -1520,7 +1520,7 @@ void RegExpMacroAssemblerS390::LoadCurrentCharacterUnchecked(int cp_offset,
 #undef __
 
 #endif  // V8_INTERPRETED_REGEXP
-
+#pragma convert(pop)
 }}  // namespace v8::internal
 
 #endif  // V8_TARGET_ARCH_S390

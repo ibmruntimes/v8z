@@ -397,7 +397,7 @@ MaybeHandle<Object> JSProxy::GetPropertyWithHandler(Handle<JSProxy> proxy,
 
   Handle<Object> args[] = { receiver, name };
   return CallTrap(
-      proxy, "get",  isolate->derived_get_trap(), ARRAY_SIZE(args), args);
+      proxy, "\x67\x65\x74",  isolate->derived_get_trap(), ARRAY_SIZE(args), args);
 }
 
 
@@ -413,7 +413,7 @@ MaybeHandle<Object> Object::GetPropertyWithAccessor(Handle<Object> receiver,
     if (!info->IsCompatibleReceiver(*receiver)) {
       Handle<Object> args[2] = { name, receiver };
       Handle<Object> error =
-          isolate->factory()->NewTypeError("incompatible_method_receiver",
+          isolate->factory()->NewTypeError("\x69\x6e\x63\x6f\x6d\x70\x61\x74\x69\x62\x6c\x65\x5f\x6d\x65\x74\x68\x6f\x64\x5f\x72\x65\x63\x65\x69\x76\x65\x72",
                                            HandleVector(args,
                                                         ARRAY_SIZE(args)));
       return isolate->Throw<Object>(error);
@@ -435,7 +435,7 @@ MaybeHandle<Object> Object::GetPropertyWithAccessor(Handle<Object> receiver,
     if (call_fun == NULL) return isolate->factory()->undefined_value();
 
     Handle<String> key = Handle<String>::cast(name);
-    LOG(isolate, ApiNamedPropertyAccess("load", *holder, *name));
+    LOG(isolate, ApiNamedPropertyAccess("\x6c\x6f\x61\x64", *holder, *name));
     PropertyCallbackArguments args(isolate, data->data(), *receiver, *holder);
     v8::Handle<v8::Value> result =
         args.Call(call_fun, v8::Utils::ToLocal(key));
@@ -489,7 +489,7 @@ MaybeHandle<Object> Object::SetPropertyWithAccessor(
     if (!info->IsCompatibleReceiver(*receiver)) {
       Handle<Object> args[2] = { name, receiver };
       Handle<Object> error =
-          isolate->factory()->NewTypeError("incompatible_method_receiver",
+          isolate->factory()->NewTypeError("\x69\x6e\x63\x6f\x6d\x70\x61\x74\x69\x62\x6c\x65\x5f\x6d\x65\x74\x68\x6f\x64\x5f\x72\x65\x63\x65\x69\x76\x65\x72",
                                            HandleVector(args,
                                                         ARRAY_SIZE(args)));
       return isolate->Throw<Object>(error);
@@ -501,7 +501,7 @@ MaybeHandle<Object> Object::SetPropertyWithAccessor(
         v8::ToCData<v8::AccessorSetterCallback>(call_obj);
     if (call_fun == NULL) return value;
     Handle<String> key = Handle<String>::cast(name);
-    LOG(isolate, ApiNamedPropertyAccess("store", *holder, *name));
+    LOG(isolate, ApiNamedPropertyAccess("\x73\x74\x6f\x72\x65", *holder, *name));
     PropertyCallbackArguments args(isolate, info->data(), *receiver, *holder);
     args.Call(call_fun,
               v8::Utils::ToLocal(key),
@@ -520,7 +520,7 @@ MaybeHandle<Object> Object::SetPropertyWithAccessor(
       if (strict_mode == SLOPPY) return value;
       Handle<Object> args[2] = { name, holder };
       Handle<Object> error =
-          isolate->factory()->NewTypeError("no_setter_in_callback",
+          isolate->factory()->NewTypeError("\x6e\x6f\x5f\x73\x65\x74\x74\x65\x72\x5f\x69\x6e\x5f\x63\x61\x6c\x6c\x62\x61\x63\x6b",
                                            HandleVector(args, 2));
       return isolate->Throw<Object>(error);
     }
@@ -992,15 +992,15 @@ static bool AnWord(String* str) {
   if (str->length() == 0) return false;  // A nothing.
   int c0 = str->Get(0);
   int c1 = str->length() > 1 ? str->Get(1) : 0;
-  if (c0 == 'U') {
-    if (c1 > 'Z') {
+  if (c0 == '\x55') {
+    if (c1 > '\x5a') {
       return true;  // An Umpire, but a UTF8String, a U.
     }
-  } else if (c0 == 'A' || c0 == 'E' || c0 == 'I' || c0 == 'O') {
+  } else if (c0 == '\x41' || c0 == '\x45' || c0 == '\x49' || c0 == '\x4f') {
     return true;    // An Ape, an ABCBook.
-  } else if ((c1 == 0 || (c1 >= 'A' && c1 <= 'Z')) &&
-           (c0 == 'F' || c0 == 'H' || c0 == 'M' || c0 == 'N' || c0 == 'R' ||
-            c0 == 'S' || c0 == 'X')) {
+  } else if ((c1 == 0 || (c1 >= '\x41' && c1 <= '\x5a')) &&
+           (c0 == '\x46' || c0 == '\x48' || c0 == '\x4d' || c0 == '\x4e' || c0 == '\x52' ||
+            c0 == '\x53' || c0 == '\x58')) {
     return true;    // An MP3File, an M.
   }
   return false;
@@ -1175,12 +1175,12 @@ bool String::MakeExternal(v8::String::ExternalAsciiStringResource* resource) {
 void String::StringShortPrint(StringStream* accumulator) {
   int len = length();
   if (len > kMaxShortPrintLength) {
-    accumulator->Add("<Very long string[%u]>", len);
+    accumulator->Add("\x3c\x56\x65\x72\x79\x20\x6c\x6f\x6e\x67\x20\x73\x74\x72\x69\x6e\x67\x5b\x6c\xa4\x5d\x3e", len);
     return;
   }
 
   if (!LooksValid()) {
-    accumulator->Add("<Invalid String>");
+    accumulator->Add("\x3c\x49\x6e\x76\x61\x6c\x69\x64\x20\x53\x74\x72\x69\x6e\x67\x3e");
     return;
   }
 
@@ -1202,35 +1202,35 @@ void String::StringShortPrint(StringStream* accumulator) {
   }
   stream.Reset(this);
   if (ascii) {
-    accumulator->Add("<String[%u]: ", length());
+    accumulator->Add("\x3c\x53\x74\x72\x69\x6e\x67\x5b\x6c\xa4\x5d\x3a\x20", length());
     for (int i = 0; i < len; i++) {
       accumulator->Put(static_cast<char>(stream.GetNext()));
     }
-    accumulator->Put('>');
+    accumulator->Put('\x3e');
   } else {
     // Backslash indicates that the string contains control
     // characters and that backslashes are therefore escaped.
-    accumulator->Add("<String[%u]\\: ", length());
+    accumulator->Add("\x3c\x53\x74\x72\x69\x6e\x67\x5b\x6c\xa4\x5d\x5c\x3a\x20", length());
     for (int i = 0; i < len; i++) {
       uint16_t c = stream.GetNext();
-      if (c == '\n') {
-        accumulator->Add("\\n");
-      } else if (c == '\r') {
-        accumulator->Add("\\r");
-      } else if (c == '\\') {
+      if (c == '\xa') {
+        accumulator->Add("\x5c\x6e");
+      } else if (c == '\xd') {
+        accumulator->Add("\x5c\x72");
+      } else if (c == '\x5c') {
         accumulator->Add("\\\\");
       } else if (GET_ASCII_CODE(c) < 32 || GET_ASCII_CODE(c) > 126) {
-        accumulator->Add("\\x%02x", c);
+        accumulator->Add("\x5c\x78\x6c\xf0\xf2\xa7", c);
       } else {
         accumulator->Put(static_cast<char>(c));
       }
     }
     if (truncated) {
-      accumulator->Put('.');
-      accumulator->Put('.');
-      accumulator->Put('.');
+      accumulator->Put('\x2e');
+      accumulator->Put('\x2e');
+      accumulator->Put('\x2e');
     }
-    accumulator->Put('>');
+    accumulator->Put('\x3e');
   }
   return;
 }
@@ -1252,19 +1252,19 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       double length = JSArray::cast(this)->length()->IsUndefined()
           ? 0
           : JSArray::cast(this)->length()->Number();
-      accumulator->Add("<JS Array[%u]>", static_cast<uint32_t>(length));
+      accumulator->Add("\x3c\x4a\x53\x20\x41\x72\x72\x61\x79\x5b\x6c\xa4\x5d\x3e", static_cast<uint32_t>(length));
       break;
     }
     case JS_WEAK_MAP_TYPE: {
-      accumulator->Add("<JS WeakMap>");
+      accumulator->Add("\x3c\x4a\x53\x20\x57\x65\x61\x6b\x4d\x61\x70\x3e");
       break;
     }
     case JS_WEAK_SET_TYPE: {
-      accumulator->Add("<JS WeakSet>");
+      accumulator->Add("\x3c\x4a\x53\x20\x57\x65\x61\x6b\x53\x65\x74\x3e");
       break;
     }
     case JS_REGEXP_TYPE: {
-      accumulator->Add("<JS RegExp>");
+      accumulator->Add("\x3c\x4a\x53\x20\x52\x65\x67\x45\x78\x70\x3e");
       break;
     }
     case JS_FUNCTION_TYPE: {
@@ -1274,25 +1274,25 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       if (fun_name->IsString()) {
         String* str = String::cast(fun_name);
         if (str->length() > 0) {
-          accumulator->Add("<JS Function ");
+          accumulator->Add("\x3c\x4a\x53\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x20");
           accumulator->Put(str);
           printed = true;
         }
       }
       if (!printed) {
-        accumulator->Add("<JS Function");
+        accumulator->Add("\x3c\x4a\x53\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e");
       }
-      accumulator->Add(" (SharedFunctionInfo %p)",
+      accumulator->Add("\x20\x28\x53\x68\x61\x72\x65\x64\x46\x75\x6e\x63\x74\x69\x6f\x6e\x49\x6e\x66\x6f\x20\x6c\x97\x29",
                        reinterpret_cast<void*>(function->shared()));
-      accumulator->Put('>');
+      accumulator->Put('\x3e');
       break;
     }
     case JS_GENERATOR_OBJECT_TYPE: {
-      accumulator->Add("<JS Generator>");
+      accumulator->Add("\x3c\x4a\x53\x20\x47\x65\x6e\x65\x72\x61\x74\x6f\x72\x3e");
       break;
     }
     case JS_MODULE_TYPE: {
-      accumulator->Add("<JS Module>");
+      accumulator->Add("\x3c\x4a\x53\x20\x4d\x6f\x64\x75\x6c\x65\x3e");
       break;
     }
     // All other JSObjects are rather similar to each other (JSObject,
@@ -1304,12 +1304,12 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       bool printed = false;
       if (constructor->IsHeapObject() &&
           !heap->Contains(HeapObject::cast(constructor))) {
-        accumulator->Add("!!!INVALID CONSTRUCTOR!!!");
+        accumulator->Add("\x21\x21\x21\x49\x4e\x56\x41\x4c\x49\x44\x20\x43\x4f\x4e\x53\x54\x52\x55\x43\x54\x4f\x52\x21\x21\x21");
       } else {
         bool global_object = IsJSGlobalProxy();
         if (constructor->IsJSFunction()) {
           if (!heap->Contains(JSFunction::cast(constructor)->shared())) {
-            accumulator->Add("!!!INVALID SHARED ON CONSTRUCTOR!!!");
+            accumulator->Add("\x21\x21\x21\x49\x4e\x56\x41\x4c\x49\x44\x20\x53\x48\x41\x52\x45\x44\x20\x4f\x4e\x20\x43\x4f\x4e\x53\x54\x52\x55\x43\x54\x4f\x52\x21\x21\x21");
           } else {
             Object* constructor_name =
                 JSFunction::cast(constructor)->shared()->name();
@@ -1317,12 +1317,12 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
               String* str = String::cast(constructor_name);
               if (str->length() > 0) {
                 bool vowel = AnWord(str);
-                accumulator->Add("<%sa%s ",
-                       global_object ? "Global Object: " : "",
-                       vowel ? "n" : "");
+                accumulator->Add("\x3c\x6c\xa2\x81\x6c\xa2\x20",
+                       global_object ? "\x47\x6c\x6f\x62\x61\x6c\x20\x4f\x62\x6a\x65\x63\x74\x3a\x20" : "",
+                       vowel ? "\x6e" : "");
                 accumulator->Put(str);
-                accumulator->Add(" with %smap %p",
-                    map_of_this->is_deprecated() ? "deprecated " : "",
+                accumulator->Add("\x20\x77\x69\x74\x68\x20\x6c\xa2\x6d\x61\x70\x20\x6c\x97",
+                    map_of_this->is_deprecated() ? "\x64\x65\x70\x72\x65\x63\x61\x74\x65\x64\x20" : "",
                     map_of_this);
                 printed = true;
               }
@@ -1330,14 +1330,14 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
           }
         }
         if (!printed) {
-          accumulator->Add("<JS %sObject", global_object ? "Global " : "");
+          accumulator->Add("\x3c\x4a\x53\x20\x6c\xa2\x4f\x62\x6a\x65\x63\x74", global_object ? "\x47\x6c\x6f\x62\x61\x6c\x20" : "");
         }
       }
       if (IsJSValue()) {
-        accumulator->Add(" value = ");
+        accumulator->Add("\x20\x76\x61\x6c\x75\x65\x20\x3d\x20");
         JSValue::cast(this)->value()->ShortPrint(accumulator);
       }
-      accumulator->Put('>');
+      accumulator->Put('\x3e');
       break;
     }
   }
@@ -1350,16 +1350,16 @@ void JSObject::PrintElementsTransition(
     ElementsKind to_kind, Handle<FixedArrayBase> to_elements) {
   if (from_kind != to_kind) {
     OFStream os(file);
-    os << "elements transition [" << ElementsKindToString(from_kind) << " -> "
-       << ElementsKindToString(to_kind) << "] in ";
+    os << "\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x5b" << ElementsKindToString(from_kind) << "\x20\x2d\x3e\x20"
+       << ElementsKindToString(to_kind) << "\x5d\x20\x69\x6e\x20";
     JavaScriptFrame::PrintTop(object->GetIsolate(), file, false, true);
-    PrintF(file, " for ");
+    PrintF(file, "\x20\x66\x6f\x72\x20");
     object->ShortPrint(file);
-    PrintF(file, " from ");
+    PrintF(file, "\x20\x66\x72\x6f\x6d\x20");
     from_elements->ShortPrint(file);
-    PrintF(file, " to ");
+    PrintF(file, "\x20\x74\x6f\x20");
     to_elements->ShortPrint(file);
-    PrintF(file, "\n");
+    PrintF(file, "\xa");
   }
 }
 
@@ -1375,43 +1375,43 @@ void Map::PrintGeneralization(FILE* file,
                               HeapType* old_field_type,
                               HeapType* new_field_type) {
   OFStream os(file);
-  os << "[generalizing ";
+  os << "\x5b\x67\x65\x6e\x65\x72\x61\x6c\x69\x7a\x69\x6e\x67\x20";
   constructor_name()->PrintOn(file);
-  os << "] ";
+  os << "\x5d\x20";
   Name* name = instance_descriptors()->GetKey(modify_index);
   if (name->IsString()) {
     String::cast(name)->PrintOn(file);
   } else {
-    os << "{symbol " << static_cast<void*>(name) << "}";
+    os << "\x7b\x73\x79\x6d\x62\x6f\x6c\x20" << static_cast<void*>(name) << "\x7d";
   }
-  os << ":";
+  os << "\x3a";
   if (constant_to_field) {
-    os << "c";
+    os << "\x63";
   } else {
-    os << old_representation.Mnemonic() << "{";
+    os << old_representation.Mnemonic() << "\x7b";
     old_field_type->PrintTo(os, HeapType::SEMANTIC_DIM);
-    os << "}";
+    os << "\x7d";
   }
-  os << "->" << new_representation.Mnemonic() << "{";
+  os << "\x2d\x3e" << new_representation.Mnemonic() << "\x7b";
   new_field_type->PrintTo(os, HeapType::SEMANTIC_DIM);
-  os << "} (";
+  os << "\x7d\x20\x28";
   if (strlen(reason) > 0) {
     os << reason;
   } else {
-    os << "+" << (descriptors - split) << " maps";
+    os << "\x2b" << (descriptors - split) << "\x20\x6d\x61\x70\x73";
   }
-  os << ") [";
+  os << "\x29\x20\x5b";
   JavaScriptFrame::PrintTop(GetIsolate(), file, false, true);
-  os << "]\n";
+  os << "\x5d\xa";
 }
 
 
 void JSObject::PrintInstanceMigration(FILE* file,
                                       Map* original_map,
                                       Map* new_map) {
-  PrintF(file, "[migrating ");
+  PrintF(file, "\x5b\x6d\x69\x67\x72\x61\x74\x69\x6e\x67\x20");
   map()->constructor_name()->PrintOn(file);
-  PrintF(file, "] ");
+  PrintF(file, "\x5d\x20");
   DescriptorArray* o = original_map->instance_descriptors();
   DescriptorArray* n = new_map->instance_descriptors();
   for (int i = 0; i < original_map->NumberOfOwnDescriptors(); i++) {
@@ -1419,34 +1419,34 @@ void JSObject::PrintInstanceMigration(FILE* file,
     Representation n_r = n->GetDetails(i).representation();
     if (!o_r.Equals(n_r)) {
       String::cast(o->GetKey(i))->PrintOn(file);
-      PrintF(file, ":%s->%s ", o_r.Mnemonic(), n_r.Mnemonic());
+      PrintF(file, "\x3a\x6c\xa2\x2d\x3e\x6c\xa2\x20", o_r.Mnemonic(), n_r.Mnemonic());
     } else if (o->GetDetails(i).type() == CONSTANT &&
                n->GetDetails(i).type() == FIELD) {
       Name* name = o->GetKey(i);
       if (name->IsString()) {
         String::cast(name)->PrintOn(file);
       } else {
-        PrintF(file, "{symbol %p}", static_cast<void*>(name));
+        PrintF(file, "\x7b\x73\x79\x6d\x62\x6f\x6c\x20\x6c\x97\x7d", static_cast<void*>(name));
       }
-      PrintF(file, " ");
+      PrintF(file, "\x20");
     }
   }
-  PrintF(file, "\n");
+  PrintF(file, "\xa");
 }
 
 
 void HeapObject::HeapObjectShortPrint(OStream& os) {  // NOLINT
   Heap* heap = GetHeap();
   if (!heap->Contains(this)) {
-    os << "!!!INVALID POINTER!!!";
+    os << "\x21\x21\x21\x49\x4e\x56\x41\x4c\x49\x44\x20\x50\x4f\x49\x4e\x54\x45\x52\x21\x21\x21";
     return;
   }
   if (!heap->Contains(map())) {
-    os << "!!!INVALID MAP!!!";
+    os << "\x21\x21\x21\x49\x4e\x56\x41\x4c\x49\x44\x20\x4d\x41\x50\x21\x21\x21";
     return;
   }
 
-  os << this << " ";
+  os << this << "\x20";
 
   if (IsString()) {
     HeapStringAllocator allocator;
@@ -1464,29 +1464,29 @@ void HeapObject::HeapObjectShortPrint(OStream& os) {  // NOLINT
   }
   switch (map()->instance_type()) {
     case MAP_TYPE:
-      os << "<Map(elements=" << Map::cast(this)->elements_kind() << ")>";
+      os << "\x3c\x4d\x61\x70\x28\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3d" << Map::cast(this)->elements_kind() << "\x29\x3e";
       break;
     case FIXED_ARRAY_TYPE:
-      os << "<FixedArray[" << FixedArray::cast(this)->length() << "]>";
+      os << "\x3c\x46\x69\x78\x65\x64\x41\x72\x72\x61\x79\x5b" << FixedArray::cast(this)->length() << "\x5d\x3e";
       break;
     case FIXED_DOUBLE_ARRAY_TYPE:
-      os << "<FixedDoubleArray[" << FixedDoubleArray::cast(this)->length()
-         << "]>";
+      os << "\x3c\x46\x69\x78\x65\x64\x44\x6f\x75\x62\x6c\x65\x41\x72\x72\x61\x79\x5b" << FixedDoubleArray::cast(this)->length()
+         << "\x5d\x3e";
       break;
     case BYTE_ARRAY_TYPE:
-      os << "<ByteArray[" << ByteArray::cast(this)->length() << "]>";
+      os << "\x3c\x42\x79\x74\x65\x41\x72\x72\x61\x79\x5b" << ByteArray::cast(this)->length() << "\x5d\x3e";
       break;
     case FREE_SPACE_TYPE:
-      os << "<FreeSpace[" << FreeSpace::cast(this)->Size() << "]>";
+      os << "\x3c\x46\x72\x65\x65\x53\x70\x61\x63\x65\x5b" << FreeSpace::cast(this)->Size() << "\x5d\x3e";
       break;
 #define TYPED_ARRAY_SHORT_PRINT(Type, type, TYPE, ctype, size)                \
   case EXTERNAL_##TYPE##_ARRAY_TYPE:                                          \
-    os << "<External" #Type "Array["                                          \
-       << External##Type##Array::cast(this)->length() << "]>";                \
+    os << "\x3c\x45\x78\x74\x65\x72\x6e\x61\x6c" #Type "\x41\x72\x72\x61\x79\x5b"                                          \
+       << External##Type##Array::cast(this)->length() << "\x5d\x3e";                \
     break;                                                                    \
   case FIXED_##TYPE##_ARRAY_TYPE:                                             \
-    os << "<Fixed" #Type "Array[" << Fixed##Type##Array::cast(this)->length() \
-       << "]>";                                                               \
+    os << "\x3c\x46\x69\x78\x65\x64" #Type "\x41\x72\x72\x61\x79\x5b" << Fixed##Type##Array::cast(this)->length() \
+       << "\x5d\x3e";                                                               \
     break;
 
     TYPED_ARRAYS(TYPED_ARRAY_SHORT_PRINT)
@@ -1497,78 +1497,78 @@ void HeapObject::HeapObjectShortPrint(OStream& os) {  // NOLINT
       SmartArrayPointer<char> debug_name =
           shared->DebugName()->ToCString();
       if (debug_name[0] != 0) {
-        os << "<SharedFunctionInfo " << debug_name.get() << ">";
+        os << "\x3c\x53\x68\x61\x72\x65\x64\x46\x75\x6e\x63\x74\x69\x6f\x6e\x49\x6e\x66\x6f\x20" << debug_name.get() << "\x3e";
       } else {
-        os << "<SharedFunctionInfo>";
+        os << "\x3c\x53\x68\x61\x72\x65\x64\x46\x75\x6e\x63\x74\x69\x6f\x6e\x49\x6e\x66\x6f\x3e";
       }
       break;
     }
     case JS_MESSAGE_OBJECT_TYPE:
-      os << "<JSMessageObject>";
+      os << "\x3c\x4a\x53\x4d\x65\x73\x73\x61\x67\x65\x4f\x62\x6a\x65\x63\x74\x3e";
       break;
 #define MAKE_STRUCT_CASE(NAME, Name, name) \
   case NAME##_TYPE:                        \
-    os << "<" #Name ">";                   \
+    os << "\x3c" #Name "\x3e";                   \
     break;
   STRUCT_LIST(MAKE_STRUCT_CASE)
 #undef MAKE_STRUCT_CASE
     case CODE_TYPE: {
       Code* code = Code::cast(this);
-      os << "<Code: " << Code::Kind2String(code->kind()) << ">";
+      os << "\x3c\x43\x6f\x64\x65\x3a\x20" << Code::Kind2String(code->kind()) << "\x3e";
       break;
     }
     case ODDBALL_TYPE: {
       if (IsUndefined()) {
-        os << "<undefined>";
+        os << "\x3c\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3e";
       } else if (IsTheHole()) {
-        os << "<the hole>";
+        os << "\x3c\x74\x68\x65\x20\x68\x6f\x6c\x65\x3e";
       } else if (IsNull()) {
-        os << "<null>";
+        os << "\x3c\x6e\x75\x6c\x6c\x3e";
       } else if (IsTrue()) {
-        os << "<true>";
+        os << "\x3c\x74\x72\x75\x65\x3e";
       } else if (IsFalse()) {
-        os << "<false>";
+        os << "\x3c\x66\x61\x6c\x73\x65\x3e";
       } else {
-        os << "<Odd Oddball>";
+        os << "\x3c\x4f\x64\x64\x20\x4f\x64\x64\x62\x61\x6c\x6c\x3e";
       }
       break;
     }
     case SYMBOL_TYPE: {
       Symbol* symbol = Symbol::cast(this);
-      os << "<Symbol: " << symbol->Hash();
+      os << "\x3c\x53\x79\x6d\x62\x6f\x6c\x3a\x20" << symbol->Hash();
       if (!symbol->name()->IsUndefined()) {
-        os << " ";
+        os << "\x20";
         HeapStringAllocator allocator;
         StringStream accumulator(&allocator);
         String::cast(symbol->name())->StringShortPrint(&accumulator);
         os << accumulator.ToCString().get();
       }
-      os << ">";
+      os << "\x3e";
       break;
     }
     case HEAP_NUMBER_TYPE: {
-      os << "<Number: ";
+      os << "\x3c\x4e\x75\x6d\x62\x65\x72\x3a\x20";
       HeapNumber::cast(this)->HeapNumberPrint(os);
-      os << ">";
+      os << "\x3e";
       break;
     }
     case MUTABLE_HEAP_NUMBER_TYPE: {
-      os << "<MutableNumber: ";
+      os << "\x3c\x4d\x75\x74\x61\x62\x6c\x65\x4e\x75\x6d\x62\x65\x72\x3a\x20";
       HeapNumber::cast(this)->HeapNumberPrint(os);
-      os << '>';
+      os << '\x3e';
       break;
     }
     case JS_PROXY_TYPE:
-      os << "<JSProxy>";
+      os << "\x3c\x4a\x53\x50\x72\x6f\x78\x79\x3e";
       break;
     case JS_FUNCTION_PROXY_TYPE:
-      os << "<JSFunctionProxy>";
+      os << "\x3c\x4a\x53\x46\x75\x6e\x63\x74\x69\x6f\x6e\x50\x72\x6f\x78\x79\x3e";
       break;
     case FOREIGN_TYPE:
-      os << "<Foreign>";
+      os << "\x3c\x46\x6f\x72\x65\x69\x67\x6e\x3e";
       break;
     case CELL_TYPE: {
-      os << "Cell for ";
+      os << "\x43\x65\x6c\x6c\x20\x66\x6f\x72\x20";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       Cell::cast(this)->value()->ShortPrint(&accumulator);
@@ -1576,7 +1576,7 @@ void HeapObject::HeapObjectShortPrint(OStream& os) {  // NOLINT
       break;
     }
     case PROPERTY_CELL_TYPE: {
-      os << "PropertyCell for ";
+      os << "\x50\x72\x6f\x70\x65\x72\x74\x79\x43\x65\x6c\x6c\x20\x66\x6f\x72\x20";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       PropertyCell::cast(this)->value()->ShortPrint(&accumulator);
@@ -1584,7 +1584,7 @@ void HeapObject::HeapObjectShortPrint(OStream& os) {  // NOLINT
       break;
     }
     default:
-      os << "<Other heap object (" << map()->instance_type() << ")>";
+      os << "\x3c\x4f\x74\x68\x65\x72\x20\x68\x65\x61\x70\x20\x6f\x62\x6a\x65\x63\x74\x20\x28" << map()->instance_type() << "\x29\x3e";
       break;
   }
 }
@@ -1721,7 +1721,7 @@ void HeapObject::IterateBody(InstanceType type, int object_size,
       }
       break;
     default:
-      PrintF("Unknown type: %d\n", type);
+      PrintF("\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x74\x79\x70\x65\x3a\x20\x6c\x84\xa", type);
       UNREACHABLE();
   }
 }
@@ -1902,7 +1902,7 @@ MaybeHandle<Object> JSObject::AddPropertyInternal(
       !object->map()->is_extensible()) {
     Handle<Object> args[1] = {name};
     Handle<Object> error = isolate->factory()->NewTypeError(
-        "object_not_extensible", HandleVector(args, ARRAY_SIZE(args)));
+        "\x6f\x62\x6a\x65\x63\x74\x5f\x6e\x6f\x74\x5f\x65\x78\x74\x65\x6e\x73\x69\x62\x6c\x65", HandleVector(args, ARRAY_SIZE(args)));
     return isolate->Throw<Object>(error);
   }
 
@@ -1918,7 +1918,7 @@ MaybeHandle<Object> JSObject::AddPropertyInternal(
   if (object->map()->is_observed() &&
       *name != isolate->heap()->hidden_string()) {
     Handle<Object> old_value = isolate->factory()->the_hole_value();
-    EnqueueChangeRecord(object, "add", name, old_value);
+    EnqueueChangeRecord(object, "\x61\x64\x64", name, old_value);
   }
 
   return value;
@@ -1965,7 +1965,7 @@ static void ReplaceSlowProperty(Handle<JSObject> object,
                                 PropertyAttributes attributes) {
   NameDictionary* dictionary = object->property_dictionary();
   int old_index = dictionary->FindEntry(name);
-  int new_enumeration_index = 0;  // 0 means "Use the next available index."
+  int new_enumeration_index = 0;  // 0 means "\x55\x73\x65\x20\x74\x68\x65\x20\x6e\x65\x78\x74\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x20\x69\x6e\x64\x65\x78\x2e"
   if (old_index != -1) {
     // All calls to ReplaceSlowProperty have had all transitions removed.
     new_enumeration_index = dictionary->DetailsAt(old_index).dictionary_index();
@@ -1978,13 +1978,13 @@ static void ReplaceSlowProperty(Handle<JSObject> object,
 
 const char* Representation::Mnemonic() const {
   switch (kind_) {
-    case kNone: return "v";
-    case kTagged: return "t";
-    case kSmi: return "s";
-    case kDouble: return "d";
-    case kInteger32: return "i";
-    case kHeapObject: return "h";
-    case kExternal: return "x";
+    case kNone: return "\x76";
+    case kTagged: return "\x74";
+    case kSmi: return "\x73";
+    case kDouble: return "\x64";
+    case kInteger32: return "\x69";
+    case kHeapObject: return "\x68";
+    case kExternal: return "\x78";
     default:
       UNREACHABLE();
       return NULL;
@@ -2487,7 +2487,7 @@ void Map::GeneralizeFieldType(Handle<Map> map,
 
   if (FLAG_trace_generalization) {
     map->PrintGeneralization(
-        stdout, "field type generalization",
+        stdout, "\x66\x69\x65\x6c\x64\x20\x74\x79\x70\x65\x20\x67\x65\x6e\x65\x72\x61\x6c\x69\x7a\x61\x74\x69\x6f\x6e",
         modify_index, map->NumberOfOwnDescriptors(),
         map->NumberOfOwnDescriptors(), false,
         details.representation(), details.representation(),
@@ -2540,7 +2540,7 @@ Handle<Map> Map::GeneralizeRepresentation(Handle<Map> old_map,
             HeapType::None()));
     if (FLAG_trace_generalization) {
       old_map->PrintGeneralization(
-          stdout, "uninitialized field",
+          stdout, "\x75\x6e\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64\x20\x66\x69\x65\x6c\x64",
           modify_index, old_map->NumberOfOwnDescriptors(),
           old_map->NumberOfOwnDescriptors(), false,
           old_representation, new_representation,
@@ -2555,7 +2555,7 @@ Handle<Map> Map::GeneralizeRepresentation(Handle<Map> old_map,
   Handle<Map> root_map(old_map->FindRootMap(), isolate);
   if (!old_map->EquivalentToForTransition(*root_map)) {
     return CopyGeneralizeAllRepresentations(
-        old_map, modify_index, store_mode, "not equivalent");
+        old_map, modify_index, store_mode, "\x6e\x6f\x74\x20\x65\x71\x75\x69\x76\x61\x6c\x65\x6e\x74");
   }
   int root_nof = root_map->NumberOfOwnDescriptors();
   if (modify_index < root_nof) {
@@ -2565,7 +2565,7 @@ Handle<Map> Map::GeneralizeRepresentation(Handle<Map> old_map,
          (!new_field_type->NowIs(old_descriptors->GetFieldType(modify_index)) ||
           !new_representation.fits_into(old_details.representation())))) {
       return CopyGeneralizeAllRepresentations(
-          old_map, modify_index, store_mode, "root modification");
+          old_map, modify_index, store_mode, "\x72\x6f\x6f\x74\x20\x6d\x6f\x64\x69\x66\x69\x63\x61\x74\x69\x6f\x6e");
     }
   }
 
@@ -2587,7 +2587,7 @@ Handle<Map> Map::GeneralizeRepresentation(Handle<Map> old_map,
          (tmp_type != old_type ||
           tmp_descriptors->GetValue(i) != old_descriptors->GetValue(i)))) {
       return CopyGeneralizeAllRepresentations(
-          old_map, modify_index, store_mode, "incompatible");
+          old_map, modify_index, store_mode, "\x69\x6e\x63\x6f\x6d\x70\x61\x74\x69\x62\x6c\x65");
     }
     Representation old_representation = old_details.representation();
     Representation tmp_representation = tmp_details.representation();
@@ -2651,7 +2651,7 @@ Handle<Map> Map::GeneralizeRepresentation(Handle<Map> old_map,
          (tmp_details.type() != old_details.type() ||
           tmp_descriptors->GetValue(i) != old_descriptors->GetValue(i)))) {
       return CopyGeneralizeAllRepresentations(
-          old_map, modify_index, store_mode, "incompatible");
+          old_map, modify_index, store_mode, "\x69\x6e\x63\x6f\x6d\x70\x61\x74\x69\x62\x6c\x65");
     }
     target_map = tmp_map;
   }
@@ -2923,7 +2923,7 @@ MaybeHandle<Object> JSObject::SetPropertyWithInterceptor(LookupIterator* it,
   if (interceptor->setter()->IsUndefined()) return MaybeHandle<Object>();
 
   LOG(it->isolate(),
-      ApiNamedPropertyAccess("interceptor-named-set", *holder, *name_string));
+      ApiNamedPropertyAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x6e\x61\x6d\x65\x64\x2d\x73\x65\x74", *holder, *name_string));
   PropertyCallbackArguments args(it->isolate(), interceptor->data(), *holder,
                                  *holder);
   v8::NamedPropertySetterCallback setter =
@@ -3040,7 +3040,7 @@ MaybeHandle<Object> Object::WriteToReadOnlyProperty(LookupIterator* it,
 
   Handle<Object> args[] = {it->name(), it->GetReceiver()};
   Handle<Object> error = it->factory()->NewTypeError(
-      "strict_read_only_property", HandleVector(args, ARRAY_SIZE(args)));
+      "\x73\x74\x72\x69\x63\x74\x5f\x72\x65\x61\x64\x5f\x6f\x6e\x6c\x79\x5f\x70\x72\x6f\x70\x65\x72\x74\x79", HandleVector(args, ARRAY_SIZE(args)));
   return it->isolate()->Throw<Object>(error);
 }
 
@@ -3072,7 +3072,7 @@ MaybeHandle<Object> Object::SetDataProperty(LookupIterator* it,
 
   // Send the change record if there are observers.
   if (is_observed && !value->SameValue(*maybe_old.ToHandleChecked())) {
-    JSObject::EnqueueChangeRecord(receiver, "update", it->name(),
+    JSObject::EnqueueChangeRecord(receiver, "\x75\x70\x64\x61\x74\x65", it->name(),
                                   maybe_old.ToHandleChecked());
   }
 
@@ -3107,7 +3107,7 @@ MaybeHandle<Object> Object::AddDataProperty(LookupIterator* it,
 
     Handle<Object> args[1] = {it->name()};
     Handle<Object> error = it->factory()->NewTypeError(
-        "object_not_extensible", HandleVector(args, ARRAY_SIZE(args)));
+        "\x6f\x62\x6a\x65\x63\x74\x5f\x6e\x6f\x74\x5f\x65\x78\x74\x65\x6e\x73\x69\x62\x6c\x65", HandleVector(args, ARRAY_SIZE(args)));
     return it->isolate()->Throw<Object>(error);
   }
 
@@ -3128,7 +3128,7 @@ MaybeHandle<Object> Object::AddDataProperty(LookupIterator* it,
   // Send the change record if there are observers.
   if (receiver->map()->is_observed() &&
       !it->name().is_identical_to(it->factory()->hidden_string())) {
-    JSObject::EnqueueChangeRecord(receiver, "add", it->name(),
+    JSObject::EnqueueChangeRecord(receiver, "\x61\x64\x64", it->name(),
                                   it->factory()->the_hole_value());
   }
 
@@ -3584,7 +3584,7 @@ Maybe<bool> JSProxy::HasPropertyWithHandler(Handle<JSProxy> proxy,
   Handle<Object> args[] = { name };
   Handle<Object> result;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
-      isolate, result, CallTrap(proxy, "has", isolate->derived_has_trap(),
+      isolate, result, CallTrap(proxy, "\x68\x61\x73", isolate->derived_has_trap(),
                                 ARRAY_SIZE(args), args),
       Maybe<bool>());
 
@@ -3606,7 +3606,7 @@ MaybeHandle<Object> JSProxy::SetPropertyWithHandler(Handle<JSProxy> proxy,
   RETURN_ON_EXCEPTION(
       isolate,
       CallTrap(proxy,
-               "set",
+               "\x73\x65\x74",
                isolate->derived_set_trap(),
                ARRAY_SIZE(args),
                args),
@@ -3634,7 +3634,7 @@ MaybeHandle<Object> JSProxy::SetPropertyViaPrototypesWithHandler(
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
       CallTrap(proxy,
-               "getPropertyDescriptor",
+               "\x67\x65\x74\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72",
                Handle<Object>(),
                ARRAY_SIZE(args),
                args),
@@ -3660,17 +3660,17 @@ MaybeHandle<Object> JSProxy::SetPropertyViaPrototypesWithHandler(
   // [[GetProperty]] requires to check that all properties are configurable.
   Handle<String> configurable_name =
       isolate->factory()->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("configurable_"));
+          STATIC_ASCII_VECTOR("\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x5f"));
   Handle<Object> configurable =
       Object::GetProperty(desc, configurable_name).ToHandleChecked();
   DCHECK(configurable->IsBoolean());
   if (configurable->IsFalse()) {
     Handle<String> trap =
         isolate->factory()->InternalizeOneByteString(
-            STATIC_ASCII_VECTOR("getPropertyDescriptor"));
+            STATIC_ASCII_VECTOR("\x67\x65\x74\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72"));
     Handle<Object> args[] = { handler, trap, name };
     Handle<Object> error = isolate->factory()->NewTypeError(
-        "proxy_prop_not_configurable", HandleVector(args, ARRAY_SIZE(args)));
+        "\x70\x72\x6f\x78\x79\x5f\x70\x72\x6f\x70\x5f\x6e\x6f\x74\x5f\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65", HandleVector(args, ARRAY_SIZE(args)));
     return isolate->Throw<Object>(error);
   }
   DCHECK(configurable->IsTrue());
@@ -3678,14 +3678,14 @@ MaybeHandle<Object> JSProxy::SetPropertyViaPrototypesWithHandler(
   // Check for DataDescriptor.
   Handle<String> hasWritable_name =
       isolate->factory()->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("hasWritable_"));
+          STATIC_ASCII_VECTOR("\x68\x61\x73\x57\x72\x69\x74\x61\x62\x6c\x65\x5f"));
   Handle<Object> hasWritable =
       Object::GetProperty(desc, hasWritable_name).ToHandleChecked();
   DCHECK(hasWritable->IsBoolean());
   if (hasWritable->IsTrue()) {
     Handle<String> writable_name =
         isolate->factory()->InternalizeOneByteString(
-            STATIC_ASCII_VECTOR("writable_"));
+            STATIC_ASCII_VECTOR("\x77\x72\x69\x74\x61\x62\x6c\x65\x5f"));
     Handle<Object> writable =
         Object::GetProperty(desc, writable_name).ToHandleChecked();
     DCHECK(writable->IsBoolean());
@@ -3694,13 +3694,13 @@ MaybeHandle<Object> JSProxy::SetPropertyViaPrototypesWithHandler(
     if (strict_mode == SLOPPY) return value;
     Handle<Object> args[] = { name, receiver };
     Handle<Object> error = isolate->factory()->NewTypeError(
-        "strict_read_only_property", HandleVector(args, ARRAY_SIZE(args)));
+        "\x73\x74\x72\x69\x63\x74\x5f\x72\x65\x61\x64\x5f\x6f\x6e\x6c\x79\x5f\x70\x72\x6f\x70\x65\x72\x74\x79", HandleVector(args, ARRAY_SIZE(args)));
     return isolate->Throw<Object>(error);
   }
 
   // We have an AccessorDescriptor.
   Handle<String> set_name = isolate->factory()->InternalizeOneByteString(
-      STATIC_ASCII_VECTOR("set_"));
+      STATIC_ASCII_VECTOR("\x73\x65\x74\x5f"));
   Handle<Object> setter = Object::GetProperty(desc, set_name).ToHandleChecked();
   if (!setter->IsUndefined()) {
     // TODO(rossberg): nicer would be to cast to some JSCallable here...
@@ -3711,7 +3711,7 @@ MaybeHandle<Object> JSProxy::SetPropertyViaPrototypesWithHandler(
   if (strict_mode == SLOPPY) return value;
   Handle<Object> args2[] = { name, proxy };
   Handle<Object> error = isolate->factory()->NewTypeError(
-      "no_setter_in_callback", HandleVector(args2, ARRAY_SIZE(args2)));
+      "\x6e\x6f\x5f\x73\x65\x74\x74\x65\x72\x5f\x69\x6e\x5f\x63\x61\x6c\x6c\x62\x61\x63\x6b", HandleVector(args2, ARRAY_SIZE(args2)));
   return isolate->Throw<Object>(error);
 }
 
@@ -3728,7 +3728,7 @@ MaybeHandle<Object> JSProxy::DeletePropertyWithHandler(
   ASSIGN_RETURN_ON_EXCEPTION(
       isolate, result,
       CallTrap(proxy,
-               "delete",
+               "\x64\x65\x6c\x65\x74\x65",
                Handle<Object>(),
                ARRAY_SIZE(args),
                args),
@@ -3738,10 +3738,10 @@ MaybeHandle<Object> JSProxy::DeletePropertyWithHandler(
   if (mode == STRICT_DELETION && !result_bool) {
     Handle<Object> handler(proxy->handler(), isolate);
     Handle<String> trap_name = isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("delete"));
+        STATIC_ASCII_VECTOR("\x64\x65\x6c\x65\x74\x65"));
     Handle<Object> args[] = { handler, trap_name };
     Handle<Object> error = isolate->factory()->NewTypeError(
-        "handler_failed", HandleVector(args, ARRAY_SIZE(args)));
+        "\x68\x61\x6e\x64\x6c\x65\x72\x5f\x66\x61\x69\x6c\x65\x64", HandleVector(args, ARRAY_SIZE(args)));
     return isolate->Throw<Object>(error);
   }
   return isolate->factory()->ToBoolean(result_bool);
@@ -3768,7 +3768,7 @@ Maybe<PropertyAttributes> JSProxy::GetPropertyAttributesWithHandler(
   Handle<Object> result;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
       isolate, result,
-      proxy->CallTrap(proxy, "getPropertyDescriptor", Handle<Object>(),
+      proxy->CallTrap(proxy, "\x67\x65\x74\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72", Handle<Object>(),
                       ARRAY_SIZE(args), args),
       Maybe<PropertyAttributes>());
 
@@ -3784,26 +3784,26 @@ Maybe<PropertyAttributes> JSProxy::GetPropertyAttributesWithHandler(
 
   // Convert result to PropertyAttributes.
   Handle<String> enum_n = isolate->factory()->InternalizeOneByteString(
-      STATIC_ASCII_VECTOR("enumerable_"));
+      STATIC_ASCII_VECTOR("\x65\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x5f"));
   Handle<Object> enumerable;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, enumerable,
                                    Object::GetProperty(desc, enum_n),
                                    Maybe<PropertyAttributes>());
   Handle<String> conf_n = isolate->factory()->InternalizeOneByteString(
-      STATIC_ASCII_VECTOR("configurable_"));
+      STATIC_ASCII_VECTOR("\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x5f"));
   Handle<Object> configurable;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, configurable,
                                    Object::GetProperty(desc, conf_n),
                                    Maybe<PropertyAttributes>());
   Handle<String> writ_n = isolate->factory()->InternalizeOneByteString(
-      STATIC_ASCII_VECTOR("writable_"));
+      STATIC_ASCII_VECTOR("\x77\x72\x69\x74\x61\x62\x6c\x65\x5f"));
   Handle<Object> writable;
   ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, writable,
                                    Object::GetProperty(desc, writ_n),
                                    Maybe<PropertyAttributes>());
   if (!writable->BooleanValue()) {
     Handle<String> set_n = isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("set_"));
+        STATIC_ASCII_VECTOR("\x73\x65\x74\x5f"));
     Handle<Object> setter;
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, setter,
                                      Object::GetProperty(desc, set_n),
@@ -3814,10 +3814,10 @@ Maybe<PropertyAttributes> JSProxy::GetPropertyAttributesWithHandler(
   if (configurable->IsFalse()) {
     Handle<Object> handler(proxy->handler(), isolate);
     Handle<String> trap = isolate->factory()->InternalizeOneByteString(
-        STATIC_ASCII_VECTOR("getPropertyDescriptor"));
+        STATIC_ASCII_VECTOR("\x67\x65\x74\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72"));
     Handle<Object> args[] = { handler, trap, name };
     Handle<Object> error = isolate->factory()->NewTypeError(
-        "proxy_prop_not_configurable", HandleVector(args, ARRAY_SIZE(args)));
+        "\x70\x72\x6f\x78\x79\x5f\x70\x72\x6f\x70\x5f\x6e\x6f\x74\x5f\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65", HandleVector(args, ARRAY_SIZE(args)));
     isolate->Throw(*error);
     return maybe(NONE);
   }
@@ -3879,7 +3879,7 @@ MaybeHandle<Object> JSProxy::CallTrap(Handle<JSProxy> proxy,
     if (derived.is_null()) {
       Handle<Object> args[] = { handler, trap_name };
       Handle<Object> error = isolate->factory()->NewTypeError(
-        "handler_trap_missing", HandleVector(args, ARRAY_SIZE(args)));
+        "\x68\x61\x6e\x64\x6c\x65\x72\x5f\x74\x72\x61\x70\x5f\x6d\x69\x73\x73\x69\x6e\x67", HandleVector(args, ARRAY_SIZE(args)));
       return isolate->Throw<Object>(error);
     }
     trap = Handle<Object>(derived);
@@ -4045,7 +4045,7 @@ void JSObject::ConvertAndSetOwnProperty(LookupResult* lookup,
   } else {
     Handle<Map> old_map(object->map());
     Handle<Map> new_map = Map::CopyGeneralizeAllRepresentations(old_map,
-        descriptor_index, FORCE_FIELD, attributes, "attributes mismatch");
+        descriptor_index, FORCE_FIELD, attributes, "\x61\x74\x74\x72\x69\x62\x75\x74\x65\x73\x20\x6d\x69\x73\x6d\x61\x74\x63\x68");
     JSObject::MigrateToMap(object, new_map);
   }
 
@@ -4223,9 +4223,9 @@ MaybeHandle<Object> JSObject::SetOwnPropertyIgnoreAttributes(
 
   if (is_observed && !executed_set_prototype) {
     if (lookup.IsTransition()) {
-      EnqueueChangeRecord(object, "add", name, old_value);
+      EnqueueChangeRecord(object, "\x61\x64\x64", name, old_value);
     } else if (old_value->IsTheHole()) {
-      EnqueueChangeRecord(object, "reconfigure", name, old_value);
+      EnqueueChangeRecord(object, "\x72\x65\x63\x6f\x6e\x66\x69\x67\x75\x72\x65", name, old_value);
     } else {
       LookupResult new_lookup(isolate);
       object->LookupOwn(name, &new_lookup, true);
@@ -4237,9 +4237,9 @@ MaybeHandle<Object> JSObject::SetOwnPropertyIgnoreAttributes(
       }
       if (new_lookup.GetAttributes() != old_attributes) {
         if (!value_changed) old_value = isolate->factory()->the_hole_value();
-        EnqueueChangeRecord(object, "reconfigure", name, old_value);
+        EnqueueChangeRecord(object, "\x72\x65\x63\x6f\x6e\x66\x69\x67\x75\x72\x65", name, old_value);
       } else if (value_changed) {
-        EnqueueChangeRecord(object, "update", name, old_value);
+        EnqueueChangeRecord(object, "\x75\x70\x64\x61\x74\x65", name, old_value);
       }
     }
   }
@@ -4269,7 +4269,7 @@ Maybe<PropertyAttributes> JSObject::GetPropertyAttributesWithInterceptor(
     v8::NamedPropertyQueryCallback query =
         v8::ToCData<v8::NamedPropertyQueryCallback>(interceptor->query());
     LOG(isolate,
-        ApiNamedPropertyAccess("interceptor-named-has", *holder, *name));
+        ApiNamedPropertyAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x6e\x61\x6d\x65\x64\x2d\x68\x61\x73", *holder, *name));
     v8::Handle<v8::Integer> result =
         args.Call(query, v8::Utils::ToLocal(Handle<String>::cast(name)));
     if (!result.IsEmpty()) {
@@ -4280,7 +4280,7 @@ Maybe<PropertyAttributes> JSObject::GetPropertyAttributesWithInterceptor(
     v8::NamedPropertyGetterCallback getter =
         v8::ToCData<v8::NamedPropertyGetterCallback>(interceptor->getter());
     LOG(isolate,
-        ApiNamedPropertyAccess("interceptor-named-get-has", *holder, *name));
+        ApiNamedPropertyAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x6e\x61\x6d\x65\x64\x2d\x67\x65\x74\x2d\x68\x61\x73", *holder, *name));
     v8::Handle<v8::Value> result =
         args.Call(getter, v8::Utils::ToLocal(Handle<String>::cast(name)));
     if (!result.IsEmpty()) return maybe(DONT_ENUM);
@@ -4385,7 +4385,7 @@ Maybe<PropertyAttributes> JSObject::GetElementAttributeWithInterceptor(
     v8::IndexedPropertyQueryCallback query =
         v8::ToCData<v8::IndexedPropertyQueryCallback>(interceptor->query());
     LOG(isolate,
-        ApiIndexedPropertyAccess("interceptor-indexed-has", *object, index));
+        ApiIndexedPropertyAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x69\x6e\x64\x65\x78\x65\x64\x2d\x68\x61\x73", *object, index));
     v8::Handle<v8::Integer> result = args.Call(query, index);
     if (!result.IsEmpty())
       return maybe(static_cast<PropertyAttributes>(result->Int32Value()));
@@ -4394,7 +4394,7 @@ Maybe<PropertyAttributes> JSObject::GetElementAttributeWithInterceptor(
         v8::ToCData<v8::IndexedPropertyGetterCallback>(interceptor->getter());
     LOG(isolate,
         ApiIndexedPropertyAccess(
-            "interceptor-indexed-get-has", *object, index));
+            "\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x69\x6e\x64\x65\x78\x65\x64\x2d\x67\x65\x74\x2d\x68\x61\x73", *object, index));
     v8::Handle<v8::Value> result = args.Call(getter, index);
     if (!result.IsEmpty()) return maybe(NONE);
   }
@@ -4585,7 +4585,7 @@ void JSObject::MigrateFastToSlow(Handle<JSObject> object,
 #ifdef DEBUG
   if (FLAG_trace_normalization) {
     OFStream os(stdout);
-    os << "Object properties have been normalized:\n";
+    os << "\x4f\x62\x6a\x65\x63\x74\x20\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x20\x68\x61\x76\x65\x20\x62\x65\x65\x6e\x20\x6e\x6f\x72\x6d\x61\x6c\x69\x7a\x65\x64\x3a\xa";
     object->Print(os);
   }
 #endif
@@ -4821,7 +4821,7 @@ Handle<SeededNumberDictionary> JSObject::NormalizeElements(
 #ifdef DEBUG
   if (FLAG_trace_normalization) {
     OFStream os(stdout);
-    os << "Object elements have been normalized:\n";
+    os << "\x4f\x62\x6a\x65\x63\x74\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x68\x61\x76\x65\x20\x62\x65\x65\x6e\x20\x6e\x6f\x72\x6d\x61\x6c\x69\x7a\x65\x64\x3a\xa";
     object->Print(os);
   }
 #endif
@@ -5151,7 +5151,7 @@ MaybeHandle<Object> JSObject::DeletePropertyWithInterceptor(
     v8::NamedPropertyDeleterCallback deleter =
         v8::ToCData<v8::NamedPropertyDeleterCallback>(interceptor->deleter());
     LOG(isolate,
-        ApiNamedPropertyAccess("interceptor-named-delete", *object, *name));
+        ApiNamedPropertyAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x6e\x61\x6d\x65\x64\x2d\x64\x65\x6c\x65\x74\x65", *object, *name));
     PropertyCallbackArguments args(
         isolate, interceptor->data(), *object, *object);
     v8::Handle<v8::Boolean> result =
@@ -5186,7 +5186,7 @@ MaybeHandle<Object> JSObject::DeleteElementWithInterceptor(
   v8::IndexedPropertyDeleterCallback deleter =
       v8::ToCData<v8::IndexedPropertyDeleterCallback>(interceptor->deleter());
   LOG(isolate,
-      ApiIndexedPropertyAccess("interceptor-indexed-delete", *object, index));
+      ApiIndexedPropertyAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x69\x6e\x64\x65\x78\x65\x64\x2d\x64\x65\x6c\x65\x74\x65", *object, index));
   PropertyCallbackArguments args(
       isolate, interceptor->data(), *object, *object);
   v8::Handle<v8::Boolean> result = args.Call(deleter, index);
@@ -5224,7 +5224,7 @@ MaybeHandle<Object> JSObject::DeleteElement(Handle<JSObject> object,
       Handle<Object> name = factory->NewNumberFromUint(index);
       Handle<Object> args[2] = { name, object };
       Handle<Object> error =
-          factory->NewTypeError("strict_delete_property",
+          factory->NewTypeError("\x73\x74\x72\x69\x63\x74\x5f\x64\x65\x6c\x65\x74\x65\x5f\x70\x72\x6f\x70\x65\x72\x74\x79",
                                 HandleVector(args, 2));
       isolate->Throw(*error);
       return Handle<Object>();
@@ -5272,7 +5272,7 @@ MaybeHandle<Object> JSObject::DeleteElement(Handle<JSObject> object,
     if (!maybe.has_value) return MaybeHandle<Object>();
     if (!maybe.value) {
       Handle<String> name = factory->Uint32ToString(index);
-      EnqueueChangeRecord(object, "delete", name, old_value);
+      EnqueueChangeRecord(object, "\x64\x65\x6c\x65\x74\x65", name, old_value);
     }
   }
 
@@ -5318,7 +5318,7 @@ MaybeHandle<Object> JSObject::DeleteProperty(Handle<JSObject> object,
       // Deleting a non-configurable property in strict mode.
       Handle<Object> args[2] = { name, object };
       Handle<Object> error = isolate->factory()->NewTypeError(
-          "strict_delete_property", HandleVector(args, ARRAY_SIZE(args)));
+          "\x73\x74\x72\x69\x63\x74\x5f\x64\x65\x6c\x65\x74\x65\x5f\x70\x72\x6f\x70\x65\x72\x74\x79", HandleVector(args, ARRAY_SIZE(args)));
       isolate->Throw(*error);
       return Handle<Object>();
     }
@@ -5359,7 +5359,7 @@ MaybeHandle<Object> JSObject::DeleteProperty(Handle<JSObject> object,
     Maybe<bool> maybe = HasOwnProperty(object, name);
     if (!maybe.has_value) return MaybeHandle<Object>();
     if (!maybe.value) {
-      EnqueueChangeRecord(object, "delete", name, old_value);
+      EnqueueChangeRecord(object, "\x64\x65\x6c\x65\x74\x65", name, old_value);
     }
   }
 
@@ -5550,7 +5550,7 @@ MaybeHandle<Object> JSObject::PreventExtensions(Handle<JSObject> object) {
       object->HasFixedTypedArrayElements()) {
     Handle<Object> error  =
         isolate->factory()->NewTypeError(
-            "cant_prevent_ext_external_array_elements",
+            "\x63\x61\x6e\x74\x5f\x70\x72\x65\x76\x65\x6e\x74\x5f\x65\x78\x74\x5f\x65\x78\x74\x65\x72\x6e\x61\x6c\x5f\x61\x72\x72\x61\x79\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73",
             HandleVector(&object, 1));
     return isolate->Throw<Object>(error);
   }
@@ -5573,7 +5573,7 @@ MaybeHandle<Object> JSObject::PreventExtensions(Handle<JSObject> object) {
   DCHECK(!object->map()->is_extensible());
 
   if (object->map()->is_observed()) {
-    EnqueueChangeRecord(object, "preventExtensions", Handle<Name>(),
+    EnqueueChangeRecord(object, "\x70\x72\x65\x76\x65\x6e\x74\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x73", Handle<Name>(),
                         isolate->factory()->the_hole_value());
   }
   return object;
@@ -5633,7 +5633,7 @@ MaybeHandle<Object> JSObject::Freeze(Handle<JSObject> object) {
       object->HasFixedTypedArrayElements()) {
     Handle<Object> error  =
         isolate->factory()->NewTypeError(
-            "cant_prevent_ext_external_array_elements",
+            "\x63\x61\x6e\x74\x5f\x70\x72\x65\x76\x65\x6e\x74\x5f\x65\x78\x74\x5f\x65\x78\x74\x65\x72\x6e\x61\x6c\x5f\x61\x72\x72\x61\x79\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73",
             HandleVector(&object, 1));
     return isolate->Throw<Object>(error);
   }
@@ -6669,7 +6669,7 @@ MaybeHandle<Object> JSObject::DefineAccessor(Handle<JSObject> object,
   }
 
   if (is_observed) {
-    const char* type = preexists ? "reconfigure" : "add";
+    const char* type = preexists ? "\x72\x65\x63\x6f\x6e\x66\x69\x67\x75\x72\x65" : "\x61\x64\x64";
     EnqueueChangeRecord(object, type, name, old_value);
   }
 
@@ -7381,7 +7381,7 @@ Handle<Map> Map::TransitionToDataProperty(Handle<Map> map, Handle<Name> name,
     if (descriptors->GetDetails(descriptor).attributes() != attributes) {
       return CopyGeneralizeAllRepresentations(transition, descriptor,
                                               FORCE_FIELD, attributes,
-                                              "attributes mismatch");
+                                              "\x61\x74\x74\x72\x69\x62\x75\x74\x65\x73\x20\x6d\x69\x73\x6d\x61\x74\x63\x68");
     }
 
     return Map::PrepareForDataProperty(transition, descriptor, value);
@@ -8547,7 +8547,7 @@ SmartArrayPointer<char> String::ToCString(AllowNullsFlag allow_nulls,
   while (stream.HasMore() && character_position++ < offset + length) {
     uint16_t character = stream.GetNext();
     if (allow_nulls == DISALLOW_NULLS && character == 0) {
-      character = ' ';
+      character = '\x20';
     }
     utf8_byte_position +=
         unibrow::Utf8::Encode(result + utf8_byte_position, character, last);
@@ -8969,7 +8969,7 @@ static void CalculateLineEndsImpl(Isolate* isolate,
                                   Vector<const SourceChar> src,
                                   bool include_ending_line) {
   const int src_len = src.length();
-  StringSearch<uint8_t, SourceChar> search(isolate, STATIC_ASCII_VECTOR("\n"));
+  StringSearch<uint8_t, SourceChar> search(isolate, STATIC_ASCII_VECTOR("\xa"));
 
   // Find and record line ends.
   int position = 0;
@@ -9541,7 +9541,7 @@ uint32_t StringHasher::ComputeUtf8Hash(Vector<const char> chars,
 void String::PrintOn(FILE* file) {
   int length = this->length();
   for (int i = 0; i < length; i++) {
-    PrintF(file, "%c", Get(i));
+    PrintF(file, "\x6c\x83", Get(i));
   }
 }
 
@@ -9660,9 +9660,9 @@ void JSFunction::MarkForConcurrentOptimization() {
   DCHECK(!shared()->is_generator());
   DCHECK(GetIsolate()->concurrent_recompilation_enabled());
   if (FLAG_trace_concurrent_recompilation) {
-    PrintF("  ** Marking ");
+    PrintF("\x20\x20\x2a\x2a\x20\x4d\x61\x72\x6b\x69\x6e\x67\x20");
     PrintName();
-    PrintF(" for concurrent recompilation.\n");
+    PrintF("\x20\x66\x6f\x72\x20\x63\x6f\x6e\x63\x75\x72\x72\x65\x6e\x74\x20\x72\x65\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x2e\xa");
   }
   set_code_no_write_barrier(
       GetIsolate()->builtins()->builtin(Builtins::kCompileOptimizedConcurrent));
@@ -9678,9 +9678,9 @@ void JSFunction::MarkInOptimizationQueue() {
   DCHECK(shared()->allows_lazy_compilation() || code()->optimizable());
   DCHECK(GetIsolate()->concurrent_recompilation_enabled());
   if (FLAG_trace_concurrent_recompilation) {
-    PrintF("  ** Queueing ");
+    PrintF("\x20\x20\x2a\x2a\x20\x51\x75\x65\x75\x65\x69\x6e\x67\x20");
     PrintName();
-    PrintF(" for concurrent recompilation.\n");
+    PrintF("\x20\x66\x6f\x72\x20\x63\x6f\x6e\x63\x75\x72\x72\x65\x6e\x74\x20\x72\x65\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x2e\xa");
   }
   set_code_no_write_barrier(
       GetIsolate()->builtins()->builtin(Builtins::kInOptimizationQueue));
@@ -9789,13 +9789,13 @@ void SharedFunctionInfo::EvictFromOptimizedCodeMap(Code* optimized_code,
     if (Code::cast(code_map->get(src + kCachedCodeOffset)) == optimized_code) {
       // Evict the src entry by not copying it to the dst entry.
       if (FLAG_trace_opt) {
-        PrintF("[evicting entry from optimizing code map (%s) for ", reason);
+        PrintF("\x5b\x65\x76\x69\x63\x74\x69\x6e\x67\x20\x65\x6e\x74\x72\x79\x20\x66\x72\x6f\x6d\x20\x6f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x20\x63\x6f\x64\x65\x20\x6d\x61\x70\x20\x28\x6c\xa2\x29\x20\x66\x6f\x72\x20", reason);
         ShortPrint();
         BailoutId osr(Smi::cast(code_map->get(src + kOsrAstIdOffset))->value());
         if (osr.IsNone()) {
-          PrintF("]\n");
+          PrintF("\x5d\xa");
         } else {
-          PrintF(" (osr ast id %d)]\n", osr.ToInt());
+          PrintF("\x20\x28\x6f\x73\x72\x20\x61\x73\x74\x20\x69\x64\x20\x6c\x84\x29\x5d\xa", osr.ToInt());
         }
       }
     } else {
@@ -10054,7 +10054,7 @@ void JSFunction::SetInstanceClassName(String* name) {
 
 void JSFunction::PrintName(FILE* out) {
   SmartArrayPointer<char> name = shared()->DebugName()->ToCString();
-  PrintF(out, "%s", name.get());
+  PrintF(out, "\x6c\xa2", name.get());
 }
 
 
@@ -10072,18 +10072,18 @@ Context* JSFunction::NativeContextFromLiterals(FixedArray* literals) {
 //   "name*"  only functions starting with "name"
 //   "~"      none; the tilde is not an identifier
 bool JSFunction::PassesFilter(const char* raw_filter) {
-  if (*raw_filter == '*') return true;
+  if (*raw_filter == '\x2a') return true;
   String* name = shared()->DebugName();
   Vector<const char> filter = CStrVector(raw_filter);
   if (filter.length() == 0) return name->length() == 0;
-  if (filter[0] == '-') {
+  if (filter[0] == '\x2d') {
     // Negative filter.
     if (filter.length() == 1) {
       return (name->length() != 0);
     } else if (name->IsUtf8EqualTo(filter.SubVector(1, filter.length()))) {
       return false;
     }
-    if (filter[filter.length() - 1] == '*' &&
+    if (filter[filter.length() - 1] == '\x2a' &&
         name->IsUtf8EqualTo(filter.SubVector(1, filter.length() - 1), true)) {
       return false;
     }
@@ -10092,7 +10092,7 @@ bool JSFunction::PassesFilter(const char* raw_filter) {
   } else if (name->IsUtf8EqualTo(filter)) {
     return true;
   }
-  if (filter[filter.length() - 1] == '*' &&
+  if (filter[filter.length() - 1] == '\x2a' &&
       name->IsUtf8EqualTo(filter.SubVector(0, filter.length() - 1), true)) {
     return true;
   }
@@ -10195,7 +10195,7 @@ int Script::GetLineNumber(int code_pos) {
   int len = source_string->length();
   for (int pos = 0; pos < len; pos++) {
     if (pos == code_pos) break;
-    if (source_string->Get(pos) == '\n') line++;
+    if (source_string->Get(pos) == '\xa') line++;
   }
   return line;
 }
@@ -10205,7 +10205,7 @@ Handle<Object> Script::GetNameOrSourceURL(Handle<Script> script) {
   Isolate* isolate = script->GetIsolate();
   Handle<String> name_or_source_url_key =
       isolate->factory()->InternalizeOneByteString(
-          STATIC_ASCII_VECTOR("nameOrSourceURL"));
+          STATIC_ASCII_VECTOR("\x6e\x61\x6d\x65\x4f\x72\x53\x6f\x75\x72\x63\x65\x55\x52\x4c"));
   Handle<JSObject> script_wrapper = Script::GetWrapper(script);
   Handle<Object> property = Object::GetProperty(
       script_wrapper, name_or_source_url_key).ToHandleChecked();
@@ -10329,7 +10329,7 @@ int SharedFunctionInfo::CalculateInObjectProperties() {
 OStream& operator<<(OStream& os, const SourceCodeOf& v) {
   const SharedFunctionInfo* s = v.value;
   // For some native functions there is no source.
-  if (!s->HasSourceCode()) return os << "<No Source>";
+  if (!s->HasSourceCode()) return os << "\x3c\x4e\x6f\x20\x53\x6f\x75\x72\x63\x65\x3e";
 
   // Get the source for the script which this function came from.
   // Don't use String::cast because we don't want more assertion errors while
@@ -10337,10 +10337,10 @@ OStream& operator<<(OStream& os, const SourceCodeOf& v) {
   String* script_source =
       reinterpret_cast<String*>(Script::cast(s->script())->source());
 
-  if (!script_source->LooksValid()) return os << "<Invalid Source>";
+  if (!script_source->LooksValid()) return os << "\x3c\x49\x6e\x76\x61\x6c\x69\x64\x20\x53\x6f\x75\x72\x63\x65\x3e";
 
   if (!s->is_toplevel()) {
-    os << "function ";
+    os << "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20";
     Object* name = s->name();
     if (name->IsString() && String::cast(name)->length() > 0) {
       String::cast(name)->PrintUC16(os);
@@ -10354,7 +10354,7 @@ OStream& operator<<(OStream& os, const SourceCodeOf& v) {
   } else {
     script_source->PrintUC16(os, s->start_position(),
                              s->start_position() + v.max_length);
-    return os << "...\n";
+    return os << "\x2e\x2e\x2e\xa";
   }
 }
 
@@ -10409,9 +10409,9 @@ void SharedFunctionInfo::DisableOptimization(BailoutReason reason) {
   }
   PROFILE(GetIsolate(), CodeDisableOptEvent(code(), this));
   if (FLAG_trace_opt) {
-    PrintF("[disabled optimization for ");
+    PrintF("\x5b\x64\x69\x73\x61\x62\x6c\x65\x64\x20\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x66\x6f\x72\x20");
     ShortPrint();
-    PrintF(", reason: %s]\n", GetBailoutReason(reason));
+    PrintF("\x2c\x20\x72\x65\x61\x73\x6f\x6e\x3a\x20\x6c\xa2\x5d\xa", GetBailoutReason(reason));
   }
 }
 
@@ -10519,9 +10519,9 @@ int SharedFunctionInfo::SearchOptimizedCodeMap(Context* native_context,
       }
     }
     if (FLAG_trace_opt) {
-      PrintF("[didn't find optimized code in optimized code map for ");
+      PrintF("\x5b\x64\x69\x64\x6e\x27\x74\x20\x66\x69\x6e\x64\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x69\x6e\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x6d\x61\x70\x20\x66\x6f\x72\x20");
       ShortPrint();
-      PrintF("]\n");
+      PrintF("\x5d\xa");
     }
   }
   return -1;
@@ -11128,7 +11128,7 @@ void Code::PrintDeoptLocation(FILE* out, int bailout_id) {
           (bailout_id == Deoptimizer::GetDeoptimizationId(
               GetIsolate(), info->target_address(), Deoptimizer::LAZY))) {
         CHECK(RelocInfo::IsRuntimeEntry(info->rmode()));
-        PrintF(out, "            %s\n", last_comment);
+        PrintF(out, "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x6c\xa2\xa", last_comment);
         return;
       }
     }
@@ -11168,21 +11168,21 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
     OStream& os) {  // NOLINT
   disasm::NameConverter converter;
   int deopt_count = DeoptCount();
-  os << "Deoptimization Input Data (deopt points = " << deopt_count << ")\n";
+  os << "\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x49\x6e\x70\x75\x74\x20\x44\x61\x74\x61\x20\x28\x64\x65\x6f\x70\x74\x20\x70\x6f\x69\x6e\x74\x73\x20\x3d\x20" << deopt_count << "\x29\xa";
   if (0 != deopt_count) {
-    os << " index  ast id    argc     pc";
-    if (FLAG_print_code_verbose) os << "  commands";
-    os << "\n";
+    os << "\x20\x69\x6e\x64\x65\x78\x20\x20\x61\x73\x74\x20\x69\x64\x20\x20\x20\x20\x61\x72\x67\x63\x20\x20\x20\x20\x20\x70\x63";
+    if (FLAG_print_code_verbose) os << "\x20\x20\x63\x6f\x6d\x6d\x61\x6e\x64\x73";
+    os << "\xa";
   }
   for (int i = 0; i < deopt_count; i++) {
     // TODO(svenpanne) Add some basic formatting to our streams.
     Vector<char> buf1 = Vector<char>::New(128);
-    SNPrintF(buf1, "%6d  %6d  %6d %6d", i, AstId(i).ToInt(),
+    SNPrintF(buf1, "\x6c\xf6\x84\x20\x20\x6c\xf6\x84\x20\x20\x6c\xf6\x84\x20\x6c\xf6\x84", i, AstId(i).ToInt(),
              ArgumentsStackHeight(i)->value(), Pc(i)->value());
     os << buf1.start();
 
     if (!FLAG_print_code_verbose) {
-      os << "\n";
+      os << "\xa";
       continue;
     }
     // Print details of the frame translation.
@@ -11193,15 +11193,15 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
     DCHECK(Translation::BEGIN == opcode);
     int frame_count = iterator.Next();
     int jsframe_count = iterator.Next();
-    os << "  " << Translation::StringFor(opcode)
-       << " {frame count=" << frame_count
-       << ", js frame count=" << jsframe_count << "}\n";
+    os << "\x20\x20" << Translation::StringFor(opcode)
+       << "\x20\x7b\x66\x72\x61\x6d\x65\x20\x63\x6f\x75\x6e\x74\x3d" << frame_count
+       << "\x2c\x20\x6a\x73\x20\x66\x72\x61\x6d\x65\x20\x63\x6f\x75\x6e\x74\x3d" << jsframe_count << "\x7d\xa";
 
     while (iterator.HasNext() &&
            Translation::BEGIN !=
            (opcode = static_cast<Translation::Opcode>(iterator.Next()))) {
       Vector<char> buf2 = Vector<char>::New(128);
-      SNPrintF(buf2, "%27s    %s ", "", Translation::StringFor(opcode));
+      SNPrintF(buf2, "\x6c\xf2\xf7\xa2\x20\x20\x20\x20\x6c\xa2\x20", "", Translation::StringFor(opcode));
       os << buf2.start();
 
       switch (opcode) {
@@ -11213,20 +11213,20 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           int ast_id = iterator.Next();
           int function_id = iterator.Next();
           unsigned height = iterator.Next();
-          os << "{ast_id=" << ast_id << ", function=";
+          os << "\x7b\x61\x73\x74\x5f\x69\x64\x3d" << ast_id << "\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3d";
           if (function_id != Translation::kSelfLiteralId) {
             Object* function = LiteralArray()->get(function_id);
             os << Brief(JSFunction::cast(function)->shared()->DebugName());
           } else {
-            os << "<self>";
+            os << "\x3c\x73\x65\x6c\x66\x3e";
           }
-          os << ", height=" << height << "}";
+          os << "\x2c\x20\x68\x65\x69\x67\x68\x74\x3d" << height << "\x7d";
           break;
         }
 
         case Translation::COMPILED_STUB_FRAME: {
           Code::Kind stub_kind = static_cast<Code::Kind>(iterator.Next());
-          os << "{kind=" << stub_kind << "}";
+          os << "\x7b\x6b\x69\x6e\x64\x3d" << stub_kind << "\x7d";
           break;
         }
 
@@ -11236,8 +11236,8 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           JSFunction* function =
               JSFunction::cast(LiteralArray()->get(function_id));
           unsigned height = iterator.Next();
-          os << "{function=" << Brief(function->shared()->DebugName())
-             << ", height=" << height << "}";
+          os << "\x7b\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3d" << Brief(function->shared()->DebugName())
+             << "\x2c\x20\x68\x65\x69\x67\x68\x74\x3d" << height << "\x7d";
           break;
         }
 
@@ -11246,92 +11246,92 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           int function_id = iterator.Next();
           JSFunction* function =
               JSFunction::cast(LiteralArray()->get(function_id));
-          os << "{function=" << Brief(function->shared()->DebugName()) << "}";
+          os << "\x7b\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3d" << Brief(function->shared()->DebugName()) << "\x7d";
           break;
         }
 
         case Translation::REGISTER: {
           int reg_code = iterator.Next();
-          os << "{input=" << converter.NameOfCPURegister(reg_code) << "}";
+          os << "\x7b\x69\x6e\x70\x75\x74\x3d" << converter.NameOfCPURegister(reg_code) << "\x7d";
           break;
         }
 
         case Translation::INT32_REGISTER: {
           int reg_code = iterator.Next();
-          os << "{input=" << converter.NameOfCPURegister(reg_code) << "}";
+          os << "\x7b\x69\x6e\x70\x75\x74\x3d" << converter.NameOfCPURegister(reg_code) << "\x7d";
           break;
         }
 
         case Translation::UINT32_REGISTER: {
           int reg_code = iterator.Next();
-          os << "{input=" << converter.NameOfCPURegister(reg_code)
-             << " (unsigned)}";
+          os << "\x7b\x69\x6e\x70\x75\x74\x3d" << converter.NameOfCPURegister(reg_code)
+             << "\x20\x28\x75\x6e\x73\x69\x67\x6e\x65\x64\x29\x7d";
           break;
         }
 
         case Translation::DOUBLE_REGISTER: {
           int reg_code = iterator.Next();
-          os << "{input=" << DoubleRegister::AllocationIndexToString(reg_code)
-             << "}";
+          os << "\x7b\x69\x6e\x70\x75\x74\x3d" << DoubleRegister::AllocationIndexToString(reg_code)
+             << "\x7d";
           break;
         }
 
         case Translation::STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << "{input=" << input_slot_index << "}";
+          os << "\x7b\x69\x6e\x70\x75\x74\x3d" << input_slot_index << "\x7d";
           break;
         }
 
         case Translation::INT32_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << "{input=" << input_slot_index << "}";
+          os << "\x7b\x69\x6e\x70\x75\x74\x3d" << input_slot_index << "\x7d";
           break;
         }
 
         case Translation::UINT32_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << "{input=" << input_slot_index << " (unsigned)}";
+          os << "\x7b\x69\x6e\x70\x75\x74\x3d" << input_slot_index << "\x20\x28\x75\x6e\x73\x69\x67\x6e\x65\x64\x29\x7d";
           break;
         }
 
         case Translation::DOUBLE_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << "{input=" << input_slot_index << "}";
+          os << "\x7b\x69\x6e\x70\x75\x74\x3d" << input_slot_index << "\x7d";
           break;
         }
 
         case Translation::LITERAL: {
           unsigned literal_index = iterator.Next();
-          os << "{literal_id=" << literal_index << "}";
+          os << "\x7b\x6c\x69\x74\x65\x72\x61\x6c\x5f\x69\x64\x3d" << literal_index << "\x7d";
           break;
         }
 
         case Translation::DUPLICATED_OBJECT: {
           int object_index = iterator.Next();
-          os << "{object_index=" << object_index << "}";
+          os << "\x7b\x6f\x62\x6a\x65\x63\x74\x5f\x69\x6e\x64\x65\x78\x3d" << object_index << "\x7d";
           break;
         }
 
         case Translation::ARGUMENTS_OBJECT:
         case Translation::CAPTURED_OBJECT: {
           int args_length = iterator.Next();
-          os << "{length=" << args_length << "}";
+          os << "\x7b\x6c\x65\x6e\x67\x74\x68\x3d" << args_length << "\x7d";
           break;
         }
       }
-      os << "\n";
+      os << "\xa";
     }
   }
 
   int return_address_patch_count = ReturnAddressPatchCount();
   if (return_address_patch_count != 0) {
-    os << "Return address patch data (count = " << return_address_patch_count
-       << ")\n";
-    os << " index    pc  patched_pc\n";
+    os << "\x52\x65\x74\x75\x72\x6e\x20\x61\x64\x64\x72\x65\x73\x73\x20\x70\x61\x74\x63\x68\x20\x64\x61\x74\x61\x20\x28\x63\x6f\x75\x6e\x74\x20\x3d\x20" << return_address_patch_count
+       << "\x29\xa";
+    os << "\x20\x69\x6e\x64\x65\x78\x20\x20\x20\x20\x70\x63\x20\x20\x70\x61\x74\x63\x68\x65\x64\x5f\x70\x63\xa";
   }
   for (int i = 0; i < return_address_patch_count; i++) {
     Vector<char> buf = Vector<char>::New(128);
-    SNPrintF(buf, "%6d  %6d  %12d\n", i, ReturnAddressPc(i)->value(),
+    SNPrintF(buf, "\x6c\xf6\x84\x20\x20\x6c\xf6\x84\x20\x20\x6c\xf1\xf2\x84\xa", i, ReturnAddressPc(i)->value(),
              PatchedAddressPc(i)->value());
     os << buf.start();
   }
@@ -11340,16 +11340,16 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
 
 void DeoptimizationOutputData::DeoptimizationOutputDataPrint(
     OStream& os) {  // NOLINT
-  os << "Deoptimization Output Data (deopt points = " << this->DeoptPoints()
-     << ")\n";
+  os << "\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x4f\x75\x74\x70\x75\x74\x20\x44\x61\x74\x61\x20\x28\x64\x65\x6f\x70\x74\x20\x70\x6f\x69\x6e\x74\x73\x20\x3d\x20" << this->DeoptPoints()
+     << "\x29\xa";
   if (this->DeoptPoints() == 0) return;
 
-  os << "ast id        pc  state\n";
+  os << "\x61\x73\x74\x20\x69\x64\x20\x20\x20\x20\x20\x20\x20\x20\x70\x63\x20\x20\x73\x74\x61\x74\x65\xa";
   for (int i = 0; i < this->DeoptPoints(); i++) {
     int pc_and_state = this->PcAndState(i)->value();
     // TODO(svenpanne) Add some basic formatting to our streams.
     Vector<char> buf = Vector<char>::New(100);
-    SNPrintF(buf, "%6d  %8d  %s\n", this->AstId(i).ToInt(),
+    SNPrintF(buf, "\x6c\xf6\x84\x20\x20\x6c\xf8\x84\x20\x20\x6c\xa2\xa", this->AstId(i).ToInt(),
              FullCodeGenerator::PcField::decode(pc_and_state),
              FullCodeGenerator::State2String(
                  FullCodeGenerator::StateField::decode(pc_and_state)));
@@ -11360,17 +11360,17 @@ void DeoptimizationOutputData::DeoptimizationOutputDataPrint(
 
 const char* Code::ICState2String(InlineCacheState state) {
   switch (state) {
-    case UNINITIALIZED: return "UNINITIALIZED";
-    case PREMONOMORPHIC: return "PREMONOMORPHIC";
-    case MONOMORPHIC: return "MONOMORPHIC";
+    case UNINITIALIZED: return "\x55\x4e\x49\x4e\x49\x54\x49\x41\x4c\x49\x5a\x45\x44";
+    case PREMONOMORPHIC: return "\x50\x52\x45\x4d\x4f\x4e\x4f\x4d\x4f\x52\x50\x48\x49\x43";
+    case MONOMORPHIC: return "\x4d\x4f\x4e\x4f\x4d\x4f\x52\x50\x48\x49\x43";
     case PROTOTYPE_FAILURE:
-      return "PROTOTYPE_FAILURE";
-    case POLYMORPHIC: return "POLYMORPHIC";
-    case MEGAMORPHIC: return "MEGAMORPHIC";
-    case GENERIC: return "GENERIC";
-    case DEBUG_STUB: return "DEBUG_STUB";
+      return "\x50\x52\x4f\x54\x4f\x54\x59\x50\x45\x5f\x46\x41\x49\x4c\x55\x52\x45";
+    case POLYMORPHIC: return "\x50\x4f\x4c\x59\x4d\x4f\x52\x50\x48\x49\x43";
+    case MEGAMORPHIC: return "\x4d\x45\x47\x41\x4d\x4f\x52\x50\x48\x49\x43";
+    case GENERIC: return "\x47\x45\x4e\x45\x52\x49\x43";
+    case DEBUG_STUB: return "\x44\x45\x42\x55\x47\x5f\x53\x54\x55\x42";
     case DEFAULT:
-      return "DEFAULT";
+      return "\x44\x45\x46\x41\x55\x4c\x54";
   }
   UNREACHABLE();
   return NULL;
@@ -11379,8 +11379,8 @@ const char* Code::ICState2String(InlineCacheState state) {
 
 const char* Code::StubType2String(StubType type) {
   switch (type) {
-    case NORMAL: return "NORMAL";
-    case FAST: return "FAST";
+    case NORMAL: return "\x4e\x4f\x52\x4d\x41\x4c";
+    case FAST: return "\x46\x41\x53\x54";
   }
   UNREACHABLE();  // keep the compiler happy
   return NULL;
@@ -11389,26 +11389,26 @@ const char* Code::StubType2String(StubType type) {
 
 void Code::PrintExtraICState(OStream& os,  // NOLINT
                              Kind kind, ExtraICState extra) {
-  os << "extra_ic_state = ";
+  os << "\x65\x78\x74\x72\x61\x5f\x69\x63\x5f\x73\x74\x61\x74\x65\x20\x3d\x20";
   if ((kind == STORE_IC || kind == KEYED_STORE_IC) && (extra == STRICT)) {
-    os << "STRICT\n";
+    os << "\x53\x54\x52\x49\x43\x54\xa";
   } else {
-    os << extra << "\n";
+    os << extra << "\xa";
   }
 }
 
 
 void Code::Disassemble(const char* name, OStream& os) {  // NOLINT
-  os << "kind = " << Kind2String(kind()) << "\n";
+  os << "\x6b\x69\x6e\x64\x20\x3d\x20" << Kind2String(kind()) << "\xa";
   if (IsCodeStubOrIC()) {
     const char* n = CodeStub::MajorName(CodeStub::GetMajorKey(this), true);
-    os << "major_key = " << (n == NULL ? "null" : n) << "\n";
+    os << "\x6d\x61\x6a\x6f\x72\x5f\x6b\x65\x79\x20\x3d\x20" << (n == NULL ? "\x6e\x75\x6c\x6c" : n) << "\xa";
   }
   if (is_inline_cache_stub()) {
-    os << "ic_state = " << ICState2String(ic_state()) << "\n";
+    os << "\x69\x63\x5f\x73\x74\x61\x74\x65\x20\x3d\x20" << ICState2String(ic_state()) << "\xa";
     PrintExtraICState(os, kind(), extra_ic_state());
     if (ic_state() == MONOMORPHIC) {
-      os << "type = " << StubType2String(type()) << "\n";
+      os << "\x74\x79\x70\x65\x20\x3d\x20" << StubType2String(type()) << "\xa";
     }
     if (is_compare_ic_stub()) {
       DCHECK(CodeStub::GetMajorKey(this) == CodeStub::CompareIC);
@@ -11416,23 +11416,23 @@ void Code::Disassemble(const char* name, OStream& os) {  // NOLINT
       Token::Value op;
       ICCompareStub::DecodeKey(stub_key(), &left_state, &right_state,
                                &handler_state, &op);
-      os << "compare_state = " << CompareIC::GetStateName(left_state) << "*"
-         << CompareIC::GetStateName(right_state) << " -> "
-         << CompareIC::GetStateName(handler_state) << "\n";
-      os << "compare_operation = " << Token::Name(op) << "\n";
+      os << "\x63\x6f\x6d\x70\x61\x72\x65\x5f\x73\x74\x61\x74\x65\x20\x3d\x20" << CompareIC::GetStateName(left_state) << "\x2a"
+         << CompareIC::GetStateName(right_state) << "\x20\x2d\x3e\x20"
+         << CompareIC::GetStateName(handler_state) << "\xa";
+      os << "\x63\x6f\x6d\x70\x61\x72\x65\x5f\x6f\x70\x65\x72\x61\x74\x69\x6f\x6e\x20\x3d\x20" << Token::Name(op) << "\xa";
     }
   }
-  if ((name != NULL) && (name[0] != '\0')) {
-    os << "name = " << name << "\n";
+  if ((name != NULL) && (name[0] != '\x0')) {
+    os << "\x6e\x61\x6d\x65\x20\x3d\x20" << name << "\xa";
   }
   if (kind() == OPTIMIZED_FUNCTION) {
-    os << "stack_slots = " << stack_slots() << "\n";
+    os << "\x73\x74\x61\x63\x6b\x5f\x73\x6c\x6f\x74\x73\x20\x3d\x20" << stack_slots() << "\xa";
   }
 
-  os << "Instructions (size = " << instruction_size() << ")\n";
+  os << "\x49\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x73\x20\x28\x73\x69\x7a\x65\x20\x3d\x20" << instruction_size() << "\x29\xa";
   // TODO(svenpanne) The Disassembler should use streams, too!
   Disassembler::Decode(stdout, this);
-  os << "\n";
+  os << "\xa";
 
   if (kind() == FUNCTION) {
     DeoptimizationOutputData* data =
@@ -11443,34 +11443,34 @@ void Code::Disassemble(const char* name, OStream& os) {  // NOLINT
         DeoptimizationInputData::cast(this->deoptimization_data());
     data->DeoptimizationInputDataPrint(os);
   }
-  os << "\n";
+  os << "\xa";
 
   if (is_crankshafted()) {
     SafepointTable table(this);
-    os << "Safepoints (size = " << table.size() << ")\n";
+    os << "\x53\x61\x66\x65\x70\x6f\x69\x6e\x74\x73\x20\x28\x73\x69\x7a\x65\x20\x3d\x20" << table.size() << "\x29\xa";
     for (unsigned i = 0; i < table.length(); i++) {
       unsigned pc_offset = table.GetPcOffset(i);
-      os << (instruction_start() + pc_offset) << "  ";
+      os << (instruction_start() + pc_offset) << "\x20\x20";
       // TODO(svenpanne) Add some basic formatting to our streams.
       Vector<char> buf1 = Vector<char>::New(30);
-      SNPrintF(buf1, "%4d", pc_offset);
-      os << buf1.start() << "  ";
+      SNPrintF(buf1, "\x6c\xf4\x84", pc_offset);
+      os << buf1.start() << "\x20\x20";
       table.PrintEntry(i, os);
-      os << " (sp -> fp)  ";
+      os << "\x20\x28\x73\x70\x20\x2d\x3e\x20\x66\x70\x29\x20\x20";
       SafepointEntry entry = table.GetEntry(i);
       if (entry.deoptimization_index() != Safepoint::kNoDeoptimizationIndex) {
         Vector<char> buf2 = Vector<char>::New(30);
-        SNPrintF(buf2, "%6d", entry.deoptimization_index());
+        SNPrintF(buf2, "\x6c\xf6\x84", entry.deoptimization_index());
         os << buf2.start();
       } else {
-        os << "<none>";
+        os << "\x3c\x6e\x6f\x6e\x65\x3e";
       }
       if (entry.argument_count() > 0) {
-        os << " argc: " << entry.argument_count();
+        os << "\x20\x61\x72\x67\x63\x3a\x20" << entry.argument_count();
       }
-      os << "\n";
+      os << "\xa";
     }
-    os << "\n";
+    os << "\xa";
   } else if (kind() == FUNCTION) {
     unsigned offset = back_edge_table_offset();
     // If there is no back edge table, the "table start" will be at or after
@@ -11479,41 +11479,41 @@ void Code::Disassemble(const char* name, OStream& os) {  // NOLINT
       DisallowHeapAllocation no_gc;
       BackEdgeTable back_edges(this, &no_gc);
 
-      os << "Back edges (size = " << back_edges.length() << ")\n";
-      os << "ast_id  pc_offset  loop_depth\n";
+      os << "\x42\x61\x63\x6b\x20\x65\x64\x67\x65\x73\x20\x28\x73\x69\x7a\x65\x20\x3d\x20" << back_edges.length() << "\x29\xa";
+      os << "\x61\x73\x74\x5f\x69\x64\x20\x20\x70\x63\x5f\x6f\x66\x66\x73\x65\x74\x20\x20\x6c\x6f\x6f\x70\x5f\x64\x65\x70\x74\x68\xa";
 
       for (uint32_t i = 0; i < back_edges.length(); i++) {
         Vector<char> buf = Vector<char>::New(100);
-        SNPrintF(buf, "%6d  %9u  %10u\n", back_edges.ast_id(i).ToInt(),
+        SNPrintF(buf, "\x6c\xf6\x84\x20\x20\x6c\xf9\xa4\x20\x20\x6c\xf1\xf0\xa4\xa", back_edges.ast_id(i).ToInt(),
                  back_edges.pc_offset(i), back_edges.loop_depth(i));
         os << buf.start();
       }
 
-      os << "\n";
+      os << "\xa";
     }
 #ifdef OBJECT_PRINT
     if (!type_feedback_info()->IsUndefined()) {
       OFStream os(stdout);
       TypeFeedbackInfo::cast(type_feedback_info())->TypeFeedbackInfoPrint(os);
-      os << "\n";
+      os << "\xa";
     }
 #endif
   }
 
-  os << "RelocInfo (size = " << relocation_size() << ")\n";
+  os << "\x52\x65\x6c\x6f\x63\x49\x6e\x66\x6f\x20\x28\x73\x69\x7a\x65\x20\x3d\x20" << relocation_size() << "\x29\xa";
   for (RelocIterator it(this); !it.done(); it.next()) {
     it.rinfo()->Print(GetIsolate(), os);
   }
-  os << "\n";
+  os << "\xa";
 
 #ifdef OBJECT_PRINT
   if (FLAG_enable_ool_constant_pool_in_heapobject) {
     ConstantPoolArray* pool =
         reinterpret_cast<ConstantPoolArray*>(constant_pool());
     if (pool->length()) {
-      os << "Constant Pool\n";
+      os << "\x43\x6f\x6e\x73\x74\x61\x6e\x74\x20\x50\x6f\x6f\x6c\xa";
       pool->Print(os);
-      os << "\n";
+      os << "\xa";
     }
   }
 #endif
@@ -11773,11 +11773,11 @@ MaybeHandle<Object> JSArray::SetElementsLength(
     // will be the hole, which instructs EnqueueChangeRecord to elide
     // the "oldValue" property.
     JSObject::EnqueueChangeRecord(
-        array, "delete", isolate->factory()->Uint32ToString(indices[i]),
+        array, "\x64\x65\x6c\x65\x74\x65", isolate->factory()->Uint32ToString(indices[i]),
         old_values[i]);
   }
   JSObject::EnqueueChangeRecord(
-      array, "update", isolate->factory()->length_string(),
+      array, "\x75\x70\x64\x61\x74\x65", isolate->factory()->length_string(),
       old_length_handle);
 
   EndPerformSplice(array);
@@ -12177,7 +12177,7 @@ MaybeHandle<Object> JSObject::SetPrototype(Handle<JSObject> object,
   if (!object->map()->is_extensible()) {
     Handle<Object> args[] = { object };
     Handle<Object> error = isolate->factory()->NewTypeError(
-        "non_extensible_proto", HandleVector(args, ARRAY_SIZE(args)));
+        "\x6e\x6f\x6e\x5f\x65\x78\x74\x65\x6e\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x74\x6f", HandleVector(args, ARRAY_SIZE(args)));
     return isolate->Throw<Object>(error);
   }
 
@@ -12191,7 +12191,7 @@ MaybeHandle<Object> JSObject::SetPrototype(Handle<JSObject> object,
     if (JSReceiver::cast(iter.GetCurrent()) == *object) {
       // Cycle detected.
       Handle<Object> error = isolate->factory()->NewError(
-          "cyclic_proto", HandleVector<Object>(NULL, 0));
+          "\x63\x79\x63\x6c\x69\x63\x5f\x70\x72\x6f\x74\x6f", HandleVector<Object>(NULL, 0));
       return isolate->Throw<Object>(error);
     }
   }
@@ -12291,7 +12291,7 @@ MaybeHandle<Object> JSObject::SetElementWithInterceptor(
     v8::IndexedPropertySetterCallback setter =
         v8::ToCData<v8::IndexedPropertySetterCallback>(interceptor->setter());
     LOG(isolate,
-        ApiIndexedPropertyAccess("interceptor-indexed-set", *object, index));
+        ApiIndexedPropertyAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x69\x6e\x64\x65\x78\x65\x64\x2d\x73\x65\x74", *object, index));
     PropertyCallbackArguments args(isolate, interceptor->data(), *object,
                                    *object);
     v8::Handle<v8::Value> result =
@@ -12326,7 +12326,7 @@ MaybeHandle<Object> JSObject::GetElementWithCallback(
     Handle<JSObject> holder_handle = Handle<JSObject>::cast(holder);
     Handle<Object> number = isolate->factory()->NewNumberFromUint(index);
     Handle<String> key = isolate->factory()->NumberToString(number);
-    LOG(isolate, ApiNamedPropertyAccess("load", *holder_handle, *key));
+    LOG(isolate, ApiNamedPropertyAccess("\x6c\x6f\x61\x64", *holder_handle, *key));
     PropertyCallbackArguments
         args(isolate, data->data(), *receiver, *holder_handle);
     v8::Handle<v8::Value> result = args.Call(call_fun, v8::Utils::ToLocal(key));
@@ -12383,7 +12383,7 @@ MaybeHandle<Object> JSObject::SetElementWithCallback(Handle<JSObject> object,
     if (call_fun == NULL) return value;
     Handle<Object> number = isolate->factory()->NewNumberFromUint(index);
     Handle<String> key(isolate->factory()->NumberToString(number));
-    LOG(isolate, ApiNamedPropertyAccess("store", *object, *key));
+    LOG(isolate, ApiNamedPropertyAccess("\x73\x74\x6f\x72\x65", *object, *key));
     PropertyCallbackArguments
         args(isolate, data->data(), *object, *holder);
     args.Call(call_fun,
@@ -12404,7 +12404,7 @@ MaybeHandle<Object> JSObject::SetElementWithCallback(Handle<JSObject> object,
       Handle<Object> key(isolate->factory()->NewNumberFromUint(index));
       Handle<Object> args[2] = { key, holder };
       Handle<Object> error = isolate->factory()->NewTypeError(
-          "no_setter_in_callback", HandleVector(args, 2));
+          "\x6e\x6f\x5f\x73\x65\x74\x74\x65\x72\x5f\x69\x6e\x5f\x63\x61\x6c\x6c\x62\x61\x63\x6b", HandleVector(args, 2));
       return isolate->Throw<Object>(error);
     }
   }
@@ -12615,7 +12615,7 @@ MaybeHandle<Object> JSObject::SetDictionaryElement(
           Handle<Object> number = isolate->factory()->NewNumberFromUint(index);
           Handle<Object> args[2] = { number, object };
           Handle<Object> error =
-              isolate->factory()->NewTypeError("strict_read_only_property",
+              isolate->factory()->NewTypeError("\x73\x74\x72\x69\x63\x74\x5f\x72\x65\x61\x64\x5f\x6f\x6e\x6c\x79\x5f\x70\x72\x6f\x70\x65\x72\x74\x79",
                                                HandleVector(args, 2));
           return isolate->Throw<Object>(error);
         }
@@ -12653,7 +12653,7 @@ MaybeHandle<Object> JSObject::SetDictionaryElement(
         Handle<String> name = isolate->factory()->NumberToString(number);
         Handle<Object> args[1] = { name };
         Handle<Object> error =
-            isolate->factory()->NewTypeError("object_not_extensible",
+            isolate->factory()->NewTypeError("\x6f\x62\x6a\x65\x63\x74\x5f\x6e\x6f\x74\x5f\x65\x78\x74\x65\x6e\x73\x69\x62\x6c\x65",
                                              HandleVector(args, 1));
         return isolate->Throw<Object>(error);
       }
@@ -12703,7 +12703,7 @@ MaybeHandle<Object> JSObject::SetDictionaryElement(
 #ifdef DEBUG
     if (FLAG_trace_normalization) {
       OFStream os(stdout);
-      os << "Object elements are fast case again:\n";
+      os << "\x4f\x62\x6a\x65\x63\x74\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x61\x72\x65\x20\x66\x61\x73\x74\x20\x63\x61\x73\x65\x20\x61\x67\x61\x69\x6e\x3a\xa";
       object->Print(os);
     }
 #endif
@@ -12876,7 +12876,7 @@ MaybeHandle<Object> JSObject::SetElement(Handle<JSObject> object,
     Handle<Object> number = isolate->factory()->NewNumberFromUint(index);
     Handle<Object> args[] = { object, number };
     Handle<Object> error = isolate->factory()->NewTypeError(
-        "redef_external_array_element", HandleVector(args, ARRAY_SIZE(args)));
+        "\x72\x65\x64\x65\x66\x5f\x65\x78\x74\x65\x72\x6e\x61\x6c\x5f\x61\x72\x72\x61\x79\x5f\x65\x6c\x65\x6d\x65\x6e\x74", HandleVector(args, ARRAY_SIZE(args)));
     return isolate->Throw<Object>(error);
   }
 
@@ -12944,27 +12944,27 @@ MaybeHandle<Object> JSObject::SetElement(Handle<JSObject> object,
       CHECK(new_length_handle->ToArrayIndex(&new_length));
 
       BeginPerformSplice(Handle<JSArray>::cast(object));
-      EnqueueChangeRecord(object, "add", name, old_value);
-      EnqueueChangeRecord(object, "update", isolate->factory()->length_string(),
+      EnqueueChangeRecord(object, "\x61\x64\x64", name, old_value);
+      EnqueueChangeRecord(object, "\x75\x70\x64\x61\x74\x65", isolate->factory()->length_string(),
                           old_length_handle);
       EndPerformSplice(Handle<JSArray>::cast(object));
       Handle<JSArray> deleted = isolate->factory()->NewJSArray(0);
       EnqueueSpliceRecord(Handle<JSArray>::cast(object), old_length, deleted,
                           new_length - old_length);
     } else {
-      EnqueueChangeRecord(object, "add", name, old_value);
+      EnqueueChangeRecord(object, "\x61\x64\x64", name, old_value);
     }
   } else if (old_value->IsTheHole()) {
-    EnqueueChangeRecord(object, "reconfigure", name, old_value);
+    EnqueueChangeRecord(object, "\x72\x65\x63\x6f\x6e\x66\x69\x67\x75\x72\x65", name, old_value);
   } else {
     Handle<Object> new_value =
         Object::GetElement(isolate, object, index).ToHandleChecked();
     bool value_changed = !old_value->SameValue(*new_value);
     if (old_attributes != new_attributes) {
       if (!value_changed) old_value = isolate->factory()->the_hole_value();
-      EnqueueChangeRecord(object, "reconfigure", name, old_value);
+      EnqueueChangeRecord(object, "\x72\x65\x63\x6f\x6e\x66\x69\x67\x75\x72\x65", name, old_value);
     } else if (value_changed) {
-      EnqueueChangeRecord(object, "update", name, old_value);
+      EnqueueChangeRecord(object, "\x75\x70\x64\x61\x74\x65", name, old_value);
     }
   }
 
@@ -12986,12 +12986,12 @@ MaybeHandle<Object> JSObject::SetElementWithoutInterceptor(
   Isolate* isolate = object->GetIsolate();
   if (FLAG_trace_external_array_abuse &&
       IsExternalArrayElementsKind(object->GetElementsKind())) {
-    CheckArrayAbuse(object, "external elements write", index);
+    CheckArrayAbuse(object, "\x65\x78\x74\x65\x72\x6e\x61\x6c\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x77\x72\x69\x74\x65", index);
   }
   if (FLAG_trace_js_array_abuse &&
       !IsExternalArrayElementsKind(object->GetElementsKind())) {
     if (object->IsJSArray()) {
-      CheckArrayAbuse(object, "elements write", index, true);
+      CheckArrayAbuse(object, "\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x77\x72\x69\x74\x65", index, true);
     }
   }
   if (object->IsJSArray() && JSArray::WouldChangeReadOnlyLength(
@@ -13124,9 +13124,9 @@ void AllocationSite::DigestTransitionFeedback(Handle<AllocationSite> site,
         if (FLAG_trace_track_allocation_sites) {
           bool is_nested = site->IsNestedSite();
           PrintF(
-              "AllocationSite: JSArray %p boilerplate %s updated %s->%s\n",
+              "\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65\x3a\x20\x4a\x53\x41\x72\x72\x61\x79\x20\x6c\x97\x20\x62\x6f\x69\x6c\x65\x72\x70\x6c\x61\x74\x65\x20\x6c\xa2\x20\x75\x70\x64\x61\x74\x65\x64\x20\x6c\xa2\x2d\x3e\x6c\xa2\xa",
               reinterpret_cast<void*>(*site),
-              is_nested ? "(nested)" : "",
+              is_nested ? "\x28\x6e\x65\x73\x74\x65\x64\x29" : "",
               ElementsKindToString(kind),
               ElementsKindToString(to_kind));
         }
@@ -13143,7 +13143,7 @@ void AllocationSite::DigestTransitionFeedback(Handle<AllocationSite> site,
     }
     if (IsMoreGeneralElementsKindTransition(kind, to_kind)) {
       if (FLAG_trace_track_allocation_sites) {
-        PrintF("AllocationSite: JSArray %p site updated %s->%s\n",
+        PrintF("\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65\x3a\x20\x4a\x53\x41\x72\x72\x61\x79\x20\x6c\x97\x20\x73\x69\x74\x65\x20\x75\x70\x64\x61\x74\x65\x64\x20\x6c\xa2\x2d\x3e\x6c\xa2\xa",
                reinterpret_cast<void*>(*site),
                ElementsKindToString(kind),
                ElementsKindToString(to_kind));
@@ -13171,11 +13171,11 @@ void AllocationSite::AddDependentCompilationInfo(Handle<AllocationSite> site,
 
 const char* AllocationSite::PretenureDecisionName(PretenureDecision decision) {
   switch (decision) {
-    case kUndecided: return "undecided";
-    case kDontTenure: return "don't tenure";
-    case kMaybeTenure: return "maybe tenure";
-    case kTenure: return "tenure";
-    case kZombie: return "zombie";
+    case kUndecided: return "\x75\x6e\x64\x65\x63\x69\x64\x65\x64";
+    case kDontTenure: return "\x64\x6f\x6e\x27\x74\x20\x74\x65\x6e\x75\x72\x65";
+    case kMaybeTenure: return "\x6d\x61\x79\x62\x65\x20\x74\x65\x6e\x75\x72\x65";
+    case kTenure: return "\x74\x65\x6e\x75\x72\x65";
+    case kZombie: return "\x7a\x6f\x6d\x62\x69\x65";
     default: UNREACHABLE();
   }
   return NULL;
@@ -13330,7 +13330,7 @@ MaybeHandle<Object> JSArray::ReadOnlyLengthError(Handle<JSArray> array) {
   Handle<Name> length = isolate->factory()->length_string();
   Handle<Object> args[2] = { length, array };
   Handle<Object> error = isolate->factory()->NewTypeError(
-      "strict_read_only_property", HandleVector(args, ARRAY_SIZE(args)));
+      "\x73\x74\x72\x69\x63\x74\x5f\x72\x65\x61\x64\x5f\x6f\x6e\x6c\x79\x5f\x70\x72\x6f\x70\x65\x72\x74\x79", HandleVector(args, ARRAY_SIZE(args)));
   return isolate->Throw<Object>(error);
 }
 
@@ -13350,7 +13350,7 @@ MaybeHandle<Object> JSObject::GetElementWithInterceptor(
     v8::IndexedPropertyGetterCallback getter =
         v8::ToCData<v8::IndexedPropertyGetterCallback>(interceptor->getter());
     LOG(isolate,
-        ApiIndexedPropertyAccess("interceptor-indexed-get", *object, index));
+        ApiIndexedPropertyAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x69\x6e\x64\x65\x78\x65\x64\x2d\x67\x65\x74", *object, index));
     PropertyCallbackArguments
         args(isolate, interceptor->data(), *receiver, *object);
     v8::Handle<v8::Value> result = args.Call(getter, index);
@@ -13569,13 +13569,13 @@ void Dictionary<Derived, Shape, Key>::Print(OStream& os) {  // NOLINT
   for (int i = 0; i < capacity; i++) {
     Object* k = DerivedHashTable::KeyAt(i);
     if (DerivedHashTable::IsKey(k)) {
-      os << " ";
+      os << "\x20";
       if (k->IsString()) {
         String::cast(k)->StringPrint(os);
       } else {
         os << Brief(k);
       }
-      os << ": " << Brief(ValueAt(i)) << "\n";
+      os << "\x3a\x20" << Brief(ValueAt(i)) << "\xa";
     }
   }
 }
@@ -13635,7 +13635,7 @@ MaybeHandle<Object> JSObject::GetPropertyWithInterceptor(
   v8::NamedPropertyGetterCallback getter =
       v8::ToCData<v8::NamedPropertyGetterCallback>(interceptor->getter());
   LOG(isolate,
-      ApiNamedPropertyAccess("interceptor-named-get", *holder, *name));
+      ApiNamedPropertyAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x6e\x61\x6d\x65\x64\x2d\x67\x65\x74", *holder, *name));
   PropertyCallbackArguments
       args(isolate, interceptor->data(), *receiver, *holder);
   v8::Handle<v8::Value> result =
@@ -13663,7 +13663,7 @@ MaybeHandle<JSObject> JSObject::GetKeysForNamedInterceptor(
     v8::NamedPropertyEnumeratorCallback enum_fun =
         v8::ToCData<v8::NamedPropertyEnumeratorCallback>(
             interceptor->enumerator());
-    LOG(isolate, ApiObjectAccess("interceptor-named-enum", *object));
+    LOG(isolate, ApiObjectAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x6e\x61\x6d\x65\x64\x2d\x65\x6e\x75\x6d", *object));
     result = args.Call(enum_fun);
   }
   if (result.IsEmpty()) return MaybeHandle<JSObject>();
@@ -13688,7 +13688,7 @@ MaybeHandle<JSObject> JSObject::GetKeysForIndexedInterceptor(
     v8::IndexedPropertyEnumeratorCallback enum_fun =
         v8::ToCData<v8::IndexedPropertyEnumeratorCallback>(
             interceptor->enumerator());
-    LOG(isolate, ApiObjectAccess("interceptor-indexed-enum", *object));
+    LOG(isolate, ApiObjectAccess("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x2d\x69\x6e\x64\x65\x78\x65\x64\x2d\x65\x6e\x75\x6d", *object));
     result = args.Call(enum_fun);
   }
   if (result.IsEmpty()) return MaybeHandle<JSObject>();
@@ -14320,7 +14320,7 @@ Handle<Derived> HashTable<Derived, Shape, Key>::New(
                      ? at_least_space_for
                      : ComputeCapacity(at_least_space_for);
   if (capacity > HashTable::kMaxCapacity) {
-    v8::internal::Heap::FatalProcessOutOfMemory("invalid table size", true);
+    v8::internal::Heap::FatalProcessOutOfMemory("\x69\x6e\x76\x61\x6c\x69\x64\x20\x74\x61\x62\x6c\x65\x20\x73\x69\x7a\x65", true);
   }
 
   Factory* factory = isolate->factory();
@@ -15982,7 +15982,7 @@ Handle<Derived> OrderedHashTable<Derived, Iterator, entrysize>::Allocate(
   // field of this object.
   capacity = RoundUpToPowerOf2(Max(kMinCapacity, capacity));
   if (capacity > kMaxCapacity) {
-    v8::internal::Heap::FatalProcessOutOfMemory("invalid table size", true);
+    v8::internal::Heap::FatalProcessOutOfMemory("\x69\x6e\x76\x61\x6c\x69\x64\x20\x74\x61\x62\x6c\x65\x20\x73\x69\x7a\x65", true);
   }
   int num_buckets = capacity / kLoadFactor;
   Handle<FixedArray> backing_store = isolate->factory()->NewFixedArray(

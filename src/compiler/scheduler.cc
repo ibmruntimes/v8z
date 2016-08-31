@@ -107,7 +107,7 @@ class CreateBlockVisitor : public NullNodeVisitor {
 void Scheduler::CreateBlocks() {
   CreateBlockVisitor create_blocks(this);
   if (FLAG_trace_turbo_scheduler) {
-    PrintF("---------------- CREATING BLOCKS ------------------\n");
+    PrintF("\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x43\x52\x45\x41\x54\x49\x4e\x47\x20\x42\x4c\x4f\x43\x4b\x53\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
   }
   schedule_->AddNode(schedule_->entry(), graph_->start());
   graph_->VisitNodeInputsFromEnd(&create_blocks);
@@ -116,7 +116,7 @@ void Scheduler::CreateBlocks() {
 
 void Scheduler::WireBlocks() {
   if (FLAG_trace_turbo_scheduler) {
-    PrintF("----------------- WIRING BLOCKS -------------------\n");
+    PrintF("\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x57\x49\x52\x49\x4e\x47\x20\x42\x4c\x4f\x43\x4b\x53\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
   }
   AddSuccessorsForBranches();
   AddSuccessorsForReturns();
@@ -157,7 +157,7 @@ void Scheduler::AddPredecessorsForLoopsAndMerges() {
           DCHECK(predecessor_block != NULL);
           if (FLAG_trace_turbo_scheduler) {
             IrOpcode::Value opcode = (*i)->opcode();
-            PrintF("node %d (%s) in block %d -> block %d\n", (*i)->id(),
+            PrintF("\x6e\x6f\x64\x65\x20\x6c\x84\x20\x28\x6c\xa2\x29\x20\x69\x6e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x20\x2d\x3e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\xa", (*i)->id(),
                    IrOpcode::Mnemonic(opcode), predecessor_block->id(),
                    block->id());
           }
@@ -203,10 +203,10 @@ void Scheduler::AddSuccessorsForCalls() {
     BasicBlock* call_block = schedule_->block(call_block_node);
     if (FLAG_trace_turbo_scheduler) {
       IrOpcode::Value opcode = call->opcode();
-      PrintF("node %d (%s) in block %d -> block %d\n", call->id(),
+      PrintF("\x6e\x6f\x64\x65\x20\x6c\x84\x20\x28\x6c\xa2\x29\x20\x69\x6e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x20\x2d\x3e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\xa", call->id(),
              IrOpcode::Mnemonic(opcode), call_block->id(),
              cont_successor_block->id());
-      PrintF("node %d (%s) in block %d -> block %d\n", call->id(),
+      PrintF("\x6e\x6f\x64\x65\x20\x6c\x84\x20\x28\x6c\xa2\x29\x20\x69\x6e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x20\x2d\x3e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\xa", call->id(),
              IrOpcode::Mnemonic(opcode), call_block->id(),
              deopt_successor_block->id());
     }
@@ -223,7 +223,7 @@ void Scheduler::AddSuccessorsForDeopts() {
     DCHECK(deopt_block != NULL);
     if (FLAG_trace_turbo_scheduler) {
       IrOpcode::Value opcode = (*i)->opcode();
-      PrintF("node %d (%s) in block %d -> end\n", (*i)->id(),
+      PrintF("\x6e\x6f\x64\x65\x20\x6c\x84\x20\x28\x6c\xa2\x29\x20\x69\x6e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x20\x2d\x3e\x20\x65\x6e\x64\xa", (*i)->id(),
              IrOpcode::Mnemonic(opcode), deopt_block->id());
     }
     schedule_->AddDeoptimize(deopt_block, *i);
@@ -258,10 +258,10 @@ void Scheduler::AddSuccessorsForBranches() {
     DCHECK(false_successor_block != NULL);
     if (FLAG_trace_turbo_scheduler) {
       IrOpcode::Value opcode = branch->opcode();
-      PrintF("node %d (%s) in block %d -> block %d\n", branch->id(),
+      PrintF("\x6e\x6f\x64\x65\x20\x6c\x84\x20\x28\x6c\xa2\x29\x20\x69\x6e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x20\x2d\x3e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\xa", branch->id(),
              IrOpcode::Mnemonic(opcode), branch_block->id(),
              true_successor_block->id());
-      PrintF("node %d (%s) in block %d -> block %d\n", branch->id(),
+      PrintF("\x6e\x6f\x64\x65\x20\x6c\x84\x20\x28\x6c\xa2\x29\x20\x69\x6e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x20\x2d\x3e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\xa", branch->id(),
              IrOpcode::Mnemonic(opcode), branch_block->id(),
              false_successor_block->id());
     }
@@ -278,7 +278,7 @@ void Scheduler::AddSuccessorsForReturns() {
     DCHECK(return_block != NULL);
     if (FLAG_trace_turbo_scheduler) {
       IrOpcode::Value opcode = (*i)->opcode();
-      PrintF("node %d (%s) in block %d -> end\n", (*i)->id(),
+      PrintF("\x6e\x6f\x64\x65\x20\x6c\x84\x20\x28\x6c\xa2\x29\x20\x69\x6e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x20\x2d\x3e\x20\x65\x6e\x64\xa", (*i)->id(),
              IrOpcode::Mnemonic(opcode), return_block->id());
     }
     schedule_->AddReturn(return_block, *i);
@@ -305,7 +305,7 @@ void Scheduler::GenerateImmediateDominatorTree() {
   // Build the dominator graph.  TODO(danno): consider using Lengauer & Tarjan's
   // if this becomes really slow.
   if (FLAG_trace_turbo_scheduler) {
-    PrintF("------------ IMMEDIATE BLOCK DOMINATORS -----------\n");
+    PrintF("\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x49\x4d\x4d\x45\x44\x49\x41\x54\x45\x20\x42\x4c\x4f\x43\x4b\x20\x44\x4f\x4d\x49\x4e\x41\x54\x4f\x52\x53\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
   }
   for (size_t i = 0; i < schedule_->rpo_order_.size(); i++) {
     BasicBlock* current_rpo = schedule_->rpo_order_[i];
@@ -330,7 +330,7 @@ void Scheduler::GenerateImmediateDominatorTree() {
       }
       schedule_->immediate_dominator_[current_rpo->id()] = dominator;
       if (FLAG_trace_turbo_scheduler) {
-        PrintF("Block %d's idom is %d\n", current_rpo->id(), dominator->id());
+        PrintF("\x42\x6c\x6f\x63\x6b\x20\x6c\x84\x27\x73\x20\x69\x64\x6f\x6d\x20\x69\x73\x20\x6c\x84\xa", current_rpo->id(), dominator->id());
       }
     }
   }
@@ -357,7 +357,7 @@ class ScheduleEarlyNodeVisitor : public NullNodeVisitor {
       }
       scheduler_->schedule_early_rpo_index_[id] = max_rpo;
       if (FLAG_trace_turbo_scheduler) {
-        PrintF("Node %d pre-scheduled early at rpo limit %d\n", id, max_rpo);
+        PrintF("\x4e\x6f\x64\x65\x20\x6c\x84\x20\x70\x72\x65\x2d\x73\x63\x68\x65\x64\x75\x6c\x65\x64\x20\x65\x61\x72\x6c\x79\x20\x61\x74\x20\x72\x70\x6f\x20\x6c\x69\x6d\x69\x74\x20\x6c\x84\xa", id, max_rpo);
       }
     }
     return GenericGraphVisit::CONTINUE;
@@ -381,7 +381,7 @@ class ScheduleEarlyNodeVisitor : public NullNodeVisitor {
       }
       scheduler_->schedule_early_rpo_index_[id] = max_rpo;
       if (FLAG_trace_turbo_scheduler) {
-        PrintF("Node %d post-scheduled early at rpo limit %d\n", id, max_rpo);
+        PrintF("\x4e\x6f\x64\x65\x20\x6c\x84\x20\x70\x6f\x73\x74\x2d\x73\x63\x68\x65\x64\x75\x6c\x65\x64\x20\x65\x61\x72\x6c\x79\x20\x61\x74\x20\x72\x70\x6f\x20\x6c\x69\x6d\x69\x74\x20\x6c\x84\xa", id, max_rpo);
       }
     }
     return GenericGraphVisit::CONTINUE;
@@ -404,7 +404,7 @@ class ScheduleEarlyNodeVisitor : public NullNodeVisitor {
 
 void Scheduler::ScheduleEarly() {
   if (FLAG_trace_turbo_scheduler) {
-    PrintF("------------------- SCHEDULE EARLY ----------------\n");
+    PrintF("\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x53\x43\x48\x45\x44\x55\x4c\x45\x20\x45\x41\x52\x4c\x59\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
   }
 
   int fixpoint_count = 0;
@@ -416,7 +416,7 @@ void Scheduler::ScheduleEarly() {
   }
 
   if (FLAG_trace_turbo_scheduler) {
-    PrintF("It took %d iterations to determine fixpoint\n", fixpoint_count);
+    PrintF("\x49\x74\x20\x74\x6f\x6f\x6b\x20\x6c\x84\x20\x69\x74\x65\x72\x61\x74\x69\x6f\x6e\x73\x20\x74\x6f\x20\x64\x65\x74\x65\x72\x6d\x69\x6e\x65\x20\x66\x69\x78\x70\x6f\x69\x6e\x74\xa", fixpoint_count);
   }
 }
 
@@ -433,7 +433,7 @@ class PrepareUsesVisitor : public NullNodeVisitor {
     if (!schedule_->IsScheduled(node) &&
         OperatorProperties::HasFixedSchedulePosition(node->op())) {
       if (FLAG_trace_turbo_scheduler) {
-        PrintF("Fixed position node %d is unscheduled, scheduling now\n",
+        PrintF("\x46\x69\x78\x65\x64\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x6e\x6f\x64\x65\x20\x6c\x84\x20\x69\x73\x20\x75\x6e\x73\x63\x68\x65\x64\x75\x6c\x65\x64\x2c\x20\x73\x63\x68\x65\x64\x75\x6c\x69\x6e\x67\x20\x6e\x6f\x77\xa",
                node->id());
       }
       IrOpcode::Value opcode = node->opcode();
@@ -461,7 +461,7 @@ class PrepareUsesVisitor : public NullNodeVisitor {
       DCHECK(!OperatorProperties::HasFixedSchedulePosition(from->op()));
       ++scheduler_->unscheduled_uses_[to->id()];
       if (FLAG_trace_turbo_scheduler) {
-        PrintF("Incrementing uses of node %d from %d to %d\n", to->id(),
+        PrintF("\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x69\x6e\x67\x20\x75\x73\x65\x73\x20\x6f\x66\x20\x6e\x6f\x64\x65\x20\x6c\x84\x20\x66\x72\x6f\x6d\x20\x6c\x84\x20\x74\x6f\x20\x6c\x84\xa", to->id(),
                from->id(), scheduler_->unscheduled_uses_[to->id()]);
       }
     }
@@ -475,7 +475,7 @@ class PrepareUsesVisitor : public NullNodeVisitor {
 
 void Scheduler::PrepareUses() {
   if (FLAG_trace_turbo_scheduler) {
-    PrintF("------------------- PREPARE USES ------------------\n");
+    PrintF("\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x50\x52\x45\x50\x41\x52\x45\x20\x55\x53\x45\x53\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
   }
   // Count the uses of every node, it will be used to ensure that all of a
   // node's uses are scheduled before the node itself.
@@ -501,8 +501,8 @@ class ScheduleLateNodeVisitor : public NullNodeVisitor {
     // be scheduled.
     bool eligible = scheduler_->unscheduled_uses_[node->id()] == 0;
     if (FLAG_trace_turbo_scheduler) {
-      PrintF("Testing for schedule eligibility for node %d -> %s\n", node->id(),
-             eligible ? "true" : "false");
+      PrintF("\x54\x65\x73\x74\x69\x6e\x67\x20\x66\x6f\x72\x20\x73\x63\x68\x65\x64\x75\x6c\x65\x20\x65\x6c\x69\x67\x69\x62\x69\x6c\x69\x74\x79\x20\x66\x6f\x72\x20\x6e\x6f\x64\x65\x20\x6c\x84\x20\x2d\x3e\x20\x6c\xa2\xa", node->id(),
+             eligible ? "\x74\x72\x75\x65" : "\x66\x61\x6c\x73\x65");
     }
     if (!eligible) return GenericGraphVisit::DEFER;
 
@@ -522,8 +522,8 @@ class ScheduleLateNodeVisitor : public NullNodeVisitor {
     int min_rpo = scheduler_->schedule_early_rpo_index_[node->id()];
     if (FLAG_trace_turbo_scheduler) {
       PrintF(
-          "Schedule late conservative for node %d is block %d at "
-          "loop depth %d, min rpo = %d\n",
+          "\x53\x63\x68\x65\x64\x75\x6c\x65\x20\x6c\x61\x74\x65\x20\x63\x6f\x6e\x73\x65\x72\x76\x61\x74\x69\x76\x65\x20\x66\x6f\x72\x20\x6e\x6f\x64\x65\x20\x6c\x84\x20\x69\x73\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x20\x61\x74\x20"
+          "\x6c\x6f\x6f\x70\x20\x64\x65\x70\x74\x68\x20\x6c\x84\x2c\x20\x6d\x69\x6e\x20\x72\x70\x6f\x20\x3d\x20\x6c\x84\xa",
           node->id(), block->id(), block->loop_depth_, min_rpo);
     }
     // Hoist nodes out of loops if possible. Nodes can be hoisted iteratively
@@ -534,7 +534,7 @@ class ScheduleLateNodeVisitor : public NullNodeVisitor {
       if (hoist_block->loop_depth_ < block->loop_depth_) {
         block = hoist_block;
         if (FLAG_trace_turbo_scheduler) {
-          PrintF("Hoisting node %d to block %d\n", node->id(), block->id());
+          PrintF("\x48\x6f\x69\x73\x74\x69\x6e\x67\x20\x6e\x6f\x64\x65\x20\x6c\x84\x20\x74\x6f\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\xa", node->id(), block->id());
         }
       }
       // Try to hoist to the pre-header of the loop header.
@@ -545,8 +545,8 @@ class ScheduleLateNodeVisitor : public NullNodeVisitor {
                *hoist_block->predecessors().begin() == pre_header);
         if (FLAG_trace_turbo_scheduler) {
           PrintF(
-              "Try hoist to pre-header block %d of loop header block %d,"
-              " depth would be %d\n",
+              "\x54\x72\x79\x20\x68\x6f\x69\x73\x74\x20\x74\x6f\x20\x70\x72\x65\x2d\x68\x65\x61\x64\x65\x72\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x20\x6f\x66\x20\x6c\x6f\x6f\x70\x20\x68\x65\x61\x64\x65\x72\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x2c"
+              "\x20\x64\x65\x70\x74\x68\x20\x77\x6f\x75\x6c\x64\x20\x62\x65\x20\x6c\x84\xa",
               pre_header->id(), hoist_block->id(), pre_header->loop_depth_);
         }
         hoist_block = pre_header;
@@ -567,7 +567,7 @@ class ScheduleLateNodeVisitor : public NullNodeVisitor {
     if (opcode == IrOpcode::kPhi || opcode == IrOpcode::kEffectPhi) {
       int index = edge.index();
       if (FLAG_trace_turbo_scheduler) {
-        PrintF("Use %d is input %d to a phi\n", use->id(), index);
+        PrintF("\x55\x73\x65\x20\x6c\x84\x20\x69\x73\x20\x69\x6e\x70\x75\x74\x20\x6c\x84\x20\x74\x6f\x20\x61\x20\x70\x68\x69\xa", use->id(), index);
       }
       use = NodeProperties::GetControlInput(use, 0);
       opcode = use->opcode();
@@ -577,7 +577,7 @@ class ScheduleLateNodeVisitor : public NullNodeVisitor {
     BasicBlock* result = schedule_->block(use);
     if (result == NULL) return NULL;
     if (FLAG_trace_turbo_scheduler) {
-      PrintF("Must dominate use %d in block %d\n", use->id(), result->id());
+      PrintF("\x4d\x75\x73\x74\x20\x64\x6f\x6d\x69\x6e\x61\x74\x65\x20\x75\x73\x65\x20\x6c\x84\x20\x69\x6e\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\xa", use->id(), result->id());
     }
     return result;
   }
@@ -597,11 +597,11 @@ class ScheduleLateNodeVisitor : public NullNodeVisitor {
       DCHECK(scheduler_->unscheduled_uses_[(*i)->id()] > 0);
       --scheduler_->unscheduled_uses_[(*i)->id()];
       if (FLAG_trace_turbo_scheduler) {
-        PrintF("Decrementing use count for node %d from node %d (now %d)\n",
+        PrintF("\x44\x65\x63\x72\x65\x6d\x65\x6e\x74\x69\x6e\x67\x20\x75\x73\x65\x20\x63\x6f\x75\x6e\x74\x20\x66\x6f\x72\x20\x6e\x6f\x64\x65\x20\x6c\x84\x20\x66\x72\x6f\x6d\x20\x6e\x6f\x64\x65\x20\x6c\x84\x20\x28\x6e\x6f\x77\x20\x6c\x84\x29\xa",
                (*i)->id(), i.edge().from()->id(),
                scheduler_->unscheduled_uses_[(*i)->id()]);
         if (scheduler_->unscheduled_uses_[(*i)->id()] == 0) {
-          PrintF("node %d is now eligible for scheduling\n", (*i)->id());
+          PrintF("\x6e\x6f\x64\x65\x20\x6c\x84\x20\x69\x73\x20\x6e\x6f\x77\x20\x65\x6c\x69\x67\x69\x62\x6c\x65\x20\x66\x6f\x72\x20\x73\x63\x68\x65\x64\x75\x6c\x69\x6e\x67\xa", (*i)->id());
         }
       }
     }
@@ -614,7 +614,7 @@ class ScheduleLateNodeVisitor : public NullNodeVisitor {
 
 void Scheduler::ScheduleLate() {
   if (FLAG_trace_turbo_scheduler) {
-    PrintF("------------------- SCHEDULE LATE -----------------\n");
+    PrintF("\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x53\x43\x48\x45\x44\x55\x4c\x45\x20\x4c\x41\x54\x45\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
   }
 
   // Schedule: Places nodes in dominator block of all their uses.
@@ -746,32 +746,32 @@ static LoopInfo* ComputeLoopInfo(
 
 #if DEBUG
 static void PrintRPO(int num_loops, LoopInfo* loops, BasicBlockVector* order) {
-  PrintF("-- RPO with %d loops ", num_loops);
+  PrintF("\x2d\x2d\x20\x52\x50\x4f\x20\x77\x69\x74\x68\x20\x6c\x84\x20\x6c\x6f\x6f\x70\x73\x20", num_loops);
   if (num_loops > 0) {
-    PrintF("(");
+    PrintF("\x28");
     for (int i = 0; i < num_loops; i++) {
-      if (i > 0) PrintF(" ");
-      PrintF("B%d", loops[i].header->id());
+      if (i > 0) PrintF("\x20");
+      PrintF("\x42\x6c\x84", loops[i].header->id());
     }
-    PrintF(") ");
+    PrintF("\x29\x20");
   }
-  PrintF("-- \n");
+  PrintF("\x2d\x2d\x20\xa");
 
   for (int i = 0; i < static_cast<int>(order->size()); i++) {
     BasicBlock* block = (*order)[i];
     int bid = block->id();
-    PrintF("%5d:", i);
+    PrintF("\x6c\xf5\x84\x3a", i);
     for (int i = 0; i < num_loops; i++) {
       bool membership = loops[i].members->Contains(bid);
       bool range = loops[i].header->LoopContains(block);
-      PrintF(membership ? " |" : "  ");
-      PrintF(range ? "x" : " ");
+      PrintF(membership ? "\x20\x7c" : "\x20\x20");
+      PrintF(range ? "\x78" : "\x20");
     }
-    PrintF("  B%d: ", bid);
+    PrintF("\x20\x20\x42\x6c\x84\x3a\x20", bid);
     if (block->loop_end_ >= 0) {
-      PrintF(" range: [%d, %d)", block->rpo_number_, block->loop_end_);
+      PrintF("\x20\x72\x61\x6e\x67\x65\x3a\x20\x5b\x6c\x84\x2c\x20\x6c\x84\x29", block->rpo_number_, block->loop_end_);
     }
-    PrintF("\n");
+    PrintF("\xa");
   }
 }
 
@@ -849,7 +849,7 @@ BasicBlockVector* Scheduler::ComputeSpecialRPO(Schedule* schedule) {
   Zone tmp_zone(schedule->zone()->isolate());
   Zone* zone = &tmp_zone;
   if (FLAG_trace_turbo_scheduler) {
-    PrintF("------------- COMPUTING SPECIAL RPO ---------------\n");
+    PrintF("\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x43\x4f\x4d\x50\x55\x54\x49\x4e\x47\x20\x53\x50\x45\x43\x49\x41\x4c\x20\x52\x50\x4f\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
   }
   // RPO should not have been computed for this schedule yet.
   CHECK_EQ(kBlockUnvisited1, schedule->entry()->rpo_number_);
@@ -1011,7 +1011,7 @@ BasicBlockVector* Scheduler::ComputeSpecialRPO(Schedule* schedule) {
                                        : end->block->rpo_number_;
       current_header = current_loop->header;
       if (FLAG_trace_turbo_scheduler) {
-        PrintF("Block %d is a loop header, increment loop depth to %d\n",
+        PrintF("\x42\x6c\x6f\x63\x6b\x20\x6c\x84\x20\x69\x73\x20\x61\x20\x6c\x6f\x6f\x70\x20\x68\x65\x61\x64\x65\x72\x2c\x20\x69\x6e\x63\x72\x65\x6d\x65\x6e\x74\x20\x6c\x6f\x6f\x70\x20\x64\x65\x70\x74\x68\x20\x74\x6f\x20\x6c\x84\xa",
                current->id(), loop_depth);
       }
     } else {
@@ -1027,10 +1027,10 @@ BasicBlockVector* Scheduler::ComputeSpecialRPO(Schedule* schedule) {
     current->loop_depth_ = loop_depth;
     if (FLAG_trace_turbo_scheduler) {
       if (current->loop_header_ == NULL) {
-        PrintF("Block %d's loop header is NULL, loop depth %d\n", current->id(),
+        PrintF("\x42\x6c\x6f\x63\x6b\x20\x6c\x84\x27\x73\x20\x6c\x6f\x6f\x70\x20\x68\x65\x61\x64\x65\x72\x20\x69\x73\x20\x4e\x55\x4c\x4c\x2c\x20\x6c\x6f\x6f\x70\x20\x64\x65\x70\x74\x68\x20\x6c\x84\xa", current->id(),
                current->loop_depth_);
       } else {
-        PrintF("Block %d's loop header is block %d, loop depth %d\n",
+        PrintF("\x42\x6c\x6f\x63\x6b\x20\x6c\x84\x27\x73\x20\x6c\x6f\x6f\x70\x20\x68\x65\x61\x64\x65\x72\x20\x69\x73\x20\x62\x6c\x6f\x63\x6b\x20\x6c\x84\x2c\x20\x6c\x6f\x6f\x70\x20\x64\x65\x70\x74\x68\x20\x6c\x84\xa",
                current->id(), current->loop_header_->id(),
                current->loop_depth_);
       }

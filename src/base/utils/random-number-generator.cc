@@ -51,7 +51,7 @@ RandomNumberGenerator::RandomNumberGenerator() {
   SetSeed((static_cast<int64_t>(first_half) << 32) + second_half);
 #else
   // Gather entropy from /dev/urandom if available.
-  FILE* fp = fopen("/dev/urandom", "rb");
+  FILE* fp = fopen("\x2f\x64\x65\x76\x2f\x75\x72\x61\x6e\x64\x6f\x6d", "\x72\x62");
   if (fp != NULL) {
     int64_t seed;
     size_t n = fread(&seed, sizeof(seed), 1, fp);

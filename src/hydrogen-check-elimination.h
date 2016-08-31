@@ -16,7 +16,7 @@ namespace internal {
 class HCheckEliminationPhase : public HPhase {
  public:
   explicit HCheckEliminationPhase(HGraph* graph)
-      : HPhase("H_Check Elimination", graph), aliasing_(),
+      : HPhase("\x48\x5f\x43\x68\x65\x63\x6b\x20\x45\x6c\x69\x6d\x69\x6e\x61\x74\x69\x6f\x6e", graph), aliasing_(),
         string_maps_(kStringMapsSize, zone()) {
     // Compute the set of string maps.
     #define ADD_STRING_MAP(type, size, name, Name)                  \

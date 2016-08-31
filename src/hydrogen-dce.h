@@ -14,7 +14,7 @@ namespace internal {
 class HDeadCodeEliminationPhase : public HPhase {
  public:
   explicit HDeadCodeEliminationPhase(HGraph* graph)
-      : HPhase("H_Dead code elimination", graph) { }
+      : HPhase("\x48\x5f\x44\x65\x61\x64\x20\x63\x6f\x64\x65\x20\x65\x6c\x69\x6d\x69\x6e\x61\x74\x69\x6f\x6e", graph) { }
 
   void Run() {
     MarkLiveInstructions();

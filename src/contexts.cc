@@ -117,16 +117,16 @@ Handle<Object> Context::Lookup(Handle<String> name,
   *binding_flags = MISSING_BINDING;
 
   if (FLAG_trace_contexts) {
-    PrintF("Context::Lookup(");
+    PrintF("\x43\x6f\x6e\x74\x65\x78\x74\x3a\x3a\x4c\x6f\x6f\x6b\x75\x70\x28");
     name->ShortPrint();
-    PrintF(")\n");
+    PrintF("\x29\xa");
   }
 
   do {
     if (FLAG_trace_contexts) {
-      PrintF(" - looking in context %p", reinterpret_cast<void*>(*context));
-      if (context->IsNativeContext()) PrintF(" (native context)");
-      PrintF("\n");
+      PrintF("\x20\x2d\x20\x6c\x6f\x6f\x6b\x69\x6e\x67\x20\x69\x6e\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x6c\x97", reinterpret_cast<void*>(*context));
+      if (context->IsNativeContext()) PrintF("\x20\x28\x6e\x61\x74\x69\x76\x65\x20\x63\x6f\x6e\x74\x65\x78\x74\x29");
+      PrintF("\xa");
     }
 
     // 1. Check global objects, subjects of with, and extension objects.
@@ -155,7 +155,7 @@ Handle<Object> Context::Lookup(Handle<String> name,
 
       if (maybe.value != ABSENT) {
         if (FLAG_trace_contexts) {
-          PrintF("=> found property in context object %p\n",
+          PrintF("\x3d\x3e\x20\x66\x6f\x75\x6e\x64\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x20\x69\x6e\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x6f\x62\x6a\x65\x63\x74\x20\x6c\x97\xa",
                  reinterpret_cast<void*>(*object));
         }
         return object;
@@ -184,7 +184,7 @@ Handle<Object> Context::Lookup(Handle<String> name,
       DCHECK(slot_index < 0 || slot_index >= MIN_CONTEXT_SLOTS);
       if (slot_index >= 0) {
         if (FLAG_trace_contexts) {
-          PrintF("=> found local in context slot %d (mode = %d)\n",
+          PrintF("\x3d\x3e\x20\x66\x6f\x75\x6e\x64\x20\x6c\x6f\x63\x61\x6c\x20\x69\x6e\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x73\x6c\x6f\x74\x20\x6c\x84\x20\x28\x6d\x6f\x64\x65\x20\x3d\x20\x6c\x84\x29\xa",
                  slot_index, mode);
         }
         *index = slot_index;
@@ -237,7 +237,7 @@ Handle<Object> Context::Lookup(Handle<String> name,
         int function_index = scope_info->FunctionContextSlotIndex(*name, &mode);
         if (function_index >= 0) {
           if (FLAG_trace_contexts) {
-            PrintF("=> found intermediate function in context slot %d\n",
+            PrintF("\x3d\x3e\x20\x66\x6f\x75\x6e\x64\x20\x69\x6e\x74\x65\x72\x6d\x65\x64\x69\x61\x74\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x73\x6c\x6f\x74\x20\x6c\x84\xa",
                    function_index);
           }
           *index = function_index;
@@ -253,7 +253,7 @@ Handle<Object> Context::Lookup(Handle<String> name,
       // Catch contexts have the variable name in the extension slot.
       if (String::Equals(name, handle(String::cast(context->extension())))) {
         if (FLAG_trace_contexts) {
-          PrintF("=> found in catch context\n");
+          PrintF("\x3d\x3e\x20\x66\x6f\x75\x6e\x64\x20\x69\x6e\x20\x63\x61\x74\x63\x68\x20\x63\x6f\x6e\x74\x65\x78\x74\xa");
         }
         *index = Context::THROWN_OBJECT_INDEX;
         *attributes = NONE;
@@ -271,7 +271,7 @@ Handle<Object> Context::Lookup(Handle<String> name,
   } while (follow_context_chain);
 
   if (FLAG_trace_contexts) {
-    PrintF("=> no property/slot found\n");
+    PrintF("\x3d\x3e\x20\x6e\x6f\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x2f\x73\x6c\x6f\x74\x20\x66\x6f\x75\x6e\x64\xa");
   }
   return Handle<Object>::null();
 }
@@ -389,7 +389,7 @@ Handle<Object> Context::ErrorMessageForCodeGenerationFromStrings() {
   Handle<Object> result(error_message_for_code_gen_from_strings(), isolate);
   if (!result->IsUndefined()) return result;
   return isolate->factory()->NewStringFromStaticAscii(
-      "Code generation from strings disallowed for this context");
+      "\x43\x6f\x64\x65\x20\x67\x65\x6e\x65\x72\x61\x74\x69\x6f\x6e\x20\x66\x72\x6f\x6d\x20\x73\x74\x72\x69\x6e\x67\x73\x20\x64\x69\x73\x61\x6c\x6c\x6f\x77\x65\x64\x20\x66\x6f\x72\x20\x74\x68\x69\x73\x20\x63\x6f\x6e\x74\x65\x78\x74");
 }
 
 

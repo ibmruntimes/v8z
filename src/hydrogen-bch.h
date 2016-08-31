@@ -14,7 +14,7 @@ namespace internal {
 class HBoundsCheckHoistingPhase : public HPhase {
  public:
   explicit HBoundsCheckHoistingPhase(HGraph* graph)
-      : HPhase("H_Bounds checks hoisting", graph) { }
+      : HPhase("\x48\x5f\x42\x6f\x75\x6e\x64\x73\x20\x63\x68\x65\x63\x6b\x73\x20\x68\x6f\x69\x73\x74\x69\x6e\x67", graph) { }
 
   void Run() {
     HoistRedundantBoundsChecks();
