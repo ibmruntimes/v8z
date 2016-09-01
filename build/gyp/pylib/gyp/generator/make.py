@@ -337,7 +337,7 @@ dirx = $(call unreplace_spaces,$(dir $(call replace_spaces,$1)))
 depfile = $(depsdir)/$(call replace_spaces,$@).d
 
 """ + \
-("DEPFLAGS = -qmakedep -MF $(depfile).raw" if \
+("DEPFLAGS = -qmakedep=gcc -MF $(depfile).raw" if \
 sys.platform.startswith("os390") else \
 "DEPFLAGS = -MMD -MF $(depfile).raw") \
 + """ \
@@ -373,9 +373,7 @@ sed -e "s|^$(notdir $@)|$@|" $(depfile).raw >> $(depfile)
 # remove blank lines;
 # delete the first line and append a colon to the remaining lines.
 """ +
-("sed -e 's|\\\\||' -e 'y| |\\|' $(depfile).raw |\\" \
-if sys.platform.startswith("os390") \
-else "sed -e 's|\\\\||' -e 'y| |\\n|' $(depfile).raw |\\") +
+("sed -e 's|\\\\||' -e 'y| |\\n|' $(depfile).raw |\\") +
 r"""
   grep -v '^$$'                             |\
   sed -e 1d -e 's|$$|:|'                     \
