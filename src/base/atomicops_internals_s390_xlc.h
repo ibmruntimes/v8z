@@ -36,7 +36,7 @@ inline Atomic32 __sync_add_and_fetch(volatile Atomic32 *ptr, Atomic32 value) {
     old = *ptr;
     tmp = old + value;
   } while (__cs1(reinterpret_cast<void*>(&old),
-                const_cast<void*>(reinterpret_cast<volatile void*>(ptr)),
+                 const_cast<void*>(reinterpret_cast<volatile void*>(ptr)),
                  reinterpret_cast<void*>(&tmp)));
   return tmp;
 }
@@ -59,7 +59,7 @@ inline Atomic64 __sync_val_compare_and_swap(volatile Atomic64 *ptr,
   return oldval;
 }
 
-inline bool __sync_add_and_fetch(volatile Atomic64 *ptr, Atomic64 value) {
+inline Atomic64 __sync_add_and_fetch(volatile Atomic64 *ptr, Atomic64 value) {
   Atomic64 tmp, old;
   do {
     old = *ptr;
