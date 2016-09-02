@@ -309,10 +309,6 @@ class OS {
 
 #if defined(V8_OS_ZOS)
   static pthread_t GetCurrentThreadId();
-
-  // On zOS the default character encoding is in EBCDIC, this utility function
-  // will convert strings to ASCII.
-  static void ConvertToASCII(char * str);
 #else
   static int  GetCurrentThreadId();
 #endif

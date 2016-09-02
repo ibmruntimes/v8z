@@ -140,12 +140,6 @@ void OS::Free(void* address, const size_t size) {
 }
 
 
-void OS::ConvertToASCII(char * str) {
-  size_t length =  __e2a_s(str);
-  DCHECK_NE(length, -1);
-}
-
-
 const char* OS::LocalTimezone(double time, TimezoneCache* cache) {
     
   if (isnan(time)) return "";

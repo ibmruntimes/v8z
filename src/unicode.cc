@@ -55,8 +55,7 @@ static bool LookupPredicate(const int32_t* table, uint16_t size, uchar chr) {
   uint16_t value = chr & (kChunkBits - 1);
 #if defined(V8_OS_ZOS)
   if (value >= 0 && value <= 0xff) {
-     char c  = static_cast<char>(value);
-     v8::base::OS::ConvertToASCII(&c);
+     char c  = GET_ASCII_CODE(static_cast<char>(value));
      DCHECK(c <= 0x7f && c>= 0);
      value = c;
   }
