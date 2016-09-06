@@ -657,6 +657,7 @@ void Thread::set_name(const char* name) {
 void Thread::Start() {
   int result;
   pthread_attr_t attr;
+#if !V8_OS_ZOS
   memset(&attr, 0, sizeof(attr));
   result = pthread_attr_init(&attr);
   DCHECK_EQ(0, result);
@@ -674,14 +675,19 @@ void Thread::Start() {
     DCHECK_EQ(0, result);
   }
 #endif
+#endif
   {
     LockGuard<Mutex> lock_guard(&data_->thread_creation_mutex_);
+#if V8_OS_ZOS
+    result = pthread_create(&data_->thread_, NULL, ThreadEntry, this);
+#else
     result = pthread_create(&data_->thread_, &attr, ThreadEntry, this);
+#endif
   }
   DCHECK_EQ(0, result);
+#if !V8_OS_ZOS
   result = pthread_attr_destroy(&attr);
   DCHECK_EQ(0, result);
-#ifndef V8_OS_ZOS
   // TODO(muntasir): FIXME
   DCHECK(data_->thread_ != kNoThread);
 #endif

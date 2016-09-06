@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/modes.h>
 
 
 void assignSemInitializeError() {
@@ -90,52 +91,22 @@ void assignSemopErrorCode() {
 }
 
 
-/* initsem -- called by sem_create, it gets the semaphore using semget() */
-int initsem(key_t key, int nsems) {
-  int semid;
-
-  semid = semget(key, nsems, IPC_CREAT | IPC_EXCL | 0666);
-
-  if (semid == -1 && errno == EEXIST) { /* someone else got it first */
-    semid = semget(key, nsems, 0); /* get the id */
-    /*printf("\n Some one else got it ");*/
-    if (semid < 0) {
-      return semid;
-    }
-  } else if (semid == -1) { /*chk for other errors here */
-    return semid;
-  }
-
-  return semid;
-}
-
-
-/* sem_initialize -- it assigns a value to the semaphore using semctl() */
-int sem_initialize(int *semid, int value) {
-  int ret = semctl(*semid, 0, SETVAL, value);
-  return ret;
-}
-
-
-/* sem_init --
- * it accepts key and semaphore value as its parameters
- * it creates a semaphore using semget and then initialize it
- * it returns semid
-*/
-int sem_init(int *sem, int pshared, unsigned int value) {
-  key_t key;
-  int ret = -1;
-
-  if ((*sem = initsem(IPC_PRIVATE, 1)) == -1) {
-    assignSemgetError();  /*assign err code*/
+// On success returns 0. On error returns -1 and errno is set.
+int sem_init(int *semid, int pshared, unsigned int value) {
+  if ((*semid = semget(IPC_PRIVATE, 1, S_IRUSR | S_IWUSR)) == -1) {
+    assignSemgetError();
     return -1;
-  } else {
-    ret = sem_initialize(sem, value);
   }
-  if (ret == -1) {
-    assignSemInitializeError();  /* assign errcode for semctl */
+  // Assign value to the semaphore.
+  struct sembuf buf;
+  buf.sem_num = 0;
+  buf.sem_op = value;
+  buf.sem_flg = 0;
+  if (semop(*semid, &buf, 1) == -1) {
+    assignSemInitializeError();
+    return -1;
   }
-  return ret;
+  return 0;
 }
 
 
