@@ -26,12 +26,6 @@ typedef union {
   int64_t __align;
 } sem_t;
 
-int initsem(key_t key, int nsems);
-
-int sem_create(key_t key);
-
-int sem_initialize(int *semid, int value);
-
 int sem_init(int *semid, int pshared, unsigned int value);
 
 int sem_destroy(int *semid);
