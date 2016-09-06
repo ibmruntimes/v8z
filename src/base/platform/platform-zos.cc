@@ -354,7 +354,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
   void* reservation = anon_mmap(OS::GetRandomMmapAddr(),
                            request_size);
 
-  DCHECK_NE(reservation, MAP_FAILED);
+  if (reservation == MAP_FAILED) return;
 
   uint8_t* base = static_cast<uint8_t*>(reservation);
   uint8_t* aligned_base = RoundUp(base, alignment);
@@ -426,7 +426,7 @@ void* VirtualMemory::ReserveRegion(size_t size) {
   void* result = anon_mmap(OS::GetRandomMmapAddr(),
                       size);
 
-  DCHECK_NE(result, MAP_FAILED);
+  if (result == MAP_FAILED) return NULL;
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(result, size);
 #endif
