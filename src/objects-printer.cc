@@ -32,7 +32,7 @@ void Object::Print(OStream& os) {  // NOLINT
 
 
 void HeapObject::PrintHeader(OStream& os, const char* id) {  // NOLINT
-  os << "" << reinterpret_cast<void*>(this) << "\x3a\x20\x5b" << id << "\x5d\xa";
+  os << "" << reinterpret_cast<void*>(this) << ": [" << id << "]\n";
 }
 
 
@@ -56,9 +56,9 @@ void HeapObject::HeapObjectPrint(OStream& os) {  // NOLINT
       HeapNumber::cast(this)->HeapNumberPrint(os);
       break;
     case MUTABLE_HEAP_NUMBER_TYPE:
-      os << "\x3c\x6d\x75\x74\x61\x62\x6c\x65\x20";
+      os << "<mutable ";
       HeapNumber::cast(this)->HeapNumberPrint(os);
-      os << "\x3e";
+      os << ">";
       break;
     case FIXED_DOUBLE_ARRAY_TYPE:
       FixedDoubleArray::cast(this)->FixedDoubleArrayPrint(os);
@@ -93,7 +93,7 @@ void HeapObject::HeapObjectPrint(OStream& os) {  // NOLINT
 #undef PRINT_FIXED_TYPED_ARRAY
 
     case FILLER_TYPE:
-      os << "\x66\x69\x6c\x6c\x65\x72";
+      os << "filler";
       break;
     case JS_OBJECT_TYPE:  // fall through
     case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
@@ -121,7 +121,7 @@ void HeapObject::HeapObjectPrint(OStream& os) {  // NOLINT
       JSBuiltinsObject::cast(this)->JSBuiltinsObjectPrint(os);
       break;
     case JS_VALUE_TYPE:
-      os << "\x56\x61\x6c\x75\x65\x20\x77\x72\x61\x70\x70\x65\x72\x20\x61\x72\x6f\x75\x6e\x64\x3a";
+      os << "Value wrapper around:";
       JSValue::cast(this)->value()->Print(os);
       break;
     case JS_DATE_TYPE:
@@ -186,7 +186,7 @@ void HeapObject::HeapObjectPrint(OStream& os) {  // NOLINT
 #undef MAKE_STRUCT_CASE
 
     default:
-      os << "\x55\x4e\x4b\x4e\x4f\x57\x4e\x20\x54\x59\x50\x45\x20" << map()->instance_type();
+      os << "UNKNOWN TYPE " << map()->instance_type();
       UNREACHABLE();
       break;
   }
@@ -194,18 +194,18 @@ void HeapObject::HeapObjectPrint(OStream& os) {  // NOLINT
 
 
 void ByteArray::ByteArrayPrint(OStream& os) {  // NOLINT
-  os << "\x62\x79\x74\x65\x20\x61\x72\x72\x61\x79\x2c\x20\x64\x61\x74\x61\x20\x73\x74\x61\x72\x74\x73\x20\x61\x74\x20" << GetDataStartAddress();
+  os << "byte array, data starts at " << GetDataStartAddress();
 }
 
 
 void FreeSpace::FreeSpacePrint(OStream& os) {  // NOLINT
-  os << "\x66\x72\x65\x65\x20\x73\x70\x61\x63\x65\x2c\x20\x73\x69\x7a\x65\x20" << Size();
+  os << "free space, size " << Size();
 }
 
 
 #define EXTERNAL_ARRAY_PRINTER(Type, type, TYPE, ctype, size)           \
   void External##Type##Array::External##Type##ArrayPrint(OStream& os) { \
-    os << "\x65\x78\x74\x65\x72\x6e\x61\x6c\x20" #type "\x20\x61\x72\x72\x61\x79";                                   \
+    os << "external " #type " array";                                   \
   }
 
 TYPED_ARRAYS(EXTERNAL_ARRAY_PRINTER)
@@ -215,7 +215,7 @@ TYPED_ARRAYS(EXTERNAL_ARRAY_PRINTER)
 
 template <class Traits>
 void FixedTypedArray<Traits>::FixedTypedArrayPrint(OStream& os) {  // NOLINT
-  os << "\x66\x69\x78\x65\x64\x20" << Traits::Designator();
+  os << "fixed " << Traits::Designator();
 }
 
 
@@ -223,21 +223,21 @@ void JSObject::PrintProperties(OStream& os) {  // NOLINT
   if (HasFastProperties()) {
     DescriptorArray* descs = map()->instance_descriptors();
     for (int i = 0; i < map()->NumberOfOwnDescriptors(); i++) {
-      os << "\x20\x20\x20";
+      os << "   ";
       descs->GetKey(i)->NamePrint(os);
-      os << "\x3a\x20";
+      os << ": ";
       switch (descs->GetType(i)) {
         case FIELD: {
           FieldIndex index = FieldIndex::ForDescriptor(map(), i);
-          os << Brief(RawFastPropertyAt(index)) << "\x20\x28\x66\x69\x65\x6c\x64\x20\x61\x74\x20\x6f\x66\x66\x73\x65\x74\x20"
-             << index.property_index() << "\x29\xa";
+          os << Brief(RawFastPropertyAt(index)) << " (field at offset "
+             << index.property_index() << ")\n";
           break;
         }
         case CONSTANT:
-          os << Brief(descs->GetConstant(i)) << "\x20\x28\x63\x6f\x6e\x73\x74\x61\x6e\x74\x29\xa";
+          os << Brief(descs->GetConstant(i)) << " (constant)\n";
           break;
         case CALLBACKS:
-          os << Brief(descs->GetCallbacksObject(i)) << "\x20\x28\x63\x61\x6c\x6c\x62\x61\x63\x6b\x29\xa";
+          os << Brief(descs->GetCallbacksObject(i)) << " (callback)\n";
           break;
         case NORMAL:  // only in slow mode
         case HANDLER:  // only in lookup results, not in descriptors
@@ -258,7 +258,7 @@ template <class T>
 static void DoPrintElements(OStream& os, Object* object) {  // NOLINT
   T* p = T::cast(object);
   for (int i = 0; i < p->length(); i++) {
-    os << "\x20\x20\x20" << i << "\x3a\x20" << p->get_scalar(i) << "\xa";
+    os << "   " << i << ": " << p->get_scalar(i) << "\n";
   }
 }
 
@@ -274,7 +274,7 @@ void JSObject::PrintElements(OStream& os) {  // NOLINT
       // Print in array notation for non-sparse arrays.
       FixedArray* p = FixedArray::cast(elements());
       for (int i = 0; i < p->length(); i++) {
-        os << "\x20\x20\x20" << i << "\x3a\x20" << Brief(p->get(i)) << "\xa";
+        os << "   " << i << ": " << Brief(p->get(i)) << "\n";
       }
       break;
     }
@@ -284,13 +284,13 @@ void JSObject::PrintElements(OStream& os) {  // NOLINT
       if (elements()->length() > 0) {
         FixedDoubleArray* p = FixedDoubleArray::cast(elements());
         for (int i = 0; i < p->length(); i++) {
-          os << "\x20\x20\x20" << i << "\x3a\x20";
+          os << "   " << i << ": ";
           if (p->is_the_hole(i)) {
-            os << "\x3c\x74\x68\x65\x20\x68\x6f\x6c\x65\x3e";
+            os << "<the hole>";
           } else {
             os << p->get_scalar(i);
           }
-          os << "\xa";
+          os << "\n";
         }
       }
       break;
@@ -333,12 +333,12 @@ void JSObject::PrintElements(OStream& os) {  // NOLINT
       break;
     case SLOPPY_ARGUMENTS_ELEMENTS: {
       FixedArray* p = FixedArray::cast(elements());
-      os << "\x20\x20\x20\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x20\x6d\x61\x70\x3a";
+      os << "   parameter map:";
       for (int i = 2; i < p->length(); i++) {
-        os << "\x20" << (i - 2) << "\x3a" << Brief(p->get(i));
+        os << " " << (i - 2) << ":" << Brief(p->get(i));
       }
-      os << "\xa\x20\x20\x20\x63\x6f\x6e\x74\x65\x78\x74\x3a\x20" << Brief(p->get(0))
-         << "\xa\x20\x20\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x3a\x20" << Brief(p->get(1)) << "\xa";
+      os << "\n   context: " << Brief(p->get(0))
+         << "\n   arguments: " << Brief(p->get(1)) << "\n";
       break;
     }
   }
@@ -350,28 +350,28 @@ void JSObject::PrintTransitions(OStream& os) {  // NOLINT
   TransitionArray* transitions = map()->transitions();
   for (int i = 0; i < transitions->number_of_transitions(); i++) {
     Name* key = transitions->GetKey(i);
-    os << "\x20\x20\x20";
+    os << "   ";
     key->NamePrint(os);
-    os << "\x3a\x20";
+    os << ": ";
     if (key == GetHeap()->frozen_symbol()) {
-      os << "\x20\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x74\x6f\x20\x66\x72\x6f\x7a\x65\x6e\x29\xa";
+      os << " (transition to frozen)\n";
     } else if (key == GetHeap()->elements_transition_symbol()) {
-      os << "\x20\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x74\x6f\x20"
+      os << " (transition to "
          << ElementsKindToString(transitions->GetTarget(i)->elements_kind())
-         << "\x29\xa";
+         << ")\n";
     } else if (key == GetHeap()->observed_symbol()) {
-      os << "\x20\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x74\x6f\x20\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x29\xa";
+      os << " (transition to Object.observe)\n";
     } else {
       switch (transitions->GetTargetDetails(i).type()) {
         case FIELD: {
-          os << "\x20\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x74\x6f\x20\x66\x69\x65\x6c\x64\x29\xa";
+          os << " (transition to field)\n";
           break;
         }
         case CONSTANT:
-          os << "\x20\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x74\x6f\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x29\xa";
+          os << " (transition to constant)\n";
           break;
         case CALLBACKS:
-          os << "\x20\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x74\x6f\x20\x63\x61\x6c\x6c\x62\x61\x63\x6b\x29\xa";
+          os << " (transition to callback)\n";
           break;
         // Values below are never in the target descriptor array.
         case NORMAL:
@@ -387,31 +387,31 @@ void JSObject::PrintTransitions(OStream& os) {  // NOLINT
 
 
 void JSObject::JSObjectPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x4f\x62\x6a\x65\x63\x74");
+  HeapObject::PrintHeader(os, "JSObject");
   // Don't call GetElementsKind, its validation code can cause the printer to
   // fail when debugging.
   PrototypeIterator iter(GetIsolate(), this);
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\x20\x5b"
+  os << " - map = " << reinterpret_cast<void*>(map()) << " ["
      << ElementsKindToString(this->map()->elements_kind())
-     << "\x5d\xa\x20\x2d\x20\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20" << reinterpret_cast<void*>(iter.GetCurrent())
-     << "\xa\x20\x7b\xa";
+     << "]\n - prototype = " << reinterpret_cast<void*>(iter.GetCurrent())
+     << "\n {\n";
   PrintProperties(os);
   PrintTransitions(os);
   PrintElements(os);
-  os << "\x20\x7d\xa";
+  os << " }\n";
 }
 
 
 void JSModule::JSModulePrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x4d\x6f\x64\x75\x6c\x65");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa"
-     << "\x20\x2d\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x3d\x20";
+  HeapObject::PrintHeader(os, "JSModule");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n"
+     << " - context = ";
   context()->Print(os);
-  os << "\x20\x2d\x20\x73\x63\x6f\x70\x65\x5f\x69\x6e\x66\x6f\x20\x3d\x20" << Brief(scope_info())
-     << ElementsKindToString(this->map()->elements_kind()) << "\x20\x7b\xa";
+  os << " - scope_info = " << Brief(scope_info())
+     << ElementsKindToString(this->map()->elements_kind()) << " {\n";
   PrintProperties(os);
   PrintElements(os);
-  os << "\x20\x7d\xa";
+  os << " }\n";
 }
 
 
@@ -422,179 +422,179 @@ static const char* TypeToString(InstanceType type) {
 #undef TYPE_TO_STRING
   }
   UNREACHABLE();
-  return "\x55\x4e\x4b\x4e\x4f\x57\x4e";  // Keep the compiler happy.
+  return "UNKNOWN";  // Keep the compiler happy.
 }
 
 
 void Symbol::SymbolPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x53\x79\x6d\x62\x6f\x6c");
-  os << "\x20\x2d\x20\x68\x61\x73\x68\x3a\x20" << Hash();
-  os << "\xa\x20\x2d\x20\x6e\x61\x6d\x65\x3a\x20" << Brief(name());
-  os << "\x20\x2d\x20\x70\x72\x69\x76\x61\x74\x65\x3a\x20" << is_private();
-  os << "\xa";
+  HeapObject::PrintHeader(os, "Symbol");
+  os << " - hash: " << Hash();
+  os << "\n - name: " << Brief(name());
+  os << " - private: " << is_private();
+  os << "\n";
 }
 
 
 void Map::MapPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4d\x61\x70");
-  os << "\x20\x2d\x20\x74\x79\x70\x65\x3a\x20" << TypeToString(instance_type()) << "\xa";
-  os << "\x20\x2d\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x73\x69\x7a\x65\x3a\x20" << instance_size() << "\xa";
-  os << "\x20\x2d\x20\x69\x6e\x6f\x62\x6a\x65\x63\x74\x20\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x3a\x20" << inobject_properties() << "\xa";
-  os << "\x20\x2d\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x6b\x69\x6e\x64\x3a\x20" << ElementsKindToString(elements_kind());
-  os << "\xa\x20\x2d\x20\x70\x72\x65\x2d\x61\x6c\x6c\x6f\x63\x61\x74\x65\x64\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x20\x66\x69\x65\x6c\x64\x73\x3a\x20"
-     << pre_allocated_property_fields() << "\xa";
-  os << "\x20\x2d\x20\x75\x6e\x75\x73\x65\x64\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x20\x66\x69\x65\x6c\x64\x73\x3a\x20" << unused_property_fields() << "\xa";
-  if (is_hidden_prototype()) os << "\x20\x2d\x20\x68\x69\x64\x64\x65\x6e\x5f\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\xa";
-  if (has_named_interceptor()) os << "\x20\x2d\x20\x6e\x61\x6d\x65\x64\x5f\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\xa";
-  if (has_indexed_interceptor()) os << "\x20\x2d\x20\x69\x6e\x64\x65\x78\x65\x64\x5f\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\xa";
-  if (is_undetectable()) os << "\x20\x2d\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\xa";
-  if (has_instance_call_handler()) os << "\x20\x2d\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x63\x61\x6c\x6c\x5f\x68\x61\x6e\x64\x6c\x65\x72\xa";
-  if (is_access_check_needed()) os << "\x20\x2d\x20\x61\x63\x63\x65\x73\x73\x5f\x63\x68\x65\x63\x6b\x5f\x6e\x65\x65\x64\x65\x64\xa";
+  HeapObject::PrintHeader(os, "Map");
+  os << " - type: " << TypeToString(instance_type()) << "\n";
+  os << " - instance size: " << instance_size() << "\n";
+  os << " - inobject properties: " << inobject_properties() << "\n";
+  os << " - elements kind: " << ElementsKindToString(elements_kind());
+  os << "\n - pre-allocated property fields: "
+     << pre_allocated_property_fields() << "\n";
+  os << " - unused property fields: " << unused_property_fields() << "\n";
+  if (is_hidden_prototype()) os << " - hidden_prototype\n";
+  if (has_named_interceptor()) os << " - named_interceptor\n";
+  if (has_indexed_interceptor()) os << " - indexed_interceptor\n";
+  if (is_undetectable()) os << " - undetectable\n";
+  if (has_instance_call_handler()) os << " - instance_call_handler\n";
+  if (is_access_check_needed()) os << " - access_check_needed\n";
   if (is_frozen()) {
-    os << "\x20\x2d\x20\x66\x72\x6f\x7a\x65\x6e\xa";
+    os << " - frozen\n";
   } else if (!is_extensible()) {
-    os << "\x20\x2d\x20\x73\x65\x61\x6c\x65\x64\xa";
+    os << " - sealed\n";
   }
-  os << "\x20\x2d\x20\x62\x61\x63\x6b\x20\x70\x6f\x69\x6e\x74\x65\x72\x3a\x20" << Brief(GetBackPointer());
-  os << "\xa\x20\x2d\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x64\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x73\x20" << (owns_descriptors() ? "\x28\x6f\x77\x6e\x29\x20" : "")
-     << "\x23" << NumberOfOwnDescriptors() << "\x3a\x20"
+  os << " - back pointer: " << Brief(GetBackPointer());
+  os << "\n - instance descriptors " << (owns_descriptors() ? "(own) " : "")
+     << "#" << NumberOfOwnDescriptors() << ": "
      << Brief(instance_descriptors());
   if (HasTransitionArray()) {
-    os << "\xa\x20\x2d\x20\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x73\x3a\x20" << Brief(transitions());
+    os << "\n - transitions: " << Brief(transitions());
   }
-  os << "\xa\x20\x2d\x20\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x3a\x20" << Brief(prototype());
-  os << "\xa\x20\x2d\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x3a\x20" << Brief(constructor());
-  os << "\xa\x20\x2d\x20\x63\x6f\x64\x65\x20\x63\x61\x63\x68\x65\x3a\x20" << Brief(code_cache());
-  os << "\xa\x20\x2d\x20\x64\x65\x70\x65\x6e\x64\x65\x6e\x74\x20\x63\x6f\x64\x65\x3a\x20" << Brief(dependent_code());
-  os << "\xa";
+  os << "\n - prototype: " << Brief(prototype());
+  os << "\n - constructor: " << Brief(constructor());
+  os << "\n - code cache: " << Brief(code_cache());
+  os << "\n - dependent code: " << Brief(dependent_code());
+  os << "\n";
 }
 
 
 void CodeCache::CodeCachePrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x43\x6f\x64\x65\x43\x61\x63\x68\x65");
-  os << "\xa\x20\x2d\x20\x64\x65\x66\x61\x75\x6c\x74\x5f\x63\x61\x63\x68\x65\x3a\x20" << Brief(default_cache());
-  os << "\xa\x20\x2d\x20\x6e\x6f\x72\x6d\x61\x6c\x5f\x74\x79\x70\x65\x5f\x63\x61\x63\x68\x65\x3a\x20" << Brief(normal_type_cache());
+  HeapObject::PrintHeader(os, "CodeCache");
+  os << "\n - default_cache: " << Brief(default_cache());
+  os << "\n - normal_type_cache: " << Brief(normal_type_cache());
 }
 
 
 void PolymorphicCodeCache::PolymorphicCodeCachePrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x50\x6f\x6c\x79\x6d\x6f\x72\x70\x68\x69\x63\x43\x6f\x64\x65\x43\x61\x63\x68\x65");
-  os << "\xa\x20\x2d\x20\x63\x61\x63\x68\x65\x3a\x20" << Brief(cache());
+  HeapObject::PrintHeader(os, "PolymorphicCodeCache");
+  os << "\n - cache: " << Brief(cache());
 }
 
 
 void TypeFeedbackInfo::TypeFeedbackInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x54\x79\x70\x65\x46\x65\x65\x64\x62\x61\x63\x6b\x49\x6e\x66\x6f");
-  os << "\x20\x2d\x20\x69\x63\x5f\x74\x6f\x74\x61\x6c\x5f\x63\x6f\x75\x6e\x74\x3a\x20" << ic_total_count()
-     << "\x2c\x20\x69\x63\x5f\x77\x69\x74\x68\x5f\x74\x79\x70\x65\x5f\x69\x6e\x66\x6f\x5f\x63\x6f\x75\x6e\x74\x3a\x20" << ic_with_type_info_count()
-     << "\x2c\x20\x69\x63\x5f\x67\x65\x6e\x65\x72\x69\x63\x5f\x63\x6f\x75\x6e\x74\x3a\x20" << ic_generic_count() << "\xa";
+  HeapObject::PrintHeader(os, "TypeFeedbackInfo");
+  os << " - ic_total_count: " << ic_total_count()
+     << ", ic_with_type_info_count: " << ic_with_type_info_count()
+     << ", ic_generic_count: " << ic_generic_count() << "\n";
 }
 
 
 void AliasedArgumentsEntry::AliasedArgumentsEntryPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x41\x6c\x69\x61\x73\x65\x64\x41\x72\x67\x75\x6d\x65\x6e\x74\x73\x45\x6e\x74\x72\x79");
-  os << "\xa\x20\x2d\x20\x61\x6c\x69\x61\x73\x65\x64\x5f\x63\x6f\x6e\x74\x65\x78\x74\x5f\x73\x6c\x6f\x74\x3a\x20" << aliased_context_slot();
+  HeapObject::PrintHeader(os, "AliasedArgumentsEntry");
+  os << "\n - aliased_context_slot: " << aliased_context_slot();
 }
 
 
 void FixedArray::FixedArrayPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x46\x69\x78\x65\x64\x41\x72\x72\x61\x79");
-  os << "\x20\x2d\x20\x6c\x65\x6e\x67\x74\x68\x3a\x20" << length();
+  HeapObject::PrintHeader(os, "FixedArray");
+  os << " - length: " << length();
   for (int i = 0; i < length(); i++) {
-    os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20" << Brief(get(i));
+    os << "\n  [" << i << "]: " << Brief(get(i));
   }
-  os << "\xa";
+  os << "\n";
 }
 
 
 void FixedDoubleArray::FixedDoubleArrayPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x46\x69\x78\x65\x64\x44\x6f\x75\x62\x6c\x65\x41\x72\x72\x61\x79");
-  os << "\x20\x2d\x20\x6c\x65\x6e\x67\x74\x68\x3a\x20" << length();
+  HeapObject::PrintHeader(os, "FixedDoubleArray");
+  os << " - length: " << length();
   for (int i = 0; i < length(); i++) {
-    os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20";
+    os << "\n  [" << i << "]: ";
     if (is_the_hole(i)) {
-      os << "\x3c\x74\x68\x65\x20\x68\x6f\x6c\x65\x3e";
+      os << "<the hole>";
     } else {
       os << get_scalar(i);
     }
   }
-  os << "\xa";
+  os << "\n";
 }
 
 
 void ConstantPoolArray::ConstantPoolArrayPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x43\x6f\x6e\x73\x74\x61\x6e\x74\x50\x6f\x6f\x6c\x41\x72\x72\x61\x79");
-  os << "\x20\x2d\x20\x6c\x65\x6e\x67\x74\x68\x3a\x20" << length();
+  HeapObject::PrintHeader(os, "ConstantPoolArray");
+  os << " - length: " << length();
   for (int i = 0; i <= last_index(INT32, SMALL_SECTION); i++) {
     if (i <= last_index(INT64, SMALL_SECTION)) {
 #if V8_TARGET_ARCH_64_BIT
-      os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20\x69\x6e\x74\x36\x34\x3a\x20" << get_int64_entry(i);
+      os << "\n  [" << i << "]: int64: " << get_int64_entry(i);
 #else
-      os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20\x64\x6f\x75\x62\x6c\x65\x3a\x20" << get_int64_entry_as_double(i);
+      os << "\n  [" << i << "]: double: " << get_int64_entry_as_double(i);
 #endif
     } else if (i <= last_index(CODE_PTR, SMALL_SECTION)) {
-      os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20\x63\x6f\x64\x65\x20\x74\x61\x72\x67\x65\x74\x20\x70\x6f\x69\x6e\x74\x65\x72\x3a\x20"
+      os << "\n  [" << i << "]: code target pointer: "
          << reinterpret_cast<void*>(get_code_ptr_entry(i));
     } else if (i <= last_index(HEAP_PTR, SMALL_SECTION)) {
-      os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20\x68\x65\x61\x70\x20\x70\x6f\x69\x6e\x74\x65\x72\x3a\x20"
+      os << "\n  [" << i << "]: heap pointer: "
          << reinterpret_cast<void*>(get_heap_ptr_entry(i));
     } else if (i <= last_index(INT32, SMALL_SECTION)) {
-      os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20\x69\x6e\x74\x33\x32\x3a\x20" << get_int32_entry(i);
+      os << "\n  [" << i << "]: int32: " << get_int32_entry(i);
     }
   }
   if (is_extended_layout()) {
-    os << "\xa\x20\x20\x45\x78\x74\x65\x6e\x64\x65\x64\x20\x73\x65\x63\x74\x69\x6f\x6e\x3a";
+    os << "\n  Extended section:";
     for (int i = first_extended_section_index();
          i <= last_index(INT32, EXTENDED_SECTION); i++) {
       if (i <= last_index(INT64, EXTENDED_SECTION)) {
 #if V8_TARGET_ARCH_64_BIT
-        os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20\x69\x6e\x74\x36\x34\x3a\x20" << get_int64_entry(i);
+        os << "\n  [" << i << "]: int64: " << get_int64_entry(i);
 #else
-        os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20\x64\x6f\x75\x62\x6c\x65\x3a\x20" << get_int64_entry_as_double(i);
+        os << "\n  [" << i << "]: double: " << get_int64_entry_as_double(i);
 #endif
       } else if (i <= last_index(CODE_PTR, EXTENDED_SECTION)) {
-        os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20\x63\x6f\x64\x65\x20\x74\x61\x72\x67\x65\x74\x20\x70\x6f\x69\x6e\x74\x65\x72\x3a\x20"
+        os << "\n  [" << i << "]: code target pointer: "
            << reinterpret_cast<void*>(get_code_ptr_entry(i));
       } else if (i <= last_index(HEAP_PTR, EXTENDED_SECTION)) {
-        os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20\x68\x65\x61\x70\x20\x70\x6f\x69\x6e\x74\x65\x72\x3a\x20"
+        os << "\n  [" << i << "]: heap pointer: "
            << reinterpret_cast<void*>(get_heap_ptr_entry(i));
       } else if (i <= last_index(INT32, EXTENDED_SECTION)) {
-        os << "\xa\x20\x20\x5b" << i << "\x5d\x3a\x20\x69\x6e\x74\x33\x32\x3a\x20" << get_int32_entry(i);
+        os << "\n  [" << i << "]: int32: " << get_int32_entry(i);
       }
     }
   }
-  os << "\xa";
+  os << "\n";
 }
 
 
 void JSValue::JSValuePrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x56\x61\x6c\x75\x65\x4f\x62\x6a\x65\x63\x74");
+  HeapObject::PrintHeader(os, "ValueObject");
   value()->Print(os);
 }
 
 
 void JSMessageObject::JSMessageObjectPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x4d\x65\x73\x73\x61\x67\x65\x4f\x62\x6a\x65\x63\x74");
-  os << "\x20\x2d\x20\x74\x79\x70\x65\x3a\x20" << Brief(type());
-  os << "\xa\x20\x2d\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x3a\x20" << Brief(arguments());
-  os << "\xa\x20\x2d\x20\x73\x74\x61\x72\x74\x5f\x70\x6f\x73\x69\x74\x69\x6f\x6e\x3a\x20" << start_position();
-  os << "\xa\x20\x2d\x20\x65\x6e\x64\x5f\x70\x6f\x73\x69\x74\x69\x6f\x6e\x3a\x20" << end_position();
-  os << "\xa\x20\x2d\x20\x73\x63\x72\x69\x70\x74\x3a\x20" << Brief(script());
-  os << "\xa\x20\x2d\x20\x73\x74\x61\x63\x6b\x5f\x66\x72\x61\x6d\x65\x73\x3a\x20" << Brief(stack_frames());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "JSMessageObject");
+  os << " - type: " << Brief(type());
+  os << "\n - arguments: " << Brief(arguments());
+  os << "\n - start_position: " << start_position();
+  os << "\n - end_position: " << end_position();
+  os << "\n - script: " << Brief(script());
+  os << "\n - stack_frames: " << Brief(stack_frames());
+  os << "\n";
 }
 
 
 void String::StringPrint(OStream& os) {  // NOLINT
   if (StringShape(this).IsInternalized()) {
-    os << "\x23";
+    os << "#";
   } else if (StringShape(this).IsCons()) {
-    os << "\x63\x22";
+    os << "c\"";
   } else {
-    os << "\x22";
+    os << "\"";
   }
 
-  const char truncated_epilogue[] = "\x2e\x2e\x2e\x3c\x74\x72\x75\x6e\x63\x61\x74\x65\x64\x3e";
+  const char truncated_epilogue[] = "...<truncated>";
   int len = length();
   if (!FLAG_use_verbose_printer) {
     if (len > 100) {
@@ -605,14 +605,14 @@ void String::StringPrint(OStream& os) {  // NOLINT
 #ifndef V8_OS_ZOS
       os << AsUC16(Get(i));
 #else
-      os << static_cast<char>(Get(i));
+      os << static_cast<char>(Ascii2Ebcdic(Get(i)));
 #endif
   }
   if (len != length()) {
     os << truncated_epilogue;
   }
 
-  if (!StringShape(this).IsInternalized()) os << "\x22";
+  if (!StringShape(this).IsInternalized()) os << "\"";
 }
 
 
@@ -640,22 +640,22 @@ char* String::ToAsciiArray() {
 
 
 static const char* const weekdays[] = {
-  "\x3f\x3f\x3f", "\x53\x75\x6e", "\x4d\x6f\x6e", "\x54\x75\x65", "\x57\x65\x64", "\x54\x68\x75", "\x46\x72\x69", "\x53\x61\x74"
+  "???", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
 
 
 void JSDate::JSDatePrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x44\x61\x74\x65");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x76\x61\x6c\x75\x65\x20\x3d\x20";
+  HeapObject::PrintHeader(os, "JSDate");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - value = ";
   value()->Print(os);
   if (!year()->IsSmi()) {
-    os << "\x20\x2d\x20\x74\x69\x6d\x65\x20\x3d\x20\x4e\x61\x4e\xa";
+    os << " - time = NaN\n";
   } else {
     // TODO(svenpanne) Add some basic formatting to our streams.
     Vector<char> buf = Vector<char>::New(100);
     SNPrintF(
-        buf, "\x20\x2d\x20\x74\x69\x6d\x65\x20\x3d\x20\x6c\xa2\x20\x6c\xf0\xf4\x84\x2f\x6c\xf0\xf2\x84\x2f\x6c\xf0\xf2\x84\x20\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\xa",
+        buf, " - time = %s %04d/%02d/%02d %02d:%02d:%02d\n",
         weekdays[weekday()->IsSmi() ? Smi::cast(weekday())->value() + 1 : 0],
         year()->IsSmi() ? Smi::cast(year())->value() : -1,
         month()->IsSmi() ? Smi::cast(month())->value() : -1,
@@ -669,53 +669,53 @@ void JSDate::JSDatePrint(OStream& os) {  // NOLINT
 
 
 void JSProxy::JSProxyPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x50\x72\x6f\x78\x79");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x68\x61\x6e\x64\x6c\x65\x72\x20\x3d\x20";
+  HeapObject::PrintHeader(os, "JSProxy");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - handler = ";
   handler()->Print(os);
-  os << "\xa\x20\x2d\x20\x68\x61\x73\x68\x20\x3d\x20";
+  os << "\n - hash = ";
   hash()->Print(os);
-  os << "\xa";
+  os << "\n";
 }
 
 
 void JSFunctionProxy::JSFunctionProxyPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x46\x75\x6e\x63\x74\x69\x6f\x6e\x50\x72\x6f\x78\x79");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x68\x61\x6e\x64\x6c\x65\x72\x20\x3d\x20";
+  HeapObject::PrintHeader(os, "JSFunctionProxy");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - handler = ";
   handler()->Print(os);
-  os << "\xa\x20\x2d\x20\x63\x61\x6c\x6c\x5f\x74\x72\x61\x70\x20\x3d\x20";
+  os << "\n - call_trap = ";
   call_trap()->Print(os);
-  os << "\xa\x20\x2d\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x5f\x74\x72\x61\x70\x20\x3d\x20";
+  os << "\n - construct_trap = ";
   construct_trap()->Print(os);
-  os << "\xa";
+  os << "\n";
 }
 
 
 void JSSet::JSSetPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x53\x65\x74");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x74\x61\x62\x6c\x65\x20\x3d\x20" << Brief(table());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "JSSet");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - table = " << Brief(table());
+  os << "\n";
 }
 
 
 void JSMap::JSMapPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x4d\x61\x70");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x74\x61\x62\x6c\x65\x20\x3d\x20" << Brief(table());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "JSMap");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - table = " << Brief(table());
+  os << "\n";
 }
 
 
 template <class Derived, class TableType>
 void OrderedHashTableIterator<
     Derived, TableType>::OrderedHashTableIteratorPrint(OStream& os) {  // NOLINT
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x74\x61\x62\x6c\x65\x20\x3d\x20" << Brief(table());
-  os << "\xa\x20\x2d\x20\x69\x6e\x64\x65\x78\x20\x3d\x20" << Brief(index());
-  os << "\xa\x20\x2d\x20\x6b\x69\x6e\x64\x20\x3d\x20" << Brief(kind());
-  os << "\xa";
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - table = " << Brief(table());
+  os << "\n - index = " << Brief(index());
+  os << "\n - kind = " << Brief(kind());
+  os << "\n";
 }
 
 
@@ -730,95 +730,95 @@ template void OrderedHashTableIterator<
 
 
 void JSSetIterator::JSSetIteratorPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x53\x65\x74\x49\x74\x65\x72\x61\x74\x6f\x72");
+  HeapObject::PrintHeader(os, "JSSetIterator");
   OrderedHashTableIteratorPrint(os);
 }
 
 
 void JSMapIterator::JSMapIteratorPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x4d\x61\x70\x49\x74\x65\x72\x61\x74\x6f\x72");
+  HeapObject::PrintHeader(os, "JSMapIterator");
   OrderedHashTableIteratorPrint(os);
 }
 
 
 void JSWeakMap::JSWeakMapPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x57\x65\x61\x6b\x4d\x61\x70");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x74\x61\x62\x6c\x65\x20\x3d\x20" << Brief(table());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "JSWeakMap");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - table = " << Brief(table());
+  os << "\n";
 }
 
 
 void JSWeakSet::JSWeakSetPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x57\x65\x61\x6b\x53\x65\x74");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x74\x61\x62\x6c\x65\x20\x3d\x20" << Brief(table());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "JSWeakSet");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - table = " << Brief(table());
+  os << "\n";
 }
 
 
 void JSArrayBuffer::JSArrayBufferPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x62\x61\x63\x6b\x69\x6e\x67\x5f\x73\x74\x6f\x72\x65\x20\x3d\x20" << backing_store() << "\xa";
-  os << "\x20\x2d\x20\x62\x79\x74\x65\x5f\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20" << Brief(byte_length());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "JSArrayBuffer");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - backing_store = " << backing_store() << "\n";
+  os << " - byte_length = " << Brief(byte_length());
+  os << "\n";
 }
 
 
 void JSTypedArray::JSTypedArrayPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x54\x79\x70\x65\x64\x41\x72\x72\x61\x79");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x62\x75\x66\x66\x65\x72\x20\x3d" << Brief(buffer());
-  os << "\xa\x20\x2d\x20\x62\x79\x74\x65\x5f\x6f\x66\x66\x73\x65\x74\x20\x3d\x20" << Brief(byte_offset());
-  os << "\xa\x20\x2d\x20\x62\x79\x74\x65\x5f\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20" << Brief(byte_length());
-  os << "\xa\x20\x2d\x20\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20" << Brief(length());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "JSTypedArray");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - buffer =" << Brief(buffer());
+  os << "\n - byte_offset = " << Brief(byte_offset());
+  os << "\n - byte_length = " << Brief(byte_length());
+  os << "\n - length = " << Brief(length());
+  os << "\n";
   PrintElements(os);
 }
 
 
 void JSDataView::JSDataViewPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4a\x53\x44\x61\x74\x61\x56\x69\x65\x77");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x62\x75\x66\x66\x65\x72\x20\x3d" << Brief(buffer());
-  os << "\xa\x20\x2d\x20\x62\x79\x74\x65\x5f\x6f\x66\x66\x73\x65\x74\x20\x3d\x20" << Brief(byte_offset());
-  os << "\xa\x20\x2d\x20\x62\x79\x74\x65\x5f\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20" << Brief(byte_length());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "JSDataView");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - buffer =" << Brief(buffer());
+  os << "\n - byte_offset = " << Brief(byte_offset());
+  os << "\n - byte_length = " << Brief(byte_length());
+  os << "\n";
 }
 
 
 void JSFunction::JSFunctionPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x46\x75\x6e\x63\x74\x69\x6f\x6e");
-  os << "\x20\x2d\x20\x6d\x61\x70\x20\x3d\x20" << reinterpret_cast<void*>(map()) << "\xa";
-  os << "\x20\x2d\x20\x69\x6e\x69\x74\x69\x61\x6c\x5f\x6d\x61\x70\x20\x3d\x20";
+  HeapObject::PrintHeader(os, "Function");
+  os << " - map = " << reinterpret_cast<void*>(map()) << "\n";
+  os << " - initial_map = ";
   if (has_initial_map()) os << Brief(initial_map());
-  os << "\xa\x20\x2d\x20\x73\x68\x61\x72\x65\x64\x5f\x69\x6e\x66\x6f\x20\x3d\x20" << Brief(shared());
-  os << "\xa\x20\x20\x20\x2d\x20\x6e\x61\x6d\x65\x20\x3d\x20" << Brief(shared()->name());
-  os << "\xa\x20\x2d\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x3d\x20" << Brief(context());
+  os << "\n - shared_info = " << Brief(shared());
+  os << "\n   - name = " << Brief(shared()->name());
+  os << "\n - context = " << Brief(context());
   if (shared()->bound()) {
-    os << "\xa\x20\x2d\x20\x62\x69\x6e\x64\x69\x6e\x67\x73\x20\x3d\x20" << Brief(function_bindings());
+    os << "\n - bindings = " << Brief(function_bindings());
   } else {
-    os << "\xa\x20\x2d\x20\x6c\x69\x74\x65\x72\x61\x6c\x73\x20\x3d\x20" << Brief(literals());
+    os << "\n - literals = " << Brief(literals());
   }
-  os << "\xa\x20\x2d\x20\x63\x6f\x64\x65\x20\x3d\x20" << Brief(code());
-  os << "\xa";
+  os << "\n - code = " << Brief(code());
+  os << "\n";
   PrintProperties(os);
   PrintElements(os);
-  os << "\xa";
+  os << "\n";
 }
 
 
 void SharedFunctionInfo::SharedFunctionInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x53\x68\x61\x72\x65\x64\x46\x75\x6e\x63\x74\x69\x6f\x6e\x49\x6e\x66\x6f");
-  os << "\x20\x2d\x20\x6e\x61\x6d\x65\x3a\x20" << Brief(name());
-  os << "\xa\x20\x2d\x20\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x6e\x6f\x66\x5f\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x3a\x20" << expected_nof_properties();
-  os << "\xa\x20\x2d\x20\x61\x73\x74\x5f\x6e\x6f\x64\x65\x5f\x63\x6f\x75\x6e\x74\x3a\x20" << ast_node_count();
-  os << "\xa\x20\x2d\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x63\x6c\x61\x73\x73\x20\x6e\x61\x6d\x65\x20\x3d\x20";
+  HeapObject::PrintHeader(os, "SharedFunctionInfo");
+  os << " - name: " << Brief(name());
+  os << "\n - expected_nof_properties: " << expected_nof_properties();
+  os << "\n - ast_node_count: " << ast_node_count();
+  os << "\n - instance class name = ";
   instance_class_name()->Print(os);
-  os << "\xa\x20\x2d\x20\x63\x6f\x64\x65\x20\x3d\x20" << Brief(code());
+  os << "\n - code = " << Brief(code());
   if (HasSourceCode()) {
-    os << "\xa\x20\x2d\x20\x73\x6f\x75\x72\x63\x65\x20\x63\x6f\x64\x65\x20\x3d\x20";
+    os << "\n - source code = ";
     String* source = String::cast(Script::cast(script())->source());
     int start = start_position();
     int length = end_position() - start;
@@ -831,53 +831,53 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(OStream& os) {  // NOLINT
   // Script files are often large, hard to read.
   // os << "\n - script =";
   // script()->Print(os);
-  os << "\xa\x20\x2d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x6f\x6b\x65\x6e\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x3d\x20" << function_token_position();
-  os << "\xa\x20\x2d\x20\x73\x74\x61\x72\x74\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x3d\x20" << start_position();
-  os << "\xa\x20\x2d\x20\x65\x6e\x64\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x3d\x20" << end_position();
-  os << "\xa\x20\x2d\x20\x69\x73\x20\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x20\x3d\x20" << is_expression();
-  os << "\xa\x20\x2d\x20\x64\x65\x62\x75\x67\x20\x69\x6e\x66\x6f\x20\x3d\x20" << Brief(debug_info());
-  os << "\xa\x20\x2d\x20\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20" << length();
-  os << "\xa\x20\x2d\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x5f\x63\x6f\x64\x65\x5f\x6d\x61\x70\x20\x3d\x20" << Brief(optimized_code_map());
-  os << "\xa\x20\x2d\x20\x66\x65\x65\x64\x62\x61\x63\x6b\x5f\x76\x65\x63\x74\x6f\x72\x20\x3d\x20";
+  os << "\n - function token position = " << function_token_position();
+  os << "\n - start position = " << start_position();
+  os << "\n - end position = " << end_position();
+  os << "\n - is expression = " << is_expression();
+  os << "\n - debug info = " << Brief(debug_info());
+  os << "\n - length = " << length();
+  os << "\n - optimized_code_map = " << Brief(optimized_code_map());
+  os << "\n - feedback_vector = ";
   feedback_vector()->FixedArrayPrint(os);
-  os << "\xa";
+  os << "\n";
 }
 
 
 void JSGlobalProxy::JSGlobalProxyPrint(OStream& os) {  // NOLINT
-  os << "\x67\x6c\x6f\x62\x61\x6c\x5f\x70\x72\x6f\x78\x79\x20";
+  os << "global_proxy ";
   JSObjectPrint(os);
-  os << "\x6e\x61\x74\x69\x76\x65\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x3a\x20" << Brief(native_context());
-  os << "\xa";
+  os << "native context : " << Brief(native_context());
+  os << "\n";
 }
 
 
 void JSGlobalObject::JSGlobalObjectPrint(OStream& os) {  // NOLINT
-  os << "\x67\x6c\x6f\x62\x61\x6c\x20";
+  os << "global ";
   JSObjectPrint(os);
-  os << "\x6e\x61\x74\x69\x76\x65\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x3a\x20" << Brief(native_context());
-  os << "\xa";
+  os << "native context : " << Brief(native_context());
+  os << "\n";
 }
 
 
 void JSBuiltinsObject::JSBuiltinsObjectPrint(OStream& os) {  // NOLINT
-  os << "\x62\x75\x69\x6c\x74\x69\x6e\x73\x20";
+  os << "builtins ";
   JSObjectPrint(os);
 }
 
 
 void Cell::CellPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x43\x65\x6c\x6c");
+  HeapObject::PrintHeader(os, "Cell");
 }
 
 
 void PropertyCell::PropertyCellPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x50\x72\x6f\x70\x65\x72\x74\x79\x43\x65\x6c\x6c");
+  HeapObject::PrintHeader(os, "PropertyCell");
 }
 
 
 void Code::CodePrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x43\x6f\x64\x65");
+  HeapObject::PrintHeader(os, "Code");
 #ifdef ENABLE_DISASSEMBLER
   if (FLAG_use_verbose_printer) {
     Disassemble(NULL, os);
@@ -887,232 +887,232 @@ void Code::CodePrint(OStream& os) {  // NOLINT
 
 
 void Foreign::ForeignPrint(OStream& os) {  // NOLINT
-  os << "\x66\x6f\x72\x65\x69\x67\x6e\x20\x61\x64\x64\x72\x65\x73\x73\x20\x3a\x20" << foreign_address();
+  os << "foreign address : " << foreign_address();
 }
 
 
 void ExecutableAccessorInfo::ExecutableAccessorInfoPrint(
     OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x45\x78\x65\x63\x75\x74\x61\x62\x6c\x65\x41\x63\x63\x65\x73\x73\x6f\x72\x49\x6e\x66\x6f");
-  os << "\xa\x20\x2d\x20\x6e\x61\x6d\x65\x3a\x20" << Brief(name());
-  os << "\xa\x20\x2d\x20\x66\x6c\x61\x67\x3a\x20" << Brief(flag());
-  os << "\xa\x20\x2d\x20\x67\x65\x74\x74\x65\x72\x3a\x20" << Brief(getter());
-  os << "\xa\x20\x2d\x20\x73\x65\x74\x74\x65\x72\x3a\x20" << Brief(setter());
-  os << "\xa\x20\x2d\x20\x64\x61\x74\x61\x3a\x20" << Brief(data());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "ExecutableAccessorInfo");
+  os << "\n - name: " << Brief(name());
+  os << "\n - flag: " << Brief(flag());
+  os << "\n - getter: " << Brief(getter());
+  os << "\n - setter: " << Brief(setter());
+  os << "\n - data: " << Brief(data());
+  os << "\n";
 }
 
 
 void DeclaredAccessorInfo::DeclaredAccessorInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x44\x65\x63\x6c\x61\x72\x65\x64\x41\x63\x63\x65\x73\x73\x6f\x72\x49\x6e\x66\x6f");
-  os << "\xa\x20\x2d\x20\x6e\x61\x6d\x65\x3a\x20" << Brief(name());
-  os << "\xa\x20\x2d\x20\x66\x6c\x61\x67\x3a\x20" << Brief(flag());
-  os << "\xa\x20\x2d\x20\x64\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x3a\x20" << Brief(descriptor());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "DeclaredAccessorInfo");
+  os << "\n - name: " << Brief(name());
+  os << "\n - flag: " << Brief(flag());
+  os << "\n - descriptor: " << Brief(descriptor());
+  os << "\n";
 }
 
 
 void DeclaredAccessorDescriptor::DeclaredAccessorDescriptorPrint(
     OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x44\x65\x63\x6c\x61\x72\x65\x64\x41\x63\x63\x65\x73\x73\x6f\x72\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72");
-  os << "\xa\x20\x2d\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x66\x69\x65\x6c\x64\x3a\x20" << Brief(serialized_data());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "DeclaredAccessorDescriptor");
+  os << "\n - internal field: " << Brief(serialized_data());
+  os << "\n";
 }
 
 
 void Box::BoxPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x42\x6f\x78");
-  os << "\xa\x20\x2d\x20\x76\x61\x6c\x75\x65\x3a\x20" << Brief(value());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "Box");
+  os << "\n - value: " << Brief(value());
+  os << "\n";
 }
 
 
 void AccessorPair::AccessorPairPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x41\x63\x63\x65\x73\x73\x6f\x72\x50\x61\x69\x72");
-  os << "\xa\x20\x2d\x20\x67\x65\x74\x74\x65\x72\x3a\x20" << Brief(getter());
-  os << "\xa\x20\x2d\x20\x73\x65\x74\x74\x65\x72\x3a\x20" << Brief(setter());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "AccessorPair");
+  os << "\n - getter: " << Brief(getter());
+  os << "\n - setter: " << Brief(setter());
+  os << "\n";
 }
 
 
 void AccessCheckInfo::AccessCheckInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x41\x63\x63\x65\x73\x73\x43\x68\x65\x63\x6b\x49\x6e\x66\x6f");
-  os << "\xa\x20\x2d\x20\x6e\x61\x6d\x65\x64\x5f\x63\x61\x6c\x6c\x62\x61\x63\x6b\x3a\x20" << Brief(named_callback());
-  os << "\xa\x20\x2d\x20\x69\x6e\x64\x65\x78\x65\x64\x5f\x63\x61\x6c\x6c\x62\x61\x63\x6b\x3a\x20" << Brief(indexed_callback());
-  os << "\xa\x20\x2d\x20\x64\x61\x74\x61\x3a\x20" << Brief(data());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "AccessCheckInfo");
+  os << "\n - named_callback: " << Brief(named_callback());
+  os << "\n - indexed_callback: " << Brief(indexed_callback());
+  os << "\n - data: " << Brief(data());
+  os << "\n";
 }
 
 
 void InterceptorInfo::InterceptorInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x49\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x49\x6e\x66\x6f");
-  os << "\xa\x20\x2d\x20\x67\x65\x74\x74\x65\x72\x3a\x20" << Brief(getter());
-  os << "\xa\x20\x2d\x20\x73\x65\x74\x74\x65\x72\x3a\x20" << Brief(setter());
-  os << "\xa\x20\x2d\x20\x71\x75\x65\x72\x79\x3a\x20" << Brief(query());
-  os << "\xa\x20\x2d\x20\x64\x65\x6c\x65\x74\x65\x72\x3a\x20" << Brief(deleter());
-  os << "\xa\x20\x2d\x20\x65\x6e\x75\x6d\x65\x72\x61\x74\x6f\x72\x3a\x20" << Brief(enumerator());
-  os << "\xa\x20\x2d\x20\x64\x61\x74\x61\x3a\x20" << Brief(data());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "InterceptorInfo");
+  os << "\n - getter: " << Brief(getter());
+  os << "\n - setter: " << Brief(setter());
+  os << "\n - query: " << Brief(query());
+  os << "\n - deleter: " << Brief(deleter());
+  os << "\n - enumerator: " << Brief(enumerator());
+  os << "\n - data: " << Brief(data());
+  os << "\n";
 }
 
 
 void CallHandlerInfo::CallHandlerInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x43\x61\x6c\x6c\x48\x61\x6e\x64\x6c\x65\x72\x49\x6e\x66\x6f");
-  os << "\xa\x20\x2d\x20\x63\x61\x6c\x6c\x62\x61\x63\x6b\x3a\x20" << Brief(callback());
-  os << "\xa\x20\x2d\x20\x64\x61\x74\x61\x3a\x20" << Brief(data());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "CallHandlerInfo");
+  os << "\n - callback: " << Brief(callback());
+  os << "\n - data: " << Brief(data());
+  os << "\n";
 }
 
 
 void FunctionTemplateInfo::FunctionTemplateInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x54\x65\x6d\x70\x6c\x61\x74\x65\x49\x6e\x66\x6f");
-  os << "\xa\x20\x2d\x20\x63\x6c\x61\x73\x73\x20\x6e\x61\x6d\x65\x3a\x20" << Brief(class_name());
-  os << "\xa\x20\x2d\x20\x74\x61\x67\x3a\x20" << Brief(tag());
-  os << "\xa\x20\x2d\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x6c\x69\x73\x74\x3a\x20" << Brief(property_list());
-  os << "\xa\x20\x2d\x20\x73\x65\x72\x69\x61\x6c\x5f\x6e\x75\x6d\x62\x65\x72\x3a\x20" << Brief(serial_number());
-  os << "\xa\x20\x2d\x20\x63\x61\x6c\x6c\x5f\x63\x6f\x64\x65\x3a\x20" << Brief(call_code());
-  os << "\xa\x20\x2d\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x73\x3a\x20" << Brief(property_accessors());
-  os << "\xa\x20\x2d\x20\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x5f\x74\x65\x6d\x70\x6c\x61\x74\x65\x3a\x20" << Brief(prototype_template());
-  os << "\xa\x20\x2d\x20\x70\x61\x72\x65\x6e\x74\x5f\x74\x65\x6d\x70\x6c\x61\x74\x65\x3a\x20" << Brief(parent_template());
-  os << "\xa\x20\x2d\x20\x6e\x61\x6d\x65\x64\x5f\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x68\x61\x6e\x64\x6c\x65\x72\x3a\x20" << Brief(named_property_handler());
-  os << "\xa\x20\x2d\x20\x69\x6e\x64\x65\x78\x65\x64\x5f\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x68\x61\x6e\x64\x6c\x65\x72\x3a\x20" << Brief(indexed_property_handler());
-  os << "\xa\x20\x2d\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x74\x65\x6d\x70\x6c\x61\x74\x65\x3a\x20" << Brief(instance_template());
-  os << "\xa\x20\x2d\x20\x73\x69\x67\x6e\x61\x74\x75\x72\x65\x3a\x20" << Brief(signature());
-  os << "\xa\x20\x2d\x20\x61\x63\x63\x65\x73\x73\x5f\x63\x68\x65\x63\x6b\x5f\x69\x6e\x66\x6f\x3a\x20" << Brief(access_check_info());
-  os << "\xa\x20\x2d\x20\x68\x69\x64\x64\x65\x6e\x5f\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x3a\x20" << (hidden_prototype() ? "\x74\x72\x75\x65" : "\x66\x61\x6c\x73\x65");
-  os << "\xa\x20\x2d\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3a\x20" << (undetectable() ? "\x74\x72\x75\x65" : "\x66\x61\x6c\x73\x65");
-  os << "\xa\x20\x2d\x20\x6e\x65\x65\x64\x5f\x61\x63\x63\x65\x73\x73\x5f\x63\x68\x65\x63\x6b\x3a\x20" << (needs_access_check() ? "\x74\x72\x75\x65" : "\x66\x61\x6c\x73\x65");
-  os << "\xa";
+  HeapObject::PrintHeader(os, "FunctionTemplateInfo");
+  os << "\n - class name: " << Brief(class_name());
+  os << "\n - tag: " << Brief(tag());
+  os << "\n - property_list: " << Brief(property_list());
+  os << "\n - serial_number: " << Brief(serial_number());
+  os << "\n - call_code: " << Brief(call_code());
+  os << "\n - property_accessors: " << Brief(property_accessors());
+  os << "\n - prototype_template: " << Brief(prototype_template());
+  os << "\n - parent_template: " << Brief(parent_template());
+  os << "\n - named_property_handler: " << Brief(named_property_handler());
+  os << "\n - indexed_property_handler: " << Brief(indexed_property_handler());
+  os << "\n - instance_template: " << Brief(instance_template());
+  os << "\n - signature: " << Brief(signature());
+  os << "\n - access_check_info: " << Brief(access_check_info());
+  os << "\n - hidden_prototype: " << (hidden_prototype() ? "true" : "false");
+  os << "\n - undetectable: " << (undetectable() ? "true" : "false");
+  os << "\n - need_access_check: " << (needs_access_check() ? "true" : "false");
+  os << "\n";
 }
 
 
 void ObjectTemplateInfo::ObjectTemplateInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x4f\x62\x6a\x65\x63\x74\x54\x65\x6d\x70\x6c\x61\x74\x65\x49\x6e\x66\x6f");
-  os << "\x20\x2d\x20\x74\x61\x67\x3a\x20" << Brief(tag());
-  os << "\xa\x20\x2d\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x6c\x69\x73\x74\x3a\x20" << Brief(property_list());
-  os << "\xa\x20\x2d\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x73\x3a\x20" << Brief(property_accessors());
-  os << "\xa\x20\x2d\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x3a\x20" << Brief(constructor());
-  os << "\xa\x20\x2d\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x5f\x66\x69\x65\x6c\x64\x5f\x63\x6f\x75\x6e\x74\x3a\x20" << Brief(internal_field_count());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "ObjectTemplateInfo");
+  os << " - tag: " << Brief(tag());
+  os << "\n - property_list: " << Brief(property_list());
+  os << "\n - property_accessors: " << Brief(property_accessors());
+  os << "\n - constructor: " << Brief(constructor());
+  os << "\n - internal_field_count: " << Brief(internal_field_count());
+  os << "\n";
 }
 
 
 void SignatureInfo::SignatureInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x53\x69\x67\x6e\x61\x74\x75\x72\x65\x49\x6e\x66\x6f");
-  os << "\xa\x20\x2d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x3a\x20" << Brief(receiver());
-  os << "\xa\x20\x2d\x20\x61\x72\x67\x73\x3a\x20" << Brief(args());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "SignatureInfo");
+  os << "\n - receiver: " << Brief(receiver());
+  os << "\n - args: " << Brief(args());
+  os << "\n";
 }
 
 
 void TypeSwitchInfo::TypeSwitchInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x54\x79\x70\x65\x53\x77\x69\x74\x63\x68\x49\x6e\x66\x6f");
-  os << "\xa\x20\x2d\x20\x74\x79\x70\x65\x73\x3a\x20" << Brief(types());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "TypeSwitchInfo");
+  os << "\n - types: " << Brief(types());
+  os << "\n";
 }
 
 
 void AllocationSite::AllocationSitePrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65");
-  os << "\x20\x2d\x20\x77\x65\x61\x6b\x5f\x6e\x65\x78\x74\x3a\x20" << Brief(weak_next());
-  os << "\xa\x20\x2d\x20\x64\x65\x70\x65\x6e\x64\x65\x6e\x74\x20\x63\x6f\x64\x65\x3a\x20" << Brief(dependent_code());
-  os << "\xa\x20\x2d\x20\x6e\x65\x73\x74\x65\x64\x20\x73\x69\x74\x65\x3a\x20" << Brief(nested_site());
-  os << "\xa\x20\x2d\x20\x6d\x65\x6d\x65\x6e\x74\x6f\x20\x66\x6f\x75\x6e\x64\x20\x63\x6f\x75\x6e\x74\x3a\x20"
+  HeapObject::PrintHeader(os, "AllocationSite");
+  os << " - weak_next: " << Brief(weak_next());
+  os << "\n - dependent code: " << Brief(dependent_code());
+  os << "\n - nested site: " << Brief(nested_site());
+  os << "\n - memento found count: "
      << Brief(Smi::FromInt(memento_found_count()));
-  os << "\xa\x20\x2d\x20\x6d\x65\x6d\x65\x6e\x74\x6f\x20\x63\x72\x65\x61\x74\x65\x20\x63\x6f\x75\x6e\x74\x3a\x20"
+  os << "\n - memento create count: "
      << Brief(Smi::FromInt(memento_create_count()));
-  os << "\xa\x20\x2d\x20\x70\x72\x65\x74\x65\x6e\x75\x72\x65\x20\x64\x65\x63\x69\x73\x69\x6f\x6e\x3a\x20"
+  os << "\n - pretenure decision: "
      << Brief(Smi::FromInt(pretenure_decision()));
-  os << "\xa\x20\x2d\x20\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x5f\x69\x6e\x66\x6f\x3a\x20";
+  os << "\n - transition_info: ";
   if (transition_info()->IsSmi()) {
     ElementsKind kind = GetElementsKind();
-    os << "\x41\x72\x72\x61\x79\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x77\x69\x74\x68\x20\x45\x6c\x65\x6d\x65\x6e\x74\x73\x4b\x69\x6e\x64\x20" << ElementsKindToString(kind);
+    os << "Array allocation with ElementsKind " << ElementsKindToString(kind);
   } else if (transition_info()->IsJSArray()) {
-    os << "\x41\x72\x72\x61\x79\x20\x6c\x69\x74\x65\x72\x61\x6c\x20" << Brief(transition_info());
+    os << "Array literal " << Brief(transition_info());
   } else {
-    os << "\x75\x6e\x6b\x6e\x6f\x77\x6e\x20\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x5f\x69\x6e\x66\x6f" << Brief(transition_info());
+    os << "unknown transition_info" << Brief(transition_info());
   }
-  os << "\xa";
+  os << "\n";
 }
 
 
 void AllocationMemento::AllocationMementoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x4d\x65\x6d\x65\x6e\x74\x6f");
-  os << "\x20\x2d\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x73\x69\x74\x65\x3a\x20";
+  HeapObject::PrintHeader(os, "AllocationMemento");
+  os << " - allocation site: ";
   if (IsValid()) {
     GetAllocationSite()->Print(os);
   } else {
-    os << "\x3c\x69\x6e\x76\x61\x6c\x69\x64\x3e\xa";
+    os << "<invalid>\n";
   }
 }
 
 
 void Script::ScriptPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x53\x63\x72\x69\x70\x74");
-  os << "\xa\x20\x2d\x20\x73\x6f\x75\x72\x63\x65\x3a\x20" << Brief(source());
-  os << "\xa\x20\x2d\x20\x6e\x61\x6d\x65\x3a\x20" << Brief(name());
-  os << "\xa\x20\x2d\x20\x6c\x69\x6e\x65\x5f\x6f\x66\x66\x73\x65\x74\x3a\x20" << Brief(line_offset());
-  os << "\xa\x20\x2d\x20\x63\x6f\x6c\x75\x6d\x6e\x5f\x6f\x66\x66\x73\x65\x74\x3a\x20" << Brief(column_offset());
-  os << "\xa\x20\x2d\x20\x74\x79\x70\x65\x3a\x20" << Brief(type());
-  os << "\xa\x20\x2d\x20\x69\x64\x3a\x20" << Brief(id());
-  os << "\xa\x20\x2d\x20\x63\x6f\x6e\x74\x65\x78\x74\x20\x64\x61\x74\x61\x3a\x20" << Brief(context_data());
-  os << "\xa\x20\x2d\x20\x77\x72\x61\x70\x70\x65\x72\x3a\x20" << Brief(wrapper());
-  os << "\xa\x20\x2d\x20\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x74\x79\x70\x65\x3a\x20" << compilation_type();
-  os << "\xa\x20\x2d\x20\x6c\x69\x6e\x65\x20\x65\x6e\x64\x73\x3a\x20" << Brief(line_ends());
-  os << "\xa\x20\x2d\x20\x65\x76\x61\x6c\x20\x66\x72\x6f\x6d\x20\x73\x68\x61\x72\x65\x64\x3a\x20" << Brief(eval_from_shared());
-  os << "\xa\x20\x2d\x20\x65\x76\x61\x6c\x20\x66\x72\x6f\x6d\x20\x69\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x73\x20\x6f\x66\x66\x73\x65\x74\x3a\x20"
+  HeapObject::PrintHeader(os, "Script");
+  os << "\n - source: " << Brief(source());
+  os << "\n - name: " << Brief(name());
+  os << "\n - line_offset: " << Brief(line_offset());
+  os << "\n - column_offset: " << Brief(column_offset());
+  os << "\n - type: " << Brief(type());
+  os << "\n - id: " << Brief(id());
+  os << "\n - context data: " << Brief(context_data());
+  os << "\n - wrapper: " << Brief(wrapper());
+  os << "\n - compilation type: " << compilation_type();
+  os << "\n - line ends: " << Brief(line_ends());
+  os << "\n - eval from shared: " << Brief(eval_from_shared());
+  os << "\n - eval from instructions offset: "
      << Brief(eval_from_instructions_offset());
-  os << "\xa";
+  os << "\n";
 }
 
 
 void DebugInfo::DebugInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x44\x65\x62\x75\x67\x49\x6e\x66\x6f");
-  os << "\xa\x20\x2d\x20\x73\x68\x61\x72\x65\x64\x3a\x20" << Brief(shared());
-  os << "\xa\x20\x2d\x20\x6f\x72\x69\x67\x69\x6e\x61\x6c\x5f\x63\x6f\x64\x65\x3a\x20" << Brief(original_code());
-  os << "\xa\x20\x2d\x20\x63\x6f\x64\x65\x3a\x20" << Brief(code());
-  os << "\xa\x20\x2d\x20\x62\x72\x65\x61\x6b\x5f\x70\x6f\x69\x6e\x74\x73\x3a\x20";
+  HeapObject::PrintHeader(os, "DebugInfo");
+  os << "\n - shared: " << Brief(shared());
+  os << "\n - original_code: " << Brief(original_code());
+  os << "\n - code: " << Brief(code());
+  os << "\n - break_points: ";
   break_points()->Print(os);
 }
 
 
 void BreakPointInfo::BreakPointInfoPrint(OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x49\x6e\x66\x6f");
-  os << "\xa\x20\x2d\x20\x63\x6f\x64\x65\x5f\x70\x6f\x73\x69\x74\x69\x6f\x6e\x3a\x20" << code_position()->value();
-  os << "\xa\x20\x2d\x20\x73\x6f\x75\x72\x63\x65\x5f\x70\x6f\x73\x69\x74\x69\x6f\x6e\x3a\x20" << source_position()->value();
-  os << "\xa\x20\x2d\x20\x73\x74\x61\x74\x65\x6d\x65\x6e\x74\x5f\x70\x6f\x73\x69\x74\x69\x6f\x6e\x3a\x20" << statement_position()->value();
-  os << "\xa\x20\x2d\x20\x62\x72\x65\x61\x6b\x5f\x70\x6f\x69\x6e\x74\x5f\x6f\x62\x6a\x65\x63\x74\x73\x3a\x20" << Brief(break_point_objects());
-  os << "\xa";
+  HeapObject::PrintHeader(os, "BreakPointInfo");
+  os << "\n - code_position: " << code_position()->value();
+  os << "\n - source_position: " << source_position()->value();
+  os << "\n - statement_position: " << statement_position()->value();
+  os << "\n - break_point_objects: " << Brief(break_point_objects());
+  os << "\n";
 }
 
 
 void DescriptorArray::PrintDescriptors(OStream& os) {  // NOLINT
-  os << "\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x20\x61\x72\x72\x61\x79\x20\x20" << number_of_descriptors() << "\xa";
+  os << "Descriptor array  " << number_of_descriptors() << "\n";
   for (int i = 0; i < number_of_descriptors(); i++) {
     Descriptor desc;
     Get(i, &desc);
-    os << "\x20" << i << "\x3a\x20" << desc;
+    os << " " << i << ": " << desc;
   }
-  os << "\xa";
+  os << "\n";
 }
 
 
 void TransitionArray::PrintTransitions(OStream& os) {  // NOLINT
-  os << "\x54\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x61\x72\x72\x61\x79\x20\x20\x6c\x84\xa", number_of_transitions();
+  os << "Transition array  %d\n", number_of_transitions();
   for (int i = 0; i < number_of_transitions(); i++) {
-    os << "\x20" << i << "\x3a\x20";
+    os << " " << i << ": ";
     GetKey(i)->NamePrint(os);
-    os << "\x3a\x20";
+    os << ": ";
     switch (GetTargetDetails(i).type()) {
       case FIELD: {
-        os << "\x20\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x74\x6f\x20\x66\x69\x65\x6c\x64\x29\xa";
+        os << " (transition to field)\n";
         break;
       }
       case CONSTANT:
-        os << "\x20\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x74\x6f\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x29\xa";
+        os << " (transition to constant)\n";
         break;
       case CALLBACKS:
-        os << "\x20\x28\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x20\x74\x6f\x20\x63\x61\x6c\x6c\x62\x61\x63\x6b\x29\xa";
+        os << " (transition to callback)\n";
         break;
       // Values below are never in the target descriptor array.
       case NORMAL:
@@ -1123,7 +1123,7 @@ void TransitionArray::PrintTransitions(OStream& os) {  // NOLINT
         break;
     }
   }
-  os << "\xa";
+  os << "\n";
 }
 
 
