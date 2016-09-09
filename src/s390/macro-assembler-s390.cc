@@ -3626,7 +3626,9 @@ void MacroAssembler::CallCFunctionHelper(Register function,
 #endif
 
 #ifdef V8_OS_ZOS
+  LoadRR(r14, r7);
   CallC(dest);
+  LoadRR(r7, r14);
 #else
   Call(dest);
 #endif
