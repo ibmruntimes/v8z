@@ -151,8 +151,9 @@ uint64_t OS::TotalPhysicalMemory() {
   // convert Kb to bytes.
   return static_cast<uint64_t>(realMem) * 1024;
 #elif V8_OS_ZOS
-  // TODO(mcornac):
-  return 0;
+  // TODO(mcornac): _SC_PHYS_PAGESIZE is available on z/OS but _SC_PHYS_PAGES
+  // is not. Using 2GB for now to exceed the high limit for configuration.
+  return 2 * 1024 * 1024 * 1024;
 #else
   intptr_t pages = sysconf(_SC_PHYS_PAGES);
   intptr_t page_size = sysconf(_SC_PAGESIZE);
