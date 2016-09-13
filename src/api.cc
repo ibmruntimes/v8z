@@ -4315,10 +4315,12 @@ class Utf8LengthHelper : public i::AllStatic {
 
     void VisitOneByteString(const uint8_t* chars, int length) {
       int utf8_length = 0;
+#ifndef __MVS__
       // Add in length 1 for each non-ASCII character.
       for (int i = 0; i < length; i++) {
         utf8_length += *chars++ >> 7;
       }
+#endif
       // Add in length 1 for each character.
       utf8_length_ = utf8_length + length;
       state_ = kInitialState;
