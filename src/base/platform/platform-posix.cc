@@ -47,6 +47,9 @@
 #include "src/base/lazy-instance.h"
 #include "src/base/macros.h"
 #include "src/base/platform/platform.h"
+#if V8_OS_ZOS
+#include "src/base/platform/platform-zos.h"
+#endif
 #include "src/base/platform/time.h"
 #include "src/base/utils/random-number-generator.h"
 
@@ -80,8 +83,10 @@ const char* g_gc_fake_mmap = NULL;
 
 int OS::NumberOfProcessorsOnline() {
 #if V8_OS_ZOS
-  // TODO(mcornac):
-  return 1;
+  ZOSCVT* __ptr32 cvt = ((ZOSPSA*)0)->cvt;
+  ZOSRMCT* __ptr32 rmct = cvt->rmct;
+  ZOSCCT* __ptr32 cct = rmct->cct;
+  return static_cast<int>(cct->cpuCount);
 #else
   return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
 #endif
@@ -151,9 +156,11 @@ uint64_t OS::TotalPhysicalMemory() {
   // convert Kb to bytes.
   return static_cast<uint64_t>(realMem) * 1024;
 #elif V8_OS_ZOS
-  // TODO(mcornac): _SC_PHYS_PAGESIZE is available on z/OS but _SC_PHYS_PAGES
-  // is not. Using 2GB for now to exceed the high limit for configuration.
-  return 2 * 1024 * 1024 * 1024;
+  ZOSCVT* __ptr32 cvt = ((ZOSPSA*)0)->cvt;
+  ZOSRCE* __ptr32 rce = cvt->rce;
+  intptr_t pages = rce->pool;
+  intptr_t page_size = sysconf(_SC_PAGESIZE);
+  return static_cast<uint64_t>(pages) * page_size;
 #else
   intptr_t pages = sysconf(_SC_PHYS_PAGES);
   intptr_t page_size = sysconf(_SC_PAGESIZE);
