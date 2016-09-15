@@ -15,6 +15,7 @@
 #include "src/base/platform/platform.h"
 #include "src/ostreams.h"
 
+#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -342,7 +343,7 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
   // parse arguments
   for (int i = 1; i < *argc;) {
     int j = i;  // j > 0
-    __a2e_s(argv[i]);
+//    __a2e_s(argv[i]);
     const char* arg = argv[i++];
 
     // split arg into flag components
@@ -397,9 +398,11 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
           *flag->maybe_bool_variable() = MaybeBoolFlag::Create(true, !is_bool);
           break;
         case Flag::TYPE_INT:
-          *flag->int_variable() = strtol(value, &endp, 10);  // NOLINT
+          __a2e_s(const_cast<char *>(value));
+          *flag->int_variable() = (value, &endp, 10);  // NOLINT
           break;
         case Flag::TYPE_FLOAT:
+          __a2e_s(const_cast<char *>(value));
           *flag->float_variable() = strtod(value, &endp);
           break;
         case Flag::TYPE_STRING:
@@ -457,9 +460,9 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
     exit(0);
   }
   
-  for (int i =1 ; i < *argc; i++) {
-    __e2a_s(argv[i]); 
-  }
+ /* for (int i =1 ; i < *argc; i++) {
+  //  __e2a_s(argv[i]); 
+  }*/
   // parsed all flags successfully
   return return_code;
 }
@@ -560,5 +563,5 @@ void FlagList::EnforceFlagImplications() {
 #include "src/flag-definitions.h"
 #undef FLAG_MODE_DEFINE_IMPLICATIONS
 }
-
+#pragma convert(pop)
 } }  // namespace v8::internal

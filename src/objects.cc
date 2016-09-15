@@ -1917,7 +1917,9 @@ MaybeHandle<Object> JSObject::AddPropertyInternal(
   if (object->map()->is_observed() &&
       *name != isolate->heap()->hidden_string()) {
     Handle<Object> old_value = isolate->factory()->the_hole_value();
+#pragma convert("ISO8859-1")
     EnqueueChangeRecord(object, "add", name, old_value);
+#pragma convert(pop)  
   }
 
   return value;
@@ -3069,11 +3071,13 @@ MaybeHandle<Object> Object::SetDataProperty(LookupIterator* it,
   // Write the property value.
   it->WriteDataValue(value);
 
+#pragma convert("ISO8859-1")
   // Send the change record if there are observers.
   if (is_observed && !value->SameValue(*maybe_old.ToHandleChecked())) {
     JSObject::EnqueueChangeRecord(receiver, "update", it->name(),
                                   maybe_old.ToHandleChecked());
   }
+#pragma convert(pop)
 
   return value;
 }
@@ -3123,14 +3127,14 @@ MaybeHandle<Object> Object::AddDataProperty(LookupIterator* it,
     // Write the property value.
     it->WriteDataValue(value);
   }
-
+#pragma convert("ISO8859-1")
   // Send the change record if there are observers.
   if (receiver->map()->is_observed() &&
       !it->name().is_identical_to(it->factory()->hidden_string())) {
     JSObject::EnqueueChangeRecord(receiver, "add", it->name(),
                                   it->factory()->the_hole_value());
   }
-
+#pragma convert(pop)
   return value;
 }
 
@@ -4219,7 +4223,7 @@ MaybeHandle<Object> JSObject::SetOwnPropertyIgnoreAttributes(
         UNREACHABLE();
     }
   }
-
+#pragma convert("ISO8859-1")
   if (is_observed && !executed_set_prototype) {
     if (lookup.IsTransition()) {
       EnqueueChangeRecord(object, "add", name, old_value);
@@ -4242,7 +4246,7 @@ MaybeHandle<Object> JSObject::SetOwnPropertyIgnoreAttributes(
       }
     }
   }
-
+#pragma convert(pop)
   return value;
 }
 
@@ -5265,7 +5269,7 @@ MaybeHandle<Object> JSObject::DeleteElement(Handle<JSObject> object,
   }
   Handle<Object> result;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, result, maybe_result, Object);
-
+#pragma convert("ISO8859-1")
   if (should_enqueue_change_record) {
     Maybe<bool> maybe = HasOwnElement(object, index);
     if (!maybe.has_value) return MaybeHandle<Object>();
@@ -5274,7 +5278,7 @@ MaybeHandle<Object> JSObject::DeleteElement(Handle<JSObject> object,
       EnqueueChangeRecord(object, "delete", name, old_value);
     }
   }
-
+#pragma convert(pop)
   return result;
 }
 
@@ -5353,7 +5357,7 @@ MaybeHandle<Object> JSObject::DeleteProperty(Handle<JSObject> object,
     result = DeleteNormalizedProperty(object, name, delete_mode);
     ReoptimizeIfPrototype(object);
   }
-
+#pragma convert("ISO8859-1") 
   if (is_observed) {
     Maybe<bool> maybe = HasOwnProperty(object, name);
     if (!maybe.has_value) return MaybeHandle<Object>();
@@ -5361,7 +5365,7 @@ MaybeHandle<Object> JSObject::DeleteProperty(Handle<JSObject> object,
       EnqueueChangeRecord(object, "delete", name, old_value);
     }
   }
-
+#pragma convert(pop)
   return result;
 }
 
@@ -5570,12 +5574,13 @@ MaybeHandle<Object> JSObject::PreventExtensions(Handle<JSObject> object) {
   new_map->set_is_extensible(false);
   JSObject::MigrateToMap(object, new_map);
   DCHECK(!object->map()->is_extensible());
-
+#pragma convert("ISO8859-1") 
   if (object->map()->is_observed()) {
     EnqueueChangeRecord(object, "preventExtensions", Handle<Name>(),
                         isolate->factory()->the_hole_value());
   }
   return object;
+#pragma convert(pop)
 }
 
 
@@ -6666,12 +6671,12 @@ MaybeHandle<Object> JSObject::DefineAccessor(Handle<JSObject> object,
   } else {
     DefinePropertyAccessor(object, name, getter, setter, attributes);
   }
-
+#pragma convert("ISO8859-1")
   if (is_observed) {
     const char* type = preexists ? "reconfigure" : "add";
     EnqueueChangeRecord(object, type, name, old_value);
   }
-
+#pragma convert(pop)
   return isolate->factory()->undefined_value();
 }
 
@@ -11766,7 +11771,7 @@ MaybeHandle<Object> JSArray::SetElementsLength(
   if (old_length == new_length) return hresult;
 
   BeginPerformSplice(array);
-
+#pragma convert("ISO8859-1")
   for (int i = 0; i < indices.length(); ++i) {
     // For deletions where the property was an accessor, old_values[i]
     // will be the hole, which instructs EnqueueChangeRecord to elide
@@ -11778,7 +11783,7 @@ MaybeHandle<Object> JSArray::SetElementsLength(
   JSObject::EnqueueChangeRecord(
       array, "update", isolate->factory()->length_string(),
       old_length_handle);
-
+#pragma convert(pop)
   EndPerformSplice(array);
 
   uint32_t index = Min(old_length, new_length);
@@ -12839,6 +12844,7 @@ MaybeHandle<Object> JSObject::SetElement(Handle<JSObject> object,
                                          StrictMode strict_mode,
                                          bool check_prototype,
                                          SetPropertyMode set_mode) {
+#pragma convert("ISO8859-1")
   Isolate* isolate = object->GetIsolate();
 
   if (object->HasExternalArrayElements() ||
@@ -12968,6 +12974,7 @@ MaybeHandle<Object> JSObject::SetElement(Handle<JSObject> object,
   }
 
   return result;
+#pragma convert(pop)
 }
 
 
