@@ -521,22 +521,32 @@
         },
       }],
       ['OS=="os390"', {
+        'defines': [
+          '_UNIX03_THREADS',
+          '_XOPEN_SOURCE=500',
+          '__IBMCPP_TR1__',
+          '_OPEN_SYS_TIMED_EXT',
+          '__BIG_ENDIAN=4321',
+          '__BYTE_ORDER=__BIG_ENDIAN',
+        ],
         'cflags': [
+          '-q64',
+          '-qxplink',
+          '-qlanglvl=extended',
+          '-qlonglong',
+          '-qenum=int',
+          '-qcsect=v8z',
           '-qasmlib=sys1.maclib:sys1.modgen',
           '-qasm',
           '-qenum=4',
           '-qdebug=nohook',
-          '-qCSECT=v8z',
-          '-D_XOPEN_SOURCE_EXTENDED=1',
-          '-D_XOPEN_SOURCE=500',
           '-qbitfield=signed',
           '-qnortti',
           '-Wc,expo',
-          '-g',
-          '-D__IBMCPP_TR1__',
-          '-D__BIG_ENDIAN=4321',
-          '-D__BYTE_ORDER=__BIG_ENDIAN',
-          '-D_OPEN_SYS_TIMED_EXT=1',
+        ],
+        'ldflags': [
+          '-q64',
+          '-qxplink',
         ],
       }],
       ['(OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
@@ -614,6 +624,13 @@
           }],
         ],  # conditions
       }],
+      ['OS=="os390"', {
+        'conditions': [
+          [ 'v8_no_strict_aliasing==1', {
+            'cflags': [ '-qnoansialias' ],
+          }],
+        ],  # conditions
+      }],
       ['OS=="solaris"', {
         'defines': [ '__C99FEATURES__=1' ],  # isinf() etc.
       }],
@@ -660,7 +677,7 @@
         },
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" or \
-            OS=="qnx" or OS=="aix"', {
+            OS=="qnx" or OS=="aix" or OS=="os390"', {
             'cflags!': [
               '-O0',
               '-O3',
@@ -668,9 +685,13 @@
               '-O1',
               '-Os',
             ],
-            'cflags': [
-              '-fdata-sections',
-              '-ffunction-sections',
+            'conditions': [
+              ['OS!="os390"', {
+                'cflags': [
+                  '-fdata-sections',
+                  '-ffunction-sections',
+                ],
+              }],
             ],
           }],
           ['OS=="mac"', {
@@ -705,7 +726,7 @@
         },
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" or \
-            OS=="qnx" or OS=="aix"', {
+            OS=="qnx" or OS=="aix" or OS=="os390"', {
             'cflags!': [
               '-O0',
               '-O3', # TODO(2807) should be -O1.
@@ -765,7 +786,7 @@
         },
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" or \
-            OS=="qnx" or OS=="aix"', {
+            OS=="qnx" or OS=="aix" or OS=="os390"', {
             'cflags!': [
               '-O0',
               '-O1',
@@ -858,16 +879,18 @@
       'Release': {
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" \
-            or OS=="aix"', {
+            or OS=="aix" or OS=="os390"', {
             'cflags!': [
               '-Os',
             ],
-            'cflags': [
-              '-fdata-sections',
-              '-ffunction-sections',
-              '<(wno_array_bounds)',
-            ],
             'conditions': [
+              ['OS!="os390"', {
+                'cflags': [
+                  '-fdata-sections',
+                  '-ffunction-sections',
+                  '<(wno_array_bounds)',
+                ],
+              }],
               [ 'gcc_version==44 and clang==0', {
                 'cflags': [
                   # Avoid crashes with gcc 4.4 in the v8 test suite.
