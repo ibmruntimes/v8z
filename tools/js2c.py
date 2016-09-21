@@ -260,7 +260,7 @@ HEADER_TEMPLATE = """\
 
 namespace v8 {
 namespace internal {
-
+#pragma convert("ISO8859-1")
 %(sources_declaration)s\
 
 %(raw_sources_declaration)s\
@@ -308,7 +308,7 @@ namespace internal {
     DCHECK(%(raw_total_length)i == raw_source.length());
     raw_sources = raw_source.start();
   }
-
+#pragma convert(pop)
 }  // internal
 }  // v8
 """
