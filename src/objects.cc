@@ -10066,7 +10066,7 @@ Context* JSFunction::NativeContextFromLiterals(FixedArray* literals) {
   return Context::cast(literals->get(JSFunction::kLiteralNativeContextIndex));
 }
 
-
+#pragma convert("ISO8859-1")
 // The filter is a pattern that matches function names in this way:
 //   "*"      all; the default
 //   "-"      all but the top-level function
@@ -10102,7 +10102,7 @@ bool JSFunction::PassesFilter(const char* raw_filter) {
   }
   return false;
 }
-
+#pragma convert(pop)
 
 void Oddball::Initialize(Isolate* isolate,
                          Handle<Oddball> oddball,
