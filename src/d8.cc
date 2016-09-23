@@ -465,7 +465,7 @@ void Shell::RealmSharedSet(Local<String> property,
 
 void Shell::Print(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Write(args);
-  printf("\xa");
+  printf("\n");
   fflush(stdout);
 }
 
@@ -474,7 +474,7 @@ void Shell::Write(const v8::FunctionCallbackInfo<v8::Value>& args) {
   for (int i = 0; i < args.Length(); i++) {
     HandleScope handle_scope(args.GetIsolate());
     if (i != 0) {
-      printf("\x20");
+      printf(" ");
     }
 
     // Explicitly catch potential exceptions in toString().
@@ -486,9 +486,10 @@ void Shell::Write(const v8::FunctionCallbackInfo<v8::Value>& args) {
     }
 
     v8::String::Utf8Value str(str_obj);
+    __a2e_s(*str);
     int n = static_cast<int>(fwrite(*str, sizeof(**str), str.length(), stdout));
     if (n != str.length()) {
-      printf("\x45\x72\x72\x6f\x72\x20\x69\x6e\x20\x66\x77\x72\x69\x74\x65\xa");
+      printf("Error in fwrite\n");
       Exit(1);
     }
   }
