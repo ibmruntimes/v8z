@@ -65,6 +65,23 @@
 namespace v8 {
 
 
+void ebcdic_printf(const char* cstr, bool newline = true) {
+  int len = strlen(cstr);
+  char* ebcdic = new char[len];
+  strncpy(ebcdic, cstr, len);
+  __a2e_s(ebcdic);
+  printf(ebcdic);
+  delete[] ebcdic;
+  if (newline) printf("\n");
+}
+
+
+void ebcdic_printf(const v8::String::Utf8Value& value,
+                          bool newline = true) {
+  ebcdic_printf(Shell::ToCString(value), newline);
+}
+
+
 static Handle<Value> Throw(Isolate* isolate, const char* message) {
   return isolate->ThrowException(String::NewFromUtf8(isolate, message));
 }
@@ -130,7 +147,7 @@ class DumbLineEditor: public LineEditor {
 
 
 Handle<String> DumbLineEditor::Prompt(const char* prompt) {
-  printf("\x6c\xa2", prompt);
+  ebcdic_printf(prompt, false);
 #if defined(__native_client__)
   // Native Client libc is used to being embedded in Chrome and
   // has trouble recognizing when to flush.
@@ -253,8 +270,9 @@ bool Shell::ExecuteString(Isolate* isolate,
             // If all went well and the result wasn't undefined then print
             // the returned value.
             v8::String::Utf8Value str(result);
+            __a2e_s(*str);
             fwrite(*str, sizeof(**str), str.length(), stdout);
-            printf("\xa");
+            printf("\n");
           }
 #if !defined(V8_SHARED)
         } else {
@@ -269,8 +287,9 @@ bool Shell::ExecuteString(Isolate* isolate,
           Handle<Value> s = Handle<Function>::Cast(fun)->Call(global, 1, argv);
           if (try_catch.HasCaught()) return true;
           v8::String::Utf8Value str(s);
+          __a2e_s(*str);
           fwrite((*str), sizeof(**str), str.length(), stdout);
-          printf("\xa");
+          printf("\n");
         }
 #endif
       }
@@ -601,39 +620,37 @@ void Shell::ReportException(Isolate* isolate, v8::TryCatch* try_catch) {
   }
 #endif  // !V8_SHARED
   v8::String::Utf8Value exception(try_catch->Exception());
-  const char* exception_string = ToCString(exception);
   Handle<Message> message = try_catch->Message();
   if (message.IsEmpty()) {
     // V8 didn't provide any extra information about this error; just
     // print the exception.
-    printf("\x6c\xa2\xa", exception_string);
+    ebcdic_printf(exception);
   } else {
     // Print (filename):(line number): (message).
     v8::String::Utf8Value filename(message->GetScriptOrigin().ResourceName());
-    const char* filename_string = ToCString(filename);
     int linenum = message->GetLineNumber();
-    printf("\x6c\xa2\x3a\x6c\x89\x3a\x20\x6c\xa2\xa", filename_string, linenum, exception_string);
+    ebcdic_printf(filename, false);
+    printf(":%i: ", linenum);
+    ebcdic_printf(exception);
     // Print line of source code.
     v8::String::Utf8Value sourceline(message->GetSourceLine());
-    const char* sourceline_string = ToCString(sourceline);
-    printf("\x6c\xa2\xa", sourceline_string);
+    ebcdic_printf(sourceline);
     // Print wavy underline (GetUnderline is deprecated).
     int start = message->GetStartColumn();
     for (int i = 0; i < start; i++) {
-      printf("\x20");
+      printf(" ");
     }
     int end = message->GetEndColumn();
     for (int i = start; i < end; i++) {
-      printf("\x5e");
+      printf("^");
     }
-    printf("\xa");
+    printf("\n");
     v8::String::Utf8Value stack_trace(try_catch->StackTrace());
     if (stack_trace.length() > 0) {
-      const char* stack_trace_string = ToCString(stack_trace);
-      printf("\x6c\xa2\xa", stack_trace_string);
+      ebcdic_printf(stack_trace);
     }
   }
-  printf("\xa");
+  printf("\n");
 #ifndef V8_SHARED
   if (enter_context) utility_context->Exit();
 #endif  // !V8_SHARED
@@ -1186,7 +1203,7 @@ void Shell::RunShell(Isolate* isolate) {
   PerIsolateData::RealmScope realm_scope(PerIsolateData::Get(isolate));
   Handle<String> name = String::NewFromUtf8(isolate, "\x28\x64\x38\x29");
   LineEditor* console = LineEditor::Get();
-  printf("\x56\x38\x20\x76\x65\x72\x73\x69\x6f\x6e\x20\x6c\xa2\x20\x5b\x63\x6f\x6e\x73\x6f\x6c\x65\x3a\x20\x6c\xa2\x5d\xa", V8::GetVersion(), console->name());
+  printf("V8 version %s [console: %s]\n", V8::GetVersion(), console->name());
   console->Open(isolate);
   while (true) {
     HandleScope inner_scope(isolate);
@@ -1194,7 +1211,7 @@ void Shell::RunShell(Isolate* isolate) {
     if (input.IsEmpty()) break;
     ExecuteString(isolate, input, name, true, true);
   }
-  printf("\xa");
+  printf("\n");
 }
 
 
@@ -1228,7 +1245,7 @@ void SourceGroup::Execute(Isolate* isolate) {
       Handle<String> file_name = String::NewFromUtf8(isolate, arg);
       Handle<String> source = ReadFile(isolate, arg);
       if (source.IsEmpty()) {
-        printf("\x45\x72\x72\x6f\x72\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x27\x6c\xa2\x27\xa", arg);
+        printf("Error reading '%s'\n", arg);
         Shell::Exit(1);
       }
       if (!Shell::ExecuteString(isolate, source, file_name, false, true)) {
@@ -1366,13 +1383,13 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       continue;
     } else if (strcmp(argv[i], "\x2d\x2d\x69\x73\x6f\x6c\x61\x74\x65") == 0) {
 #ifdef V8_SHARED
-      printf("\x44\x38\x20\x77\x69\x74\x68\x20\x73\x68\x61\x72\x65\x64\x20\x6c\x69\x62\x72\x61\x72\x79\x20\x64\x6f\x65\x73\x20\x6e\x6f\x74\x20\x73\x75\x70\x70\x6f\x72\x74\x20\x6d\x75\x6c\x74\x69\x2d\x74\x68\x72\x65\x61\x64\x69\x6e\x67\xa");
+      printf("D8 with shared library does not support multi-threading\n");
       return false;
 #endif  // V8_SHARED
       options.num_isolates++;
     } else if (strcmp(argv[i], "\x2d\x2d\x64\x75\x6d\x70\x2d\x68\x65\x61\x70\x2d\x63\x6f\x6e\x73\x74\x61\x6e\x74\x73") == 0) {
 #ifdef V8_SHARED
-      printf("\x44\x38\x20\x77\x69\x74\x68\x20\x73\x68\x61\x72\x65\x64\x20\x6c\x69\x62\x72\x61\x72\x79\x20\x64\x6f\x65\x73\x20\x6e\x6f\x74\x20\x73\x75\x70\x70\x6f\x72\x74\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x20\x64\x75\x6d\x70\x69\x6e\x67\xa");
+      printf("D8 with shared library does not support constant dumping\n");
       return false;
 #else
       options.dump_heap_constants = true;
@@ -1386,10 +1403,10 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       argv[i] = NULL;
 #ifdef V8_SHARED
     } else if (strcmp(argv[i], "\x2d\x2d\x64\x75\x6d\x70\x2d\x63\x6f\x75\x6e\x74\x65\x72\x73") == 0) {
-      printf("\x44\x38\x20\x77\x69\x74\x68\x20\x73\x68\x61\x72\x65\x64\x20\x6c\x69\x62\x72\x61\x72\x79\x20\x64\x6f\x65\x73\x20\x6e\x6f\x74\x20\x69\x6e\x63\x6c\x75\x64\x65\x20\x63\x6f\x75\x6e\x74\x65\x72\x73\xa");
+      printf("D8 with shared library does not include counters\n");
       return false;
     } else if (strcmp(argv[i], "\x2d\x2d\x64\x65\x62\x75\x67\x67\x65\x72") == 0) {
-      printf("\x4a\x61\x76\x61\x73\x63\x72\x69\x70\x74\x20\x64\x65\x62\x75\x67\x67\x65\x72\x20\x6e\x6f\x74\x20\x69\x6e\x63\x6c\x75\x64\x65\x64\xa");
+      printf("Javascript debugger not included\n");
       return false;
 #endif  // V8_SHARED
 #ifdef V8_USE_EXTERNAL_STARTUP_DATA
@@ -1410,7 +1427,7 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       } else if (strncmp(value, "\x3d\x6e\x6f\x6e\x65", 6) == 0) {
         options.compile_options = v8::ScriptCompiler::kNoCompileOptions;
       } else {
-        printf("\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x6f\x70\x74\x69\x6f\x6e\x20\x74\x6f\x20\x2d\x2d\x63\x61\x63\x68\x65\x2e\xa");
+        printf("Unknown option to --cache.\n");
         return false;
       }
       argv[i] = NULL;
@@ -1430,7 +1447,7 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       current++;
       current->Begin(argv, i + 1);
     } else if (strncmp(argv[i], "\x2d\x2d", 2) == 0) {
-      printf("\x57\x61\x72\x6e\x69\x6e\x67\x3a\x20\x75\x6e\x6b\x6e\x6f\x77\x6e\x20\x66\x6c\x61\x67\x20\x6c\xa2\x2e\xa\x54\x72\x79\x20\x2d\x2d\x68\x65\x6c\x70\x20\x66\x6f\x72\x20\x6f\x70\x74\x69\x6f\x6e\x73\xa", argv[i]);
+      printf("Warning: unknown flag %s.\nTry --help for options\n", argv[i]);
     }
   }
   current->End(argc);
