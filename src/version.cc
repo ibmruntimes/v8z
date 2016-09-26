@@ -56,8 +56,8 @@
 
 #if PATCH_LEVEL > 0
 #define VERSION_STRING                                                         \
-    S(MAJOR_VERSION) "\x2e" S(MINOR_VERSION) "\x2e" S(BUILD_NUMBER) "\x2e"              \
-        S(PATCH_LEVEL) CANDIDATE_STRING
+    "\x33\x2E\x32\x38\x2E\x37\x31\x2E\x31\x39" CANDIDATE_STRING
+    // S(MAJOR_VERSION) "\x2e" S(MINOR_VERSION) "\x2e" S(BUILD_NUMBER) "\x2e" S(PATCH_LEVEL) CANDIDATE_STRING
 #else
 #define VERSION_STRING                                                         \
     S(MAJOR_VERSION) "\x2e" S(MINOR_VERSION) "\x2e" S(BUILD_NUMBER)                  \
