@@ -399,7 +399,7 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
           break;
         case Flag::TYPE_INT:
           __a2e_s(const_cast<char *>(value));
-          *flag->int_variable() = (value, &endp, 10);  // NOLINT
+          *flag->int_variable() = strtol(value, &endp, 10);  // NOLINT
           break;
         case Flag::TYPE_FLOAT:
           __a2e_s(const_cast<char *>(value));
