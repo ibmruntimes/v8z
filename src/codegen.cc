@@ -193,7 +193,7 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
     if (print_source) {
       Handle<Script> script = info->script();
       if (!script->IsUndefined() && !script->source()->IsUndefined()) {
-        os << "\x2d\x2d\x2d\x20\x52\x61\x77\x20\x73\x6f\x75\x72\x63\x65\x20\x2d\x2d\x2d\xa";
+        os << "--- Raw source ---\n";
         ConsStringIteratorOp op;
         StringCharacterStream stream(String::cast(script->source()),
                                      &op,
@@ -207,22 +207,22 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
             os << AsUC16(stream.GetNext());
           }
         }
-        os << "\xa\xa";
+        os << "\n\n";
       }
     }
     if (info->IsOptimizing()) {
       if (FLAG_print_unopt_code) {
-        os << "\x2d\x2d\x2d\x20\x55\x6e\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x2d\x2d\x2d\xa";
+        os << "--- Unoptimized code ---\n";
         info->closure()->shared()->code()->Disassemble(
             function->debug_name()->ToCString().get(), os);
       }
-      os << "\x2d\x2d\x2d\x20\x4f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x2d\x2d\x2d\xa"
-         << "\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x5f\x69\x64\x20\x3d\x20" << info->optimization_id() << "\xa";
+      os << "--- Optimized code ---\n"
+         << "optimization_id = " << info->optimization_id() << "\n";
     } else {
-      os << "\x2d\x2d\x2d\x20\x43\x6f\x64\x65\x20\x2d\x2d\x2d\xa";
+      os << "--- Code ---\n";
     }
     if (print_source) {
-      os << "\x73\x6f\x75\x72\x63\x65\x5f\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x3d\x20" << function->start_position() << "\xa";
+      os << "source_position = " << function->start_position() << "\n";
     }
     if (info->IsStub()) {
       CodeStub::Major major_key = info->code_stub()->MajorKey();
@@ -230,7 +230,7 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
     } else {
       code->Disassemble(function->debug_name()->ToCString().get(), os);
     }
-    os << "\x2d\x2d\x2d\x20\x45\x6e\x64\x20\x63\x6f\x64\x65\x20\x2d\x2d\x2d\xa";
+    os << "--- End code ---\n";
   }
 #endif  // ENABLE_DISASSEMBLER
 }

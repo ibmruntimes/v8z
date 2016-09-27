@@ -197,7 +197,7 @@ Handle<Code> CodeStub::GetCode() {
       OStringStream name;
       name << *this;
       new_object->Disassemble(name.c_str(), os);
-      os << "\xa";
+      os << "\n";
     }
 #endif
 
