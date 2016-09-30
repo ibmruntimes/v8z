@@ -10058,7 +10058,9 @@ void JSFunction::SetInstanceClassName(String* name) {
 
 void JSFunction::PrintName(FILE* out) {
   SmartArrayPointer<char> name = shared()->DebugName()->ToCString();
-  PrintF(out, "%s", name.get());
+  char * name_cstr = name.get();
+  __a2e_s(name_cstr);
+  PrintF(out, "%s", name_cstr);
 }
 
 

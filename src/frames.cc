@@ -790,10 +790,10 @@ void JavaScriptFrame::Summarize(List<FrameSummary>* functions) {
 void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
                                              Address pc, FILE* file,
                                              bool print_line_number) {
-  PrintF(file, "\x6c\xa2", function->IsOptimized() ? "\x2a" : "\x7e");
+  PrintF(file, "%s", function->IsOptimized() ? "*" : "~");
   function->PrintName(file);
   int code_offset = static_cast<int>(pc - code->instruction_start());
-  PrintF(file, "\x2b\x6c\x84", code_offset);
+  PrintF(file, "+%d", code_offset);
   if (print_line_number) {
     SharedFunctionInfo* shared = function->shared();
     int source_pos = code->SourcePosition(pc);
@@ -806,12 +806,12 @@ void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
         String* script_name = String::cast(script->name());
         SmartArrayPointer<char> c_script_name =
             script_name->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-        PrintF(file, "\x20\x61\x74\x20\x6c\xa2\x3a\x6c\x84", c_script_name.get(), line);
+        PrintF(file, " at %s:%d", c_script_name.get(), line);
       } else {
-        PrintF(file, "\x20\x61\x74\x20\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e\x3a\x6c\x84", line);
+        PrintF(file, " at <unknown>:%d", line);
       }
     } else {
-      PrintF(file, "\x20\x61\x74\x20\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e\x3a\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e");
+      PrintF(file, " at <unknown>:<unknown>");
     }
   }
 }
@@ -825,21 +825,21 @@ void JavaScriptFrame::PrintTop(Isolate* isolate, FILE* file, bool print_args,
   while (!it.done()) {
     if (it.frame()->is_java_script()) {
       JavaScriptFrame* frame = it.frame();
-      if (frame->IsConstructor()) PrintF(file, "\x6e\x65\x77\x20");
+      if (frame->IsConstructor()) PrintF(file, "new ");
       PrintFunctionAndOffset(frame->function(), frame->unchecked_code(),
                              frame->pc(), file, print_line_number);
       if (print_args) {
         // function arguments
         // (we are intentionally only printing the actually
         // supplied parameters, not all parameters required)
-        PrintF(file, "\x28\x74\x68\x69\x73\x3d");
+        PrintF(file, "(this=");
         frame->receiver()->ShortPrint(file);
         const int length = frame->ComputeParametersCount();
         for (int i = 0; i < length; i++) {
-          PrintF(file, "\x2c\x20");
+          PrintF(file, ", ");
           frame->GetParameter(i)->ShortPrint(file);
         }
-        PrintF(file, "\x29");
+        PrintF(file, ")");
       }
       break;
     }
