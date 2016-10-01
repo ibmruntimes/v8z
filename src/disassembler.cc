@@ -254,8 +254,12 @@ static int DecodeIt(Isolate* isolate,
           uint32_t minor_key = CodeStub::MinorKeyFromKey(key);
           CodeStub::Major major_key = CodeStub::GetMajorKey(code);
           DCHECK(major_key == CodeStub::MajorKeyFromKey(key));
-          out.AddFormatted(" %s, %s, ", Code::Kind2String(kind),
-                           CodeStub::MajorName(major_key, false));
+          const char * name = CodeStub::MajorName(major_key, false);
+          char name_e[name != NULL ? strlen(name) : 1];
+          name_e[0] = '\0';
+          strcpy(name_e, name);
+          __a2e_s(name_e);
+          out.AddFormatted(" %s, %s, ", Code::Kind2String(kind), name_e);
           switch (major_key) {
             case CodeStub::CallFunction: {
               int argc = CallFunctionStub::ExtractArgcFromMinorKey(minor_key);
