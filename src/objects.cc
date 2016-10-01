@@ -1203,7 +1203,8 @@ void String::StringShortPrint(StringStream* accumulator) {
   if (ascii) {
     accumulator->Add("<String[%u]: ", length());
     for (int i = 0; i < len; i++) {
-      accumulator->Put(static_cast<char>(stream.GetNext()));
+      accumulator->Put(
+          Ascii2Ebcdic(static_cast<char>(stream.GetNext())));
     }
     accumulator->Put('>');
   } else {
@@ -1212,16 +1213,17 @@ void String::StringShortPrint(StringStream* accumulator) {
     accumulator->Add("<String[%u]\\: ", length());
     for (int i = 0; i < len; i++) {
       uint16_t c = stream.GetNext();
-      if (c == '\n') {
+      char ec = Ascii2Ebcdic(static_cast<char>(c));
+      if (ec == '\n') {
         accumulator->Add("\\n");
-      } else if (c == '\r') {
+      } else if (ec == '\r') {
         accumulator->Add("\\r");
-      } else if (c == '\\') {
+      } else if (ec == '\\') {
         accumulator->Add("\\\\");
       } else if (GET_ASCII_CODE(c) < 32 || GET_ASCII_CODE(c) > 126) {
         accumulator->Add("\\x%02x", c);
       } else {
-        accumulator->Put(static_cast<char>(c));
+        accumulator->Put(static_cast<char>(ec));
       }
     }
     if (truncated) {
