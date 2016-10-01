@@ -117,32 +117,41 @@ void CodeGenerator::MakeCodePrologue(CompilationInfo* info, const char* kind) {
   if (info->isolate()->bootstrapper()->IsActive()) {
     print_source = FLAG_print_builtin_source;
     print_ast = FLAG_print_builtin_ast;
-    ftype = "\x62\x75\x69\x6c\x74\x69\x6e";
+    ftype = "builtin";
   } else {
     print_source = FLAG_print_source;
     print_ast = FLAG_print_ast;
-    ftype = "\x75\x73\x65\x72\x2d\x64\x65\x66\x69\x6e\x65\x64";
+    ftype = "user-defined";
   }
 
   if (FLAG_trace_codegen || print_source || print_ast) {
-    PrintF("\x5b\x67\x65\x6e\x65\x72\x61\x74\x69\x6e\x67\x20\x6c\xa2\x20\x63\x6f\x64\x65\x20\x66\x6f\x72\x20\x6c\xa2\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20", kind, ftype);
+    PrintF("[generating %s code for %s function: ", kind, ftype);
     if (info->IsStub()) {
       const char* name =
           CodeStub::MajorName(info->code_stub()->MajorKey(), true);
-      PrintF("\x6c\xa2", name == NULL ? "\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e" : name);
+      if (name == NULL) {
+        PrintF("<unknown>");
+      } else {
+        for (int i = 0; name[i] != '\0'; i++) {
+          PrintF("%c", Ascii2Ebcdic(name[i]));
+        }
+      }
     } else {
-      PrintF("\x6c\xa2", info->function()->debug_name()->ToCString().get());
+      SmartArrayPointer<char> name = info->function()->debug_name()->ToCString();
+      char * name_cstr = name.get();
+      __a2e_s(name_cstr);
+      PrintF("%s", name_cstr);
     }
-    PrintF("\x5d\xa");
+    PrintF("]\n");
   }
 
 #ifdef DEBUG
-  if (!info->IsStub() && print_source) {
-    PrintF("\x2d\x2d\x2d\x20\x53\x6f\x75\x72\x63\x65\x20\x66\x72\x6f\x6d\x20\x41\x53\x54\x20\x2d\x2d\x2d\xa\x6c\xa2\xa",
+  if (!info->IsStub() && print_source && false) {
+    PrintF("--- Source from AST ---\n%s\n",
            PrettyPrinter(info->zone()).PrintProgram(info->function()));
   }
 
-  if (!info->IsStub() && print_ast) {
+  if (!info->IsStub() && print_ast && false) {
     PrintF("\x2d\x2d\x2d\x20\x41\x53\x54\x20\x2d\x2d\x2d\xa\x6c\xa2\xa",
            AstPrinter(info->zone()).PrintProgram(info->function()));
   }

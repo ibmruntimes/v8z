@@ -223,15 +223,16 @@ Handle<Code> CodeStub::GetCode() {
 }
 
 
+#pragma convert("ISO8859-1")
 const char* CodeStub::MajorName(CodeStub::Major major_key,
                                 bool allow_unknown_keys) {
   switch (major_key) {
-#define DEF_CASE(name) case name: return #name "\x53\x74\x75\x62";
+#define DEF_CASE(name) case name: return #name "Stub";
     CODE_STUB_LIST(DEF_CASE)
 #undef DEF_CASE
-    case UninitializedMajorKey: return "\x3c\x55\x6e\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64\x4d\x61\x6a\x6f\x72\x4b\x65\x79\x3e\x53\x74\x75\x62";
+    case UninitializedMajorKey: return "<UninitializedMajorKey>Stub";
     case NoCache:
-      return "\x3c\x4e\x6f\x43\x61\x63\x68\x65\x3e\x53\x74\x75\x62";
+      return "<NoCache>Stub";
     default:
       if (!allow_unknown_keys) {
         UNREACHABLE();
@@ -239,6 +240,7 @@ const char* CodeStub::MajorName(CodeStub::Major major_key,
       return NULL;
   }
 }
+#pragma convert(pop)
 
 
 void CodeStub::PrintBaseName(OStream& os) const {  // NOLINT

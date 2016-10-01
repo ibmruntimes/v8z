@@ -297,7 +297,7 @@ bool FullCodeGenerator::MakeCode(CompilationInfo* info) {
     int len = String::cast(script->source())->length();
     isolate->counters()->total_full_codegen_source_size()->Increment(len);
   }
-  CodeGenerator::MakeCodePrologue(info, "\x66\x75\x6c\x6c");
+  CodeGenerator::MakeCodePrologue(info, "full");
   const int kInitialBufferSize = 4 * KB;
   MacroAssembler masm(info->isolate(), NULL, kInitialBufferSize);
   if (info->will_serialize()) masm.enable_serializer();

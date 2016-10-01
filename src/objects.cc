@@ -11410,7 +11410,15 @@ void Code::Disassemble(const char* name, OStream& os) {  // NOLINT
   os << "kind = " << Kind2String(kind()) << "\n";
   if (IsCodeStubOrIC()) {
     const char* n = CodeStub::MajorName(CodeStub::GetMajorKey(this), true);
-    os << "major_key = " << (n == NULL ? "null" : n) << "\n";
+    os << "major_key = ";
+    if (n == NULL) {
+      os << "null";
+    } else {
+      for (int i = 0; n[i] != '\0'; i++) {
+        os << Ascii2Ebcdic(n[i]);
+      }
+    }
+    os << "\n";
   }
   if (is_inline_cache_stub()) {
     os << "ic_state = " << ICState2String(ic_state()) << "\n";
@@ -11431,7 +11439,11 @@ void Code::Disassemble(const char* name, OStream& os) {  // NOLINT
     }
   }
   if ((name != NULL) && (name[0] != '\0')) {
-    os << "name = " << name << "\n";
+    os << "name = ";
+    for (int n = 0; name[n] != '\0'; n++) {
+      os << Ascii2Ebcdic(name[n]);
+    }
+    os << "\n";
   }
   if (kind() == OPTIMIZED_FUNCTION) {
     os << "stack_slots = " << stack_slots() << "\n";
