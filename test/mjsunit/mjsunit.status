@@ -587,10 +587,12 @@
 }],  # 'arch == s390 or arch == s390x'
 
 ['system == "OS/390"', {
+  # scp issue on unicode characters
   'string-case': [SKIP],
   'unicode-test': [SKIP],
   'unicodelctest': [SKIP],
   'unicodelctest-no-optimization': [SKIP],
+  'regress/regress-2032' [SKIP],
 }], # 'system == "OS/390"'
 
 ['arch == ppc or arch == ppc64', {
