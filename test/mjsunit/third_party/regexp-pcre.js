@@ -75,7 +75,7 @@
 //
 // End
 //
-// Flags: --stack-size=1200
+// Flags: --stack-size=1300
 
 var res = new Array();
 res[0] = /(a)b|/i;
