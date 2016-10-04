@@ -386,6 +386,7 @@ Handle<FixedArray> JSObject::EnsureWritableFastElements(
 }
 
 
+#pragma convert("ISO8859-1")
 MaybeHandle<Object> JSProxy::GetPropertyWithHandler(Handle<JSProxy> proxy,
                                                     Handle<Object> receiver,
                                                     Handle<Name> name) {
@@ -398,6 +399,7 @@ MaybeHandle<Object> JSProxy::GetPropertyWithHandler(Handle<JSProxy> proxy,
   return CallTrap(
       proxy, "get",  isolate->derived_get_trap(), ARRAY_SIZE(args), args);
 }
+#pragma convert(pop)
 
 
 MaybeHandle<Object> Object::GetPropertyWithAccessor(Handle<Object> receiver,
