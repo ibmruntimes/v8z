@@ -3581,6 +3581,7 @@ void JSObject::LookupRealNamedPropertyInPrototypes(Handle<Name> name,
 }
 
 
+#pragma convert("ISO8859-1")
 Maybe<bool> JSProxy::HasPropertyWithHandler(Handle<JSProxy> proxy,
                                             Handle<Name> name) {
   Isolate* isolate = proxy->GetIsolate();
@@ -3622,7 +3623,6 @@ MaybeHandle<Object> JSProxy::SetPropertyWithHandler(Handle<JSProxy> proxy,
   return value;
 }
 
-#pragma convert("ISO8859-1")
 MaybeHandle<Object> JSProxy::SetPropertyViaPrototypesWithHandler(
     Handle<JSProxy> proxy, Handle<Object> receiver, Handle<Name> name,
     Handle<Object> value, StrictMode strict_mode, bool* done) {
@@ -3752,8 +3752,6 @@ MaybeHandle<Object> JSProxy::DeletePropertyWithHandler(
   }
   return isolate->factory()->ToBoolean(result_bool);
 }
-#pragma convert(pop)
-
 
 MaybeHandle<Object> JSProxy::DeleteElementWithHandler(
     Handle<JSProxy> proxy, uint32_t index, DeleteMode mode) {
@@ -3762,7 +3760,6 @@ MaybeHandle<Object> JSProxy::DeleteElementWithHandler(
   return JSProxy::DeletePropertyWithHandler(proxy, name, mode);
 }
 
-#pragma convert("ISO8859-1")
 Maybe<PropertyAttributes> JSProxy::GetPropertyAttributesWithHandler(
     Handle<JSProxy> proxy, Handle<Object> receiver, Handle<Name> name) {
   Isolate* isolate = proxy->GetIsolate();
