@@ -586,6 +586,13 @@
   'debug-liveedit-double-call': [SKIP],
 }],  # 'arch == s390 or arch == s390x'
 
+['system == "OS/390"', {
+  'string-case': [SKIP],
+  'unicode-test': [SKIP],
+  'unicodelctest': [SKIP],
+  'unicodelctest-no-optimization': [SKIP],
+}], # 'system == "OS/390"'
+
 ['arch == ppc or arch == ppc64', {
 
   # Test does not handle increased precision of multiply-add optimization
