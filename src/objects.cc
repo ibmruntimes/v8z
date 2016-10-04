@@ -399,8 +399,6 @@ MaybeHandle<Object> JSProxy::GetPropertyWithHandler(Handle<JSProxy> proxy,
   return CallTrap(
       proxy, "get",  isolate->derived_get_trap(), ARRAY_SIZE(args), args);
 }
-#pragma convert(pop)
-
 
 MaybeHandle<Object> Object::GetPropertyWithAccessor(Handle<Object> receiver,
                                                     Handle<Name> name,
@@ -535,7 +533,7 @@ MaybeHandle<Object> Object::SetPropertyWithAccessor(
   UNREACHABLE();
   return MaybeHandle<Object>();
 }
-
+#pragma convert(pop)
 
 MaybeHandle<Object> Object::GetPropertyWithDefinedGetter(
     Handle<Object> receiver,
@@ -1888,7 +1886,7 @@ void JSObject::AddSlowProperty(Handle<JSObject> object,
   if (*dict != *result) object->set_properties(*result);
 }
 
-
+#pragma convert("ISO8859-1")
 MaybeHandle<Object> JSObject::AddPropertyInternal(
     Handle<JSObject> object, Handle<Name> name, Handle<Object> value,
     PropertyAttributes attributes, JSReceiver::StoreFromKeyed store_mode,
@@ -1921,14 +1919,14 @@ MaybeHandle<Object> JSObject::AddPropertyInternal(
   if (object->map()->is_observed() &&
       *name != isolate->heap()->hidden_string()) {
     Handle<Object> old_value = isolate->factory()->the_hole_value();
-#pragma convert("ISO8859-1")
+
     EnqueueChangeRecord(object, "add", name, old_value);
-#pragma convert(pop)  
+ 
   }
 
   return value;
 }
-
+#pragma convert(pop) 
 
 Context* JSObject::GetCreationContext() {
   Object* constructor = this->map()->constructor();
@@ -3086,7 +3084,7 @@ MaybeHandle<Object> Object::SetDataProperty(LookupIterator* it,
   return value;
 }
 
-
+#pragma convert("ISO8859-1")
 MaybeHandle<Object> Object::AddDataProperty(LookupIterator* it,
                                             Handle<Object> value,
                                             PropertyAttributes attributes,
@@ -3131,17 +3129,17 @@ MaybeHandle<Object> Object::AddDataProperty(LookupIterator* it,
     // Write the property value.
     it->WriteDataValue(value);
   }
-#pragma convert("ISO8859-1")
+
   // Send the change record if there are observers.
   if (receiver->map()->is_observed() &&
       !it->name().is_identical_to(it->factory()->hidden_string())) {
     JSObject::EnqueueChangeRecord(receiver, "add", it->name(),
                                   it->factory()->the_hole_value());
   }
-#pragma convert(pop)
+
   return value;
 }
-
+#pragma convert(pop)
 
 MaybeHandle<Object> JSObject::SetElementWithCallbackSetterInPrototypes(
     Handle<JSObject> object,
@@ -3623,6 +3621,7 @@ MaybeHandle<Object> JSProxy::SetPropertyWithHandler(Handle<JSProxy> proxy,
   return value;
 }
 
+#pragma convert("ISO8859-1")
 MaybeHandle<Object> JSProxy::SetPropertyViaPrototypesWithHandler(
     Handle<JSProxy> proxy, Handle<Object> receiver, Handle<Name> name,
     Handle<Object> value, StrictMode strict_mode, bool* done) {
@@ -3752,6 +3751,7 @@ MaybeHandle<Object> JSProxy::DeletePropertyWithHandler(
   }
   return isolate->factory()->ToBoolean(result_bool);
 }
+#pragma convert(pop)
 
 MaybeHandle<Object> JSProxy::DeleteElementWithHandler(
     Handle<JSProxy> proxy, uint32_t index, DeleteMode mode) {
@@ -3760,6 +3760,7 @@ MaybeHandle<Object> JSProxy::DeleteElementWithHandler(
   return JSProxy::DeletePropertyWithHandler(proxy, name, mode);
 }
 
+#pragma convert("ISO8859-1")
 Maybe<PropertyAttributes> JSProxy::GetPropertyAttributesWithHandler(
     Handle<JSProxy> proxy, Handle<Object> receiver, Handle<Name> name) {
   Isolate* isolate = proxy->GetIsolate();
@@ -12590,7 +12591,7 @@ MaybeHandle<Object> JSObject::SetFastElement(Handle<JSObject> object,
   return value;
 }
 
-
+#pragma convert("ISO8859-1")
 MaybeHandle<Object> JSObject::SetDictionaryElement(
     Handle<JSObject> object,
     uint32_t index,
@@ -12729,6 +12730,7 @@ MaybeHandle<Object> JSObject::SetDictionaryElement(
   }
   return value;
 }
+#pragma convert(pop)
 
 MaybeHandle<Object> JSObject::SetFastDoubleElement(
     Handle<JSObject> object,
