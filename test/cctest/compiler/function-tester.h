@@ -156,17 +156,29 @@ class FunctionTester : public InitializedHandleScope {
   }
 
   Handle<JSFunction> NewFunction(const char* source) {
+    int len = strlen(source);
+    char* ascii = new char[len];
+    memcpy(ascii, source, len);
+    __e2a_s(ascii);
     return v8::Utils::OpenHandle(
-        *v8::Handle<v8::Function>::Cast(CompileRun(source)));
+        *v8::Handle<v8::Function>::Cast(CompileRun(ascii)));
   }
 
   Handle<JSObject> NewObject(const char* source) {
+    int len = strlen(source);
+    char* ascii = new char[len];
+    memcpy(ascii, source, len);
+    __e2a_s(ascii);
     return v8::Utils::OpenHandle(
-        *v8::Handle<v8::Object>::Cast(CompileRun(source)));
+        *v8::Handle<v8::Object>::Cast(CompileRun(ascii)));
   }
 
   Handle<String> Val(const char* string) {
-    return isolate->factory()->InternalizeUtf8String(string);
+    int len = strlen(string);
+    char* ascii = new char[len];
+    memcpy(ascii, string, len);
+    __e2a_s(ascii);
+    return isolate->factory()->InternalizeUtf8String(ascii);
   }
 
   Handle<Object> Val(double value) {
