@@ -124,7 +124,7 @@ void TestSetter(
 
 Handle<AccessorInfo> TestAccessorInfo(
       Isolate* isolate, PropertyAttributes attributes) {
-  Handle<String> name = isolate->factory()->NewStringFromStaticAscii("get");
+  Handle<String> name = isolate->factory()->NewStringFromStaticAscii("\x67\x65\x74");
   return Accessors::MakeAccessor(isolate, name, &TestGetter, &TestSetter,
                                  attributes);
 }
@@ -157,11 +157,11 @@ TEST(StressJS) {
   map->AppendDescriptor(&d);
 
   // Add the Foo constructor the global object.
-  env->Global()->Set(v8::String::NewFromUtf8(CcTest::isolate(), "Foo"),
+  env->Global()->Set(v8::String::NewFromUtf8(CcTest::isolate(), "\x46\x6f\x6f"),
                      v8::Utils::ToLocal(function));
   // Call the accessor through JavaScript.
   v8::Handle<v8::Value> result = v8::Script::Compile(
-      v8::String::NewFromUtf8(CcTest::isolate(), "(new Foo).get"))->Run();
+      v8::String::NewFromUtf8(CcTest::isolate(), "\x28\x6e\x65\x77\x20\x46\x6f\x6f\x29\x2e\x67\x65\x74"))->Run();
   CHECK_EQ(42, result->Int32Value());
   env->Exit();
 }

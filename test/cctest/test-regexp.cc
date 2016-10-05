@@ -168,251 +168,251 @@ static MinMaxPair CheckMinMaxMatch(const char* input) {
 TEST(Parser) {
   V8::Initialize(NULL);
 
-  CHECK_PARSE_ERROR("?");
+  CHECK_PARSE_ERROR("\x3f");
 
-  CheckParseEq("abc", "'abc'");
-  CheckParseEq("", "%");
-  CheckParseEq("abc|def", "(| 'abc' 'def')");
-  CheckParseEq("abc|def|ghi", "(| 'abc' 'def' 'ghi')");
-  CheckParseEq("^xxx$", "(: @^i 'xxx' @$i)");
-  CheckParseEq("ab\\b\\d\\bcd", "(: 'ab' @b [0-9] @b 'cd')");
-  CheckParseEq("\\w|\\d", "(| [0-9 A-Z _ a-z] [0-9])");
-  CheckParseEq("a*", "(# 0 - g 'a')");
-  CheckParseEq("a*?", "(# 0 - n 'a')");
-  CheckParseEq("abc+", "(: 'ab' (# 1 - g 'c'))");
-  CheckParseEq("abc+?", "(: 'ab' (# 1 - n 'c'))");
-  CheckParseEq("xyz?", "(: 'xy' (# 0 1 g 'z'))");
-  CheckParseEq("xyz??", "(: 'xy' (# 0 1 n 'z'))");
-  CheckParseEq("xyz{0,1}", "(: 'xy' (# 0 1 g 'z'))");
-  CheckParseEq("xyz{0,1}?", "(: 'xy' (# 0 1 n 'z'))");
-  CheckParseEq("xyz{93}", "(: 'xy' (# 93 93 g 'z'))");
-  CheckParseEq("xyz{93}?", "(: 'xy' (# 93 93 n 'z'))");
-  CheckParseEq("xyz{1,32}", "(: 'xy' (# 1 32 g 'z'))");
-  CheckParseEq("xyz{1,32}?", "(: 'xy' (# 1 32 n 'z'))");
-  CheckParseEq("xyz{1,}", "(: 'xy' (# 1 - g 'z'))");
-  CheckParseEq("xyz{1,}?", "(: 'xy' (# 1 - n 'z'))");
-  CheckParseEq("a\\fb\\nc\\rd\\te\\vf", "'a\\x0cb\\x0ac\\x0dd\\x09e\\x0bf'");
-  CheckParseEq("a\\nb\\bc", "(: 'a\\x0ab' @b 'c')");
-  CheckParseEq("(?:foo)", "'foo'");
-  CheckParseEq("(?: foo )", "' foo '");
-  CheckParseEq("(foo|bar|baz)", "(^ (| 'foo' 'bar' 'baz'))");
-  CheckParseEq("foo|(bar|baz)|quux", "(| 'foo' (^ (| 'bar' 'baz')) 'quux')");
-  CheckParseEq("foo(?=bar)baz", "(: 'foo' (-> + 'bar') 'baz')");
-  CheckParseEq("foo(?!bar)baz", "(: 'foo' (-> - 'bar') 'baz')");
-  CheckParseEq("()", "(^ %)");
-  CheckParseEq("(?=)", "(-> + %)");
-  CheckParseEq("[]", "^[\\x00-\\uffff]");  // Doesn't compile on windows
-  CheckParseEq("[^]", "[\\x00-\\uffff]");  // \uffff isn't in codepage 1252
-  CheckParseEq("[x]", "[x]");
-  CheckParseEq("[xyz]", "[x y z]");
-  CheckParseEq("[a-zA-Z0-9]", "[a-z A-Z 0-9]");
-  CheckParseEq("[-123]", "[- 1 2 3]");
-  CheckParseEq("[^123]", "^[1 2 3]");
-  CheckParseEq("]", "']'");
-  CheckParseEq("}", "'}'");
-  CheckParseEq("[a-b-c]", "[a-b - c]");
-  CheckParseEq("[\\d]", "[0-9]");
-  CheckParseEq("[x\\dz]", "[x 0-9 z]");
-  CheckParseEq("[\\d-z]", "[0-9 - z]");
-  CheckParseEq("[\\d-\\d]", "[0-9 - 0-9]");
-  CheckParseEq("[z-\\d]", "[z - 0-9]");
+  CheckParseEq("\x61\x62\x63", "\x27\x61\x62\x63\x27");
+  CheckParseEq("", "\x25");
+  CheckParseEq("\x61\x62\x63\x7c\x64\x65\x66", "\x28\x7c\x20\x27\x61\x62\x63\x27\x20\x27\x64\x65\x66\x27\x29");
+  CheckParseEq("\x61\x62\x63\x7c\x64\x65\x66\x7c\x67\x68\x69", "\x28\x7c\x20\x27\x61\x62\x63\x27\x20\x27\x64\x65\x66\x27\x20\x27\x67\x68\x69\x27\x29");
+  CheckParseEq("\x5e\x78\x78\x78\x24", "\x28\x3a\x20\x40\x5e\x69\x20\x27\x78\x78\x78\x27\x20\x40\x24\x69\x29");
+  CheckParseEq("\x61\x62\x5c\x62\x5c\x64\x5c\x62\x63\x64", "\x28\x3a\x20\x27\x61\x62\x27\x20\x40\x62\x20\x5b\x30\x2d\x39\x5d\x20\x40\x62\x20\x27\x63\x64\x27\x29");
+  CheckParseEq("\x5c\x77\x7c\x5c\x64", "\x28\x7c\x20\x5b\x30\x2d\x39\x20\x41\x2d\x5a\x20\x5f\x20\x61\x2d\x7a\x5d\x20\x5b\x30\x2d\x39\x5d\x29");
+  CheckParseEq("\x61\x2a", "\x28\x23\x20\x30\x20\x2d\x20\x67\x20\x27\x61\x27\x29");
+  CheckParseEq("\x61\x2a\x3f", "\x28\x23\x20\x30\x20\x2d\x20\x6e\x20\x27\x61\x27\x29");
+  CheckParseEq("\x61\x62\x63\x2b", "\x28\x3a\x20\x27\x61\x62\x27\x20\x28\x23\x20\x31\x20\x2d\x20\x67\x20\x27\x63\x27\x29\x29");
+  CheckParseEq("\x61\x62\x63\x2b\x3f", "\x28\x3a\x20\x27\x61\x62\x27\x20\x28\x23\x20\x31\x20\x2d\x20\x6e\x20\x27\x63\x27\x29\x29");
+  CheckParseEq("\x78\x79\x7a\x3f", "\x28\x3a\x20\x27\x78\x79\x27\x20\x28\x23\x20\x30\x20\x31\x20\x67\x20\x27\x7a\x27\x29\x29");
+  CheckParseEq("\x78\x79\x7a\x3f\x3f", "\x28\x3a\x20\x27\x78\x79\x27\x20\x28\x23\x20\x30\x20\x31\x20\x6e\x20\x27\x7a\x27\x29\x29");
+  CheckParseEq("\x78\x79\x7a\x7b\x30\x2c\x31\x7d", "\x28\x3a\x20\x27\x78\x79\x27\x20\x28\x23\x20\x30\x20\x31\x20\x67\x20\x27\x7a\x27\x29\x29");
+  CheckParseEq("\x78\x79\x7a\x7b\x30\x2c\x31\x7d\x3f", "\x28\x3a\x20\x27\x78\x79\x27\x20\x28\x23\x20\x30\x20\x31\x20\x6e\x20\x27\x7a\x27\x29\x29");
+  CheckParseEq("\x78\x79\x7a\x7b\x39\x33\x7d", "\x28\x3a\x20\x27\x78\x79\x27\x20\x28\x23\x20\x39\x33\x20\x39\x33\x20\x67\x20\x27\x7a\x27\x29\x29");
+  CheckParseEq("\x78\x79\x7a\x7b\x39\x33\x7d\x3f", "\x28\x3a\x20\x27\x78\x79\x27\x20\x28\x23\x20\x39\x33\x20\x39\x33\x20\x6e\x20\x27\x7a\x27\x29\x29");
+  CheckParseEq("\x78\x79\x7a\x7b\x31\x2c\x33\x32\x7d", "\x28\x3a\x20\x27\x78\x79\x27\x20\x28\x23\x20\x31\x20\x33\x32\x20\x67\x20\x27\x7a\x27\x29\x29");
+  CheckParseEq("\x78\x79\x7a\x7b\x31\x2c\x33\x32\x7d\x3f", "\x28\x3a\x20\x27\x78\x79\x27\x20\x28\x23\x20\x31\x20\x33\x32\x20\x6e\x20\x27\x7a\x27\x29\x29");
+  CheckParseEq("\x78\x79\x7a\x7b\x31\x2c\x7d", "\x28\x3a\x20\x27\x78\x79\x27\x20\x28\x23\x20\x31\x20\x2d\x20\x67\x20\x27\x7a\x27\x29\x29");
+  CheckParseEq("\x78\x79\x7a\x7b\x31\x2c\x7d\x3f", "\x28\x3a\x20\x27\x78\x79\x27\x20\x28\x23\x20\x31\x20\x2d\x20\x6e\x20\x27\x7a\x27\x29\x29");
+  CheckParseEq("\x61\x5c\x66\x62\x5c\x6e\x63\x5c\x72\x64\x5c\x74\x65\x5c\x76\x66", "\x27\x61\x5c\x78\x30\x63\x62\x5c\x78\x30\x61\x63\x5c\x78\x30\x64\x64\x5c\x78\x30\x39\x65\x5c\x78\x30\x62\x66\x27");
+  CheckParseEq("\x61\x5c\x6e\x62\x5c\x62\x63", "\x28\x3a\x20\x27\x61\x5c\x78\x30\x61\x62\x27\x20\x40\x62\x20\x27\x63\x27\x29");
+  CheckParseEq("\x28\x3f\x3a\x66\x6f\x6f\x29", "\x27\x66\x6f\x6f\x27");
+  CheckParseEq("\x28\x3f\x3a\x20\x66\x6f\x6f\x20\x29", "\x27\x20\x66\x6f\x6f\x20\x27");
+  CheckParseEq("\x28\x66\x6f\x6f\x7c\x62\x61\x72\x7c\x62\x61\x7a\x29", "\x28\x5e\x20\x28\x7c\x20\x27\x66\x6f\x6f\x27\x20\x27\x62\x61\x72\x27\x20\x27\x62\x61\x7a\x27\x29\x29");
+  CheckParseEq("\x66\x6f\x6f\x7c\x28\x62\x61\x72\x7c\x62\x61\x7a\x29\x7c\x71\x75\x75\x78", "\x28\x7c\x20\x27\x66\x6f\x6f\x27\x20\x28\x5e\x20\x28\x7c\x20\x27\x62\x61\x72\x27\x20\x27\x62\x61\x7a\x27\x29\x29\x20\x27\x71\x75\x75\x78\x27\x29");
+  CheckParseEq("\x66\x6f\x6f\x28\x3f\x3d\x62\x61\x72\x29\x62\x61\x7a", "\x28\x3a\x20\x27\x66\x6f\x6f\x27\x20\x28\x2d\x3e\x20\x2b\x20\x27\x62\x61\x72\x27\x29\x20\x27\x62\x61\x7a\x27\x29");
+  CheckParseEq("\x66\x6f\x6f\x28\x3f\x21\x62\x61\x72\x29\x62\x61\x7a", "\x28\x3a\x20\x27\x66\x6f\x6f\x27\x20\x28\x2d\x3e\x20\x2d\x20\x27\x62\x61\x72\x27\x29\x20\x27\x62\x61\x7a\x27\x29");
+  CheckParseEq("\x28\x29", "\x28\x5e\x20\x25\x29");
+  CheckParseEq("\x28\x3f\x3d\x29", "\x28\x2d\x3e\x20\x2b\x20\x25\x29");
+  CheckParseEq("\x5b\x5d", "\x5e\x5b\x5c\x78\x30\x30\x2d\x5c\x75\x66\x66\x66\x66\x5d");  // Doesn't compile on windows
+  CheckParseEq("\x5b\x5e\x5d", "\x5b\x5c\x78\x30\x30\x2d\x5c\x75\x66\x66\x66\x66\x5d");  // \uffff isn't in codepage 1252
+  CheckParseEq("\x5b\x78\x5d", "\x5b\x78\x5d");
+  CheckParseEq("\x5b\x78\x79\x7a\x5d", "\x5b\x78\x20\x79\x20\x7a\x5d");
+  CheckParseEq("\x5b\x61\x2d\x7a\x41\x2d\x5a\x30\x2d\x39\x5d", "\x5b\x61\x2d\x7a\x20\x41\x2d\x5a\x20\x30\x2d\x39\x5d");
+  CheckParseEq("\x5b\x2d\x31\x32\x33\x5d", "\x5b\x2d\x20\x31\x20\x32\x20\x33\x5d");
+  CheckParseEq("\x5b\x5e\x31\x32\x33\x5d", "\x5e\x5b\x31\x20\x32\x20\x33\x5d");
+  CheckParseEq("\x5d", "\x27\x5d\x27");
+  CheckParseEq("\x7d", "\x27\x7d\x27");
+  CheckParseEq("\x5b\x61\x2d\x62\x2d\x63\x5d", "\x5b\x61\x2d\x62\x20\x2d\x20\x63\x5d");
+  CheckParseEq("\x5b\x5c\x64\x5d", "\x5b\x30\x2d\x39\x5d");
+  CheckParseEq("\x5b\x78\x5c\x64\x7a\x5d", "\x5b\x78\x20\x30\x2d\x39\x20\x7a\x5d");
+  CheckParseEq("\x5b\x5c\x64\x2d\x7a\x5d", "\x5b\x30\x2d\x39\x20\x2d\x20\x7a\x5d");
+  CheckParseEq("\x5b\x5c\x64\x2d\x5c\x64\x5d", "\x5b\x30\x2d\x39\x20\x2d\x20\x30\x2d\x39\x5d");
+  CheckParseEq("\x5b\x7a\x2d\x5c\x64\x5d", "\x5b\x7a\x20\x2d\x20\x30\x2d\x39\x5d");
   // Control character outside character class.
-  CheckParseEq("\\cj\\cJ\\ci\\cI\\ck\\cK", "'\\x0a\\x0a\\x09\\x09\\x0b\\x0b'");
-  CheckParseEq("\\c!", "'\\c!'");
-  CheckParseEq("\\c_", "'\\c_'");
-  CheckParseEq("\\c~", "'\\c~'");
-  CheckParseEq("\\c1", "'\\c1'");
+  CheckParseEq("\x5c\x63\x6a\x5c\x63\x4a\x5c\x63\x69\x5c\x63\x49\x5c\x63\x6b\x5c\x63\x4b", "\x27\x5c\x78\x30\x61\x5c\x78\x30\x61\x5c\x78\x30\x39\x5c\x78\x30\x39\x5c\x78\x30\x62\x5c\x78\x30\x62\x27");
+  CheckParseEq("\x5c\x63\x21", "\x27\x5c\x63\x21\x27");
+  CheckParseEq("\x5c\x63\x5f", "\x27\x5c\x63\x5f\x27");
+  CheckParseEq("\x5c\x63\x7e", "\x27\x5c\x63\x7e\x27");
+  CheckParseEq("\x5c\x63\x31", "\x27\x5c\x63\x31\x27");
   // Control character inside character class.
-  CheckParseEq("[\\c!]", "[\\ c !]");
-  CheckParseEq("[\\c_]", "[\\x1f]");
-  CheckParseEq("[\\c~]", "[\\ c ~]");
-  CheckParseEq("[\\ca]", "[\\x01]");
-  CheckParseEq("[\\cz]", "[\\x1a]");
-  CheckParseEq("[\\cA]", "[\\x01]");
-  CheckParseEq("[\\cZ]", "[\\x1a]");
-  CheckParseEq("[\\c1]", "[\\x11]");
+  CheckParseEq("\x5b\x5c\x63\x21\x5d", "\x5b\x5c\x20\x63\x20\x21\x5d");
+  CheckParseEq("\x5b\x5c\x63\x5f\x5d", "\x5b\x5c\x78\x31\x66\x5d");
+  CheckParseEq("\x5b\x5c\x63\x7e\x5d", "\x5b\x5c\x20\x63\x20\x7e\x5d");
+  CheckParseEq("\x5b\x5c\x63\x61\x5d", "\x5b\x5c\x78\x30\x31\x5d");
+  CheckParseEq("\x5b\x5c\x63\x7a\x5d", "\x5b\x5c\x78\x31\x61\x5d");
+  CheckParseEq("\x5b\x5c\x63\x41\x5d", "\x5b\x5c\x78\x30\x31\x5d");
+  CheckParseEq("\x5b\x5c\x63\x5a\x5d", "\x5b\x5c\x78\x31\x61\x5d");
+  CheckParseEq("\x5b\x5c\x63\x31\x5d", "\x5b\x5c\x78\x31\x31\x5d");
 
-  CheckParseEq("[a\\]c]", "[a ] c]");
-  CheckParseEq("\\[\\]\\{\\}\\(\\)\\%\\^\\#\\ ", "'[]{}()%^# '");
-  CheckParseEq("[\\[\\]\\{\\}\\(\\)\\%\\^\\#\\ ]", "[[ ] { } ( ) % ^ #  ]");
-  CheckParseEq("\\0", "'\\x00'");
-  CheckParseEq("\\8", "'8'");
-  CheckParseEq("\\9", "'9'");
-  CheckParseEq("\\11", "'\\x09'");
-  CheckParseEq("\\11a", "'\\x09a'");
-  CheckParseEq("\\011", "'\\x09'");
-  CheckParseEq("\\00011", "'\\x0011'");
-  CheckParseEq("\\118", "'\\x098'");
-  CheckParseEq("\\111", "'I'");
-  CheckParseEq("\\1111", "'I1'");
-  CheckParseEq("(x)(x)(x)\\1", "(: (^ 'x') (^ 'x') (^ 'x') (<- 1))");
-  CheckParseEq("(x)(x)(x)\\2", "(: (^ 'x') (^ 'x') (^ 'x') (<- 2))");
-  CheckParseEq("(x)(x)(x)\\3", "(: (^ 'x') (^ 'x') (^ 'x') (<- 3))");
-  CheckParseEq("(x)(x)(x)\\4", "(: (^ 'x') (^ 'x') (^ 'x') '\\x04')");
-  CheckParseEq("(x)(x)(x)\\1*",
-               "(: (^ 'x') (^ 'x') (^ 'x')"
-               " (# 0 - g (<- 1)))");
-  CheckParseEq("(x)(x)(x)\\2*",
-               "(: (^ 'x') (^ 'x') (^ 'x')"
-               " (# 0 - g (<- 2)))");
-  CheckParseEq("(x)(x)(x)\\3*",
-               "(: (^ 'x') (^ 'x') (^ 'x')"
-               " (# 0 - g (<- 3)))");
-  CheckParseEq("(x)(x)(x)\\4*",
-               "(: (^ 'x') (^ 'x') (^ 'x')"
-               " (# 0 - g '\\x04'))");
-  CheckParseEq("(x)(x)(x)(x)(x)(x)(x)(x)(x)(x)\\10",
-               "(: (^ 'x') (^ 'x') (^ 'x') (^ 'x') (^ 'x') (^ 'x')"
-               " (^ 'x') (^ 'x') (^ 'x') (^ 'x') (<- 10))");
-  CheckParseEq("(x)(x)(x)(x)(x)(x)(x)(x)(x)(x)\\11",
-               "(: (^ 'x') (^ 'x') (^ 'x') (^ 'x') (^ 'x') (^ 'x')"
-               " (^ 'x') (^ 'x') (^ 'x') (^ 'x') '\\x09')");
-  CheckParseEq("(a)\\1", "(: (^ 'a') (<- 1))");
-  CheckParseEq("(a\\1)", "(^ 'a')");
-  CheckParseEq("(\\1a)", "(^ 'a')");
-  CheckParseEq("(?=a)?a", "'a'");
-  CheckParseEq("(?=a){0,10}a", "'a'");
-  CheckParseEq("(?=a){1,10}a", "(: (-> + 'a') 'a')");
-  CheckParseEq("(?=a){9,10}a", "(: (-> + 'a') 'a')");
-  CheckParseEq("(?!a)?a", "'a'");
-  CheckParseEq("\\1(a)", "(^ 'a')");
-  CheckParseEq("(?!(a))\\1", "(: (-> - (^ 'a')) (<- 1))");
-  CheckParseEq("(?!\\1(a\\1)\\1)\\1", "(: (-> - (: (^ 'a') (<- 1))) (<- 1))");
-  CheckParseEq("[\\0]", "[\\x00]");
-  CheckParseEq("[\\11]", "[\\x09]");
-  CheckParseEq("[\\11a]", "[\\x09 a]");
-  CheckParseEq("[\\011]", "[\\x09]");
-  CheckParseEq("[\\00011]", "[\\x00 1 1]");
-  CheckParseEq("[\\118]", "[\\x09 8]");
-  CheckParseEq("[\\111]", "[I]");
-  CheckParseEq("[\\1111]", "[I 1]");
-  CheckParseEq("\\x34", "'\x34'");
-  CheckParseEq("\\x60", "'\x60'");
-  CheckParseEq("\\x3z", "'x3z'");
-  CheckParseEq("\\c", "'\\c'");
-  CheckParseEq("\\u0034", "'\x34'");
-  CheckParseEq("\\u003z", "'u003z'");
-  CheckParseEq("foo[z]*", "(: 'foo' (# 0 - g [z]))");
+  CheckParseEq("\x5b\x61\x5c\x5d\x63\x5d", "\x5b\x61\x20\x5d\x20\x63\x5d");
+  CheckParseEq("\x5c\x5b\x5c\x5d\x5c\x7b\x5c\x7d\x5c\x28\x5c\x29\x5c\x25\x5c\x5e\x5c\x23\x5c\x20", "\x27\x5b\x5d\x7b\x7d\x28\x29\x25\x5e\x23\x20\x27");
+  CheckParseEq("\x5b\x5c\x5b\x5c\x5d\x5c\x7b\x5c\x7d\x5c\x28\x5c\x29\x5c\x25\x5c\x5e\x5c\x23\x5c\x20\x5d", "\x5b\x5b\x20\x5d\x20\x7b\x20\x7d\x20\x28\x20\x29\x20\x25\x20\x5e\x20\x23\x20\x20\x5d");
+  CheckParseEq("\x5c\x30", "\x27\x5c\x78\x30\x30\x27");
+  CheckParseEq("\x5c\x38", "\x27\x38\x27");
+  CheckParseEq("\x5c\x39", "\x27\x39\x27");
+  CheckParseEq("\x5c\x31\x31", "\x27\x5c\x78\x30\x39\x27");
+  CheckParseEq("\x5c\x31\x31\x61", "\x27\x5c\x78\x30\x39\x61\x27");
+  CheckParseEq("\x5c\x30\x31\x31", "\x27\x5c\x78\x30\x39\x27");
+  CheckParseEq("\x5c\x30\x30\x30\x31\x31", "\x27\x5c\x78\x30\x30\x31\x31\x27");
+  CheckParseEq("\x5c\x31\x31\x38", "\x27\x5c\x78\x30\x39\x38\x27");
+  CheckParseEq("\x5c\x31\x31\x31", "\x27\x49\x27");
+  CheckParseEq("\x5c\x31\x31\x31\x31", "\x27\x49\x31\x27");
+  CheckParseEq("\x28\x78\x29\x28\x78\x29\x28\x78\x29\x5c\x31", "\x28\x3a\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x3c\x2d\x20\x31\x29\x29");
+  CheckParseEq("\x28\x78\x29\x28\x78\x29\x28\x78\x29\x5c\x32", "\x28\x3a\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x3c\x2d\x20\x32\x29\x29");
+  CheckParseEq("\x28\x78\x29\x28\x78\x29\x28\x78\x29\x5c\x33", "\x28\x3a\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x3c\x2d\x20\x33\x29\x29");
+  CheckParseEq("\x28\x78\x29\x28\x78\x29\x28\x78\x29\x5c\x34", "\x28\x3a\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x27\x5c\x78\x30\x34\x27\x29");
+  CheckParseEq("\x28\x78\x29\x28\x78\x29\x28\x78\x29\x5c\x31\x2a",
+               "\x28\x3a\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29"
+               "\x20\x28\x23\x20\x30\x20\x2d\x20\x67\x20\x28\x3c\x2d\x20\x31\x29\x29\x29");
+  CheckParseEq("\x28\x78\x29\x28\x78\x29\x28\x78\x29\x5c\x32\x2a",
+               "\x28\x3a\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29"
+               "\x20\x28\x23\x20\x30\x20\x2d\x20\x67\x20\x28\x3c\x2d\x20\x32\x29\x29\x29");
+  CheckParseEq("\x28\x78\x29\x28\x78\x29\x28\x78\x29\x5c\x33\x2a",
+               "\x28\x3a\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29"
+               "\x20\x28\x23\x20\x30\x20\x2d\x20\x67\x20\x28\x3c\x2d\x20\x33\x29\x29\x29");
+  CheckParseEq("\x28\x78\x29\x28\x78\x29\x28\x78\x29\x5c\x34\x2a",
+               "\x28\x3a\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29"
+               "\x20\x28\x23\x20\x30\x20\x2d\x20\x67\x20\x27\x5c\x78\x30\x34\x27\x29\x29");
+  CheckParseEq("\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x5c\x31\x30",
+               "\x28\x3a\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29"
+               "\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x3c\x2d\x20\x31\x30\x29\x29");
+  CheckParseEq("\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x28\x78\x29\x5c\x31\x31",
+               "\x28\x3a\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29"
+               "\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x28\x5e\x20\x27\x78\x27\x29\x20\x27\x5c\x78\x30\x39\x27\x29");
+  CheckParseEq("\x28\x61\x29\x5c\x31", "\x28\x3a\x20\x28\x5e\x20\x27\x61\x27\x29\x20\x28\x3c\x2d\x20\x31\x29\x29");
+  CheckParseEq("\x28\x61\x5c\x31\x29", "\x28\x5e\x20\x27\x61\x27\x29");
+  CheckParseEq("\x28\x5c\x31\x61\x29", "\x28\x5e\x20\x27\x61\x27\x29");
+  CheckParseEq("\x28\x3f\x3d\x61\x29\x3f\x61", "\x27\x61\x27");
+  CheckParseEq("\x28\x3f\x3d\x61\x29\x7b\x30\x2c\x31\x30\x7d\x61", "\x27\x61\x27");
+  CheckParseEq("\x28\x3f\x3d\x61\x29\x7b\x31\x2c\x31\x30\x7d\x61", "\x28\x3a\x20\x28\x2d\x3e\x20\x2b\x20\x27\x61\x27\x29\x20\x27\x61\x27\x29");
+  CheckParseEq("\x28\x3f\x3d\x61\x29\x7b\x39\x2c\x31\x30\x7d\x61", "\x28\x3a\x20\x28\x2d\x3e\x20\x2b\x20\x27\x61\x27\x29\x20\x27\x61\x27\x29");
+  CheckParseEq("\x28\x3f\x21\x61\x29\x3f\x61", "\x27\x61\x27");
+  CheckParseEq("\x5c\x31\x28\x61\x29", "\x28\x5e\x20\x27\x61\x27\x29");
+  CheckParseEq("\x28\x3f\x21\x28\x61\x29\x29\x5c\x31", "\x28\x3a\x20\x28\x2d\x3e\x20\x2d\x20\x28\x5e\x20\x27\x61\x27\x29\x29\x20\x28\x3c\x2d\x20\x31\x29\x29");
+  CheckParseEq("\x28\x3f\x21\x5c\x31\x28\x61\x5c\x31\x29\x5c\x31\x29\x5c\x31", "\x28\x3a\x20\x28\x2d\x3e\x20\x2d\x20\x28\x3a\x20\x28\x5e\x20\x27\x61\x27\x29\x20\x28\x3c\x2d\x20\x31\x29\x29\x29\x20\x28\x3c\x2d\x20\x31\x29\x29");
+  CheckParseEq("\x5b\x5c\x30\x5d", "\x5b\x5c\x78\x30\x30\x5d");
+  CheckParseEq("\x5b\x5c\x31\x31\x5d", "\x5b\x5c\x78\x30\x39\x5d");
+  CheckParseEq("\x5b\x5c\x31\x31\x61\x5d", "\x5b\x5c\x78\x30\x39\x20\x61\x5d");
+  CheckParseEq("\x5b\x5c\x30\x31\x31\x5d", "\x5b\x5c\x78\x30\x39\x5d");
+  CheckParseEq("\x5b\x5c\x30\x30\x30\x31\x31\x5d", "\x5b\x5c\x78\x30\x30\x20\x31\x20\x31\x5d");
+  CheckParseEq("\x5b\x5c\x31\x31\x38\x5d", "\x5b\x5c\x78\x30\x39\x20\x38\x5d");
+  CheckParseEq("\x5b\x5c\x31\x31\x31\x5d", "\x5b\x49\x5d");
+  CheckParseEq("\x5b\x5c\x31\x31\x31\x31\x5d", "\x5b\x49\x20\x31\x5d");
+  CheckParseEq("\x5c\x78\x33\x34", "\x27\x34\x27");
+  CheckParseEq("\x5c\x78\x36\x30", "\x27\x60\x27");
+  CheckParseEq("\x5c\x78\x33\x7a", "\x27\x78\x33\x7a\x27");
+  CheckParseEq("\x5c\x63", "\x27\x5c\x63\x27");
+  CheckParseEq("\x5c\x75\x30\x30\x33\x34", "\x27\x34\x27");
+  CheckParseEq("\x5c\x75\x30\x30\x33\x7a", "\x27\x75\x30\x30\x33\x7a\x27");
+  CheckParseEq("\x66\x6f\x6f\x5b\x7a\x5d\x2a", "\x28\x3a\x20\x27\x66\x6f\x6f\x27\x20\x28\x23\x20\x30\x20\x2d\x20\x67\x20\x5b\x7a\x5d\x29\x29");
 
   CHECK_SIMPLE("", false);
-  CHECK_SIMPLE("a", true);
-  CHECK_SIMPLE("a|b", false);
-  CHECK_SIMPLE("a\\n", false);
-  CHECK_SIMPLE("^a", false);
-  CHECK_SIMPLE("a$", false);
-  CHECK_SIMPLE("a\\b!", false);
-  CHECK_SIMPLE("a\\Bb", false);
-  CHECK_SIMPLE("a*", false);
-  CHECK_SIMPLE("a*?", false);
-  CHECK_SIMPLE("a?", false);
-  CHECK_SIMPLE("a??", false);
-  CHECK_SIMPLE("a{0,1}?", false);
-  CHECK_SIMPLE("a{1,1}?", false);
-  CHECK_SIMPLE("a{1,2}?", false);
-  CHECK_SIMPLE("a+?", false);
-  CHECK_SIMPLE("(a)", false);
-  CHECK_SIMPLE("(a)\\1", false);
-  CHECK_SIMPLE("(\\1a)", false);
-  CHECK_SIMPLE("\\1(a)", false);
-  CHECK_SIMPLE("a\\s", false);
-  CHECK_SIMPLE("a\\S", false);
-  CHECK_SIMPLE("a\\d", false);
-  CHECK_SIMPLE("a\\D", false);
-  CHECK_SIMPLE("a\\w", false);
-  CHECK_SIMPLE("a\\W", false);
-  CHECK_SIMPLE("a.", false);
-  CHECK_SIMPLE("a\\q", false);
-  CHECK_SIMPLE("a[a]", false);
-  CHECK_SIMPLE("a[^a]", false);
-  CHECK_SIMPLE("a[a-z]", false);
-  CHECK_SIMPLE("a[\\q]", false);
-  CHECK_SIMPLE("a(?:b)", false);
-  CHECK_SIMPLE("a(?=b)", false);
-  CHECK_SIMPLE("a(?!b)", false);
-  CHECK_SIMPLE("\\x60", false);
-  CHECK_SIMPLE("\\u0060", false);
-  CHECK_SIMPLE("\\cA", false);
-  CHECK_SIMPLE("\\q", false);
-  CHECK_SIMPLE("\\1112", false);
-  CHECK_SIMPLE("\\0", false);
-  CHECK_SIMPLE("(a)\\1", false);
-  CHECK_SIMPLE("(?=a)?a", false);
-  CHECK_SIMPLE("(?!a)?a\\1", false);
-  CHECK_SIMPLE("(?:(?=a))a\\1", false);
+  CHECK_SIMPLE("\x61", true);
+  CHECK_SIMPLE("\x61\x7c\x62", false);
+  CHECK_SIMPLE("\x61\x5c\x6e", false);
+  CHECK_SIMPLE("\x5e\x61", false);
+  CHECK_SIMPLE("\x61\x24", false);
+  CHECK_SIMPLE("\x61\x5c\x62\x21", false);
+  CHECK_SIMPLE("\x61\x5c\x42\x62", false);
+  CHECK_SIMPLE("\x61\x2a", false);
+  CHECK_SIMPLE("\x61\x2a\x3f", false);
+  CHECK_SIMPLE("\x61\x3f", false);
+  CHECK_SIMPLE("\x61\x3f\x3f", false);
+  CHECK_SIMPLE("\x61\x7b\x30\x2c\x31\x7d\x3f", false);
+  CHECK_SIMPLE("\x61\x7b\x31\x2c\x31\x7d\x3f", false);
+  CHECK_SIMPLE("\x61\x7b\x31\x2c\x32\x7d\x3f", false);
+  CHECK_SIMPLE("\x61\x2b\x3f", false);
+  CHECK_SIMPLE("\x28\x61\x29", false);
+  CHECK_SIMPLE("\x28\x61\x29\x5c\x31", false);
+  CHECK_SIMPLE("\x28\x5c\x31\x61\x29", false);
+  CHECK_SIMPLE("\x5c\x31\x28\x61\x29", false);
+  CHECK_SIMPLE("\x61\x5c\x73", false);
+  CHECK_SIMPLE("\x61\x5c\x53", false);
+  CHECK_SIMPLE("\x61\x5c\x64", false);
+  CHECK_SIMPLE("\x61\x5c\x44", false);
+  CHECK_SIMPLE("\x61\x5c\x77", false);
+  CHECK_SIMPLE("\x61\x5c\x57", false);
+  CHECK_SIMPLE("\x61\x2e", false);
+  CHECK_SIMPLE("\x61\x5c\x71", false);
+  CHECK_SIMPLE("\x61\x5b\x61\x5d", false);
+  CHECK_SIMPLE("\x61\x5b\x5e\x61\x5d", false);
+  CHECK_SIMPLE("\x61\x5b\x61\x2d\x7a\x5d", false);
+  CHECK_SIMPLE("\x61\x5b\x5c\x71\x5d", false);
+  CHECK_SIMPLE("\x61\x28\x3f\x3a\x62\x29", false);
+  CHECK_SIMPLE("\x61\x28\x3f\x3d\x62\x29", false);
+  CHECK_SIMPLE("\x61\x28\x3f\x21\x62\x29", false);
+  CHECK_SIMPLE("\x5c\x78\x36\x30", false);
+  CHECK_SIMPLE("\x5c\x75\x30\x30\x36\x30", false);
+  CHECK_SIMPLE("\x5c\x63\x41", false);
+  CHECK_SIMPLE("\x5c\x71", false);
+  CHECK_SIMPLE("\x5c\x31\x31\x31\x32", false);
+  CHECK_SIMPLE("\x5c\x30", false);
+  CHECK_SIMPLE("\x28\x61\x29\x5c\x31", false);
+  CHECK_SIMPLE("\x28\x3f\x3d\x61\x29\x3f\x61", false);
+  CHECK_SIMPLE("\x28\x3f\x21\x61\x29\x3f\x61\x5c\x31", false);
+  CHECK_SIMPLE("\x28\x3f\x3a\x28\x3f\x3d\x61\x29\x29\x61\x5c\x31", false);
 
-  CheckParseEq("a{}", "'a{}'");
-  CheckParseEq("a{,}", "'a{,}'");
-  CheckParseEq("a{", "'a{'");
-  CheckParseEq("a{z}", "'a{z}'");
-  CheckParseEq("a{1z}", "'a{1z}'");
-  CheckParseEq("a{12z}", "'a{12z}'");
-  CheckParseEq("a{12,", "'a{12,'");
-  CheckParseEq("a{12,3b", "'a{12,3b'");
-  CheckParseEq("{}", "'{}'");
-  CheckParseEq("{,}", "'{,}'");
-  CheckParseEq("{", "'{'");
-  CheckParseEq("{z}", "'{z}'");
-  CheckParseEq("{1z}", "'{1z}'");
-  CheckParseEq("{12z}", "'{12z}'");
-  CheckParseEq("{12,", "'{12,'");
-  CheckParseEq("{12,3b", "'{12,3b'");
+  CheckParseEq("\x61\x7b\x7d", "\x27\x61\x7b\x7d\x27");
+  CheckParseEq("\x61\x7b\x2c\x7d", "\x27\x61\x7b\x2c\x7d\x27");
+  CheckParseEq("\x61\x7b", "\x27\x61\x7b\x27");
+  CheckParseEq("\x61\x7b\x7a\x7d", "\x27\x61\x7b\x7a\x7d\x27");
+  CheckParseEq("\x61\x7b\x31\x7a\x7d", "\x27\x61\x7b\x31\x7a\x7d\x27");
+  CheckParseEq("\x61\x7b\x31\x32\x7a\x7d", "\x27\x61\x7b\x31\x32\x7a\x7d\x27");
+  CheckParseEq("\x61\x7b\x31\x32\x2c", "\x27\x61\x7b\x31\x32\x2c\x27");
+  CheckParseEq("\x61\x7b\x31\x32\x2c\x33\x62", "\x27\x61\x7b\x31\x32\x2c\x33\x62\x27");
+  CheckParseEq("\x7b\x7d", "\x27\x7b\x7d\x27");
+  CheckParseEq("\x7b\x2c\x7d", "\x27\x7b\x2c\x7d\x27");
+  CheckParseEq("\x7b", "\x27\x7b\x27");
+  CheckParseEq("\x7b\x7a\x7d", "\x27\x7b\x7a\x7d\x27");
+  CheckParseEq("\x7b\x31\x7a\x7d", "\x27\x7b\x31\x7a\x7d\x27");
+  CheckParseEq("\x7b\x31\x32\x7a\x7d", "\x27\x7b\x31\x32\x7a\x7d\x27");
+  CheckParseEq("\x7b\x31\x32\x2c", "\x27\x7b\x31\x32\x2c\x27");
+  CheckParseEq("\x7b\x31\x32\x2c\x33\x62", "\x27\x7b\x31\x32\x2c\x33\x62\x27");
 
-  CHECK_MIN_MAX("a", 1, 1);
-  CHECK_MIN_MAX("abc", 3, 3);
-  CHECK_MIN_MAX("a[bc]d", 3, 3);
-  CHECK_MIN_MAX("a|bc", 1, 2);
-  CHECK_MIN_MAX("ab|c", 1, 2);
-  CHECK_MIN_MAX("a||bc", 0, 2);
-  CHECK_MIN_MAX("|", 0, 0);
-  CHECK_MIN_MAX("(?:ab)", 2, 2);
-  CHECK_MIN_MAX("(?:ab|cde)", 2, 3);
-  CHECK_MIN_MAX("(?:ab)|cde", 2, 3);
-  CHECK_MIN_MAX("(ab)", 2, 2);
-  CHECK_MIN_MAX("(ab|cde)", 2, 3);
-  CHECK_MIN_MAX("(ab)\\1", 2, 4);
-  CHECK_MIN_MAX("(ab|cde)\\1", 2, 6);
-  CHECK_MIN_MAX("(?:ab)?", 0, 2);
-  CHECK_MIN_MAX("(?:ab)*", 0, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:ab)+", 2, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("a?", 0, 1);
-  CHECK_MIN_MAX("a*", 0, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("a+", 1, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("a??", 0, 1);
-  CHECK_MIN_MAX("a*?", 0, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("a+?", 1, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:a?)?", 0, 1);
-  CHECK_MIN_MAX("(?:a*)?", 0, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:a+)?", 0, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:a?)+", 0, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:a*)+", 0, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:a+)+", 1, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:a?)*", 0, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:a*)*", 0, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:a+)*", 0, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("a{0}", 0, 0);
-  CHECK_MIN_MAX("(?:a+){0}", 0, 0);
-  CHECK_MIN_MAX("(?:a+){0,0}", 0, 0);
-  CHECK_MIN_MAX("a*b", 1, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("a+b", 2, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("a*b|c", 1, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("a+b|c", 1, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:a{5,1000000}){3,1000000}", 15, RegExpTree::kInfinity);
-  CHECK_MIN_MAX("(?:ab){4,7}", 8, 14);
-  CHECK_MIN_MAX("a\\bc", 2, 2);
-  CHECK_MIN_MAX("a\\Bc", 2, 2);
-  CHECK_MIN_MAX("a\\sc", 3, 3);
-  CHECK_MIN_MAX("a\\Sc", 3, 3);
-  CHECK_MIN_MAX("a(?=b)c", 2, 2);
-  CHECK_MIN_MAX("a(?=bbb|bb)c", 2, 2);
-  CHECK_MIN_MAX("a(?!bbb|bb)c", 2, 2);
+  CHECK_MIN_MAX("\x61", 1, 1);
+  CHECK_MIN_MAX("\x61\x62\x63", 3, 3);
+  CHECK_MIN_MAX("\x61\x5b\x62\x63\x5d\x64", 3, 3);
+  CHECK_MIN_MAX("\x61\x7c\x62\x63", 1, 2);
+  CHECK_MIN_MAX("\x61\x62\x7c\x63", 1, 2);
+  CHECK_MIN_MAX("\x61\x7c\x7c\x62\x63", 0, 2);
+  CHECK_MIN_MAX("\x7c", 0, 0);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x62\x29", 2, 2);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x62\x7c\x63\x64\x65\x29", 2, 3);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x62\x29\x7c\x63\x64\x65", 2, 3);
+  CHECK_MIN_MAX("\x28\x61\x62\x29", 2, 2);
+  CHECK_MIN_MAX("\x28\x61\x62\x7c\x63\x64\x65\x29", 2, 3);
+  CHECK_MIN_MAX("\x28\x61\x62\x29\x5c\x31", 2, 4);
+  CHECK_MIN_MAX("\x28\x61\x62\x7c\x63\x64\x65\x29\x5c\x31", 2, 6);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x62\x29\x3f", 0, 2);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x62\x29\x2a", 0, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x62\x29\x2b", 2, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x61\x3f", 0, 1);
+  CHECK_MIN_MAX("\x61\x2a", 0, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x61\x2b", 1, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x61\x3f\x3f", 0, 1);
+  CHECK_MIN_MAX("\x61\x2a\x3f", 0, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x61\x2b\x3f", 1, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x3f\x29\x3f", 0, 1);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x2a\x29\x3f", 0, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x2b\x29\x3f", 0, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x3f\x29\x2b", 0, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x2a\x29\x2b", 0, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x2b\x29\x2b", 1, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x3f\x29\x2a", 0, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x2a\x29\x2a", 0, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x2b\x29\x2a", 0, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x61\x7b\x30\x7d", 0, 0);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x2b\x29\x7b\x30\x7d", 0, 0);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x2b\x29\x7b\x30\x2c\x30\x7d", 0, 0);
+  CHECK_MIN_MAX("\x61\x2a\x62", 1, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x61\x2b\x62", 2, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x61\x2a\x62\x7c\x63", 1, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x61\x2b\x62\x7c\x63", 1, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x7b\x35\x2c\x31\x30\x30\x30\x30\x30\x30\x7d\x29\x7b\x33\x2c\x31\x30\x30\x30\x30\x30\x30\x7d", 15, RegExpTree::kInfinity);
+  CHECK_MIN_MAX("\x28\x3f\x3a\x61\x62\x29\x7b\x34\x2c\x37\x7d", 8, 14);
+  CHECK_MIN_MAX("\x61\x5c\x62\x63", 2, 2);
+  CHECK_MIN_MAX("\x61\x5c\x42\x63", 2, 2);
+  CHECK_MIN_MAX("\x61\x5c\x73\x63", 3, 3);
+  CHECK_MIN_MAX("\x61\x5c\x53\x63", 3, 3);
+  CHECK_MIN_MAX("\x61\x28\x3f\x3d\x62\x29\x63", 2, 2);
+  CHECK_MIN_MAX("\x61\x28\x3f\x3d\x62\x62\x62\x7c\x62\x62\x29\x63", 2, 2);
+  CHECK_MIN_MAX("\x61\x28\x3f\x21\x62\x62\x62\x7c\x62\x62\x29\x63", 2, 2);
 }
 
 
 TEST(ParserRegression) {
-  CheckParseEq("[A-Z$-][x]", "(! [A-Z $ -] [x])");
-  CheckParseEq("a{3,4*}", "(: 'a{3,' (# 0 - g '4') '}')");
-  CheckParseEq("{", "'{'");
-  CheckParseEq("a|", "(| 'a' %)");
+  CheckParseEq("\x5b\x41\x2d\x5a\x24\x2d\x5d\x5b\x78\x5d", "\x28\x21\x20\x5b\x41\x2d\x5a\x20\x24\x20\x2d\x5d\x20\x5b\x78\x5d\x29");
+  CheckParseEq("\x61\x7b\x33\x2c\x34\x2a\x7d", "\x28\x3a\x20\x27\x61\x7b\x33\x2c\x27\x20\x28\x23\x20\x30\x20\x2d\x20\x67\x20\x27\x34\x27\x29\x20\x27\x7d\x27\x29");
+  CheckParseEq("\x7b", "\x27\x7b\x27");
+  CheckParseEq("\x61\x7c", "\x28\x7c\x20\x27\x61\x27\x20\x25\x29");
 }
 
 static void ExpectError(const char* input,
@@ -432,36 +432,36 @@ static void ExpectError(const char* input,
 
 
 TEST(Errors) {
-  const char* kEndBackslash = "\\ at end of pattern";
+  const char* kEndBackslash = "\x5c\x20\x61\x74\x20\x65\x6e\x64\x20\x6f\x66\x20\x70\x61\x74\x74\x65\x72\x6e";
   ExpectError("\\", kEndBackslash);
-  const char* kUnterminatedGroup = "Unterminated group";
-  ExpectError("(foo", kUnterminatedGroup);
-  const char* kInvalidGroup = "Invalid group";
-  ExpectError("(?", kInvalidGroup);
-  const char* kUnterminatedCharacterClass = "Unterminated character class";
-  ExpectError("[", kUnterminatedCharacterClass);
-  ExpectError("[a-", kUnterminatedCharacterClass);
-  const char* kNothingToRepeat = "Nothing to repeat";
-  ExpectError("*", kNothingToRepeat);
-  ExpectError("?", kNothingToRepeat);
-  ExpectError("+", kNothingToRepeat);
-  ExpectError("{1}", kNothingToRepeat);
-  ExpectError("{1,2}", kNothingToRepeat);
-  ExpectError("{1,}", kNothingToRepeat);
+  const char* kUnterminatedGroup = "\x55\x6e\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x64\x20\x67\x72\x6f\x75\x70";
+  ExpectError("\x28\x66\x6f\x6f", kUnterminatedGroup);
+  const char* kInvalidGroup = "\x49\x6e\x76\x61\x6c\x69\x64\x20\x67\x72\x6f\x75\x70";
+  ExpectError("\x28\x3f", kInvalidGroup);
+  const char* kUnterminatedCharacterClass = "\x55\x6e\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x64\x20\x63\x68\x61\x72\x61\x63\x74\x65\x72\x20\x63\x6c\x61\x73\x73";
+  ExpectError("\x5b", kUnterminatedCharacterClass);
+  ExpectError("\x5b\x61\x2d", kUnterminatedCharacterClass);
+  const char* kNothingToRepeat = "\x4e\x6f\x74\x68\x69\x6e\x67\x20\x74\x6f\x20\x72\x65\x70\x65\x61\x74";
+  ExpectError("\x2a", kNothingToRepeat);
+  ExpectError("\x3f", kNothingToRepeat);
+  ExpectError("\x2b", kNothingToRepeat);
+  ExpectError("\x7b\x31\x7d", kNothingToRepeat);
+  ExpectError("\x7b\x31\x2c\x32\x7d", kNothingToRepeat);
+  ExpectError("\x7b\x31\x2c\x7d", kNothingToRepeat);
 
   // Check that we don't allow more than kMaxCapture captures
   const int kMaxCaptures = 1 << 16;  // Must match RegExpParser::kMaxCaptures.
-  const char* kTooManyCaptures = "Too many captures";
+  const char* kTooManyCaptures = "\x54\x6f\x6f\x20\x6d\x61\x6e\x79\x20\x63\x61\x70\x74\x75\x72\x65\x73";
   OStringStream os;
   for (int i = 0; i <= kMaxCaptures; i++) {
-    os << "()";
+    os << "\x28\x29";
   }
   ExpectError(os.c_str(), kTooManyCaptures);
 }
 
 
 static bool IsDigit(uc16 c) {
-  return ('0' <= c && c <= '9');
+  return ('\x30' <= c && c <= '\x39');
 }
 
 
@@ -505,13 +505,13 @@ static void TestCharacterClassEscapes(uc16 c, bool (pred)(uc16 c)) {
 
 TEST(CharacterClassEscapes) {
   v8::internal::V8::Initialize(NULL);
-  TestCharacterClassEscapes('.', IsRegExpNewline);
-  TestCharacterClassEscapes('d', IsDigit);
-  TestCharacterClassEscapes('D', NotDigit);
-  TestCharacterClassEscapes('s', IsWhiteSpaceOrLineTerminator);
-  TestCharacterClassEscapes('S', NotWhiteSpaceNorLineTermiantor);
-  TestCharacterClassEscapes('w', IsRegExpWord);
-  TestCharacterClassEscapes('W', NotWord);
+  TestCharacterClassEscapes('\x2e', IsRegExpNewline);
+  TestCharacterClassEscapes('\x64', IsDigit);
+  TestCharacterClassEscapes('\x44', NotDigit);
+  TestCharacterClassEscapes('\x73', IsWhiteSpaceOrLineTerminator);
+  TestCharacterClassEscapes('\x53', NotWhiteSpaceNorLineTermiantor);
+  TestCharacterClassEscapes('\x77', IsRegExpWord);
+  TestCharacterClassEscapes('\x57', NotWord);
 }
 
 
@@ -684,20 +684,20 @@ TEST(ParsePossessiveRepetition) {
   // Enable possessive quantifier syntax.
   FLAG_regexp_possessive_quantifier = true;
 
-  CheckParseEq("a*+", "(# 0 - p 'a')");
-  CheckParseEq("a++", "(# 1 - p 'a')");
-  CheckParseEq("a?+", "(# 0 1 p 'a')");
-  CheckParseEq("a{10,20}+", "(# 10 20 p 'a')");
-  CheckParseEq("za{10,20}+b", "(: 'z' (# 10 20 p 'a') 'b')");
+  CheckParseEq("\x61\x2a\x2b", "\x28\x23\x20\x30\x20\x2d\x20\x70\x20\x27\x61\x27\x29");
+  CheckParseEq("\x61\x2b\x2b", "\x28\x23\x20\x31\x20\x2d\x20\x70\x20\x27\x61\x27\x29");
+  CheckParseEq("\x61\x3f\x2b", "\x28\x23\x20\x30\x20\x31\x20\x70\x20\x27\x61\x27\x29");
+  CheckParseEq("\x61\x7b\x31\x30\x2c\x32\x30\x7d\x2b", "\x28\x23\x20\x31\x30\x20\x32\x30\x20\x70\x20\x27\x61\x27\x29");
+  CheckParseEq("\x7a\x61\x7b\x31\x30\x2c\x32\x30\x7d\x2b\x62", "\x28\x3a\x20\x27\x7a\x27\x20\x28\x23\x20\x31\x30\x20\x32\x30\x20\x70\x20\x27\x61\x27\x29\x20\x27\x62\x27\x29");
 
   // Disable possessive quantifier syntax.
   FLAG_regexp_possessive_quantifier = false;
 
-  CHECK_PARSE_ERROR("a*+");
-  CHECK_PARSE_ERROR("a++");
-  CHECK_PARSE_ERROR("a?+");
-  CHECK_PARSE_ERROR("a{10,20}+");
-  CHECK_PARSE_ERROR("a{10,20}+b");
+  CHECK_PARSE_ERROR("\x61\x2a\x2b");
+  CHECK_PARSE_ERROR("\x61\x2b\x2b");
+  CHECK_PARSE_ERROR("\x61\x3f\x2b");
+  CHECK_PARSE_ERROR("\x61\x7b\x31\x30\x2c\x32\x30\x7d\x2b");
+  CHECK_PARSE_ERROR("\x61\x7b\x31\x30\x2c\x32\x30\x7d\x2b\x62");
 
   FLAG_regexp_possessive_quantifier = old_flag_value;
 }
@@ -779,7 +779,7 @@ TEST(MacroAssemblerNativeSuccess) {
   Handle<Code> code = Handle<Code>::cast(code_object);
 
   int captures[4] = {42, 37, 87, 117};
-  Handle<String> input = factory->NewStringFromStaticAscii("foofoo");
+  Handle<String> input = factory->NewStringFromStaticAscii("\x66\x6f\x6f\x66\x6f\x6f");
   Handle<SeqOneByteString> seq_input = Handle<SeqOneByteString>::cast(input);
   const byte* start_adr =
       reinterpret_cast<const byte*>(seq_input->GetCharsAddress());
@@ -813,11 +813,11 @@ TEST(MacroAssemblerNativeSimple) {
   m.PushBacktrack(&fail);
   m.CheckNotAtStart(NULL);
   m.LoadCurrentCharacter(2, NULL);
-  m.CheckNotCharacter('o', NULL);
+  m.CheckNotCharacter('\x6f', NULL);
   m.LoadCurrentCharacter(1, NULL, false);
-  m.CheckNotCharacter('o', NULL);
+  m.CheckNotCharacter('\x6f', NULL);
   m.LoadCurrentCharacter(0, NULL, false);
-  m.CheckNotCharacter('f', NULL);
+  m.CheckNotCharacter('\x66', NULL);
   m.WriteCurrentPositionToRegister(0, 0);
   m.WriteCurrentPositionToRegister(1, 3);
   m.AdvanceCurrentPosition(3);
@@ -828,12 +828,12 @@ TEST(MacroAssemblerNativeSimple) {
   m.Bind(&fail);
   m.Fail();
 
-  Handle<String> source = factory->NewStringFromStaticAscii("^foo");
+  Handle<String> source = factory->NewStringFromStaticAscii("\x5e\x66\x6f\x6f");
   Handle<Object> code_object = m.GetCode(source);
   Handle<Code> code = Handle<Code>::cast(code_object);
 
   int captures[4] = {42, 37, 87, 117};
-  Handle<String> input = factory->NewStringFromStaticAscii("foofoo");
+  Handle<String> input = factory->NewStringFromStaticAscii("\x66\x6f\x6f\x66\x6f\x6f");
   Handle<SeqOneByteString> seq_input = Handle<SeqOneByteString>::cast(input);
   Address start_adr = seq_input->GetCharsAddress();
 
@@ -851,7 +851,7 @@ TEST(MacroAssemblerNativeSimple) {
   CHECK_EQ(-1, captures[2]);
   CHECK_EQ(-1, captures[3]);
 
-  input = factory->NewStringFromStaticAscii("barbarbar");
+  input = factory->NewStringFromStaticAscii("\x62\x61\x72\x62\x61\x72\x62\x61\x72");
   seq_input = Handle<SeqOneByteString>::cast(input);
   start_adr = seq_input->GetCharsAddress();
 
@@ -879,11 +879,11 @@ TEST(MacroAssemblerNativeSimpleUC16) {
   m.PushBacktrack(&fail);
   m.CheckNotAtStart(NULL);
   m.LoadCurrentCharacter(2, NULL);
-  m.CheckNotCharacter('o', NULL);
+  m.CheckNotCharacter('\x6f', NULL);
   m.LoadCurrentCharacter(1, NULL, false);
-  m.CheckNotCharacter('o', NULL);
+  m.CheckNotCharacter('\x6f', NULL);
   m.LoadCurrentCharacter(0, NULL, false);
-  m.CheckNotCharacter('f', NULL);
+  m.CheckNotCharacter('\x66', NULL);
   m.WriteCurrentPositionToRegister(0, 0);
   m.WriteCurrentPositionToRegister(1, 3);
   m.AdvanceCurrentPosition(3);
@@ -894,12 +894,12 @@ TEST(MacroAssemblerNativeSimpleUC16) {
   m.Bind(&fail);
   m.Fail();
 
-  Handle<String> source = factory->NewStringFromStaticAscii("^foo");
+  Handle<String> source = factory->NewStringFromStaticAscii("\x5e\x66\x6f\x6f");
   Handle<Object> code_object = m.GetCode(source);
   Handle<Code> code = Handle<Code>::cast(code_object);
 
   int captures[4] = {42, 37, 87, 117};
-  const uc16 input_data[6] = {'f', 'o', 'o', 'f', 'o',
+  const uc16 input_data[6] = {'\x66', '\x6f', '\x6f', '\x66', '\x6f',
                               static_cast<uc16>(0x2603)};
   Handle<String> input = factory->NewStringFromTwoByte(
       Vector<const uc16>(input_data, 6)).ToHandleChecked();
@@ -920,7 +920,7 @@ TEST(MacroAssemblerNativeSimpleUC16) {
   CHECK_EQ(-1, captures[2]);
   CHECK_EQ(-1, captures[3]);
 
-  const uc16 input_data2[9] = {'b', 'a', 'r', 'b', 'a', 'r', 'b', 'a',
+  const uc16 input_data2[9] = {'\x62', '\x61', '\x72', '\x62', '\x61', '\x72', '\x62', '\x61',
                                static_cast<uc16>(0x2603)};
   input = factory->NewStringFromTwoByte(
       Vector<const uc16>(input_data2, 9)).ToHandleChecked();
@@ -958,11 +958,11 @@ TEST(MacroAssemblerNativeBacktrack) {
   m.Bind(&backtrack);
   m.Fail();
 
-  Handle<String> source = factory->NewStringFromStaticAscii("..........");
+  Handle<String> source = factory->NewStringFromStaticAscii("\x2e\x2e\x2e\x2e\x2e\x2e\x2e\x2e\x2e\x2e");
   Handle<Object> code_object = m.GetCode(source);
   Handle<Code> code = Handle<Code>::cast(code_object);
 
-  Handle<String> input = factory->NewStringFromStaticAscii("foofoo");
+  Handle<String> input = factory->NewStringFromStaticAscii("\x66\x6f\x6f\x66\x6f\x6f");
   Handle<SeqOneByteString> seq_input = Handle<SeqOneByteString>::cast(input);
   Address start_adr = seq_input->GetCharsAddress();
 
@@ -1002,11 +1002,11 @@ TEST(MacroAssemblerNativeBackReferenceASCII) {
   m.Bind(&missing_match);
   m.Fail();
 
-  Handle<String> source = factory->NewStringFromStaticAscii("^(..)..\1");
+  Handle<String> source = factory->NewStringFromStaticAscii("\x5e\x28\x2e\x2e\x29\x2e\x2e\x5c\x31");
   Handle<Object> code_object = m.GetCode(source);
   Handle<Code> code = Handle<Code>::cast(code_object);
 
-  Handle<String> input = factory->NewStringFromStaticAscii("fooofo");
+  Handle<String> input = factory->NewStringFromStaticAscii("\x66\x6f\x6f\x6f\x66\x6f");
   Handle<SeqOneByteString> seq_input = Handle<SeqOneByteString>::cast(input);
   Address start_adr = seq_input->GetCharsAddress();
 
@@ -1051,11 +1051,11 @@ TEST(MacroAssemblerNativeBackReferenceUC16) {
   m.Bind(&missing_match);
   m.Fail();
 
-  Handle<String> source = factory->NewStringFromStaticAscii("^(..)..\1");
+  Handle<String> source = factory->NewStringFromStaticAscii("\x5e\x28\x2e\x2e\x29\x2e\x2e\x5c\x31");
   Handle<Object> code_object = m.GetCode(source);
   Handle<Code> code = Handle<Code>::cast(code_object);
 
-  const uc16 input_data[6] = {'f', 0x2028, 'o', 'o', 'f', 0x2028};
+  const uc16 input_data[6] = {'\x66', 0x2028, '\x6f', '\x6f', '\x66', 0x2028};
   Handle<String> input = factory->NewStringFromTwoByte(
       Vector<const uc16>(input_data, 6)).ToHandleChecked();
   Handle<SeqTwoByteString> seq_input = Handle<SeqTwoByteString>::cast(input);
@@ -1091,29 +1091,29 @@ TEST(MacroAssemblernativeAtStart) {
   Label not_at_start, newline, fail;
   m.CheckNotAtStart(&not_at_start);
   // Check that prevchar = '\n' and current = 'f'.
-  m.CheckCharacter('\n', &newline);
+  m.CheckCharacter('\xa', &newline);
   m.Bind(&fail);
   m.Fail();
   m.Bind(&newline);
   m.LoadCurrentCharacter(0, &fail);
-  m.CheckNotCharacter('f', &fail);
+  m.CheckNotCharacter('\x66', &fail);
   m.Succeed();
 
   m.Bind(&not_at_start);
   // Check that prevchar = 'o' and current = 'b'.
   Label prevo;
-  m.CheckCharacter('o', &prevo);
+  m.CheckCharacter('\x6f', &prevo);
   m.Fail();
   m.Bind(&prevo);
   m.LoadCurrentCharacter(0, &fail);
-  m.CheckNotCharacter('b', &fail);
+  m.CheckNotCharacter('\x62', &fail);
   m.Succeed();
 
-  Handle<String> source = factory->NewStringFromStaticAscii("(^f|ob)");
+  Handle<String> source = factory->NewStringFromStaticAscii("\x28\x5e\x66\x7c\x6f\x62\x29");
   Handle<Object> code_object = m.GetCode(source);
   Handle<Code> code = Handle<Code>::cast(code_object);
 
-  Handle<String> input = factory->NewStringFromStaticAscii("foobar");
+  Handle<String> input = factory->NewStringFromStaticAscii("\x66\x6f\x6f\x62\x61\x72");
   Handle<SeqOneByteString> seq_input = Handle<SeqOneByteString>::cast(input);
   Address start_adr = seq_input->GetCharsAddress();
 
@@ -1153,15 +1153,15 @@ TEST(MacroAssemblerNativeBackRefNoCase) {
   m.WriteCurrentPositionToRegister(2, 0);
   m.AdvanceCurrentPosition(3);
   m.WriteCurrentPositionToRegister(3, 0);
-  m.CheckNotBackReferenceIgnoreCase(2, &fail);  // Match "AbC".
-  m.CheckNotBackReferenceIgnoreCase(2, &fail);  // Match "ABC".
+  m.CheckNotBackReferenceIgnoreCase(2, &fail);  // Match "\x41\x62\x43".
+  m.CheckNotBackReferenceIgnoreCase(2, &fail);  // Match "\x41\x42\x43".
   Label expected_fail;
   m.CheckNotBackReferenceIgnoreCase(2, &expected_fail);
   m.Bind(&fail);
   m.Fail();
 
   m.Bind(&expected_fail);
-  m.AdvanceCurrentPosition(3);  // Skip "xYz"
+  m.AdvanceCurrentPosition(3);  // Skip "\x78\x59\x7a"
   m.CheckNotBackReferenceIgnoreCase(2, &succ);
   m.Fail();
 
@@ -1170,12 +1170,12 @@ TEST(MacroAssemblerNativeBackRefNoCase) {
   m.Succeed();
 
   Handle<String> source =
-      factory->NewStringFromStaticAscii("^(abc)\1\1(?!\1)...(?!\1)");
+      factory->NewStringFromStaticAscii("\x5e\x28\x61\x62\x63\x29\x5c\x31\x5c\x31\x28\x3f\x21\x5c\x31\x29\x2e\x2e\x2e\x28\x3f\x21\x5c\x31\x29");
   Handle<Object> code_object = m.GetCode(source);
   Handle<Code> code = Handle<Code>::cast(code_object);
 
   Handle<String> input =
-      factory->NewStringFromStaticAscii("aBcAbCABCxYzab");
+      factory->NewStringFromStaticAscii("\x61\x42\x63\x41\x62\x43\x41\x42\x43\x78\x59\x7a\x61\x62");
   Handle<SeqOneByteString> seq_input = Handle<SeqOneByteString>::cast(input);
   Address start_adr = seq_input->GetCharsAddress();
 
@@ -1206,7 +1206,7 @@ TEST(MacroAssemblerNativeRegisters) {
 
   ArchRegExpMacroAssembler m(NativeRegExpMacroAssembler::ASCII, 6, &zone);
 
-  uc16 foo_chars[3] = {'f', 'o', 'o'};
+  uc16 foo_chars[3] = {'\x66', '\x6f', '\x6f'};
   Vector<const uc16> foo(foo_chars, 3);
 
   enum registers { out1, out2, out3, out4, out5, out6, sp, loop_cnt };
@@ -1271,13 +1271,13 @@ TEST(MacroAssemblerNativeRegisters) {
   m.Fail();
 
   Handle<String> source =
-      factory->NewStringFromStaticAscii("<loop test>");
+      factory->NewStringFromStaticAscii("\x3c\x6c\x6f\x6f\x70\x20\x74\x65\x73\x74\x3e");
   Handle<Object> code_object = m.GetCode(source);
   Handle<Code> code = Handle<Code>::cast(code_object);
 
   // String long enough for test (content doesn't matter).
   Handle<String> input =
-      factory->NewStringFromStaticAscii("foofoofoofoofoo");
+      factory->NewStringFromStaticAscii("\x66\x6f\x6f\x66\x6f\x6f\x66\x6f\x6f\x66\x6f\x6f\x66\x6f\x6f");
   Handle<SeqOneByteString> seq_input = Handle<SeqOneByteString>::cast(input);
   Address start_adr = seq_input->GetCharsAddress();
 
@@ -1315,13 +1315,13 @@ TEST(MacroAssemblerStackOverflow) {
   m.GoTo(&loop);
 
   Handle<String> source =
-      factory->NewStringFromStaticAscii("<stack overflow test>");
+      factory->NewStringFromStaticAscii("\x3c\x73\x74\x61\x63\x6b\x20\x6f\x76\x65\x72\x66\x6c\x6f\x77\x20\x74\x65\x73\x74\x3e");
   Handle<Object> code_object = m.GetCode(source);
   Handle<Code> code = Handle<Code>::cast(code_object);
 
   // String long enough for test (content doesn't matter).
   Handle<String> input =
-      factory->NewStringFromStaticAscii("dummy");
+      factory->NewStringFromStaticAscii("\x64\x75\x6d\x6d\x79");
   Handle<SeqOneByteString> seq_input = Handle<SeqOneByteString>::cast(input);
   Address start_adr = seq_input->GetCharsAddress();
 
@@ -1362,13 +1362,13 @@ TEST(MacroAssemblerNativeLotsOfRegisters) {
   m.Succeed();
 
   Handle<String> source =
-      factory->NewStringFromStaticAscii("<huge register space test>");
+      factory->NewStringFromStaticAscii("\x3c\x68\x75\x67\x65\x20\x72\x65\x67\x69\x73\x74\x65\x72\x20\x73\x70\x61\x63\x65\x20\x74\x65\x73\x74\x3e");
   Handle<Object> code_object = m.GetCode(source);
   Handle<Code> code = Handle<Code>::cast(code_object);
 
   // String long enough for test (content doesn't matter).
   Handle<String> input =
-      factory->NewStringFromStaticAscii("sample text");
+      factory->NewStringFromStaticAscii("\x73\x61\x6d\x70\x6c\x65\x20\x74\x65\x78\x74");
   Handle<SeqOneByteString> seq_input = Handle<SeqOneByteString>::cast(input);
   Address start_adr = seq_input->GetCharsAddress();
 
@@ -1407,11 +1407,11 @@ TEST(MacroAssembler) {
   m.PushBacktrack(&fail);
   m.CheckNotAtStart(NULL);
   m.LoadCurrentCharacter(0, NULL);
-  m.CheckNotCharacter('f', NULL);
+  m.CheckNotCharacter('\x66', NULL);
   m.LoadCurrentCharacter(1, NULL);
-  m.CheckNotCharacter('o', NULL);
+  m.CheckNotCharacter('\x6f', NULL);
   m.LoadCurrentCharacter(2, NULL);
-  m.CheckNotCharacter('o', NULL);
+  m.CheckNotCharacter('\x6f', NULL);
   m.WriteCurrentPositionToRegister(0, 0);
   m.WriteCurrentPositionToRegister(1, 3);
   m.WriteCurrentPositionToRegister(2, 1);
@@ -1430,11 +1430,11 @@ TEST(MacroAssembler) {
   Factory* factory = isolate->factory();
   HandleScope scope(isolate);
 
-  Handle<String> source = factory->NewStringFromStaticAscii("^f(o)o");
+  Handle<String> source = factory->NewStringFromStaticAscii("\x5e\x66\x28\x6f\x29\x6f");
   Handle<ByteArray> array = Handle<ByteArray>::cast(m.GetCode(source));
   int captures[5];
 
-  const uc16 str1[] = {'f', 'o', 'o', 'b', 'a', 'r'};
+  const uc16 str1[] = {'\x66', '\x6f', '\x6f', '\x62', '\x61', '\x72'};
   Handle<String> f1_16 = factory->NewStringFromTwoByte(
       Vector<const uc16>(str1, 6)).ToHandleChecked();
 
@@ -1445,7 +1445,7 @@ TEST(MacroAssembler) {
   CHECK_EQ(2, captures[3]);
   CHECK_EQ(84, captures[4]);
 
-  const uc16 str2[] = {'b', 'a', 'r', 'f', 'o', 'o'};
+  const uc16 str2[] = {'\x62', '\x61', '\x72', '\x66', '\x6f', '\x6f'};
   Handle<String> f2_16 = factory->NewStringFromTwoByte(
       Vector<const uc16>(str2, 6)).ToHandleChecked();
 
@@ -1497,7 +1497,7 @@ TEST(AddInverseToTable) {
 
 static uc32 canonicalize(uc32 c) {
   unibrow::uchar canon[unibrow::Ecma262Canonicalize::kMaxWidth];
-  int count = unibrow::Ecma262Canonicalize::Convert(c, '\0', canon, NULL);
+  int count = unibrow::Ecma262Canonicalize::Convert(c, '\x0', canon, NULL);
   if (count == 0) {
     return c;
   } else {
@@ -1509,11 +1509,11 @@ static uc32 canonicalize(uc32 c) {
 
 TEST(LatinCanonicalize) {
   unibrow::Mapping<unibrow::Ecma262UnCanonicalize> un_canonicalize;
-  for (char lower = 'a'; lower <= 'z'; lower++) {
-    char upper = lower + ('A' - 'a');
+  for (char lower = '\x61'; lower <= '\x7a'; lower++) {
+    char upper = lower + ('\x41' - '\x61');
     CHECK_EQ(canonicalize(lower), canonicalize(upper));
     unibrow::uchar uncanon[unibrow::Ecma262UnCanonicalize::kMaxWidth];
-    int length = un_canonicalize.get(lower, '\0', uncanon);
+    int length = un_canonicalize.get(lower, '\x0', uncanon);
     CHECK_EQ(2, length);
     CHECK_EQ(upper, uncanon[0]);
     CHECK_EQ(lower, uncanon[1]);
@@ -1524,7 +1524,7 @@ TEST(LatinCanonicalize) {
   // Canonicalization is only defined for the Basic Multilingual Plane.
   for (uc32 c = 0; c < (1 << 16); c++) {
     unibrow::uchar upper[unibrow::ToUppercase::kMaxWidth];
-    int length = to_upper.get(c, '\0', upper);
+    int length = to_upper.get(c, '\x0', upper);
     if (length == 0) {
       length = 1;
       upper[0] = c;
@@ -1539,7 +1539,7 @@ TEST(LatinCanonicalize) {
 
 static uc32 CanonRangeEnd(uc32 c) {
   unibrow::uchar canon[unibrow::CanonicalizationRange::kMaxWidth];
-  int count = unibrow::CanonicalizationRange::Convert(c, '\0', canon, NULL);
+  int count = unibrow::CanonicalizationRange::Convert(c, '\x0', canon, NULL);
   if (count == 0) {
     return c;
   } else {
@@ -1560,10 +1560,10 @@ TEST(RangeCanonicalization) {
     unsigned block_length = block_end - block_start + 1;
     if (block_length > 1) {
       unibrow::uchar first[unibrow::Ecma262UnCanonicalize::kMaxWidth];
-      int first_length = un_canonicalize.get(block_start, '\0', first);
+      int first_length = un_canonicalize.get(block_start, '\x0', first);
       for (unsigned i = 1; i < block_length; i++) {
         unibrow::uchar succ[unibrow::Ecma262UnCanonicalize::kMaxWidth];
-        int succ_length = un_canonicalize.get(block_start + i, '\0', succ);
+        int succ_length = un_canonicalize.get(block_start + i, '\x0', succ);
         CHECK_EQ(first_length, succ_length);
         for (int j = 0; j < succ_length; j++) {
           int calc = first[j] + i;
@@ -1581,10 +1581,10 @@ TEST(UncanonicalizeEquivalence) {
   unibrow::Mapping<unibrow::Ecma262UnCanonicalize> un_canonicalize;
   unibrow::uchar chars[unibrow::Ecma262UnCanonicalize::kMaxWidth];
   for (int i = 0; i < (1 << 16); i++) {
-    int length = un_canonicalize.get(i, '\0', chars);
+    int length = un_canonicalize.get(i, '\x0', chars);
     for (int j = 0; j < length; j++) {
       unibrow::uchar chars2[unibrow::Ecma262UnCanonicalize::kMaxWidth];
-      int length2 = un_canonicalize.get(chars[j], '\0', chars2);
+      int length2 = un_canonicalize.get(chars[j], '\x0', chars2);
       CHECK_EQ(length, length2);
       for (int k = 0; k < length; k++)
         CHECK_EQ(static_cast<int>(chars[k]), static_cast<int>(chars2[k]));
@@ -1618,31 +1618,31 @@ static void TestSimpleRangeCaseIndependence(CharacterRange input,
 
 TEST(CharacterRangeCaseIndependence) {
   v8::internal::V8::Initialize(NULL);
-  TestSimpleRangeCaseIndependence(CharacterRange::Singleton('a'),
-                                  CharacterRange::Singleton('A'));
-  TestSimpleRangeCaseIndependence(CharacterRange::Singleton('z'),
-                                  CharacterRange::Singleton('Z'));
-  TestSimpleRangeCaseIndependence(CharacterRange('a', 'z'),
-                                  CharacterRange('A', 'Z'));
-  TestSimpleRangeCaseIndependence(CharacterRange('c', 'f'),
-                                  CharacterRange('C', 'F'));
-  TestSimpleRangeCaseIndependence(CharacterRange('a', 'b'),
-                                  CharacterRange('A', 'B'));
-  TestSimpleRangeCaseIndependence(CharacterRange('y', 'z'),
-                                  CharacterRange('Y', 'Z'));
-  TestSimpleRangeCaseIndependence(CharacterRange('a' - 1, 'z' + 1),
-                                  CharacterRange('A', 'Z'));
-  TestSimpleRangeCaseIndependence(CharacterRange('A', 'Z'),
-                                  CharacterRange('a', 'z'));
-  TestSimpleRangeCaseIndependence(CharacterRange('C', 'F'),
-                                  CharacterRange('c', 'f'));
-  TestSimpleRangeCaseIndependence(CharacterRange('A' - 1, 'Z' + 1),
-                                  CharacterRange('a', 'z'));
+  TestSimpleRangeCaseIndependence(CharacterRange::Singleton('\x61'),
+                                  CharacterRange::Singleton('\x41'));
+  TestSimpleRangeCaseIndependence(CharacterRange::Singleton('\x7a'),
+                                  CharacterRange::Singleton('\x5a'));
+  TestSimpleRangeCaseIndependence(CharacterRange('\x61', '\x7a'),
+                                  CharacterRange('\x41', '\x5a'));
+  TestSimpleRangeCaseIndependence(CharacterRange('\x63', '\x66'),
+                                  CharacterRange('\x43', '\x46'));
+  TestSimpleRangeCaseIndependence(CharacterRange('\x61', '\x62'),
+                                  CharacterRange('\x41', '\x42'));
+  TestSimpleRangeCaseIndependence(CharacterRange('\x79', '\x7a'),
+                                  CharacterRange('\x59', '\x5a'));
+  TestSimpleRangeCaseIndependence(CharacterRange('\x61' - 1, '\x7a' + 1),
+                                  CharacterRange('\x41', '\x5a'));
+  TestSimpleRangeCaseIndependence(CharacterRange('\x41', '\x5a'),
+                                  CharacterRange('\x61', '\x7a'));
+  TestSimpleRangeCaseIndependence(CharacterRange('\x43', '\x46'),
+                                  CharacterRange('\x63', '\x66'));
+  TestSimpleRangeCaseIndependence(CharacterRange('\x41' - 1, '\x5a' + 1),
+                                  CharacterRange('\x61', '\x7a'));
   // Here we need to add [l-z] to complete the case independence of
   // [A-Za-z] but we expect [a-z] to be added since we always add a
   // whole block at a time.
-  TestSimpleRangeCaseIndependence(CharacterRange('A', 'k'),
-                                  CharacterRange('a', 'z'));
+  TestSimpleRangeCaseIndependence(CharacterRange('\x41', '\x6b'),
+                                  CharacterRange('\x61', '\x7a'));
 }
 
 
@@ -1838,5 +1838,5 @@ TEST(CharacterRangeMerge) {
 
 TEST(Graph) {
   V8::Initialize(NULL);
-  Execute("\\b\\w+\\b", false, true, true);
+  Execute("\x5c\x62\x5c\x77\x2b\x5c\x62", false, true, true);
 }

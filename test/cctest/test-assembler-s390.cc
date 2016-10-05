@@ -79,7 +79,7 @@ TEST(0) {
   F2 f = FUNCTION_CAST<F2>(code->entry());
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 0, 0, 0));
-  ::printf("f() = %" V8PRIdPTR "\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x25" V8PRIdPTR "\xa", res);
   CHECK_EQ(7, static_cast<int>(res));
 }
 
@@ -128,7 +128,7 @@ TEST(1) {
   F1 f = FUNCTION_CAST<F1>(code->entry());
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 100, 0, 0, 0, 0));
-  ::printf("f() = %" V8PRIdPTR  "\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x25" V8PRIdPTR  "\xa", res);
   CHECK_EQ(5050, static_cast<int>(res));
 }
 
@@ -171,9 +171,9 @@ TEST(2) {
 #endif
 
   // some relocated stuff here, not executed
-  __ RecordComment("dead code, just testing relocations");
+  __ RecordComment("\x64\x65\x61\x64\x20\x63\x6f\x64\x65\x2c\x20\x6a\x75\x73\x74\x20\x74\x65\x73\x74\x69\x6e\x67\x20\x72\x65\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x73");
   __ iilf(r0, Operand(isolate->factory()->true_value()));
-  __ RecordComment("dead code, just testing immediate operands");
+  __ RecordComment("\x64\x65\x61\x64\x20\x63\x6f\x64\x65\x2c\x20\x6a\x75\x73\x74\x20\x74\x65\x73\x74\x69\x6e\x67\x20\x69\x6d\x6d\x65\x64\x69\x61\x74\x65\x20\x6f\x70\x65\x72\x61\x6e\x64\x73");
   __ iilf(r0, Operand(-1));
   __ iilf(r0, Operand(0xFF000000));
   __ iilf(r0, Operand(0xF0F0F0F0));
@@ -189,7 +189,7 @@ TEST(2) {
   F1 f = FUNCTION_CAST<F1>(code->entry());
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 10, 0, 0, 0, 0));
-  ::printf("f() = %" V8PRIdPTR "\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x25" V8PRIdPTR "\xa", res);
   CHECK_EQ(3628800, static_cast<int>(res));
 }
 
@@ -233,7 +233,7 @@ TEST(3) {
   __ sll(r13, Operand(10));
 
   v8::internal::byte * bufPos = assm.buffer_pos();
-  ::printf("buffer position = %p", bufPos);
+  ::printf("\x62\x75\x66\x66\x65\x72\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x3d\x20\x6c\x97", bufPos);
   ::fflush(stdout);
   // OS::DebugBreak();
 
@@ -304,7 +304,7 @@ TEST(4) {
   F2 f = FUNCTION_CAST<F2>(code->entry());
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
-  ::printf("f() = %" V8PRIdPTR "\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x25" V8PRIdPTR "\xa", res);
   CHECK_EQ(4, static_cast<int>(res));
 }
 
@@ -345,7 +345,7 @@ TEST(5) {
   F2 f = FUNCTION_CAST<F2>(code->entry());
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
-  ::printf("f() = %" V8PRIdPTR "\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x25" V8PRIdPTR "\xa", res);
   CHECK_EQ(2, static_cast<int>(res));
 }
 
@@ -391,7 +391,7 @@ TEST(6) {
   F2 f = FUNCTION_CAST<F2>(code->entry());
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
-  ::printf("f() = %" V8PRIdPTR "\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x25" V8PRIdPTR "\xa", res);
   CHECK_EQ(1, static_cast<int>(res));
 }
 
@@ -436,7 +436,7 @@ TEST(7) {
   F2 f = FUNCTION_CAST<F2>(code->entry());
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 3, 4, 3, 0, 0));
-  ::printf("f() = %" V8PRIdPTR "\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x25" V8PRIdPTR "\xa", res);
   CHECK_EQ(0x2468, static_cast<int>(res));
 }
 
@@ -481,7 +481,7 @@ TEST(8) {
   F1 f = FUNCTION_CAST<F1>(code->entry());
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 100, 0, 0, 0, 0));
-  ::printf("f() = %" V8PRIdPTR  "\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x25" V8PRIdPTR  "\xa", res);
   CHECK_EQ(0, static_cast<int>(res));
 }
 
@@ -515,7 +515,7 @@ TEST(9) {
   F1 f = FUNCTION_CAST<F1>(code->entry());
   intptr_t res =
     reinterpret_cast<intptr_t>(CALL_GENERATED_CODE(f, 0, 0, 0, 0, 0));
-  ::printf("f() = %" V8PRIdPTR  "\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x25" V8PRIdPTR  "\xa", res);
 }
 
 

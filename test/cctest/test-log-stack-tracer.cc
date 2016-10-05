@@ -87,13 +87,13 @@ static void construct_call(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 #if defined(V8_HOST_ARCH_32_BIT)
   int32_t low_bits = reinterpret_cast<int32_t>(calling_frame->fp());
-  args.This()->Set(v8_str("low_bits"), v8_num(low_bits >> 1));
+  args.This()->Set(v8_str("\x6c\x6f\x77\x5f\x62\x69\x74\x73"), v8_num(low_bits >> 1));
 #elif defined(V8_HOST_ARCH_64_BIT)
   uint64_t fp = reinterpret_cast<uint64_t>(calling_frame->fp());
   int32_t low_bits = static_cast<int32_t>(fp & 0xffffffff);
   int32_t high_bits = static_cast<int32_t>(fp >> 32);
-  args.This()->Set(v8_str("low_bits"), v8_num(low_bits));
-  args.This()->Set(v8_str("high_bits"), v8_num(high_bits));
+  args.This()->Set(v8_str("\x6c\x6f\x77\x5f\x62\x69\x74\x73"), v8_num(low_bits));
+  args.This()->Set(v8_str("\x68\x69\x67\x68\x5f\x62\x69\x74\x73"), v8_num(high_bits));
 #else
 #error Host architecture is neither 32-bit nor 64-bit.
 #endif
@@ -106,7 +106,7 @@ void CreateFramePointerGrabberConstructor(v8::Local<v8::Context> context,
                                           const char* constructor_name) {
     Local<v8::FunctionTemplate> constructor_template =
         v8::FunctionTemplate::New(context->GetIsolate(), construct_call);
-    constructor_template->SetClassName(v8_str("FPGrabber"));
+    constructor_template->SetClassName(v8_str("\x46\x50\x47\x72\x61\x62\x62\x65\x72"));
     Local<Function> fun = constructor_template->GetFunction();
     context->Global()->Set(v8_str(constructor_name), fun);
 }
@@ -120,15 +120,15 @@ static void CreateTraceCallerFunction(v8::Local<v8::Context> context,
                                       const char* trace_func_name) {
   i::EmbeddedVector<char, 256> trace_call_buf;
   i::SNPrintF(trace_call_buf,
-              "function %s() {"
-              "  fp = new FPGrabber();"
-              "  %s(fp.low_bits, fp.high_bits);"
-              "}",
+              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\xa2\x28\x29\x20\x7b"
+              "\x20\x20\x66\x70\x20\x3d\x20\x6e\x65\x77\x20\x46\x50\x47\x72\x61\x62\x62\x65\x72\x28\x29\x3b"
+              "\x20\x20\x6c\xa2\x28\x66\x70\x2e\x6c\x6f\x77\x5f\x62\x69\x74\x73\x2c\x20\x66\x70\x2e\x68\x69\x67\x68\x5f\x62\x69\x74\x73\x29\x3b"
+              "\x7d",
               func_name, trace_func_name);
 
   // Create the FPGrabber function, which grabs the caller's frame pointer
   // when called as a constructor.
-  CreateFramePointerGrabberConstructor(context, "FPGrabber");
+  CreateFramePointerGrabberConstructor(context, "\x46\x50\x47\x72\x61\x62\x62\x65\x72");
 
   // Compile the script.
   CompileRun(trace_call_buf.start());
@@ -152,13 +152,13 @@ TEST(CFromJSStackTrace) {
 
   // Create global function JSFuncDoTrace which calls
   // extension function trace() with the current frame pointer value.
-  CreateTraceCallerFunction(context, "JSFuncDoTrace", "trace");
+  CreateTraceCallerFunction(context, "\x4a\x53\x46\x75\x6e\x63\x44\x6f\x54\x72\x61\x63\x65", "\x74\x72\x61\x63\x65");
   Local<Value> result = CompileRun(
-      "function JSTrace() {"
-      "         JSFuncDoTrace();"
-      "};\n"
-      "JSTrace();\n"
-      "true;");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x4a\x53\x54\x72\x61\x63\x65\x28\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x4a\x53\x46\x75\x6e\x63\x44\x6f\x54\x72\x61\x63\x65\x28\x29\x3b"
+      "\x7d\x3b\xa"
+      "\x4a\x53\x54\x72\x61\x63\x65\x28\x29\x3b\xa"
+      "\x74\x72\x75\x65\x3b");
   CHECK(!result.IsEmpty());
   // When stack tracer is invoked, the stack should look as follows:
   // script [JS]
@@ -176,8 +176,8 @@ TEST(CFromJSStackTrace) {
   CHECK_GT(sample.frames_count, base + 1);
 
   CHECK(IsAddressWithinFuncCode(
-      context, "JSFuncDoTrace", sample.stack[base + 0]));
-  CHECK(IsAddressWithinFuncCode(context, "JSTrace", sample.stack[base + 1]));
+      context, "\x4a\x53\x46\x75\x6e\x63\x44\x6f\x54\x72\x61\x63\x65", sample.stack[base + 0]));
+  CHECK(IsAddressWithinFuncCode(context, "\x4a\x53\x54\x72\x61\x63\x65", sample.stack[base + 1]));
 }
 
 
@@ -200,16 +200,16 @@ TEST(PureJSStackTrace) {
 
   // Create global function JSFuncDoTrace which calls
   // extension function js_trace() with the current frame pointer value.
-  CreateTraceCallerFunction(context, "JSFuncDoTrace", "js_trace");
+  CreateTraceCallerFunction(context, "\x4a\x53\x46\x75\x6e\x63\x44\x6f\x54\x72\x61\x63\x65", "\x6a\x73\x5f\x74\x72\x61\x63\x65");
   Local<Value> result = CompileRun(
-      "function JSTrace() {"
-      "         JSFuncDoTrace();"
-      "};\n"
-      "function OuterJSTrace() {"
-      "         JSTrace();"
-      "};\n"
-      "OuterJSTrace();\n"
-      "true;");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x4a\x53\x54\x72\x61\x63\x65\x28\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x4a\x53\x46\x75\x6e\x63\x44\x6f\x54\x72\x61\x63\x65\x28\x29\x3b"
+      "\x7d\x3b\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x4f\x75\x74\x65\x72\x4a\x53\x54\x72\x61\x63\x65\x28\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x4a\x53\x54\x72\x61\x63\x65\x28\x29\x3b"
+      "\x7d\x3b\xa"
+      "\x4f\x75\x74\x65\x72\x4a\x53\x54\x72\x61\x63\x65\x28\x29\x3b\xa"
+      "\x74\x72\x75\x65\x3b");
   CHECK(!result.IsEmpty());
   // When stack tracer is invoked, the stack should look as follows:
   // script [JS]
@@ -227,9 +227,9 @@ TEST(PureJSStackTrace) {
   // Stack sampling will start from the caller of JSFuncDoTrace, i.e. "JSTrace"
   unsigned base = 0;
   CHECK_GT(sample.frames_count, base + 1);
-  CHECK(IsAddressWithinFuncCode(context, "JSTrace", sample.stack[base + 0]));
+  CHECK(IsAddressWithinFuncCode(context, "\x4a\x53\x54\x72\x61\x63\x65", sample.stack[base + 0]));
   CHECK(IsAddressWithinFuncCode(
-      context, "OuterJSTrace", sample.stack[base + 1]));
+      context, "\x4f\x75\x74\x65\x72\x4a\x53\x54\x72\x61\x63\x65", sample.stack[base + 1]));
 }
 
 
@@ -277,10 +277,10 @@ TEST(JsEntrySp) {
   v8::Local<v8::Context> context = CcTest::NewContext(TRACE_EXTENSION);
   v8::Context::Scope context_scope(context);
   CHECK_EQ(0, i::TraceExtension::GetJsEntrySp());
-  CompileRun("a = 1; b = a + 1;");
+  CompileRun("\x61\x20\x3d\x20\x31\x3b\x20\x62\x20\x3d\x20\x61\x20\x2b\x20\x31\x3b");
   CHECK_EQ(0, i::TraceExtension::GetJsEntrySp());
-  CompileRun("js_entry_sp();");
+  CompileRun("\x6a\x73\x5f\x65\x6e\x74\x72\x79\x5f\x73\x70\x28\x29\x3b");
   CHECK_EQ(0, i::TraceExtension::GetJsEntrySp());
-  CompileRun("js_entry_sp_level2();");
+  CompileRun("\x6a\x73\x5f\x65\x6e\x74\x72\x79\x5f\x73\x70\x5f\x6c\x65\x76\x65\x6c\x32\x28\x29\x3b");
   CHECK_EQ(0, i::TraceExtension::GetJsEntrySp());
 }

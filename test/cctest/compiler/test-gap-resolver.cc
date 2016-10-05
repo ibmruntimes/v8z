@@ -61,7 +61,7 @@ class InterpreterState {
   friend OStream& operator<<(OStream& os, const InterpreterState& is) {
     for (OperandMap::const_iterator it = is.values_.begin();
          it != is.values_.end(); ++it) {
-      if (it != is.values_.begin()) os << " ";
+      if (it != is.values_.begin()) os << "\x20";
       InstructionOperand source(it->first.first, it->first.second);
       InstructionOperand destination(it->second.first, it->second.second);
       os << MoveOperands(&source, &destination);

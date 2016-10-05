@@ -243,8 +243,8 @@ TEST(RunDiamondPhiNumber) {
 
 TEST(RunDiamondPhiString) {
   RawMachineAssemblerTester<Object*> m(kMachineWord32);
-  const char* false_val = "false";
-  const char* true_val = "true";
+  const char* false_val = "\x66\x61\x6c\x73\x65";
+  const char* true_val = "\x74\x72\x75\x65";
   Node* true_node = m.StringConstant(true_val);
   Node* false_node = m.StringConstant(false_val);
   BuildDiamondPhi(&m, m.Parameter(0), true_node, false_node);
@@ -2439,7 +2439,7 @@ TEST(RunDeadNodes) {
         m.Int32Constant(44);
         break;
       case 1:
-        m.StringConstant("unused");
+        m.StringConstant("\x75\x6e\x75\x73\x65\x64");
         break;
       case 2:
         m.NumberConstant(11.1);
@@ -2514,7 +2514,7 @@ static void RunLoadImmIndex(MachineType rep) {
       Type expected = buffer[i];
       Type actual = static_cast<CType>(m.Call());
       CHECK_EQ(expected, actual);
-      printf("XXX\n");
+      printf("\x58\x58\x58\xa");
     }
   }
 }
@@ -3110,12 +3110,12 @@ TEST(RunRefDiamond) {
 
   const int magic = 99644;
   Handle<String> rexpected =
-      CcTest::i_isolate()->factory()->InternalizeUtf8String("A");
+      CcTest::i_isolate()->factory()->InternalizeUtf8String("\x41");
   String* buffer;
 
   MLabel blocka, blockb, end;
-  Node* k1 = m.StringConstant("A");
-  Node* k2 = m.StringConstant("B");
+  Node* k1 = m.StringConstant("\x41");
+  Node* k2 = m.StringConstant("\x42");
   m.Branch(m.Int32Constant(0), &blocka, &blockb);
   m.Bind(&blocka);
   m.Goto(&end);
@@ -3138,14 +3138,14 @@ TEST(RunDoubleRefDiamond) {
   double dbuffer = 0.1;
   double dconstant = 99.99;
   Handle<String> rexpected =
-      CcTest::i_isolate()->factory()->InternalizeUtf8String("AX");
+      CcTest::i_isolate()->factory()->InternalizeUtf8String("\x41\x58");
   String* rbuffer;
 
   MLabel blocka, blockb, end;
   Node* d1 = m.Float64Constant(dconstant);
   Node* d2 = m.Float64Constant(0 - dconstant);
-  Node* r1 = m.StringConstant("AX");
-  Node* r2 = m.StringConstant("BX");
+  Node* r1 = m.StringConstant("\x41\x58");
+  Node* r2 = m.StringConstant("\x42\x58");
   m.Branch(m.Int32Constant(0), &blocka, &blockb);
   m.Bind(&blocka);
   m.Goto(&end);
@@ -3173,14 +3173,14 @@ TEST(RunDoubleRefDoubleDiamond) {
   double dbuffer = 0.1;
   double dconstant = 99.997;
   Handle<String> rexpected =
-      CcTest::i_isolate()->factory()->InternalizeUtf8String("AD");
+      CcTest::i_isolate()->factory()->InternalizeUtf8String("\x41\x44");
   String* rbuffer;
 
   MLabel blocka, blockb, mid, blockd, blocke, end;
   Node* d1 = m.Float64Constant(dconstant);
   Node* d2 = m.Float64Constant(0 - dconstant);
-  Node* r1 = m.StringConstant("AD");
-  Node* r2 = m.StringConstant("BD");
+  Node* r1 = m.StringConstant("\x41\x44");
+  Node* r2 = m.StringConstant("\x42\x44");
   m.Branch(m.Int32Constant(0), &blocka, &blockb);
   m.Bind(&blocka);
   m.Goto(&mid);

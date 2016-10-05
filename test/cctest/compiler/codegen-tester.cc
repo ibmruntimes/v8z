@@ -319,7 +319,7 @@ void Int32BinopInputShapeTester::TestAllInputShapes() {
 
       gen->gen(&m, n0, n1);
 
-      if (false) printf("Int32BinopInputShapeTester i=%d, j=%d\n", i, j);
+      if (false) printf("\x49\x6e\x74\x33\x32\x42\x69\x6e\x6f\x70\x49\x6e\x70\x75\x74\x53\x68\x61\x70\x65\x54\x65\x73\x74\x65\x72\x20\x69\x3d\x6c\x84\x2c\x20\x6a\x3d\x6c\x84\xa", i, j);
       if (i >= 0) {
         input_a = inputs[i];
         RunRight(&m);
@@ -340,7 +340,7 @@ void Int32BinopInputShapeTester::Run(RawMachineAssemblerTester<int32_t>* m) {
       input_a = *pl;
       input_b = *pr;
       int32_t expect = gen->expected(input_a, input_b);
-      if (false) printf("  cmp(a=%d, b=%d) ?== %d\n", input_a, input_b, expect);
+      if (false) printf("\x20\x20\x63\x6d\x70\x28\x61\x3d\x6c\x84\x2c\x20\x62\x3d\x6c\x84\x29\x20\x3f\x3d\x3d\x20\x6c\x84\xa", input_a, input_b, expect);
       CHECK_EQ(expect, m->Call(input_a, input_b));
     }
   }
@@ -352,7 +352,7 @@ void Int32BinopInputShapeTester::RunLeft(
   FOR_UINT32_INPUTS(i) {
     input_a = *i;
     int32_t expect = gen->expected(input_a, input_b);
-    if (false) printf("  cmp(a=%d, b=%d) ?== %d\n", input_a, input_b, expect);
+    if (false) printf("\x20\x20\x63\x6d\x70\x28\x61\x3d\x6c\x84\x2c\x20\x62\x3d\x6c\x84\x29\x20\x3f\x3d\x3d\x20\x6c\x84\xa", input_a, input_b, expect);
     CHECK_EQ(expect, m->Call(input_a, input_b));
   }
 }
@@ -363,7 +363,7 @@ void Int32BinopInputShapeTester::RunRight(
   FOR_UINT32_INPUTS(i) {
     input_b = *i;
     int32_t expect = gen->expected(input_a, input_b);
-    if (false) printf("  cmp(a=%d, b=%d) ?== %d\n", input_a, input_b, expect);
+    if (false) printf("\x20\x20\x63\x6d\x70\x28\x61\x3d\x6c\x84\x2c\x20\x62\x3d\x6c\x84\x29\x20\x3f\x3d\x3d\x20\x6c\x84\xa", input_a, input_b, expect);
     CHECK_EQ(expect, m->Call(input_a, input_b));
   }
 }
@@ -464,15 +464,15 @@ TEST(RunNumberConstants) {
 
 TEST(RunEmptyString) {
   RawMachineAssemblerTester<Object*> m;
-  m.Return(m.StringConstant("empty"));
-  m.CheckString("empty", m.Call());
+  m.Return(m.StringConstant("\x65\x6d\x70\x74\x79"));
+  m.CheckString("\x65\x6d\x70\x74\x79", m.Call());
 }
 
 
 TEST(RunHeapConstant) {
   RawMachineAssemblerTester<Object*> m;
-  m.Return(m.StringConstant("empty"));
-  m.CheckString("empty", m.Call());
+  m.Return(m.StringConstant("\x65\x6d\x70\x74\x79"));
+  m.CheckString("\x65\x6d\x70\x74\x79", m.Call());
 }
 
 

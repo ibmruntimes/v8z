@@ -44,7 +44,7 @@ static Turn turn = FILL_CACHE;
 
 class ThreadA : public v8::base::Thread {
  public:
-  ThreadA() : Thread(Options("ThreadA")) {}
+  ThreadA() : Thread(Options("\x54\x68\x72\x65\x61\x64\x41")) {}
   void Run() {
     v8::Isolate* isolate = CcTest::isolate();
     v8::Locker locker(isolate);
@@ -59,11 +59,11 @@ class ThreadA : public v8::base::Thread {
     v8::Handle<v8::Script> script = v8::Script::Compile(
         v8::String::NewFromUtf8(
           isolate,
-          "for (var i = 0; i < 3; i++) {"
-          "  var result = \"a\".search(\"a\");"
-          "  if (result != 0) throw \"result: \" + result + \" @\" + i;"
-          "};"
-          "true"));
+          "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x33\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+          "\x20\x20\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x22\x61\x22\x2e\x73\x65\x61\x72\x63\x68\x28\x22\x61\x22\x29\x3b"
+          "\x20\x20\x69\x66\x20\x28\x72\x65\x73\x75\x6c\x74\x20\x21\x3d\x20\x30\x29\x20\x74\x68\x72\x6f\x77\x20\x22\x72\x65\x73\x75\x6c\x74\x3a\x20\x22\x20\x2b\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x20\x22\x20\x40\x22\x20\x2b\x20\x69\x3b"
+          "\x7d\x3b"
+          "\x74\x72\x75\x65"));
     CHECK(script->Run()->IsTrue());
 
     turn = CLEAN_CACHE;
@@ -84,7 +84,7 @@ class ThreadA : public v8::base::Thread {
 
 class ThreadB : public v8::base::Thread {
  public:
-  ThreadB() : Thread(Options("ThreadB")) {}
+  ThreadB() : Thread(Options("\x54\x68\x72\x65\x61\x64\x42")) {}
   void Run() {
     do {
       {
@@ -127,7 +127,7 @@ class ThreadIdValidationThread : public v8::base::Thread {
   ThreadIdValidationThread(v8::base::Thread* thread_to_start,
                            i::List<i::ThreadId>* refs, unsigned int thread_no,
                            v8::base::Semaphore* semaphore)
-      : Thread(Options("ThreadRefValidationThread")),
+      : Thread(Options("\x54\x68\x72\x65\x61\x64\x52\x65\x66\x56\x61\x6c\x69\x64\x61\x74\x69\x6f\x6e\x54\x68\x72\x65\x61\x64")),
         refs_(refs),
         thread_no_(thread_no),
         thread_to_start_(thread_to_start),

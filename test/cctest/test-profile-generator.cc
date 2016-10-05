@@ -50,17 +50,17 @@ using i::Vector;
 TEST(ProfileNodeFindOrAddChild) {
   ProfileTree tree;
   ProfileNode* node = tree.root();
-  CodeEntry entry1(i::Logger::FUNCTION_TAG, "aaa");
+  CodeEntry entry1(i::Logger::FUNCTION_TAG, "\x61\x61\x61");
   ProfileNode* childNode1 = node->FindOrAddChild(&entry1);
   CHECK_NE(NULL, childNode1);
   CHECK_EQ(childNode1, node->FindOrAddChild(&entry1));
-  CodeEntry entry2(i::Logger::FUNCTION_TAG, "bbb");
+  CodeEntry entry2(i::Logger::FUNCTION_TAG, "\x62\x62\x62");
   ProfileNode* childNode2 = node->FindOrAddChild(&entry2);
   CHECK_NE(NULL, childNode2);
   CHECK_NE(childNode1, childNode2);
   CHECK_EQ(childNode1, node->FindOrAddChild(&entry1));
   CHECK_EQ(childNode2, node->FindOrAddChild(&entry2));
-  CodeEntry entry3(i::Logger::FUNCTION_TAG, "ccc");
+  CodeEntry entry3(i::Logger::FUNCTION_TAG, "\x63\x63\x63");
   ProfileNode* childNode3 = node->FindOrAddChild(&entry3);
   CHECK_NE(NULL, childNode3);
   CHECK_NE(childNode1, childNode3);
@@ -72,7 +72,7 @@ TEST(ProfileNodeFindOrAddChild) {
 
 
 TEST(ProfileNodeFindOrAddChildForSameFunction) {
-  const char* aaa = "aaa";
+  const char* aaa = "\x61\x61\x61";
   ProfileTree tree;
   ProfileNode* node = tree.root();
   CodeEntry entry1(i::Logger::FUNCTION_TAG, aaa);
@@ -118,9 +118,9 @@ class ProfileTreeTestHelper {
 }  // namespace
 
 TEST(ProfileTreeAddPathFromStart) {
-  CodeEntry entry1(i::Logger::FUNCTION_TAG, "aaa");
-  CodeEntry entry2(i::Logger::FUNCTION_TAG, "bbb");
-  CodeEntry entry3(i::Logger::FUNCTION_TAG, "ccc");
+  CodeEntry entry1(i::Logger::FUNCTION_TAG, "\x61\x61\x61");
+  CodeEntry entry2(i::Logger::FUNCTION_TAG, "\x62\x62\x62");
+  CodeEntry entry3(i::Logger::FUNCTION_TAG, "\x63\x63\x63");
   ProfileTree tree;
   ProfileTreeTestHelper helper(&tree);
   CHECK_EQ(NULL, helper.Walk(&entry1));
@@ -177,9 +177,9 @@ TEST(ProfileTreeAddPathFromStart) {
 
 
 TEST(ProfileTreeAddPathFromEnd) {
-  CodeEntry entry1(i::Logger::FUNCTION_TAG, "aaa");
-  CodeEntry entry2(i::Logger::FUNCTION_TAG, "bbb");
-  CodeEntry entry3(i::Logger::FUNCTION_TAG, "ccc");
+  CodeEntry entry1(i::Logger::FUNCTION_TAG, "\x61\x61\x61");
+  CodeEntry entry2(i::Logger::FUNCTION_TAG, "\x62\x62\x62");
+  CodeEntry entry3(i::Logger::FUNCTION_TAG, "\x63\x63\x63");
   ProfileTree tree;
   ProfileTreeTestHelper helper(&tree);
   CHECK_EQ(NULL, helper.Walk(&entry1));
@@ -241,7 +241,7 @@ TEST(ProfileTreeCalculateTotalTicks) {
   empty_tree.root()->IncrementSelfTicks();
   CHECK_EQ(1, empty_tree.root()->self_ticks());
 
-  CodeEntry entry1(i::Logger::FUNCTION_TAG, "aaa");
+  CodeEntry entry1(i::Logger::FUNCTION_TAG, "\x61\x61\x61");
   CodeEntry* e1_path[] = {&entry1};
   Vector<CodeEntry*> e1_path_vec(
       e1_path, sizeof(e1_path) / sizeof(e1_path[0]));
@@ -256,7 +256,7 @@ TEST(ProfileTreeCalculateTotalTicks) {
   CHECK_EQ(1, single_child_tree.root()->self_ticks());
   CHECK_EQ(1, node1->self_ticks());
 
-  CodeEntry entry2(i::Logger::FUNCTION_TAG, "bbb");
+  CodeEntry entry2(i::Logger::FUNCTION_TAG, "\x62\x62\x62");
   CodeEntry* e1_e2_path[] = {&entry1, &entry2};
   Vector<CodeEntry*> e1_e2_path_vec(
       e1_e2_path, sizeof(e1_e2_path) / sizeof(e1_e2_path[0]));
@@ -283,7 +283,7 @@ TEST(ProfileTreeCalculateTotalTicks) {
   CodeEntry* e2_path[] = {&entry2};
   Vector<CodeEntry*> e2_path_vec(
       e2_path, sizeof(e2_path) / sizeof(e2_path[0]));
-  CodeEntry entry3(i::Logger::FUNCTION_TAG, "ccc");
+  CodeEntry entry3(i::Logger::FUNCTION_TAG, "\x63\x63\x63");
   CodeEntry* e3_path[] = {&entry3};
   Vector<CodeEntry*> e3_path_vec(
       e3_path, sizeof(e3_path) / sizeof(e3_path[0]));
@@ -334,10 +334,10 @@ static inline i::Address ToAddress(int n) {
 
 TEST(CodeMapAddCode) {
   CodeMap code_map;
-  CodeEntry entry1(i::Logger::FUNCTION_TAG, "aaa");
-  CodeEntry entry2(i::Logger::FUNCTION_TAG, "bbb");
-  CodeEntry entry3(i::Logger::FUNCTION_TAG, "ccc");
-  CodeEntry entry4(i::Logger::FUNCTION_TAG, "ddd");
+  CodeEntry entry1(i::Logger::FUNCTION_TAG, "\x61\x61\x61");
+  CodeEntry entry2(i::Logger::FUNCTION_TAG, "\x62\x62\x62");
+  CodeEntry entry3(i::Logger::FUNCTION_TAG, "\x63\x63\x63");
+  CodeEntry entry4(i::Logger::FUNCTION_TAG, "\x64\x64\x64");
   code_map.AddCode(ToAddress(0x1500), &entry1, 0x200);
   code_map.AddCode(ToAddress(0x1700), &entry2, 0x100);
   code_map.AddCode(ToAddress(0x1900), &entry3, 0x50);
@@ -364,8 +364,8 @@ TEST(CodeMapAddCode) {
 
 TEST(CodeMapMoveAndDeleteCode) {
   CodeMap code_map;
-  CodeEntry entry1(i::Logger::FUNCTION_TAG, "aaa");
-  CodeEntry entry2(i::Logger::FUNCTION_TAG, "bbb");
+  CodeEntry entry1(i::Logger::FUNCTION_TAG, "\x61\x61\x61");
+  CodeEntry entry2(i::Logger::FUNCTION_TAG, "\x62\x62\x62");
   code_map.AddCode(ToAddress(0x1500), &entry1, 0x200);
   code_map.AddCode(ToAddress(0x1700), &entry2, 0x100);
   CHECK_EQ(&entry1, code_map.FindEntry(ToAddress(0x1500)));
@@ -373,7 +373,7 @@ TEST(CodeMapMoveAndDeleteCode) {
   code_map.MoveCode(ToAddress(0x1500), ToAddress(0x1700));  // Deprecate bbb.
   CHECK_EQ(NULL, code_map.FindEntry(ToAddress(0x1500)));
   CHECK_EQ(&entry1, code_map.FindEntry(ToAddress(0x1700)));
-  CodeEntry entry3(i::Logger::FUNCTION_TAG, "ccc");
+  CodeEntry entry3(i::Logger::FUNCTION_TAG, "\x63\x63\x63");
   code_map.AddCode(ToAddress(0x1750), &entry3, 0x100);
   CHECK_EQ(NULL, code_map.FindEntry(ToAddress(0x1700)));
   CHECK_EQ(&entry3, code_map.FindEntry(ToAddress(0x1750)));
@@ -404,9 +404,9 @@ TEST(RecordTickSample) {
   CpuProfilesCollection profiles(CcTest::heap());
   profiles.StartProfiling("", false);
   ProfileGenerator generator(&profiles);
-  CodeEntry* entry1 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "aaa");
-  CodeEntry* entry2 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "bbb");
-  CodeEntry* entry3 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "ccc");
+  CodeEntry* entry1 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "\x61\x61\x61");
+  CodeEntry* entry2 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "\x62\x62\x62");
+  CodeEntry* entry3 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "\x63\x63\x63");
   generator.code_map()->AddCode(ToAddress(0x1500), entry1, 0x200);
   generator.code_map()->AddCode(ToAddress(0x1700), entry2, 0x100);
   generator.code_map()->AddCode(ToAddress(0x1900), entry3, 0x50);
@@ -470,9 +470,9 @@ TEST(SampleIds) {
   CpuProfilesCollection profiles(CcTest::heap());
   profiles.StartProfiling("", true);
   ProfileGenerator generator(&profiles);
-  CodeEntry* entry1 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "aaa");
-  CodeEntry* entry2 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "bbb");
-  CodeEntry* entry3 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "ccc");
+  CodeEntry* entry1 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "\x61\x61\x61");
+  CodeEntry* entry2 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "\x62\x62\x62");
+  CodeEntry* entry3 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "\x63\x63\x63");
   generator.code_map()->AddCode(ToAddress(0x1500), entry1, 0x200);
   generator.code_map()->AddCode(ToAddress(0x1700), entry2, 0x100);
   generator.code_map()->AddCode(ToAddress(0x1900), entry3, 0x50);
@@ -518,7 +518,7 @@ TEST(NoSamples) {
   CpuProfilesCollection profiles(CcTest::heap());
   profiles.StartProfiling("", false);
   ProfileGenerator generator(&profiles);
-  CodeEntry* entry1 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "aaa");
+  CodeEntry* entry1 = profiles.NewCodeEntry(i::Logger::FUNCTION_TAG, "\x61\x61\x61");
   generator.code_map()->AddCode(ToAddress(0x1500), entry1, 0x200);
 
   // We are building the following calls tree:
@@ -560,11 +560,11 @@ TEST(RecordStackTraceAtStartProfiling) {
   CpuProfiler* profiler = CcTest::i_isolate()->cpu_profiler();
   CHECK_EQ(0, profiler->GetProfilesCount());
   CompileRun(
-      "function c() { startProfiling(); }\n"
-      "function b() { c(); }\n"
-      "function a() { b(); }\n"
-      "a();\n"
-      "stopProfiling();");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x28\x29\x20\x7b\x20\x73\x74\x61\x72\x74\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67\x28\x29\x3b\x20\x7d\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x28\x29\x20\x7b\x20\x63\x28\x29\x3b\x20\x7d\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x28\x29\x20\x7b\x20\x62\x28\x29\x3b\x20\x7d\xa"
+      "\x61\x28\x29\x3b\xa"
+      "\x73\x74\x6f\x70\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67\x28\x29\x3b");
   CHECK_EQ(1, profiler->GetProfilesCount());
   CpuProfile* profile = profiler->GetProfile(0);
   const ProfileTree* topDown = profile->top_down();
@@ -581,16 +581,16 @@ TEST(RecordStackTraceAtStartProfiling) {
   // if the sampler managed to get a tick.
   current = PickChild(current, "");
   CHECK_NE(NULL, const_cast<ProfileNode*>(current));
-  current = PickChild(current, "a");
+  current = PickChild(current, "\x61");
   CHECK_NE(NULL, const_cast<ProfileNode*>(current));
-  current = PickChild(current, "b");
+  current = PickChild(current, "\x62");
   CHECK_NE(NULL, const_cast<ProfileNode*>(current));
-  current = PickChild(current, "c");
+  current = PickChild(current, "\x63");
   CHECK_NE(NULL, const_cast<ProfileNode*>(current));
   CHECK(current->children()->length() == 0 ||
         current->children()->length() == 1);
   if (current->children()->length() == 1) {
-    current = PickChild(current, "startProfiling");
+    current = PickChild(current, "\x73\x74\x61\x72\x74\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67");
     CHECK_EQ(0, current->children()->length());
   }
 }
@@ -602,11 +602,11 @@ TEST(Issue51919) {
       CpuProfilesCollection::kMaxSimultaneousProfiles> titles;
   for (int i = 0; i < CpuProfilesCollection::kMaxSimultaneousProfiles; ++i) {
     i::Vector<char> title = i::Vector<char>::New(16);
-    i::SNPrintF(title, "%d", i);
+    i::SNPrintF(title, "\x6c\x84", i);
     CHECK(collection.StartProfiling(title.start(), false));
     titles[i] = title.start();
   }
-  CHECK(!collection.StartProfiling("maximum", false));
+  CHECK(!collection.StartProfiling("\x6d\x61\x78\x69\x6d\x75\x6d", false));
   for (int i = 0; i < CpuProfilesCollection::kMaxSimultaneousProfiles; ++i)
     i::DeleteArray(titles[i]);
 }
@@ -636,13 +636,13 @@ TEST(ProfileNodeScriptId) {
   i::CpuProfiler* iprofiler = reinterpret_cast<i::CpuProfiler*>(profiler);
   CHECK_EQ(0, iprofiler->GetProfilesCount());
   v8::Handle<v8::Script> script_a = v8::Script::Compile(v8::String::NewFromUtf8(
-      env->GetIsolate(), "function a() { startProfiling(); }\n"));
+      env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x28\x29\x20\x7b\x20\x73\x74\x61\x72\x74\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67\x28\x29\x3b\x20\x7d\xa"));
   script_a->Run();
   v8::Handle<v8::Script> script_b =
       v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                                  "function b() { a(); }\n"
-                                                  "b();\n"
-                                                  "stopProfiling();\n"));
+                                                  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x28\x29\x20\x7b\x20\x61\x28\x29\x3b\x20\x7d\xa"
+                                                  "\x62\x28\x29\x3b\xa"
+                                                  "\x73\x74\x6f\x70\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67\x28\x29\x3b\xa"));
   script_b->Run();
   CHECK_EQ(1, iprofiler->GetProfilesCount());
   const v8::CpuProfile* profile = i::ProfilerExtension::last_profile;
@@ -660,11 +660,11 @@ TEST(ProfileNodeScriptId) {
   current = PickChild(current, "");
   CHECK_NE(NULL, const_cast<v8::CpuProfileNode*>(current));
 
-  current = PickChild(current, "b");
+  current = PickChild(current, "\x62");
   CHECK_NE(NULL, const_cast<v8::CpuProfileNode*>(current));
   CHECK_EQ(script_b->GetUnboundScript()->GetId(), current->GetScriptId());
 
-  current = PickChild(current, "a");
+  current = PickChild(current, "\x61");
   CHECK_NE(NULL, const_cast<v8::CpuProfileNode*>(current));
   CHECK_EQ(script_a->GetUnboundScript()->GetId(), current->GetScriptId());
 }
@@ -673,19 +673,19 @@ TEST(ProfileNodeScriptId) {
 
 
 static const char* line_number_test_source_existing_functions =
-"function foo_at_the_first_line() {\n"
-"}\n"
-"foo_at_the_first_line();\n"
-"function lazy_func_at_forth_line() {}\n";
+"\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x5f\x61\x74\x5f\x74\x68\x65\x5f\x66\x69\x72\x73\x74\x5f\x6c\x69\x6e\x65\x28\x29\x20\x7b\xa"
+"\x7d\xa"
+"\x66\x6f\x6f\x5f\x61\x74\x5f\x74\x68\x65\x5f\x66\x69\x72\x73\x74\x5f\x6c\x69\x6e\x65\x28\x29\x3b\xa"
+"\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x61\x7a\x79\x5f\x66\x75\x6e\x63\x5f\x61\x74\x5f\x66\x6f\x72\x74\x68\x5f\x6c\x69\x6e\x65\x28\x29\x20\x7b\x7d\xa";
 
 
 static const char* line_number_test_source_profile_time_functions =
-"// Empty first line\n"
-"function bar_at_the_second_line() {\n"
-"  foo_at_the_first_line();\n"
-"}\n"
-"bar_at_the_second_line();\n"
-"function lazy_func_at_6th_line() {}";
+"\x2f\x2f\x20\x45\x6d\x70\x74\x79\x20\x66\x69\x72\x73\x74\x20\x6c\x69\x6e\x65\xa"
+"\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x5f\x61\x74\x5f\x74\x68\x65\x5f\x73\x65\x63\x6f\x6e\x64\x5f\x6c\x69\x6e\x65\x28\x29\x20\x7b\xa"
+"\x20\x20\x66\x6f\x6f\x5f\x61\x74\x5f\x74\x68\x65\x5f\x66\x69\x72\x73\x74\x5f\x6c\x69\x6e\x65\x28\x29\x3b\xa"
+"\x7d\xa"
+"\x62\x61\x72\x5f\x61\x74\x5f\x74\x68\x65\x5f\x73\x65\x63\x6f\x6e\x64\x5f\x6c\x69\x6e\x65\x28\x29\x3b\xa"
+"\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x61\x7a\x79\x5f\x66\x75\x6e\x63\x5f\x61\x74\x5f\x36\x74\x68\x5f\x6c\x69\x6e\x65\x28\x29\x20\x7b\x7d";
 
 int GetFunctionLineNumber(LocalContext* env, const char* name) {
   CpuProfiler* profiler = CcTest::i_isolate()->cpu_profiler();
@@ -713,18 +713,18 @@ TEST(LineNumber) {
   CompileRun(line_number_test_source_existing_functions);
 
   CpuProfiler* profiler = isolate->cpu_profiler();
-  profiler->StartProfiling("LineNumber");
+  profiler->StartProfiling("\x4c\x69\x6e\x65\x4e\x75\x6d\x62\x65\x72");
 
   CompileRun(line_number_test_source_profile_time_functions);
 
   profiler->processor()->StopSynchronously();
 
-  CHECK_EQ(1, GetFunctionLineNumber(&env, "foo_at_the_first_line"));
-  CHECK_EQ(0, GetFunctionLineNumber(&env, "lazy_func_at_forth_line"));
-  CHECK_EQ(2, GetFunctionLineNumber(&env, "bar_at_the_second_line"));
-  CHECK_EQ(0, GetFunctionLineNumber(&env, "lazy_func_at_6th_line"));
+  CHECK_EQ(1, GetFunctionLineNumber(&env, "\x66\x6f\x6f\x5f\x61\x74\x5f\x74\x68\x65\x5f\x66\x69\x72\x73\x74\x5f\x6c\x69\x6e\x65"));
+  CHECK_EQ(0, GetFunctionLineNumber(&env, "\x6c\x61\x7a\x79\x5f\x66\x75\x6e\x63\x5f\x61\x74\x5f\x66\x6f\x72\x74\x68\x5f\x6c\x69\x6e\x65"));
+  CHECK_EQ(2, GetFunctionLineNumber(&env, "\x62\x61\x72\x5f\x61\x74\x5f\x74\x68\x65\x5f\x73\x65\x63\x6f\x6e\x64\x5f\x6c\x69\x6e\x65"));
+  CHECK_EQ(0, GetFunctionLineNumber(&env, "\x6c\x61\x7a\x79\x5f\x66\x75\x6e\x63\x5f\x61\x74\x5f\x36\x74\x68\x5f\x6c\x69\x6e\x65"));
 
-  profiler->StopProfiling("LineNumber");
+  profiler->StopProfiling("\x4c\x69\x6e\x65\x4e\x75\x6d\x62\x65\x72");
 }
 
 
@@ -739,18 +739,18 @@ TEST(BailoutReason) {
   CHECK_EQ(0, iprofiler->GetProfilesCount());
   v8::Handle<v8::Script> script =
       v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                                  "function TryCatch() {\n"
-                                                  "  try {\n"
-                                                  "    startProfiling();\n"
-                                                  "  } catch (e) { };\n"
-                                                  "}\n"
-                                                  "function TryFinally() {\n"
-                                                  "  try {\n"
-                                                  "    TryCatch();\n"
-                                                  "  } finally { };\n"
-                                                  "}\n"
-                                                  "TryFinally();\n"
-                                                  "stopProfiling();"));
+                                                  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x54\x72\x79\x43\x61\x74\x63\x68\x28\x29\x20\x7b\xa"
+                                                  "\x20\x20\x74\x72\x79\x20\x7b\xa"
+                                                  "\x20\x20\x20\x20\x73\x74\x61\x72\x74\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67\x28\x29\x3b\xa"
+                                                  "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x7d\x3b\xa"
+                                                  "\x7d\xa"
+                                                  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x54\x72\x79\x46\x69\x6e\x61\x6c\x6c\x79\x28\x29\x20\x7b\xa"
+                                                  "\x20\x20\x74\x72\x79\x20\x7b\xa"
+                                                  "\x20\x20\x20\x20\x54\x72\x79\x43\x61\x74\x63\x68\x28\x29\x3b\xa"
+                                                  "\x20\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x20\x7d\x3b\xa"
+                                                  "\x7d\xa"
+                                                  "\x54\x72\x79\x46\x69\x6e\x61\x6c\x6c\x79\x28\x29\x3b\xa"
+                                                  "\x73\x74\x6f\x70\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67\x28\x29\x3b"));
   script->Run();
   CHECK_EQ(1, iprofiler->GetProfilesCount());
   const v8::CpuProfile* profile = i::ProfilerExtension::last_profile;
@@ -766,11 +766,11 @@ TEST(BailoutReason) {
   current = PickChild(current, "");
   CHECK_NE(NULL, const_cast<v8::CpuProfileNode*>(current));
 
-  current = PickChild(current, "TryFinally");
+  current = PickChild(current, "\x54\x72\x79\x46\x69\x6e\x61\x6c\x6c\x79");
   CHECK_NE(NULL, const_cast<v8::CpuProfileNode*>(current));
-  CHECK(!strcmp("TryFinallyStatement", current->GetBailoutReason()));
+  CHECK(!strcmp("\x54\x72\x79\x46\x69\x6e\x61\x6c\x6c\x79\x53\x74\x61\x74\x65\x6d\x65\x6e\x74", current->GetBailoutReason()));
 
-  current = PickChild(current, "TryCatch");
+  current = PickChild(current, "\x54\x72\x79\x43\x61\x74\x63\x68");
   CHECK_NE(NULL, const_cast<v8::CpuProfileNode*>(current));
-  CHECK(!strcmp("TryCatchStatement", current->GetBailoutReason()));
+  CHECK(!strcmp("\x54\x72\x79\x43\x61\x74\x63\x68\x53\x74\x61\x74\x65\x6d\x65\x6e\x74", current->GetBailoutReason()));
 }

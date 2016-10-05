@@ -52,7 +52,7 @@ class ChangesLoweringTester : public GraphBuilderTester<ReturnType> {
     if (function.is_null()) {
       function =
           v8::Utils::OpenHandle(*v8::Handle<v8::Function>::Cast(CompileRun(
-              "(function() { 'use strict'; return 2.7123; })")));
+              "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x27\x75\x73\x65\x20\x73\x74\x72\x69\x63\x74\x27\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x32\x2e\x37\x31\x32\x33\x3b\x20\x7d\x29")));
       CompilationInfoWithZone info(function);
       CHECK(Parser::Parse(&info));
       StrictMode strict_mode = info.function()->strict_mode();

@@ -39,13 +39,13 @@ v8::Handle<v8::FunctionTemplate> PrintExtension::GetNativeFunctionTemplate(
 
 void PrintExtension::Print(const v8::FunctionCallbackInfo<v8::Value>& args) {
   for (int i = 0; i < args.Length(); i++) {
-    if (i != 0) printf(" ");
+    if (i != 0) printf("\x20");
     v8::HandleScope scope(args.GetIsolate());
     v8::String::Utf8Value str(args[i]);
     if (*str == NULL) return;
-    printf("%s", *str);
+    printf("\x6c\xa2", *str);
   }
-  printf("\n");
+  printf("\xa");
 }
 
 } }  // namespace v8::internal

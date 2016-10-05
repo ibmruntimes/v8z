@@ -166,10 +166,10 @@ TEST(ExternalReferenceDecoder) {
 class FileByteSink : public SnapshotByteSink {
  public:
   explicit FileByteSink(const char* snapshot_file) {
-    fp_ = v8::base::OS::FOpen(snapshot_file, "wb");
+    fp_ = v8::base::OS::FOpen(snapshot_file, "\x77\x62");
     file_name_ = snapshot_file;
     if (fp_ == NULL) {
-      PrintF("Unable to write to snapshot file \"%s\"\n", snapshot_file);
+      PrintF("\x55\x6e\x61\x62\x6c\x65\x20\x74\x6f\x20\x77\x72\x69\x74\x65\x20\x74\x6f\x20\x73\x6e\x61\x70\x73\x68\x6f\x74\x20\x66\x69\x6c\x65\x20\x22\x6c\xa2\x22\xa", snapshot_file);
       exit(1);
     }
   }
@@ -211,16 +211,16 @@ void FileByteSink::WriteSpaceUsed(
       int property_cell_space_used) {
   int file_name_length = StrLength(file_name_) + 10;
   Vector<char> name = Vector<char>::New(file_name_length + 1);
-  SNPrintF(name, "%s.size", file_name_);
-  FILE* fp = v8::base::OS::FOpen(name.start(), "w");
+  SNPrintF(name, "\x6c\xa2\x2e\x73\x69\x7a\x65", file_name_);
+  FILE* fp = v8::base::OS::FOpen(name.start(), "\x77");
   name.Dispose();
-  fprintf(fp, "new %d\n", new_space_used);
-  fprintf(fp, "pointer %d\n", pointer_space_used);
-  fprintf(fp, "data %d\n", data_space_used);
-  fprintf(fp, "code %d\n", code_space_used);
-  fprintf(fp, "map %d\n", map_space_used);
-  fprintf(fp, "cell %d\n", cell_space_used);
-  fprintf(fp, "property cell %d\n", property_cell_space_used);
+  fprintf(fp, "\x6e\x65\x77\x20\x6c\x84\xa", new_space_used);
+  fprintf(fp, "\x70\x6f\x69\x6e\x74\x65\x72\x20\x6c\x84\xa", pointer_space_used);
+  fprintf(fp, "\x64\x61\x74\x61\x20\x6c\x84\xa", data_space_used);
+  fprintf(fp, "\x63\x6f\x64\x65\x20\x6c\x84\xa", code_space_used);
+  fprintf(fp, "\x6d\x61\x70\x20\x6c\x84\xa", map_space_used);
+  fprintf(fp, "\x63\x65\x6c\x6c\x20\x6c\x84\xa", cell_space_used);
+  fprintf(fp, "\x70\x72\x6f\x70\x65\x72\x74\x79\x20\x63\x65\x6c\x6c\x20\x6c\x84\xa", property_cell_space_used);
   fclose(fp);
 }
 
@@ -255,7 +255,7 @@ static void Serialize() {
   }
 
   Isolate* internal_isolate = CcTest::i_isolate();
-  internal_isolate->heap()->CollectAllGarbage(Heap::kNoGCFlags, "serialize");
+  internal_isolate->heap()->CollectAllGarbage(Heap::kNoGCFlags, "\x73\x65\x72\x69\x61\x6c\x69\x7a\x65");
   WriteToFile(internal_isolate, FLAG_testing_serialization_file);
 }
 
@@ -289,8 +289,8 @@ static void ReserveSpaceForSnapshot(Deserializer* deserializer,
                                     const char* file_name) {
   int file_name_length = StrLength(file_name) + 10;
   Vector<char> name = Vector<char>::New(file_name_length + 1);
-  SNPrintF(name, "%s.size", file_name);
-  FILE* fp = v8::base::OS::FOpen(name.start(), "r");
+  SNPrintF(name, "\x6c\xa2\x2e\x73\x69\x7a\x65", file_name);
+  FILE* fp = v8::base::OS::FOpen(name.start(), "\x72");
   name.Dispose();
   int new_size, pointer_size, data_size, code_size, map_size, cell_size,
       property_cell_size;
@@ -299,13 +299,13 @@ static void ReserveSpaceForSnapshot(Deserializer* deserializer,
   // Please note that this is only fine if %c and %s are not being used.
 #define fscanf fscanf_s
 #endif
-  CHECK_EQ(1, fscanf(fp, "new %d\n", &new_size));
-  CHECK_EQ(1, fscanf(fp, "pointer %d\n", &pointer_size));
-  CHECK_EQ(1, fscanf(fp, "data %d\n", &data_size));
-  CHECK_EQ(1, fscanf(fp, "code %d\n", &code_size));
-  CHECK_EQ(1, fscanf(fp, "map %d\n", &map_size));
-  CHECK_EQ(1, fscanf(fp, "cell %d\n", &cell_size));
-  CHECK_EQ(1, fscanf(fp, "property cell %d\n", &property_cell_size));
+  CHECK_EQ(1, fscanf(fp, "\x6e\x65\x77\x20\x6c\x84\xa", &new_size));
+  CHECK_EQ(1, fscanf(fp, "\x70\x6f\x69\x6e\x74\x65\x72\x20\x6c\x84\xa", &pointer_size));
+  CHECK_EQ(1, fscanf(fp, "\x64\x61\x74\x61\x20\x6c\x84\xa", &data_size));
+  CHECK_EQ(1, fscanf(fp, "\x63\x6f\x64\x65\x20\x6c\x84\xa", &code_size));
+  CHECK_EQ(1, fscanf(fp, "\x6d\x61\x70\x20\x6c\x84\xa", &map_size));
+  CHECK_EQ(1, fscanf(fp, "\x63\x65\x6c\x6c\x20\x6c\x84\xa", &cell_size));
+  CHECK_EQ(1, fscanf(fp, "\x70\x72\x6f\x70\x65\x72\x74\x79\x20\x63\x65\x6c\x6c\x20\x6c\x84\xa", &property_cell_size));
 #ifdef _MSC_VER
 #undef fscanf
 #endif
@@ -350,7 +350,7 @@ static void SanityCheck() {
   CHECK(isolate->global_object()->IsJSObject());
   CHECK(isolate->native_context()->IsContext());
   CHECK(CcTest::heap()->string_table()->IsStringTable());
-  isolate->factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("Empty"));
+  isolate->factory()->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x45\x6d\x70\x74\x79"));
 }
 
 
@@ -394,7 +394,7 @@ DEPENDENT_TEST(DeserializeAndRunScript2, Serialize) {
     v8::Local<v8::Context> env = v8::Context::New(isolate);
     env->Enter();
 
-    const char* c_source = "\"1234\".length";
+    const char* c_source = "\x22\x31\x32\x33\x34\x22\x2e\x6c\x65\x6e\x67\x74\x68";
     v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, c_source);
     v8::Local<v8::Script> script = v8::Script::Compile(source);
     CHECK_EQ(4, script->Run()->Int32Value());
@@ -412,7 +412,7 @@ DEPENDENT_TEST(DeserializeFromSecondSerializationAndRunScript2,
     v8::Local<v8::Context> env = v8::Context::New(isolate);
     env->Enter();
 
-    const char* c_source = "\"1234\".length";
+    const char* c_source = "\x22\x31\x32\x33\x34\x22\x2e\x6c\x65\x6e\x67\x74\x68";
     v8::Local<v8::String> source = v8::String::NewFromUtf8(isolate, c_source);
     v8::Local<v8::Script> script = v8::Script::Compile(source);
     CHECK_EQ(4, script->Run()->Int32Value());
@@ -450,14 +450,14 @@ TEST(PartialSerialization) {
     Object* raw_foo;
     {
       v8::HandleScope handle_scope(v8_isolate);
-      v8::Local<v8::String> foo = v8::String::NewFromUtf8(v8_isolate, "foo");
+      v8::Local<v8::String> foo = v8::String::NewFromUtf8(v8_isolate, "\x66\x6f\x6f");
       DCHECK(!foo.IsEmpty());
       raw_foo = *(v8::Utils::OpenHandle(*foo));
     }
 
     int file_name_length = StrLength(FLAG_testing_serialization_file) + 10;
     Vector<char> startup_name = Vector<char>::New(file_name_length + 1);
-    SNPrintF(startup_name, "%s.startup", FLAG_testing_serialization_file);
+    SNPrintF(startup_name, "\x6c\xa2\x2e\x73\x74\x61\x72\x74\x75\x70", FLAG_testing_serialization_file);
 
     {
       v8::HandleScope handle_scope(v8_isolate);
@@ -500,7 +500,7 @@ DEPENDENT_TEST(PartialDeserialization, PartialSerialization) {
   if (!Snapshot::HaveASnapshotToStartFrom()) {
     int file_name_length = StrLength(FLAG_testing_serialization_file) + 10;
     Vector<char> startup_name = Vector<char>::New(file_name_length + 1);
-    SNPrintF(startup_name, "%s.startup", FLAG_testing_serialization_file);
+    SNPrintF(startup_name, "\x6c\xa2\x2e\x73\x74\x61\x72\x74\x75\x70", FLAG_testing_serialization_file);
 
     CHECK(InitializeFromFile(startup_name.start()));
     startup_name.Dispose();
@@ -566,7 +566,7 @@ TEST(ContextSerialization) {
 
     int file_name_length = StrLength(FLAG_testing_serialization_file) + 10;
     Vector<char> startup_name = Vector<char>::New(file_name_length + 1);
-    SNPrintF(startup_name, "%s.startup", FLAG_testing_serialization_file);
+    SNPrintF(startup_name, "\x6c\xa2\x2e\x73\x74\x61\x72\x74\x75\x70", FLAG_testing_serialization_file);
 
     {
       v8::HandleScope handle_scope(v8_isolate);
@@ -612,7 +612,7 @@ DEPENDENT_TEST(ContextDeserialization, ContextSerialization) {
   if (!Snapshot::HaveASnapshotToStartFrom()) {
     int file_name_length = StrLength(FLAG_testing_serialization_file) + 10;
     Vector<char> startup_name = Vector<char>::New(file_name_length + 1);
-    SNPrintF(startup_name, "%s.startup", FLAG_testing_serialization_file);
+    SNPrintF(startup_name, "\x6c\xa2\x2e\x73\x74\x61\x72\x74\x75\x70", FLAG_testing_serialization_file);
 
     CHECK(InitializeFromFile(startup_name.start()));
     startup_name.Dispose();
@@ -684,7 +684,7 @@ TEST(SerializeToplevelOnePlusOne) {
 
   v8::HandleScope scope(CcTest::isolate());
 
-  const char* source = "1 + 1";
+  const char* source = "\x31\x20\x2b\x20\x31";
 
   Handle<String> orig_source = isolate->factory()
                                    ->NewStringFromUtf8(CStrVector(source))
@@ -738,7 +738,7 @@ TEST(SerializeToplevelInternalizedString) {
 
   v8::HandleScope scope(CcTest::isolate());
 
-  const char* source = "'string1'";
+  const char* source = "\x27\x73\x74\x72\x69\x6e\x67\x31\x27";
 
   Handle<String> orig_source = isolate->factory()
                                    ->NewStringFromUtf8(CStrVector(source))
@@ -784,7 +784,7 @@ TEST(SerializeToplevelInternalizedString) {
       Execution::Call(isolate, copy_fun, global, 0, NULL).ToHandleChecked();
   CHECK(orig_result.is_identical_to(copy_result));
   Handle<String> expected =
-      isolate->factory()->NewStringFromAsciiChecked("string1");
+      isolate->factory()->NewStringFromAsciiChecked("\x73\x74\x72\x69\x6e\x67\x31");
 
   CHECK(Handle<String>::cast(copy_result)->Equals(*expected));
   CHECK_EQ(builtins_count, CountBuiltins());
@@ -796,7 +796,7 @@ TEST(SerializeToplevelInternalizedString) {
 TEST(SerializeToplevelIsolates) {
   FLAG_serialize_toplevel = true;
 
-  const char* source = "function f() { return 'abc'; }; f() + 'def'";
+  const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x61\x62\x63\x27\x3b\x20\x7d\x3b\x20\x66\x28\x29\x20\x2b\x20\x27\x64\x65\x66\x27";
   v8::ScriptCompiler::CachedData* cache;
 
   v8::Isolate* isolate1 = v8::Isolate::New();
@@ -808,7 +808,7 @@ TEST(SerializeToplevelIsolates) {
     v8::Context::Scope context_scope(context);
 
     v8::Local<v8::String> source_str = v8_str(source);
-    v8::ScriptOrigin origin(v8_str("test"));
+    v8::ScriptOrigin origin(v8_str("\x74\x65\x73\x74"));
     v8::ScriptCompiler::Source source(source_str, origin);
     v8::Local<v8::UnboundScript> script = v8::ScriptCompiler::CompileUnbound(
         isolate1, &source, v8::ScriptCompiler::kProduceCodeCache);
@@ -820,7 +820,7 @@ TEST(SerializeToplevelIsolates) {
         buffer, data->length, v8::ScriptCompiler::CachedData::BufferOwned);
 
     v8::Local<v8::Value> result = script->BindToCurrentContext()->Run();
-    CHECK(result->ToString()->Equals(v8_str("abcdef")));
+    CHECK(result->ToString()->Equals(v8_str("\x61\x62\x63\x64\x65\x66")));
   }
   isolate1->Dispose();
 
@@ -831,7 +831,7 @@ TEST(SerializeToplevelIsolates) {
     v8::Context::Scope context_scope(context);
 
     v8::Local<v8::String> source_str = v8_str(source);
-    v8::ScriptOrigin origin(v8_str("test"));
+    v8::ScriptOrigin origin(v8_str("\x74\x65\x73\x74"));
     v8::ScriptCompiler::Source source(source_str, origin, cache);
     v8::Local<v8::UnboundScript> script;
     {
@@ -840,7 +840,7 @@ TEST(SerializeToplevelIsolates) {
           isolate2, &source, v8::ScriptCompiler::kConsumeCodeCache);
     }
     v8::Local<v8::Value> result = script->BindToCurrentContext()->Run();
-    CHECK(result->ToString()->Equals(v8_str("abcdef")));
+    CHECK(result->ToString()->Equals(v8_str("\x61\x62\x63\x64\x65\x66")));
   }
   isolate2->Dispose();
 }

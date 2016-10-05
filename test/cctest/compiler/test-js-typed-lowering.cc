@@ -544,12 +544,12 @@ TEST(JSToString1) {
 
   Operator* op = R.javascript.ToString();
 
-  {  // ToString(undefined) => "undefined"
+  {  // ToString(undefined) => "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64"
     Node* r = R.ReduceUnop(op, Type::Undefined());
     R.CheckHandle(R.isolate->factory()->undefined_string(), r);
   }
 
-  {  // ToString(null) => "null"
+  {  // ToString(null) => "\x6e\x75\x6c\x6c"
     Node* r = R.ReduceUnop(op, Type::Null());
     R.CheckHandle(R.isolate->factory()->null_string(), r);
   }

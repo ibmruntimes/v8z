@@ -104,7 +104,7 @@ void RunWithProfiler(void (*test)()) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::Local<v8::String> profile_name =
-      v8::String::NewFromUtf8(env->GetIsolate(), "my_profile1");
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x6d\x79\x5f\x70\x72\x6f\x66\x69\x6c\x65\x31");
   v8::CpuProfiler* cpu_profiler = env->GetIsolate()->GetCpuProfiler();
 
   cpu_profiler->StartProfiling(profile_name);
@@ -177,7 +177,7 @@ THREADED_TEST(Handles) {
   CHECK(!undef.IsEmpty());
   CHECK(undef->IsUndefined());
 
-  const char* source = "1 + 2 + 3";
+  const char* source = "\x31\x20\x2b\x20\x32\x20\x2b\x20\x33";
   Local<Script> script = v8_compile(source);
   CHECK_EQ(6, script->Run()->Int32Value());
 
@@ -203,9 +203,9 @@ THREADED_TEST(IsolateOfContext) {
 static void TestSignature(const char* loop_js, Local<Value> receiver) {
   i::ScopedVector<char> source(200);
   i::SNPrintF(source,
-              "for (var i = 0; i < 10; i++) {"
-              "  %s"
-              "}",
+              "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+              "\x20\x20\x6c\xa2"
+              "\x7d",
               loop_js);
   signature_callback_count = 0;
   signature_expected_receiver = receiver;
@@ -216,7 +216,7 @@ static void TestSignature(const char* loop_js, Local<Value> receiver) {
   if (!expected_to_throw) {
     CHECK_EQ(10, signature_callback_count);
   } else {
-    CHECK_EQ(v8_str("TypeError: Illegal invocation"),
+    CHECK_EQ(v8_str("\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x49\x6c\x6c\x65\x67\x61\x6c\x20\x69\x6e\x76\x6f\x63\x61\x74\x69\x6f\x6e"),
              try_catch.Exception()->ToString());
   }
 }
@@ -240,59 +240,59 @@ THREADED_TEST(ReceiverSignature) {
       v8::FunctionTemplate::New(isolate);
   // Install properties.
   v8::Handle<v8::ObjectTemplate> fun_proto = fun->PrototypeTemplate();
-  fun_proto->Set(v8_str("prop_sig"), callback_sig);
-  fun_proto->Set(v8_str("prop"), callback);
+  fun_proto->Set(v8_str("\x70\x72\x6f\x70\x5f\x73\x69\x67"), callback_sig);
+  fun_proto->Set(v8_str("\x70\x72\x6f\x70"), callback);
   fun_proto->SetAccessorProperty(
-      v8_str("accessor_sig"), callback_sig, callback_sig);
-  fun_proto->SetAccessorProperty(v8_str("accessor"), callback, callback);
+      v8_str("\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x73\x69\x67"), callback_sig, callback_sig);
+  fun_proto->SetAccessorProperty(v8_str("\x61\x63\x63\x65\x73\x73\x6f\x72"), callback, callback);
   // Instantiate templates.
   Local<Value> fun_instance = fun->InstanceTemplate()->NewInstance();
   Local<Value> sub_fun_instance = sub_fun->InstanceTemplate()->NewInstance();
   // Setup global variables.
-  env->Global()->Set(v8_str("Fun"), fun->GetFunction());
-  env->Global()->Set(v8_str("UnrelFun"), unrel_fun->GetFunction());
-  env->Global()->Set(v8_str("fun_instance"), fun_instance);
-  env->Global()->Set(v8_str("sub_fun_instance"), sub_fun_instance);
+  env->Global()->Set(v8_str("\x46\x75\x6e"), fun->GetFunction());
+  env->Global()->Set(v8_str("\x55\x6e\x72\x65\x6c\x46\x75\x6e"), unrel_fun->GetFunction());
+  env->Global()->Set(v8_str("\x66\x75\x6e\x5f\x69\x6e\x73\x74\x61\x6e\x63\x65"), fun_instance);
+  env->Global()->Set(v8_str("\x73\x75\x62\x5f\x66\x75\x6e\x5f\x69\x6e\x73\x74\x61\x6e\x63\x65"), sub_fun_instance);
   CompileRun(
-      "var accessor_sig_key = 'accessor_sig';"
-      "var accessor_key = 'accessor';"
-      "var prop_sig_key = 'prop_sig';"
-      "var prop_key = 'prop';"
+      "\x76\x61\x72\x20\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x73\x69\x67\x5f\x6b\x65\x79\x20\x3d\x20\x27\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x73\x69\x67\x27\x3b"
+      "\x76\x61\x72\x20\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x6b\x65\x79\x20\x3d\x20\x27\x61\x63\x63\x65\x73\x73\x6f\x72\x27\x3b"
+      "\x76\x61\x72\x20\x70\x72\x6f\x70\x5f\x73\x69\x67\x5f\x6b\x65\x79\x20\x3d\x20\x27\x70\x72\x6f\x70\x5f\x73\x69\x67\x27\x3b"
+      "\x76\x61\x72\x20\x70\x72\x6f\x70\x5f\x6b\x65\x79\x20\x3d\x20\x27\x70\x72\x6f\x70\x27\x3b"
       ""
-      "function copy_props(obj) {"
-      "  var keys = [accessor_sig_key, accessor_key, prop_sig_key, prop_key];"
-      "  var source = Fun.prototype;"
-      "  for (var i in keys) {"
-      "    var key = keys[i];"
-      "    var desc = Object.getOwnPropertyDescriptor(source, key);"
-      "    Object.defineProperty(obj, key, desc);"
-      "  }"
-      "}"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x6f\x70\x79\x5f\x70\x72\x6f\x70\x73\x28\x6f\x62\x6a\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x6b\x65\x79\x73\x20\x3d\x20\x5b\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x73\x69\x67\x5f\x6b\x65\x79\x2c\x20\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x6b\x65\x79\x2c\x20\x70\x72\x6f\x70\x5f\x73\x69\x67\x5f\x6b\x65\x79\x2c\x20\x70\x72\x6f\x70\x5f\x6b\x65\x79\x5d\x3b"
+      "\x20\x20\x76\x61\x72\x20\x73\x6f\x75\x72\x63\x65\x20\x3d\x20\x46\x75\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x69\x6e\x20\x6b\x65\x79\x73\x29\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x6b\x65\x79\x20\x3d\x20\x6b\x65\x79\x73\x5b\x69\x5d\x3b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x64\x65\x73\x63\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x73\x6f\x75\x72\x63\x65\x2c\x20\x6b\x65\x79\x29\x3b"
+      "\x20\x20\x20\x20\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x2c\x20\x6b\x65\x79\x2c\x20\x64\x65\x73\x63\x29\x3b"
+      "\x20\x20\x7d"
+      "\x7d"
       ""
-      "var obj = {};"
-      "copy_props(obj);"
-      "var unrel = new UnrelFun();"
-      "copy_props(unrel);");
+      "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
+      "\x63\x6f\x70\x79\x5f\x70\x72\x6f\x70\x73\x28\x6f\x62\x6a\x29\x3b"
+      "\x76\x61\x72\x20\x75\x6e\x72\x65\x6c\x20\x3d\x20\x6e\x65\x77\x20\x55\x6e\x72\x65\x6c\x46\x75\x6e\x28\x29\x3b"
+      "\x63\x6f\x70\x79\x5f\x70\x72\x6f\x70\x73\x28\x75\x6e\x72\x65\x6c\x29\x3b");
   // Test with and without ICs
   const char* test_objects[] = {
-      "fun_instance", "sub_fun_instance", "obj", "unrel" };
+      "\x66\x75\x6e\x5f\x69\x6e\x73\x74\x61\x6e\x63\x65", "\x73\x75\x62\x5f\x66\x75\x6e\x5f\x69\x6e\x73\x74\x61\x6e\x63\x65", "\x6f\x62\x6a", "\x75\x6e\x72\x65\x6c" };
   unsigned bad_signature_start_offset = 2;
   for (unsigned i = 0; i < ARRAY_SIZE(test_objects); i++) {
     i::ScopedVector<char> source(200);
     i::SNPrintF(
-        source, "var test_object = %s; test_object", test_objects[i]);
+        source, "\x76\x61\x72\x20\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x20\x3d\x20\x6c\xa2\x3b\x20\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74", test_objects[i]);
     Local<Value> test_object = CompileRun(source.start());
-    TestSignature("test_object.prop();", test_object);
-    TestSignature("test_object.accessor;", test_object);
-    TestSignature("test_object[accessor_key];", test_object);
-    TestSignature("test_object.accessor = 1;", test_object);
-    TestSignature("test_object[accessor_key] = 1;", test_object);
+    TestSignature("\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x70\x28\x29\x3b", test_object);
+    TestSignature("\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x3b", test_object);
+    TestSignature("\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x5b\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x6b\x65\x79\x5d\x3b", test_object);
+    TestSignature("\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x20\x3d\x20\x31\x3b", test_object);
+    TestSignature("\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x5b\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x6b\x65\x79\x5d\x20\x3d\x20\x31\x3b", test_object);
     if (i >= bad_signature_start_offset) test_object = Local<Value>();
-    TestSignature("test_object.prop_sig();", test_object);
-    TestSignature("test_object.accessor_sig;", test_object);
-    TestSignature("test_object[accessor_sig_key];", test_object);
-    TestSignature("test_object.accessor_sig = 1;", test_object);
-    TestSignature("test_object[accessor_sig_key] = 1;", test_object);
+    TestSignature("\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x70\x5f\x73\x69\x67\x28\x29\x3b", test_object);
+    TestSignature("\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x73\x69\x67\x3b", test_object);
+    TestSignature("\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x5b\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x73\x69\x67\x5f\x6b\x65\x79\x5d\x3b", test_object);
+    TestSignature("\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x73\x69\x67\x20\x3d\x20\x31\x3b", test_object);
+    TestSignature("\x74\x65\x73\x74\x5f\x6f\x62\x6a\x65\x63\x74\x5b\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x73\x69\x67\x5f\x6b\x65\x79\x5d\x20\x3d\x20\x31\x3b", test_object);
   }
 }
 
@@ -302,7 +302,7 @@ THREADED_TEST(ArgumentSignature) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::FunctionTemplate> cons = v8::FunctionTemplate::New(isolate);
-  cons->SetClassName(v8_str("Cons"));
+  cons->SetClassName(v8_str("\x43\x6f\x6e\x73"));
   v8::Handle<v8::Signature> sig = v8::Signature::New(
       isolate, v8::Handle<v8::FunctionTemplate>(), 1, &cons);
   v8::Handle<v8::FunctionTemplate> fun =
@@ -310,24 +310,24 @@ THREADED_TEST(ArgumentSignature) {
                                 SignatureCallback,
                                 v8::Handle<Value>(),
                                 sig);
-  env->Global()->Set(v8_str("Cons"), cons->GetFunction());
-  env->Global()->Set(v8_str("Fun1"), fun->GetFunction());
+  env->Global()->Set(v8_str("\x43\x6f\x6e\x73"), cons->GetFunction());
+  env->Global()->Set(v8_str("\x46\x75\x6e\x31"), fun->GetFunction());
 
-  v8::Handle<Value> value1 = CompileRun("Fun1(4) == '';");
+  v8::Handle<Value> value1 = CompileRun("\x46\x75\x6e\x31\x28\x34\x29\x20\x3d\x3d\x20\x27\x27\x3b");
   CHECK(value1->IsTrue());
 
-  v8::Handle<Value> value2 = CompileRun("Fun1(new Cons()) == '[object Cons]';");
+  v8::Handle<Value> value2 = CompileRun("\x46\x75\x6e\x31\x28\x6e\x65\x77\x20\x43\x6f\x6e\x73\x28\x29\x29\x20\x3d\x3d\x20\x27\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x5d\x27\x3b");
   CHECK(value2->IsTrue());
 
-  v8::Handle<Value> value3 = CompileRun("Fun1() == '';");
+  v8::Handle<Value> value3 = CompileRun("\x46\x75\x6e\x31\x28\x29\x20\x3d\x3d\x20\x27\x27\x3b");
   CHECK(value3->IsTrue());
 
   v8::Handle<v8::FunctionTemplate> cons1 = v8::FunctionTemplate::New(isolate);
-  cons1->SetClassName(v8_str("Cons1"));
+  cons1->SetClassName(v8_str("\x43\x6f\x6e\x73\x31"));
   v8::Handle<v8::FunctionTemplate> cons2 = v8::FunctionTemplate::New(isolate);
-  cons2->SetClassName(v8_str("Cons2"));
+  cons2->SetClassName(v8_str("\x43\x6f\x6e\x73\x32"));
   v8::Handle<v8::FunctionTemplate> cons3 = v8::FunctionTemplate::New(isolate);
-  cons3->SetClassName(v8_str("Cons3"));
+  cons3->SetClassName(v8_str("\x43\x6f\x6e\x73\x33"));
 
   v8::Handle<v8::FunctionTemplate> args[3] = { cons1, cons2, cons3 };
   v8::Handle<v8::Signature> wsig = v8::Signature::New(
@@ -338,30 +338,30 @@ THREADED_TEST(ArgumentSignature) {
                                 v8::Handle<Value>(),
                                 wsig);
 
-  env->Global()->Set(v8_str("Cons1"), cons1->GetFunction());
-  env->Global()->Set(v8_str("Cons2"), cons2->GetFunction());
-  env->Global()->Set(v8_str("Cons3"), cons3->GetFunction());
-  env->Global()->Set(v8_str("Fun2"), fun2->GetFunction());
+  env->Global()->Set(v8_str("\x43\x6f\x6e\x73\x31"), cons1->GetFunction());
+  env->Global()->Set(v8_str("\x43\x6f\x6e\x73\x32"), cons2->GetFunction());
+  env->Global()->Set(v8_str("\x43\x6f\x6e\x73\x33"), cons3->GetFunction());
+  env->Global()->Set(v8_str("\x46\x75\x6e\x32"), fun2->GetFunction());
   v8::Handle<Value> value4 = CompileRun(
-      "Fun2(new Cons1(), new Cons2(), new Cons3()) =="
-      "'[object Cons1],[object Cons2],[object Cons3]'");
+      "\x46\x75\x6e\x32\x28\x6e\x65\x77\x20\x43\x6f\x6e\x73\x31\x28\x29\x2c\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x32\x28\x29\x2c\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x33\x28\x29\x29\x20\x3d\x3d"
+      "\x27\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x31\x5d\x2c\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x32\x5d\x2c\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x33\x5d\x27");
   CHECK(value4->IsTrue());
 
   v8::Handle<Value> value5 = CompileRun(
-      "Fun2(new Cons1(), new Cons2(), 5) == '[object Cons1],[object Cons2],'");
+      "\x46\x75\x6e\x32\x28\x6e\x65\x77\x20\x43\x6f\x6e\x73\x31\x28\x29\x2c\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x32\x28\x29\x2c\x20\x35\x29\x20\x3d\x3d\x20\x27\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x31\x5d\x2c\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x32\x5d\x2c\x27");
   CHECK(value5->IsTrue());
 
   v8::Handle<Value> value6 = CompileRun(
-      "Fun2(new Cons3(), new Cons2(), new Cons1()) == ',[object Cons2],'");
+      "\x46\x75\x6e\x32\x28\x6e\x65\x77\x20\x43\x6f\x6e\x73\x33\x28\x29\x2c\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x32\x28\x29\x2c\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x31\x28\x29\x29\x20\x3d\x3d\x20\x27\x2c\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x32\x5d\x2c\x27");
   CHECK(value6->IsTrue());
 
   v8::Handle<Value> value7 = CompileRun(
-      "Fun2(new Cons1(), new Cons2(), new Cons3(), 'd') == "
-      "'[object Cons1],[object Cons2],[object Cons3],d';");
+      "\x46\x75\x6e\x32\x28\x6e\x65\x77\x20\x43\x6f\x6e\x73\x31\x28\x29\x2c\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x32\x28\x29\x2c\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x33\x28\x29\x2c\x20\x27\x64\x27\x29\x20\x3d\x3d\x20"
+      "\x27\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x31\x5d\x2c\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x32\x5d\x2c\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x33\x5d\x2c\x64\x27\x3b");
   CHECK(value7->IsTrue());
 
   v8::Handle<Value> value8 = CompileRun(
-      "Fun2(new Cons1(), new Cons2()) == '[object Cons1],[object Cons2]'");
+      "\x46\x75\x6e\x32\x28\x6e\x65\x77\x20\x43\x6f\x6e\x73\x31\x28\x29\x2c\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x32\x28\x29\x29\x20\x3d\x3d\x20\x27\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x31\x5d\x2c\x5b\x6f\x62\x6a\x65\x63\x74\x20\x43\x6f\x6e\x73\x32\x5d\x27");
   CHECK(value8->IsTrue());
 }
 
@@ -374,7 +374,7 @@ THREADED_TEST(HulIgennem) {
   Local<String> undef_str = undef->ToString();
   char* value = i::NewArray<char>(undef_str->Utf8Length() + 1);
   undef_str->WriteUtf8(value);
-  CHECK_EQ(0, strcmp(value, "undefined"));
+  CHECK_EQ(0, strcmp(value, "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64"));
   i::DeleteArray(value);
 }
 
@@ -384,11 +384,11 @@ THREADED_TEST(Access) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
   Local<v8::Object> obj = v8::Object::New(isolate);
-  Local<Value> foo_before = obj->Get(v8_str("foo"));
+  Local<Value> foo_before = obj->Get(v8_str("\x66\x6f\x6f"));
   CHECK(foo_before->IsUndefined());
-  Local<String> bar_str = v8_str("bar");
-  obj->Set(v8_str("foo"), bar_str);
-  Local<Value> foo_after = obj->Get(v8_str("foo"));
+  Local<String> bar_str = v8_str("\x62\x61\x72");
+  obj->Set(v8_str("\x66\x6f\x6f"), bar_str);
+  Local<Value> foo_after = obj->Get(v8_str("\x66\x6f\x6f"));
   CHECK(!foo_after->IsUndefined());
   CHECK(foo_after->IsString());
   CHECK_EQ(bar_str, foo_after);
@@ -401,23 +401,23 @@ THREADED_TEST(AccessElement) {
   Local<v8::Object> obj = v8::Object::New(env->GetIsolate());
   Local<Value> before = obj->Get(1);
   CHECK(before->IsUndefined());
-  Local<String> bar_str = v8_str("bar");
+  Local<String> bar_str = v8_str("\x62\x61\x72");
   obj->Set(1, bar_str);
   Local<Value> after = obj->Get(1);
   CHECK(!after->IsUndefined());
   CHECK(after->IsString());
   CHECK_EQ(bar_str, after);
 
-  Local<v8::Array> value = CompileRun("[\"a\", \"b\"]").As<v8::Array>();
-  CHECK_EQ(v8_str("a"), value->Get(0));
-  CHECK_EQ(v8_str("b"), value->Get(1));
+  Local<v8::Array> value = CompileRun("\x5b\x22\x61\x22\x2c\x20\x22\x62\x22\x5d").As<v8::Array>();
+  CHECK_EQ(v8_str("\x61"), value->Get(0));
+  CHECK_EQ(v8_str("\x62"), value->Get(1));
 }
 
 
 THREADED_TEST(Script) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
-  const char* source = "1 + 2 + 3";
+  const char* source = "\x31\x20\x2b\x20\x32\x20\x2b\x20\x33";
   Local<Script> script = v8_compile(source);
   CHECK_EQ(6, script->Run()->Int32Value());
 }
@@ -487,7 +487,7 @@ class TestAsciiResource: public String::ExternalAsciiStringResource {
 
 THREADED_TEST(ScriptUsingStringResource) {
   int dispose_count = 0;
-  const char* c_source = "1 + 2 * 3";
+  const char* c_source = "\x31\x20\x2b\x20\x32\x20\x2a\x20\x33";
   uint16_t* two_byte_source = AsciiToTwoByteString(c_source);
   {
     LocalContext env;
@@ -516,7 +516,7 @@ THREADED_TEST(ScriptUsingStringResource) {
 
 THREADED_TEST(ScriptUsingAsciiStringResource) {
   int dispose_count = 0;
-  const char* c_source = "1 + 2 * 3";
+  const char* c_source = "\x31\x20\x2b\x20\x32\x20\x2a\x20\x33";
   {
     LocalContext env;
     v8::HandleScope scope(env->GetIsolate());
@@ -545,7 +545,7 @@ THREADED_TEST(ScriptUsingAsciiStringResource) {
 
 THREADED_TEST(ScriptMakingExternalString) {
   int dispose_count = 0;
-  uint16_t* two_byte_source = AsciiToTwoByteString("1 + 2 * 3");
+  uint16_t* two_byte_source = AsciiToTwoByteString("\x31\x20\x2b\x20\x32\x20\x2a\x20\x33");
   {
     LocalContext env;
     v8::HandleScope scope(env->GetIsolate());
@@ -577,7 +577,7 @@ THREADED_TEST(ScriptMakingExternalString) {
 
 THREADED_TEST(ScriptMakingExternalAsciiString) {
   int dispose_count = 0;
-  const char* c_source = "1 + 2 * 3";
+  const char* c_source = "\x31\x20\x2b\x20\x32\x20\x2a\x20\x33";
   {
     LocalContext env;
     v8::HandleScope scope(env->GetIsolate());
@@ -609,7 +609,7 @@ TEST(MakingExternalStringConditions) {
   CcTest::heap()->CollectGarbage(i::NEW_SPACE);
   CcTest::heap()->CollectGarbage(i::NEW_SPACE);
 
-  uint16_t* two_byte_string = AsciiToTwoByteString("s1");
+  uint16_t* two_byte_string = AsciiToTwoByteString("\x73\x31");
   Local<String> small_string =
       String::NewFromTwoByte(env->GetIsolate(), two_byte_string);
   i::DeleteArray(two_byte_string);
@@ -622,7 +622,7 @@ TEST(MakingExternalStringConditions) {
   // Old space strings should be accepted.
   CHECK(small_string->CanMakeExternal());
 
-  two_byte_string = AsciiToTwoByteString("small string 2");
+  two_byte_string = AsciiToTwoByteString("\x73\x6d\x61\x6c\x6c\x20\x73\x74\x72\x69\x6e\x67\x20\x32");
   small_string = String::NewFromTwoByte(env->GetIsolate(), two_byte_string);
   i::DeleteArray(two_byte_string);
 
@@ -636,8 +636,8 @@ TEST(MakingExternalStringConditions) {
 
   const int buf_size = 10 * 1024;
   char* buf = i::NewArray<char>(buf_size);
-  memset(buf, 'a', buf_size);
-  buf[buf_size - 1] = '\0';
+  memset(buf, '\x61', buf_size);
+  buf[buf_size - 1] = '\x0';
 
   two_byte_string = AsciiToTwoByteString(buf);
   Local<String> large_string =
@@ -657,7 +657,7 @@ TEST(MakingExternalAsciiStringConditions) {
   CcTest::heap()->CollectGarbage(i::NEW_SPACE);
   CcTest::heap()->CollectGarbage(i::NEW_SPACE);
 
-  Local<String> small_string = String::NewFromUtf8(env->GetIsolate(), "s1");
+  Local<String> small_string = String::NewFromUtf8(env->GetIsolate(), "\x73\x31");
   // We should refuse to externalize newly created small string.
   CHECK(!small_string->CanMakeExternal());
   // Trigger GCs so that the newly allocated string moves to old gen.
@@ -666,7 +666,7 @@ TEST(MakingExternalAsciiStringConditions) {
   // Old space strings should be accepted.
   CHECK(small_string->CanMakeExternal());
 
-  small_string = String::NewFromUtf8(env->GetIsolate(), "small string 2");
+  small_string = String::NewFromUtf8(env->GetIsolate(), "\x73\x6d\x61\x6c\x6c\x20\x73\x74\x72\x69\x6e\x67\x20\x32");
   // We should refuse externalizing newly created small string.
   CHECK(!small_string->CanMakeExternal());
   for (int i = 0; i < 100; i++) {
@@ -677,8 +677,8 @@ TEST(MakingExternalAsciiStringConditions) {
 
   const int buf_size = 10 * 1024;
   char* buf = i::NewArray<char>(buf_size);
-  memset(buf, 'a', buf_size);
-  buf[buf_size - 1] = '\0';
+  memset(buf, '\x61', buf_size);
+  buf[buf_size - 1] = '\x0';
   Local<String> large_string = String::NewFromUtf8(env->GetIsolate(), buf);
   i::DeleteArray(buf);
   // Large strings should be immediately accepted.
@@ -690,14 +690,14 @@ TEST(MakingExternalUnalignedAsciiString) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
 
-  CompileRun("function cons(a, b) { return a + b; }"
-             "function slice(a) { return a.substring(1); }");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x6f\x6e\x73\x28\x61\x2c\x20\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x62\x3b\x20\x7d"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x6c\x69\x63\x65\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x2e\x73\x75\x62\x73\x74\x72\x69\x6e\x67\x28\x31\x29\x3b\x20\x7d");
   // Create a cons string that will land in old pointer space.
   Local<String> cons = Local<String>::Cast(CompileRun(
-      "cons('abcdefghijklm', 'nopqrstuvwxyz');"));
+      "\x63\x6f\x6e\x73\x28\x27\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x27\x2c\x20\x27\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a\x27\x29\x3b"));
   // Create a sliced string that will land in old pointer space.
   Local<String> slice = Local<String>::Cast(CompileRun(
-      "slice('abcdefghijklmnopqrstuvwxyz');"));
+      "\x73\x6c\x69\x63\x65\x28\x27\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a\x27\x29\x3b"));
 
   // Trigger GCs so that the newly allocated string moves to old gen.
   SimulateFullSpace(CcTest::heap()->old_pointer_space());
@@ -705,11 +705,11 @@ TEST(MakingExternalUnalignedAsciiString) {
   CcTest::heap()->CollectGarbage(i::NEW_SPACE);  // in old gen now
 
   // Turn into external string with unaligned resource data.
-  const char* c_cons = "_abcdefghijklmnopqrstuvwxyz";
+  const char* c_cons = "\x5f\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a";
   bool success = cons->MakeExternal(
       new TestAsciiResource(i::StrDup(c_cons), NULL, 1));
   CHECK(success);
-  const char* c_slice = "_bcdefghijklmnopqrstuvwxyz";
+  const char* c_slice = "\x5f\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a";
   success = slice->MakeExternal(
       new TestAsciiResource(i::StrDup(c_slice), NULL, 1));
   CHECK(success);
@@ -724,7 +724,7 @@ THREADED_TEST(UsingExternalString) {
   i::Factory* factory = CcTest::i_isolate()->factory();
   {
     v8::HandleScope scope(CcTest::isolate());
-    uint16_t* two_byte_string = AsciiToTwoByteString("test string");
+    uint16_t* two_byte_string = AsciiToTwoByteString("\x74\x65\x73\x74\x20\x73\x74\x72\x69\x6e\x67");
     Local<String> string = String::NewExternal(
         CcTest::isolate(), new TestResource(two_byte_string));
     i::Handle<i::String> istring = v8::Utils::OpenHandle(*string);
@@ -744,7 +744,7 @@ THREADED_TEST(UsingExternalAsciiString) {
   i::Factory* factory = CcTest::i_isolate()->factory();
   {
     v8::HandleScope scope(CcTest::isolate());
-    const char* one_byte_string = "test string";
+    const char* one_byte_string = "\x74\x65\x73\x74\x20\x73\x74\x72\x69\x6e\x67";
     Local<String> string = String::NewExternal(
         CcTest::isolate(), new TestAsciiResource(i::StrDup(one_byte_string)));
     i::Handle<i::String> istring = v8::Utils::OpenHandle(*string);
@@ -767,7 +767,7 @@ THREADED_TEST(ScavengeExternalString) {
   bool in_new_space = false;
   {
     v8::HandleScope scope(CcTest::isolate());
-    uint16_t* two_byte_string = AsciiToTwoByteString("test string");
+    uint16_t* two_byte_string = AsciiToTwoByteString("\x74\x65\x73\x74\x20\x73\x74\x72\x69\x6e\x67");
     Local<String> string = String::NewExternal(
         CcTest::isolate(), new TestResource(two_byte_string, &dispose_count));
     i::Handle<i::String> istring = v8::Utils::OpenHandle(*string);
@@ -789,7 +789,7 @@ THREADED_TEST(ScavengeExternalAsciiString) {
   bool in_new_space = false;
   {
     v8::HandleScope scope(CcTest::isolate());
-    const char* one_byte_string = "test string";
+    const char* one_byte_string = "\x74\x65\x73\x74\x20\x73\x74\x72\x69\x6e\x67";
     Local<String> string = String::NewExternal(
         CcTest::isolate(),
         new TestAsciiResource(i::StrDup(one_byte_string), &dispose_count));
@@ -829,7 +829,7 @@ int TestAsciiResourceWithDisposeControl::dispose_calls = 0;
 
 
 TEST(ExternalStringWithDisposeHandling) {
-  const char* c_source = "1 + 2 * 3";
+  const char* c_source = "\x31\x20\x2b\x20\x32\x20\x2a\x20\x33";
 
   // Use a stack allocated external string resource allocated object.
   TestAsciiResourceWithDisposeControl::dispose_count = 0;
@@ -878,13 +878,13 @@ THREADED_TEST(StringConcat) {
   {
     LocalContext env;
     v8::HandleScope scope(env->GetIsolate());
-    const char* one_byte_string_1 = "function a_times_t";
-    const char* two_byte_string_1 = "wo_plus_b(a, b) {return ";
-    const char* one_byte_extern_1 = "a * 2 + b;} a_times_two_plus_b(4, 8) + ";
-    const char* two_byte_extern_1 = "a_times_two_plus_b(4, 8) + ";
-    const char* one_byte_string_2 = "a_times_two_plus_b(4, 8) + ";
-    const char* two_byte_string_2 = "a_times_two_plus_b(4, 8) + ";
-    const char* two_byte_extern_2 = "a_times_two_plus_b(1, 2);";
+    const char* one_byte_string_1 = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x5f\x74\x69\x6d\x65\x73\x5f\x74";
+    const char* two_byte_string_1 = "\x77\x6f\x5f\x70\x6c\x75\x73\x5f\x62\x28\x61\x2c\x20\x62\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20";
+    const char* one_byte_extern_1 = "\x61\x20\x2a\x20\x32\x20\x2b\x20\x62\x3b\x7d\x20\x61\x5f\x74\x69\x6d\x65\x73\x5f\x74\x77\x6f\x5f\x70\x6c\x75\x73\x5f\x62\x28\x34\x2c\x20\x38\x29\x20\x2b\x20";
+    const char* two_byte_extern_1 = "\x61\x5f\x74\x69\x6d\x65\x73\x5f\x74\x77\x6f\x5f\x70\x6c\x75\x73\x5f\x62\x28\x34\x2c\x20\x38\x29\x20\x2b\x20";
+    const char* one_byte_string_2 = "\x61\x5f\x74\x69\x6d\x65\x73\x5f\x74\x77\x6f\x5f\x70\x6c\x75\x73\x5f\x62\x28\x34\x2c\x20\x38\x29\x20\x2b\x20";
+    const char* two_byte_string_2 = "\x61\x5f\x74\x69\x6d\x65\x73\x5f\x74\x77\x6f\x5f\x70\x6c\x75\x73\x5f\x62\x28\x34\x2c\x20\x38\x29\x20\x2b\x20";
+    const char* two_byte_extern_2 = "\x61\x5f\x74\x69\x6d\x65\x73\x5f\x74\x77\x6f\x5f\x70\x6c\x75\x73\x5f\x62\x28\x31\x2c\x20\x32\x29\x3b";
     Local<String> left = v8_str(one_byte_string_1);
 
     uint16_t* two_byte_source = AsciiToTwoByteString(two_byte_string_1);
@@ -927,8 +927,8 @@ THREADED_TEST(GlobalProperties) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::Handle<v8::Object> global = env->Global();
-  global->Set(v8_str("pi"), v8_num(3.1415926));
-  Local<Value> pi = global->Get(v8_str("pi"));
+  global->Set(v8_str("\x70\x69"), v8_num(3.1415926));
+  Local<Value> pi = global->Get(v8_str("\x70\x69"));
   CHECK_EQ(3.1415926, pi->NumberValue());
 }
 #endif
@@ -966,7 +966,7 @@ static void handle_callback_impl(const v8::FunctionCallbackInfo<Value>& info,
                                  i::Address callback) {
   ApiTestFuzzer::Fuzz();
   CheckReturnValue(info, callback);
-  info.GetReturnValue().Set(v8_str("bad value"));
+  info.GetReturnValue().Set(v8_str("\x62\x61\x64\x20\x76\x61\x6c\x75\x65"));
   info.GetReturnValue().Set(v8_num(102));
 }
 
@@ -984,9 +984,9 @@ static void construct_callback(
     const v8::FunctionCallbackInfo<Value>& info) {
   ApiTestFuzzer::Fuzz();
   CheckReturnValue(info, FUNCTION_ADDR(construct_callback));
-  info.This()->Set(v8_str("x"), v8_num(1));
-  info.This()->Set(v8_str("y"), v8_num(2));
-  info.GetReturnValue().Set(v8_str("bad value"));
+  info.This()->Set(v8_str("\x78"), v8_num(1));
+  info.This()->Set(v8_str("\x79"), v8_num(2));
+  info.GetReturnValue().Set(v8_str("\x62\x61\x64\x20\x76\x61\x6c\x75\x65"));
   info.GetReturnValue().Set(info.This());
 }
 #endif
@@ -996,7 +996,7 @@ static void Return239Callback(
     Local<String> name, const v8::PropertyCallbackInfo<Value>& info) {
   ApiTestFuzzer::Fuzz();
   CheckReturnValue(info, FUNCTION_ADDR(Return239Callback));
-  info.GetReturnValue().Set(v8_str("bad value"));
+  info.GetReturnValue().Set(v8_str("\x62\x61\x64\x20\x76\x61\x6c\x75\x65"));
   info.GetReturnValue().Set(v8_num(239));
 }
 
@@ -1015,8 +1015,8 @@ static void TestFunctionTemplateInitializer(Handler handler,
     Local<v8::FunctionTemplate> fun_templ =
         v8::FunctionTemplate::New(isolate, handler);
     Local<Function> fun = fun_templ->GetFunction();
-    env->Global()->Set(v8_str("obj"), fun);
-    Local<Script> script = v8_compile("obj()");
+    env->Global()->Set(v8_str("\x6f\x62\x6a"), fun);
+    Local<Script> script = v8_compile("\x6f\x62\x6a\x28\x29");
     for (int i = 0; i < 30; i++) {
       CHECK_EQ(102, script->Run()->Int32Value());
     }
@@ -1031,8 +1031,8 @@ static void TestFunctionTemplateInitializer(Handler handler,
     Local<v8::FunctionTemplate> fun_templ = v8::FunctionTemplate::New(isolate);
     fun_templ->SetCallHandler(handler_2);
     Local<Function> fun = fun_templ->GetFunction();
-    env->Global()->Set(v8_str("obj"), fun);
-    Local<Script> script = v8_compile("obj()");
+    env->Global()->Set(v8_str("\x6f\x62\x6a"), fun);
+    Local<Script> script = v8_compile("\x6f\x62\x6a\x28\x29");
     for (int i = 0; i < 30; i++) {
       CHECK_EQ(102, script->Run()->Int32Value());
     }
@@ -1048,19 +1048,19 @@ static void TestFunctionTemplateAccessor(Constructor constructor,
 
   Local<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(env->GetIsolate(), constructor);
-  fun_templ->SetClassName(v8_str("funky"));
-  fun_templ->InstanceTemplate()->SetAccessor(v8_str("m"), accessor);
+  fun_templ->SetClassName(v8_str("\x66\x75\x6e\x6b\x79"));
+  fun_templ->InstanceTemplate()->SetAccessor(v8_str("\x6d"), accessor);
   Local<Function> fun = fun_templ->GetFunction();
-  env->Global()->Set(v8_str("obj"), fun);
-  Local<Value> result = v8_compile("(new obj()).toString()")->Run();
-  CHECK_EQ(v8_str("[object funky]"), result);
-  CompileRun("var obj_instance = new obj();");
+  env->Global()->Set(v8_str("\x6f\x62\x6a"), fun);
+  Local<Value> result = v8_compile("\x28\x6e\x65\x77\x20\x6f\x62\x6a\x28\x29\x29\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29")->Run();
+  CHECK_EQ(v8_str("\x5b\x6f\x62\x6a\x65\x63\x74\x20\x66\x75\x6e\x6b\x79\x5d"), result);
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x5f\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x3d\x20\x6e\x65\x77\x20\x6f\x62\x6a\x28\x29\x3b");
   Local<Script> script;
-  script = v8_compile("obj_instance.x");
+  script = v8_compile("\x6f\x62\x6a\x5f\x69\x6e\x73\x74\x61\x6e\x63\x65\x2e\x78");
   for (int i = 0; i < 30; i++) {
     CHECK_EQ(1, script->Run()->Int32Value());
   }
-  script = v8_compile("obj_instance.m");
+  script = v8_compile("\x6f\x62\x6a\x5f\x69\x6e\x73\x74\x61\x6e\x63\x65\x2e\x6d");
   for (int i = 0; i < 30; i++) {
     CHECK_EQ(239, script->Run()->Int32Value());
   }
@@ -1088,16 +1088,16 @@ static void TestSimpleCallback(Callback callback) {
 
   v8::Handle<v8::ObjectTemplate> object_template =
       v8::ObjectTemplate::New(isolate);
-  object_template->Set(isolate, "callback",
+  object_template->Set(isolate, "\x63\x61\x6c\x6c\x62\x61\x63\x6b",
                        v8::FunctionTemplate::New(isolate, callback));
   v8::Local<v8::Object> object = object_template->NewInstance();
-  (*env)->Global()->Set(v8_str("callback_object"), object);
+  (*env)->Global()->Set(v8_str("\x63\x61\x6c\x6c\x62\x61\x63\x6b\x5f\x6f\x62\x6a\x65\x63\x74"), object);
   v8::Handle<v8::Script> script;
-  script = v8_compile("callback_object.callback(17)");
+  script = v8_compile("\x63\x61\x6c\x6c\x62\x61\x63\x6b\x5f\x6f\x62\x6a\x65\x63\x74\x2e\x63\x61\x6c\x6c\x62\x61\x63\x6b\x28\x31\x37\x29");
   for (int i = 0; i < 30; i++) {
     CHECK_EQ(51424, script->Run()->Int32Value());
   }
-  script = v8_compile("callback_object.callback(17, 24)");
+  script = v8_compile("\x63\x61\x6c\x6c\x62\x61\x63\x6b\x5f\x6f\x62\x6a\x65\x63\x74\x2e\x63\x61\x6c\x6c\x62\x61\x63\x6b\x28\x31\x37\x2c\x20\x32\x34\x29");
   for (int i = 0; i < 30; i++) {
     CHECK_EQ(51425, script->Run()->Int32Value());
   }
@@ -1195,11 +1195,11 @@ Handle<Value> TestFastReturnValues() {
   v8::Handle<v8::ObjectTemplate> object_template =
       v8::ObjectTemplate::New(isolate);
   v8::FunctionCallback callback = &FastReturnValueCallback<T>;
-  object_template->Set(isolate, "callback",
+  object_template->Set(isolate, "\x63\x61\x6c\x6c\x62\x61\x63\x6b",
                        v8::FunctionTemplate::New(isolate, callback));
   v8::Local<v8::Object> object = object_template->NewInstance();
-  (*env)->Global()->Set(v8_str("callback_object"), object);
-  return scope.Escape(CompileRun("callback_object.callback()"));
+  (*env)->Global()->Set(v8_str("\x63\x61\x6c\x6c\x62\x61\x63\x6b\x5f\x6f\x62\x6a\x65\x63\x74"), object);
+  return scope.Escape(CompileRun("\x63\x61\x6c\x6c\x62\x61\x63\x6b\x5f\x6f\x62\x6a\x65\x63\x74\x2e\x63\x61\x6c\x6c\x62\x61\x63\x6b\x28\x29"));
 }
 
 
@@ -1282,8 +1282,8 @@ THREADED_TEST(FunctionTemplateSetLength) {
                                   Handle<v8::Signature>(),
                                   23);
     Local<Function> fun = fun_templ->GetFunction();
-    env->Global()->Set(v8_str("obj"), fun);
-    Local<Script> script = v8_compile("obj.length");
+    env->Global()->Set(v8_str("\x6f\x62\x6a"), fun);
+    Local<Script> script = v8_compile("\x6f\x62\x6a\x2e\x6c\x65\x6e\x67\x74\x68");
     CHECK_EQ(23, script->Run()->Int32Value());
   }
   {
@@ -1291,8 +1291,8 @@ THREADED_TEST(FunctionTemplateSetLength) {
         v8::FunctionTemplate::New(isolate, handle_callback);
     fun_templ->SetLength(22);
     Local<Function> fun = fun_templ->GetFunction();
-    env->Global()->Set(v8_str("obj"), fun);
-    Local<Script> script = v8_compile("obj.length");
+    env->Global()->Set(v8_str("\x6f\x62\x6a"), fun);
+    Local<Script> script = v8_compile("\x6f\x62\x6a\x2e\x6c\x65\x6e\x67\x74\x68");
     CHECK_EQ(22, script->Run()->Int32Value());
   }
   {
@@ -1300,8 +1300,8 @@ THREADED_TEST(FunctionTemplateSetLength) {
     Local<v8::FunctionTemplate> fun_templ =
         v8::FunctionTemplate::New(isolate, handle_callback);
     Local<Function> fun = fun_templ->GetFunction();
-    env->Global()->Set(v8_str("obj"), fun);
-    Local<Script> script = v8_compile("obj.length");
+    env->Global()->Set(v8_str("\x6f\x62\x6a"), fun);
+    Local<Script> script = v8_compile("\x6f\x62\x6a\x2e\x6c\x65\x6e\x67\x74\x68");
     CHECK_EQ(0, script->Run()->Int32Value());
   }
 }
@@ -1324,15 +1324,15 @@ static void TestExternalPointerWrapping() {
       v8::External::New(isolate, expected_ptr);
 
   v8::Handle<v8::Object> obj = v8::Object::New(isolate);
-  obj->Set(v8_str("func"),
+  obj->Set(v8_str("\x66\x75\x6e\x63"),
            v8::FunctionTemplate::New(isolate, callback, data)->GetFunction());
-  env->Global()->Set(v8_str("obj"), obj);
+  env->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
 
   CHECK(CompileRun(
-        "function foo() {\n"
-        "  for (var i = 0; i < 13; i++) obj.func();\n"
-        "}\n"
-        "foo(), true")->BooleanValue());
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+        "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x33\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x2e\x66\x75\x6e\x63\x28\x29\x3b\xa"
+        "\x7d\xa"
+        "\x66\x6f\x6f\x28\x29\x2c\x20\x74\x72\x75\x65")->BooleanValue());
 }
 
 
@@ -1400,8 +1400,8 @@ THREADED_TEST(FindInstanceInPrototypeChain) {
   Local<v8::Object> derived_instance = derived_function->NewInstance();
   Local<v8::Object> derived_instance2 = derived_function->NewInstance();
   Local<v8::Object> other_instance = other_function->NewInstance();
-  derived_instance2->Set(v8_str("__proto__"), derived_instance);
-  other_instance->Set(v8_str("__proto__"), derived_instance2);
+  derived_instance2->Set(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), derived_instance);
+  other_instance->Set(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), derived_instance2);
 
   // base_instance is only an instance of base.
   CHECK_EQ(base_instance,
@@ -1557,11 +1557,11 @@ THREADED_TEST(IsNativeError) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::Handle<Value> syntax_error = CompileRun(
-      "var out = 0; try { eval(\"#\"); } catch(x) { out = x; } out; ");
+      "\x76\x61\x72\x20\x6f\x75\x74\x20\x3d\x20\x30\x3b\x20\x74\x72\x79\x20\x7b\x20\x65\x76\x61\x6c\x28\x22\x23\x22\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x78\x29\x20\x7b\x20\x6f\x75\x74\x20\x3d\x20\x78\x3b\x20\x7d\x20\x6f\x75\x74\x3b\x20");
   CHECK(syntax_error->IsNativeError());
-  v8::Handle<Value> not_error = CompileRun("{a:42}");
+  v8::Handle<Value> not_error = CompileRun("\x7b\x61\x3a\x34\x32\x7d");
   CHECK(!not_error->IsNativeError());
-  v8::Handle<Value> not_object = CompileRun("42");
+  v8::Handle<Value> not_object = CompileRun("\x34\x32");
   CHECK(!not_object->IsNativeError());
 }
 
@@ -1569,36 +1569,36 @@ THREADED_TEST(IsNativeError) {
 THREADED_TEST(StringObject) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
-  v8::Handle<Value> boxed_string = CompileRun("new String(\"test\")");
+  v8::Handle<Value> boxed_string = CompileRun("\x6e\x65\x77\x20\x53\x74\x72\x69\x6e\x67\x28\x22\x74\x65\x73\x74\x22\x29");
   CHECK(boxed_string->IsStringObject());
-  v8::Handle<Value> unboxed_string = CompileRun("\"test\"");
+  v8::Handle<Value> unboxed_string = CompileRun("\x22\x74\x65\x73\x74\x22");
   CHECK(!unboxed_string->IsStringObject());
-  v8::Handle<Value> boxed_not_string = CompileRun("new Number(42)");
+  v8::Handle<Value> boxed_not_string = CompileRun("\x6e\x65\x77\x20\x4e\x75\x6d\x62\x65\x72\x28\x34\x32\x29");
   CHECK(!boxed_not_string->IsStringObject());
-  v8::Handle<Value> not_object = CompileRun("0");
+  v8::Handle<Value> not_object = CompileRun("\x30");
   CHECK(!not_object->IsStringObject());
   v8::Handle<v8::StringObject> as_boxed = boxed_string.As<v8::StringObject>();
   CHECK(!as_boxed.IsEmpty());
   Local<v8::String> the_string = as_boxed->ValueOf();
   CHECK(!the_string.IsEmpty());
-  ExpectObject("\"test\"", the_string);
+  ExpectObject("\x22\x74\x65\x73\x74\x22", the_string);
   v8::Handle<v8::Value> new_boxed_string = v8::StringObject::New(the_string);
   CHECK(new_boxed_string->IsStringObject());
   as_boxed = new_boxed_string.As<v8::StringObject>();
   the_string = as_boxed->ValueOf();
   CHECK(!the_string.IsEmpty());
-  ExpectObject("\"test\"", the_string);
+  ExpectObject("\x22\x74\x65\x73\x74\x22", the_string);
 }
 
 
 THREADED_TEST(NumberObject) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
-  v8::Handle<Value> boxed_number = CompileRun("new Number(42)");
+  v8::Handle<Value> boxed_number = CompileRun("\x6e\x65\x77\x20\x4e\x75\x6d\x62\x65\x72\x28\x34\x32\x29");
   CHECK(boxed_number->IsNumberObject());
-  v8::Handle<Value> unboxed_number = CompileRun("42");
+  v8::Handle<Value> unboxed_number = CompileRun("\x34\x32");
   CHECK(!unboxed_number->IsNumberObject());
-  v8::Handle<Value> boxed_not_number = CompileRun("new Boolean(false)");
+  v8::Handle<Value> boxed_not_number = CompileRun("\x6e\x65\x77\x20\x42\x6f\x6f\x6c\x65\x61\x6e\x28\x66\x61\x6c\x73\x65\x29");
   CHECK(!boxed_not_number->IsNumberObject());
   v8::Handle<v8::NumberObject> as_boxed = boxed_number.As<v8::NumberObject>();
   CHECK(!as_boxed.IsEmpty());
@@ -1616,11 +1616,11 @@ THREADED_TEST(NumberObject) {
 THREADED_TEST(BooleanObject) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
-  v8::Handle<Value> boxed_boolean = CompileRun("new Boolean(true)");
+  v8::Handle<Value> boxed_boolean = CompileRun("\x6e\x65\x77\x20\x42\x6f\x6f\x6c\x65\x61\x6e\x28\x74\x72\x75\x65\x29");
   CHECK(boxed_boolean->IsBooleanObject());
-  v8::Handle<Value> unboxed_boolean = CompileRun("true");
+  v8::Handle<Value> unboxed_boolean = CompileRun("\x74\x72\x75\x65");
   CHECK(!unboxed_boolean->IsBooleanObject());
-  v8::Handle<Value> boxed_not_boolean = CompileRun("new Number(42)");
+  v8::Handle<Value> boxed_not_boolean = CompileRun("\x6e\x65\x77\x20\x4e\x75\x6d\x62\x65\x72\x28\x34\x32\x29");
   CHECK(!boxed_not_boolean->IsBooleanObject());
   v8::Handle<v8::BooleanObject> as_boxed =
       boxed_boolean.As<v8::BooleanObject>();
@@ -1703,7 +1703,7 @@ THREADED_TEST(ToNumber) {
   LocalContext env;
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
-  Local<String> str = v8_str("3.1415926");
+  Local<String> str = v8_str("\x33\x2e\x31\x34\x31\x35\x39\x32\x36");
   CHECK_EQ(3.1415926, str->NumberValue());
   v8::Handle<v8::Boolean> t = v8::True(isolate);
   CHECK_EQ(1.0, t->NumberValue());
@@ -1718,9 +1718,9 @@ THREADED_TEST(Date) {
   double PI = 3.1415926;
   Local<Value> date = v8::Date::New(env->GetIsolate(), PI);
   CHECK_EQ(3.0, date->NumberValue());
-  date.As<v8::Date>()->Set(v8_str("property"),
+  date.As<v8::Date>()->Set(v8_str("\x70\x72\x6f\x70\x65\x72\x74\x79"),
                            v8::Integer::New(env->GetIsolate(), 42));
-  CHECK_EQ(42, date.As<v8::Date>()->Get(v8_str("property"))->Int32Value());
+  CHECK_EQ(42, date.As<v8::Date>()->Get(v8_str("\x70\x72\x6f\x70\x65\x72\x74\x79"))->Int32Value());
 }
 
 
@@ -1738,13 +1738,13 @@ THREADED_TEST(Boolean) {
   CHECK(!n->BooleanValue());
   v8::Handle<String> str1 = v8_str("");
   CHECK(!str1->BooleanValue());
-  v8::Handle<String> str2 = v8_str("x");
+  v8::Handle<String> str2 = v8_str("\x78");
   CHECK(str2->BooleanValue());
   CHECK(!v8::Number::New(isolate, 0)->BooleanValue());
   CHECK(v8::Number::New(isolate, -1)->BooleanValue());
   CHECK(v8::Number::New(isolate, 1)->BooleanValue());
   CHECK(v8::Number::New(isolate, 42)->BooleanValue());
-  CHECK(!v8_compile("NaN")->Run()->BooleanValue());
+  CHECK(!v8_compile("\x4e\x61\x4e")->Run()->BooleanValue());
 }
 #endif
 
@@ -1770,16 +1770,16 @@ THREADED_TEST(GlobalPrototype) {
   v8::Handle<v8::FunctionTemplate> func_templ =
       v8::FunctionTemplate::New(isolate);
   func_templ->PrototypeTemplate()->Set(
-      isolate, "dummy", v8::FunctionTemplate::New(isolate, DummyCallHandler));
+      isolate, "\x64\x75\x6d\x6d\x79", v8::FunctionTemplate::New(isolate, DummyCallHandler));
   v8::Handle<ObjectTemplate> templ = func_templ->InstanceTemplate();
-  templ->Set(isolate, "x", v8_num(200));
-  templ->SetAccessor(v8_str("m"), GetM);
+  templ->Set(isolate, "\x78", v8_num(200));
+  templ->SetAccessor(v8_str("\x6d"), GetM);
   LocalContext env(0, templ);
-  v8::Handle<Script> script(v8_compile("dummy()"));
+  v8::Handle<Script> script(v8_compile("\x64\x75\x6d\x6d\x79\x28\x29"));
   v8::Handle<Value> result(script->Run());
   CHECK_EQ(13.4, result->NumberValue());
-  CHECK_EQ(200, v8_compile("x")->Run()->Int32Value());
-  CHECK_EQ(876, v8_compile("m")->Run()->Int32Value());
+  CHECK_EQ(200, v8_compile("\x78")->Run()->Int32Value());
+  CHECK_EQ(876, v8_compile("\x6d")->Run()->Int32Value());
 }
 
 
@@ -1787,24 +1787,24 @@ THREADED_TEST(ObjectTemplate) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ1 = ObjectTemplate::New(isolate);
-  templ1->Set(isolate, "x", v8_num(10));
-  templ1->Set(isolate, "y", v8_num(13));
+  templ1->Set(isolate, "\x78", v8_num(10));
+  templ1->Set(isolate, "\x79", v8_num(13));
   LocalContext env;
   Local<v8::Object> instance1 = templ1->NewInstance();
-  env->Global()->Set(v8_str("p"), instance1);
-  CHECK(v8_compile("(p.x == 10)")->Run()->BooleanValue());
-  CHECK(v8_compile("(p.y == 13)")->Run()->BooleanValue());
+  env->Global()->Set(v8_str("\x70"), instance1);
+  CHECK(v8_compile("\x28\x70\x2e\x78\x20\x3d\x3d\x20\x31\x30\x29")->Run()->BooleanValue());
+  CHECK(v8_compile("\x28\x70\x2e\x79\x20\x3d\x3d\x20\x31\x33\x29")->Run()->BooleanValue());
   Local<v8::FunctionTemplate> fun = v8::FunctionTemplate::New(isolate);
-  fun->PrototypeTemplate()->Set(isolate, "nirk", v8_num(123));
+  fun->PrototypeTemplate()->Set(isolate, "\x6e\x69\x72\x6b", v8_num(123));
   Local<ObjectTemplate> templ2 = fun->InstanceTemplate();
-  templ2->Set(isolate, "a", v8_num(12));
-  templ2->Set(isolate, "b", templ1);
+  templ2->Set(isolate, "\x61", v8_num(12));
+  templ2->Set(isolate, "\x62", templ1);
   Local<v8::Object> instance2 = templ2->NewInstance();
-  env->Global()->Set(v8_str("q"), instance2);
-  CHECK(v8_compile("(q.nirk == 123)")->Run()->BooleanValue());
-  CHECK(v8_compile("(q.a == 12)")->Run()->BooleanValue());
-  CHECK(v8_compile("(q.b.x == 10)")->Run()->BooleanValue());
-  CHECK(v8_compile("(q.b.y == 13)")->Run()->BooleanValue());
+  env->Global()->Set(v8_str("\x71"), instance2);
+  CHECK(v8_compile("\x28\x71\x2e\x6e\x69\x72\x6b\x20\x3d\x3d\x20\x31\x32\x33\x29")->Run()->BooleanValue());
+  CHECK(v8_compile("\x28\x71\x2e\x61\x20\x3d\x3d\x20\x31\x32\x29")->Run()->BooleanValue());
+  CHECK(v8_compile("\x28\x71\x2e\x62\x2e\x78\x20\x3d\x3d\x20\x31\x30\x29")->Run()->BooleanValue());
+  CHECK(v8_compile("\x28\x71\x2e\x62\x2e\x79\x20\x3d\x3d\x20\x31\x33\x29")->Run()->BooleanValue());
 }
 
 
@@ -1825,57 +1825,57 @@ THREADED_TEST(DescriptorInheritance) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::FunctionTemplate> super = v8::FunctionTemplate::New(isolate);
-  super->PrototypeTemplate()->Set(isolate, "flabby",
+  super->PrototypeTemplate()->Set(isolate, "\x66\x6c\x61\x62\x62\x79",
                                   v8::FunctionTemplate::New(isolate,
                                                             GetFlabby));
-  super->PrototypeTemplate()->Set(isolate, "PI", v8_num(3.14));
+  super->PrototypeTemplate()->Set(isolate, "\x50\x49", v8_num(3.14));
 
-  super->InstanceTemplate()->SetAccessor(v8_str("knurd"), GetKnurd);
+  super->InstanceTemplate()->SetAccessor(v8_str("\x6b\x6e\x75\x72\x64"), GetKnurd);
 
   v8::Handle<v8::FunctionTemplate> base1 = v8::FunctionTemplate::New(isolate);
   base1->Inherit(super);
-  base1->PrototypeTemplate()->Set(isolate, "v1", v8_num(20.1));
+  base1->PrototypeTemplate()->Set(isolate, "\x76\x31", v8_num(20.1));
 
   v8::Handle<v8::FunctionTemplate> base2 = v8::FunctionTemplate::New(isolate);
   base2->Inherit(super);
-  base2->PrototypeTemplate()->Set(isolate, "v2", v8_num(10.1));
+  base2->PrototypeTemplate()->Set(isolate, "\x76\x32", v8_num(10.1));
 
   LocalContext env;
 
-  env->Global()->Set(v8_str("s"), super->GetFunction());
-  env->Global()->Set(v8_str("base1"), base1->GetFunction());
-  env->Global()->Set(v8_str("base2"), base2->GetFunction());
+  env->Global()->Set(v8_str("\x73"), super->GetFunction());
+  env->Global()->Set(v8_str("\x62\x61\x73\x65\x31"), base1->GetFunction());
+  env->Global()->Set(v8_str("\x62\x61\x73\x65\x32"), base2->GetFunction());
 
   // Checks right __proto__ chain.
-  CHECK(CompileRun("base1.prototype.__proto__ == s.prototype")->BooleanValue());
-  CHECK(CompileRun("base2.prototype.__proto__ == s.prototype")->BooleanValue());
+  CHECK(CompileRun("\x62\x61\x73\x65\x31\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x3d\x20\x73\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65")->BooleanValue());
+  CHECK(CompileRun("\x62\x61\x73\x65\x32\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x3d\x20\x73\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65")->BooleanValue());
 
-  CHECK(v8_compile("s.prototype.PI == 3.14")->Run()->BooleanValue());
+  CHECK(v8_compile("\x73\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x50\x49\x20\x3d\x3d\x20\x33\x2e\x31\x34")->Run()->BooleanValue());
 
   // Instance accessor should not be visible on function object or its prototype
-  CHECK(CompileRun("s.knurd == undefined")->BooleanValue());
-  CHECK(CompileRun("s.prototype.knurd == undefined")->BooleanValue());
-  CHECK(CompileRun("base1.prototype.knurd == undefined")->BooleanValue());
+  CHECK(CompileRun("\x73\x2e\x6b\x6e\x75\x72\x64\x20\x3d\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64")->BooleanValue());
+  CHECK(CompileRun("\x73\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x6b\x6e\x75\x72\x64\x20\x3d\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64")->BooleanValue());
+  CHECK(CompileRun("\x62\x61\x73\x65\x31\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x6b\x6e\x75\x72\x64\x20\x3d\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64")->BooleanValue());
 
-  env->Global()->Set(v8_str("obj"),
+  env->Global()->Set(v8_str("\x6f\x62\x6a"),
                      base1->GetFunction()->NewInstance());
-  CHECK_EQ(17.2, v8_compile("obj.flabby()")->Run()->NumberValue());
-  CHECK(v8_compile("'flabby' in obj")->Run()->BooleanValue());
-  CHECK_EQ(15.2, v8_compile("obj.knurd")->Run()->NumberValue());
-  CHECK(v8_compile("'knurd' in obj")->Run()->BooleanValue());
-  CHECK_EQ(20.1, v8_compile("obj.v1")->Run()->NumberValue());
+  CHECK_EQ(17.2, v8_compile("\x6f\x62\x6a\x2e\x66\x6c\x61\x62\x62\x79\x28\x29")->Run()->NumberValue());
+  CHECK(v8_compile("\x27\x66\x6c\x61\x62\x62\x79\x27\x20\x69\x6e\x20\x6f\x62\x6a")->Run()->BooleanValue());
+  CHECK_EQ(15.2, v8_compile("\x6f\x62\x6a\x2e\x6b\x6e\x75\x72\x64")->Run()->NumberValue());
+  CHECK(v8_compile("\x27\x6b\x6e\x75\x72\x64\x27\x20\x69\x6e\x20\x6f\x62\x6a")->Run()->BooleanValue());
+  CHECK_EQ(20.1, v8_compile("\x6f\x62\x6a\x2e\x76\x31")->Run()->NumberValue());
 
-  env->Global()->Set(v8_str("obj2"),
+  env->Global()->Set(v8_str("\x6f\x62\x6a\x32"),
                      base2->GetFunction()->NewInstance());
-  CHECK_EQ(17.2, v8_compile("obj2.flabby()")->Run()->NumberValue());
-  CHECK(v8_compile("'flabby' in obj2")->Run()->BooleanValue());
-  CHECK_EQ(15.2, v8_compile("obj2.knurd")->Run()->NumberValue());
-  CHECK(v8_compile("'knurd' in obj2")->Run()->BooleanValue());
-  CHECK_EQ(10.1, v8_compile("obj2.v2")->Run()->NumberValue());
+  CHECK_EQ(17.2, v8_compile("\x6f\x62\x6a\x32\x2e\x66\x6c\x61\x62\x62\x79\x28\x29")->Run()->NumberValue());
+  CHECK(v8_compile("\x27\x66\x6c\x61\x62\x62\x79\x27\x20\x69\x6e\x20\x6f\x62\x6a\x32")->Run()->BooleanValue());
+  CHECK_EQ(15.2, v8_compile("\x6f\x62\x6a\x32\x2e\x6b\x6e\x75\x72\x64")->Run()->NumberValue());
+  CHECK(v8_compile("\x27\x6b\x6e\x75\x72\x64\x27\x20\x69\x6e\x20\x6f\x62\x6a\x32")->Run()->BooleanValue());
+  CHECK_EQ(10.1, v8_compile("\x6f\x62\x6a\x32\x2e\x76\x32")->Run()->NumberValue());
 
   // base1 and base2 cannot cross reference to each's prototype
-  CHECK(v8_compile("obj.v2")->Run()->IsUndefined());
-  CHECK(v8_compile("obj2.v1")->Run()->IsUndefined());
+  CHECK(v8_compile("\x6f\x62\x6a\x2e\x76\x32")->Run()->IsUndefined());
+  CHECK(v8_compile("\x6f\x62\x6a\x32\x2e\x76\x31")->Run()->IsUndefined());
 }
 
 
@@ -1885,7 +1885,7 @@ int echo_named_call_count;
 static void EchoNamedProperty(Local<String> name,
                               const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  CHECK_EQ(v8_str("data"), info.Data());
+  CHECK_EQ(v8_str("\x64\x61\x74\x61"), info.Data());
   echo_named_call_count++;
   info.GetReturnValue().Set(name);
 }
@@ -1897,13 +1897,13 @@ void SimpleAccessorGetter(Local<String> name,
                           const v8::PropertyCallbackInfo<v8::Value>& info) {
   Handle<Object> self = Handle<Object>::Cast(info.This());
   info.GetReturnValue().Set(
-      self->Get(String::Concat(v8_str("accessor_"), name)));
+      self->Get(String::Concat(v8_str("\x61\x63\x63\x65\x73\x73\x6f\x72\x5f"), name)));
 }
 
 void SimpleAccessorSetter(Local<String> name, Local<Value> value,
                           const v8::PropertyCallbackInfo<void>& info) {
   Handle<Object> self = Handle<Object>::Cast(info.This());
-  self->Set(String::Concat(v8_str("accessor_"), name), value);
+  self->Set(String::Concat(v8_str("\x61\x63\x63\x65\x73\x73\x6f\x72\x5f"), name), value);
 }
 #endif
 
@@ -1926,7 +1926,7 @@ static void InterceptorGetter(Local<String> name,
   // Intercept names that start with 'interceptor_'.
   String::Utf8Value utf8(name);
   char* name_str = *utf8;
-  char prefix[] = "interceptor_";
+  char prefix[] = "\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f";
   int i;
   for (i = 0; name_str[i] && prefix[i]; ++i) {
     if (name_str[i] != prefix[i]) return;
@@ -1944,7 +1944,7 @@ static void InterceptorSetter(Local<String> name,
   // not start with 'accessor_'.
   String::Utf8Value utf8(name);
   char* name_str = *utf8;
-  char prefix[] = "accessor_";
+  char prefix[] = "\x61\x63\x63\x65\x73\x73\x6f\x72\x5f";
   int i;
   for (i = 0; name_str[i] && prefix[i]; ++i) {
     if (name_str[i] != prefix[i]) break;
@@ -1982,16 +1982,16 @@ THREADED_TEST(EmptyInterceptorDoesNotShadowAccessors) {
   Handle<FunctionTemplate> parent = FunctionTemplate::New(CcTest::isolate());
   Handle<FunctionTemplate> child = FunctionTemplate::New(CcTest::isolate());
   child->Inherit(parent);
-  AddAccessor(parent, v8_str("age"),
+  AddAccessor(parent, v8_str("\x61\x67\x65"),
               SimpleAccessorGetter, SimpleAccessorSetter);
   AddInterceptor(child, EmptyInterceptorGetter, EmptyInterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Child"), child->GetFunction());
-  CompileRun("var child = new Child;"
-             "child.age = 10;");
-  ExpectBoolean("child.hasOwnProperty('age')", false);
-  ExpectInt32("child.age", 10);
-  ExpectInt32("child.accessor_age", 10);
+  env->Global()->Set(v8_str("\x43\x68\x69\x6c\x64"), child->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x63\x68\x69\x6c\x64\x20\x3d\x20\x6e\x65\x77\x20\x43\x68\x69\x6c\x64\x3b"
+             "\x63\x68\x69\x6c\x64\x2e\x61\x67\x65\x20\x3d\x20\x31\x30\x3b");
+  ExpectBoolean("\x63\x68\x69\x6c\x64\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x61\x67\x65\x27\x29", false);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x61\x67\x65", 10);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65", 10);
 }
 
 
@@ -1999,16 +1999,16 @@ THREADED_TEST(ExecutableAccessorIsPreservedOnAttributeChange) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   LocalContext env;
-  v8::Local<v8::Value> res = CompileRun("var a = []; a;");
+  v8::Local<v8::Value> res = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x5b\x5d\x3b\x20\x61\x3b");
   i::Handle<i::JSObject> a(v8::Utils::OpenHandle(v8::Object::Cast(*res)));
   CHECK(a->map()->instance_descriptors()->IsFixedArray());
   CHECK_GT(i::FixedArray::cast(a->map()->instance_descriptors())->length(), 0);
-  CompileRun("Object.defineProperty(a, 'length', { writable: false });");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x61\x2c\x20\x27\x6c\x65\x6e\x67\x74\x68\x27\x2c\x20\x7b\x20\x77\x72\x69\x74\x61\x62\x6c\x65\x3a\x20\x66\x61\x6c\x73\x65\x20\x7d\x29\x3b");
   CHECK_EQ(i::FixedArray::cast(a->map()->instance_descriptors())->length(), 0);
   // But we should still have an ExecutableAccessorInfo.
   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
   i::LookupResult lookup(i_isolate);
-  i::Handle<i::String> name(v8::Utils::OpenHandle(*v8_str("length")));
+  i::Handle<i::String> name(v8::Utils::OpenHandle(*v8_str("\x6c\x65\x6e\x67\x74\x68")));
   a->LookupOwnRealNamedProperty(name, &lookup);
   CHECK(lookup.IsPropertyCallbacks());
   i::Handle<i::Object> callback(lookup.GetCallbackObject(), i_isolate);
@@ -2021,13 +2021,13 @@ THREADED_TEST(EmptyInterceptorBreakTransitions) {
   Handle<FunctionTemplate> templ = FunctionTemplate::New(CcTest::isolate());
   AddInterceptor(templ, EmptyInterceptorGetter, EmptyInterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Constructor"), templ->GetFunction());
-  CompileRun("var o1 = new Constructor;"
-             "o1.a = 1;"  // Ensure a and x share the descriptor array.
-             "Object.defineProperty(o1, 'x', {value: 10});");
-  CompileRun("var o2 = new Constructor;"
-             "o2.a = 1;"
-             "Object.defineProperty(o2, 'x', {value: 10});");
+  env->Global()->Set(v8_str("\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72"), templ->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x6f\x31\x20\x3d\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x3b"
+             "\x6f\x31\x2e\x61\x20\x3d\x20\x31\x3b"  // Ensure a and x share the descriptor array.
+             "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x31\x2c\x20\x27\x78\x27\x2c\x20\x7b\x76\x61\x6c\x75\x65\x3a\x20\x31\x30\x7d\x29\x3b");
+  CompileRun("\x76\x61\x72\x20\x6f\x32\x20\x3d\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x3b"
+             "\x6f\x32\x2e\x61\x20\x3d\x20\x31\x3b"
+             "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x32\x2c\x20\x27\x78\x27\x2c\x20\x7b\x76\x61\x6c\x75\x65\x3a\x20\x31\x30\x7d\x29\x3b");
 }
 
 
@@ -2039,17 +2039,17 @@ THREADED_TEST(EmptyInterceptorDoesNotShadowJSAccessors) {
   child->Inherit(parent);
   AddInterceptor(child, EmptyInterceptorGetter, EmptyInterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Child"), child->GetFunction());
-  CompileRun("var child = new Child;"
-             "var parent = child.__proto__;"
-             "Object.defineProperty(parent, 'age', "
-             "  {get: function(){ return this.accessor_age; }, "
-             "   set: function(v){ this.accessor_age = v; }, "
-             "   enumerable: true, configurable: true});"
-             "child.age = 10;");
-  ExpectBoolean("child.hasOwnProperty('age')", false);
-  ExpectInt32("child.age", 10);
-  ExpectInt32("child.accessor_age", 10);
+  env->Global()->Set(v8_str("\x43\x68\x69\x6c\x64"), child->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x63\x68\x69\x6c\x64\x20\x3d\x20\x6e\x65\x77\x20\x43\x68\x69\x6c\x64\x3b"
+             "\x76\x61\x72\x20\x70\x61\x72\x65\x6e\x74\x20\x3d\x20\x63\x68\x69\x6c\x64\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3b"
+             "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x70\x61\x72\x65\x6e\x74\x2c\x20\x27\x61\x67\x65\x27\x2c\x20"
+             "\x20\x20\x7b\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x3b\x20\x7d\x2c\x20"
+             "\x20\x20\x20\x73\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x76\x29\x7b\x20\x74\x68\x69\x73\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x20\x3d\x20\x76\x3b\x20\x7d\x2c\x20"
+             "\x20\x20\x20\x65\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x3a\x20\x74\x72\x75\x65\x2c\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x74\x72\x75\x65\x7d\x29\x3b"
+             "\x63\x68\x69\x6c\x64\x2e\x61\x67\x65\x20\x3d\x20\x31\x30\x3b");
+  ExpectBoolean("\x63\x68\x69\x6c\x64\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x61\x67\x65\x27\x29", false);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x61\x67\x65", 10);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65", 10);
 }
 
 
@@ -2061,52 +2061,52 @@ THREADED_TEST(EmptyInterceptorDoesNotAffectJSProperties) {
   child->Inherit(parent);
   AddInterceptor(child, EmptyInterceptorGetter, EmptyInterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Child"), child->GetFunction());
-  CompileRun("var child = new Child;"
-             "var parent = child.__proto__;"
-             "parent.name = 'Alice';");
-  ExpectBoolean("child.hasOwnProperty('name')", false);
-  ExpectString("child.name", "Alice");
-  CompileRun("child.name = 'Bob';");
-  ExpectString("child.name", "Bob");
-  ExpectBoolean("child.hasOwnProperty('name')", true);
-  ExpectString("parent.name", "Alice");
+  env->Global()->Set(v8_str("\x43\x68\x69\x6c\x64"), child->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x63\x68\x69\x6c\x64\x20\x3d\x20\x6e\x65\x77\x20\x43\x68\x69\x6c\x64\x3b"
+             "\x76\x61\x72\x20\x70\x61\x72\x65\x6e\x74\x20\x3d\x20\x63\x68\x69\x6c\x64\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3b"
+             "\x70\x61\x72\x65\x6e\x74\x2e\x6e\x61\x6d\x65\x20\x3d\x20\x27\x41\x6c\x69\x63\x65\x27\x3b");
+  ExpectBoolean("\x63\x68\x69\x6c\x64\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x6e\x61\x6d\x65\x27\x29", false);
+  ExpectString("\x63\x68\x69\x6c\x64\x2e\x6e\x61\x6d\x65", "\x41\x6c\x69\x63\x65");
+  CompileRun("\x63\x68\x69\x6c\x64\x2e\x6e\x61\x6d\x65\x20\x3d\x20\x27\x42\x6f\x62\x27\x3b");
+  ExpectString("\x63\x68\x69\x6c\x64\x2e\x6e\x61\x6d\x65", "\x42\x6f\x62");
+  ExpectBoolean("\x63\x68\x69\x6c\x64\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x6e\x61\x6d\x65\x27\x29", true);
+  ExpectString("\x70\x61\x72\x65\x6e\x74\x2e\x6e\x61\x6d\x65", "\x41\x6c\x69\x63\x65");
 }
 
 
 THREADED_TEST(SwitchFromInterceptorToAccessor) {
   v8::HandleScope scope(CcTest::isolate());
   Handle<FunctionTemplate> templ = FunctionTemplate::New(CcTest::isolate());
-  AddAccessor(templ, v8_str("age"),
+  AddAccessor(templ, v8_str("\x61\x67\x65"),
               SimpleAccessorGetter, SimpleAccessorSetter);
   AddInterceptor(templ, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Obj"), templ->GetFunction());
-  CompileRun("var obj = new Obj;"
-             "function setAge(i){ obj.age = i; };"
-             "for(var i = 0; i <= 10000; i++) setAge(i);");
+  env->Global()->Set(v8_str("\x4f\x62\x6a"), templ->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x7b\x20\x6f\x62\x6a\x2e\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x66\x6f\x72\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x3d\x20\x31\x30\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x3b");
   // All i < 10000 go to the interceptor.
-  ExpectInt32("obj.interceptor_age", 9999);
+  ExpectInt32("\x6f\x62\x6a\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65", 9999);
   // The last i goes to the accessor.
-  ExpectInt32("obj.accessor_age", 10000);
+  ExpectInt32("\x6f\x62\x6a\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65", 10000);
 }
 
 
 THREADED_TEST(SwitchFromAccessorToInterceptor) {
   v8::HandleScope scope(CcTest::isolate());
   Handle<FunctionTemplate> templ = FunctionTemplate::New(CcTest::isolate());
-  AddAccessor(templ, v8_str("age"),
+  AddAccessor(templ, v8_str("\x61\x67\x65"),
               SimpleAccessorGetter, SimpleAccessorSetter);
   AddInterceptor(templ, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Obj"), templ->GetFunction());
-  CompileRun("var obj = new Obj;"
-             "function setAge(i){ obj.age = i; };"
-             "for(var i = 20000; i >= 9999; i--) setAge(i);");
+  env->Global()->Set(v8_str("\x4f\x62\x6a"), templ->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x7b\x20\x6f\x62\x6a\x2e\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x66\x6f\x72\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x32\x30\x30\x30\x30\x3b\x20\x69\x20\x3e\x3d\x20\x39\x39\x39\x39\x3b\x20\x69\x2d\x2d\x29\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x3b");
   // All i >= 10000 go to the accessor.
-  ExpectInt32("obj.accessor_age", 10000);
+  ExpectInt32("\x6f\x62\x6a\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65", 10000);
   // The last i goes to the interceptor.
-  ExpectInt32("obj.interceptor_age", 9999);
+  ExpectInt32("\x6f\x62\x6a\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65", 9999);
 }
 
 
@@ -2115,18 +2115,18 @@ THREADED_TEST(SwitchFromInterceptorToAccessorWithInheritance) {
   Handle<FunctionTemplate> parent = FunctionTemplate::New(CcTest::isolate());
   Handle<FunctionTemplate> child = FunctionTemplate::New(CcTest::isolate());
   child->Inherit(parent);
-  AddAccessor(parent, v8_str("age"),
+  AddAccessor(parent, v8_str("\x61\x67\x65"),
               SimpleAccessorGetter, SimpleAccessorSetter);
   AddInterceptor(child, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Child"), child->GetFunction());
-  CompileRun("var child = new Child;"
-             "function setAge(i){ child.age = i; };"
-             "for(var i = 0; i <= 10000; i++) setAge(i);");
+  env->Global()->Set(v8_str("\x43\x68\x69\x6c\x64"), child->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x63\x68\x69\x6c\x64\x20\x3d\x20\x6e\x65\x77\x20\x43\x68\x69\x6c\x64\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x7b\x20\x63\x68\x69\x6c\x64\x2e\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x66\x6f\x72\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x3d\x20\x31\x30\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x3b");
   // All i < 10000 go to the interceptor.
-  ExpectInt32("child.interceptor_age", 9999);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65", 9999);
   // The last i goes to the accessor.
-  ExpectInt32("child.accessor_age", 10000);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65", 10000);
 }
 
 
@@ -2135,18 +2135,18 @@ THREADED_TEST(SwitchFromAccessorToInterceptorWithInheritance) {
   Handle<FunctionTemplate> parent = FunctionTemplate::New(CcTest::isolate());
   Handle<FunctionTemplate> child = FunctionTemplate::New(CcTest::isolate());
   child->Inherit(parent);
-  AddAccessor(parent, v8_str("age"),
+  AddAccessor(parent, v8_str("\x61\x67\x65"),
               SimpleAccessorGetter, SimpleAccessorSetter);
   AddInterceptor(child, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Child"), child->GetFunction());
-  CompileRun("var child = new Child;"
-             "function setAge(i){ child.age = i; };"
-             "for(var i = 20000; i >= 9999; i--) setAge(i);");
+  env->Global()->Set(v8_str("\x43\x68\x69\x6c\x64"), child->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x63\x68\x69\x6c\x64\x20\x3d\x20\x6e\x65\x77\x20\x43\x68\x69\x6c\x64\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x7b\x20\x63\x68\x69\x6c\x64\x2e\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x66\x6f\x72\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x32\x30\x30\x30\x30\x3b\x20\x69\x20\x3e\x3d\x20\x39\x39\x39\x39\x3b\x20\x69\x2d\x2d\x29\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x3b");
   // All i >= 10000 go to the accessor.
-  ExpectInt32("child.accessor_age", 10000);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65", 10000);
   // The last i goes to the interceptor.
-  ExpectInt32("child.interceptor_age", 9999);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65", 9999);
 }
 
 
@@ -2155,23 +2155,23 @@ THREADED_TEST(SwitchFromInterceptorToJSAccessor) {
   Handle<FunctionTemplate> templ = FunctionTemplate::New(CcTest::isolate());
   AddInterceptor(templ, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Obj"), templ->GetFunction());
-  CompileRun("var obj = new Obj;"
-             "function setter(i) { this.accessor_age = i; };"
-             "function getter() { return this.accessor_age; };"
-             "function setAge(i) { obj.age = i; };"
-             "Object.defineProperty(obj, 'age', { get:getter, set:setter });"
-             "for(var i = 0; i <= 10000; i++) setAge(i);");
+  env->Global()->Set(v8_str("\x4f\x62\x6a"), templ->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x74\x65\x72\x28\x69\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x74\x65\x72\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x3b\x20\x7d\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x20\x7b\x20\x6f\x62\x6a\x2e\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x2c\x20\x27\x61\x67\x65\x27\x2c\x20\x7b\x20\x67\x65\x74\x3a\x67\x65\x74\x74\x65\x72\x2c\x20\x73\x65\x74\x3a\x73\x65\x74\x74\x65\x72\x20\x7d\x29\x3b"
+             "\x66\x6f\x72\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x3d\x20\x31\x30\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x3b");
   // All i < 10000 go to the interceptor.
-  ExpectInt32("obj.interceptor_age", 9999);
+  ExpectInt32("\x6f\x62\x6a\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65", 9999);
   // The last i goes to the JavaScript accessor.
-  ExpectInt32("obj.accessor_age", 10000);
+  ExpectInt32("\x6f\x62\x6a\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65", 10000);
   // The installed JavaScript getter is still intact.
   // This last part is a regression test for issue 1651 and relies on the fact
   // that both interceptor and accessor are being installed on the same object.
-  ExpectInt32("obj.age", 10000);
-  ExpectBoolean("obj.hasOwnProperty('age')", true);
-  ExpectUndefined("Object.getOwnPropertyDescriptor(obj, 'age').value");
+  ExpectInt32("\x6f\x62\x6a\x2e\x61\x67\x65", 10000);
+  ExpectBoolean("\x6f\x62\x6a\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x61\x67\x65\x27\x29", true);
+  ExpectUndefined("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x2c\x20\x27\x61\x67\x65\x27\x29\x2e\x76\x61\x6c\x75\x65");
 }
 
 
@@ -2180,23 +2180,23 @@ THREADED_TEST(SwitchFromJSAccessorToInterceptor) {
   Handle<FunctionTemplate> templ = FunctionTemplate::New(CcTest::isolate());
   AddInterceptor(templ, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Obj"), templ->GetFunction());
-  CompileRun("var obj = new Obj;"
-             "function setter(i) { this.accessor_age = i; };"
-             "function getter() { return this.accessor_age; };"
-             "function setAge(i) { obj.age = i; };"
-             "Object.defineProperty(obj, 'age', { get:getter, set:setter });"
-             "for(var i = 20000; i >= 9999; i--) setAge(i);");
+  env->Global()->Set(v8_str("\x4f\x62\x6a"), templ->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x74\x65\x72\x28\x69\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x74\x65\x72\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x3b\x20\x7d\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x20\x7b\x20\x6f\x62\x6a\x2e\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x2c\x20\x27\x61\x67\x65\x27\x2c\x20\x7b\x20\x67\x65\x74\x3a\x67\x65\x74\x74\x65\x72\x2c\x20\x73\x65\x74\x3a\x73\x65\x74\x74\x65\x72\x20\x7d\x29\x3b"
+             "\x66\x6f\x72\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x32\x30\x30\x30\x30\x3b\x20\x69\x20\x3e\x3d\x20\x39\x39\x39\x39\x3b\x20\x69\x2d\x2d\x29\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x3b");
   // All i >= 10000 go to the accessor.
-  ExpectInt32("obj.accessor_age", 10000);
+  ExpectInt32("\x6f\x62\x6a\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65", 10000);
   // The last i goes to the interceptor.
-  ExpectInt32("obj.interceptor_age", 9999);
+  ExpectInt32("\x6f\x62\x6a\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65", 9999);
   // The installed JavaScript getter is still intact.
   // This last part is a regression test for issue 1651 and relies on the fact
   // that both interceptor and accessor are being installed on the same object.
-  ExpectInt32("obj.age", 10000);
-  ExpectBoolean("obj.hasOwnProperty('age')", true);
-  ExpectUndefined("Object.getOwnPropertyDescriptor(obj, 'age').value");
+  ExpectInt32("\x6f\x62\x6a\x2e\x61\x67\x65", 10000);
+  ExpectBoolean("\x6f\x62\x6a\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x61\x67\x65\x27\x29", true);
+  ExpectUndefined("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x2c\x20\x27\x61\x67\x65\x27\x29\x2e\x76\x61\x6c\x75\x65");
 }
 
 
@@ -2207,14 +2207,14 @@ THREADED_TEST(SwitchFromInterceptorToProperty) {
   child->Inherit(parent);
   AddInterceptor(child, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Child"), child->GetFunction());
-  CompileRun("var child = new Child;"
-             "function setAge(i){ child.age = i; };"
-             "for(var i = 0; i <= 10000; i++) setAge(i);");
+  env->Global()->Set(v8_str("\x43\x68\x69\x6c\x64"), child->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x63\x68\x69\x6c\x64\x20\x3d\x20\x6e\x65\x77\x20\x43\x68\x69\x6c\x64\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x7b\x20\x63\x68\x69\x6c\x64\x2e\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x66\x6f\x72\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x3d\x20\x31\x30\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x3b");
   // All i < 10000 go to the interceptor.
-  ExpectInt32("child.interceptor_age", 9999);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65", 9999);
   // The last i goes to child's own property.
-  ExpectInt32("child.age", 10000);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x61\x67\x65", 10000);
 }
 
 
@@ -2225,14 +2225,14 @@ THREADED_TEST(SwitchFromPropertyToInterceptor) {
   child->Inherit(parent);
   AddInterceptor(child, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Child"), child->GetFunction());
-  CompileRun("var child = new Child;"
-             "function setAge(i){ child.age = i; };"
-             "for(var i = 20000; i >= 9999; i--) setAge(i);");
+  env->Global()->Set(v8_str("\x43\x68\x69\x6c\x64"), child->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x63\x68\x69\x6c\x64\x20\x3d\x20\x6e\x65\x77\x20\x43\x68\x69\x6c\x64\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x7b\x20\x63\x68\x69\x6c\x64\x2e\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x66\x6f\x72\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x32\x30\x30\x30\x30\x3b\x20\x69\x20\x3e\x3d\x20\x39\x39\x39\x39\x3b\x20\x69\x2d\x2d\x29\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x3b");
   // All i >= 10000 go to child's own property.
-  ExpectInt32("child.age", 10000);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x61\x67\x65", 10000);
   // The last i goes to the interceptor.
-  ExpectInt32("child.interceptor_age", 9999);
+  ExpectInt32("\x63\x68\x69\x6c\x64\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65", 9999);
 }
 
 
@@ -2243,21 +2243,21 @@ THREADED_TEST(NamedPropertyHandlerGetter) {
       v8::FunctionTemplate::New(CcTest::isolate());
   templ->InstanceTemplate()->SetNamedPropertyHandler(EchoNamedProperty,
                                                      0, 0, 0, 0,
-                                                     v8_str("data"));
+                                                     v8_str("\x64\x61\x74\x61"));
   LocalContext env;
-  env->Global()->Set(v8_str("obj"),
+  env->Global()->Set(v8_str("\x6f\x62\x6a"),
                      templ->GetFunction()->NewInstance());
   CHECK_EQ(echo_named_call_count, 0);
-  v8_compile("obj.x")->Run();
+  v8_compile("\x6f\x62\x6a\x2e\x78")->Run();
   CHECK_EQ(echo_named_call_count, 1);
-  const char* code = "var str = 'oddle'; obj[str] + obj.poddle;";
+  const char* code = "\x76\x61\x72\x20\x73\x74\x72\x20\x3d\x20\x27\x6f\x64\x64\x6c\x65\x27\x3b\x20\x6f\x62\x6a\x5b\x73\x74\x72\x5d\x20\x2b\x20\x6f\x62\x6a\x2e\x70\x6f\x64\x64\x6c\x65\x3b";
   v8::Handle<Value> str = CompileRun(code);
   String::Utf8Value value(str);
-  CHECK_EQ(*value, "oddlepoddle");
+  CHECK_EQ(*value, "\x6f\x64\x64\x6c\x65\x70\x6f\x64\x64\x6c\x65");
   // Check default behavior
-  CHECK_EQ(v8_compile("obj.flob = 10;")->Run()->Int32Value(), 10);
-  CHECK(v8_compile("'myProperty' in obj")->Run()->BooleanValue());
-  CHECK(v8_compile("delete obj.myProperty")->Run()->BooleanValue());
+  CHECK_EQ(v8_compile("\x6f\x62\x6a\x2e\x66\x6c\x6f\x62\x20\x3d\x20\x31\x30\x3b")->Run()->Int32Value(), 10);
+  CHECK(v8_compile("\x27\x6d\x79\x50\x72\x6f\x70\x65\x72\x74\x79\x27\x20\x69\x6e\x20\x6f\x62\x6a")->Run()->BooleanValue());
+  CHECK(v8_compile("\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x2e\x6d\x79\x50\x72\x6f\x70\x65\x72\x74\x79")->Run()->BooleanValue());
 }
 
 
@@ -2282,9 +2282,9 @@ THREADED_TEST(IndexedPropertyHandlerGetter) {
                                                        0, 0, 0, 0,
                                                        v8_num(637));
   LocalContext env;
-  env->Global()->Set(v8_str("obj"),
+  env->Global()->Set(v8_str("\x6f\x62\x6a"),
                      templ->GetFunction()->NewInstance());
-  Local<Script> script = v8_compile("obj[900]");
+  Local<Script> script = v8_compile("\x6f\x62\x6a\x5b\x39\x30\x30\x5d");
   CHECK_EQ(script->Run()->Int32Value(), 900);
 }
 
@@ -2405,26 +2405,26 @@ THREADED_PROFILED_TEST(PropertyHandlerInPrototype) {
 
   bottom->SetPrototype(middle);
   middle->SetPrototype(top);
-  env->Global()->Set(v8_str("obj"), bottom);
+  env->Global()->Set(v8_str("\x6f\x62\x6a"), bottom);
 
   // Indexed and named get.
-  CompileRun("obj[0]");
-  CompileRun("obj.x");
+  CompileRun("\x6f\x62\x6a\x5b\x30\x5d");
+  CompileRun("\x6f\x62\x6a\x2e\x78");
 
   // Indexed and named set.
-  CompileRun("obj[1] = 42");
-  CompileRun("obj.y = 42");
+  CompileRun("\x6f\x62\x6a\x5b\x31\x5d\x20\x3d\x20\x34\x32");
+  CompileRun("\x6f\x62\x6a\x2e\x79\x20\x3d\x20\x34\x32");
 
   // Indexed and named query.
-  CompileRun("0 in obj");
-  CompileRun("'x' in obj");
+  CompileRun("\x30\x20\x69\x6e\x20\x6f\x62\x6a");
+  CompileRun("\x27\x78\x27\x20\x69\x6e\x20\x6f\x62\x6a");
 
   // Indexed and named deleter.
-  CompileRun("delete obj[0]");
-  CompileRun("delete obj.x");
+  CompileRun("\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x5b\x30\x5d");
+  CompileRun("\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x2e\x78");
 
   // Enumerators.
-  CompileRun("for (var p in obj) ;");
+  CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x70\x20\x69\x6e\x20\x6f\x62\x6a\x29\x20\x3b");
 }
 
 
@@ -2432,8 +2432,8 @@ static void PrePropertyHandlerGet(
     Local<String> key,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  if (v8_str("pre")->Equals(key)) {
-    info.GetReturnValue().Set(v8_str("PrePropertyHandler: pre"));
+  if (v8_str("\x70\x72\x65")->Equals(key)) {
+    info.GetReturnValue().Set(v8_str("\x50\x72\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x48\x61\x6e\x64\x6c\x65\x72\x3a\x20\x70\x72\x65"));
   }
 }
 
@@ -2441,7 +2441,7 @@ static void PrePropertyHandlerGet(
 static void PrePropertyHandlerQuery(
     Local<String> key,
     const v8::PropertyCallbackInfo<v8::Integer>& info) {
-  if (v8_str("pre")->Equals(key)) {
+  if (v8_str("\x70\x72\x65")->Equals(key)) {
     info.GetReturnValue().Set(static_cast<int32_t>(v8::None));
   }
 }
@@ -2455,12 +2455,12 @@ THREADED_TEST(PrePropertyHandler) {
                                                     0,
                                                     PrePropertyHandlerQuery);
   LocalContext env(NULL, desc->InstanceTemplate());
-  CompileRun("var pre = 'Object: pre'; var on = 'Object: on';");
-  v8::Handle<Value> result_pre = CompileRun("pre");
-  CHECK_EQ(v8_str("PrePropertyHandler: pre"), result_pre);
-  v8::Handle<Value> result_on = CompileRun("on");
-  CHECK_EQ(v8_str("Object: on"), result_on);
-  v8::Handle<Value> result_post = CompileRun("post");
+  CompileRun("\x76\x61\x72\x20\x70\x72\x65\x20\x3d\x20\x27\x4f\x62\x6a\x65\x63\x74\x3a\x20\x70\x72\x65\x27\x3b\x20\x76\x61\x72\x20\x6f\x6e\x20\x3d\x20\x27\x4f\x62\x6a\x65\x63\x74\x3a\x20\x6f\x6e\x27\x3b");
+  v8::Handle<Value> result_pre = CompileRun("\x70\x72\x65");
+  CHECK_EQ(v8_str("\x50\x72\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x48\x61\x6e\x64\x6c\x65\x72\x3a\x20\x70\x72\x65"), result_pre);
+  v8::Handle<Value> result_on = CompileRun("\x6f\x6e");
+  CHECK_EQ(v8_str("\x4f\x62\x6a\x65\x63\x74\x3a\x20\x6f\x6e"), result_on);
+  v8::Handle<Value> result_post = CompileRun("\x70\x6f\x73\x74");
   CHECK(result_post.IsEmpty());
 }
 
@@ -2468,7 +2468,7 @@ THREADED_TEST(PrePropertyHandler) {
 THREADED_TEST(UndefinedIsNotEnumerable) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
-  v8::Handle<Value> result = CompileRun("this.propertyIsEnumerable(undefined)");
+  v8::Handle<Value> result = CompileRun("\x74\x68\x69\x73\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x49\x73\x45\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x28\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x29");
   CHECK(result->IsFalse());
 }
 
@@ -2480,9 +2480,9 @@ static const int kTargetRecursionDepth = 200;  // near maximum
 static void CallScriptRecursivelyCall(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   ApiTestFuzzer::Fuzz();
-  int depth = args.This()->Get(v8_str("depth"))->Int32Value();
+  int depth = args.This()->Get(v8_str("\x64\x65\x70\x74\x68"))->Int32Value();
   if (depth == kTargetRecursionDepth) return;
-  args.This()->Set(v8_str("depth"),
+  args.This()->Set(v8_str("\x64\x65\x70\x74\x68"),
                    v8::Integer::New(args.GetIsolate(), depth + 1));
   args.GetReturnValue().Set(call_recursively_script->Run());
 }
@@ -2491,15 +2491,15 @@ static void CallScriptRecursivelyCall(
 static void CallFunctionRecursivelyCall(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   ApiTestFuzzer::Fuzz();
-  int depth = args.This()->Get(v8_str("depth"))->Int32Value();
+  int depth = args.This()->Get(v8_str("\x64\x65\x70\x74\x68"))->Int32Value();
   if (depth == kTargetRecursionDepth) {
-    printf("[depth = %d]\n", depth);
+    printf("\x5b\x64\x65\x70\x74\x68\x20\x3d\x20\x6c\x84\x5d\xa", depth);
     return;
   }
-  args.This()->Set(v8_str("depth"),
+  args.This()->Set(v8_str("\x64\x65\x70\x74\x68"),
                    v8::Integer::New(args.GetIsolate(), depth + 1));
   v8::Handle<Value> function =
-      args.This()->Get(v8_str("callFunctionRecursively"));
+      args.This()->Get(v8_str("\x63\x61\x6c\x6c\x46\x75\x6e\x63\x74\x69\x6f\x6e\x52\x65\x63\x75\x72\x73\x69\x76\x65\x6c\x79"));
   args.GetReturnValue().Set(
       function.As<Function>()->Call(args.This(), 0, NULL));
 }
@@ -2509,19 +2509,19 @@ THREADED_TEST(DeepCrossLanguageRecursion) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> global = ObjectTemplate::New(isolate);
-  global->Set(v8_str("callScriptRecursively"),
+  global->Set(v8_str("\x63\x61\x6c\x6c\x53\x63\x72\x69\x70\x74\x52\x65\x63\x75\x72\x73\x69\x76\x65\x6c\x79"),
               v8::FunctionTemplate::New(isolate, CallScriptRecursivelyCall));
-  global->Set(v8_str("callFunctionRecursively"),
+  global->Set(v8_str("\x63\x61\x6c\x6c\x46\x75\x6e\x63\x74\x69\x6f\x6e\x52\x65\x63\x75\x72\x73\x69\x76\x65\x6c\x79"),
               v8::FunctionTemplate::New(isolate, CallFunctionRecursivelyCall));
   LocalContext env(NULL, global);
 
-  env->Global()->Set(v8_str("depth"), v8::Integer::New(isolate, 0));
-  call_recursively_script = v8_compile("callScriptRecursively()");
+  env->Global()->Set(v8_str("\x64\x65\x70\x74\x68"), v8::Integer::New(isolate, 0));
+  call_recursively_script = v8_compile("\x63\x61\x6c\x6c\x53\x63\x72\x69\x70\x74\x52\x65\x63\x75\x72\x73\x69\x76\x65\x6c\x79\x28\x29");
   call_recursively_script->Run();
   call_recursively_script = v8::Handle<Script>();
 
-  env->Global()->Set(v8_str("depth"), v8::Integer::New(isolate, 0));
-  CompileRun("callFunctionRecursively()");
+  env->Global()->Set(v8_str("\x64\x65\x70\x74\x68"), v8::Integer::New(isolate, 0));
+  CompileRun("\x63\x61\x6c\x6c\x46\x75\x6e\x63\x74\x69\x6f\x6e\x52\x65\x63\x75\x72\x73\x69\x76\x65\x6c\x79\x28\x29");
 }
 
 
@@ -2549,13 +2549,13 @@ THREADED_TEST(CallbackExceptionRegression) {
   obj->SetNamedPropertyHandler(ThrowingPropertyHandlerGet,
                                ThrowingPropertyHandlerSet);
   LocalContext env;
-  env->Global()->Set(v8_str("obj"), obj->NewInstance());
+  env->Global()->Set(v8_str("\x6f\x62\x6a"), obj->NewInstance());
   v8::Handle<Value> otto = CompileRun(
-      "try { with (obj) { otto; } } catch (e) { e; }");
-  CHECK_EQ(v8_str("otto"), otto);
+      "\x74\x72\x79\x20\x7b\x20\x77\x69\x74\x68\x20\x28\x6f\x62\x6a\x29\x20\x7b\x20\x6f\x74\x74\x6f\x3b\x20\x7d\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x65\x3b\x20\x7d");
+  CHECK_EQ(v8_str("\x6f\x74\x74\x6f"), otto);
   v8::Handle<Value> netto = CompileRun(
-      "try { with (obj) { netto = 4; } } catch (e) { e; }");
-  CHECK_EQ(v8_str("netto"), netto);
+      "\x74\x72\x79\x20\x7b\x20\x77\x69\x74\x68\x20\x28\x6f\x62\x6a\x29\x20\x7b\x20\x6e\x65\x74\x74\x6f\x20\x3d\x20\x34\x3b\x20\x7d\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x65\x3b\x20\x7d");
+  CHECK_EQ(v8_str("\x6e\x65\x74\x74\x6f"), netto);
 }
 
 
@@ -2563,10 +2563,10 @@ THREADED_TEST(FunctionPrototype) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<v8::FunctionTemplate> Foo = v8::FunctionTemplate::New(isolate);
-  Foo->PrototypeTemplate()->Set(v8_str("plak"), v8_num(321));
+  Foo->PrototypeTemplate()->Set(v8_str("\x70\x6c\x61\x6b"), v8_num(321));
   LocalContext env;
-  env->Global()->Set(v8_str("Foo"), Foo->GetFunction());
-  Local<Script> script = v8_compile("Foo.prototype.plak");
+  env->Global()->Set(v8_str("\x46\x6f\x6f"), Foo->GetFunction());
+  Local<Script> script = v8_compile("\x46\x6f\x6f\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x70\x6c\x61\x6b");
   CHECK_EQ(script->Run()->Int32Value(), 321);
 }
 
@@ -2607,7 +2607,7 @@ THREADED_TEST(GlobalObjectHasRealIndexedProperty) {
   v8::HandleScope scope(CcTest::isolate());
 
   v8::Local<v8::Object> global = env->Global();
-  global->Set(0, v8::String::NewFromUtf8(CcTest::isolate(), "value"));
+  global->Set(0, v8::String::NewFromUtf8(CcTest::isolate(), "\x76\x61\x6c\x75\x65"));
   CHECK(global->HasRealIndexedProperty(0));
 }
 
@@ -2707,9 +2707,9 @@ THREADED_TEST(EmbedderData) {
 
   CheckEmbedderData(
       &env, 3,
-      v8::String::NewFromUtf8(isolate, "The quick brown fox jumps"));
+      v8::String::NewFromUtf8(isolate, "\x54\x68\x65\x20\x71\x75\x69\x63\x6b\x20\x62\x72\x6f\x77\x6e\x20\x66\x6f\x78\x20\x6a\x75\x6d\x70\x73"));
   CheckEmbedderData(&env, 2, v8::String::NewFromUtf8(isolate,
-                                                     "over the lazy dog."));
+                                                     "\x6f\x76\x65\x72\x20\x74\x68\x65\x20\x6c\x61\x7a\x79\x20\x64\x6f\x67\x2e"));
   CheckEmbedderData(&env, 1, v8::Number::New(isolate, 1.2345));
   CheckEmbedderData(&env, 0, v8::Boolean::New(isolate, true));
 }
@@ -2744,15 +2744,15 @@ THREADED_TEST(IdentityHash) {
   // Check identity hashes behaviour in the presence of JS accessors.
   // Put a getter for 'v8::IdentityHash' on the Object's prototype:
   {
-    CompileRun("Object.prototype['v8::IdentityHash'] = 42;\n");
+    CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x5b\x27\x76\x38\x3a\x3a\x49\x64\x65\x6e\x74\x69\x74\x79\x48\x61\x73\x68\x27\x5d\x20\x3d\x20\x34\x32\x3b\xa");
     Local<v8::Object> o1 = v8::Object::New(isolate);
     Local<v8::Object> o2 = v8::Object::New(isolate);
     CHECK_NE(o1->GetIdentityHash(), o2->GetIdentityHash());
   }
   {
     CompileRun(
-        "function cnst() { return 42; };\n"
-        "Object.prototype.__defineGetter__('v8::IdentityHash', cnst);\n");
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x6e\x73\x74\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b\x20\x7d\x3b\xa"
+        "\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x76\x38\x3a\x3a\x49\x64\x65\x6e\x74\x69\x74\x79\x48\x61\x73\x68\x27\x2c\x20\x63\x6e\x73\x74\x29\x3b\xa");
     Local<v8::Object> o1 = v8::Object::New(isolate);
     Local<v8::Object> o2 = v8::Object::New(isolate);
     CHECK_NE(o1->GetIdentityHash(), o2->GetIdentityHash());
@@ -2787,7 +2787,7 @@ THREADED_TEST(SymbolProperties) {
   v8::Local<v8::Object> obj = v8::Object::New(isolate);
   v8::Local<v8::Symbol> sym1 = v8::Symbol::New(isolate);
   v8::Local<v8::Symbol> sym2 =
-      v8::Symbol::New(isolate, v8_str("my-symbol"));
+      v8::Symbol::New(isolate, v8_str("\x6d\x79\x2d\x73\x79\x6d\x62\x6f\x6c"));
 
   CcTest::heap()->CollectAllGarbage(i::Heap::kNoGCFlags);
 
@@ -2805,7 +2805,7 @@ THREADED_TEST(SymbolProperties) {
   CHECK(!sym1->StrictEquals(sym2));
   CHECK(!sym2->StrictEquals(sym1));
 
-  CHECK(sym2->Name()->Equals(v8_str("my-symbol")));
+  CHECK(sym2->Name()->Equals(v8_str("\x6d\x79\x2d\x73\x79\x6d\x62\x6f\x6c")));
 
   v8::Local<v8::Value> sym_val = sym2;
   CHECK(sym_val->IsSymbol());
@@ -2836,7 +2836,7 @@ THREADED_TEST(SymbolProperties) {
 
   CHECK_EQ(0, obj->GetOwnPropertyNames()->Length());
   int num_props = obj->GetPropertyNames()->Length();
-  CHECK(obj->Set(v8::String::NewFromUtf8(isolate, "bla"),
+  CHECK(obj->Set(v8::String::NewFromUtf8(isolate, "\x62\x6c\x61"),
                  v8::Integer::New(isolate, 20)));
   CHECK_EQ(1, obj->GetOwnPropertyNames()->Length());
   CHECK_EQ(num_props + 1, obj->GetPropertyNames()->Length());
@@ -2876,11 +2876,11 @@ THREADED_TEST(PrivateProperties) {
   v8::Local<v8::Object> obj = v8::Object::New(isolate);
   v8::Local<v8::Private> priv1 = v8::Private::New(isolate);
   v8::Local<v8::Private> priv2 =
-      v8::Private::New(isolate, v8_str("my-private"));
+      v8::Private::New(isolate, v8_str("\x6d\x79\x2d\x70\x72\x69\x76\x61\x74\x65"));
 
   CcTest::heap()->CollectAllGarbage(i::Heap::kNoGCFlags);
 
-  CHECK(priv2->Name()->Equals(v8::String::NewFromUtf8(isolate, "my-private")));
+  CHECK(priv2->Name()->Equals(v8::String::NewFromUtf8(isolate, "\x6d\x79\x2d\x70\x72\x69\x76\x61\x74\x65")));
 
   // Make sure delete of a non-existent private symbol property works.
   CHECK(obj->DeletePrivate(priv1));
@@ -2895,7 +2895,7 @@ THREADED_TEST(PrivateProperties) {
 
   CHECK_EQ(0, obj->GetOwnPropertyNames()->Length());
   int num_props = obj->GetPropertyNames()->Length();
-  CHECK(obj->Set(v8::String::NewFromUtf8(isolate, "bla"),
+  CHECK(obj->Set(v8::String::NewFromUtf8(isolate, "\x62\x6c\x61"),
                  v8::Integer::New(isolate, 20)));
   CHECK_EQ(1, obj->GetOwnPropertyNames()->Length());
   CHECK_EQ(num_props + 1, obj->GetPropertyNames()->Length());
@@ -2932,7 +2932,7 @@ THREADED_TEST(GlobalSymbols) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
 
-  v8::Local<String> name = v8_str("my-symbol");
+  v8::Local<String> name = v8_str("\x6d\x79\x2d\x73\x79\x6d\x62\x6f\x6c");
   v8::Local<v8::Symbol> glob = v8::Symbol::For(isolate, name);
   v8::Local<v8::Symbol> glob2 = v8::Symbol::For(isolate, name);
   CHECK(glob2->SameValue(glob));
@@ -2945,8 +2945,8 @@ THREADED_TEST(GlobalSymbols) {
   v8::Local<v8::Symbol> sym = v8::Symbol::New(isolate, name);
   CHECK(!sym->SameValue(glob));
 
-  CompileRun("var sym2 = Symbol.for('my-symbol')");
-  v8::Local<Value> sym2 = env->Global()->Get(v8_str("sym2"));
+  CompileRun("\x76\x61\x72\x20\x73\x79\x6d\x32\x20\x3d\x20\x53\x79\x6d\x62\x6f\x6c\x2e\x66\x6f\x72\x28\x27\x6d\x79\x2d\x73\x79\x6d\x62\x6f\x6c\x27\x29");
+  v8::Local<Value> sym2 = env->Global()->Get(v8_str("\x73\x79\x6d\x32"));
   CHECK(sym2->SameValue(glob));
   CHECK(!sym2->SameValue(glob_api));
 }
@@ -2957,7 +2957,7 @@ THREADED_TEST(GlobalPrivates) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
 
-  v8::Local<String> name = v8_str("my-private");
+  v8::Local<String> name = v8_str("\x6d\x79\x2d\x70\x72\x69\x76\x61\x74\x65");
   v8::Local<v8::Private> glob = v8::Private::ForApi(isolate, name);
   v8::Local<v8::Object> obj = v8::Object::New(isolate);
   CHECK(obj->SetPrivate(glob, v8::Integer::New(isolate, 3)));
@@ -2968,8 +2968,8 @@ THREADED_TEST(GlobalPrivates) {
   v8::Local<v8::Private> priv = v8::Private::New(isolate, name);
   CHECK(!obj->HasPrivate(priv));
 
-  CompileRun("var intern = %CreateGlobalPrivateSymbol('my-private')");
-  v8::Local<Value> intern = env->Global()->Get(v8_str("intern"));
+  CompileRun("\x76\x61\x72\x20\x69\x6e\x74\x65\x72\x6e\x20\x3d\x20\x25\x43\x72\x65\x61\x74\x65\x47\x6c\x6f\x62\x61\x6c\x50\x72\x69\x76\x61\x74\x65\x53\x79\x6d\x62\x6f\x6c\x28\x27\x6d\x79\x2d\x70\x72\x69\x76\x61\x74\x65\x27\x29");
+  v8::Local<Value> intern = env->Global()->Get(v8_str("\x69\x6e\x74\x65\x72\x6e"));
   CHECK(!obj->Has(intern));
 }
 
@@ -3015,21 +3015,21 @@ THREADED_TEST(ArrayBuffer_ApiInternalToExternal) {
   CHECK_EQ(1024, static_cast<int>(ab_contents.ByteLength()));
   uint8_t* data = static_cast<uint8_t*>(ab_contents.Data());
   DCHECK(data != NULL);
-  env->Global()->Set(v8_str("ab"), ab);
+  env->Global()->Set(v8_str("\x61\x62"), ab);
 
-  v8::Handle<v8::Value> result = CompileRun("ab.byteLength");
+  v8::Handle<v8::Value> result = CompileRun("\x61\x62\x2e\x62\x79\x74\x65\x4c\x65\x6e\x67\x74\x68");
   CHECK_EQ(1024, result->Int32Value());
 
-  result = CompileRun("var u8 = new Uint8Array(ab);"
-                      "u8[0] = 0xFF;"
-                      "u8[1] = 0xAA;"
-                      "u8.length");
+  result = CompileRun("\x76\x61\x72\x20\x75\x38\x20\x3d\x20\x6e\x65\x77\x20\x55\x69\x6e\x74\x38\x41\x72\x72\x61\x79\x28\x61\x62\x29\x3b"
+                      "\x75\x38\x5b\x30\x5d\x20\x3d\x20\x30\x78\x46\x46\x3b"
+                      "\x75\x38\x5b\x31\x5d\x20\x3d\x20\x30\x78\x41\x41\x3b"
+                      "\x75\x38\x2e\x6c\x65\x6e\x67\x74\x68");
   CHECK_EQ(1024, result->Int32Value());
   CHECK_EQ(0xFF, data[0]);
   CHECK_EQ(0xAA, data[1]);
   data[0] = 0xCC;
   data[1] = 0x11;
-  result = CompileRun("u8[0] + u8[1]");
+  result = CompileRun("\x75\x38\x5b\x30\x5d\x20\x2b\x20\x75\x38\x5b\x31\x5d");
   CHECK_EQ(0xDD, result->Int32Value());
 }
 
@@ -3041,10 +3041,10 @@ THREADED_TEST(ArrayBuffer_JSInternalToExternal) {
 
 
   v8::Local<v8::Value> result =
-      CompileRun("var ab1 = new ArrayBuffer(2);"
-                 "var u8_a = new Uint8Array(ab1);"
-                 "u8_a[0] = 0xAA;"
-                 "u8_a[1] = 0xFF; u8_a.buffer");
+      CompileRun("\x76\x61\x72\x20\x61\x62\x31\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x28\x32\x29\x3b"
+                 "\x76\x61\x72\x20\x75\x38\x5f\x61\x20\x3d\x20\x6e\x65\x77\x20\x55\x69\x6e\x74\x38\x41\x72\x72\x61\x79\x28\x61\x62\x31\x29\x3b"
+                 "\x75\x38\x5f\x61\x5b\x30\x5d\x20\x3d\x20\x30\x78\x41\x41\x3b"
+                 "\x75\x38\x5f\x61\x5b\x31\x5d\x20\x3d\x20\x30\x78\x46\x46\x3b\x20\x75\x38\x5f\x61\x2e\x62\x75\x66\x66\x65\x72");
   Local<v8::ArrayBuffer> ab1 = Local<v8::ArrayBuffer>::Cast(result);
   CheckInternalFieldsAreZero(ab1);
   CHECK_EQ(2, static_cast<int>(ab1->ByteLength()));
@@ -3052,17 +3052,17 @@ THREADED_TEST(ArrayBuffer_JSInternalToExternal) {
   ScopedArrayBufferContents ab1_contents(ab1->Externalize());
   CHECK(ab1->IsExternal());
 
-  result = CompileRun("ab1.byteLength");
+  result = CompileRun("\x61\x62\x31\x2e\x62\x79\x74\x65\x4c\x65\x6e\x67\x74\x68");
   CHECK_EQ(2, result->Int32Value());
-  result = CompileRun("u8_a[0]");
+  result = CompileRun("\x75\x38\x5f\x61\x5b\x30\x5d");
   CHECK_EQ(0xAA, result->Int32Value());
-  result = CompileRun("u8_a[1]");
+  result = CompileRun("\x75\x38\x5f\x61\x5b\x31\x5d");
   CHECK_EQ(0xFF, result->Int32Value());
-  result = CompileRun("var u8_b = new Uint8Array(ab1);"
-                      "u8_b[0] = 0xBB;"
-                      "u8_a[0]");
+  result = CompileRun("\x76\x61\x72\x20\x75\x38\x5f\x62\x20\x3d\x20\x6e\x65\x77\x20\x55\x69\x6e\x74\x38\x41\x72\x72\x61\x79\x28\x61\x62\x31\x29\x3b"
+                      "\x75\x38\x5f\x62\x5b\x30\x5d\x20\x3d\x20\x30\x78\x42\x42\x3b"
+                      "\x75\x38\x5f\x61\x5b\x30\x5d");
   CHECK_EQ(0xBB, result->Int32Value());
-  result = CompileRun("u8_b[1]");
+  result = CompileRun("\x75\x38\x5f\x62\x5b\x31\x5d");
   CHECK_EQ(0xFF, result->Int32Value());
 
   CHECK_EQ(2, static_cast<int>(ab1_contents.ByteLength()));
@@ -3071,7 +3071,7 @@ THREADED_TEST(ArrayBuffer_JSInternalToExternal) {
   CHECK_EQ(0xFF, ab1_data[1]);
   ab1_data[0] = 0xCC;
   ab1_data[1] = 0x11;
-  result = CompileRun("u8_a[0] + u8_a[1]");
+  result = CompileRun("\x75\x38\x5f\x61\x5b\x30\x5d\x20\x2b\x20\x75\x38\x5f\x61\x5b\x31\x5d");
   CHECK_EQ(0xDD, result->Int32Value());
 }
 
@@ -3089,21 +3089,21 @@ THREADED_TEST(ArrayBuffer_External) {
   CHECK_EQ(100, static_cast<int>(ab3->ByteLength()));
   CHECK(ab3->IsExternal());
 
-  env->Global()->Set(v8_str("ab3"), ab3);
+  env->Global()->Set(v8_str("\x61\x62\x33"), ab3);
 
-  v8::Handle<v8::Value> result = CompileRun("ab3.byteLength");
+  v8::Handle<v8::Value> result = CompileRun("\x61\x62\x33\x2e\x62\x79\x74\x65\x4c\x65\x6e\x67\x74\x68");
   CHECK_EQ(100, result->Int32Value());
 
-  result = CompileRun("var u8_b = new Uint8Array(ab3);"
-                      "u8_b[0] = 0xBB;"
-                      "u8_b[1] = 0xCC;"
-                      "u8_b.length");
+  result = CompileRun("\x76\x61\x72\x20\x75\x38\x5f\x62\x20\x3d\x20\x6e\x65\x77\x20\x55\x69\x6e\x74\x38\x41\x72\x72\x61\x79\x28\x61\x62\x33\x29\x3b"
+                      "\x75\x38\x5f\x62\x5b\x30\x5d\x20\x3d\x20\x30\x78\x42\x42\x3b"
+                      "\x75\x38\x5f\x62\x5b\x31\x5d\x20\x3d\x20\x30\x78\x43\x43\x3b"
+                      "\x75\x38\x5f\x62\x2e\x6c\x65\x6e\x67\x74\x68");
   CHECK_EQ(100, result->Int32Value());
   CHECK_EQ(0xBB, my_data[0]);
   CHECK_EQ(0xCC, my_data[1]);
   my_data[0] = 0xCC;
   my_data[1] = 0x11;
-  result = CompileRun("u8_b[0] + u8_b[1]");
+  result = CompileRun("\x75\x38\x5f\x62\x5b\x30\x5d\x20\x2b\x20\x75\x38\x5f\x62\x5b\x31\x5d");
   CHECK_EQ(0xDD, result->Int32Value());
 }
 
@@ -3124,7 +3124,7 @@ static void CheckIsNeutered(v8::Handle<v8::TypedArray> ta) {
 static void CheckIsTypedArrayVarNeutered(const char* name) {
   i::ScopedVector<char> source(1024);
   i::SNPrintF(source,
-      "%s.byteLength == 0 && %s.byteOffset == 0 && %s.length == 0",
+      "\x6c\xa2\x2e\x62\x79\x74\x65\x4c\x65\x6e\x67\x74\x68\x20\x3d\x3d\x20\x30\x20\x26\x26\x20\x6c\xa2\x2e\x62\x79\x74\x65\x4f\x66\x66\x73\x65\x74\x20\x3d\x3d\x20\x30\x20\x26\x26\x20\x6c\xa2\x2e\x6c\x65\x6e\x67\x74\x68\x20\x3d\x3d\x20\x30",
       name, name, name);
   CHECK(CompileRun(source.start())->IsTrue());
   v8::Handle<v8::TypedArray> ta =
@@ -3202,40 +3202,40 @@ THREADED_TEST(ArrayBuffer_NeuteringScript) {
   v8::HandleScope handle_scope(isolate);
 
   CompileRun(
-      "var ab = new ArrayBuffer(1024);"
-      "var u8a = new Uint8Array(ab, 1, 1023);"
-      "var u8c = new Uint8ClampedArray(ab, 1, 1023);"
-      "var i8a = new Int8Array(ab, 1, 1023);"
-      "var u16a = new Uint16Array(ab, 2, 511);"
-      "var i16a = new Int16Array(ab, 2, 511);"
-      "var u32a = new Uint32Array(ab, 4, 255);"
-      "var i32a = new Int32Array(ab, 4, 255);"
-      "var f32a = new Float32Array(ab, 4, 255);"
-      "var f64a = new Float64Array(ab, 8, 127);"
-      "var dv = new DataView(ab, 1, 1023);");
+      "\x76\x61\x72\x20\x61\x62\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x28\x31\x30\x32\x34\x29\x3b"
+      "\x76\x61\x72\x20\x75\x38\x61\x20\x3d\x20\x6e\x65\x77\x20\x55\x69\x6e\x74\x38\x41\x72\x72\x61\x79\x28\x61\x62\x2c\x20\x31\x2c\x20\x31\x30\x32\x33\x29\x3b"
+      "\x76\x61\x72\x20\x75\x38\x63\x20\x3d\x20\x6e\x65\x77\x20\x55\x69\x6e\x74\x38\x43\x6c\x61\x6d\x70\x65\x64\x41\x72\x72\x61\x79\x28\x61\x62\x2c\x20\x31\x2c\x20\x31\x30\x32\x33\x29\x3b"
+      "\x76\x61\x72\x20\x69\x38\x61\x20\x3d\x20\x6e\x65\x77\x20\x49\x6e\x74\x38\x41\x72\x72\x61\x79\x28\x61\x62\x2c\x20\x31\x2c\x20\x31\x30\x32\x33\x29\x3b"
+      "\x76\x61\x72\x20\x75\x31\x36\x61\x20\x3d\x20\x6e\x65\x77\x20\x55\x69\x6e\x74\x31\x36\x41\x72\x72\x61\x79\x28\x61\x62\x2c\x20\x32\x2c\x20\x35\x31\x31\x29\x3b"
+      "\x76\x61\x72\x20\x69\x31\x36\x61\x20\x3d\x20\x6e\x65\x77\x20\x49\x6e\x74\x31\x36\x41\x72\x72\x61\x79\x28\x61\x62\x2c\x20\x32\x2c\x20\x35\x31\x31\x29\x3b"
+      "\x76\x61\x72\x20\x75\x33\x32\x61\x20\x3d\x20\x6e\x65\x77\x20\x55\x69\x6e\x74\x33\x32\x41\x72\x72\x61\x79\x28\x61\x62\x2c\x20\x34\x2c\x20\x32\x35\x35\x29\x3b"
+      "\x76\x61\x72\x20\x69\x33\x32\x61\x20\x3d\x20\x6e\x65\x77\x20\x49\x6e\x74\x33\x32\x41\x72\x72\x61\x79\x28\x61\x62\x2c\x20\x34\x2c\x20\x32\x35\x35\x29\x3b"
+      "\x76\x61\x72\x20\x66\x33\x32\x61\x20\x3d\x20\x6e\x65\x77\x20\x46\x6c\x6f\x61\x74\x33\x32\x41\x72\x72\x61\x79\x28\x61\x62\x2c\x20\x34\x2c\x20\x32\x35\x35\x29\x3b"
+      "\x76\x61\x72\x20\x66\x36\x34\x61\x20\x3d\x20\x6e\x65\x77\x20\x46\x6c\x6f\x61\x74\x36\x34\x41\x72\x72\x61\x79\x28\x61\x62\x2c\x20\x38\x2c\x20\x31\x32\x37\x29\x3b"
+      "\x76\x61\x72\x20\x64\x76\x20\x3d\x20\x6e\x65\x77\x20\x44\x61\x74\x61\x56\x69\x65\x77\x28\x61\x62\x2c\x20\x31\x2c\x20\x31\x30\x32\x33\x29\x3b");
 
   v8::Handle<v8::ArrayBuffer> ab =
-      Local<v8::ArrayBuffer>::Cast(CompileRun("ab"));
+      Local<v8::ArrayBuffer>::Cast(CompileRun("\x61\x62"));
 
   v8::Handle<v8::DataView> dv =
-    v8::Handle<v8::DataView>::Cast(CompileRun("dv"));
+    v8::Handle<v8::DataView>::Cast(CompileRun("\x64\x76"));
 
   ScopedArrayBufferContents contents(ab->Externalize());
   ab->Neuter();
   CHECK_EQ(0, static_cast<int>(ab->ByteLength()));
-  CHECK_EQ(0, CompileRun("ab.byteLength")->Int32Value());
+  CHECK_EQ(0, CompileRun("\x61\x62\x2e\x62\x79\x74\x65\x4c\x65\x6e\x67\x74\x68")->Int32Value());
 
-  CheckIsTypedArrayVarNeutered("u8a");
-  CheckIsTypedArrayVarNeutered("u8c");
-  CheckIsTypedArrayVarNeutered("i8a");
-  CheckIsTypedArrayVarNeutered("u16a");
-  CheckIsTypedArrayVarNeutered("i16a");
-  CheckIsTypedArrayVarNeutered("u32a");
-  CheckIsTypedArrayVarNeutered("i32a");
-  CheckIsTypedArrayVarNeutered("f32a");
-  CheckIsTypedArrayVarNeutered("f64a");
+  CheckIsTypedArrayVarNeutered("\x75\x38\x61");
+  CheckIsTypedArrayVarNeutered("\x75\x38\x63");
+  CheckIsTypedArrayVarNeutered("\x69\x38\x61");
+  CheckIsTypedArrayVarNeutered("\x75\x31\x36\x61");
+  CheckIsTypedArrayVarNeutered("\x69\x31\x36\x61");
+  CheckIsTypedArrayVarNeutered("\x75\x33\x32\x61");
+  CheckIsTypedArrayVarNeutered("\x69\x33\x32\x61");
+  CheckIsTypedArrayVarNeutered("\x66\x33\x32\x61");
+  CheckIsTypedArrayVarNeutered("\x66\x36\x34\x61");
 
-  CHECK(CompileRun("dv.byteLength == 0 && dv.byteOffset == 0")->IsTrue());
+  CHECK(CompileRun("\x64\x76\x2e\x62\x79\x74\x65\x4c\x65\x6e\x67\x74\x68\x20\x3d\x3d\x20\x30\x20\x26\x26\x20\x64\x76\x2e\x62\x79\x74\x65\x4f\x66\x66\x73\x65\x74\x20\x3d\x3d\x20\x30")->IsTrue());
   CheckDataViewIsNeutered(dv);
 }
 
@@ -3247,9 +3247,9 @@ THREADED_TEST(HiddenProperties) {
   v8::HandleScope scope(isolate);
 
   v8::Local<v8::Object> obj = v8::Object::New(env->GetIsolate());
-  v8::Local<v8::String> key = v8_str("api-test::hidden-key");
+  v8::Local<v8::String> key = v8_str("\x61\x70\x69\x2d\x74\x65\x73\x74\x3a\x3a\x68\x69\x64\x64\x65\x6e\x2d\x6b\x65\x79");
   v8::Local<v8::String> empty = v8_str("");
-  v8::Local<v8::String> prop_name = v8_str("prop_name");
+  v8::Local<v8::String> prop_name = v8_str("\x70\x72\x6f\x70\x5f\x6e\x61\x6d\x65");
 
   CcTest::heap()->CollectAllGarbage(i::Heap::kNoGCFlags);
 
@@ -3302,22 +3302,22 @@ THREADED_TEST(Regress97784) {
   v8::HandleScope scope(env->GetIsolate());
 
   v8::Local<v8::Object> obj = v8::Object::New(env->GetIsolate());
-  v8::Local<v8::String> key = v8_str("hidden");
+  v8::Local<v8::String> key = v8_str("\x68\x69\x64\x64\x65\x6e");
 
   CompileRun(
-      "set_called = false;"
-      "Object.defineProperty("
-      "    Object.prototype,"
-      "    'hidden',"
-      "    {get: function() { return 45; },"
-      "     set: function() { set_called = true; }})");
+      "\x73\x65\x74\x5f\x63\x61\x6c\x6c\x65\x64\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28"
+      "\x20\x20\x20\x20\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2c"
+      "\x20\x20\x20\x20\x27\x68\x69\x64\x64\x65\x6e\x27\x2c"
+      "\x20\x20\x20\x20\x7b\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x35\x3b\x20\x7d\x2c"
+      "\x20\x20\x20\x20\x20\x73\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x73\x65\x74\x5f\x63\x61\x6c\x6c\x65\x64\x20\x3d\x20\x74\x72\x75\x65\x3b\x20\x7d\x7d\x29");
 
   CHECK(obj->GetHiddenValue(key).IsEmpty());
   // Make sure that the getter and setter from Object.prototype is not invoked.
   // If it did we would have full access to the hidden properties in
   // the accessor.
   CHECK(obj->SetHiddenValue(key, v8::Integer::New(env->GetIsolate(), 42)));
-  ExpectFalse("set_called");
+  ExpectFalse("\x73\x65\x74\x5f\x63\x61\x6c\x6c\x65\x64");
   CHECK_EQ(42, obj->GetHiddenValue(key)->Int32Value());
 }
 
@@ -3336,7 +3336,7 @@ THREADED_TEST(HiddenPropertiesWithInterceptors) {
 
   interceptor_for_hidden_properties_called = false;
 
-  v8::Local<v8::String> key = v8_str("api-test::hidden-key");
+  v8::Local<v8::String> key = v8_str("\x61\x70\x69\x2d\x74\x65\x73\x74\x3a\x3a\x68\x69\x64\x64\x65\x6e\x2d\x6b\x65\x79");
 
   // Associate an interceptor with an object and start setting hidden values.
   Local<v8::FunctionTemplate> fun_templ = v8::FunctionTemplate::New(isolate);
@@ -3355,8 +3355,8 @@ THREADED_TEST(External) {
   int x = 3;
   Local<v8::External> ext = v8::External::New(CcTest::isolate(), &x);
   LocalContext env;
-  env->Global()->Set(v8_str("ext"), ext);
-  Local<Value> reext_obj = CompileRun("this.ext");
+  env->Global()->Set(v8_str("\x65\x78\x74"), ext);
+  Local<Value> reext_obj = CompileRun("\x74\x68\x69\x73\x2e\x65\x78\x74");
   v8::Handle<v8::External> reext = reext_obj.As<v8::External>();
   int* ptr = static_cast<int*>(reext->Value());
   CHECK_EQ(x, 3);
@@ -3364,20 +3364,20 @@ THREADED_TEST(External) {
   CHECK_EQ(x, 10);
 
   // Make sure unaligned pointers are wrapped properly.
-  char* data = i::StrDup("0123456789");
+  char* data = i::StrDup("\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39");
   Local<v8::Value> zero = v8::External::New(CcTest::isolate(), &data[0]);
   Local<v8::Value> one = v8::External::New(CcTest::isolate(), &data[1]);
   Local<v8::Value> two = v8::External::New(CcTest::isolate(), &data[2]);
   Local<v8::Value> three = v8::External::New(CcTest::isolate(), &data[3]);
 
   char* char_ptr = reinterpret_cast<char*>(v8::External::Cast(*zero)->Value());
-  CHECK_EQ('0', *char_ptr);
+  CHECK_EQ('\x30', *char_ptr);
   char_ptr = reinterpret_cast<char*>(v8::External::Cast(*one)->Value());
-  CHECK_EQ('1', *char_ptr);
+  CHECK_EQ('\x31', *char_ptr);
   char_ptr = reinterpret_cast<char*>(v8::External::Cast(*two)->Value());
-  CHECK_EQ('2', *char_ptr);
+  CHECK_EQ('\x32', *char_ptr);
   char_ptr = reinterpret_cast<char*>(v8::External::Cast(*three)->Value());
-  CHECK_EQ('3', *char_ptr);
+  CHECK_EQ('\x33', *char_ptr);
   i::DeleteArray(data);
 }
 
@@ -3387,7 +3387,7 @@ THREADED_TEST(GlobalHandle) {
   v8::Persistent<String> global;
   {
     v8::HandleScope scope(isolate);
-    global.Reset(isolate, v8_str("str"));
+    global.Reset(isolate, v8_str("\x73\x74\x72"));
   }
   {
     v8::HandleScope scope(isolate);
@@ -3396,7 +3396,7 @@ THREADED_TEST(GlobalHandle) {
   global.Reset();
   {
     v8::HandleScope scope(isolate);
-    global.Reset(isolate, v8_str("str"));
+    global.Reset(isolate, v8_str("\x73\x74\x72"));
   }
   {
     v8::HandleScope scope(isolate);
@@ -3411,7 +3411,7 @@ THREADED_TEST(ResettingGlobalHandle) {
   v8::Persistent<String> global;
   {
     v8::HandleScope scope(isolate);
-    global.Reset(isolate, v8_str("str"));
+    global.Reset(isolate, v8_str("\x73\x74\x72"));
   }
   v8::internal::GlobalHandles* global_handles =
       reinterpret_cast<v8::internal::Isolate*>(isolate)->global_handles();
@@ -3422,7 +3422,7 @@ THREADED_TEST(ResettingGlobalHandle) {
   }
   {
     v8::HandleScope scope(isolate);
-    global.Reset(isolate, v8_str("longer"));
+    global.Reset(isolate, v8_str("\x6c\x6f\x6e\x67\x65\x72"));
   }
   CHECK_EQ(global_handles->global_handles_count(), initial_handle_count);
   {
@@ -3439,7 +3439,7 @@ THREADED_TEST(ResettingGlobalHandleToEmpty) {
   v8::Persistent<String> global;
   {
     v8::HandleScope scope(isolate);
-    global.Reset(isolate, v8_str("str"));
+    global.Reset(isolate, v8_str("\x73\x74\x72"));
   }
   v8::internal::GlobalHandles* global_handles =
       reinterpret_cast<v8::internal::Isolate*>(isolate)->global_handles();
@@ -3477,7 +3477,7 @@ THREADED_TEST(UniquePersistent) {
   v8::Persistent<String> global;
   {
     v8::HandleScope scope(isolate);
-    global.Reset(isolate, v8_str("str"));
+    global.Reset(isolate, v8_str("\x73\x74\x72"));
   }
   v8::internal::GlobalHandles* global_handles =
       reinterpret_cast<v8::internal::Isolate*>(isolate)->global_handles();
@@ -3668,7 +3668,7 @@ TEST(PersistentValueVector) {
 THREADED_TEST(GlobalHandleUpcast) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
-  v8::Local<String> local = v8::Local<String>::New(isolate, v8_str("str"));
+  v8::Local<String> local = v8::Local<String>::New(isolate, v8_str("\x73\x74\x72"));
   v8::Persistent<String> global_string(isolate, local);
   v8::Persistent<Value>& global_value =
       v8::Persistent<Value>::Cast(global_string);
@@ -3684,8 +3684,8 @@ THREADED_TEST(HandleEquality) {
   v8::Persistent<String> global2;
   {
     v8::HandleScope scope(isolate);
-    global1.Reset(isolate, v8_str("str"));
-    global2.Reset(isolate, v8_str("str2"));
+    global1.Reset(isolate, v8_str("\x73\x74\x72"));
+    global2.Reset(isolate, v8_str("\x73\x74\x72\x32"));
   }
   CHECK_EQ(global1 == global1, true);
   CHECK_EQ(global1 != global1, false);
@@ -3719,7 +3719,7 @@ THREADED_TEST(HandleEquality) {
 THREADED_TEST(LocalHandle) {
   v8::HandleScope scope(CcTest::isolate());
   v8::Local<String> local =
-      v8::Local<String>::New(CcTest::isolate(), v8_str("str"));
+      v8::Local<String>::New(CcTest::isolate(), v8_str("\x73\x74\x72"));
   CHECK_EQ(local->Length(), 3);
 }
 
@@ -3871,15 +3871,15 @@ THREADED_TEST(ApiObjectGroupsForSubtypes) {
   {
     HandleScope scope(iso);
     g1s1.handle.Reset(iso, Object::New(iso));
-    g1s2.handle.Reset(iso, String::NewFromUtf8(iso, "foo1"));
-    g1c1.handle.Reset(iso, String::NewFromUtf8(iso, "foo2"));
+    g1s2.handle.Reset(iso, String::NewFromUtf8(iso, "\x66\x6f\x6f\x31"));
+    g1c1.handle.Reset(iso, String::NewFromUtf8(iso, "\x66\x6f\x6f\x32"));
     g1s1.handle.SetWeak(&g1s1, &WeakPointerCallback);
     g1s2.handle.SetWeak(&g1s2, &WeakPointerCallback);
     g1c1.handle.SetWeak(&g1c1, &WeakPointerCallback);
 
     g2s1.handle.Reset(iso, Object::New(iso));
-    g2s2.handle.Reset(iso, String::NewFromUtf8(iso, "foo3"));
-    g2c1.handle.Reset(iso, String::NewFromUtf8(iso, "foo4"));
+    g2s2.handle.Reset(iso, String::NewFromUtf8(iso, "\x66\x6f\x6f\x33"));
+    g2c1.handle.Reset(iso, String::NewFromUtf8(iso, "\x66\x6f\x6f\x34"));
     g2s1.handle.SetWeak(&g2s1, &WeakPointerCallback);
     g2s2.handle.SetWeak(&g2s2, &WeakPointerCallback);
     g2c1.handle.SetWeak(&g2c1, &WeakPointerCallback);
@@ -4112,15 +4112,15 @@ TEST(ApiObjectGroupsCycleForScavenger) {
     iso->SetObjectGroupId(g1s1.handle, UniqueId(1));
     iso->SetObjectGroupId(g1s2.handle, UniqueId(1));
     Local<Object>::New(iso, g1s1.handle.As<Object>())->Set(
-        v8_str("x"), Local<Value>::New(iso, g2s1.handle));
+        v8_str("\x78"), Local<Value>::New(iso, g2s1.handle));
     iso->SetObjectGroupId(g2s1.handle, UniqueId(2));
     iso->SetObjectGroupId(g2s2.handle, UniqueId(2));
     Local<Object>::New(iso, g2s1.handle.As<Object>())->Set(
-        v8_str("x"), Local<Value>::New(iso, g3s1.handle));
+        v8_str("\x78"), Local<Value>::New(iso, g3s1.handle));
     iso->SetObjectGroupId(g3s1.handle, UniqueId(3));
     iso->SetObjectGroupId(g3s2.handle, UniqueId(3));
     Local<Object>::New(iso, g3s1.handle.As<Object>())->Set(
-        v8_str("x"), Local<Value>::New(iso, g1s1.handle));
+        v8_str("\x78"), Local<Value>::New(iso, g1s1.handle));
   }
 
   v8::internal::Heap* heap = reinterpret_cast<v8::internal::Isolate*>(
@@ -4146,15 +4146,15 @@ TEST(ApiObjectGroupsCycleForScavenger) {
     iso->SetObjectGroupId(g1s1.handle, UniqueId(1));
     iso->SetObjectGroupId(g1s2.handle, UniqueId(1));
     Local<Object>::New(iso, g1s1.handle.As<Object>())->Set(
-        v8_str("x"), Local<Value>::New(iso, g2s1.handle));
+        v8_str("\x78"), Local<Value>::New(iso, g2s1.handle));
     iso->SetObjectGroupId(g2s1.handle, UniqueId(2));
     iso->SetObjectGroupId(g2s2.handle, UniqueId(2));
     Local<Object>::New(iso, g2s1.handle.As<Object>())->Set(
-        v8_str("x"), Local<Value>::New(iso, g3s1.handle));
+        v8_str("\x78"), Local<Value>::New(iso, g3s1.handle));
     iso->SetObjectGroupId(g3s1.handle, UniqueId(3));
     iso->SetObjectGroupId(g3s2.handle, UniqueId(3));
     Local<Object>::New(iso, g3s1.handle.As<Object>())->Set(
-        v8_str("x"), Local<Value>::New(iso, g1s1.handle));
+        v8_str("\x78"), Local<Value>::New(iso, g1s1.handle));
   }
 
   heap->CollectAllGarbage(i::Heap::kNoGCFlags);
@@ -4167,13 +4167,13 @@ TEST(ApiObjectGroupsCycleForScavenger) {
 THREADED_TEST(ScriptException) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
-  Local<Script> script = v8_compile("throw 'panama!';");
+  Local<Script> script = v8_compile("\x74\x68\x72\x6f\x77\x20\x27\x70\x61\x6e\x61\x6d\x61\x21\x27\x3b");
   v8::TryCatch try_catch;
   Local<Value> result = script->Run();
   CHECK(result.IsEmpty());
   CHECK(try_catch.HasCaught());
   String::Utf8Value exception_value(try_catch.Exception());
-  CHECK_EQ(*exception_value, "panama!");
+  CHECK_EQ(*exception_value, "\x70\x61\x6e\x61\x6d\x61\x21");
 }
 
 
@@ -4181,11 +4181,11 @@ TEST(TryCatchCustomException) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::TryCatch try_catch;
-  CompileRun("function CustomError() { this.a = 'b'; }"
-             "(function f() { throw new CustomError(); })();");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x75\x73\x74\x6f\x6d\x45\x72\x72\x6f\x72\x28\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x61\x20\x3d\x20\x27\x62\x27\x3b\x20\x7d"
+             "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x43\x75\x73\x74\x6f\x6d\x45\x72\x72\x6f\x72\x28\x29\x3b\x20\x7d\x29\x28\x29\x3b");
   CHECK(try_catch.HasCaught());
   CHECK(try_catch.Exception()->ToObject()->
-            Get(v8_str("a"))->Equals(v8_str("b")));
+            Get(v8_str("\x61"))->Equals(v8_str("\x62")));
 }
 
 
@@ -4207,7 +4207,7 @@ THREADED_TEST(MessageHandler0) {
   CHECK(!message_received);
   LocalContext context;
   v8::V8::AddMessageListener(check_message_0, v8_num(5.76));
-  v8::Handle<v8::Script> script = CompileWithOrigin("throw 'error'", "6.75");
+  v8::Handle<v8::Script> script = CompileWithOrigin("\x74\x68\x72\x6f\x77\x20\x27\x65\x72\x72\x6f\x72\x27", "\x36\x2e\x37\x35");
   script->Run();
   CHECK(message_received);
   // clear out the message listener
@@ -4230,7 +4230,7 @@ TEST(MessageHandler1) {
   CHECK(!message_received);
   v8::V8::AddMessageListener(check_message_1);
   LocalContext context;
-  CompileRun("throw 1337;");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x31\x33\x33\x37\x3b");
   CHECK(message_received);
   // clear out the message listener
   v8::V8::RemoveMessageListeners(check_message_1);
@@ -4242,8 +4242,8 @@ static void check_message_2(v8::Handle<v8::Message> message,
   LocalContext context;
   CHECK(data->IsObject());
   v8::Local<v8::Value> hidden_property =
-      v8::Object::Cast(*data)->GetHiddenValue(v8_str("hidden key"));
-  CHECK(v8_str("hidden value")->Equals(hidden_property));
+      v8::Object::Cast(*data)->GetHiddenValue(v8_str("\x68\x69\x64\x64\x65\x6e\x20\x6b\x65\x79"));
+  CHECK(v8_str("\x68\x69\x64\x64\x65\x6e\x20\x76\x61\x6c\x75\x65")->Equals(hidden_property));
   CHECK(!message->IsSharedCrossOrigin());
   message_received = true;
 }
@@ -4255,11 +4255,11 @@ TEST(MessageHandler2) {
   CHECK(!message_received);
   v8::V8::AddMessageListener(check_message_2);
   LocalContext context;
-  v8::Local<v8::Value> error = v8::Exception::Error(v8_str("custom error"));
-  v8::Object::Cast(*error)->SetHiddenValue(v8_str("hidden key"),
-                                           v8_str("hidden value"));
-  context->Global()->Set(v8_str("error"), error);
-  CompileRun("throw error;");
+  v8::Local<v8::Value> error = v8::Exception::Error(v8_str("\x63\x75\x73\x74\x6f\x6d\x20\x65\x72\x72\x6f\x72"));
+  v8::Object::Cast(*error)->SetHiddenValue(v8_str("\x68\x69\x64\x64\x65\x6e\x20\x6b\x65\x79"),
+                                           v8_str("\x68\x69\x64\x64\x65\x6e\x20\x76\x61\x6c\x75\x65"));
+  context->Global()->Set(v8_str("\x65\x72\x72\x6f\x72"), error);
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x65\x72\x72\x6f\x72\x3b");
   CHECK(message_received);
   // clear out the message listener
   v8::V8::RemoveMessageListeners(check_message_2);
@@ -4282,11 +4282,11 @@ TEST(MessageHandler3) {
   v8::V8::AddMessageListener(check_message_3);
   LocalContext context;
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8_str("6.75"),
+      v8::ScriptOrigin(v8_str("\x36\x2e\x37\x35"),
                        v8::Integer::New(isolate, 1),
                        v8::Integer::New(isolate, 2),
                        v8::True(isolate));
-  v8::Handle<v8::Script> script = Script::Compile(v8_str("throw 'error'"),
+  v8::Handle<v8::Script> script = Script::Compile(v8_str("\x74\x68\x72\x6f\x77\x20\x27\x65\x72\x72\x6f\x72\x27"),
                                                   &origin);
   script->Run();
   CHECK(message_received);
@@ -4311,11 +4311,11 @@ TEST(MessageHandler4) {
   v8::V8::AddMessageListener(check_message_4);
   LocalContext context;
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8_str("6.75"),
+      v8::ScriptOrigin(v8_str("\x36\x2e\x37\x35"),
                        v8::Integer::New(isolate, 1),
                        v8::Integer::New(isolate, 2),
                        v8::False(isolate));
-  v8::Handle<v8::Script> script = Script::Compile(v8_str("throw 'error'"),
+  v8::Handle<v8::Script> script = Script::Compile(v8_str("\x74\x68\x72\x6f\x77\x20\x27\x65\x72\x72\x6f\x72\x27"),
                                                   &origin);
   script->Run();
   CHECK(message_received);
@@ -4348,11 +4348,11 @@ TEST(MessageHandler5) {
   v8::V8::AddMessageListener(check_message_5a);
   LocalContext context;
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8_str("6.75"),
+      v8::ScriptOrigin(v8_str("\x36\x2e\x37\x35"),
                        v8::Integer::New(isolate, 1),
                        v8::Integer::New(isolate, 2),
                        v8::True(isolate));
-  v8::Handle<v8::Script> script = Script::Compile(v8_str("throw 'error'"),
+  v8::Handle<v8::Script> script = Script::Compile(v8_str("\x74\x68\x72\x6f\x77\x20\x27\x65\x72\x72\x6f\x72\x27"),
                                                   &origin);
   script->Run();
   CHECK(message_received);
@@ -4362,11 +4362,11 @@ TEST(MessageHandler5) {
   message_received = false;
   v8::V8::AddMessageListener(check_message_5b);
   origin =
-      v8::ScriptOrigin(v8_str("6.75"),
+      v8::ScriptOrigin(v8_str("\x36\x2e\x37\x35"),
                        v8::Integer::New(isolate, 1),
                        v8::Integer::New(isolate, 2),
                        v8::False(isolate));
-  script = Script::Compile(v8_str("throw 'error'"),
+  script = Script::Compile(v8_str("\x74\x68\x72\x6f\x77\x20\x27\x65\x72\x72\x6f\x72\x27"),
                            &origin);
   script->Run();
   CHECK(message_received);
@@ -4379,29 +4379,29 @@ THREADED_TEST(GetSetProperty) {
   LocalContext context;
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
-  context->Global()->Set(v8_str("foo"), v8_num(14));
-  context->Global()->Set(v8_str("12"), v8_num(92));
+  context->Global()->Set(v8_str("\x66\x6f\x6f"), v8_num(14));
+  context->Global()->Set(v8_str("\x31\x32"), v8_num(92));
   context->Global()->Set(v8::Integer::New(isolate, 16), v8_num(32));
   context->Global()->Set(v8_num(13), v8_num(56));
-  Local<Value> foo = CompileRun("this.foo");
+  Local<Value> foo = CompileRun("\x74\x68\x69\x73\x2e\x66\x6f\x6f");
   CHECK_EQ(14, foo->Int32Value());
-  Local<Value> twelve = CompileRun("this[12]");
+  Local<Value> twelve = CompileRun("\x74\x68\x69\x73\x5b\x31\x32\x5d");
   CHECK_EQ(92, twelve->Int32Value());
-  Local<Value> sixteen = CompileRun("this[16]");
+  Local<Value> sixteen = CompileRun("\x74\x68\x69\x73\x5b\x31\x36\x5d");
   CHECK_EQ(32, sixteen->Int32Value());
-  Local<Value> thirteen = CompileRun("this[13]");
+  Local<Value> thirteen = CompileRun("\x74\x68\x69\x73\x5b\x31\x33\x5d");
   CHECK_EQ(56, thirteen->Int32Value());
   CHECK_EQ(92,
            context->Global()->Get(v8::Integer::New(isolate, 12))->Int32Value());
-  CHECK_EQ(92, context->Global()->Get(v8_str("12"))->Int32Value());
+  CHECK_EQ(92, context->Global()->Get(v8_str("\x31\x32"))->Int32Value());
   CHECK_EQ(92, context->Global()->Get(v8_num(12))->Int32Value());
   CHECK_EQ(32,
            context->Global()->Get(v8::Integer::New(isolate, 16))->Int32Value());
-  CHECK_EQ(32, context->Global()->Get(v8_str("16"))->Int32Value());
+  CHECK_EQ(32, context->Global()->Get(v8_str("\x31\x36"))->Int32Value());
   CHECK_EQ(32, context->Global()->Get(v8_num(16))->Int32Value());
   CHECK_EQ(56,
            context->Global()->Get(v8::Integer::New(isolate, 13))->Int32Value());
-  CHECK_EQ(56, context->Global()->Get(v8_str("13"))->Int32Value());
+  CHECK_EQ(56, context->Global()->Get(v8_str("\x31\x33"))->Int32Value());
   CHECK_EQ(56, context->Global()->Get(v8_num(13))->Int32Value());
 }
 
@@ -4410,42 +4410,42 @@ THREADED_TEST(PropertyAttributes) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
   // none
-  Local<String> prop = v8_str("none");
+  Local<String> prop = v8_str("\x6e\x6f\x6e\x65");
   context->Global()->Set(prop, v8_num(7));
   CHECK_EQ(v8::None, context->Global()->GetPropertyAttributes(prop));
   // read-only
-  prop = v8_str("read_only");
+  prop = v8_str("\x72\x65\x61\x64\x5f\x6f\x6e\x6c\x79");
   context->Global()->ForceSet(prop, v8_num(7), v8::ReadOnly);
   CHECK_EQ(7, context->Global()->Get(prop)->Int32Value());
   CHECK_EQ(v8::ReadOnly, context->Global()->GetPropertyAttributes(prop));
-  CompileRun("read_only = 9");
+  CompileRun("\x72\x65\x61\x64\x5f\x6f\x6e\x6c\x79\x20\x3d\x20\x39");
   CHECK_EQ(7, context->Global()->Get(prop)->Int32Value());
   context->Global()->Set(prop, v8_num(10));
   CHECK_EQ(7, context->Global()->Get(prop)->Int32Value());
   // dont-delete
-  prop = v8_str("dont_delete");
+  prop = v8_str("\x64\x6f\x6e\x74\x5f\x64\x65\x6c\x65\x74\x65");
   context->Global()->ForceSet(prop, v8_num(13), v8::DontDelete);
   CHECK_EQ(13, context->Global()->Get(prop)->Int32Value());
-  CompileRun("delete dont_delete");
+  CompileRun("\x64\x65\x6c\x65\x74\x65\x20\x64\x6f\x6e\x74\x5f\x64\x65\x6c\x65\x74\x65");
   CHECK_EQ(13, context->Global()->Get(prop)->Int32Value());
   CHECK_EQ(v8::DontDelete, context->Global()->GetPropertyAttributes(prop));
   // dont-enum
-  prop = v8_str("dont_enum");
+  prop = v8_str("\x64\x6f\x6e\x74\x5f\x65\x6e\x75\x6d");
   context->Global()->ForceSet(prop, v8_num(28), v8::DontEnum);
   CHECK_EQ(v8::DontEnum, context->Global()->GetPropertyAttributes(prop));
   // absent
-  prop = v8_str("absent");
+  prop = v8_str("\x61\x62\x73\x65\x6e\x74");
   CHECK_EQ(v8::None, context->Global()->GetPropertyAttributes(prop));
   Local<Value> fake_prop = v8_num(1);
   CHECK_EQ(v8::None, context->Global()->GetPropertyAttributes(fake_prop));
   // exception
   TryCatch try_catch;
   Local<Value> exception =
-      CompileRun("({ toString: function() { throw 'exception';} })");
+      CompileRun("\x28\x7b\x20\x74\x6f\x53\x74\x72\x69\x6e\x67\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x27\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x27\x3b\x7d\x20\x7d\x29");
   CHECK_EQ(v8::None, context->Global()->GetPropertyAttributes(exception));
   CHECK(try_catch.HasCaught());
   String::Utf8Value exception_value(try_catch.Exception());
-  CHECK_EQ("exception", *exception_value);
+  CHECK_EQ("\x65\x78\x63\x65\x70\x74\x69\x6f\x6e", *exception_value);
   try_catch.Reset();
 }
 
@@ -4465,7 +4465,7 @@ THREADED_TEST(Array) {
   CHECK(!array->Has(1));
   CHECK(array->Has(2));
   CHECK_EQ(7, array->Get(2)->Int32Value());
-  Local<Value> obj = CompileRun("[1, 2, 3]");
+  Local<Value> obj = CompileRun("\x5b\x31\x2c\x20\x32\x2c\x20\x33\x5d");
   Local<v8::Array> arr = obj.As<v8::Array>();
   CHECK_EQ(3, arr->Length());
   CHECK_EQ(1, arr->Get(0)->Int32Value());
@@ -4492,32 +4492,32 @@ THREADED_TEST(Vector) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
-  global->Set(v8_str("f"), v8::FunctionTemplate::New(isolate, HandleF));
+  global->Set(v8_str("\x66"), v8::FunctionTemplate::New(isolate, HandleF));
   LocalContext context(0, global);
 
-  const char* fun = "f()";
+  const char* fun = "\x66\x28\x29";
   Local<v8::Array> a0 = CompileRun(fun).As<v8::Array>();
   CHECK_EQ(0, a0->Length());
 
-  const char* fun2 = "f(11)";
+  const char* fun2 = "\x66\x28\x31\x31\x29";
   Local<v8::Array> a1 = CompileRun(fun2).As<v8::Array>();
   CHECK_EQ(1, a1->Length());
   CHECK_EQ(11, a1->Get(0)->Int32Value());
 
-  const char* fun3 = "f(12, 13)";
+  const char* fun3 = "\x66\x28\x31\x32\x2c\x20\x31\x33\x29";
   Local<v8::Array> a2 = CompileRun(fun3).As<v8::Array>();
   CHECK_EQ(2, a2->Length());
   CHECK_EQ(12, a2->Get(0)->Int32Value());
   CHECK_EQ(13, a2->Get(1)->Int32Value());
 
-  const char* fun4 = "f(14, 15, 16)";
+  const char* fun4 = "\x66\x28\x31\x34\x2c\x20\x31\x35\x2c\x20\x31\x36\x29";
   Local<v8::Array> a3 = CompileRun(fun4).As<v8::Array>();
   CHECK_EQ(3, a3->Length());
   CHECK_EQ(14, a3->Get(0)->Int32Value());
   CHECK_EQ(15, a3->Get(1)->Int32Value());
   CHECK_EQ(16, a3->Get(2)->Int32Value());
 
-  const char* fun5 = "f(17, 18, 19, 20)";
+  const char* fun5 = "\x66\x28\x31\x37\x2c\x20\x31\x38\x2c\x20\x31\x39\x2c\x20\x32\x30\x29";
   Local<v8::Array> a4 = CompileRun(fun5).As<v8::Array>();
   CHECK_EQ(4, a4->Length());
   CHECK_EQ(17, a4->Get(0)->Int32Value());
@@ -4532,26 +4532,26 @@ THREADED_TEST(FunctionCall) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   CompileRun(
-    "function Foo() {"
-    "  var result = [];"
-    "  for (var i = 0; i < arguments.length; i++) {"
-    "    result.push(arguments[i]);"
-    "  }"
-    "  return result;"
-    "}"
-    "function ReturnThisSloppy() {"
-    "  return this;"
-    "}"
-    "function ReturnThisStrict() {"
-    "  'use strict';"
-    "  return this;"
-    "}");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x6f\x6f\x28\x29\x20\x7b"
+    "\x20\x20\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x5b\x5d\x3b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x2e\x6c\x65\x6e\x67\x74\x68\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x20\x20\x72\x65\x73\x75\x6c\x74\x2e\x70\x75\x73\x68\x28\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x29\x3b"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x72\x65\x73\x75\x6c\x74\x3b"
+    "\x7d"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x52\x65\x74\x75\x72\x6e\x54\x68\x69\x73\x53\x6c\x6f\x70\x70\x79\x28\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x3b"
+    "\x7d"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x52\x65\x74\x75\x72\x6e\x54\x68\x69\x73\x53\x74\x72\x69\x63\x74\x28\x29\x20\x7b"
+    "\x20\x20\x27\x75\x73\x65\x20\x73\x74\x72\x69\x63\x74\x27\x3b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x3b"
+    "\x7d");
   Local<Function> Foo =
-      Local<Function>::Cast(context->Global()->Get(v8_str("Foo")));
+      Local<Function>::Cast(context->Global()->Get(v8_str("\x46\x6f\x6f")));
   Local<Function> ReturnThisSloppy =
-      Local<Function>::Cast(context->Global()->Get(v8_str("ReturnThisSloppy")));
+      Local<Function>::Cast(context->Global()->Get(v8_str("\x52\x65\x74\x75\x72\x6e\x54\x68\x69\x73\x53\x6c\x6f\x70\x70\x79")));
   Local<Function> ReturnThisStrict =
-      Local<Function>::Cast(context->Global()->Get(v8_str("ReturnThisStrict")));
+      Local<Function>::Cast(context->Global()->Get(v8_str("\x52\x65\x74\x75\x72\x6e\x54\x68\x69\x73\x53\x74\x72\x69\x63\x74")));
 
   v8::Handle<Value>* args0 = NULL;
   Local<v8::Array> a0 = Local<v8::Array>::Cast(Foo->Call(Foo, 0, args0));
@@ -4596,9 +4596,9 @@ THREADED_TEST(FunctionCall) {
   Local<v8::Value> r3 = ReturnThisSloppy->Call(v8_num(42), 0, NULL);
   CHECK(r3->IsNumberObject());
   CHECK_EQ(42.0, r3.As<v8::NumberObject>()->ValueOf());
-  Local<v8::Value> r4 = ReturnThisSloppy->Call(v8_str("hello"), 0, NULL);
+  Local<v8::Value> r4 = ReturnThisSloppy->Call(v8_str("\x68\x65\x6c\x6c\x6f"), 0, NULL);
   CHECK(r4->IsStringObject());
-  CHECK(r4.As<v8::StringObject>()->ValueOf()->StrictEquals(v8_str("hello")));
+  CHECK(r4.As<v8::StringObject>()->ValueOf()->StrictEquals(v8_str("\x68\x65\x6c\x6c\x6f")));
   Local<v8::Value> r5 = ReturnThisSloppy->Call(v8::True(isolate), 0, NULL);
   CHECK(r5->IsBooleanObject());
   CHECK(r5.As<v8::BooleanObject>()->ValueOf());
@@ -4609,8 +4609,8 @@ THREADED_TEST(FunctionCall) {
   CHECK(r7->IsNull());
   Local<v8::Value> r8 = ReturnThisStrict->Call(v8_num(42), 0, NULL);
   CHECK(r8->StrictEquals(v8_num(42)));
-  Local<v8::Value> r9 = ReturnThisStrict->Call(v8_str("hello"), 0, NULL);
-  CHECK(r9->StrictEquals(v8_str("hello")));
+  Local<v8::Value> r9 = ReturnThisStrict->Call(v8_str("\x68\x65\x6c\x6c\x6f"), 0, NULL);
+  CHECK(r9->StrictEquals(v8_str("\x68\x65\x6c\x6c\x6f")));
   Local<v8::Value> r10 = ReturnThisStrict->Call(v8::True(isolate), 0, NULL);
   CHECK(r10->StrictEquals(v8::True(isolate)));
 }
@@ -4621,15 +4621,15 @@ THREADED_TEST(ConstructCall) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   CompileRun(
-    "function Foo() {"
-    "  var result = [];"
-    "  for (var i = 0; i < arguments.length; i++) {"
-    "    result.push(arguments[i]);"
-    "  }"
-    "  return result;"
-    "}");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x6f\x6f\x28\x29\x20\x7b"
+    "\x20\x20\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x5b\x5d\x3b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x2e\x6c\x65\x6e\x67\x74\x68\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x20\x20\x72\x65\x73\x75\x6c\x74\x2e\x70\x75\x73\x68\x28\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x29\x3b"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x72\x65\x73\x75\x6c\x74\x3b"
+    "\x7d");
   Local<Function> Foo =
-      Local<Function>::Cast(context->Global()->Get(v8_str("Foo")));
+      Local<Function>::Cast(context->Global()->Get(v8_str("\x46\x6f\x6f")));
 
   v8::Handle<Value>* args0 = NULL;
   Local<v8::Array> a0 = Local<v8::Array>::Cast(Foo->NewInstance(0, args0));
@@ -4672,7 +4672,7 @@ THREADED_TEST(ConstructCall) {
 static void CheckUncle(v8::TryCatch* try_catch) {
   CHECK(try_catch->HasCaught());
   String::Utf8Value str_value(try_catch->Exception());
-  CHECK_EQ(*str_value, "uncle?");
+  CHECK_EQ(*str_value, "\x75\x6e\x63\x6c\x65\x3f");
   try_catch->Reset();
 }
 
@@ -4681,44 +4681,44 @@ THREADED_TEST(ConversionNumber) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   // Very large number.
-  CompileRun("var obj = Math.pow(2,32) * 1237;");
-  Local<Value> obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x4d\x61\x74\x68\x2e\x70\x6f\x77\x28\x32\x2c\x33\x32\x29\x20\x2a\x20\x31\x32\x33\x37\x3b");
+  Local<Value> obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK_EQ(5312874545152.0, obj->ToNumber()->Value());
   CHECK_EQ(0, obj->ToInt32()->Value());
   CHECK(0u == obj->ToUint32()->Value());  // NOLINT - no CHECK_EQ for unsigned.
   // Large number.
-  CompileRun("var obj = -1234567890123;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x2d\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32\x33\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK_EQ(-1234567890123.0, obj->ToNumber()->Value());
   CHECK_EQ(-1912276171, obj->ToInt32()->Value());
   CHECK(2382691125u == obj->ToUint32()->Value());  // NOLINT
   // Small positive integer.
-  CompileRun("var obj = 42;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x34\x32\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK_EQ(42.0, obj->ToNumber()->Value());
   CHECK_EQ(42, obj->ToInt32()->Value());
   CHECK(42u == obj->ToUint32()->Value());  // NOLINT
   // Negative integer.
-  CompileRun("var obj = -37;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x2d\x33\x37\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK_EQ(-37.0, obj->ToNumber()->Value());
   CHECK_EQ(-37, obj->ToInt32()->Value());
   CHECK(4294967259u == obj->ToUint32()->Value());  // NOLINT
   // Positive non-int32 integer.
-  CompileRun("var obj = 0x81234567;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x30\x78\x38\x31\x32\x33\x34\x35\x36\x37\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK_EQ(2166572391.0, obj->ToNumber()->Value());
   CHECK_EQ(-2128394905, obj->ToInt32()->Value());
   CHECK(2166572391u == obj->ToUint32()->Value());  // NOLINT
   // Fraction.
-  CompileRun("var obj = 42.3;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x34\x32\x2e\x33\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK_EQ(42.3, obj->ToNumber()->Value());
   CHECK_EQ(42, obj->ToInt32()->Value());
   CHECK(42u == obj->ToUint32()->Value());  // NOLINT
   // Large negative fraction.
-  CompileRun("var obj = -5726623061.75;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x2d\x35\x37\x32\x36\x36\x32\x33\x30\x36\x31\x2e\x37\x35\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK_EQ(-5726623061.75, obj->ToNumber()->Value());
   CHECK_EQ(-1431655765, obj->ToInt32()->Value());
   CHECK(2863311531u == obj->ToUint32()->Value());  // NOLINT
@@ -4729,48 +4729,48 @@ THREADED_TEST(isNumberType) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   // Very large number.
-  CompileRun("var obj = Math.pow(2,32) * 1237;");
-  Local<Value> obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x4d\x61\x74\x68\x2e\x70\x6f\x77\x28\x32\x2c\x33\x32\x29\x20\x2a\x20\x31\x32\x33\x37\x3b");
+  Local<Value> obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK(!obj->IsInt32());
   CHECK(!obj->IsUint32());
   // Large negative number.
-  CompileRun("var obj = -1234567890123;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x2d\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32\x33\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK(!obj->IsInt32());
   CHECK(!obj->IsUint32());
   // Small positive integer.
-  CompileRun("var obj = 42;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x34\x32\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK(obj->IsInt32());
   CHECK(obj->IsUint32());
   // Negative integer.
-  CompileRun("var obj = -37;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x2d\x33\x37\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK(obj->IsInt32());
   CHECK(!obj->IsUint32());
   // Positive non-int32 integer.
-  CompileRun("var obj = 0x81234567;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x30\x78\x38\x31\x32\x33\x34\x35\x36\x37\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK(!obj->IsInt32());
   CHECK(obj->IsUint32());
   // Fraction.
-  CompileRun("var obj = 42.3;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x34\x32\x2e\x33\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK(!obj->IsInt32());
   CHECK(!obj->IsUint32());
   // Large negative fraction.
-  CompileRun("var obj = -5726623061.75;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x2d\x35\x37\x32\x36\x36\x32\x33\x30\x36\x31\x2e\x37\x35\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK(!obj->IsInt32());
   CHECK(!obj->IsUint32());
   // Positive zero
-  CompileRun("var obj = 0.0;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x30\x2e\x30\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK(obj->IsInt32());
   CHECK(obj->IsUint32());
   // Positive zero
-  CompileRun("var obj = -0.0;");
-  obj = env->Global()->Get(v8_str("obj"));
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x2d\x30\x2e\x30\x3b");
+  obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
   CHECK(!obj->IsInt32());
   CHECK(!obj->IsUint32());
 }
@@ -4781,10 +4781,10 @@ THREADED_TEST(ConversionException) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
   CompileRun(
-    "function TestClass() { };"
-    "TestClass.prototype.toString = function () { throw 'uncle?'; };"
-    "var obj = new TestClass();");
-  Local<Value> obj = env->Global()->Get(v8_str("obj"));
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x54\x65\x73\x74\x43\x6c\x61\x73\x73\x28\x29\x20\x7b\x20\x7d\x3b"
+    "\x54\x65\x73\x74\x43\x6c\x61\x73\x73\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x27\x75\x6e\x63\x6c\x65\x3f\x27\x3b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x54\x65\x73\x74\x43\x6c\x61\x73\x73\x28\x29\x3b");
+  Local<Value> obj = env->Global()->Get(v8_str("\x6f\x62\x6a"));
 
   v8::TryCatch try_catch;
 
@@ -4833,7 +4833,7 @@ THREADED_TEST(ConversionException) {
 
 void ThrowFromC(const v8::FunctionCallbackInfo<v8::Value>& args) {
   ApiTestFuzzer::Fuzz();
-  args.GetIsolate()->ThrowException(v8_str("konto"));
+  args.GetIsolate()->ThrowException(v8_str("\x6b\x6f\x6e\x74\x6f"));
 }
 
 
@@ -4854,17 +4854,17 @@ THREADED_TEST(APICatch) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("ThrowFromC"),
+  templ->Set(v8_str("\x54\x68\x72\x6f\x77\x46\x72\x6f\x6d\x43"),
              v8::FunctionTemplate::New(isolate, ThrowFromC));
   LocalContext context(0, templ);
   CompileRun(
-    "var thrown = false;"
-    "try {"
-    "  ThrowFromC();"
-    "} catch (e) {"
-    "  thrown = true;"
-    "}");
-  Local<Value> thrown = context->Global()->Get(v8_str("thrown"));
+    "\x76\x61\x72\x20\x74\x68\x72\x6f\x77\x6e\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
+    "\x74\x72\x79\x20\x7b"
+    "\x20\x20\x54\x68\x72\x6f\x77\x46\x72\x6f\x6d\x43\x28\x29\x3b"
+    "\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+    "\x20\x20\x74\x68\x72\x6f\x77\x6e\x20\x3d\x20\x74\x72\x75\x65\x3b"
+    "\x7d");
+  Local<Value> thrown = context->Global()->Get(v8_str("\x74\x68\x72\x6f\x77\x6e"));
   CHECK(thrown->BooleanValue());
 }
 
@@ -4873,11 +4873,11 @@ THREADED_TEST(APIThrowTryCatch) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("ThrowFromC"),
+  templ->Set(v8_str("\x54\x68\x72\x6f\x77\x46\x72\x6f\x6d\x43"),
              v8::FunctionTemplate::New(isolate, ThrowFromC));
   LocalContext context(0, templ);
   v8::TryCatch try_catch;
-  CompileRun("ThrowFromC();");
+  CompileRun("\x54\x68\x72\x6f\x77\x46\x72\x6f\x6d\x43\x28\x29\x3b");
   CHECK(try_catch.HasCaught());
 }
 
@@ -4893,16 +4893,16 @@ TEST(TryCatchInTryFinally) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("CCatcher"),
+  templ->Set(v8_str("\x43\x43\x61\x74\x63\x68\x65\x72"),
              v8::FunctionTemplate::New(isolate, CCatcher));
   LocalContext context(0, templ);
-  Local<Value> result = CompileRun("try {"
-                                   "  try {"
-                                   "    CCatcher('throw 7;');"
-                                   "  } finally {"
-                                   "  }"
-                                   "} catch (e) {"
-                                   "}");
+  Local<Value> result = CompileRun("\x74\x72\x79\x20\x7b"
+                                   "\x20\x20\x74\x72\x79\x20\x7b"
+                                   "\x20\x20\x20\x20\x43\x43\x61\x74\x63\x68\x65\x72\x28\x27\x74\x68\x72\x6f\x77\x20\x37\x3b\x27\x29\x3b"
+                                   "\x20\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b"
+                                   "\x20\x20\x7d"
+                                   "\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+                                   "\x7d");
   CHECK(result->IsTrue());
 }
 
@@ -4910,7 +4910,7 @@ TEST(TryCatchInTryFinally) {
 static void check_reference_error_message(
     v8::Handle<v8::Message> message,
     v8::Handle<v8::Value> data) {
-  const char* reference_error = "Uncaught ReferenceError: asdf is not defined";
+  const char* reference_error = "\x55\x6e\x63\x61\x75\x67\x68\x74\x20\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x3a\x20\x61\x73\x64\x66\x20\x69\x73\x20\x6e\x6f\x74\x20\x64\x65\x66\x69\x6e\x65\x64";
   CHECK(message->Get()->Equals(v8_str(reference_error)));
 }
 
@@ -4929,36 +4929,36 @@ TEST(APIThrowMessageOverwrittenToString) {
   v8::HandleScope scope(isolate);
   v8::V8::AddMessageListener(check_reference_error_message);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("fail"), v8::FunctionTemplate::New(isolate, Fail));
+  templ->Set(v8_str("\x66\x61\x69\x6c"), v8::FunctionTemplate::New(isolate, Fail));
   LocalContext context(NULL, templ);
-  CompileRun("asdf;");
-  CompileRun("var limit = {};"
-             "limit.valueOf = fail;"
-             "Error.stackTraceLimit = limit;");
-  CompileRun("asdf");
-  CompileRun("Array.prototype.pop = fail;");
-  CompileRun("Object.prototype.hasOwnProperty = fail;");
-  CompileRun("Object.prototype.toString = function f() { return 'Yikes'; }");
-  CompileRun("Number.prototype.toString = function f() { return 'Yikes'; }");
-  CompileRun("String.prototype.toString = function f() { return 'Yikes'; }");
-  CompileRun("ReferenceError.prototype.toString ="
-             "  function() { return 'Whoops' }");
-  CompileRun("asdf;");
-  CompileRun("ReferenceError.prototype.constructor.name = void 0;");
-  CompileRun("asdf;");
-  CompileRun("ReferenceError.prototype.constructor = void 0;");
-  CompileRun("asdf;");
-  CompileRun("ReferenceError.prototype.__proto__ = new Object();");
-  CompileRun("asdf;");
-  CompileRun("ReferenceError.prototype = new Object();");
-  CompileRun("asdf;");
-  v8::Handle<Value> string = CompileRun("try { asdf; } catch(e) { e + ''; }");
-  CHECK(string->Equals(v8_str("Whoops")));
-  CompileRun("ReferenceError.prototype.constructor = new Object();"
-             "ReferenceError.prototype.constructor.name = 1;"
-             "Number.prototype.toString = function() { return 'Whoops'; };"
-             "ReferenceError.prototype.toString = Object.prototype.toString;");
-  CompileRun("asdf;");
+  CompileRun("\x61\x73\x64\x66\x3b");
+  CompileRun("\x76\x61\x72\x20\x6c\x69\x6d\x69\x74\x20\x3d\x20\x7b\x7d\x3b"
+             "\x6c\x69\x6d\x69\x74\x2e\x76\x61\x6c\x75\x65\x4f\x66\x20\x3d\x20\x66\x61\x69\x6c\x3b"
+             "\x45\x72\x72\x6f\x72\x2e\x73\x74\x61\x63\x6b\x54\x72\x61\x63\x65\x4c\x69\x6d\x69\x74\x20\x3d\x20\x6c\x69\x6d\x69\x74\x3b");
+  CompileRun("\x61\x73\x64\x66");
+  CompileRun("\x41\x72\x72\x61\x79\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x70\x6f\x70\x20\x3d\x20\x66\x61\x69\x6c\x3b");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x20\x3d\x20\x66\x61\x69\x6c\x3b");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x59\x69\x6b\x65\x73\x27\x3b\x20\x7d");
+  CompileRun("\x4e\x75\x6d\x62\x65\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x59\x69\x6b\x65\x73\x27\x3b\x20\x7d");
+  CompileRun("\x53\x74\x72\x69\x6e\x67\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x59\x69\x6b\x65\x73\x27\x3b\x20\x7d");
+  CompileRun("\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d"
+             "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x57\x68\x6f\x6f\x70\x73\x27\x20\x7d");
+  CompileRun("\x61\x73\x64\x66\x3b");
+  CompileRun("\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x2e\x6e\x61\x6d\x65\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b");
+  CompileRun("\x61\x73\x64\x66\x3b");
+  CompileRun("\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b");
+  CompileRun("\x61\x73\x64\x66\x3b");
+  CompileRun("\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b");
+  CompileRun("\x61\x73\x64\x66\x3b");
+  CompileRun("\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b");
+  CompileRun("\x61\x73\x64\x66\x3b");
+  v8::Handle<Value> string = CompileRun("\x74\x72\x79\x20\x7b\x20\x61\x73\x64\x66\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x65\x20\x2b\x20\x27\x27\x3b\x20\x7d");
+  CHECK(string->Equals(v8_str("\x57\x68\x6f\x6f\x70\x73")));
+  CompileRun("\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+             "\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x2e\x6e\x61\x6d\x65\x20\x3d\x20\x31\x3b"
+             "\x4e\x75\x6d\x62\x65\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x57\x68\x6f\x6f\x70\x73\x27\x3b\x20\x7d\x3b"
+             "\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x3b");
+  CompileRun("\x61\x73\x64\x66\x3b");
   v8::V8::RemoveMessageListeners(check_reference_error_message);
 }
 
@@ -4966,7 +4966,7 @@ TEST(APIThrowMessageOverwrittenToString) {
 static void check_custom_error_tostring(
     v8::Handle<v8::Message> message,
     v8::Handle<v8::Value> data) {
-  const char* uncaught_error = "Uncaught MyError toString";
+  const char* uncaught_error = "\x55\x6e\x63\x61\x75\x67\x68\x74\x20\x4d\x79\x45\x72\x72\x6f\x72\x20\x74\x6f\x53\x74\x72\x69\x6e\x67";
   CHECK(message->Get()->Equals(v8_str(uncaught_error)));
 }
 
@@ -4976,15 +4976,15 @@ TEST(CustomErrorToString) {
   v8::HandleScope scope(context->GetIsolate());
   v8::V8::AddMessageListener(check_custom_error_tostring);
   CompileRun(
-    "function MyError(name, message) {                   "
-    "  this.name = name;                                 "
-    "  this.message = message;                           "
-    "}                                                   "
-    "MyError.prototype = Object.create(Error.prototype); "
-    "MyError.prototype.toString = function() {           "
-    "  return 'MyError toString';                        "
-    "};                                                  "
-    "throw new MyError('my name', 'my message');         ");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x4d\x79\x45\x72\x72\x6f\x72\x28\x6e\x61\x6d\x65\x2c\x20\x6d\x65\x73\x73\x61\x67\x65\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x74\x68\x69\x73\x2e\x6e\x61\x6d\x65\x20\x3d\x20\x6e\x61\x6d\x65\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x74\x68\x69\x73\x2e\x6d\x65\x73\x73\x61\x67\x65\x20\x3d\x20\x6d\x65\x73\x73\x61\x67\x65\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x4d\x79\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x63\x72\x65\x61\x74\x65\x28\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x29\x3b\x20"
+    "\x4d\x79\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x4d\x79\x45\x72\x72\x6f\x72\x20\x74\x6f\x53\x74\x72\x69\x6e\x67\x27\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x7d\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x4d\x79\x45\x72\x72\x6f\x72\x28\x27\x6d\x79\x20\x6e\x61\x6d\x65\x27\x2c\x20\x27\x6d\x79\x20\x6d\x65\x73\x73\x61\x67\x65\x27\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20");
   v8::V8::RemoveMessageListeners(check_custom_error_tostring);
 }
 
@@ -4992,8 +4992,8 @@ TEST(CustomErrorToString) {
 static void check_custom_error_message(
     v8::Handle<v8::Message> message,
     v8::Handle<v8::Value> data) {
-  const char* uncaught_error = "Uncaught MyError: my message";
-  printf("%s\n", *v8::String::Utf8Value(message->Get()));
+  const char* uncaught_error = "\x55\x6e\x63\x61\x75\x67\x68\x74\x20\x4d\x79\x45\x72\x72\x6f\x72\x3a\x20\x6d\x79\x20\x6d\x65\x73\x73\x61\x67\x65";
+  printf("\x6c\xa2\xa", *v8::String::Utf8Value(message->Get()));
   CHECK(message->Get()->Equals(v8_str(uncaught_error)));
 }
 
@@ -5005,37 +5005,37 @@ TEST(CustomErrorMessage) {
 
   // Handlebars.
   CompileRun(
-    "function MyError(msg) {                             "
-    "  this.name = 'MyError';                            "
-    "  this.message = msg;                               "
-    "}                                                   "
-    "MyError.prototype = new Error();                    "
-    "throw new MyError('my message');                    ");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x4d\x79\x45\x72\x72\x6f\x72\x28\x6d\x73\x67\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x74\x68\x69\x73\x2e\x6e\x61\x6d\x65\x20\x3d\x20\x27\x4d\x79\x45\x72\x72\x6f\x72\x27\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x74\x68\x69\x73\x2e\x6d\x65\x73\x73\x61\x67\x65\x20\x3d\x20\x6d\x73\x67\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x4d\x79\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x4d\x79\x45\x72\x72\x6f\x72\x28\x27\x6d\x79\x20\x6d\x65\x73\x73\x61\x67\x65\x27\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20");
 
   // Closure.
   CompileRun(
-    "function MyError(msg) {                             "
-    "  this.name = 'MyError';                            "
-    "  this.message = msg;                               "
-    "}                                                   "
-    "inherits = function(childCtor, parentCtor) {        "
-    "    function tempCtor() {};                         "
-    "    tempCtor.prototype = parentCtor.prototype;      "
-    "    childCtor.superClass_ = parentCtor.prototype;   "
-    "    childCtor.prototype = new tempCtor();           "
-    "    childCtor.prototype.constructor = childCtor;    "
-    "};                                                  "
-    "inherits(MyError, Error);                           "
-    "throw new MyError('my message');                    ");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x4d\x79\x45\x72\x72\x6f\x72\x28\x6d\x73\x67\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x74\x68\x69\x73\x2e\x6e\x61\x6d\x65\x20\x3d\x20\x27\x4d\x79\x45\x72\x72\x6f\x72\x27\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x74\x68\x69\x73\x2e\x6d\x65\x73\x73\x61\x67\x65\x20\x3d\x20\x6d\x73\x67\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x69\x6e\x68\x65\x72\x69\x74\x73\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x63\x68\x69\x6c\x64\x43\x74\x6f\x72\x2c\x20\x70\x61\x72\x65\x6e\x74\x43\x74\x6f\x72\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x6d\x70\x43\x74\x6f\x72\x28\x29\x20\x7b\x7d\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x20\x20\x74\x65\x6d\x70\x43\x74\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x70\x61\x72\x65\x6e\x74\x43\x74\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x3b\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x20\x20\x63\x68\x69\x6c\x64\x43\x74\x6f\x72\x2e\x73\x75\x70\x65\x72\x43\x6c\x61\x73\x73\x5f\x20\x3d\x20\x70\x61\x72\x65\x6e\x74\x43\x74\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x3b\x20\x20\x20"
+    "\x20\x20\x20\x20\x63\x68\x69\x6c\x64\x43\x74\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x6e\x65\x77\x20\x74\x65\x6d\x70\x43\x74\x6f\x72\x28\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x20\x20\x63\x68\x69\x6c\x64\x43\x74\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x20\x3d\x20\x63\x68\x69\x6c\x64\x43\x74\x6f\x72\x3b\x20\x20\x20\x20"
+    "\x7d\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x69\x6e\x68\x65\x72\x69\x74\x73\x28\x4d\x79\x45\x72\x72\x6f\x72\x2c\x20\x45\x72\x72\x6f\x72\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x4d\x79\x45\x72\x72\x6f\x72\x28\x27\x6d\x79\x20\x6d\x65\x73\x73\x61\x67\x65\x27\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20");
 
   // Object.create.
   CompileRun(
-    "function MyError(msg) {                             "
-    "  this.name = 'MyError';                            "
-    "  this.message = msg;                               "
-    "}                                                   "
-    "MyError.prototype = Object.create(Error.prototype); "
-    "throw new MyError('my message');                    ");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x4d\x79\x45\x72\x72\x6f\x72\x28\x6d\x73\x67\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x74\x68\x69\x73\x2e\x6e\x61\x6d\x65\x20\x3d\x20\x27\x4d\x79\x45\x72\x72\x6f\x72\x27\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x20\x20\x74\x68\x69\x73\x2e\x6d\x65\x73\x73\x61\x67\x65\x20\x3d\x20\x6d\x73\x67\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+    "\x4d\x79\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x63\x72\x65\x61\x74\x65\x28\x45\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x29\x3b\x20"
+    "\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x4d\x79\x45\x72\x72\x6f\x72\x28\x27\x6d\x79\x20\x6d\x65\x73\x73\x61\x67\x65\x27\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20");
 
   v8::V8::RemoveMessageListeners(check_custom_error_message);
 }
@@ -5054,10 +5054,10 @@ TEST(APIThrowMessage) {
   v8::HandleScope scope(isolate);
   v8::V8::AddMessageListener(receive_message);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("ThrowFromC"),
+  templ->Set(v8_str("\x54\x68\x72\x6f\x77\x46\x72\x6f\x6d\x43"),
              v8::FunctionTemplate::New(isolate, ThrowFromC));
   LocalContext context(0, templ);
-  CompileRun("ThrowFromC();");
+  CompileRun("\x54\x68\x72\x6f\x77\x46\x72\x6f\x6d\x43\x28\x29\x3b");
   CHECK(message_received);
   v8::V8::RemoveMessageListeners(receive_message);
 }
@@ -5069,12 +5069,12 @@ TEST(APIThrowMessageAndVerboseTryCatch) {
   v8::HandleScope scope(isolate);
   v8::V8::AddMessageListener(receive_message);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("ThrowFromC"),
+  templ->Set(v8_str("\x54\x68\x72\x6f\x77\x46\x72\x6f\x6d\x43"),
              v8::FunctionTemplate::New(isolate, ThrowFromC));
   LocalContext context(0, templ);
   v8::TryCatch try_catch;
   try_catch.SetVerbose(true);
-  Local<Value> result = CompileRun("ThrowFromC();");
+  Local<Value> result = CompileRun("\x54\x68\x72\x6f\x77\x46\x72\x6f\x6d\x43\x28\x29\x3b");
   CHECK(try_catch.HasCaught());
   CHECK(result.IsEmpty());
   CHECK(message_received);
@@ -5089,7 +5089,7 @@ TEST(APIStackOverflowAndVerboseTryCatch) {
   v8::V8::AddMessageListener(receive_message);
   v8::TryCatch try_catch;
   try_catch.SetVerbose(true);
-  Local<Value> result = CompileRun("function foo() { foo(); } foo();");
+  Local<Value> result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20\x66\x6f\x6f\x28\x29\x3b\x20\x7d\x20\x66\x6f\x6f\x28\x29\x3b");
   CHECK(try_catch.HasCaught());
   CHECK(result.IsEmpty());
   CHECK(message_received);
@@ -5101,16 +5101,16 @@ THREADED_TEST(ExternalScriptException) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("ThrowFromC"),
+  templ->Set(v8_str("\x54\x68\x72\x6f\x77\x46\x72\x6f\x6d\x43"),
              v8::FunctionTemplate::New(isolate, ThrowFromC));
   LocalContext context(0, templ);
 
   v8::TryCatch try_catch;
-  Local<Value> result = CompileRun("ThrowFromC(); throw 'panama';");
+  Local<Value> result = CompileRun("\x54\x68\x72\x6f\x77\x46\x72\x6f\x6d\x43\x28\x29\x3b\x20\x74\x68\x72\x6f\x77\x20\x27\x70\x61\x6e\x61\x6d\x61\x27\x3b");
   CHECK(result.IsEmpty());
   CHECK(try_catch.HasCaught());
   String::Utf8Value exception_value(try_catch.Exception());
-  CHECK_EQ("konto", *exception_value);
+  CHECK_EQ("\x6b\x6f\x6e\x74\x6f", *exception_value);
 }
 
 
@@ -5121,12 +5121,12 @@ void CThrowCountDown(const v8::FunctionCallbackInfo<v8::Value>& args) {
   int count = args[0]->Int32Value();
   int cInterval = args[2]->Int32Value();
   if (count == 0) {
-    args.GetIsolate()->ThrowException(v8_str("FromC"));
+    args.GetIsolate()->ThrowException(v8_str("\x46\x72\x6f\x6d\x43"));
     return;
   } else {
     Local<v8::Object> global =
         args.GetIsolate()->GetCurrentContext()->Global();
-    Local<Value> fun = global->Get(v8_str("JSThrowCountDown"));
+    Local<Value> fun = global->Get(v8_str("\x4a\x53\x54\x68\x72\x6f\x77\x43\x6f\x75\x6e\x74\x44\x6f\x77\x6e"));
     v8::Handle<Value> argv[] = { v8_num(count - 1),
                                  args[1],
                                  args[2],
@@ -5170,13 +5170,13 @@ THREADED_TEST(EvalInTryFinally) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
   v8::TryCatch try_catch;
-  CompileRun("(function() {"
-             "  try {"
-             "    eval('asldkf (*&^&*^');"
-             "  } finally {"
-             "    return;"
-             "  }"
-             "})()");
+  CompileRun("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+             "\x20\x20\x74\x72\x79\x20\x7b"
+             "\x20\x20\x20\x20\x65\x76\x61\x6c\x28\x27\x61\x73\x6c\x64\x6b\x66\x20\x28\x2a\x26\x5e\x26\x2a\x5e\x27\x29\x3b"
+             "\x20\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b"
+             "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x3b"
+             "\x20\x20\x7d"
+             "\x7d\x29\x28\x29");
   CHECK(!try_catch.HasCaught());
 }
 
@@ -5205,30 +5205,30 @@ TEST(ExceptionOrder) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("check"), v8::FunctionTemplate::New(isolate, JSCheck));
-  templ->Set(v8_str("CThrowCountDown"),
+  templ->Set(v8_str("\x63\x68\x65\x63\x6b"), v8::FunctionTemplate::New(isolate, JSCheck));
+  templ->Set(v8_str("\x43\x54\x68\x72\x6f\x77\x43\x6f\x75\x6e\x74\x44\x6f\x77\x6e"),
              v8::FunctionTemplate::New(isolate, CThrowCountDown));
   LocalContext context(0, templ);
   CompileRun(
-    "function JSThrowCountDown(count, jsInterval, cInterval, expected) {"
-    "  if (count == 0) throw 'FromJS';"
-    "  if (count % jsInterval == 0) {"
-    "    try {"
-    "      var value = CThrowCountDown(count - 1,"
-    "                                  jsInterval,"
-    "                                  cInterval,"
-    "                                  expected);"
-    "      check(false, count, expected);"
-    "      return value;"
-    "    } catch (e) {"
-    "      check(true, count, expected);"
-    "    }"
-    "  } else {"
-    "    return CThrowCountDown(count - 1, jsInterval, cInterval, expected);"
-    "  }"
-    "}");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x4a\x53\x54\x68\x72\x6f\x77\x43\x6f\x75\x6e\x74\x44\x6f\x77\x6e\x28\x63\x6f\x75\x6e\x74\x2c\x20\x6a\x73\x49\x6e\x74\x65\x72\x76\x61\x6c\x2c\x20\x63\x49\x6e\x74\x65\x72\x76\x61\x6c\x2c\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x63\x6f\x75\x6e\x74\x20\x3d\x3d\x20\x30\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x46\x72\x6f\x6d\x4a\x53\x27\x3b"
+    "\x20\x20\x69\x66\x20\x28\x63\x6f\x75\x6e\x74\x20\x6c\x40\x91\xa2\x49\x6e\x74\x65\x72\x76\x61\x6c\x20\x3d\x3d\x20\x30\x29\x20\x7b"
+    "\x20\x20\x20\x20\x74\x72\x79\x20\x7b"
+    "\x20\x20\x20\x20\x20\x20\x76\x61\x72\x20\x76\x61\x6c\x75\x65\x20\x3d\x20\x43\x54\x68\x72\x6f\x77\x43\x6f\x75\x6e\x74\x44\x6f\x77\x6e\x28\x63\x6f\x75\x6e\x74\x20\x2d\x20\x31\x2c"
+    "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x6a\x73\x49\x6e\x74\x65\x72\x76\x61\x6c\x2c"
+    "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x63\x49\x6e\x74\x65\x72\x76\x61\x6c\x2c"
+    "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x3b"
+    "\x20\x20\x20\x20\x20\x20\x63\x68\x65\x63\x6b\x28\x66\x61\x6c\x73\x65\x2c\x20\x63\x6f\x75\x6e\x74\x2c\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x3b"
+    "\x20\x20\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x76\x61\x6c\x75\x65\x3b"
+    "\x20\x20\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+    "\x20\x20\x20\x20\x20\x20\x63\x68\x65\x63\x6b\x28\x74\x72\x75\x65\x2c\x20\x63\x6f\x75\x6e\x74\x2c\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x3b"
+    "\x20\x20\x20\x20\x7d"
+    "\x20\x20\x7d\x20\x65\x6c\x73\x65\x20\x7b"
+    "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x43\x54\x68\x72\x6f\x77\x43\x6f\x75\x6e\x74\x44\x6f\x77\x6e\x28\x63\x6f\x75\x6e\x74\x20\x2d\x20\x31\x2c\x20\x6a\x73\x49\x6e\x74\x65\x72\x76\x61\x6c\x2c\x20\x63\x49\x6e\x74\x65\x72\x76\x61\x6c\x2c\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x3b"
+    "\x20\x20\x7d"
+    "\x7d");
   Local<Function> fun =
-      Local<Function>::Cast(context->Global()->Get(v8_str("JSThrowCountDown")));
+      Local<Function>::Cast(context->Global()->Get(v8_str("\x4a\x53\x54\x68\x72\x6f\x77\x43\x6f\x75\x6e\x74\x44\x6f\x77\x6e")));
 
   const int argc = 4;
   //                             count      jsInterval cInterval  expected
@@ -5270,18 +5270,18 @@ THREADED_TEST(ThrowValues) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("Throw"), v8::FunctionTemplate::New(isolate, ThrowValue));
+  templ->Set(v8_str("\x54\x68\x72\x6f\x77"), v8::FunctionTemplate::New(isolate, ThrowValue));
   LocalContext context(0, templ);
   v8::Handle<v8::Array> result = v8::Handle<v8::Array>::Cast(CompileRun(
-    "function Run(obj) {"
-    "  try {"
-    "    Throw(obj);"
-    "  } catch (e) {"
-    "    return e;"
-    "  }"
-    "  return 'no exception';"
-    "}"
-    "[Run('str'), Run(1), Run(0), Run(null), Run(void 0)];"));
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x52\x75\x6e\x28\x6f\x62\x6a\x29\x20\x7b"
+    "\x20\x20\x74\x72\x79\x20\x7b"
+    "\x20\x20\x20\x20\x54\x68\x72\x6f\x77\x28\x6f\x62\x6a\x29\x3b"
+    "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+    "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x3b"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x6e\x6f\x20\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x27\x3b"
+    "\x7d"
+    "\x5b\x52\x75\x6e\x28\x27\x73\x74\x72\x27\x29\x2c\x20\x52\x75\x6e\x28\x31\x29\x2c\x20\x52\x75\x6e\x28\x30\x29\x2c\x20\x52\x75\x6e\x28\x6e\x75\x6c\x6c\x29\x2c\x20\x52\x75\x6e\x28\x76\x6f\x69\x64\x20\x30\x29\x5d\x3b"));
   CHECK_EQ(5, result->Length());
   CHECK(result->Get(v8::Integer::New(isolate, 0))->IsString());
   CHECK(result->Get(v8::Integer::New(isolate, 1))->IsNumber());
@@ -5298,12 +5298,12 @@ THREADED_TEST(CatchZero) {
   v8::HandleScope scope(context->GetIsolate());
   v8::TryCatch try_catch;
   CHECK(!try_catch.HasCaught());
-  CompileRun("throw 10");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x31\x30");
   CHECK(try_catch.HasCaught());
   CHECK_EQ(10, try_catch.Exception()->Int32Value());
   try_catch.Reset();
   CHECK(!try_catch.HasCaught());
-  CompileRun("throw 0");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x30");
   CHECK(try_catch.HasCaught());
   CHECK_EQ(0, try_catch.Exception()->Int32Value());
 }
@@ -5314,7 +5314,7 @@ THREADED_TEST(CatchExceptionFromWith) {
   v8::HandleScope scope(context->GetIsolate());
   v8::TryCatch try_catch;
   CHECK(!try_catch.HasCaught());
-  CompileRun("var o = {}; with (o) { throw 42; }");
+  CompileRun("\x76\x61\x72\x20\x6f\x20\x3d\x20\x7b\x7d\x3b\x20\x77\x69\x74\x68\x20\x28\x6f\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x34\x32\x3b\x20\x7d");
   CHECK(try_catch.HasCaught());
 }
 
@@ -5324,8 +5324,8 @@ THREADED_TEST(TryCatchAndFinallyHidingException) {
   v8::HandleScope scope(context->GetIsolate());
   v8::TryCatch try_catch;
   CHECK(!try_catch.HasCaught());
-  CompileRun("function f(k) { try { this[k]; } finally { return 0; } };");
-  CompileRun("f({toString: function() { throw 42; }});");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x6b\x29\x20\x7b\x20\x74\x72\x79\x20\x7b\x20\x74\x68\x69\x73\x5b\x6b\x5d\x3b\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x30\x3b\x20\x7d\x20\x7d\x3b");
+  CompileRun("\x66\x28\x7b\x74\x6f\x53\x74\x72\x69\x6e\x67\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x34\x32\x3b\x20\x7d\x7d\x29\x3b");
   CHECK(!try_catch.HasCaught());
 }
 
@@ -5340,16 +5340,16 @@ THREADED_TEST(TryCatchAndFinally) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   context->Global()->Set(
-      v8_str("native_with_try_catch"),
+      v8_str("\x6e\x61\x74\x69\x76\x65\x5f\x77\x69\x74\x68\x5f\x74\x72\x79\x5f\x63\x61\x74\x63\x68"),
       v8::FunctionTemplate::New(isolate, WithTryCatch)->GetFunction());
   v8::TryCatch try_catch;
   CHECK(!try_catch.HasCaught());
   CompileRun(
-      "try {\n"
-      "  throw new Error('a');\n"
-      "} finally {\n"
-      "  native_with_try_catch();\n"
-      "}\n");
+      "\x74\x72\x79\x20\x7b\xa"
+      "\x20\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x27\x61\x27\x29\x3b\xa"
+      "\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\xa"
+      "\x20\x20\x6e\x61\x74\x69\x76\x65\x5f\x77\x69\x74\x68\x5f\x74\x72\x79\x5f\x63\x61\x74\x63\x68\x28\x29\x3b\xa"
+      "\x7d\xa");
   CHECK(try_catch.HasCaught());
 }
 
@@ -5362,7 +5362,7 @@ static void TryCatchNested1Helper(int depth) {
     CHECK(try_catch.HasCaught());
     try_catch.ReThrow();
   } else {
-    CcTest::isolate()->ThrowException(v8_str("E1"));
+    CcTest::isolate()->ThrowException(v8_str("\x45\x31"));
   }
 }
 
@@ -5375,7 +5375,7 @@ static void TryCatchNested2Helper(int depth) {
     CHECK(try_catch.HasCaught());
     try_catch.ReThrow();
   } else {
-    CompileRun("throw 'E2';");
+    CompileRun("\x74\x68\x72\x6f\x77\x20\x27\x45\x32\x27\x3b");
   }
 }
 
@@ -5390,7 +5390,7 @@ TEST(TryCatchNested) {
     v8::TryCatch try_catch;
     TryCatchNested1Helper(5);
     CHECK(try_catch.HasCaught());
-    CHECK_EQ(0, strcmp(*v8::String::Utf8Value(try_catch.Exception()), "E1"));
+    CHECK_EQ(0, strcmp(*v8::String::Utf8Value(try_catch.Exception()), "\x45\x31"));
   }
 
   {
@@ -5398,7 +5398,7 @@ TEST(TryCatchNested) {
     v8::TryCatch try_catch;
     TryCatchNested2Helper(5);
     CHECK(try_catch.HasCaught());
-    CHECK_EQ(0, strcmp(*v8::String::Utf8Value(try_catch.Exception()), "E2"));
+    CHECK_EQ(0, strcmp(*v8::String::Utf8Value(try_catch.Exception()), "\x45\x32"));
   }
 }
 
@@ -5407,9 +5407,9 @@ void TryCatchMixedNestingCheck(v8::TryCatch* try_catch) {
   CHECK(try_catch->HasCaught());
   Handle<Message> message = try_catch->Message();
   Handle<Value> resource = message->GetScriptOrigin().ResourceName();
-  CHECK_EQ(0, strcmp(*v8::String::Utf8Value(resource), "inner"));
+  CHECK_EQ(0, strcmp(*v8::String::Utf8Value(resource), "\x69\x6e\x6e\x65\x72"));
   CHECK_EQ(0, strcmp(*v8::String::Utf8Value(message->Get()),
-                     "Uncaught Error: a"));
+                     "\x55\x6e\x63\x61\x75\x67\x68\x74\x20\x45\x72\x72\x6f\x72\x3a\x20\x61"));
   CHECK_EQ(1, message->GetLineNumber());
   CHECK_EQ(6, message->GetStartColumn());
 }
@@ -5419,7 +5419,7 @@ void TryCatchMixedNestingHelper(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   ApiTestFuzzer::Fuzz();
   v8::TryCatch try_catch;
-  CompileRunWithOrigin("throw new Error('a');\n", "inner", 0, 0);
+  CompileRunWithOrigin("\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x27\x61\x27\x29\x3b\xa", "\x69\x6e\x6e\x65\x72", 0, 0);
   CHECK(try_catch.HasCaught());
   TryCatchMixedNestingCheck(&try_catch);
   try_catch.ReThrow();
@@ -5437,10 +5437,10 @@ TEST(TryCatchMixedNesting) {
   v8::V8::Initialize();
   v8::TryCatch try_catch;
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("TryCatchMixedNestingHelper"),
+  templ->Set(v8_str("\x54\x72\x79\x43\x61\x74\x63\x68\x4d\x69\x78\x65\x64\x4e\x65\x73\x74\x69\x6e\x67\x48\x65\x6c\x70\x65\x72"),
              v8::FunctionTemplate::New(isolate, TryCatchMixedNestingHelper));
   LocalContext context(0, templ);
-  CompileRunWithOrigin("TryCatchMixedNestingHelper();\n", "outer", 1, 1);
+  CompileRunWithOrigin("\x54\x72\x79\x43\x61\x74\x63\x68\x4d\x69\x78\x65\x64\x4e\x65\x73\x74\x69\x6e\x67\x48\x65\x6c\x70\x65\x72\x28\x29\x3b\xa", "\x6f\x75\x74\x65\x72", 1, 1);
   TryCatchMixedNestingCheck(&try_catch);
 }
 
@@ -5448,7 +5448,7 @@ TEST(TryCatchMixedNesting) {
 void TryCatchNativeHelper(const v8::FunctionCallbackInfo<v8::Value>& args) {
   ApiTestFuzzer::Fuzz();
   v8::TryCatch try_catch;
-  args.GetIsolate()->ThrowException(v8_str("boom"));
+  args.GetIsolate()->ThrowException(v8_str("\x62\x6f\x6f\x6d"));
   CHECK(try_catch.HasCaught());
 }
 
@@ -5459,10 +5459,10 @@ TEST(TryCatchNative) {
   v8::V8::Initialize();
   v8::TryCatch try_catch;
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("TryCatchNativeHelper"),
+  templ->Set(v8_str("\x54\x72\x79\x43\x61\x74\x63\x68\x4e\x61\x74\x69\x76\x65\x48\x65\x6c\x70\x65\x72"),
              v8::FunctionTemplate::New(isolate, TryCatchNativeHelper));
   LocalContext context(0, templ);
-  CompileRun("TryCatchNativeHelper();");
+  CompileRun("\x54\x72\x79\x43\x61\x74\x63\x68\x4e\x61\x74\x69\x76\x65\x48\x65\x6c\x70\x65\x72\x28\x29\x3b");
   CHECK(!try_catch.HasCaught());
 }
 
@@ -5471,7 +5471,7 @@ void TryCatchNativeResetHelper(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   ApiTestFuzzer::Fuzz();
   v8::TryCatch try_catch;
-  args.GetIsolate()->ThrowException(v8_str("boom"));
+  args.GetIsolate()->ThrowException(v8_str("\x62\x6f\x6f\x6d"));
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
   CHECK(!try_catch.HasCaught());
@@ -5484,10 +5484,10 @@ TEST(TryCatchNativeReset) {
   v8::V8::Initialize();
   v8::TryCatch try_catch;
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("TryCatchNativeResetHelper"),
+  templ->Set(v8_str("\x54\x72\x79\x43\x61\x74\x63\x68\x4e\x61\x74\x69\x76\x65\x52\x65\x73\x65\x74\x48\x65\x6c\x70\x65\x72"),
              v8::FunctionTemplate::New(isolate, TryCatchNativeResetHelper));
   LocalContext context(0, templ);
-  CompileRun("TryCatchNativeResetHelper();");
+  CompileRun("\x54\x72\x79\x43\x61\x74\x63\x68\x4e\x61\x74\x69\x76\x65\x52\x65\x73\x65\x74\x48\x65\x6c\x70\x65\x72\x28\x29\x3b");
   CHECK(!try_catch.HasCaught());
 }
 
@@ -5497,19 +5497,19 @@ THREADED_TEST(Equality) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(context->GetIsolate());
   // Check that equality works at all before relying on CHECK_EQ
-  CHECK(v8_str("a")->Equals(v8_str("a")));
-  CHECK(!v8_str("a")->Equals(v8_str("b")));
+  CHECK(v8_str("\x61")->Equals(v8_str("\x61")));
+  CHECK(!v8_str("\x61")->Equals(v8_str("\x62")));
 
-  CHECK_EQ(v8_str("a"), v8_str("a"));
-  CHECK_NE(v8_str("a"), v8_str("b"));
+  CHECK_EQ(v8_str("\x61"), v8_str("\x61"));
+  CHECK_NE(v8_str("\x61"), v8_str("\x62"));
   CHECK_EQ(v8_num(1), v8_num(1));
   CHECK_EQ(v8_num(1.00), v8_num(1));
   CHECK_NE(v8_num(1), v8_num(2));
 
   // Assume String is not internalized.
-  CHECK(v8_str("a")->StrictEquals(v8_str("a")));
-  CHECK(!v8_str("a")->StrictEquals(v8_str("b")));
-  CHECK(!v8_str("5")->StrictEquals(v8_num(5)));
+  CHECK(v8_str("\x61")->StrictEquals(v8_str("\x61")));
+  CHECK(!v8_str("\x61")->StrictEquals(v8_str("\x62")));
+  CHECK(!v8_str("\x35")->StrictEquals(v8_num(5)));
   CHECK(v8_num(1)->StrictEquals(v8_num(1)));
   CHECK(!v8_num(1)->StrictEquals(v8_num(2)));
   CHECK(v8_num(0.0)->StrictEquals(v8_num(-0.0)));
@@ -5523,9 +5523,9 @@ THREADED_TEST(Equality) {
   CHECK(v8::Local<v8::Object>::New(isolate, alias)->StrictEquals(obj));
   alias.Reset();
 
-  CHECK(v8_str("a")->SameValue(v8_str("a")));
-  CHECK(!v8_str("a")->SameValue(v8_str("b")));
-  CHECK(!v8_str("5")->SameValue(v8_num(5)));
+  CHECK(v8_str("\x61")->SameValue(v8_str("\x61")));
+  CHECK(!v8_str("\x61")->SameValue(v8_str("\x62")));
+  CHECK(!v8_str("\x35")->SameValue(v8_num(5)));
   CHECK(v8_num(1)->SameValue(v8_num(1)));
   CHECK(!v8_num(1)->SameValue(v8_num(2)));
   CHECK(!v8_num(0.0)->SameValue(v8_num(-0.0)));
@@ -5538,7 +5538,7 @@ THREADED_TEST(Equality) {
 THREADED_TEST(MultiRun) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
-  Local<Script> script = v8_compile("x");
+  Local<Script> script = v8_compile("\x78");
   for (int i = 0; i < 10; i++)
     script->Run();
 }
@@ -5548,8 +5548,8 @@ THREADED_TEST(MultiRun) {
 static void GetXValue(Local<String> name,
                       const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  CHECK_EQ(info.Data(), v8_str("donut"));
-  CHECK_EQ(name, v8_str("x"));
+  CHECK_EQ(info.Data(), v8_str("\x64\x6f\x6e\x75\x74"));
+  CHECK_EQ(name, v8_str("\x78"));
   info.GetReturnValue().Set(name);
 }
 
@@ -5561,12 +5561,12 @@ THREADED_TEST(SimplePropertyRead) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut"));
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
-  Local<Script> script = v8_compile("obj.x");
+  templ->SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74"));
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
+  Local<Script> script = v8_compile("\x6f\x62\x6a\x2e\x78");
   for (int i = 0; i < 10; i++) {
     Local<Value> result = script->Run();
-    CHECK_EQ(result, v8_str("x"));
+    CHECK_EQ(result, v8_str("\x78"));
   }
 }
 
@@ -5576,23 +5576,23 @@ THREADED_TEST(DefinePropertyOnAPIAccessor) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut"));
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
+  templ->SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74"));
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
 
   // Uses getOwnPropertyDescriptor to check the configurable status
   Local<Script> script_desc = v8_compile(
-      "var prop = Object.getOwnPropertyDescriptor( "
-      "obj, 'x');"
-      "prop.configurable;");
+      "\x76\x61\x72\x20\x70\x72\x6f\x70\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x20"
+      "\x6f\x62\x6a\x2c\x20\x27\x78\x27\x29\x3b"
+      "\x70\x72\x6f\x70\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3b");
   Local<Value> result = script_desc->Run();
   CHECK_EQ(result->BooleanValue(), true);
 
   // Redefine get - but still configurable
   Local<Script> script_define = v8_compile(
-      "var desc = { get: function(){return 42; },"
-      "            configurable: true };"
-      "Object.defineProperty(obj, 'x', desc);"
-      "obj.x");
+      "\x76\x61\x72\x20\x64\x65\x73\x63\x20\x3d\x20\x7b\x20\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b\x20\x7d\x2c"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x74\x72\x75\x65\x20\x7d\x3b"
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x2c\x20\x27\x78\x27\x2c\x20\x64\x65\x73\x63\x29\x3b"
+      "\x6f\x62\x6a\x2e\x78");
   result = script_define->Run();
   CHECK_EQ(result, v8_num(42));
 
@@ -5602,10 +5602,10 @@ THREADED_TEST(DefinePropertyOnAPIAccessor) {
 
   // Redefine to a non-configurable
   script_define = v8_compile(
-      "var desc = { get: function(){return 43; },"
-      "             configurable: false };"
-      "Object.defineProperty(obj, 'x', desc);"
-      "obj.x");
+      "\x76\x61\x72\x20\x64\x65\x73\x63\x20\x3d\x20\x7b\x20\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x34\x33\x3b\x20\x7d\x2c"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x66\x61\x6c\x73\x65\x20\x7d\x3b"
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x2c\x20\x27\x78\x27\x2c\x20\x64\x65\x73\x63\x29\x3b"
+      "\x6f\x62\x6a\x2e\x78");
   result = script_define->Run();
   CHECK_EQ(result, v8_num(43));
   result = script_desc->Run();
@@ -5616,7 +5616,7 @@ THREADED_TEST(DefinePropertyOnAPIAccessor) {
   result = script_define->Run();
   CHECK(try_catch.HasCaught());
   String::Utf8Value exception_value(try_catch.Exception());
-  CHECK_EQ(*exception_value, "TypeError: Cannot redefine property: x");
+  CHECK_EQ(*exception_value, "\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x43\x61\x6e\x6e\x6f\x74\x20\x72\x65\x64\x65\x66\x69\x6e\x65\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x3a\x20\x78");
 }
 
 
@@ -5624,23 +5624,23 @@ THREADED_TEST(DefinePropertyOnDefineGetterSetter) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut"));
+  templ->SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74"));
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
 
   Local<Script> script_desc = v8_compile(
-      "var prop ="
-      "Object.getOwnPropertyDescriptor( "
-      "obj, 'x');"
-      "prop.configurable;");
+      "\x76\x61\x72\x20\x70\x72\x6f\x70\x20\x3d"
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x20"
+      "\x6f\x62\x6a\x2c\x20\x27\x78\x27\x29\x3b"
+      "\x70\x72\x6f\x70\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3b");
   Local<Value> result = script_desc->Run();
   CHECK_EQ(result->BooleanValue(), true);
 
   Local<Script> script_define = v8_compile(
-      "var desc = {get: function(){return 42; },"
-      "            configurable: true };"
-      "Object.defineProperty(obj, 'x', desc);"
-      "obj.x");
+      "\x76\x61\x72\x20\x64\x65\x73\x63\x20\x3d\x20\x7b\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b\x20\x7d\x2c"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x74\x72\x75\x65\x20\x7d\x3b"
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x2c\x20\x27\x78\x27\x2c\x20\x64\x65\x73\x63\x29\x3b"
+      "\x6f\x62\x6a\x2e\x78");
   result = script_define->Run();
   CHECK_EQ(result, v8_num(42));
 
@@ -5650,10 +5650,10 @@ THREADED_TEST(DefinePropertyOnDefineGetterSetter) {
 
 
   script_define = v8_compile(
-      "var desc = {get: function(){return 43; },"
-      "            configurable: false };"
-      "Object.defineProperty(obj, 'x', desc);"
-      "obj.x");
+      "\x76\x61\x72\x20\x64\x65\x73\x63\x20\x3d\x20\x7b\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x34\x33\x3b\x20\x7d\x2c"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x66\x61\x6c\x73\x65\x20\x7d\x3b"
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x2c\x20\x27\x78\x27\x2c\x20\x64\x65\x73\x63\x29\x3b"
+      "\x6f\x62\x6a\x2e\x78");
   result = script_define->Run();
   CHECK_EQ(result, v8_num(43));
   result = script_desc->Run();
@@ -5664,7 +5664,7 @@ THREADED_TEST(DefinePropertyOnDefineGetterSetter) {
   result = script_define->Run();
   CHECK(try_catch.HasCaught());
   String::Utf8Value exception_value(try_catch.Exception());
-  CHECK_EQ(*exception_value, "TypeError: Cannot redefine property: x");
+  CHECK_EQ(*exception_value, "\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x43\x61\x6e\x6e\x6f\x74\x20\x72\x65\x64\x65\x66\x69\x6e\x65\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x3a\x20\x78");
 }
 
 
@@ -5680,72 +5680,72 @@ THREADED_TEST(DefineAPIAccessorOnObject) {
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
   LocalContext context;
 
-  context->Global()->Set(v8_str("obj1"), templ->NewInstance());
-  CompileRun("var obj2 = {};");
+  context->Global()->Set(v8_str("\x6f\x62\x6a\x31"), templ->NewInstance());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x32\x20\x3d\x20\x7b\x7d\x3b");
 
-  CHECK(CompileRun("obj1.x")->IsUndefined());
-  CHECK(CompileRun("obj2.x")->IsUndefined());
+  CHECK(CompileRun("\x6f\x62\x6a\x31\x2e\x78")->IsUndefined());
+  CHECK(CompileRun("\x6f\x62\x6a\x32\x2e\x78")->IsUndefined());
 
-  CHECK(GetGlobalProperty(&context, "obj1")->
-      SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut")));
+  CHECK(GetGlobalProperty(&context, "\x6f\x62\x6a\x31")->
+      SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74")));
 
-  ExpectString("obj1.x", "x");
-  CHECK(CompileRun("obj2.x")->IsUndefined());
+  ExpectString("\x6f\x62\x6a\x31\x2e\x78", "\x78");
+  CHECK(CompileRun("\x6f\x62\x6a\x32\x2e\x78")->IsUndefined());
 
-  CHECK(GetGlobalProperty(&context, "obj2")->
-      SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut")));
+  CHECK(GetGlobalProperty(&context, "\x6f\x62\x6a\x32")->
+      SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74")));
 
-  ExpectString("obj1.x", "x");
-  ExpectString("obj2.x", "x");
+  ExpectString("\x6f\x62\x6a\x31\x2e\x78", "\x78");
+  ExpectString("\x6f\x62\x6a\x32\x2e\x78", "\x78");
 
-  ExpectTrue("Object.getOwnPropertyDescriptor(obj1, 'x').configurable");
-  ExpectTrue("Object.getOwnPropertyDescriptor(obj2, 'x').configurable");
+  ExpectTrue("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x31\x2c\x20\x27\x78\x27\x29\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65");
+  ExpectTrue("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x32\x2c\x20\x27\x78\x27\x29\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65");
 
-  CompileRun("Object.defineProperty(obj1, 'x',"
-             "{ get: function() { return 'y'; }, configurable: true })");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x31\x2c\x20\x27\x78\x27\x2c"
+             "\x7b\x20\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x79\x27\x3b\x20\x7d\x2c\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x74\x72\x75\x65\x20\x7d\x29");
 
-  ExpectString("obj1.x", "y");
-  ExpectString("obj2.x", "x");
+  ExpectString("\x6f\x62\x6a\x31\x2e\x78", "\x79");
+  ExpectString("\x6f\x62\x6a\x32\x2e\x78", "\x78");
 
-  CompileRun("Object.defineProperty(obj2, 'x',"
-             "{ get: function() { return 'y'; }, configurable: true })");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x32\x2c\x20\x27\x78\x27\x2c"
+             "\x7b\x20\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x79\x27\x3b\x20\x7d\x2c\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x74\x72\x75\x65\x20\x7d\x29");
 
-  ExpectString("obj1.x", "y");
-  ExpectString("obj2.x", "y");
+  ExpectString("\x6f\x62\x6a\x31\x2e\x78", "\x79");
+  ExpectString("\x6f\x62\x6a\x32\x2e\x78", "\x79");
 
-  ExpectTrue("Object.getOwnPropertyDescriptor(obj1, 'x').configurable");
-  ExpectTrue("Object.getOwnPropertyDescriptor(obj2, 'x').configurable");
+  ExpectTrue("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x31\x2c\x20\x27\x78\x27\x29\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65");
+  ExpectTrue("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x32\x2c\x20\x27\x78\x27\x29\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65");
 
-  CHECK(GetGlobalProperty(&context, "obj1")->
-      SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut")));
-  CHECK(GetGlobalProperty(&context, "obj2")->
-      SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut")));
+  CHECK(GetGlobalProperty(&context, "\x6f\x62\x6a\x31")->
+      SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74")));
+  CHECK(GetGlobalProperty(&context, "\x6f\x62\x6a\x32")->
+      SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74")));
 
-  ExpectString("obj1.x", "x");
-  ExpectString("obj2.x", "x");
+  ExpectString("\x6f\x62\x6a\x31\x2e\x78", "\x78");
+  ExpectString("\x6f\x62\x6a\x32\x2e\x78", "\x78");
 
-  ExpectTrue("Object.getOwnPropertyDescriptor(obj1, 'x').configurable");
-  ExpectTrue("Object.getOwnPropertyDescriptor(obj2, 'x').configurable");
+  ExpectTrue("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x31\x2c\x20\x27\x78\x27\x29\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65");
+  ExpectTrue("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x32\x2c\x20\x27\x78\x27\x29\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65");
 
   // Define getters/setters, but now make them not configurable.
-  CompileRun("Object.defineProperty(obj1, 'x',"
-             "{ get: function() { return 'z'; }, configurable: false })");
-  CompileRun("Object.defineProperty(obj2, 'x',"
-             "{ get: function() { return 'z'; }, configurable: false })");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x31\x2c\x20\x27\x78\x27\x2c"
+             "\x7b\x20\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x7a\x27\x3b\x20\x7d\x2c\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x66\x61\x6c\x73\x65\x20\x7d\x29");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x32\x2c\x20\x27\x78\x27\x2c"
+             "\x7b\x20\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x7a\x27\x3b\x20\x7d\x2c\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x66\x61\x6c\x73\x65\x20\x7d\x29");
 
-  ExpectTrue("!Object.getOwnPropertyDescriptor(obj1, 'x').configurable");
-  ExpectTrue("!Object.getOwnPropertyDescriptor(obj2, 'x').configurable");
+  ExpectTrue("\x21\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x31\x2c\x20\x27\x78\x27\x29\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65");
+  ExpectTrue("\x21\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x32\x2c\x20\x27\x78\x27\x29\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65");
 
-  ExpectString("obj1.x", "z");
-  ExpectString("obj2.x", "z");
+  ExpectString("\x6f\x62\x6a\x31\x2e\x78", "\x7a");
+  ExpectString("\x6f\x62\x6a\x32\x2e\x78", "\x7a");
 
-  CHECK(!GetGlobalProperty(&context, "obj1")->
-      SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut")));
-  CHECK(!GetGlobalProperty(&context, "obj2")->
-      SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut")));
+  CHECK(!GetGlobalProperty(&context, "\x6f\x62\x6a\x31")->
+      SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74")));
+  CHECK(!GetGlobalProperty(&context, "\x6f\x62\x6a\x32")->
+      SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74")));
 
-  ExpectString("obj1.x", "z");
-  ExpectString("obj2.x", "z");
+  ExpectString("\x6f\x62\x6a\x31\x2e\x78", "\x7a");
+  ExpectString("\x6f\x62\x6a\x32\x2e\x78", "\x7a");
 }
 
 
@@ -5755,44 +5755,44 @@ THREADED_TEST(DontDeleteAPIAccessorsCannotBeOverriden) {
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
   LocalContext context;
 
-  context->Global()->Set(v8_str("obj1"), templ->NewInstance());
-  CompileRun("var obj2 = {};");
+  context->Global()->Set(v8_str("\x6f\x62\x6a\x31"), templ->NewInstance());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x32\x20\x3d\x20\x7b\x7d\x3b");
 
-  CHECK(GetGlobalProperty(&context, "obj1")->SetAccessor(
-        v8_str("x"),
+  CHECK(GetGlobalProperty(&context, "\x6f\x62\x6a\x31")->SetAccessor(
+        v8_str("\x78"),
         GetXValue, NULL,
-        v8_str("donut"), v8::DEFAULT, v8::DontDelete));
-  CHECK(GetGlobalProperty(&context, "obj2")->SetAccessor(
-        v8_str("x"),
+        v8_str("\x64\x6f\x6e\x75\x74"), v8::DEFAULT, v8::DontDelete));
+  CHECK(GetGlobalProperty(&context, "\x6f\x62\x6a\x32")->SetAccessor(
+        v8_str("\x78"),
         GetXValue, NULL,
-        v8_str("donut"), v8::DEFAULT, v8::DontDelete));
+        v8_str("\x64\x6f\x6e\x75\x74"), v8::DEFAULT, v8::DontDelete));
 
-  ExpectString("obj1.x", "x");
-  ExpectString("obj2.x", "x");
+  ExpectString("\x6f\x62\x6a\x31\x2e\x78", "\x78");
+  ExpectString("\x6f\x62\x6a\x32\x2e\x78", "\x78");
 
-  ExpectTrue("!Object.getOwnPropertyDescriptor(obj1, 'x').configurable");
-  ExpectTrue("!Object.getOwnPropertyDescriptor(obj2, 'x').configurable");
+  ExpectTrue("\x21\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x31\x2c\x20\x27\x78\x27\x29\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65");
+  ExpectTrue("\x21\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x32\x2c\x20\x27\x78\x27\x29\x2e\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65");
 
-  CHECK(!GetGlobalProperty(&context, "obj1")->
-      SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut")));
-  CHECK(!GetGlobalProperty(&context, "obj2")->
-      SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("donut")));
+  CHECK(!GetGlobalProperty(&context, "\x6f\x62\x6a\x31")->
+      SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74")));
+  CHECK(!GetGlobalProperty(&context, "\x6f\x62\x6a\x32")->
+      SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x64\x6f\x6e\x75\x74")));
 
   {
     v8::TryCatch try_catch;
-    CompileRun("Object.defineProperty(obj1, 'x',"
-        "{get: function() { return 'func'; }})");
+    CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x31\x2c\x20\x27\x78\x27\x2c"
+        "\x7b\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x66\x75\x6e\x63\x27\x3b\x20\x7d\x7d\x29");
     CHECK(try_catch.HasCaught());
     String::Utf8Value exception_value(try_catch.Exception());
-    CHECK_EQ(*exception_value, "TypeError: Cannot redefine property: x");
+    CHECK_EQ(*exception_value, "\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x43\x61\x6e\x6e\x6f\x74\x20\x72\x65\x64\x65\x66\x69\x6e\x65\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x3a\x20\x78");
   }
   {
     v8::TryCatch try_catch;
-    CompileRun("Object.defineProperty(obj2, 'x',"
-        "{get: function() { return 'func'; }})");
+    CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x32\x2c\x20\x27\x78\x27\x2c"
+        "\x7b\x67\x65\x74\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x66\x75\x6e\x63\x27\x3b\x20\x7d\x7d\x29");
     CHECK(try_catch.HasCaught());
     String::Utf8Value exception_value(try_catch.Exception());
-    CHECK_EQ(*exception_value, "TypeError: Cannot redefine property: x");
+    CHECK_EQ(*exception_value, "\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x43\x61\x6e\x6e\x6f\x74\x20\x72\x65\x64\x65\x66\x69\x6e\x65\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x3a\x20\x78");
   }
 }
 
@@ -5800,8 +5800,8 @@ THREADED_TEST(DontDeleteAPIAccessorsCannotBeOverriden) {
 static void Get239Value(Local<String> name,
                         const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  CHECK_EQ(info.Data(), v8_str("donut"));
-  CHECK_EQ(name, v8_str("239"));
+  CHECK_EQ(info.Data(), v8_str("\x64\x6f\x6e\x75\x74"));
+  CHECK_EQ(name, v8_str("\x32\x33\x39"));
   info.GetReturnValue().Set(name);
 }
 
@@ -5812,22 +5812,22 @@ THREADED_TEST(ElementAPIAccessor) {
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
   LocalContext context;
 
-  context->Global()->Set(v8_str("obj1"), templ->NewInstance());
-  CompileRun("var obj2 = {};");
+  context->Global()->Set(v8_str("\x6f\x62\x6a\x31"), templ->NewInstance());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x32\x20\x3d\x20\x7b\x7d\x3b");
 
-  CHECK(GetGlobalProperty(&context, "obj1")->SetAccessor(
-        v8_str("239"),
+  CHECK(GetGlobalProperty(&context, "\x6f\x62\x6a\x31")->SetAccessor(
+        v8_str("\x32\x33\x39"),
         Get239Value, NULL,
-        v8_str("donut")));
-  CHECK(GetGlobalProperty(&context, "obj2")->SetAccessor(
-        v8_str("239"),
+        v8_str("\x64\x6f\x6e\x75\x74")));
+  CHECK(GetGlobalProperty(&context, "\x6f\x62\x6a\x32")->SetAccessor(
+        v8_str("\x32\x33\x39"),
         Get239Value, NULL,
-        v8_str("donut")));
+        v8_str("\x64\x6f\x6e\x75\x74")));
 
-  ExpectString("obj1[239]", "239");
-  ExpectString("obj2[239]", "239");
-  ExpectString("obj1['239']", "239");
-  ExpectString("obj2['239']", "239");
+  ExpectString("\x6f\x62\x6a\x31\x5b\x32\x33\x39\x5d", "\x32\x33\x39");
+  ExpectString("\x6f\x62\x6a\x32\x5b\x32\x33\x39\x5d", "\x32\x33\x39");
+  ExpectString("\x6f\x62\x6a\x31\x5b\x27\x32\x33\x39\x27\x5d", "\x32\x33\x39");
+  ExpectString("\x6f\x62\x6a\x32\x5b\x27\x32\x33\x39\x27\x5d", "\x32\x33\x39");
 }
 
 
@@ -5838,8 +5838,8 @@ static void SetXValue(Local<String> name,
                       Local<Value> value,
                       const v8::PropertyCallbackInfo<void>& info) {
   CHECK_EQ(value, v8_num(4));
-  CHECK_EQ(info.Data(), v8_str("donut"));
-  CHECK_EQ(name, v8_str("x"));
+  CHECK_EQ(info.Data(), v8_str("\x64\x6f\x6e\x75\x74"));
+  CHECK_EQ(name, v8_str("\x78"));
   CHECK(xValue.IsEmpty());
   xValue.Reset(info.GetIsolate(), value);
 }
@@ -5849,10 +5849,10 @@ THREADED_TEST(SimplePropertyWrite) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("x"), GetXValue, SetXValue, v8_str("donut"));
+  templ->SetAccessor(v8_str("\x78"), GetXValue, SetXValue, v8_str("\x64\x6f\x6e\x75\x74"));
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
-  Local<Script> script = v8_compile("obj.x = 4");
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
+  Local<Script> script = v8_compile("\x6f\x62\x6a\x2e\x78\x20\x3d\x20\x34");
   for (int i = 0; i < 10; i++) {
     CHECK(xValue.IsEmpty());
     script->Run();
@@ -5866,10 +5866,10 @@ THREADED_TEST(SetterOnly) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("x"), NULL, SetXValue, v8_str("donut"));
+  templ->SetAccessor(v8_str("\x78"), NULL, SetXValue, v8_str("\x64\x6f\x6e\x75\x74"));
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
-  Local<Script> script = v8_compile("obj.x = 4; obj.x");
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
+  Local<Script> script = v8_compile("\x6f\x62\x6a\x2e\x78\x20\x3d\x20\x34\x3b\x20\x6f\x62\x6a\x2e\x78");
   for (int i = 0; i < 10; i++) {
     CHECK(xValue.IsEmpty());
     script->Run();
@@ -5883,13 +5883,13 @@ THREADED_TEST(NoAccessors) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("x"),
+  templ->SetAccessor(v8_str("\x78"),
                      static_cast<v8::AccessorGetterCallback>(NULL),
                      NULL,
-                     v8_str("donut"));
+                     v8_str("\x64\x6f\x6e\x75\x74"));
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
-  Local<Script> script = v8_compile("obj.x = 4; obj.x");
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
+  Local<Script> script = v8_compile("\x6f\x62\x6a\x2e\x78\x20\x3d\x20\x34\x3b\x20\x6f\x62\x6a\x2e\x78");
   for (int i = 0; i < 10; i++) {
     script->Run();
   }
@@ -5910,11 +5910,11 @@ THREADED_TEST(NamedInterceptorPropertyRead) {
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(XPropertyGetter);
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
-  Local<Script> script = v8_compile("obj.x");
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
+  Local<Script> script = v8_compile("\x6f\x62\x6a\x2e\x78");
   for (int i = 0; i < 10; i++) {
     Local<Value> result = script->Run();
-    CHECK_EQ(result, v8_str("x"));
+    CHECK_EQ(result, v8_str("\x78"));
   }
 }
 
@@ -5926,11 +5926,11 @@ THREADED_TEST(NamedInterceptorDictionaryIC) {
   templ->SetNamedPropertyHandler(XPropertyGetter);
   LocalContext context;
   // Create an object with a named interceptor.
-  context->Global()->Set(v8_str("interceptor_obj"), templ->NewInstance());
-  Local<Script> script = v8_compile("interceptor_obj.x");
+  context->Global()->Set(v8_str("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a"), templ->NewInstance());
+  Local<Script> script = v8_compile("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a\x2e\x78");
   for (int i = 0; i < 10; i++) {
     Local<Value> result = script->Run();
-    CHECK_EQ(result, v8_str("x"));
+    CHECK_EQ(result, v8_str("\x78"));
   }
   // Create a slow case object and a function accessing a property in
   // that slow case object (with dictionary probing in generated
@@ -5938,15 +5938,15 @@ THREADED_TEST(NamedInterceptorDictionaryIC) {
   // pass it to the function, and check that the interceptor is called
   // instead of accessing the local property.
   Local<Value> result =
-      CompileRun("function get_x(o) { return o.x; };"
-                 "var obj = { x : 42, y : 0 };"
-                 "delete obj.y;"
-                 "for (var i = 0; i < 10; i++) get_x(obj);"
-                 "interceptor_obj.x = 42;"
-                 "interceptor_obj.y = 10;"
-                 "delete interceptor_obj.y;"
-                 "get_x(interceptor_obj)");
-  CHECK_EQ(result, v8_str("x"));
+      CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x5f\x78\x28\x6f\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x2e\x78\x3b\x20\x7d\x3b"
+                 "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x20\x78\x20\x3a\x20\x34\x32\x2c\x20\x79\x20\x3a\x20\x30\x20\x7d\x3b"
+                 "\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x2e\x79\x3b"
+                 "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x67\x65\x74\x5f\x78\x28\x6f\x62\x6a\x29\x3b"
+                 "\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a\x2e\x78\x20\x3d\x20\x34\x32\x3b"
+                 "\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a\x2e\x79\x20\x3d\x20\x31\x30\x3b"
+                 "\x64\x65\x6c\x65\x74\x65\x20\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a\x2e\x79\x3b"
+                 "\x67\x65\x74\x5f\x78\x28\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a\x29");
+  CHECK_EQ(result, v8_str("\x78"));
 }
 
 
@@ -5960,33 +5960,33 @@ THREADED_TEST(NamedInterceptorDictionaryICMultipleContext) {
   templ->SetNamedPropertyHandler(XPropertyGetter);
   // Create an object with a named interceptor.
   v8::Local<v8::Object> object = templ->NewInstance();
-  context1->Global()->Set(v8_str("interceptor_obj"), object);
+  context1->Global()->Set(v8_str("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a"), object);
 
   // Force the object into the slow case.
-  CompileRun("interceptor_obj.y = 0;"
-             "delete interceptor_obj.y;");
+  CompileRun("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a\x2e\x79\x20\x3d\x20\x30\x3b"
+             "\x64\x65\x6c\x65\x74\x65\x20\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a\x2e\x79\x3b");
   context1->Exit();
 
   {
     // Introduce the object into a different context.
     // Repeat named loads to exercise ICs.
     LocalContext context2;
-    context2->Global()->Set(v8_str("interceptor_obj"), object);
+    context2->Global()->Set(v8_str("\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a"), object);
     Local<Value> result =
-      CompileRun("function get_x(o) { return o.x; }"
-                 "interceptor_obj.x = 42;"
-                 "for (var i=0; i != 10; i++) {"
-                 "  get_x(interceptor_obj);"
-                 "}"
-                 "get_x(interceptor_obj)");
+      CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x5f\x78\x28\x6f\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x2e\x78\x3b\x20\x7d"
+                 "\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a\x2e\x78\x20\x3d\x20\x34\x32\x3b"
+                 "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x3d\x30\x3b\x20\x69\x20\x21\x3d\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                 "\x20\x20\x67\x65\x74\x5f\x78\x28\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a\x29\x3b"
+                 "\x7d"
+                 "\x67\x65\x74\x5f\x78\x28\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x6f\x62\x6a\x29");
     // Check that the interceptor was actually invoked.
-    CHECK_EQ(result, v8_str("x"));
+    CHECK_EQ(result, v8_str("\x78"));
   }
 
   // Return to the original context and force some object to the slow case
   // to cause the NormalizedMapCache to verify.
   context1->Enter();
-  CompileRun("var obj = { x : 0 }; delete obj.x;");
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x20\x78\x20\x3a\x20\x30\x20\x7d\x3b\x20\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x2e\x78\x3b");
   context1->Exit();
 }
 
@@ -5996,7 +5996,7 @@ static void SetXOnPrototypeGetter(
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   // Set x on the prototype object and do not handle the get request.
   v8::Handle<v8::Value> proto = info.Holder()->GetPrototype();
-  proto.As<v8::Object>()->Set(v8_str("x"),
+  proto.As<v8::Object>()->Set(v8_str("\x78"),
                               v8::Integer::New(info.GetIsolate(), 23));
 }
 
@@ -6012,11 +6012,11 @@ THREADED_TEST(NamedInterceptorMapTransitionRead) {
       = function_template->InstanceTemplate();
   instance_template->SetNamedPropertyHandler(SetXOnPrototypeGetter);
   LocalContext context;
-  context->Global()->Set(v8_str("F"), function_template->GetFunction());
+  context->Global()->Set(v8_str("\x46"), function_template->GetFunction());
   // Create an instance of F and introduce a map transition for x.
-  CompileRun("var o = new F(); o.x = 23;");
+  CompileRun("\x76\x61\x72\x20\x6f\x20\x3d\x20\x6e\x65\x77\x20\x46\x28\x29\x3b\x20\x6f\x2e\x78\x20\x3d\x20\x32\x33\x3b");
   // Create an instance of F and invoke the getter. The result should be 23.
-  Local<Value> result = CompileRun("o = new F(); o.x");
+  Local<Value> result = CompileRun("\x6f\x20\x3d\x20\x6e\x65\x77\x20\x46\x28\x29\x3b\x20\x6f\x2e\x78");
   CHECK_EQ(result->Int32Value(), 23);
 }
 
@@ -6049,19 +6049,19 @@ THREADED_TEST(IndexedInterceptorWithIndexedAccessor) {
   templ->SetIndexedPropertyHandler(IndexedPropertyGetter,
                                    IndexedPropertySetter);
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
   Local<Script> getter_script = v8_compile(
-      "obj.__defineGetter__(\"3\", function(){return 5;});obj[3];");
+      "\x6f\x62\x6a\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x22\x33\x22\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x35\x3b\x7d\x29\x3b\x6f\x62\x6a\x5b\x33\x5d\x3b");
   Local<Script> setter_script = v8_compile(
-      "obj.__defineSetter__(\"17\", function(val){this.foo = val;});"
-      "obj[17] = 23;"
-      "obj.foo;");
+      "\x6f\x62\x6a\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x53\x65\x74\x74\x65\x72\x5f\x5f\x28\x22\x31\x37\x22\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x76\x61\x6c\x29\x7b\x74\x68\x69\x73\x2e\x66\x6f\x6f\x20\x3d\x20\x76\x61\x6c\x3b\x7d\x29\x3b"
+      "\x6f\x62\x6a\x5b\x31\x37\x5d\x20\x3d\x20\x32\x33\x3b"
+      "\x6f\x62\x6a\x2e\x66\x6f\x6f\x3b");
   Local<Script> interceptor_setter_script = v8_compile(
-      "obj.__defineSetter__(\"39\", function(val){this.foo = \"hit\";});"
-      "obj[39] = 47;"
-      "obj.foo;");  // This setter should not run, due to the interceptor.
+      "\x6f\x62\x6a\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x53\x65\x74\x74\x65\x72\x5f\x5f\x28\x22\x33\x39\x22\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x76\x61\x6c\x29\x7b\x74\x68\x69\x73\x2e\x66\x6f\x6f\x20\x3d\x20\x22\x68\x69\x74\x22\x3b\x7d\x29\x3b"
+      "\x6f\x62\x6a\x5b\x33\x39\x5d\x20\x3d\x20\x34\x37\x3b"
+      "\x6f\x62\x6a\x2e\x66\x6f\x6f\x3b");  // This setter should not run, due to the interceptor.
   Local<Script> interceptor_getter_script = v8_compile(
-      "obj[37];");
+      "\x6f\x62\x6a\x5b\x33\x37\x5d\x3b");
   Local<Value> result = getter_script->Run();
   CHECK_EQ(v8_num(5), result);
   result = setter_script->Run();
@@ -6098,9 +6098,9 @@ void UnboxedDoubleIndexedPropertyEnumerator(
     const v8::PropertyCallbackInfo<v8::Array>& info) {
   // Force the list of returned keys to be stored in a FastDoubleArray.
   Local<Script> indexed_property_names_script = v8_compile(
-      "keys = new Array(); keys[125000] = 1;"
-      "for(i = 0; i < 80000; i++) { keys[i] = i; };"
-      "keys.length = 25; keys;");
+      "\x6b\x65\x79\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x29\x3b\x20\x6b\x65\x79\x73\x5b\x31\x32\x35\x30\x30\x30\x5d\x20\x3d\x20\x31\x3b"
+      "\x66\x6f\x72\x28\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x30\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b\x20\x6b\x65\x79\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+      "\x6b\x65\x79\x73\x2e\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20\x32\x35\x3b\x20\x6b\x65\x79\x73\x3b");
   Local<Value> result = indexed_property_names_script->Run();
   info.GetReturnValue().Set(Local<v8::Array>::Cast(result));
 }
@@ -6118,16 +6118,16 @@ THREADED_TEST(IndexedInterceptorUnboxedDoubleWithIndexedAccessor) {
                                    0,
                                    UnboxedDoubleIndexedPropertyEnumerator);
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
   // When obj is created, force it to be Stored in a FastDoubleArray.
   Local<Script> create_unboxed_double_script = v8_compile(
-      "obj[125000] = 1; for(i = 0; i < 80000; i+=2) { obj[i] = i; } "
-      "key_count = 0; "
-      "for (x in obj) {key_count++;};"
-      "obj;");
+      "\x6f\x62\x6a\x5b\x31\x32\x35\x30\x30\x30\x5d\x20\x3d\x20\x31\x3b\x20\x66\x6f\x72\x28\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x30\x30\x30\x30\x3b\x20\x69\x2b\x3d\x32\x29\x20\x7b\x20\x6f\x62\x6a\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d\x20"
+      "\x6b\x65\x79\x5f\x63\x6f\x75\x6e\x74\x20\x3d\x20\x30\x3b\x20"
+      "\x66\x6f\x72\x20\x28\x78\x20\x69\x6e\x20\x6f\x62\x6a\x29\x20\x7b\x6b\x65\x79\x5f\x63\x6f\x75\x6e\x74\x2b\x2b\x3b\x7d\x3b"
+      "\x6f\x62\x6a\x3b");
   Local<Value> result = create_unboxed_double_script->Run();
   CHECK(result->ToObject()->HasRealIndexedProperty(2000));
-  Local<Script> key_count_check = v8_compile("key_count;");
+  Local<Script> key_count_check = v8_compile("\x6b\x65\x79\x5f\x63\x6f\x75\x6e\x74\x3b");
   result = key_count_check->Run();
   CHECK_EQ(v8_num(40013), result);
 }
@@ -6137,11 +6137,11 @@ void SloppyArgsIndexedPropertyEnumerator(
     const v8::PropertyCallbackInfo<v8::Array>& info) {
   // Force the list of returned keys to be stored in a Arguments object.
   Local<Script> indexed_property_names_script = v8_compile(
-      "function f(w,x) {"
-      " return arguments;"
-      "}"
-      "keys = f(0, 1, 2, 3);"
-      "keys;");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x77\x2c\x78\x29\x20\x7b"
+      "\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x3b"
+      "\x7d"
+      "\x6b\x65\x79\x73\x20\x3d\x20\x66\x28\x30\x2c\x20\x31\x2c\x20\x32\x2c\x20\x33\x29\x3b"
+      "\x6b\x65\x79\x73\x3b");
   Local<Object> result =
       Local<Object>::Cast(indexed_property_names_script->Run());
   // Have to populate the handle manually, as it's not Cast-able.
@@ -6174,10 +6174,10 @@ THREADED_TEST(IndexedInterceptorSloppyArgsWithIndexedAccessor) {
                                    0,
                                    SloppyArgsIndexedPropertyEnumerator);
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
   Local<Script> create_args_script = v8_compile(
-      "var key_count = 0;"
-      "for (x in obj) {key_count++;} key_count;");
+      "\x76\x61\x72\x20\x6b\x65\x79\x5f\x63\x6f\x75\x6e\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x78\x20\x69\x6e\x20\x6f\x62\x6a\x29\x20\x7b\x6b\x65\x79\x5f\x63\x6f\x75\x6e\x74\x2b\x2b\x3b\x7d\x20\x6b\x65\x79\x5f\x63\x6f\x75\x6e\x74\x3b");
   Local<Value> result = create_args_script->Run();
   CHECK_EQ(v8_num(4), result);
 }
@@ -6197,18 +6197,18 @@ THREADED_TEST(IndexedInterceptorWithGetOwnPropertyDescriptor) {
   templ->SetIndexedPropertyHandler(IdentityIndexedPropertyGetter);
 
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
 
   // Check fast object case.
   const char* fast_case_code =
-      "Object.getOwnPropertyDescriptor(obj, 0).value.toString()";
-  ExpectString(fast_case_code, "0");
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x2c\x20\x30\x29\x2e\x76\x61\x6c\x75\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29";
+  ExpectString(fast_case_code, "\x30");
 
   // Check slow case.
   const char* slow_case_code =
-      "obj.x = 1; delete obj.x;"
-      "Object.getOwnPropertyDescriptor(obj, 1).value.toString()";
-  ExpectString(slow_case_code, "1");
+      "\x6f\x62\x6a\x2e\x78\x20\x3d\x20\x31\x3b\x20\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x2e\x78\x3b"
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x62\x6a\x2c\x20\x31\x29\x2e\x76\x61\x6c\x75\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29";
+  ExpectString(slow_case_code, "\x31");
 }
 
 
@@ -6219,20 +6219,20 @@ THREADED_TEST(IndexedInterceptorWithNoSetter) {
   templ->SetIndexedPropertyHandler(IdentityIndexedPropertyGetter);
 
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
 
   const char* code =
-      "try {"
-      "  obj[0] = 239;"
-      "  for (var i = 0; i < 100; i++) {"
-      "    var v = obj[0];"
-      "    if (v != 0) throw 'Wrong value ' + v + ' at iteration ' + i;"
-      "  }"
-      "  'PASSED'"
-      "} catch(e) {"
-      "  e"
-      "}";
-  ExpectString(code, "PASSED");
+      "\x74\x72\x79\x20\x7b"
+      "\x20\x20\x6f\x62\x6a\x5b\x30\x5d\x20\x3d\x20\x32\x33\x39\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6f\x62\x6a\x5b\x30\x5d\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x76\x20\x21\x3d\x20\x30\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x61\x74\x20\x69\x74\x65\x72\x61\x74\x69\x6f\x6e\x20\x27\x20\x2b\x20\x69\x3b"
+      "\x20\x20\x7d"
+      "\x20\x20\x27\x50\x41\x53\x53\x45\x44\x27"
+      "\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+      "\x20\x20\x65"
+      "\x7d";
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -6245,21 +6245,21 @@ THREADED_TEST(IndexedInterceptorWithAccessorCheck) {
   LocalContext context;
   Local<v8::Object> obj = templ->NewInstance();
   obj->TurnOnAccessCheck();
-  context->Global()->Set(v8_str("obj"), obj);
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
 
   const char* code =
-      "var result = 'PASSED';"
-      "for (var i = 0; i < 100; i++) {"
-      "  try {"
-      "    var v = obj[0];"
-      "    result = 'Wrong value ' + v + ' at iteration ' + i;"
-      "    break;"
-      "  } catch (e) {"
-      "    /* pass */"
-      "  }"
-      "}"
-      "result";
-  ExpectString(code, "PASSED");
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x27\x50\x41\x53\x53\x45\x44\x27\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x74\x72\x79\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6f\x62\x6a\x5b\x30\x5d\x3b"
+      "\x20\x20\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x61\x74\x20\x69\x74\x65\x72\x61\x74\x69\x6f\x6e\x20\x27\x20\x2b\x20\x69\x3b"
+      "\x20\x20\x20\x20\x62\x72\x65\x61\x6b\x3b"
+      "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+      "\x20\x20\x20\x20\x2f\x2a\x20\x70\x61\x73\x73\x20\x2a\x2f"
+      "\x20\x20\x7d"
+      "\x7d"
+      "\x72\x65\x73\x75\x6c\x74";
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -6272,33 +6272,33 @@ THREADED_TEST(IndexedInterceptorWithAccessorCheckSwitchedOn) {
 
   LocalContext context;
   Local<v8::Object> obj = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), obj);
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
 
   const char* code =
-      "var result = 'PASSED';"
-      "for (var i = 0; i < 100; i++) {"
-      "  var expected = i;"
-      "  if (i == 5) {"
-      "    %EnableAccessChecks(obj);"
-      "  }"
-      "  try {"
-      "    var v = obj[i];"
-      "    if (i == 5) {"
-      "      result = 'Should not have reached this!';"
-      "      break;"
-      "    } else if (v != expected) {"
-      "      result = 'Wrong value ' + v + ' at iteration ' + i;"
-      "      break;"
-      "    }"
-      "  } catch (e) {"
-      "    if (i != 5) {"
-      "      result = e;"
-      "    }"
-      "  }"
-      "  if (i == 5) %DisableAccessChecks(obj);"
-      "}"
-      "result";
-  ExpectString(code, "PASSED");
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x27\x50\x41\x53\x53\x45\x44\x27\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x69\x3b"
+      "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x7b"
+      "\x20\x20\x20\x20\x6c\xc5\x95\x81\x62\x6c\x65\x41\x63\x63\x65\x73\x73\x43\x68\x65\x63\x6b\x73\x28\x6f\x62\x6a\x29\x3b"
+      "\x20\x20\x7d"
+      "\x20\x20\x74\x72\x79\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6f\x62\x6a\x5b\x69\x5d\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x27\x53\x68\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x68\x61\x76\x65\x20\x72\x65\x61\x63\x68\x65\x64\x20\x74\x68\x69\x73\x21\x27\x3b"
+      "\x20\x20\x20\x20\x20\x20\x62\x72\x65\x61\x6b\x3b"
+      "\x20\x20\x20\x20\x7d\x20\x65\x6c\x73\x65\x20\x69\x66\x20\x28\x76\x20\x21\x3d\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x61\x74\x20\x69\x74\x65\x72\x61\x74\x69\x6f\x6e\x20\x27\x20\x2b\x20\x69\x3b"
+      "\x20\x20\x20\x20\x20\x20\x62\x72\x65\x61\x6b\x3b"
+      "\x20\x20\x20\x20\x7d"
+      "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x21\x3d\x20\x35\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x65\x3b"
+      "\x20\x20\x20\x20\x7d"
+      "\x20\x20\x7d"
+      "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x25\x44\x69\x73\x61\x62\x6c\x65\x41\x63\x63\x65\x73\x73\x43\x68\x65\x63\x6b\x73\x28\x6f\x62\x6a\x29\x3b"
+      "\x7d"
+      "\x72\x65\x73\x75\x6c\x74";
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -6310,19 +6310,19 @@ THREADED_TEST(IndexedInterceptorWithDifferentIndices) {
 
   LocalContext context;
   Local<v8::Object> obj = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), obj);
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
 
   const char* code =
-      "try {"
-      "  for (var i = 0; i < 100; i++) {"
-      "    var v = obj[i];"
-      "    if (v != i) throw 'Wrong value ' + v + ' at iteration ' + i;"
-      "  }"
-      "  'PASSED'"
-      "} catch(e) {"
-      "  e"
-      "}";
-  ExpectString(code, "PASSED");
+      "\x74\x72\x79\x20\x7b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6f\x62\x6a\x5b\x69\x5d\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x76\x20\x21\x3d\x20\x69\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x61\x74\x20\x69\x74\x65\x72\x61\x74\x69\x6f\x6e\x20\x27\x20\x2b\x20\x69\x3b"
+      "\x20\x20\x7d"
+      "\x20\x20\x27\x50\x41\x53\x53\x45\x44\x27"
+      "\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+      "\x20\x20\x65"
+      "\x7d";
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -6334,35 +6334,35 @@ THREADED_TEST(IndexedInterceptorWithNegativeIndices) {
 
   LocalContext context;
   Local<v8::Object> obj = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), obj);
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
 
   const char* code =
-      "try {"
-      "  for (var i = 0; i < 100; i++) {"
-      "    var expected = i;"
-      "    var key = i;"
-      "    if (i == 25) {"
-      "       key = -1;"
-      "       expected = undefined;"
-      "    }"
-      "    if (i == 50) {"
-      "       /* probe minimal Smi number on 32-bit platforms */"
-      "       key = -(1 << 30);"
-      "       expected = undefined;"
-      "    }"
-      "    if (i == 75) {"
-      "       /* probe minimal Smi number on 64-bit platforms */"
-      "       key = 1 << 31;"
-      "       expected = undefined;"
-      "    }"
-      "    var v = obj[key];"
-      "    if (v != expected) throw 'Wrong value ' + v + ' at iteration ' + i;"
-      "  }"
-      "  'PASSED'"
-      "} catch(e) {"
-      "  e"
-      "}";
-  ExpectString(code, "PASSED");
+      "\x74\x72\x79\x20\x7b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x69\x3b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x6b\x65\x79\x20\x3d\x20\x69\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x32\x35\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x6b\x65\x79\x20\x3d\x20\x2d\x31\x3b"
+      "\x20\x20\x20\x20\x20\x20\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3b"
+      "\x20\x20\x20\x20\x7d"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x2f\x2a\x20\x70\x72\x6f\x62\x65\x20\x6d\x69\x6e\x69\x6d\x61\x6c\x20\x53\x6d\x69\x20\x6e\x75\x6d\x62\x65\x72\x20\x6f\x6e\x20\x33\x32\x2d\x62\x69\x74\x20\x70\x6c\x61\x74\x66\x6f\x72\x6d\x73\x20\x2a\x2f"
+      "\x20\x20\x20\x20\x20\x20\x20\x6b\x65\x79\x20\x3d\x20\x2d\x28\x31\x20\x3c\x3c\x20\x33\x30\x29\x3b"
+      "\x20\x20\x20\x20\x20\x20\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3b"
+      "\x20\x20\x20\x20\x7d"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x37\x35\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x2f\x2a\x20\x70\x72\x6f\x62\x65\x20\x6d\x69\x6e\x69\x6d\x61\x6c\x20\x53\x6d\x69\x20\x6e\x75\x6d\x62\x65\x72\x20\x6f\x6e\x20\x36\x34\x2d\x62\x69\x74\x20\x70\x6c\x61\x74\x66\x6f\x72\x6d\x73\x20\x2a\x2f"
+      "\x20\x20\x20\x20\x20\x20\x20\x6b\x65\x79\x20\x3d\x20\x31\x20\x3c\x3c\x20\x33\x31\x3b"
+      "\x20\x20\x20\x20\x20\x20\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3b"
+      "\x20\x20\x20\x20\x7d"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6f\x62\x6a\x5b\x6b\x65\x79\x5d\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x76\x20\x21\x3d\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x61\x74\x20\x69\x74\x65\x72\x61\x74\x69\x6f\x6e\x20\x27\x20\x2b\x20\x69\x3b"
+      "\x20\x20\x7d"
+      "\x20\x20\x27\x50\x41\x53\x53\x45\x44\x27"
+      "\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+      "\x20\x20\x65"
+      "\x7d";
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -6374,25 +6374,25 @@ THREADED_TEST(IndexedInterceptorWithNotSmiLookup) {
 
   LocalContext context;
   Local<v8::Object> obj = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), obj);
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
 
   const char* code =
-      "try {"
-      "  for (var i = 0; i < 100; i++) {"
-      "    var expected = i;"
-      "    var key = i;"
-      "    if (i == 50) {"
-      "       key = 'foobar';"
-      "       expected = undefined;"
-      "    }"
-      "    var v = obj[key];"
-      "    if (v != expected) throw 'Wrong value ' + v + ' at iteration ' + i;"
-      "  }"
-      "  'PASSED'"
-      "} catch(e) {"
-      "  e"
-      "}";
-  ExpectString(code, "PASSED");
+      "\x74\x72\x79\x20\x7b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x69\x3b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x6b\x65\x79\x20\x3d\x20\x69\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x6b\x65\x79\x20\x3d\x20\x27\x66\x6f\x6f\x62\x61\x72\x27\x3b"
+      "\x20\x20\x20\x20\x20\x20\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3b"
+      "\x20\x20\x20\x20\x7d"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6f\x62\x6a\x5b\x6b\x65\x79\x5d\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x76\x20\x21\x3d\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x61\x74\x20\x69\x74\x65\x72\x61\x74\x69\x6f\x6e\x20\x27\x20\x2b\x20\x69\x3b"
+      "\x20\x20\x7d"
+      "\x20\x20\x27\x50\x41\x53\x53\x45\x44\x27"
+      "\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+      "\x20\x20\x65"
+      "\x7d";
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -6404,26 +6404,26 @@ THREADED_TEST(IndexedInterceptorGoingMegamorphic) {
 
   LocalContext context;
   Local<v8::Object> obj = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), obj);
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
 
   const char* code =
-      "var original = obj;"
-      "try {"
-      "  for (var i = 0; i < 100; i++) {"
-      "    var expected = i;"
-      "    if (i == 50) {"
-      "       obj = {50: 'foobar'};"
-      "       expected = 'foobar';"
-      "    }"
-      "    var v = obj[i];"
-      "    if (v != expected) throw 'Wrong value ' + v + ' at iteration ' + i;"
-      "    if (i == 50) obj = original;"
-      "  }"
-      "  'PASSED'"
-      "} catch(e) {"
-      "  e"
-      "}";
-  ExpectString(code, "PASSED");
+      "\x76\x61\x72\x20\x6f\x72\x69\x67\x69\x6e\x61\x6c\x20\x3d\x20\x6f\x62\x6a\x3b"
+      "\x74\x72\x79\x20\x7b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x69\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x35\x30\x3a\x20\x27\x66\x6f\x6f\x62\x61\x72\x27\x7d\x3b"
+      "\x20\x20\x20\x20\x20\x20\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x27\x66\x6f\x6f\x62\x61\x72\x27\x3b"
+      "\x20\x20\x20\x20\x7d"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6f\x62\x6a\x5b\x69\x5d\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x76\x20\x21\x3d\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x61\x74\x20\x69\x74\x65\x72\x61\x74\x69\x6f\x6e\x20\x27\x20\x2b\x20\x69\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x6f\x62\x6a\x20\x3d\x20\x6f\x72\x69\x67\x69\x6e\x61\x6c\x3b"
+      "\x20\x20\x7d"
+      "\x20\x20\x27\x50\x41\x53\x53\x45\x44\x27"
+      "\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+      "\x20\x20\x65"
+      "\x7d";
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -6435,26 +6435,26 @@ THREADED_TEST(IndexedInterceptorReceiverTurningSmi) {
 
   LocalContext context;
   Local<v8::Object> obj = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), obj);
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
 
   const char* code =
-      "var original = obj;"
-      "try {"
-      "  for (var i = 0; i < 100; i++) {"
-      "    var expected = i;"
-      "    if (i == 5) {"
-      "       obj = 239;"
-      "       expected = undefined;"
-      "    }"
-      "    var v = obj[i];"
-      "    if (v != expected) throw 'Wrong value ' + v + ' at iteration ' + i;"
-      "    if (i == 5) obj = original;"
-      "  }"
-      "  'PASSED'"
-      "} catch(e) {"
-      "  e"
-      "}";
-  ExpectString(code, "PASSED");
+      "\x76\x61\x72\x20\x6f\x72\x69\x67\x69\x6e\x61\x6c\x20\x3d\x20\x6f\x62\x6a\x3b"
+      "\x74\x72\x79\x20\x7b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x69\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x6f\x62\x6a\x20\x3d\x20\x32\x33\x39\x3b"
+      "\x20\x20\x20\x20\x20\x20\x20\x65\x78\x70\x65\x63\x74\x65\x64\x20\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3b"
+      "\x20\x20\x20\x20\x7d"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6f\x62\x6a\x5b\x69\x5d\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x76\x20\x21\x3d\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x61\x74\x20\x69\x74\x65\x72\x61\x74\x69\x6f\x6e\x20\x27\x20\x2b\x20\x69\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x6f\x62\x6a\x20\x3d\x20\x6f\x72\x69\x67\x69\x6e\x61\x6c\x3b"
+      "\x20\x20\x7d"
+      "\x20\x20\x27\x50\x41\x53\x53\x45\x44\x27"
+      "\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+      "\x20\x20\x65"
+      "\x7d";
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -6466,20 +6466,20 @@ THREADED_TEST(IndexedInterceptorOnProto) {
 
   LocalContext context;
   Local<v8::Object> obj = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), obj);
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
 
   const char* code =
-      "var o = {__proto__: obj};"
-      "try {"
-      "  for (var i = 0; i < 100; i++) {"
-      "    var v = o[i];"
-      "    if (v != i) throw 'Wrong value ' + v + ' at iteration ' + i;"
-      "  }"
-      "  'PASSED'"
-      "} catch(e) {"
-      "  e"
-      "}";
-  ExpectString(code, "PASSED");
+      "\x76\x61\x72\x20\x6f\x20\x3d\x20\x7b\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3a\x20\x6f\x62\x6a\x7d\x3b"
+      "\x74\x72\x79\x20\x7b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6f\x5b\x69\x5d\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x76\x20\x21\x3d\x20\x69\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x61\x74\x20\x69\x74\x65\x72\x61\x74\x69\x6f\x6e\x20\x27\x20\x2b\x20\x69\x3b"
+      "\x20\x20\x7d"
+      "\x20\x20\x27\x50\x41\x53\x53\x45\x44\x27"
+      "\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+      "\x20\x20\x65"
+      "\x7d";
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -6487,34 +6487,34 @@ THREADED_TEST(MultiContexts) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   v8::Handle<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("dummy"), v8::FunctionTemplate::New(isolate,
+  templ->Set(v8_str("\x64\x75\x6d\x6d\x79"), v8::FunctionTemplate::New(isolate,
                                                         DummyCallHandler));
 
-  Local<String> password = v8_str("Password");
+  Local<String> password = v8_str("\x50\x61\x73\x73\x77\x6f\x72\x64");
 
   // Create an environment
   LocalContext context0(0, templ);
   context0->SetSecurityToken(password);
   v8::Handle<v8::Object> global0 = context0->Global();
-  global0->Set(v8_str("custom"), v8_num(1234));
-  CHECK_EQ(1234, global0->Get(v8_str("custom"))->Int32Value());
+  global0->Set(v8_str("\x63\x75\x73\x74\x6f\x6d"), v8_num(1234));
+  CHECK_EQ(1234, global0->Get(v8_str("\x63\x75\x73\x74\x6f\x6d"))->Int32Value());
 
   // Create an independent environment
   LocalContext context1(0, templ);
   context1->SetSecurityToken(password);
   v8::Handle<v8::Object> global1 = context1->Global();
-  global1->Set(v8_str("custom"), v8_num(1234));
+  global1->Set(v8_str("\x63\x75\x73\x74\x6f\x6d"), v8_num(1234));
   CHECK_NE(global0, global1);
-  CHECK_EQ(1234, global0->Get(v8_str("custom"))->Int32Value());
-  CHECK_EQ(1234, global1->Get(v8_str("custom"))->Int32Value());
+  CHECK_EQ(1234, global0->Get(v8_str("\x63\x75\x73\x74\x6f\x6d"))->Int32Value());
+  CHECK_EQ(1234, global1->Get(v8_str("\x63\x75\x73\x74\x6f\x6d"))->Int32Value());
 
   // Now create a new context with the old global
   LocalContext context2(0, templ, global1);
   context2->SetSecurityToken(password);
   v8::Handle<v8::Object> global2 = context2->Global();
   CHECK_EQ(global1, global2);
-  CHECK_EQ(0, global1->Get(v8_str("custom"))->Int32Value());
-  CHECK_EQ(0, global2->Get(v8_str("custom"))->Int32Value());
+  CHECK_EQ(0, global1->Get(v8_str("\x63\x75\x73\x74\x6f\x6d"))->Int32Value());
+  CHECK_EQ(0, global2->Get(v8_str("\x63\x75\x73\x74\x6f\x6d"))->Int32Value());
 }
 
 
@@ -6528,23 +6528,23 @@ THREADED_TEST(FunctionPrototypeAcrossContexts) {
   v8::Handle<v8::Object> global0 =
       env0->Global();
   v8::Handle<v8::Object> object0 =
-      global0->Get(v8_str("Object")).As<v8::Object>();
+      global0->Get(v8_str("\x4f\x62\x6a\x65\x63\x74")).As<v8::Object>();
   v8::Handle<v8::Object> tostring0 =
-      object0->Get(v8_str("toString")).As<v8::Object>();
+      object0->Get(v8_str("\x74\x6f\x53\x74\x72\x69\x6e\x67")).As<v8::Object>();
   v8::Handle<v8::Object> proto0 =
-      tostring0->Get(v8_str("__proto__")).As<v8::Object>();
-  proto0->Set(v8_str("custom"), v8_num(1234));
+      tostring0->Get(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f")).As<v8::Object>();
+  proto0->Set(v8_str("\x63\x75\x73\x74\x6f\x6d"), v8_num(1234));
 
   LocalContext env1;
   v8::Handle<v8::Object> global1 =
       env1->Global();
   v8::Handle<v8::Object> object1 =
-      global1->Get(v8_str("Object")).As<v8::Object>();
+      global1->Get(v8_str("\x4f\x62\x6a\x65\x63\x74")).As<v8::Object>();
   v8::Handle<v8::Object> tostring1 =
-      object1->Get(v8_str("toString")).As<v8::Object>();
+      object1->Get(v8_str("\x74\x6f\x53\x74\x72\x69\x6e\x67")).As<v8::Object>();
   v8::Handle<v8::Object> proto1 =
-      tostring1->Get(v8_str("__proto__")).As<v8::Object>();
-  CHECK(!proto1->Has(v8_str("custom")));
+      tostring1->Get(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f")).As<v8::Object>();
+  CHECK(!proto1->Has(v8_str("\x63\x75\x73\x74\x6f\x6d")));
 }
 
 
@@ -6557,9 +6557,9 @@ THREADED_TEST(Regress892105) {
 
   v8::HandleScope scope(CcTest::isolate());
 
-  Local<String> source = v8_str("Object.prototype.obj = 1234;"
-                                "Array.prototype.arr = 4567;"
-                                "8901");
+  Local<String> source = v8_str("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x6f\x62\x6a\x20\x3d\x20\x31\x32\x33\x34\x3b"
+                                "\x41\x72\x72\x61\x79\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x61\x72\x72\x20\x3d\x20\x34\x35\x36\x37\x3b"
+                                "\x38\x39\x30\x31");
 
   LocalContext env0;
   Local<Script> script0 = v8_compile(source);
@@ -6580,38 +6580,38 @@ THREADED_TEST(UndetectableObject) {
   desc->InstanceTemplate()->MarkAsUndetectable();  // undetectable
 
   Local<v8::Object> obj = desc->GetFunction()->NewInstance();
-  env->Global()->Set(v8_str("undetectable"), obj);
+  env->Global()->Set(v8_str("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65"), obj);
 
-  ExpectString("undetectable.toString()", "[object Object]");
-  ExpectString("typeof undetectable", "undefined");
-  ExpectString("typeof(undetectable)", "undefined");
-  ExpectBoolean("typeof undetectable == 'undefined'", true);
-  ExpectBoolean("typeof undetectable == 'object'", false);
-  ExpectBoolean("if (undetectable) { true; } else { false; }", false);
-  ExpectBoolean("!undetectable", true);
+  ExpectString("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29", "\x5b\x6f\x62\x6a\x65\x63\x74\x20\x4f\x62\x6a\x65\x63\x74\x5d");
+  ExpectString("\x74\x79\x70\x65\x6f\x66\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64");
+  ExpectString("\x74\x79\x70\x65\x6f\x66\x28\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29", "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64");
+  ExpectBoolean("\x74\x79\x70\x65\x6f\x66\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x20\x3d\x3d\x20\x27\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x27", true);
+  ExpectBoolean("\x74\x79\x70\x65\x6f\x66\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x20\x3d\x3d\x20\x27\x6f\x62\x6a\x65\x63\x74\x27", false);
+  ExpectBoolean("\x69\x66\x20\x28\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29\x20\x7b\x20\x74\x72\x75\x65\x3b\x20\x7d\x20\x65\x6c\x73\x65\x20\x7b\x20\x66\x61\x6c\x73\x65\x3b\x20\x7d", false);
+  ExpectBoolean("\x21\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
 
-  ExpectObject("true&&undetectable", obj);
-  ExpectBoolean("false&&undetectable", false);
-  ExpectBoolean("true||undetectable", true);
-  ExpectObject("false||undetectable", obj);
+  ExpectObject("\x74\x72\x75\x65\x26\x26\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", obj);
+  ExpectBoolean("\x66\x61\x6c\x73\x65\x26\x26\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", false);
+  ExpectBoolean("\x74\x72\x75\x65\x7c\x7c\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
+  ExpectObject("\x66\x61\x6c\x73\x65\x7c\x7c\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", obj);
 
-  ExpectObject("undetectable&&true", obj);
-  ExpectObject("undetectable&&false", obj);
-  ExpectBoolean("undetectable||true", true);
-  ExpectBoolean("undetectable||false", false);
+  ExpectObject("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x26\x26\x74\x72\x75\x65", obj);
+  ExpectObject("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x26\x26\x66\x61\x6c\x73\x65", obj);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x7c\x7c\x74\x72\x75\x65", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x7c\x7c\x66\x61\x6c\x73\x65", false);
 
-  ExpectBoolean("undetectable==null", true);
-  ExpectBoolean("null==undetectable", true);
-  ExpectBoolean("undetectable==undefined", true);
-  ExpectBoolean("undefined==undetectable", true);
-  ExpectBoolean("undetectable==undetectable", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x6e\x75\x6c\x6c", true);
+  ExpectBoolean("\x6e\x75\x6c\x6c\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
 
 
-  ExpectBoolean("undetectable===null", false);
-  ExpectBoolean("null===undetectable", false);
-  ExpectBoolean("undetectable===undefined", false);
-  ExpectBoolean("undefined===undetectable", false);
-  ExpectBoolean("undetectable===undetectable", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x3d\x6e\x75\x6c\x6c", false);
+  ExpectBoolean("\x6e\x75\x6c\x6c\x3d\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", false);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x3d\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", false);
+  ExpectBoolean("\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3d\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", false);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
 }
 
 
@@ -6624,38 +6624,38 @@ THREADED_TEST(VoidLiteral) {
   desc->InstanceTemplate()->MarkAsUndetectable();  // undetectable
 
   Local<v8::Object> obj = desc->GetFunction()->NewInstance();
-  env->Global()->Set(v8_str("undetectable"), obj);
+  env->Global()->Set(v8_str("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65"), obj);
 
-  ExpectBoolean("undefined == void 0", true);
-  ExpectBoolean("undetectable == void 0", true);
-  ExpectBoolean("null == void 0", true);
-  ExpectBoolean("undefined === void 0", true);
-  ExpectBoolean("undetectable === void 0", false);
-  ExpectBoolean("null === void 0", false);
+  ExpectBoolean("\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x20\x3d\x3d\x20\x76\x6f\x69\x64\x20\x30", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x20\x3d\x3d\x20\x76\x6f\x69\x64\x20\x30", true);
+  ExpectBoolean("\x6e\x75\x6c\x6c\x20\x3d\x3d\x20\x76\x6f\x69\x64\x20\x30", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x20\x3d\x3d\x3d\x20\x76\x6f\x69\x64\x20\x30", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x20\x3d\x3d\x3d\x20\x76\x6f\x69\x64\x20\x30", false);
+  ExpectBoolean("\x6e\x75\x6c\x6c\x20\x3d\x3d\x3d\x20\x76\x6f\x69\x64\x20\x30", false);
 
-  ExpectBoolean("void 0 == undefined", true);
-  ExpectBoolean("void 0 == undetectable", true);
-  ExpectBoolean("void 0 == null", true);
-  ExpectBoolean("void 0 === undefined", true);
-  ExpectBoolean("void 0 === undetectable", false);
-  ExpectBoolean("void 0 === null", false);
+  ExpectBoolean("\x76\x6f\x69\x64\x20\x30\x20\x3d\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", true);
+  ExpectBoolean("\x76\x6f\x69\x64\x20\x30\x20\x3d\x3d\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
+  ExpectBoolean("\x76\x6f\x69\x64\x20\x30\x20\x3d\x3d\x20\x6e\x75\x6c\x6c", true);
+  ExpectBoolean("\x76\x6f\x69\x64\x20\x30\x20\x3d\x3d\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", true);
+  ExpectBoolean("\x76\x6f\x69\x64\x20\x30\x20\x3d\x3d\x3d\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", false);
+  ExpectBoolean("\x76\x6f\x69\x64\x20\x30\x20\x3d\x3d\x3d\x20\x6e\x75\x6c\x6c", false);
 
-  ExpectString("(function() {"
-               "  try {"
-               "    return x === void 0;"
-               "  } catch(e) {"
-               "    return e.toString();"
-               "  }"
-               "})()",
-               "ReferenceError: x is not defined");
-  ExpectString("(function() {"
-               "  try {"
-               "    return void 0 === x;"
-               "  } catch(e) {"
-               "    return e.toString();"
-               "  }"
-               "})()",
-               "ReferenceError: x is not defined");
+  ExpectString("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+               "\x20\x20\x74\x72\x79\x20\x7b"
+               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x3d\x3d\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b"
+               "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x3b"
+               "\x20\x20\x7d"
+               "\x7d\x29\x28\x29",
+               "\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x3a\x20\x78\x20\x69\x73\x20\x6e\x6f\x74\x20\x64\x65\x66\x69\x6e\x65\x64");
+  ExpectString("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+               "\x20\x20\x74\x72\x79\x20\x7b"
+               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x76\x6f\x69\x64\x20\x30\x20\x3d\x3d\x3d\x20\x78\x3b"
+               "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x3b"
+               "\x20\x20\x7d"
+               "\x7d\x29\x28\x29",
+               "\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x3a\x20\x78\x20\x69\x73\x20\x6e\x6f\x74\x20\x64\x65\x66\x69\x6e\x65\x64");
 }
 
 
@@ -6668,26 +6668,26 @@ THREADED_TEST(ExtensibleOnUndetectable) {
   desc->InstanceTemplate()->MarkAsUndetectable();  // undetectable
 
   Local<v8::Object> obj = desc->GetFunction()->NewInstance();
-  env->Global()->Set(v8_str("undetectable"), obj);
+  env->Global()->Set(v8_str("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65"), obj);
 
-  Local<String> source = v8_str("undetectable.x = 42;"
-                                "undetectable.x");
+  Local<String> source = v8_str("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x2e\x78\x20\x3d\x20\x34\x32\x3b"
+                                "\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x2e\x78");
 
   Local<Script> script = v8_compile(source);
 
   CHECK_EQ(v8::Integer::New(isolate, 42), script->Run());
 
-  ExpectBoolean("Object.isExtensible(undetectable)", true);
+  ExpectBoolean("\x4f\x62\x6a\x65\x63\x74\x2e\x69\x73\x45\x78\x74\x65\x6e\x73\x69\x62\x6c\x65\x28\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29", true);
 
-  source = v8_str("Object.preventExtensions(undetectable);");
+  source = v8_str("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x65\x76\x65\x6e\x74\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x73\x28\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29\x3b");
   script = v8_compile(source);
   script->Run();
-  ExpectBoolean("Object.isExtensible(undetectable)", false);
+  ExpectBoolean("\x4f\x62\x6a\x65\x63\x74\x2e\x69\x73\x45\x78\x74\x65\x6e\x73\x69\x62\x6c\x65\x28\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29", false);
 
-  source = v8_str("undetectable.y = 2000;");
+  source = v8_str("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x2e\x79\x20\x3d\x20\x32\x30\x30\x30\x3b");
   script = v8_compile(source);
   script->Run();
-  ExpectBoolean("undetectable.y == undefined", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x2e\x79\x20\x3d\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", true);
 }
 
 
@@ -6696,40 +6696,40 @@ THREADED_TEST(UndetectableString) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
 
-  Local<String> obj = String::NewFromUtf8(env->GetIsolate(), "foo",
+  Local<String> obj = String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f",
                                           String::kUndetectableString);
-  env->Global()->Set(v8_str("undetectable"), obj);
+  env->Global()->Set(v8_str("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65"), obj);
 
-  ExpectString("undetectable", "foo");
-  ExpectString("typeof undetectable", "undefined");
-  ExpectString("typeof(undetectable)", "undefined");
-  ExpectBoolean("typeof undetectable == 'undefined'", true);
-  ExpectBoolean("typeof undetectable == 'string'", false);
-  ExpectBoolean("if (undetectable) { true; } else { false; }", false);
-  ExpectBoolean("!undetectable", true);
+  ExpectString("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", "\x66\x6f\x6f");
+  ExpectString("\x74\x79\x70\x65\x6f\x66\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64");
+  ExpectString("\x74\x79\x70\x65\x6f\x66\x28\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29", "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64");
+  ExpectBoolean("\x74\x79\x70\x65\x6f\x66\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x20\x3d\x3d\x20\x27\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x27", true);
+  ExpectBoolean("\x74\x79\x70\x65\x6f\x66\x20\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x20\x3d\x3d\x20\x27\x73\x74\x72\x69\x6e\x67\x27", false);
+  ExpectBoolean("\x69\x66\x20\x28\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29\x20\x7b\x20\x74\x72\x75\x65\x3b\x20\x7d\x20\x65\x6c\x73\x65\x20\x7b\x20\x66\x61\x6c\x73\x65\x3b\x20\x7d", false);
+  ExpectBoolean("\x21\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
 
-  ExpectObject("true&&undetectable", obj);
-  ExpectBoolean("false&&undetectable", false);
-  ExpectBoolean("true||undetectable", true);
-  ExpectObject("false||undetectable", obj);
+  ExpectObject("\x74\x72\x75\x65\x26\x26\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", obj);
+  ExpectBoolean("\x66\x61\x6c\x73\x65\x26\x26\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", false);
+  ExpectBoolean("\x74\x72\x75\x65\x7c\x7c\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
+  ExpectObject("\x66\x61\x6c\x73\x65\x7c\x7c\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", obj);
 
-  ExpectObject("undetectable&&true", obj);
-  ExpectObject("undetectable&&false", obj);
-  ExpectBoolean("undetectable||true", true);
-  ExpectBoolean("undetectable||false", false);
+  ExpectObject("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x26\x26\x74\x72\x75\x65", obj);
+  ExpectObject("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x26\x26\x66\x61\x6c\x73\x65", obj);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x7c\x7c\x74\x72\x75\x65", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x7c\x7c\x66\x61\x6c\x73\x65", false);
 
-  ExpectBoolean("undetectable==null", true);
-  ExpectBoolean("null==undetectable", true);
-  ExpectBoolean("undetectable==undefined", true);
-  ExpectBoolean("undefined==undetectable", true);
-  ExpectBoolean("undetectable==undetectable", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x6e\x75\x6c\x6c", true);
+  ExpectBoolean("\x6e\x75\x6c\x6c\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
 
 
-  ExpectBoolean("undetectable===null", false);
-  ExpectBoolean("null===undetectable", false);
-  ExpectBoolean("undetectable===undefined", false);
-  ExpectBoolean("undefined===undetectable", false);
-  ExpectBoolean("undetectable===undetectable", true);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x3d\x6e\x75\x6c\x6c", false);
+  ExpectBoolean("\x6e\x75\x6c\x6c\x3d\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", false);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x3d\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", false);
+  ExpectBoolean("\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3d\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", false);
+  ExpectBoolean("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x3d\x3d\x3d\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65", true);
 }
 
 
@@ -6738,31 +6738,31 @@ TEST(UndetectableOptimized) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
 
-  Local<String> obj = String::NewFromUtf8(env->GetIsolate(), "foo",
+  Local<String> obj = String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f",
                                           String::kUndetectableString);
-  env->Global()->Set(v8_str("undetectable"), obj);
-  env->Global()->Set(v8_str("detectable"), v8_str("bar"));
+  env->Global()->Set(v8_str("\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65"), obj);
+  env->Global()->Set(v8_str("\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65"), v8_str("\x62\x61\x72"));
 
   ExpectString(
-      "function testBranch() {"
-      "  if (!%_IsUndetectableObject(undetectable)) throw 1;"
-      "  if (%_IsUndetectableObject(detectable)) throw 2;"
-      "}\n"
-      "function testBool() {"
-      "  var b1 = !%_IsUndetectableObject(undetectable);"
-      "  var b2 = %_IsUndetectableObject(detectable);"
-      "  if (b1) throw 3;"
-      "  if (b2) throw 4;"
-      "  return b1 == b2;"
-      "}\n"
-      "%OptimizeFunctionOnNextCall(testBranch);"
-      "%OptimizeFunctionOnNextCall(testBool);"
-      "for (var i = 0; i < 10; i++) {"
-      "  testBranch();"
-      "  testBool();"
-      "}\n"
-      "\"PASS\"",
-      "PASS");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x42\x72\x61\x6e\x63\x68\x28\x29\x20\x7b"
+      "\x20\x20\x69\x66\x20\x28\x21\x25\x5f\x49\x73\x55\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x4f\x62\x6a\x65\x63\x74\x28\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29\x29\x20\x74\x68\x72\x6f\x77\x20\x31\x3b"
+      "\x20\x20\x69\x66\x20\x28\x25\x5f\x49\x73\x55\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x4f\x62\x6a\x65\x63\x74\x28\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29\x29\x20\x74\x68\x72\x6f\x77\x20\x32\x3b"
+      "\x7d\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x42\x6f\x6f\x6c\x28\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x62\x31\x20\x3d\x20\x21\x25\x5f\x49\x73\x55\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x4f\x62\x6a\x65\x63\x74\x28\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29\x3b"
+      "\x20\x20\x76\x61\x72\x20\x62\x32\x20\x3d\x20\x25\x5f\x49\x73\x55\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x4f\x62\x6a\x65\x63\x74\x28\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x29\x3b"
+      "\x20\x20\x69\x66\x20\x28\x62\x31\x29\x20\x74\x68\x72\x6f\x77\x20\x33\x3b"
+      "\x20\x20\x69\x66\x20\x28\x62\x32\x29\x20\x74\x68\x72\x6f\x77\x20\x34\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x62\x31\x20\x3d\x3d\x20\x62\x32\x3b"
+      "\x7d\xa"
+      "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x74\x65\x73\x74\x42\x72\x61\x6e\x63\x68\x29\x3b"
+      "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x74\x65\x73\x74\x42\x6f\x6f\x6c\x29\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x74\x65\x73\x74\x42\x72\x61\x6e\x63\x68\x28\x29\x3b"
+      "\x20\x20\x74\x65\x73\x74\x42\x6f\x6f\x6c\x28\x29\x3b"
+      "\x7d\xa"
+      "\x22\x50\x41\x53\x53\x22",
+      "\x50\x41\x53\x53");
 }
 
 
@@ -6772,7 +6772,7 @@ TEST(PersistentHandles) {
   LocalContext env;
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
-  Local<String> str = v8_str("foo");
+  Local<String> str = v8_str("\x66\x6f\x6f");
   v8::Persistent<String> p_str(isolate, str);
   p_str.Reset();
   Local<Script> scr = v8_compile("");
@@ -6794,84 +6794,84 @@ THREADED_TEST(GlobalObjectTemplate) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope handle_scope(isolate);
   Local<ObjectTemplate> global_template = ObjectTemplate::New(isolate);
-  global_template->Set(v8_str("JSNI_Log"),
+  global_template->Set(v8_str("\x4a\x53\x4e\x49\x5f\x4c\x6f\x67"),
                        v8::FunctionTemplate::New(isolate, HandleLogDelegator));
   v8::Local<Context> context = Context::New(isolate, 0, global_template);
   Context::Scope context_scope(context);
-  CompileRun("JSNI_Log('LOG')");
+  CompileRun("\x4a\x53\x4e\x49\x5f\x4c\x6f\x67\x28\x27\x4c\x4f\x47\x27\x29");
 }
 
 
 static const char* kSimpleExtensionSource =
-  "function Foo() {"
-  "  return 4;"
-  "}";
+  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x6f\x6f\x28\x29\x20\x7b"
+  "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x3b"
+  "\x7d";
 
 
 TEST(SimpleExtensions) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  v8::RegisterExtension(new Extension("simpletest", kSimpleExtensionSource));
-  const char* extension_names[] = { "simpletest" };
+  v8::RegisterExtension(new Extension("\x73\x69\x6d\x70\x6c\x65\x74\x65\x73\x74", kSimpleExtensionSource));
+  const char* extension_names[] = { "\x73\x69\x6d\x70\x6c\x65\x74\x65\x73\x74" };
   v8::ExtensionConfiguration extensions(1, extension_names);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate(), &extensions);
   Context::Scope lock(context);
-  v8::Handle<Value> result = CompileRun("Foo()");
+  v8::Handle<Value> result = CompileRun("\x46\x6f\x6f\x28\x29");
   CHECK_EQ(result, v8::Integer::New(CcTest::isolate(), 4));
 }
 
 
 static const char* kStackTraceFromExtensionSource =
-  "function foo() {"
-  "  throw new Error();"
-  "}"
-  "function bar() {"
-  "  foo();"
-  "}";
+  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b"
+  "\x20\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x3b"
+  "\x7d"
+  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b"
+  "\x20\x20\x66\x6f\x6f\x28\x29\x3b"
+  "\x7d";
 
 
 TEST(StackTraceInExtension) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  v8::RegisterExtension(new Extension("stacktracetest",
+  v8::RegisterExtension(new Extension("\x73\x74\x61\x63\x6b\x74\x72\x61\x63\x65\x74\x65\x73\x74",
                         kStackTraceFromExtensionSource));
-  const char* extension_names[] = { "stacktracetest" };
+  const char* extension_names[] = { "\x73\x74\x61\x63\x6b\x74\x72\x61\x63\x65\x74\x65\x73\x74" };
   v8::ExtensionConfiguration extensions(1, extension_names);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate(), &extensions);
   Context::Scope lock(context);
-  CompileRun("function user() { bar(); }"
-             "var error;"
-             "try{ user(); } catch (e) { error = e; }");
-  CHECK_EQ(-1, CompileRun("error.stack.indexOf('foo')")->Int32Value());
-  CHECK_EQ(-1, CompileRun("error.stack.indexOf('bar')")->Int32Value());
-  CHECK_NE(-1, CompileRun("error.stack.indexOf('user')")->Int32Value());
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x75\x73\x65\x72\x28\x29\x20\x7b\x20\x62\x61\x72\x28\x29\x3b\x20\x7d"
+             "\x76\x61\x72\x20\x65\x72\x72\x6f\x72\x3b"
+             "\x74\x72\x79\x7b\x20\x75\x73\x65\x72\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x65\x3b\x20\x7d");
+  CHECK_EQ(-1, CompileRun("\x65\x72\x72\x6f\x72\x2e\x73\x74\x61\x63\x6b\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x66\x6f\x6f\x27\x29")->Int32Value());
+  CHECK_EQ(-1, CompileRun("\x65\x72\x72\x6f\x72\x2e\x73\x74\x61\x63\x6b\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x62\x61\x72\x27\x29")->Int32Value());
+  CHECK_NE(-1, CompileRun("\x65\x72\x72\x6f\x72\x2e\x73\x74\x61\x63\x6b\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x75\x73\x65\x72\x27\x29")->Int32Value());
 }
 
 
 TEST(NullExtensions) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  v8::RegisterExtension(new Extension("nulltest", NULL));
-  const char* extension_names[] = { "nulltest" };
+  v8::RegisterExtension(new Extension("\x6e\x75\x6c\x6c\x74\x65\x73\x74", NULL));
+  const char* extension_names[] = { "\x6e\x75\x6c\x6c\x74\x65\x73\x74" };
   v8::ExtensionConfiguration extensions(1, extension_names);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate(), &extensions);
   Context::Scope lock(context);
-  v8::Handle<Value> result = CompileRun("1+3");
+  v8::Handle<Value> result = CompileRun("\x31\x2b\x33");
   CHECK_EQ(result, v8::Integer::New(CcTest::isolate(), 4));
 }
 
 
 static const char* kEmbeddedExtensionSource =
-    "function Ret54321(){return 54321;}~~@@$"
-    "$%% THIS IS A SERIES OF NON-NULL-TERMINATED STRINGS.";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x52\x65\x74\x35\x34\x33\x32\x31\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x35\x34\x33\x32\x31\x3b\x7d\x7e\x7e\x40\x40\x24"
+    "\x24\x25\x25\x20\x54\x48\x49\x53\x20\x49\x53\x20\x41\x20\x53\x45\x52\x49\x45\x53\x20\x4f\x46\x20\x4e\x4f\x4e\x2d\x4e\x55\x4c\x4c\x2d\x54\x45\x52\x4d\x49\x4e\x41\x54\x45\x44\x20\x53\x54\x52\x49\x4e\x47\x53\x2e";
 static const int kEmbeddedExtensionSourceValidLen = 34;
 
 
 TEST(ExtensionMissingSourceLength) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  v8::RegisterExtension(new Extension("srclentest_fail",
+  v8::RegisterExtension(new Extension("\x73\x72\x63\x6c\x65\x6e\x74\x65\x73\x74\x5f\x66\x61\x69\x6c",
                                       kEmbeddedExtensionSource));
-  const char* extension_names[] = { "srclentest_fail" };
+  const char* extension_names[] = { "\x73\x72\x63\x6c\x65\x6e\x74\x65\x73\x74\x5f\x66\x61\x69\x6c" };
   v8::ExtensionConfiguration extensions(1, extension_names);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate(), &extensions);
@@ -6884,7 +6884,7 @@ TEST(ExtensionWithSourceLength) {
        source_len <= kEmbeddedExtensionSourceValidLen + 1; ++source_len) {
     v8::HandleScope handle_scope(CcTest::isolate());
     i::ScopedVector<char> extension_name(32);
-    i::SNPrintF(extension_name, "ext #%d", source_len);
+    i::SNPrintF(extension_name, "\x65\x78\x74\x20\x23\x6c\x84", source_len);
     v8::RegisterExtension(new Extension(extension_name.start(),
                                         kEmbeddedExtensionSource, 0, 0,
                                         source_len));
@@ -6894,7 +6894,7 @@ TEST(ExtensionWithSourceLength) {
       Context::New(CcTest::isolate(), &extensions);
     if (source_len == kEmbeddedExtensionSourceValidLen) {
       Context::Scope lock(context);
-      v8::Handle<Value> result = CompileRun("Ret54321()");
+      v8::Handle<Value> result = CompileRun("\x52\x65\x74\x35\x34\x33\x32\x31\x28\x29");
       CHECK_EQ(v8::Integer::New(CcTest::isolate(), 54321), result);
     } else {
       // Anything but exactly the right length should fail to compile.
@@ -6905,96 +6905,96 @@ TEST(ExtensionWithSourceLength) {
 
 
 static const char* kEvalExtensionSource1 =
-  "function UseEval1() {"
-  "  var x = 42;"
-  "  return eval('x');"
-  "}";
+  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x55\x73\x65\x45\x76\x61\x6c\x31\x28\x29\x20\x7b"
+  "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x32\x3b"
+  "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x76\x61\x6c\x28\x27\x78\x27\x29\x3b"
+  "\x7d";
 
 
 static const char* kEvalExtensionSource2 =
-  "(function() {"
-  "  var x = 42;"
-  "  function e() {"
-  "    return eval('x');"
-  "  }"
-  "  this.UseEval2 = e;"
-  "})()";
+  "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+  "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x32\x3b"
+  "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x28\x29\x20\x7b"
+  "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x76\x61\x6c\x28\x27\x78\x27\x29\x3b"
+  "\x20\x20\x7d"
+  "\x20\x20\x74\x68\x69\x73\x2e\x55\x73\x65\x45\x76\x61\x6c\x32\x20\x3d\x20\x65\x3b"
+  "\x7d\x29\x28\x29";
 
 
 TEST(UseEvalFromExtension) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  v8::RegisterExtension(new Extension("evaltest1", kEvalExtensionSource1));
-  v8::RegisterExtension(new Extension("evaltest2", kEvalExtensionSource2));
-  const char* extension_names[] = { "evaltest1", "evaltest2" };
+  v8::RegisterExtension(new Extension("\x65\x76\x61\x6c\x74\x65\x73\x74\x31", kEvalExtensionSource1));
+  v8::RegisterExtension(new Extension("\x65\x76\x61\x6c\x74\x65\x73\x74\x32", kEvalExtensionSource2));
+  const char* extension_names[] = { "\x65\x76\x61\x6c\x74\x65\x73\x74\x31", "\x65\x76\x61\x6c\x74\x65\x73\x74\x32" };
   v8::ExtensionConfiguration extensions(2, extension_names);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate(), &extensions);
   Context::Scope lock(context);
-  v8::Handle<Value> result = CompileRun("UseEval1()");
+  v8::Handle<Value> result = CompileRun("\x55\x73\x65\x45\x76\x61\x6c\x31\x28\x29");
   CHECK_EQ(result, v8::Integer::New(CcTest::isolate(), 42));
-  result = CompileRun("UseEval2()");
+  result = CompileRun("\x55\x73\x65\x45\x76\x61\x6c\x32\x28\x29");
   CHECK_EQ(result, v8::Integer::New(CcTest::isolate(), 42));
 }
 
 
 static const char* kWithExtensionSource1 =
-  "function UseWith1() {"
-  "  var x = 42;"
-  "  with({x:87}) { return x; }"
-  "}";
+  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x55\x73\x65\x57\x69\x74\x68\x31\x28\x29\x20\x7b"
+  "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x32\x3b"
+  "\x20\x20\x77\x69\x74\x68\x28\x7b\x78\x3a\x38\x37\x7d\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d"
+  "\x7d";
 
 
 
 static const char* kWithExtensionSource2 =
-  "(function() {"
-  "  var x = 42;"
-  "  function e() {"
-  "    with ({x:87}) { return x; }"
-  "  }"
-  "  this.UseWith2 = e;"
-  "})()";
+  "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+  "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x32\x3b"
+  "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x28\x29\x20\x7b"
+  "\x20\x20\x20\x20\x77\x69\x74\x68\x20\x28\x7b\x78\x3a\x38\x37\x7d\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d"
+  "\x20\x20\x7d"
+  "\x20\x20\x74\x68\x69\x73\x2e\x55\x73\x65\x57\x69\x74\x68\x32\x20\x3d\x20\x65\x3b"
+  "\x7d\x29\x28\x29";
 
 
 TEST(UseWithFromExtension) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  v8::RegisterExtension(new Extension("withtest1", kWithExtensionSource1));
-  v8::RegisterExtension(new Extension("withtest2", kWithExtensionSource2));
-  const char* extension_names[] = { "withtest1", "withtest2" };
+  v8::RegisterExtension(new Extension("\x77\x69\x74\x68\x74\x65\x73\x74\x31", kWithExtensionSource1));
+  v8::RegisterExtension(new Extension("\x77\x69\x74\x68\x74\x65\x73\x74\x32", kWithExtensionSource2));
+  const char* extension_names[] = { "\x77\x69\x74\x68\x74\x65\x73\x74\x31", "\x77\x69\x74\x68\x74\x65\x73\x74\x32" };
   v8::ExtensionConfiguration extensions(2, extension_names);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate(), &extensions);
   Context::Scope lock(context);
-  v8::Handle<Value> result = CompileRun("UseWith1()");
+  v8::Handle<Value> result = CompileRun("\x55\x73\x65\x57\x69\x74\x68\x31\x28\x29");
   CHECK_EQ(result, v8::Integer::New(CcTest::isolate(), 87));
-  result = CompileRun("UseWith2()");
+  result = CompileRun("\x55\x73\x65\x57\x69\x74\x68\x32\x28\x29");
   CHECK_EQ(result, v8::Integer::New(CcTest::isolate(), 87));
 }
 
 
 TEST(AutoExtensions) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  Extension* extension = new Extension("autotest", kSimpleExtensionSource);
+  Extension* extension = new Extension("\x61\x75\x74\x6f\x74\x65\x73\x74", kSimpleExtensionSource);
   extension->set_auto_enable(true);
   v8::RegisterExtension(extension);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate());
   Context::Scope lock(context);
-  v8::Handle<Value> result = CompileRun("Foo()");
+  v8::Handle<Value> result = CompileRun("\x46\x6f\x6f\x28\x29");
   CHECK_EQ(result, v8::Integer::New(CcTest::isolate(), 4));
 }
 
 
 static const char* kSyntaxErrorInExtensionSource =
-    "[";
+    "\x5b";
 
 
 // Test that a syntax error in an extension does not cause a fatal
 // error but results in an empty context.
 TEST(SyntaxErrorExtensions) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  v8::RegisterExtension(new Extension("syntaxerror",
+  v8::RegisterExtension(new Extension("\x73\x79\x6e\x74\x61\x78\x65\x72\x72\x6f\x72",
                                       kSyntaxErrorInExtensionSource));
-  const char* extension_names[] = { "syntaxerror" };
+  const char* extension_names[] = { "\x73\x79\x6e\x74\x61\x78\x65\x72\x72\x6f\x72" };
   v8::ExtensionConfiguration extensions(1, extension_names);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate(), &extensions);
@@ -7003,16 +7003,16 @@ TEST(SyntaxErrorExtensions) {
 
 
 static const char* kExceptionInExtensionSource =
-    "throw 42";
+    "\x74\x68\x72\x6f\x77\x20\x34\x32";
 
 
 // Test that an exception when installing an extension does not cause
 // a fatal error but results in an empty context.
 TEST(ExceptionExtensions) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  v8::RegisterExtension(new Extension("exception",
+  v8::RegisterExtension(new Extension("\x65\x78\x63\x65\x70\x74\x69\x6f\x6e",
                                       kExceptionInExtensionSource));
-  const char* extension_names[] = { "exception" };
+  const char* extension_names[] = { "\x65\x78\x63\x65\x70\x74\x69\x6f\x6e" };
   v8::ExtensionConfiguration extensions(1, extension_names);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate(), &extensions);
@@ -7021,20 +7021,20 @@ TEST(ExceptionExtensions) {
 
 
 static const char* kNativeCallInExtensionSource =
-    "function call_runtime_last_index_of(x) {"
-    "  return %StringLastIndexOf(x, 'bob', 10);"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x61\x6c\x6c\x5f\x72\x75\x6e\x74\x69\x6d\x65\x5f\x6c\x61\x73\x74\x5f\x69\x6e\x64\x65\x78\x5f\x6f\x66\x28\x78\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x25\x53\x74\x72\x69\x6e\x67\x4c\x61\x73\x74\x49\x6e\x64\x65\x78\x4f\x66\x28\x78\x2c\x20\x27\x62\x6f\x62\x27\x2c\x20\x31\x30\x29\x3b"
+    "\x7d";
 
 
 static const char* kNativeCallTest =
-    "call_runtime_last_index_of('bobbobboellebobboellebobbob');";
+    "\x63\x61\x6c\x6c\x5f\x72\x75\x6e\x74\x69\x6d\x65\x5f\x6c\x61\x73\x74\x5f\x69\x6e\x64\x65\x78\x5f\x6f\x66\x28\x27\x62\x6f\x62\x62\x6f\x62\x62\x6f\x65\x6c\x6c\x65\x62\x6f\x62\x62\x6f\x65\x6c\x6c\x65\x62\x6f\x62\x62\x6f\x62\x27\x29\x3b";
 
 // Test that a native runtime calls are supported in extensions.
 TEST(NativeCallInExtensions) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  v8::RegisterExtension(new Extension("nativecall",
+  v8::RegisterExtension(new Extension("\x6e\x61\x74\x69\x76\x65\x63\x61\x6c\x6c",
                                       kNativeCallInExtensionSource));
-  const char* extension_names[] = { "nativecall" };
+  const char* extension_names[] = { "\x6e\x61\x74\x69\x76\x65\x63\x61\x6c\x6c" };
   v8::ExtensionConfiguration extensions(1, extension_names);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate(), &extensions);
@@ -7068,25 +7068,25 @@ class NativeFunctionExtension : public Extension {
 
 TEST(NativeFunctionDeclaration) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  const char* name = "nativedecl";
+  const char* name = "\x6e\x61\x74\x69\x76\x65\x64\x65\x63\x6c";
   v8::RegisterExtension(new NativeFunctionExtension(name,
-                                                    "native function foo();"));
+                                                    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x3b"));
   const char* extension_names[] = { name };
   v8::ExtensionConfiguration extensions(1, extension_names);
   v8::Handle<Context> context =
       Context::New(CcTest::isolate(), &extensions);
   Context::Scope lock(context);
-  v8::Handle<Value> result = CompileRun("foo(42);");
+  v8::Handle<Value> result = CompileRun("\x66\x6f\x6f\x28\x34\x32\x29\x3b");
   CHECK_EQ(result, v8::Integer::New(CcTest::isolate(), 42));
 }
 
 
 TEST(NativeFunctionDeclarationError) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  const char* name = "nativedeclerr";
+  const char* name = "\x6e\x61\x74\x69\x76\x65\x64\x65\x63\x6c\x65\x72\x72";
   // Syntax error in extension code.
   v8::RegisterExtension(new NativeFunctionExtension(name,
-                                                    "native\nfunction foo();"));
+                                                    "\x6e\x61\x74\x69\x76\x65\xaf\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x3b"));
   const char* extension_names[] = { name };
   v8::ExtensionConfiguration extensions(1, extension_names);
   v8::Handle<Context> context =
@@ -7097,12 +7097,12 @@ TEST(NativeFunctionDeclarationError) {
 
 TEST(NativeFunctionDeclarationErrorEscape) {
   v8::HandleScope handle_scope(CcTest::isolate());
-  const char* name = "nativedeclerresc";
+  const char* name = "\x6e\x61\x74\x69\x76\x65\x64\x65\x63\x6c\x65\x72\x72\x65\x73\x63";
   // Syntax error in extension code - escape code in "native" means that
   // it's not treated as a keyword.
   v8::RegisterExtension(new NativeFunctionExtension(
       name,
-      "nativ\\u0065 function foo();"));
+      "\x6e\x61\x74\x69\x76\x5c\x75\x30\x30\x36\x35\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x3b"));
   const char* extension_names[] = { name };
   v8::ExtensionConfiguration extensions(1, extension_names);
   v8::Handle<Context> context =
@@ -7116,7 +7116,7 @@ static void CheckDependencies(const char* name, const char* expected) {
   v8::ExtensionConfiguration config(1, &name);
   LocalContext context(&config);
   CHECK_EQ(String::NewFromUtf8(CcTest::isolate(), expected),
-           context->Global()->Get(v8_str("loaded")));
+           context->Global()->Get(v8_str("\x6c\x6f\x61\x64\x65\x64")));
 }
 
 
@@ -7128,42 +7128,42 @@ static void CheckDependencies(const char* name, const char* expected) {
  *     \-- C <--/
  */
 THREADED_TEST(ExtensionDependency) {
-  static const char* kEDeps[] = { "D" };
-  v8::RegisterExtension(new Extension("E", "this.loaded += 'E';", 1, kEDeps));
-  static const char* kDDeps[] = { "B", "C" };
-  v8::RegisterExtension(new Extension("D", "this.loaded += 'D';", 2, kDDeps));
-  static const char* kBCDeps[] = { "A" };
-  v8::RegisterExtension(new Extension("B", "this.loaded += 'B';", 1, kBCDeps));
-  v8::RegisterExtension(new Extension("C", "this.loaded += 'C';", 1, kBCDeps));
-  v8::RegisterExtension(new Extension("A", "this.loaded += 'A';"));
-  CheckDependencies("A", "undefinedA");
-  CheckDependencies("B", "undefinedAB");
-  CheckDependencies("C", "undefinedAC");
-  CheckDependencies("D", "undefinedABCD");
-  CheckDependencies("E", "undefinedABCDE");
+  static const char* kEDeps[] = { "\x44" };
+  v8::RegisterExtension(new Extension("\x45", "\x74\x68\x69\x73\x2e\x6c\x6f\x61\x64\x65\x64\x20\x2b\x3d\x20\x27\x45\x27\x3b", 1, kEDeps));
+  static const char* kDDeps[] = { "\x42", "\x43" };
+  v8::RegisterExtension(new Extension("\x44", "\x74\x68\x69\x73\x2e\x6c\x6f\x61\x64\x65\x64\x20\x2b\x3d\x20\x27\x44\x27\x3b", 2, kDDeps));
+  static const char* kBCDeps[] = { "\x41" };
+  v8::RegisterExtension(new Extension("\x42", "\x74\x68\x69\x73\x2e\x6c\x6f\x61\x64\x65\x64\x20\x2b\x3d\x20\x27\x42\x27\x3b", 1, kBCDeps));
+  v8::RegisterExtension(new Extension("\x43", "\x74\x68\x69\x73\x2e\x6c\x6f\x61\x64\x65\x64\x20\x2b\x3d\x20\x27\x43\x27\x3b", 1, kBCDeps));
+  v8::RegisterExtension(new Extension("\x41", "\x74\x68\x69\x73\x2e\x6c\x6f\x61\x64\x65\x64\x20\x2b\x3d\x20\x27\x41\x27\x3b"));
+  CheckDependencies("\x41", "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x41");
+  CheckDependencies("\x42", "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x41\x42");
+  CheckDependencies("\x43", "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x41\x43");
+  CheckDependencies("\x44", "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x41\x42\x43\x44");
+  CheckDependencies("\x45", "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x41\x42\x43\x44\x45");
   v8::HandleScope handle_scope(CcTest::isolate());
-  static const char* exts[2] = { "C", "E" };
+  static const char* exts[2] = { "\x43", "\x45" };
   v8::ExtensionConfiguration config(2, exts);
   LocalContext context(&config);
-  CHECK_EQ(v8_str("undefinedACBDE"), context->Global()->Get(v8_str("loaded")));
+  CHECK_EQ(v8_str("\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x41\x43\x42\x44\x45"), context->Global()->Get(v8_str("\x6c\x6f\x61\x64\x65\x64")));
 }
 
 
 static const char* kExtensionTestScript =
-  "native function A();"
-  "native function B();"
-  "native function C();"
-  "function Foo(i) {"
-  "  if (i == 0) return A();"
-  "  if (i == 1) return B();"
-  "  if (i == 2) return C();"
-  "}";
+  "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x41\x28\x29\x3b"
+  "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x42\x28\x29\x3b"
+  "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x28\x29\x3b"
+  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x6f\x6f\x28\x69\x29\x20\x7b"
+  "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x30\x29\x20\x72\x65\x74\x75\x72\x6e\x20\x41\x28\x29\x3b"
+  "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x31\x29\x20\x72\x65\x74\x75\x72\x6e\x20\x42\x28\x29\x3b"
+  "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x32\x29\x20\x72\x65\x74\x75\x72\x6e\x20\x43\x28\x29\x3b"
+  "\x7d";
 
 
 static void CallFun(const v8::FunctionCallbackInfo<v8::Value>& args) {
   ApiTestFuzzer::Fuzz();
   if (args.IsConstructCall()) {
-    args.This()->Set(v8_str("data"), args.Data());
+    args.This()->Set(v8_str("\x64\x61\x74\x61"), args.Data());
     args.GetReturnValue().SetNull();
     return;
   }
@@ -7173,7 +7173,7 @@ static void CallFun(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 class FunctionExtension : public Extension {
  public:
-  FunctionExtension() : Extension("functiontest", kExtensionTestScript) { }
+  FunctionExtension() : Extension("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x74\x65\x73\x74", kExtensionTestScript) { }
   virtual v8::Handle<v8::FunctionTemplate> GetNativeFunctionTemplate(
       v8::Isolate* isolate,
       v8::Handle<String> name);
@@ -7184,13 +7184,13 @@ static int lookup_count = 0;
 v8::Handle<v8::FunctionTemplate> FunctionExtension::GetNativeFunctionTemplate(
     v8::Isolate* isolate, v8::Handle<String> name) {
   lookup_count++;
-  if (name->Equals(v8_str("A"))) {
+  if (name->Equals(v8_str("\x41"))) {
     return v8::FunctionTemplate::New(
         isolate, CallFun, v8::Integer::New(isolate, 8));
-  } else if (name->Equals(v8_str("B"))) {
+  } else if (name->Equals(v8_str("\x42"))) {
     return v8::FunctionTemplate::New(
         isolate, CallFun, v8::Integer::New(isolate, 7));
-  } else if (name->Equals(v8_str("C"))) {
+  } else if (name->Equals(v8_str("\x43"))) {
     return v8::FunctionTemplate::New(
         isolate, CallFun, v8::Integer::New(isolate, 6));
   } else {
@@ -7202,34 +7202,34 @@ v8::Handle<v8::FunctionTemplate> FunctionExtension::GetNativeFunctionTemplate(
 THREADED_TEST(FunctionLookup) {
   v8::RegisterExtension(new FunctionExtension());
   v8::HandleScope handle_scope(CcTest::isolate());
-  static const char* exts[1] = { "functiontest" };
+  static const char* exts[1] = { "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x74\x65\x73\x74" };
   v8::ExtensionConfiguration config(1, exts);
   LocalContext context(&config);
   CHECK_EQ(3, lookup_count);
   CHECK_EQ(v8::Integer::New(CcTest::isolate(), 8),
-           CompileRun("Foo(0)"));
+           CompileRun("\x46\x6f\x6f\x28\x30\x29"));
   CHECK_EQ(v8::Integer::New(CcTest::isolate(), 7),
-           CompileRun("Foo(1)"));
+           CompileRun("\x46\x6f\x6f\x28\x31\x29"));
   CHECK_EQ(v8::Integer::New(CcTest::isolate(), 6),
-           CompileRun("Foo(2)"));
+           CompileRun("\x46\x6f\x6f\x28\x32\x29"));
 }
 
 
 THREADED_TEST(NativeFunctionConstructCall) {
   v8::RegisterExtension(new FunctionExtension());
   v8::HandleScope handle_scope(CcTest::isolate());
-  static const char* exts[1] = { "functiontest" };
+  static const char* exts[1] = { "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x74\x65\x73\x74" };
   v8::ExtensionConfiguration config(1, exts);
   LocalContext context(&config);
   for (int i = 0; i < 10; i++) {
     // Run a few times to ensure that allocation of objects doesn't
     // change behavior of a constructor function.
     CHECK_EQ(v8::Integer::New(CcTest::isolate(), 8),
-             CompileRun("(new A()).data"));
+             CompileRun("\x28\x6e\x65\x77\x20\x41\x28\x29\x29\x2e\x64\x61\x74\x61"));
     CHECK_EQ(v8::Integer::New(CcTest::isolate(), 7),
-             CompileRun("(new B()).data"));
+             CompileRun("\x28\x6e\x65\x77\x20\x42\x28\x29\x29\x2e\x64\x61\x74\x61"));
     CHECK_EQ(v8::Integer::New(CcTest::isolate(), 6),
-             CompileRun("(new C()).data"));
+             CompileRun("\x28\x6e\x65\x77\x20\x43\x28\x29\x29\x2e\x64\x61\x74\x61"));
   }
 }
 #endif
@@ -7254,10 +7254,10 @@ static void StoringErrorCallback(const char* location, const char* message) {
 // unusable and therefore this test cannot be run in parallel.
 TEST(ErrorReporting) {
   v8::V8::SetFatalErrorHandler(StoringErrorCallback);
-  static const char* aDeps[] = { "B" };
-  v8::RegisterExtension(new Extension("A", "", 1, aDeps));
-  static const char* bDeps[] = { "A" };
-  v8::RegisterExtension(new Extension("B", "", 1, bDeps));
+  static const char* aDeps[] = { "\x42" };
+  v8::RegisterExtension(new Extension("\x41", "", 1, aDeps));
+  static const char* bDeps[] = { "\x41" };
+  v8::RegisterExtension(new Extension("\x42", "", 1, bDeps));
   last_location = NULL;
   v8::ExtensionConfiguration config(1, bDeps);
   v8::Handle<Context> context =
@@ -7281,7 +7281,7 @@ THREADED_TEST(ErrorWithMissingScriptInfo) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
   v8::V8::AddMessageListener(MissingScriptInfoMessageListener);
-  CompileRun("throw Error()");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x45\x72\x72\x6f\x72\x28\x29");
   v8::V8::RemoveMessageListeners(MissingScriptInfoMessageListener);
 }
 
@@ -7403,8 +7403,8 @@ THREADED_TEST(IndependentHandleRevival) {
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> o = v8::Object::New(isolate);
     object.handle.Reset(isolate, o);
-    o->Set(v8_str("x"), v8::Integer::New(isolate, 1));
-    v8::Local<String> y_str = v8_str("y");
+    o->Set(v8_str("\x78"), v8::Integer::New(isolate, 1));
+    v8::Local<String> y_str = v8_str("\x79");
     o->Set(y_str, y_str);
   }
   object.flag = false;
@@ -7417,8 +7417,8 @@ THREADED_TEST(IndependentHandleRevival) {
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> o =
         v8::Local<v8::Object>::New(isolate, object.handle);
-    v8::Local<String> y_str = v8_str("y");
-    CHECK_EQ(v8::Integer::New(isolate, 1), o->Get(v8_str("x")));
+    v8::Local<String> y_str = v8_str("\x79");
+    CHECK_EQ(v8::Integer::New(isolate, 1), o->Get(v8_str("\x78")));
     CHECK(o->Get(y_str)->Equals(y_str));
   }
 }
@@ -7446,11 +7446,11 @@ THREADED_TEST(Arguments) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> global = ObjectTemplate::New(isolate);
-  global->Set(v8_str("f"),
+  global->Set(v8_str("\x66"),
               v8::FunctionTemplate::New(isolate, ArgumentsTestCallback));
   LocalContext context(NULL, global);
-  args_fun = context->Global()->Get(v8_str("f")).As<Function>();
-  v8_compile("f(1, 2, 3)")->Run();
+  args_fun = context->Global()->Get(v8_str("\x66")).As<Function>();
+  v8_compile("\x66\x28\x31\x2c\x20\x32\x2c\x20\x33\x29")->Run();
 }
 #endif
 
@@ -7469,7 +7469,7 @@ static void NoBlockGetterI(uint32_t index,
 
 static void PDeleter(Local<String> name,
                      const v8::PropertyCallbackInfo<v8::Boolean>& info) {
-  if (!name->Equals(v8_str("foo"))) {
+  if (!name->Equals(v8_str("\x66\x6f\x6f"))) {
     return;  // not intercepted
   }
 
@@ -7494,32 +7494,32 @@ THREADED_TEST(Deleter) {
   obj->SetNamedPropertyHandler(NoBlockGetterX, NULL, NULL, PDeleter, NULL);
   obj->SetIndexedPropertyHandler(NoBlockGetterI, NULL, NULL, IDeleter, NULL);
   LocalContext context;
-  context->Global()->Set(v8_str("k"), obj->NewInstance());
+  context->Global()->Set(v8_str("\x6b"), obj->NewInstance());
   CompileRun(
-    "k.foo = 'foo';"
-    "k.bar = 'bar';"
-    "k[2] = 2;"
-    "k[4] = 4;");
-  CHECK(v8_compile("delete k.foo")->Run()->IsFalse());
-  CHECK(v8_compile("delete k.bar")->Run()->IsTrue());
+    "\x6b\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x66\x6f\x6f\x27\x3b"
+    "\x6b\x2e\x62\x61\x72\x20\x3d\x20\x27\x62\x61\x72\x27\x3b"
+    "\x6b\x5b\x32\x5d\x20\x3d\x20\x32\x3b"
+    "\x6b\x5b\x34\x5d\x20\x3d\x20\x34\x3b");
+  CHECK(v8_compile("\x64\x65\x6c\x65\x74\x65\x20\x6b\x2e\x66\x6f\x6f")->Run()->IsFalse());
+  CHECK(v8_compile("\x64\x65\x6c\x65\x74\x65\x20\x6b\x2e\x62\x61\x72")->Run()->IsTrue());
 
-  CHECK_EQ(v8_compile("k.foo")->Run(), v8_str("foo"));
-  CHECK(v8_compile("k.bar")->Run()->IsUndefined());
+  CHECK_EQ(v8_compile("\x6b\x2e\x66\x6f\x6f")->Run(), v8_str("\x66\x6f\x6f"));
+  CHECK(v8_compile("\x6b\x2e\x62\x61\x72")->Run()->IsUndefined());
 
-  CHECK(v8_compile("delete k[2]")->Run()->IsFalse());
-  CHECK(v8_compile("delete k[4]")->Run()->IsTrue());
+  CHECK(v8_compile("\x64\x65\x6c\x65\x74\x65\x20\x6b\x5b\x32\x5d")->Run()->IsFalse());
+  CHECK(v8_compile("\x64\x65\x6c\x65\x74\x65\x20\x6b\x5b\x34\x5d")->Run()->IsTrue());
 
-  CHECK_EQ(v8_compile("k[2]")->Run(), v8_num(2));
-  CHECK(v8_compile("k[4]")->Run()->IsUndefined());
+  CHECK_EQ(v8_compile("\x6b\x5b\x32\x5d")->Run(), v8_num(2));
+  CHECK(v8_compile("\x6b\x5b\x34\x5d")->Run()->IsUndefined());
 }
 
 
 static void GetK(Local<String> name,
                  const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  if (name->Equals(v8_str("foo")) ||
-      name->Equals(v8_str("bar")) ||
-      name->Equals(v8_str("baz"))) {
+  if (name->Equals(v8_str("\x66\x6f\x6f")) ||
+      name->Equals(v8_str("\x62\x61\x72")) ||
+      name->Equals(v8_str("\x62\x61\x7a"))) {
     info.GetReturnValue().SetUndefined();
   }
 }
@@ -7535,9 +7535,9 @@ static void IndexedGetK(uint32_t index,
 static void NamedEnum(const v8::PropertyCallbackInfo<v8::Array>& info) {
   ApiTestFuzzer::Fuzz();
   v8::Handle<v8::Array> result = v8::Array::New(info.GetIsolate(), 3);
-  result->Set(v8::Integer::New(info.GetIsolate(), 0), v8_str("foo"));
-  result->Set(v8::Integer::New(info.GetIsolate(), 1), v8_str("bar"));
-  result->Set(v8::Integer::New(info.GetIsolate(), 2), v8_str("baz"));
+  result->Set(v8::Integer::New(info.GetIsolate(), 0), v8_str("\x66\x6f\x6f"));
+  result->Set(v8::Integer::New(info.GetIsolate(), 1), v8_str("\x62\x61\x72"));
+  result->Set(v8::Integer::New(info.GetIsolate(), 2), v8_str("\x62\x61\x7a"));
   info.GetReturnValue().Set(result);
 }
 
@@ -7545,8 +7545,8 @@ static void NamedEnum(const v8::PropertyCallbackInfo<v8::Array>& info) {
 static void IndexedEnum(const v8::PropertyCallbackInfo<v8::Array>& info) {
   ApiTestFuzzer::Fuzz();
   v8::Handle<v8::Array> result = v8::Array::New(info.GetIsolate(), 2);
-  result->Set(v8::Integer::New(info.GetIsolate(), 0), v8_str("0"));
-  result->Set(v8::Integer::New(info.GetIsolate(), 1), v8_str("1"));
+  result->Set(v8::Integer::New(info.GetIsolate(), 0), v8_str("\x30"));
+  result->Set(v8::Integer::New(info.GetIsolate(), 1), v8_str("\x31"));
   info.GetReturnValue().Set(result);
 }
 
@@ -7558,25 +7558,25 @@ THREADED_TEST(Enumerators) {
   obj->SetNamedPropertyHandler(GetK, NULL, NULL, NULL, NamedEnum);
   obj->SetIndexedPropertyHandler(IndexedGetK, NULL, NULL, NULL, IndexedEnum);
   LocalContext context;
-  context->Global()->Set(v8_str("k"), obj->NewInstance());
+  context->Global()->Set(v8_str("\x6b"), obj->NewInstance());
   v8::Handle<v8::Array> result = v8::Handle<v8::Array>::Cast(CompileRun(
-    "k[10] = 0;"
-    "k.a = 0;"
-    "k[5] = 0;"
-    "k.b = 0;"
-    "k[4294967295] = 0;"
-    "k.c = 0;"
-    "k[4294967296] = 0;"
-    "k.d = 0;"
-    "k[140000] = 0;"
-    "k.e = 0;"
-    "k[30000000000] = 0;"
-    "k.f = 0;"
-    "var result = [];"
-    "for (var prop in k) {"
-    "  result.push(prop);"
-    "}"
-    "result"));
+    "\x6b\x5b\x31\x30\x5d\x20\x3d\x20\x30\x3b"
+    "\x6b\x2e\x61\x20\x3d\x20\x30\x3b"
+    "\x6b\x5b\x35\x5d\x20\x3d\x20\x30\x3b"
+    "\x6b\x2e\x62\x20\x3d\x20\x30\x3b"
+    "\x6b\x5b\x34\x32\x39\x34\x39\x36\x37\x32\x39\x35\x5d\x20\x3d\x20\x30\x3b"
+    "\x6b\x2e\x63\x20\x3d\x20\x30\x3b"
+    "\x6b\x5b\x34\x32\x39\x34\x39\x36\x37\x32\x39\x36\x5d\x20\x3d\x20\x30\x3b"
+    "\x6b\x2e\x64\x20\x3d\x20\x30\x3b"
+    "\x6b\x5b\x31\x34\x30\x30\x30\x30\x5d\x20\x3d\x20\x30\x3b"
+    "\x6b\x2e\x65\x20\x3d\x20\x30\x3b"
+    "\x6b\x5b\x33\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x5d\x20\x3d\x20\x30\x3b"
+    "\x6b\x2e\x66\x20\x3d\x20\x30\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x5b\x5d\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x70\x72\x6f\x70\x20\x69\x6e\x20\x6b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x2e\x70\x75\x73\x68\x28\x70\x72\x6f\x70\x29\x3b"
+    "\x7d"
+    "\x72\x65\x73\x75\x6c\x74"));
   // Check that we get all the property names returned including the
   // ones from the enumerators in the right order: indexed properties
   // in numerical order, indexed interceptor properties, named
@@ -7585,27 +7585,27 @@ THREADED_TEST(Enumerators) {
   // documenting our behavior.
   CHECK_EQ(17, result->Length());
   // Indexed properties in numerical order.
-  CHECK_EQ(v8_str("5"), result->Get(v8::Integer::New(isolate, 0)));
-  CHECK_EQ(v8_str("10"), result->Get(v8::Integer::New(isolate, 1)));
-  CHECK_EQ(v8_str("140000"), result->Get(v8::Integer::New(isolate, 2)));
-  CHECK_EQ(v8_str("4294967295"), result->Get(v8::Integer::New(isolate, 3)));
+  CHECK_EQ(v8_str("\x35"), result->Get(v8::Integer::New(isolate, 0)));
+  CHECK_EQ(v8_str("\x31\x30"), result->Get(v8::Integer::New(isolate, 1)));
+  CHECK_EQ(v8_str("\x31\x34\x30\x30\x30\x30"), result->Get(v8::Integer::New(isolate, 2)));
+  CHECK_EQ(v8_str("\x34\x32\x39\x34\x39\x36\x37\x32\x39\x35"), result->Get(v8::Integer::New(isolate, 3)));
   // Indexed interceptor properties in the order they are returned
   // from the enumerator interceptor.
-  CHECK_EQ(v8_str("0"), result->Get(v8::Integer::New(isolate, 4)));
-  CHECK_EQ(v8_str("1"), result->Get(v8::Integer::New(isolate, 5)));
+  CHECK_EQ(v8_str("\x30"), result->Get(v8::Integer::New(isolate, 4)));
+  CHECK_EQ(v8_str("\x31"), result->Get(v8::Integer::New(isolate, 5)));
   // Named properties in insertion order.
-  CHECK_EQ(v8_str("a"), result->Get(v8::Integer::New(isolate, 6)));
-  CHECK_EQ(v8_str("b"), result->Get(v8::Integer::New(isolate, 7)));
-  CHECK_EQ(v8_str("c"), result->Get(v8::Integer::New(isolate, 8)));
-  CHECK_EQ(v8_str("4294967296"), result->Get(v8::Integer::New(isolate, 9)));
-  CHECK_EQ(v8_str("d"), result->Get(v8::Integer::New(isolate, 10)));
-  CHECK_EQ(v8_str("e"), result->Get(v8::Integer::New(isolate, 11)));
-  CHECK_EQ(v8_str("30000000000"), result->Get(v8::Integer::New(isolate, 12)));
-  CHECK_EQ(v8_str("f"), result->Get(v8::Integer::New(isolate, 13)));
+  CHECK_EQ(v8_str("\x61"), result->Get(v8::Integer::New(isolate, 6)));
+  CHECK_EQ(v8_str("\x62"), result->Get(v8::Integer::New(isolate, 7)));
+  CHECK_EQ(v8_str("\x63"), result->Get(v8::Integer::New(isolate, 8)));
+  CHECK_EQ(v8_str("\x34\x32\x39\x34\x39\x36\x37\x32\x39\x36"), result->Get(v8::Integer::New(isolate, 9)));
+  CHECK_EQ(v8_str("\x64"), result->Get(v8::Integer::New(isolate, 10)));
+  CHECK_EQ(v8_str("\x65"), result->Get(v8::Integer::New(isolate, 11)));
+  CHECK_EQ(v8_str("\x33\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"), result->Get(v8::Integer::New(isolate, 12)));
+  CHECK_EQ(v8_str("\x66"), result->Get(v8::Integer::New(isolate, 13)));
   // Named interceptor properties.
-  CHECK_EQ(v8_str("foo"), result->Get(v8::Integer::New(isolate, 14)));
-  CHECK_EQ(v8_str("bar"), result->Get(v8::Integer::New(isolate, 15)));
-  CHECK_EQ(v8_str("baz"), result->Get(v8::Integer::New(isolate, 16)));
+  CHECK_EQ(v8_str("\x66\x6f\x6f"), result->Get(v8::Integer::New(isolate, 14)));
+  CHECK_EQ(v8_str("\x62\x61\x72"), result->Get(v8::Integer::New(isolate, 15)));
+  CHECK_EQ(v8_str("\x62\x61\x7a"), result->Get(v8::Integer::New(isolate, 16)));
 }
 
 
@@ -7619,15 +7619,15 @@ static void PGetter(Local<String> name,
   p_getter_count++;
   v8::Handle<v8::Object> global =
       info.GetIsolate()->GetCurrentContext()->Global();
-  CHECK_EQ(info.Holder(), global->Get(v8_str("o1")));
-  if (name->Equals(v8_str("p1"))) {
-    CHECK_EQ(info.This(), global->Get(v8_str("o1")));
-  } else if (name->Equals(v8_str("p2"))) {
-    CHECK_EQ(info.This(), global->Get(v8_str("o2")));
-  } else if (name->Equals(v8_str("p3"))) {
-    CHECK_EQ(info.This(), global->Get(v8_str("o3")));
-  } else if (name->Equals(v8_str("p4"))) {
-    CHECK_EQ(info.This(), global->Get(v8_str("o4")));
+  CHECK_EQ(info.Holder(), global->Get(v8_str("\x6f\x31")));
+  if (name->Equals(v8_str("\x70\x31"))) {
+    CHECK_EQ(info.This(), global->Get(v8_str("\x6f\x31")));
+  } else if (name->Equals(v8_str("\x70\x32"))) {
+    CHECK_EQ(info.This(), global->Get(v8_str("\x6f\x32")));
+  } else if (name->Equals(v8_str("\x70\x33"))) {
+    CHECK_EQ(info.This(), global->Get(v8_str("\x6f\x33")));
+  } else if (name->Equals(v8_str("\x70\x34"))) {
+    CHECK_EQ(info.This(), global->Get(v8_str("\x6f\x34")));
   }
 }
 
@@ -7635,16 +7635,16 @@ static void PGetter(Local<String> name,
 static void RunHolderTest(v8::Handle<v8::ObjectTemplate> obj) {
   ApiTestFuzzer::Fuzz();
   LocalContext context;
-  context->Global()->Set(v8_str("o1"), obj->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x31"), obj->NewInstance());
   CompileRun(
-    "o1.__proto__ = { };"
-    "var o2 = { __proto__: o1 };"
-    "var o3 = { __proto__: o2 };"
-    "var o4 = { __proto__: o3 };"
-    "for (var i = 0; i < 10; i++) o4.p4;"
-    "for (var i = 0; i < 10; i++) o3.p3;"
-    "for (var i = 0; i < 10; i++) o2.p2;"
-    "for (var i = 0; i < 10; i++) o1.p1;");
+    "\x6f\x31\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x7b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x6f\x32\x20\x3d\x20\x7b\x20\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3a\x20\x6f\x31\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x6f\x33\x20\x3d\x20\x7b\x20\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3a\x20\x6f\x32\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x6f\x34\x20\x3d\x20\x7b\x20\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3a\x20\x6f\x33\x20\x7d\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x34\x2e\x70\x34\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x33\x2e\x70\x33\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x32\x2e\x70\x32\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x31\x2e\x70\x31\x3b");
 }
 
 
@@ -7654,15 +7654,15 @@ static void PGetter2(Local<String> name,
   p_getter_count2++;
   v8::Handle<v8::Object> global =
       info.GetIsolate()->GetCurrentContext()->Global();
-  CHECK_EQ(info.Holder(), global->Get(v8_str("o1")));
-  if (name->Equals(v8_str("p1"))) {
-    CHECK_EQ(info.This(), global->Get(v8_str("o1")));
-  } else if (name->Equals(v8_str("p2"))) {
-    CHECK_EQ(info.This(), global->Get(v8_str("o2")));
-  } else if (name->Equals(v8_str("p3"))) {
-    CHECK_EQ(info.This(), global->Get(v8_str("o3")));
-  } else if (name->Equals(v8_str("p4"))) {
-    CHECK_EQ(info.This(), global->Get(v8_str("o4")));
+  CHECK_EQ(info.Holder(), global->Get(v8_str("\x6f\x31")));
+  if (name->Equals(v8_str("\x70\x31"))) {
+    CHECK_EQ(info.This(), global->Get(v8_str("\x6f\x31")));
+  } else if (name->Equals(v8_str("\x70\x32"))) {
+    CHECK_EQ(info.This(), global->Get(v8_str("\x6f\x32")));
+  } else if (name->Equals(v8_str("\x70\x33"))) {
+    CHECK_EQ(info.This(), global->Get(v8_str("\x6f\x33")));
+  } else if (name->Equals(v8_str("\x70\x34"))) {
+    CHECK_EQ(info.This(), global->Get(v8_str("\x6f\x34")));
   }
 }
 
@@ -7671,10 +7671,10 @@ THREADED_TEST(GetterHolders) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> obj = ObjectTemplate::New(isolate);
-  obj->SetAccessor(v8_str("p1"), PGetter);
-  obj->SetAccessor(v8_str("p2"), PGetter);
-  obj->SetAccessor(v8_str("p3"), PGetter);
-  obj->SetAccessor(v8_str("p4"), PGetter);
+  obj->SetAccessor(v8_str("\x70\x31"), PGetter);
+  obj->SetAccessor(v8_str("\x70\x32"), PGetter);
+  obj->SetAccessor(v8_str("\x70\x33"), PGetter);
+  obj->SetAccessor(v8_str("\x70\x34"), PGetter);
   p_getter_count = 0;
   RunHolderTest(obj);
   CHECK_EQ(40, p_getter_count);
@@ -7696,18 +7696,18 @@ THREADED_TEST(ObjectInstantiation) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("t"), PGetter2);
+  templ->SetAccessor(v8_str("\x74"), PGetter2);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   for (int i = 0; i < 100; i++) {
     v8::HandleScope inner_scope(CcTest::isolate());
     v8::Handle<v8::Object> obj = templ->NewInstance();
-    CHECK_NE(obj, context->Global()->Get(v8_str("o")));
-    context->Global()->Set(v8_str("o2"), obj);
+    CHECK_NE(obj, context->Global()->Get(v8_str("\x6f")));
+    context->Global()->Set(v8_str("\x6f\x32"), obj);
     v8::Handle<Value> value =
-        CompileRun("o.__proto__ === o2.__proto__");
+        CompileRun("\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x3d\x3d\x20\x6f\x32\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f");
     CHECK_EQ(v8::True(isolate), value);
-    context->Global()->Set(v8_str("o"), obj);
+    context->Global()->Set(v8_str("\x6f"), obj);
   }
 }
 
@@ -7747,11 +7747,11 @@ int GetUtf8Length(Handle<String> str) {
 THREADED_TEST(StringWrite) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
-  v8::Handle<String> str = v8_str("abcde");
+  v8::Handle<String> str = v8_str("\x61\x62\x63\x64\x65");
   // abc<Icelandic eth><Unicode snowman>.
-  v8::Handle<String> str2 = v8_str("abc\303\260\342\230\203");
+  v8::Handle<String> str2 = v8_str("\x61\x62\x63\x5c\x33\x30\x33\x5c\x32\x36\x30\x5c\x33\x34\x32\x5c\x32\x33\x30\x5c\x32\x30\x33");
   v8::Handle<String> str3 = v8::String::NewFromUtf8(
-      context->GetIsolate(), "abc\0def", v8::String::kNormalString, 7);
+      context->GetIsolate(), "\x61\x62\x63\x0d\x65\x66", v8::String::kNormalString, 7);
   // "ab" + lead surrogate + "cd" + trail surrogate + "ef"
   uint16_t orphans[8] = { 0x61, 0x62, 0xd800, 0x63, 0x64, 0xdc00, 0x65, 0x66 };
   v8::Handle<String> orphans_str = v8::String::NewFromTwoByte(
@@ -7770,18 +7770,18 @@ THREADED_TEST(StringWrite) {
       context->GetIsolate(), pair, v8::String::kNormalString, 2);
   const int kStride = 4;  // Must match stride in for loops in JS below.
   CompileRun(
-      "var left = '';"
-      "for (var i = 0; i < 0xd800; i += 4) {"
-      "  left = left + String.fromCharCode(i);"
-      "}");
+      "\x76\x61\x72\x20\x6c\x65\x66\x74\x20\x3d\x20\x27\x27\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x30\x78\x64\x38\x30\x30\x3b\x20\x69\x20\x2b\x3d\x20\x34\x29\x20\x7b"
+      "\x20\x20\x6c\x65\x66\x74\x20\x3d\x20\x6c\x65\x66\x74\x20\x2b\x20\x53\x74\x72\x69\x6e\x67\x2e\x66\x72\x6f\x6d\x43\x68\x61\x72\x43\x6f\x64\x65\x28\x69\x29\x3b"
+      "\x7d");
   CompileRun(
-      "var right = '';"
-      "for (var i = 0; i < 0xd800; i += 4) {"
-      "  right = String.fromCharCode(i) + right;"
-      "}");
+      "\x76\x61\x72\x20\x72\x69\x67\x68\x74\x20\x3d\x20\x27\x27\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x30\x78\x64\x38\x30\x30\x3b\x20\x69\x20\x2b\x3d\x20\x34\x29\x20\x7b"
+      "\x20\x20\x72\x69\x67\x68\x74\x20\x3d\x20\x53\x74\x72\x69\x6e\x67\x2e\x66\x72\x6f\x6d\x43\x68\x61\x72\x43\x6f\x64\x65\x28\x69\x29\x20\x2b\x20\x72\x69\x67\x68\x74\x3b"
+      "\x7d");
   v8::Handle<v8::Object> global = context->Global();
-  Handle<String> left_tree = global->Get(v8_str("left")).As<String>();
-  Handle<String> right_tree = global->Get(v8_str("right")).As<String>();
+  Handle<String> left_tree = global->Get(v8_str("\x6c\x65\x66\x74")).As<String>();
+  Handle<String> right_tree = global->Get(v8_str("\x72\x69\x67\x68\x74")).As<String>();
 
   CHECK_EQ(5, str2->Length());
   CHECK_EQ(0xd800 / kStride, left_tree->Length());
@@ -7797,56 +7797,56 @@ THREADED_TEST(StringWrite) {
   len = str2->WriteUtf8(utf8buf, sizeof(utf8buf), &charlen);
   CHECK_EQ(9, len);
   CHECK_EQ(5, charlen);
-  CHECK_EQ(0, strcmp(utf8buf, "abc\303\260\342\230\203"));
+  CHECK_EQ(0, strcmp(utf8buf, "\x61\x62\x63\x5c\x33\x30\x33\x5c\x32\x36\x30\x5c\x33\x34\x32\x5c\x32\x33\x30\x5c\x32\x30\x33"));
 
   memset(utf8buf, 0x1, 1000);
   len = str2->WriteUtf8(utf8buf, 8, &charlen);
   CHECK_EQ(8, len);
   CHECK_EQ(5, charlen);
-  CHECK_EQ(0, strncmp(utf8buf, "abc\303\260\342\230\203\1", 9));
+  CHECK_EQ(0, strncmp(utf8buf, "\x61\x62\x63\x5c\x33\x30\x33\x5c\x32\x36\x30\x5c\x33\x34\x32\x5c\x32\x33\x30\x5c\x32\x30\x33\x5c\x31", 9));
 
   memset(utf8buf, 0x1, 1000);
   len = str2->WriteUtf8(utf8buf, 7, &charlen);
   CHECK_EQ(5, len);
   CHECK_EQ(4, charlen);
-  CHECK_EQ(0, strncmp(utf8buf, "abc\303\260\1", 5));
+  CHECK_EQ(0, strncmp(utf8buf, "\x61\x62\x63\x5c\x33\x30\x33\x5c\x32\x36\x30\x5c\x31", 5));
 
   memset(utf8buf, 0x1, 1000);
   len = str2->WriteUtf8(utf8buf, 6, &charlen);
   CHECK_EQ(5, len);
   CHECK_EQ(4, charlen);
-  CHECK_EQ(0, strncmp(utf8buf, "abc\303\260\1", 5));
+  CHECK_EQ(0, strncmp(utf8buf, "\x61\x62\x63\x5c\x33\x30\x33\x5c\x32\x36\x30\x5c\x31", 5));
 
   memset(utf8buf, 0x1, 1000);
   len = str2->WriteUtf8(utf8buf, 5, &charlen);
   CHECK_EQ(5, len);
   CHECK_EQ(4, charlen);
-  CHECK_EQ(0, strncmp(utf8buf, "abc\303\260\1", 5));
+  CHECK_EQ(0, strncmp(utf8buf, "\x61\x62\x63\x5c\x33\x30\x33\x5c\x32\x36\x30\x5c\x31", 5));
 
   memset(utf8buf, 0x1, 1000);
   len = str2->WriteUtf8(utf8buf, 4, &charlen);
   CHECK_EQ(3, len);
   CHECK_EQ(3, charlen);
-  CHECK_EQ(0, strncmp(utf8buf, "abc\1", 4));
+  CHECK_EQ(0, strncmp(utf8buf, "\x61\x62\x63\x5c\x31", 4));
 
   memset(utf8buf, 0x1, 1000);
   len = str2->WriteUtf8(utf8buf, 3, &charlen);
   CHECK_EQ(3, len);
   CHECK_EQ(3, charlen);
-  CHECK_EQ(0, strncmp(utf8buf, "abc\1", 4));
+  CHECK_EQ(0, strncmp(utf8buf, "\x61\x62\x63\x5c\x31", 4));
 
   memset(utf8buf, 0x1, 1000);
   len = str2->WriteUtf8(utf8buf, 2, &charlen);
   CHECK_EQ(2, len);
   CHECK_EQ(2, charlen);
-  CHECK_EQ(0, strncmp(utf8buf, "ab\1", 3));
+  CHECK_EQ(0, strncmp(utf8buf, "\x61\x62\x5c\x31", 3));
 
   // allow orphan surrogates by default
   memset(utf8buf, 0x1, 1000);
   len = orphans_str->WriteUtf8(utf8buf, sizeof(utf8buf), &charlen);
   CHECK_EQ(13, len);
   CHECK_EQ(8, charlen);
-  CHECK_EQ(0, strcmp(utf8buf, "ab\355\240\200cd\355\260\200ef"));
+  CHECK_EQ(0, strcmp(utf8buf, "\x61\x62\x5c\x33\x35\x35\x5c\x32\x34\x30\x5c\x32\x30\x30\x63\x64\x5c\x33\x35\x35\x5c\x32\x36\x30\x5c\x32\x30\x30\x65\x66"));
 
   // replace orphan surrogates with unicode replacement character
   memset(utf8buf, 0x1, 1000);
@@ -7856,7 +7856,7 @@ THREADED_TEST(StringWrite) {
                                String::REPLACE_INVALID_UTF8);
   CHECK_EQ(13, len);
   CHECK_EQ(8, charlen);
-  CHECK_EQ(0, strcmp(utf8buf, "ab\357\277\275cd\357\277\275ef"));
+  CHECK_EQ(0, strcmp(utf8buf, "\x61\x62\x5c\x33\x35\x37\x5c\x32\x37\x37\x5c\x32\x37\x35\x63\x64\x5c\x33\x35\x37\x5c\x32\x37\x37\x5c\x32\x37\x35\x65\x66"));
 
   // replace single lead surrogate with unicode replacement character
   memset(utf8buf, 0x1, 1000);
@@ -7866,7 +7866,7 @@ THREADED_TEST(StringWrite) {
                             String::REPLACE_INVALID_UTF8);
   CHECK_EQ(4, len);
   CHECK_EQ(1, charlen);
-  CHECK_EQ(0, strcmp(utf8buf, "\357\277\275"));
+  CHECK_EQ(0, strcmp(utf8buf, "\x5c\x33\x35\x37\x5c\x32\x37\x37\x5c\x32\x37\x35"));
 
   // replace single trail surrogate with unicode replacement character
   memset(utf8buf, 0x1, 1000);
@@ -7876,7 +7876,7 @@ THREADED_TEST(StringWrite) {
                              String::REPLACE_INVALID_UTF8);
   CHECK_EQ(4, len);
   CHECK_EQ(1, charlen);
-  CHECK_EQ(0, strcmp(utf8buf, "\357\277\275"));
+  CHECK_EQ(0, strcmp(utf8buf, "\x5c\x33\x35\x37\x5c\x32\x37\x37\x5c\x32\x37\x35"));
 
   // do not replace / write anything if surrogate pair does not fit the buffer
   // space
@@ -7919,8 +7919,8 @@ THREADED_TEST(StringWrite) {
   CHECK_EQ(5, len);
   len = str->Write(wbuf);
   CHECK_EQ(5, len);
-  CHECK_EQ(0, strcmp("abcde", buf));
-  uint16_t answer1[] = {'a', 'b', 'c', 'd', 'e', '\0'};
+  CHECK_EQ(0, strcmp("\x61\x62\x63\x64\x65", buf));
+  uint16_t answer1[] = {'\x61', '\x62', '\x63', '\x64', '\x65', '\x0'};
   CHECK_EQ(0, StrCmp16(answer1, wbuf));
 
   memset(buf, 0x1, sizeof(buf));
@@ -7929,8 +7929,8 @@ THREADED_TEST(StringWrite) {
   CHECK_EQ(4, len);
   len = str->Write(wbuf, 0, 4);
   CHECK_EQ(4, len);
-  CHECK_EQ(0, strncmp("abcd\1", buf, 5));
-  uint16_t answer2[] = {'a', 'b', 'c', 'd', 0x101};
+  CHECK_EQ(0, strncmp("\x61\x62\x63\x64\x5c\x31", buf, 5));
+  uint16_t answer2[] = {'\x61', '\x62', '\x63', '\x64', 0x101};
   CHECK_EQ(0, StrNCmp16(answer2, wbuf, 5));
 
   memset(buf, 0x1, sizeof(buf));
@@ -7939,8 +7939,8 @@ THREADED_TEST(StringWrite) {
   CHECK_EQ(5, len);
   len = str->Write(wbuf, 0, 5);
   CHECK_EQ(5, len);
-  CHECK_EQ(0, strncmp("abcde\1", buf, 6));
-  uint16_t answer3[] = {'a', 'b', 'c', 'd', 'e', 0x101};
+  CHECK_EQ(0, strncmp("\x61\x62\x63\x64\x65\x5c\x31", buf, 6));
+  uint16_t answer3[] = {'\x61', '\x62', '\x63', '\x64', '\x65', 0x101};
   CHECK_EQ(0, StrNCmp16(answer3, wbuf, 6));
 
   memset(buf, 0x1, sizeof(buf));
@@ -7949,8 +7949,8 @@ THREADED_TEST(StringWrite) {
   CHECK_EQ(5, len);
   len = str->Write(wbuf, 0, 6);
   CHECK_EQ(5, len);
-  CHECK_EQ(0, strcmp("abcde", buf));
-  uint16_t answer4[] = {'a', 'b', 'c', 'd', 'e', '\0'};
+  CHECK_EQ(0, strcmp("\x61\x62\x63\x64\x65", buf));
+  uint16_t answer4[] = {'\x61', '\x62', '\x63', '\x64', '\x65', '\x0'};
   CHECK_EQ(0, StrCmp16(answer4, wbuf));
 
   memset(buf, 0x1, sizeof(buf));
@@ -7959,8 +7959,8 @@ THREADED_TEST(StringWrite) {
   CHECK_EQ(1, len);
   len = str->Write(wbuf, 4, -1);
   CHECK_EQ(1, len);
-  CHECK_EQ(0, strcmp("e", buf));
-  uint16_t answer5[] = {'e', '\0'};
+  CHECK_EQ(0, strcmp("\x65", buf));
+  uint16_t answer5[] = {'\x65', '\x0'};
   CHECK_EQ(0, StrCmp16(answer5, wbuf));
 
   memset(buf, 0x1, sizeof(buf));
@@ -7969,7 +7969,7 @@ THREADED_TEST(StringWrite) {
   CHECK_EQ(1, len);
   len = str->Write(wbuf, 4, 6);
   CHECK_EQ(1, len);
-  CHECK_EQ(0, strcmp("e", buf));
+  CHECK_EQ(0, strcmp("\x65", buf));
   CHECK_EQ(0, StrCmp16(answer5, wbuf));
 
   memset(buf, 0x1, sizeof(buf));
@@ -7978,8 +7978,8 @@ THREADED_TEST(StringWrite) {
   CHECK_EQ(1, len);
   len = str->Write(wbuf, 4, 1);
   CHECK_EQ(1, len);
-  CHECK_EQ(0, strncmp("e\1", buf, 2));
-  uint16_t answer6[] = {'e', 0x101};
+  CHECK_EQ(0, strncmp("\x65\x5c\x31", buf, 2));
+  uint16_t answer6[] = {'\x65', 0x101};
   CHECK_EQ(0, StrNCmp16(answer6, wbuf, 2));
 
   memset(buf, 0x1, sizeof(buf));
@@ -7988,63 +7988,63 @@ THREADED_TEST(StringWrite) {
   CHECK_EQ(1, len);
   len = str->Write(wbuf, 3, 1);
   CHECK_EQ(1, len);
-  CHECK_EQ(0, strncmp("d\1", buf, 2));
-  uint16_t answer7[] = {'d', 0x101};
+  CHECK_EQ(0, strncmp("\x64\x5c\x31", buf, 2));
+  uint16_t answer7[] = {'\x64', 0x101};
   CHECK_EQ(0, StrNCmp16(answer7, wbuf, 2));
 
   memset(wbuf, 0x1, sizeof(wbuf));
-  wbuf[5] = 'X';
+  wbuf[5] = '\x58';
   len = str->Write(wbuf, 0, 6, String::NO_NULL_TERMINATION);
   CHECK_EQ(5, len);
-  CHECK_EQ('X', wbuf[5]);
-  uint16_t answer8a[] = {'a', 'b', 'c', 'd', 'e'};
-  uint16_t answer8b[] = {'a', 'b', 'c', 'd', 'e', '\0'};
+  CHECK_EQ('\x58', wbuf[5]);
+  uint16_t answer8a[] = {'\x61', '\x62', '\x63', '\x64', '\x65'};
+  uint16_t answer8b[] = {'\x61', '\x62', '\x63', '\x64', '\x65', '\x0'};
   CHECK_EQ(0, StrNCmp16(answer8a, wbuf, 5));
   CHECK_NE(0, StrCmp16(answer8b, wbuf));
-  wbuf[5] = '\0';
+  wbuf[5] = '\x0';
   CHECK_EQ(0, StrCmp16(answer8b, wbuf));
 
   memset(buf, 0x1, sizeof(buf));
-  buf[5] = 'X';
+  buf[5] = '\x58';
   len = str->WriteOneByte(reinterpret_cast<uint8_t*>(buf),
                           0,
                           6,
                           String::NO_NULL_TERMINATION);
   CHECK_EQ(5, len);
-  CHECK_EQ('X', buf[5]);
-  CHECK_EQ(0, strncmp("abcde", buf, 5));
-  CHECK_NE(0, strcmp("abcde", buf));
-  buf[5] = '\0';
-  CHECK_EQ(0, strcmp("abcde", buf));
+  CHECK_EQ('\x58', buf[5]);
+  CHECK_EQ(0, strncmp("\x61\x62\x63\x64\x65", buf, 5));
+  CHECK_NE(0, strcmp("\x61\x62\x63\x64\x65", buf));
+  buf[5] = '\x0';
+  CHECK_EQ(0, strcmp("\x61\x62\x63\x64\x65", buf));
 
   memset(utf8buf, 0x1, sizeof(utf8buf));
-  utf8buf[8] = 'X';
+  utf8buf[8] = '\x58';
   len = str2->WriteUtf8(utf8buf, sizeof(utf8buf), &charlen,
                         String::NO_NULL_TERMINATION);
   CHECK_EQ(8, len);
-  CHECK_EQ('X', utf8buf[8]);
+  CHECK_EQ('\x58', utf8buf[8]);
   CHECK_EQ(5, charlen);
-  CHECK_EQ(0, strncmp(utf8buf, "abc\303\260\342\230\203", 8));
-  CHECK_NE(0, strcmp(utf8buf, "abc\303\260\342\230\203"));
-  utf8buf[8] = '\0';
-  CHECK_EQ(0, strcmp(utf8buf, "abc\303\260\342\230\203"));
+  CHECK_EQ(0, strncmp(utf8buf, "\x61\x62\x63\x5c\x33\x30\x33\x5c\x32\x36\x30\x5c\x33\x34\x32\x5c\x32\x33\x30\x5c\x32\x30\x33", 8));
+  CHECK_NE(0, strcmp(utf8buf, "\x61\x62\x63\x5c\x33\x30\x33\x5c\x32\x36\x30\x5c\x33\x34\x32\x5c\x32\x33\x30\x5c\x32\x30\x33"));
+  utf8buf[8] = '\x0';
+  CHECK_EQ(0, strcmp(utf8buf, "\x61\x62\x63\x5c\x33\x30\x33\x5c\x32\x36\x30\x5c\x33\x34\x32\x5c\x32\x33\x30\x5c\x32\x30\x33"));
 
   memset(utf8buf, 0x1, sizeof(utf8buf));
-  utf8buf[5] = 'X';
+  utf8buf[5] = '\x58';
   len = str->WriteUtf8(utf8buf, sizeof(utf8buf), &charlen,
                         String::NO_NULL_TERMINATION);
   CHECK_EQ(5, len);
-  CHECK_EQ('X', utf8buf[5]);  // Test that the sixth character is untouched.
+  CHECK_EQ('\x58', utf8buf[5]);  // Test that the sixth character is untouched.
   CHECK_EQ(5, charlen);
-  utf8buf[5] = '\0';
-  CHECK_EQ(0, strcmp(utf8buf, "abcde"));
+  utf8buf[5] = '\x0';
+  CHECK_EQ(0, strcmp(utf8buf, "\x61\x62\x63\x64\x65"));
 
   memset(buf, 0x1, sizeof(buf));
   len = str3->WriteOneByte(reinterpret_cast<uint8_t*>(buf));
   CHECK_EQ(7, len);
-  CHECK_EQ(0, strcmp("abc", buf));
+  CHECK_EQ(0, strcmp("\x61\x62\x63", buf));
   CHECK_EQ(0, buf[3]);
-  CHECK_EQ(0, strcmp("def", buf + 4));
+  CHECK_EQ(0, strcmp("\x64\x65\x66", buf + 4));
 
   CHECK_EQ(0, str->WriteOneByte(NULL, 0, 0, String::NO_NULL_TERMINATION));
   CHECK_EQ(0, str->WriteUtf8(NULL, 0, 0, String::NO_NULL_TERMINATION));
@@ -8154,51 +8154,51 @@ THREADED_TEST(Utf16) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
   CompileRun(
-      "var pad = '01234567890123456789';"
-      "var p = [];"
-      "var plens = [20, 3, 3];"
-      "p.push('01234567890123456789');"
-      "var lead = 0xd800;"
-      "var trail = 0xdc00;"
-      "p.push(String.fromCharCode(0xd800));"
-      "p.push(String.fromCharCode(0xdc00));"
-      "var a = [];"
-      "var b = [];"
-      "var c = [];"
-      "var alens = [];"
-      "for (var i = 0; i < 3; i++) {"
-      "  p[1] = String.fromCharCode(lead++);"
-      "  for (var j = 0; j < 3; j++) {"
-      "    p[2] = String.fromCharCode(trail++);"
-      "    a.push(p[i] + p[j]);"
-      "    b.push(p[i] + p[j]);"
-      "    c.push(p[i] + p[j]);"
-      "    alens.push(plens[i] + plens[j]);"
-      "  }"
-      "}"
-      "alens[5] -= 2;"  // Here the surrogate pairs match up.
-      "var a2 = [];"
-      "var b2 = [];"
-      "var c2 = [];"
-      "var a2lens = [];"
-      "for (var m = 0; m < 9; m++) {"
-      "  for (var n = 0; n < 9; n++) {"
-      "    a2.push(a[m] + a[n]);"
-      "    b2.push(b[m] + b[n]);"
-      "    var newc = 'x' + c[m] + c[n] + 'y';"
-      "    c2.push(newc.substring(1, newc.length - 1));"
-      "    var utf = alens[m] + alens[n];"  // And here.
+      "\x76\x61\x72\x20\x70\x61\x64\x20\x3d\x20\x27\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x27\x3b"
+      "\x76\x61\x72\x20\x70\x20\x3d\x20\x5b\x5d\x3b"
+      "\x76\x61\x72\x20\x70\x6c\x65\x6e\x73\x20\x3d\x20\x5b\x32\x30\x2c\x20\x33\x2c\x20\x33\x5d\x3b"
+      "\x70\x2e\x70\x75\x73\x68\x28\x27\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x27\x29\x3b"
+      "\x76\x61\x72\x20\x6c\x65\x61\x64\x20\x3d\x20\x30\x78\x64\x38\x30\x30\x3b"
+      "\x76\x61\x72\x20\x74\x72\x61\x69\x6c\x20\x3d\x20\x30\x78\x64\x63\x30\x30\x3b"
+      "\x70\x2e\x70\x75\x73\x68\x28\x53\x74\x72\x69\x6e\x67\x2e\x66\x72\x6f\x6d\x43\x68\x61\x72\x43\x6f\x64\x65\x28\x30\x78\x64\x38\x30\x30\x29\x29\x3b"
+      "\x70\x2e\x70\x75\x73\x68\x28\x53\x74\x72\x69\x6e\x67\x2e\x66\x72\x6f\x6d\x43\x68\x61\x72\x43\x6f\x64\x65\x28\x30\x78\x64\x63\x30\x30\x29\x29\x3b"
+      "\x76\x61\x72\x20\x61\x20\x3d\x20\x5b\x5d\x3b"
+      "\x76\x61\x72\x20\x62\x20\x3d\x20\x5b\x5d\x3b"
+      "\x76\x61\x72\x20\x63\x20\x3d\x20\x5b\x5d\x3b"
+      "\x76\x61\x72\x20\x61\x6c\x65\x6e\x73\x20\x3d\x20\x5b\x5d\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x33\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x70\x5b\x31\x5d\x20\x3d\x20\x53\x74\x72\x69\x6e\x67\x2e\x66\x72\x6f\x6d\x43\x68\x61\x72\x43\x6f\x64\x65\x28\x6c\x65\x61\x64\x2b\x2b\x29\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x33\x3b\x20\x6a\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x70\x5b\x32\x5d\x20\x3d\x20\x53\x74\x72\x69\x6e\x67\x2e\x66\x72\x6f\x6d\x43\x68\x61\x72\x43\x6f\x64\x65\x28\x74\x72\x61\x69\x6c\x2b\x2b\x29\x3b"
+      "\x20\x20\x20\x20\x61\x2e\x70\x75\x73\x68\x28\x70\x5b\x69\x5d\x20\x2b\x20\x70\x5b\x6a\x5d\x29\x3b"
+      "\x20\x20\x20\x20\x62\x2e\x70\x75\x73\x68\x28\x70\x5b\x69\x5d\x20\x2b\x20\x70\x5b\x6a\x5d\x29\x3b"
+      "\x20\x20\x20\x20\x63\x2e\x70\x75\x73\x68\x28\x70\x5b\x69\x5d\x20\x2b\x20\x70\x5b\x6a\x5d\x29\x3b"
+      "\x20\x20\x20\x20\x61\x6c\x65\x6e\x73\x2e\x70\x75\x73\x68\x28\x70\x6c\x65\x6e\x73\x5b\x69\x5d\x20\x2b\x20\x70\x6c\x65\x6e\x73\x5b\x6a\x5d\x29\x3b"
+      "\x20\x20\x7d"
+      "\x7d"
+      "\x61\x6c\x65\x6e\x73\x5b\x35\x5d\x20\x2d\x3d\x20\x32\x3b"  // Here the surrogate pairs match up.
+      "\x76\x61\x72\x20\x61\x32\x20\x3d\x20\x5b\x5d\x3b"
+      "\x76\x61\x72\x20\x62\x32\x20\x3d\x20\x5b\x5d\x3b"
+      "\x76\x61\x72\x20\x63\x32\x20\x3d\x20\x5b\x5d\x3b"
+      "\x76\x61\x72\x20\x61\x32\x6c\x65\x6e\x73\x20\x3d\x20\x5b\x5d\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6d\x20\x3d\x20\x30\x3b\x20\x6d\x20\x3c\x20\x39\x3b\x20\x6d\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6e\x20\x3d\x20\x30\x3b\x20\x6e\x20\x3c\x20\x39\x3b\x20\x6e\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x61\x32\x2e\x70\x75\x73\x68\x28\x61\x5b\x6d\x5d\x20\x2b\x20\x61\x5b\x6e\x5d\x29\x3b"
+      "\x20\x20\x20\x20\x62\x32\x2e\x70\x75\x73\x68\x28\x62\x5b\x6d\x5d\x20\x2b\x20\x62\x5b\x6e\x5d\x29\x3b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x6e\x65\x77\x63\x20\x3d\x20\x27\x78\x27\x20\x2b\x20\x63\x5b\x6d\x5d\x20\x2b\x20\x63\x5b\x6e\x5d\x20\x2b\x20\x27\x79\x27\x3b"
+      "\x20\x20\x20\x20\x63\x32\x2e\x70\x75\x73\x68\x28\x6e\x65\x77\x63\x2e\x73\x75\x62\x73\x74\x72\x69\x6e\x67\x28\x31\x2c\x20\x6e\x65\x77\x63\x2e\x6c\x65\x6e\x67\x74\x68\x20\x2d\x20\x31\x29\x29\x3b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x75\x74\x66\x20\x3d\x20\x61\x6c\x65\x6e\x73\x5b\x6d\x5d\x20\x2b\x20\x61\x6c\x65\x6e\x73\x5b\x6e\x5d\x3b"  // And here.
            // The 'n's that start with 0xdc.. are 6-8
            // The 'm's that end with 0xd8.. are 1, 4 and 7
-      "    if ((m % 3) == 1 && n >= 6) utf -= 2;"
-      "    a2lens.push(utf);"
-      "  }"
-      "}");
-  Utf16Helper(context, "a", "alens", 9);
-  Utf16Helper(context, "a2", "a2lens", 81);
-  WriteUtf8Helper(context, "b", "alens", 9);
-  WriteUtf8Helper(context, "b2", "a2lens", 81);
-  WriteUtf8Helper(context, "c2", "a2lens", 81);
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x28\x6d\x20\x25\x20\x33\x29\x20\x3d\x3d\x20\x31\x20\x26\x26\x20\x6e\x20\x3e\x3d\x20\x36\x29\x20\x75\x74\x66\x20\x2d\x3d\x20\x32\x3b"
+      "\x20\x20\x20\x20\x61\x32\x6c\x65\x6e\x73\x2e\x70\x75\x73\x68\x28\x75\x74\x66\x29\x3b"
+      "\x20\x20\x7d"
+      "\x7d");
+  Utf16Helper(context, "\x61", "\x61\x6c\x65\x6e\x73", 9);
+  Utf16Helper(context, "\x61\x32", "\x61\x32\x6c\x65\x6e\x73", 81);
+  WriteUtf8Helper(context, "\x62", "\x61\x6c\x65\x6e\x73", 9);
+  WriteUtf8Helper(context, "\x62\x32", "\x61\x32\x6c\x65\x6e\x73", 81);
+  WriteUtf8Helper(context, "\x63\x32", "\x61\x32\x6c\x65\x6e\x73", 81);
 }
 
 
@@ -8223,61 +8223,61 @@ THREADED_TEST(Utf16Symbol) {
   v8::HandleScope scope(context->GetIsolate());
 
   Handle<String> symbol1 = v8::String::NewFromUtf8(
-      context->GetIsolate(), "abc", v8::String::kInternalizedString);
+      context->GetIsolate(), "\x61\x62\x63", v8::String::kInternalizedString);
   Handle<String> symbol2 = v8::String::NewFromUtf8(
-      context->GetIsolate(), "abc", v8::String::kInternalizedString);
+      context->GetIsolate(), "\x61\x62\x63", v8::String::kInternalizedString);
   CHECK(SameSymbol(symbol1, symbol2));
 
   SameSymbolHelper(context->GetIsolate(),
-                   "\360\220\220\205",  // 4 byte encoding.
-                   "\355\240\201\355\260\205");  // 2 3-byte surrogates.
+                   "\x5c\x33\x36\x30\x5c\x32\x32\x30\x5c\x32\x32\x30\x5c\x32\x30\x35",  // 4 byte encoding.
+                   "\x5c\x33\x35\x35\x5c\x32\x34\x30\x5c\x32\x30\x31\x5c\x33\x35\x35\x5c\x32\x36\x30\x5c\x32\x30\x35");  // 2 3-byte surrogates.
   SameSymbolHelper(context->GetIsolate(),
-                   "\355\240\201\355\260\206",  // 2 3-byte surrogates.
-                   "\360\220\220\206");  // 4 byte encoding.
+                   "\x5c\x33\x35\x35\x5c\x32\x34\x30\x5c\x32\x30\x31\x5c\x33\x35\x35\x5c\x32\x36\x30\x5c\x32\x30\x36",  // 2 3-byte surrogates.
+                   "\x5c\x33\x36\x30\x5c\x32\x32\x30\x5c\x32\x32\x30\x5c\x32\x30\x36");  // 4 byte encoding.
   SameSymbolHelper(context->GetIsolate(),
-                   "x\360\220\220\205",  // 4 byte encoding.
-                   "x\355\240\201\355\260\205");  // 2 3-byte surrogates.
+                   "\x78\x5c\x33\x36\x30\x5c\x32\x32\x30\x5c\x32\x32\x30\x5c\x32\x30\x35",  // 4 byte encoding.
+                   "\x78\x5c\x33\x35\x35\x5c\x32\x34\x30\x5c\x32\x30\x31\x5c\x33\x35\x35\x5c\x32\x36\x30\x5c\x32\x30\x35");  // 2 3-byte surrogates.
   SameSymbolHelper(context->GetIsolate(),
-                   "x\355\240\201\355\260\206",  // 2 3-byte surrogates.
-                   "x\360\220\220\206");  // 4 byte encoding.
+                   "\x78\x5c\x33\x35\x35\x5c\x32\x34\x30\x5c\x32\x30\x31\x5c\x33\x35\x35\x5c\x32\x36\x30\x5c\x32\x30\x36",  // 2 3-byte surrogates.
+                   "\x78\x5c\x33\x36\x30\x5c\x32\x32\x30\x5c\x32\x32\x30\x5c\x32\x30\x36");  // 4 byte encoding.
   CompileRun(
-      "var sym0 = 'benedictus';"
-      "var sym0b = 'S\303\270ren';"
-      "var sym1 = '\355\240\201\355\260\207';"
-      "var sym2 = '\360\220\220\210';"
-      "var sym3 = 'x\355\240\201\355\260\207';"
-      "var sym4 = 'x\360\220\220\210';"
-      "if (sym1.length != 2) throw sym1;"
-      "if (sym1.charCodeAt(1) != 0xdc07) throw sym1.charCodeAt(1);"
-      "if (sym2.length != 2) throw sym2;"
-      "if (sym2.charCodeAt(1) != 0xdc08) throw sym2.charCodeAt(2);"
-      "if (sym3.length != 3) throw sym3;"
-      "if (sym3.charCodeAt(2) != 0xdc07) throw sym1.charCodeAt(2);"
-      "if (sym4.length != 3) throw sym4;"
-      "if (sym4.charCodeAt(2) != 0xdc08) throw sym2.charCodeAt(2);");
+      "\x76\x61\x72\x20\x73\x79\x6d\x30\x20\x3d\x20\x27\x62\x65\x6e\x65\x64\x69\x63\x74\x75\x73\x27\x3b"
+      "\x76\x61\x72\x20\x73\x79\x6d\x30\x62\x20\x3d\x20\x27\x53\x5c\x33\x30\x33\x5c\x32\x37\x30\x72\x65\x6e\x27\x3b"
+      "\x76\x61\x72\x20\x73\x79\x6d\x31\x20\x3d\x20\x27\x5c\x33\x35\x35\x5c\x32\x34\x30\x5c\x32\x30\x31\x5c\x33\x35\x35\x5c\x32\x36\x30\x5c\x32\x30\x37\x27\x3b"
+      "\x76\x61\x72\x20\x73\x79\x6d\x32\x20\x3d\x20\x27\x5c\x33\x36\x30\x5c\x32\x32\x30\x5c\x32\x32\x30\x5c\x32\x31\x30\x27\x3b"
+      "\x76\x61\x72\x20\x73\x79\x6d\x33\x20\x3d\x20\x27\x78\x5c\x33\x35\x35\x5c\x32\x34\x30\x5c\x32\x30\x31\x5c\x33\x35\x35\x5c\x32\x36\x30\x5c\x32\x30\x37\x27\x3b"
+      "\x76\x61\x72\x20\x73\x79\x6d\x34\x20\x3d\x20\x27\x78\x5c\x33\x36\x30\x5c\x32\x32\x30\x5c\x32\x32\x30\x5c\x32\x31\x30\x27\x3b"
+      "\x69\x66\x20\x28\x73\x79\x6d\x31\x2e\x6c\x65\x6e\x67\x74\x68\x20\x21\x3d\x20\x32\x29\x20\x74\x68\x72\x6f\x77\x20\x73\x79\x6d\x31\x3b"
+      "\x69\x66\x20\x28\x73\x79\x6d\x31\x2e\x63\x68\x61\x72\x43\x6f\x64\x65\x41\x74\x28\x31\x29\x20\x21\x3d\x20\x30\x78\x64\x63\x30\x37\x29\x20\x74\x68\x72\x6f\x77\x20\x73\x79\x6d\x31\x2e\x63\x68\x61\x72\x43\x6f\x64\x65\x41\x74\x28\x31\x29\x3b"
+      "\x69\x66\x20\x28\x73\x79\x6d\x32\x2e\x6c\x65\x6e\x67\x74\x68\x20\x21\x3d\x20\x32\x29\x20\x74\x68\x72\x6f\x77\x20\x73\x79\x6d\x32\x3b"
+      "\x69\x66\x20\x28\x73\x79\x6d\x32\x2e\x63\x68\x61\x72\x43\x6f\x64\x65\x41\x74\x28\x31\x29\x20\x21\x3d\x20\x30\x78\x64\x63\x30\x38\x29\x20\x74\x68\x72\x6f\x77\x20\x73\x79\x6d\x32\x2e\x63\x68\x61\x72\x43\x6f\x64\x65\x41\x74\x28\x32\x29\x3b"
+      "\x69\x66\x20\x28\x73\x79\x6d\x33\x2e\x6c\x65\x6e\x67\x74\x68\x20\x21\x3d\x20\x33\x29\x20\x74\x68\x72\x6f\x77\x20\x73\x79\x6d\x33\x3b"
+      "\x69\x66\x20\x28\x73\x79\x6d\x33\x2e\x63\x68\x61\x72\x43\x6f\x64\x65\x41\x74\x28\x32\x29\x20\x21\x3d\x20\x30\x78\x64\x63\x30\x37\x29\x20\x74\x68\x72\x6f\x77\x20\x73\x79\x6d\x31\x2e\x63\x68\x61\x72\x43\x6f\x64\x65\x41\x74\x28\x32\x29\x3b"
+      "\x69\x66\x20\x28\x73\x79\x6d\x34\x2e\x6c\x65\x6e\x67\x74\x68\x20\x21\x3d\x20\x33\x29\x20\x74\x68\x72\x6f\x77\x20\x73\x79\x6d\x34\x3b"
+      "\x69\x66\x20\x28\x73\x79\x6d\x34\x2e\x63\x68\x61\x72\x43\x6f\x64\x65\x41\x74\x28\x32\x29\x20\x21\x3d\x20\x30\x78\x64\x63\x30\x38\x29\x20\x74\x68\x72\x6f\x77\x20\x73\x79\x6d\x32\x2e\x63\x68\x61\x72\x43\x6f\x64\x65\x41\x74\x28\x32\x29\x3b");
   Handle<String> sym0 = v8::String::NewFromUtf8(
-      context->GetIsolate(), "benedictus", v8::String::kInternalizedString);
+      context->GetIsolate(), "\x62\x65\x6e\x65\x64\x69\x63\x74\x75\x73", v8::String::kInternalizedString);
   Handle<String> sym0b = v8::String::NewFromUtf8(
-      context->GetIsolate(), "S\303\270ren", v8::String::kInternalizedString);
+      context->GetIsolate(), "\x53\x5c\x33\x30\x33\x5c\x32\x37\x30\x72\x65\x6e", v8::String::kInternalizedString);
   Handle<String> sym1 =
-      v8::String::NewFromUtf8(context->GetIsolate(), "\355\240\201\355\260\207",
+      v8::String::NewFromUtf8(context->GetIsolate(), "\x5c\x33\x35\x35\x5c\x32\x34\x30\x5c\x32\x30\x31\x5c\x33\x35\x35\x5c\x32\x36\x30\x5c\x32\x30\x37",
                               v8::String::kInternalizedString);
   Handle<String> sym2 =
-      v8::String::NewFromUtf8(context->GetIsolate(), "\360\220\220\210",
+      v8::String::NewFromUtf8(context->GetIsolate(), "\x5c\x33\x36\x30\x5c\x32\x32\x30\x5c\x32\x32\x30\x5c\x32\x31\x30",
                               v8::String::kInternalizedString);
   Handle<String> sym3 = v8::String::NewFromUtf8(
-      context->GetIsolate(), "x\355\240\201\355\260\207",
+      context->GetIsolate(), "\x78\x5c\x33\x35\x35\x5c\x32\x34\x30\x5c\x32\x30\x31\x5c\x33\x35\x35\x5c\x32\x36\x30\x5c\x32\x30\x37",
       v8::String::kInternalizedString);
   Handle<String> sym4 =
-      v8::String::NewFromUtf8(context->GetIsolate(), "x\360\220\220\210",
+      v8::String::NewFromUtf8(context->GetIsolate(), "\x78\x5c\x33\x36\x30\x5c\x32\x32\x30\x5c\x32\x32\x30\x5c\x32\x31\x30",
                               v8::String::kInternalizedString);
   v8::Local<v8::Object> global = context->Global();
-  Local<Value> s0 = global->Get(v8_str("sym0"));
-  Local<Value> s0b = global->Get(v8_str("sym0b"));
-  Local<Value> s1 = global->Get(v8_str("sym1"));
-  Local<Value> s2 = global->Get(v8_str("sym2"));
-  Local<Value> s3 = global->Get(v8_str("sym3"));
-  Local<Value> s4 = global->Get(v8_str("sym4"));
+  Local<Value> s0 = global->Get(v8_str("\x73\x79\x6d\x30"));
+  Local<Value> s0b = global->Get(v8_str("\x73\x79\x6d\x30\x62"));
+  Local<Value> s1 = global->Get(v8_str("\x73\x79\x6d\x31"));
+  Local<Value> s2 = global->Get(v8_str("\x73\x79\x6d\x32"));
+  Local<Value> s3 = global->Get(v8_str("\x73\x79\x6d\x33"));
+  Local<Value> s4 = global->Get(v8_str("\x73\x79\x6d\x34"));
   CHECK(SameSymbol(sym0, Handle<String>::Cast(s0)));
   CHECK(SameSymbol(sym0b, Handle<String>::Cast(s0b)));
   CHECK(SameSymbol(sym1, Handle<String>::Cast(s1)));
@@ -8292,17 +8292,17 @@ THREADED_TEST(ToArrayIndex) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
 
-  v8::Handle<String> str = v8_str("42");
+  v8::Handle<String> str = v8_str("\x34\x32");
   v8::Handle<v8::Uint32> index = str->ToArrayIndex();
   CHECK(!index.IsEmpty());
   CHECK_EQ(42.0, index->Uint32Value());
-  str = v8_str("42asdf");
+  str = v8_str("\x34\x32\x61\x73\x64\x66");
   index = str->ToArrayIndex();
   CHECK(index.IsEmpty());
-  str = v8_str("-42");
+  str = v8_str("\x2d\x34\x32");
   index = str->ToArrayIndex();
   CHECK(index.IsEmpty());
-  str = v8_str("4294967295");
+  str = v8_str("\x34\x32\x39\x34\x39\x36\x37\x32\x39\x35");
   index = str->ToArrayIndex();
   CHECK(!index.IsEmpty());
   CHECK_EQ(4294967295.0, index->Uint32Value());
@@ -8323,8 +8323,8 @@ THREADED_TEST(ErrorConstruction) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
 
-  v8::Handle<String> foo = v8_str("foo");
-  v8::Handle<String> message = v8_str("message");
+  v8::Handle<String> foo = v8_str("\x66\x6f\x6f");
+  v8::Handle<String> message = v8_str("\x6d\x65\x73\x73\x61\x67\x65");
   v8::Handle<Value> range_error = v8::Exception::RangeError(foo);
   CHECK(range_error->IsObject());
   CHECK(range_error.As<v8::Object>()->Get(message)->Equals(foo));
@@ -8363,12 +8363,12 @@ THREADED_TEST(DeleteAccessor) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> obj = ObjectTemplate::New(isolate);
-  obj->SetAccessor(v8_str("y"), YGetter, YSetter);
+  obj->SetAccessor(v8_str("\x79"), YGetter, YSetter);
   LocalContext context;
   v8::Handle<v8::Object> holder = obj->NewInstance();
-  context->Global()->Set(v8_str("holder"), holder);
+  context->Global()->Set(v8_str("\x68\x6f\x6c\x64\x65\x72"), holder);
   v8::Handle<Value> result = CompileRun(
-      "holder.y = 11; holder.y = 12; holder.y");
+      "\x68\x6f\x6c\x64\x65\x72\x2e\x79\x20\x3d\x20\x31\x31\x3b\x20\x68\x6f\x6c\x64\x65\x72\x2e\x79\x20\x3d\x20\x31\x32\x3b\x20\x68\x6f\x6c\x64\x65\x72\x2e\x79");
   CHECK_EQ(12, result->Uint32Value());
 }
 
@@ -8408,8 +8408,8 @@ static void TroubleCallback(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Local<v8::Object> arg_this =
       args.GetIsolate()->GetCurrentContext()->Global();
   Local<Value> trouble_callee = (trouble_nesting == 3) ?
-    arg_this->Get(v8_str("trouble_callee")) :
-    arg_this->Get(v8_str("trouble_caller"));
+    arg_this->Get(v8_str("\x74\x72\x6f\x75\x62\x6c\x65\x5f\x63\x61\x6c\x6c\x65\x65")) :
+    arg_this->Get(v8_str("\x74\x72\x6f\x75\x62\x6c\x65\x5f\x63\x61\x6c\x6c\x65\x72"));
   CHECK(trouble_callee->IsFunction());
   args.GetReturnValue().Set(
       Function::Cast(*trouble_callee)->Call(arg_this, 0, NULL));
@@ -8438,28 +8438,28 @@ TEST(ApiUncaughtException) {
   Local<v8::FunctionTemplate> fun =
       v8::FunctionTemplate::New(isolate, TroubleCallback);
   v8::Local<v8::Object> global = env->Global();
-  global->Set(v8_str("trouble"), fun->GetFunction());
+  global->Set(v8_str("\x74\x72\x6f\x75\x62\x6c\x65"), fun->GetFunction());
 
   CompileRun(
-      "function trouble_callee() {"
-      "  var x = null;"
-      "  return x.foo;"
-      "};"
-      "function trouble_caller() {"
-      "  trouble();"
-      "};");
-  Local<Value> trouble = global->Get(v8_str("trouble"));
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x72\x6f\x75\x62\x6c\x65\x5f\x63\x61\x6c\x6c\x65\x65\x28\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x6e\x75\x6c\x6c\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x2e\x66\x6f\x6f\x3b"
+      "\x7d\x3b"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x72\x6f\x75\x62\x6c\x65\x5f\x63\x61\x6c\x6c\x65\x72\x28\x29\x20\x7b"
+      "\x20\x20\x74\x72\x6f\x75\x62\x6c\x65\x28\x29\x3b"
+      "\x7d\x3b");
+  Local<Value> trouble = global->Get(v8_str("\x74\x72\x6f\x75\x62\x6c\x65"));
   CHECK(trouble->IsFunction());
-  Local<Value> trouble_callee = global->Get(v8_str("trouble_callee"));
+  Local<Value> trouble_callee = global->Get(v8_str("\x74\x72\x6f\x75\x62\x6c\x65\x5f\x63\x61\x6c\x6c\x65\x65"));
   CHECK(trouble_callee->IsFunction());
-  Local<Value> trouble_caller = global->Get(v8_str("trouble_caller"));
+  Local<Value> trouble_caller = global->Get(v8_str("\x74\x72\x6f\x75\x62\x6c\x65\x5f\x63\x61\x6c\x6c\x65\x72"));
   CHECK(trouble_caller->IsFunction());
   Function::Cast(*trouble_caller)->Call(global, 0, NULL);
   CHECK_EQ(1, report_count);
   v8::V8::RemoveMessageListeners(ApiUncaughtExceptionTestListener);
 }
 
-static const char* script_resource_name = "ExceptionInNativeScript.js";
+static const char* script_resource_name = "\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x49\x6e\x4e\x61\x74\x69\x76\x65\x53\x63\x72\x69\x70\x74\x2e\x6a\x73";
 static void ExceptionInNativeScriptTestListener(v8::Handle<v8::Message> message,
                                                 v8::Handle<Value>) {
   v8::Handle<v8::Value> name_val = message->GetScriptOrigin().ResourceName();
@@ -8468,7 +8468,7 @@ static void ExceptionInNativeScriptTestListener(v8::Handle<v8::Message> message,
   CHECK_EQ(script_resource_name, *name);
   CHECK_EQ(3, message->GetLineNumber());
   v8::String::Utf8Value source_line(message->GetSourceLine());
-  CHECK_EQ("  new o.foo();", *source_line);
+  CHECK_EQ("\x20\x20\x6e\x65\x77\x20\x6f\x2e\x66\x6f\x6f\x28\x29\x3b", *source_line);
 }
 
 
@@ -8481,15 +8481,15 @@ TEST(ExceptionInNativeScript) {
   Local<v8::FunctionTemplate> fun =
       v8::FunctionTemplate::New(isolate, TroubleCallback);
   v8::Local<v8::Object> global = env->Global();
-  global->Set(v8_str("trouble"), fun->GetFunction());
+  global->Set(v8_str("\x74\x72\x6f\x75\x62\x6c\x65"), fun->GetFunction());
 
   CompileRunWithOrigin(
-      "function trouble() {\n"
-      "  var o = {};\n"
-      "  new o.foo();\n"
-      "};",
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x72\x6f\x75\x62\x6c\x65\x28\x29\x20\x7b\xa"
+      "\x20\x20\x76\x61\x72\x20\x6f\x20\x3d\x20\x7b\x7d\x3b\xa"
+      "\x20\x20\x6e\x65\x77\x20\x6f\x2e\x66\x6f\x6f\x28\x29\x3b\xa"
+      "\x7d\x3b",
       script_resource_name);
-  Local<Value> trouble = global->Get(v8_str("trouble"));
+  Local<Value> trouble = global->Get(v8_str("\x74\x72\x6f\x75\x62\x6c\x65"));
   CHECK(trouble->IsFunction());
   Function::Cast(*trouble)->Call(global, 0, NULL);
   v8::V8::RemoveMessageListeners(ExceptionInNativeScriptTestListener);
@@ -8500,7 +8500,7 @@ TEST(CompilationErrorUsingTryCatchHandler) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::TryCatch try_catch;
-  v8_compile("This doesn't &*&@#$&*^ compile.");
+  v8_compile("\x54\x68\x69\x73\x20\x64\x6f\x65\x73\x6e\x27\x74\x20\x26\x2a\x26\x40\x23\x24\x26\x2a\x5e\x20\x63\x6f\x6d\x70\x69\x6c\x65\x2e");
   CHECK_NE(NULL, *try_catch.Exception());
   CHECK(try_catch.HasCaught());
 }
@@ -8510,20 +8510,20 @@ TEST(TryCatchFinallyUsingTryCatchHandler) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::TryCatch try_catch;
-  CompileRun("try { throw ''; } catch (e) {}");
+  CompileRun("\x74\x72\x79\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x27\x27\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x7d");
   CHECK(!try_catch.HasCaught());
-  CompileRun("try { throw ''; } finally {}");
+  CompileRun("\x74\x72\x79\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x27\x27\x3b\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x7d");
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
   CompileRun(
-      "(function() {"
-      "try { throw ''; } finally { return; }"
-      "})()");
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+      "\x74\x72\x79\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x27\x27\x3b\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x3b\x20\x7d"
+      "\x7d\x29\x28\x29");
   CHECK(!try_catch.HasCaught());
   CompileRun(
-      "(function()"
-      "  { try { throw ''; } finally { throw 0; }"
-      "})()");
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29"
+      "\x20\x20\x7b\x20\x74\x72\x79\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x27\x27\x3b\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x30\x3b\x20\x7d"
+      "\x7d\x29\x28\x29");
   CHECK(try_catch.HasCaught());
 }
 
@@ -8538,28 +8538,28 @@ TEST(TryCatchFinallyStoresMessageUsingTryCatchHandler) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("CEvaluate"),
+  templ->Set(v8_str("\x43\x45\x76\x61\x6c\x75\x61\x74\x65"),
              v8::FunctionTemplate::New(isolate, CEvaluate));
   LocalContext context(0, templ);
   v8::TryCatch try_catch;
-  CompileRun("try {"
-             "  CEvaluate('throw 1;');"
-             "} finally {"
-             "}");
+  CompileRun("\x74\x72\x79\x20\x7b"
+             "\x20\x20\x43\x45\x76\x61\x6c\x75\x61\x74\x65\x28\x27\x74\x68\x72\x6f\x77\x20\x31\x3b\x27\x29\x3b"
+             "\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b"
+             "\x7d");
   CHECK(try_catch.HasCaught());
   CHECK(!try_catch.Message().IsEmpty());
   String::Utf8Value exception_value(try_catch.Exception());
-  CHECK_EQ(*exception_value, "1");
+  CHECK_EQ(*exception_value, "\x31");
   try_catch.Reset();
-  CompileRun("try {"
-             "  CEvaluate('throw 1;');"
-             "} finally {"
-             "  throw 2;"
-             "}");
+  CompileRun("\x74\x72\x79\x20\x7b"
+             "\x20\x20\x43\x45\x76\x61\x6c\x75\x61\x74\x65\x28\x27\x74\x68\x72\x6f\x77\x20\x31\x3b\x27\x29\x3b"
+             "\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b"
+             "\x20\x20\x74\x68\x72\x6f\x77\x20\x32\x3b"
+             "\x7d");
   CHECK(try_catch.HasCaught());
   CHECK(!try_catch.Message().IsEmpty());
   String::Utf8Value finally_exception_value(try_catch.Exception());
-  CHECK_EQ(*finally_exception_value, "2");
+  CHECK_EQ(*finally_exception_value, "\x32");
 }
 #endif
 
@@ -8572,7 +8572,7 @@ static bool NamedSecurityTestCallback(Local<v8::Object> global,
                                       Local<Value> name,
                                       v8::AccessType type,
                                       Local<Value> data) {
-  printf("a\n");
+  printf("\x61\xa");
   // Always allow read access.
   if (type == v8::ACCESS_GET)
     return true;
@@ -8587,7 +8587,7 @@ static bool IndexedSecurityTestCallback(Local<v8::Object> global,
                                         uint32_t key,
                                         v8::AccessType type,
                                         Local<Value> data) {
-  printf("b\n");
+  printf("\x62\xa");
   // Always allow read access.
   if (type == v8::ACCESS_GET)
     return true;
@@ -8612,12 +8612,12 @@ TEST(SecurityHandler) {
   context0->Enter();
 
   v8::Handle<v8::Object> global0 = context0->Global();
-  v8::Handle<Script> script0 = v8_compile("foo = 111");
+  v8::Handle<Script> script0 = v8_compile("\x66\x6f\x6f\x20\x3d\x20\x31\x31\x31");
   script0->Run();
-  global0->Set(v8_str("0"), v8_num(999));
-  v8::Handle<Value> foo0 = global0->Get(v8_str("foo"));
+  global0->Set(v8_str("\x30"), v8_num(999));
+  v8::Handle<Value> foo0 = global0->Get(v8_str("\x66\x6f\x6f"));
   CHECK_EQ(111, foo0->Int32Value());
-  v8::Handle<Value> z0 = global0->Get(v8_str("0"));
+  v8::Handle<Value> z0 = global0->Get(v8_str("\x30"));
   CHECK_EQ(999, z0->Int32Value());
 
   // Create another environment, should fail security checks.
@@ -8628,16 +8628,16 @@ TEST(SecurityHandler) {
   context1->Enter();
 
   v8::Handle<v8::Object> global1 = context1->Global();
-  global1->Set(v8_str("othercontext"), global0);
+  global1->Set(v8_str("\x6f\x74\x68\x65\x72\x63\x6f\x6e\x74\x65\x78\x74"), global0);
   // This set will fail the security check.
   v8::Handle<Script> script1 =
-    v8_compile("othercontext.foo = 222; othercontext[0] = 888;");
+    v8_compile("\x6f\x74\x68\x65\x72\x63\x6f\x6e\x74\x65\x78\x74\x2e\x66\x6f\x6f\x20\x3d\x20\x32\x32\x32\x3b\x20\x6f\x74\x68\x65\x72\x63\x6f\x6e\x74\x65\x78\x74\x5b\x30\x5d\x20\x3d\x20\x38\x38\x38\x3b");
   script1->Run();
   // This read will pass the security check.
-  v8::Handle<Value> foo1 = global0->Get(v8_str("foo"));
+  v8::Handle<Value> foo1 = global0->Get(v8_str("\x66\x6f\x6f"));
   CHECK_EQ(111, foo1->Int32Value());
   // This read will pass the security check.
-  v8::Handle<Value> z1 = global0->Get(v8_str("0"));
+  v8::Handle<Value> z1 = global0->Get(v8_str("\x30"));
   CHECK_EQ(999, z1->Int32Value());
 
   // Create another environment, should pass security checks.
@@ -8645,13 +8645,13 @@ TEST(SecurityHandler) {
     v8::HandleScope scope2(isolate);
     LocalContext context2;
     v8::Handle<v8::Object> global2 = context2->Global();
-    global2->Set(v8_str("othercontext"), global0);
+    global2->Set(v8_str("\x6f\x74\x68\x65\x72\x63\x6f\x6e\x74\x65\x78\x74"), global0);
     v8::Handle<Script> script2 =
-        v8_compile("othercontext.foo = 333; othercontext[0] = 888;");
+        v8_compile("\x6f\x74\x68\x65\x72\x63\x6f\x6e\x74\x65\x78\x74\x2e\x66\x6f\x6f\x20\x3d\x20\x33\x33\x33\x3b\x20\x6f\x74\x68\x65\x72\x63\x6f\x6e\x74\x65\x78\x74\x5b\x30\x5d\x20\x3d\x20\x38\x38\x38\x3b");
     script2->Run();
-    v8::Handle<Value> foo2 = global0->Get(v8_str("foo"));
+    v8::Handle<Value> foo2 = global0->Get(v8_str("\x66\x6f\x6f"));
     CHECK_EQ(333, foo2->Int32Value());
-    v8::Handle<Value> z2 = global0->Get(v8_str("0"));
+    v8::Handle<Value> z2 = global0->Get(v8_str("\x30"));
     CHECK_EQ(888, z2->Int32Value());
   }
 
@@ -8665,20 +8665,20 @@ THREADED_TEST(SecurityChecks) {
   v8::HandleScope handle_scope(env1->GetIsolate());
   v8::Handle<Context> env2 = Context::New(env1->GetIsolate());
 
-  Local<Value> foo = v8_str("foo");
-  Local<Value> bar = v8_str("bar");
+  Local<Value> foo = v8_str("\x66\x6f\x6f");
+  Local<Value> bar = v8_str("\x62\x61\x72");
 
   // Set to the same domain.
   env1->SetSecurityToken(foo);
 
   // Create a function in env1.
-  CompileRun("spy=function(){return spy;}");
-  Local<Value> spy = env1->Global()->Get(v8_str("spy"));
+  CompileRun("\x73\x70\x79\x3d\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x73\x70\x79\x3b\x7d");
+  Local<Value> spy = env1->Global()->Get(v8_str("\x73\x70\x79"));
   CHECK(spy->IsFunction());
 
   // Create another function accessing global objects.
-  CompileRun("spy2=function(){return new this.Array();}");
-  Local<Value> spy2 = env1->Global()->Get(v8_str("spy2"));
+  CompileRun("\x73\x70\x79\x32\x3d\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x6e\x65\x77\x20\x74\x68\x69\x73\x2e\x41\x72\x72\x61\x79\x28\x29\x3b\x7d");
+  Local<Value> spy2 = env1->Global()->Get(v8_str("\x73\x70\x79\x32"));
   CHECK(spy2->IsFunction());
 
   // Switch to env2 in the same domain and invoke spy on env2.
@@ -8712,18 +8712,18 @@ THREADED_TEST(SecurityChecksForPrototypeChain) {
   // other context without hitting the security checks.
   v8::Local<Value> other_object;
   { Context::Scope scope(other);
-    other_object = other->Global()->Get(v8_str("Object"));
+    other_object = other->Global()->Get(v8_str("\x4f\x62\x6a\x65\x63\x74"));
     other->Global()->Set(v8_num(42), v8_num(87));
   }
 
-  current->Global()->Set(v8_str("other"), other->Global());
-  CHECK(v8_compile("other")->Run()->Equals(other->Global()));
+  current->Global()->Set(v8_str("\x6f\x74\x68\x65\x72"), other->Global());
+  CHECK(v8_compile("\x6f\x74\x68\x65\x72")->Run()->Equals(other->Global()));
 
   // Make sure the security check fails here and we get an undefined
   // result instead of getting the Object function. Repeat in a loop
   // to make sure to exercise the IC code.
-  v8::Local<Script> access_other0 = v8_compile("other.Object");
-  v8::Local<Script> access_other1 = v8_compile("other[42]");
+  v8::Local<Script> access_other0 = v8_compile("\x6f\x74\x68\x65\x72\x2e\x4f\x62\x6a\x65\x63\x74");
+  v8::Local<Script> access_other1 = v8_compile("\x6f\x74\x68\x65\x72\x5b\x34\x32\x5d");
   for (int i = 0; i < 5; i++) {
     CHECK(access_other0->Run().IsEmpty());
     CHECK(access_other1->Run().IsEmpty());
@@ -8732,11 +8732,11 @@ THREADED_TEST(SecurityChecksForPrototypeChain) {
   // Create an object that has 'other' in its prototype chain and make
   // sure we cannot access the Object function indirectly through
   // that. Repeat in a loop to make sure to exercise the IC code.
-  v8_compile("function F() { };"
-             "F.prototype = other;"
-             "var f = new F();")->Run();
-  v8::Local<Script> access_f0 = v8_compile("f.Object");
-  v8::Local<Script> access_f1 = v8_compile("f[42]");
+  v8_compile("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x28\x29\x20\x7b\x20\x7d\x3b"
+             "\x46\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x6f\x74\x68\x65\x72\x3b"
+             "\x76\x61\x72\x20\x66\x20\x3d\x20\x6e\x65\x77\x20\x46\x28\x29\x3b")->Run();
+  v8::Local<Script> access_f0 = v8_compile("\x66\x2e\x4f\x62\x6a\x65\x63\x74");
+  v8::Local<Script> access_f1 = v8_compile("\x66\x5b\x34\x32\x5d");
   for (int j = 0; j < 5; j++) {
     CHECK(access_f0->Run().IsEmpty());
     CHECK(access_f1->Run().IsEmpty());
@@ -8746,17 +8746,17 @@ THREADED_TEST(SecurityChecksForPrototypeChain) {
   // to be the current global object. The prototype chain for 'f' now
   // goes through 'other' but ends up in the current global object.
   { Context::Scope scope(other);
-    other->Global()->Set(v8_str("__proto__"), current->Global());
+    other->Global()->Set(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), current->Global());
   }
   // Set a named and an index property on the current global
   // object. To force the lookup to go through the other global object,
   // the properties must not exist in the other global object.
-  current->Global()->Set(v8_str("foo"), v8_num(100));
+  current->Global()->Set(v8_str("\x66\x6f\x6f"), v8_num(100));
   current->Global()->Set(v8_num(99), v8_num(101));
   // Try to read the properties from f and make sure that the access
   // gets stopped by the security checks on the other global object.
-  Local<Script> access_f2 = v8_compile("f.foo");
-  Local<Script> access_f3 = v8_compile("f[99]");
+  Local<Script> access_f2 = v8_compile("\x66\x2e\x66\x6f\x6f");
+  Local<Script> access_f3 = v8_compile("\x66\x5b\x39\x39\x5d");
   for (int k = 0; k < 5; k++) {
     CHECK(access_f2->Run().IsEmpty());
     CHECK(access_f3->Run().IsEmpty());
@@ -8799,22 +8799,22 @@ TEST(SecurityTestGCAllowed) {
   v8::Handle<Context> context = Context::New(isolate);
   v8::Context::Scope context_scope(context);
 
-  context->Global()->Set(v8_str("obj"), object_template->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), object_template->NewInstance());
 
   named_security_check_with_gc_called = false;
-  CompileRun("obj.foo = new String(1001);");
+  CompileRun("\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x6e\x65\x77\x20\x53\x74\x72\x69\x6e\x67\x28\x31\x30\x30\x31\x29\x3b");
   CHECK(named_security_check_with_gc_called);
 
   indexed_security_check_with_gc_called = false;
-  CompileRun("obj[0] = new String(1002);");
+  CompileRun("\x6f\x62\x6a\x5b\x30\x5d\x20\x3d\x20\x6e\x65\x77\x20\x53\x74\x72\x69\x6e\x67\x28\x31\x30\x30\x32\x29\x3b");
   CHECK(indexed_security_check_with_gc_called);
 
   named_security_check_with_gc_called = false;
-  CHECK(CompileRun("obj.foo")->ToString()->Equals(v8_str("1001")));
+  CHECK(CompileRun("\x6f\x62\x6a\x2e\x66\x6f\x6f")->ToString()->Equals(v8_str("\x31\x30\x30\x31")));
   CHECK(named_security_check_with_gc_called);
 
   indexed_security_check_with_gc_called = false;
-  CHECK(CompileRun("obj[0]")->ToString()->Equals(v8_str("1002")));
+  CHECK(CompileRun("\x6f\x62\x6a\x5b\x30\x5d")->ToString()->Equals(v8_str("\x31\x30\x30\x32")));
   CHECK(indexed_security_check_with_gc_called);
 }
 
@@ -8824,27 +8824,27 @@ THREADED_TEST(CrossDomainDelete) {
   v8::HandleScope handle_scope(env1->GetIsolate());
   v8::Handle<Context> env2 = Context::New(env1->GetIsolate());
 
-  Local<Value> foo = v8_str("foo");
-  Local<Value> bar = v8_str("bar");
+  Local<Value> foo = v8_str("\x66\x6f\x6f");
+  Local<Value> bar = v8_str("\x62\x61\x72");
 
   // Set to the same domain.
   env1->SetSecurityToken(foo);
   env2->SetSecurityToken(foo);
 
-  env1->Global()->Set(v8_str("prop"), v8_num(3));
-  env2->Global()->Set(v8_str("env1"), env1->Global());
+  env1->Global()->Set(v8_str("\x70\x72\x6f\x70"), v8_num(3));
+  env2->Global()->Set(v8_str("\x65\x6e\x76\x31"), env1->Global());
 
   // Change env2 to a different domain and delete env1.prop.
   env2->SetSecurityToken(bar);
   {
     Context::Scope scope_env2(env2);
     Local<Value> result =
-        CompileRun("delete env1.prop");
+        CompileRun("\x64\x65\x6c\x65\x74\x65\x20\x65\x6e\x76\x31\x2e\x70\x72\x6f\x70");
     CHECK(result.IsEmpty());
   }
 
   // Check that env1.prop still exists.
-  Local<Value> v = env1->Global()->Get(v8_str("prop"));
+  Local<Value> v = env1->Global()->Get(v8_str("\x70\x72\x6f\x70"));
   CHECK(v->IsNumber());
   CHECK_EQ(3, v->Int32Value());
 }
@@ -8855,18 +8855,18 @@ THREADED_TEST(CrossDomainIsPropertyEnumerable) {
   v8::HandleScope handle_scope(env1->GetIsolate());
   v8::Handle<Context> env2 = Context::New(env1->GetIsolate());
 
-  Local<Value> foo = v8_str("foo");
-  Local<Value> bar = v8_str("bar");
+  Local<Value> foo = v8_str("\x66\x6f\x6f");
+  Local<Value> bar = v8_str("\x62\x61\x72");
 
   // Set to the same domain.
   env1->SetSecurityToken(foo);
   env2->SetSecurityToken(foo);
 
-  env1->Global()->Set(v8_str("prop"), v8_num(3));
-  env2->Global()->Set(v8_str("env1"), env1->Global());
+  env1->Global()->Set(v8_str("\x70\x72\x6f\x70"), v8_num(3));
+  env2->Global()->Set(v8_str("\x65\x6e\x76\x31"), env1->Global());
 
   // env1.prop is enumerable in env2.
-  Local<String> test = v8_str("propertyIsEnumerable.call(env1, 'prop')");
+  Local<String> test = v8_str("\x70\x72\x6f\x70\x65\x72\x74\x79\x49\x73\x45\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x2e\x63\x61\x6c\x6c\x28\x65\x6e\x76\x31\x2c\x20\x27\x70\x72\x6f\x70\x27\x29");
   {
     Context::Scope scope_env2(env2);
     Local<Value> result = CompileRun(test);
@@ -8888,15 +8888,15 @@ THREADED_TEST(CrossDomainForIn) {
   v8::HandleScope handle_scope(env1->GetIsolate());
   v8::Handle<Context> env2 = Context::New(env1->GetIsolate());
 
-  Local<Value> foo = v8_str("foo");
-  Local<Value> bar = v8_str("bar");
+  Local<Value> foo = v8_str("\x66\x6f\x6f");
+  Local<Value> bar = v8_str("\x62\x61\x72");
 
   // Set to the same domain.
   env1->SetSecurityToken(foo);
   env2->SetSecurityToken(foo);
 
-  env1->Global()->Set(v8_str("prop"), v8_num(3));
-  env2->Global()->Set(v8_str("env1"), env1->Global());
+  env1->Global()->Set(v8_str("\x70\x72\x6f\x70"), v8_num(3));
+  env2->Global()->Set(v8_str("\x65\x6e\x76\x31"), env1->Global());
 
   // Change env2 to a different domain and set env1's global object
   // as the __proto__ of an object in env2 and enumerate properties
@@ -8906,17 +8906,17 @@ THREADED_TEST(CrossDomainForIn) {
   {
     Context::Scope scope_env2(env2);
     Local<Value> result = CompileRun(
-        "(function() {"
-        "  var obj = { '__proto__': env1 };"
-        "  try {"
-        "    for (var p in obj) {"
-        "      if (p == 'prop') return false;"
-        "    }"
-        "    return false;"
-        "  } catch (e) {"
-        "    return true;"
-        "  }"
-        "})()");
+        "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+        "\x20\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x20\x27\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x27\x3a\x20\x65\x6e\x76\x31\x20\x7d\x3b"
+        "\x20\x20\x74\x72\x79\x20\x7b"
+        "\x20\x20\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x70\x20\x69\x6e\x20\x6f\x62\x6a\x29\x20\x7b"
+        "\x20\x20\x20\x20\x20\x20\x69\x66\x20\x28\x70\x20\x3d\x3d\x20\x27\x70\x72\x6f\x70\x27\x29\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x61\x6c\x73\x65\x3b"
+        "\x20\x20\x20\x20\x7d"
+        "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x61\x6c\x73\x65\x3b"
+        "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+        "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x72\x75\x65\x3b"
+        "\x20\x20\x7d"
+        "\x7d\x29\x28\x29");
     CHECK(result->IsTrue());
   }
 }
@@ -8929,7 +8929,7 @@ TEST(ContextDetachGlobal) {
 
   Local<v8::Object> global1 = env1->Global();
 
-  Local<Value> foo = v8_str("foo");
+  Local<Value> foo = v8_str("\x66\x6f\x6f");
 
   // Set to the same domain.
   env1->SetSecurityToken(foo);
@@ -8940,11 +8940,11 @@ TEST(ContextDetachGlobal) {
 
   // Create a function in env2 and add a reference to it in env1.
   Local<v8::Object> global2 = env2->Global();
-  global2->Set(v8_str("prop"), v8::Integer::New(env2->GetIsolate(), 1));
-  CompileRun("function getProp() {return prop;}");
+  global2->Set(v8_str("\x70\x72\x6f\x70"), v8::Integer::New(env2->GetIsolate(), 1));
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x50\x72\x6f\x70\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x70\x72\x6f\x70\x3b\x7d");
 
-  env1->Global()->Set(v8_str("getProp"),
-                      global2->Get(v8_str("getProp")));
+  env1->Global()->Set(v8_str("\x67\x65\x74\x50\x72\x6f\x70"),
+                      global2->Get(v8_str("\x67\x65\x74\x50\x72\x6f\x70")));
 
   // Detach env2's global, and reuse the global object of env2
   env2->Exit();
@@ -8954,20 +8954,20 @@ TEST(ContextDetachGlobal) {
                                           0,
                                           v8::Handle<v8::ObjectTemplate>(),
                                           global2);
-  env3->SetSecurityToken(v8_str("bar"));
+  env3->SetSecurityToken(v8_str("\x62\x61\x72"));
   env3->Enter();
 
   Local<v8::Object> global3 = env3->Global();
   CHECK_EQ(global2, global3);
-  CHECK(global3->Get(v8_str("prop"))->IsUndefined());
-  CHECK(global3->Get(v8_str("getProp"))->IsUndefined());
-  global3->Set(v8_str("prop"), v8::Integer::New(env3->GetIsolate(), -1));
-  global3->Set(v8_str("prop2"), v8::Integer::New(env3->GetIsolate(), 2));
+  CHECK(global3->Get(v8_str("\x70\x72\x6f\x70"))->IsUndefined());
+  CHECK(global3->Get(v8_str("\x67\x65\x74\x50\x72\x6f\x70"))->IsUndefined());
+  global3->Set(v8_str("\x70\x72\x6f\x70"), v8::Integer::New(env3->GetIsolate(), -1));
+  global3->Set(v8_str("\x70\x72\x6f\x70\x32"), v8::Integer::New(env3->GetIsolate(), 2));
   env3->Exit();
 
   // Call getProp in env1, and it should return the value 1
   {
-    Local<Value> get_prop = global1->Get(v8_str("getProp"));
+    Local<Value> get_prop = global1->Get(v8_str("\x67\x65\x74\x50\x72\x6f\x70"));
     CHECK(get_prop->IsFunction());
     v8::TryCatch try_catch;
     Local<Value> r = Function::Cast(*get_prop)->Call(global1, 0, NULL);
@@ -8977,7 +8977,7 @@ TEST(ContextDetachGlobal) {
 
   // Check that env3 is not accessible from env1
   {
-    Local<Value> r = global3->Get(v8_str("prop2"));
+    Local<Value> r = global3->Get(v8_str("\x70\x72\x6f\x70\x32"));
     CHECK(r.IsEmpty());
   }
 }
@@ -8990,7 +8990,7 @@ TEST(DetachGlobal) {
   // Create second environment.
   v8::Handle<Context> env2 = Context::New(env1->GetIsolate());
 
-  Local<Value> foo = v8_str("foo");
+  Local<Value> foo = v8_str("\x66\x6f\x6f");
 
   // Set same security token for env1 and env2.
   env1->SetSecurityToken(foo);
@@ -8999,14 +8999,14 @@ TEST(DetachGlobal) {
   // Create a property on the global object in env2.
   {
     v8::Context::Scope scope(env2);
-    env2->Global()->Set(v8_str("p"), v8::Integer::New(env2->GetIsolate(), 42));
+    env2->Global()->Set(v8_str("\x70"), v8::Integer::New(env2->GetIsolate(), 42));
   }
 
   // Create a reference to env2 global from env1 global.
-  env1->Global()->Set(v8_str("other"), env2->Global());
+  env1->Global()->Set(v8_str("\x6f\x74\x68\x65\x72"), env2->Global());
 
   // Check that we have access to other.p in env2 from env1.
-  Local<Value> result = CompileRun("other.p");
+  Local<Value> result = CompileRun("\x6f\x74\x68\x65\x72\x2e\x70");
   CHECK(result->IsInt32());
   CHECK_EQ(42, result->Int32Value());
 
@@ -9016,7 +9016,7 @@ TEST(DetachGlobal) {
 
   // Check that the global has been detached. No other.p property can
   // be found.
-  result = CompileRun("other.p");
+  result = CompileRun("\x6f\x74\x68\x65\x72\x2e\x70");
   CHECK(result.IsEmpty());
 
   // Reuse global2 for env3.
@@ -9032,28 +9032,28 @@ TEST(DetachGlobal) {
   // Create a property on the global object in env3.
   {
     v8::Context::Scope scope(env3);
-    env3->Global()->Set(v8_str("p"), v8::Integer::New(env3->GetIsolate(), 24));
+    env3->Global()->Set(v8_str("\x70"), v8::Integer::New(env3->GetIsolate(), 24));
   }
 
   // Check that other.p is now the property in env3 and that we have access.
-  result = CompileRun("other.p");
+  result = CompileRun("\x6f\x74\x68\x65\x72\x2e\x70");
   CHECK(result->IsInt32());
   CHECK_EQ(24, result->Int32Value());
 
   // Change security token for env3 to something different from env1 and env2.
-  env3->SetSecurityToken(v8_str("bar"));
+  env3->SetSecurityToken(v8_str("\x62\x61\x72"));
 
   // Check that we do not have access to other.p in env1. |other| is now
   // the global object for env3 which has a different security token,
   // so access should be blocked.
-  result = CompileRun("other.p");
+  result = CompileRun("\x6f\x74\x68\x65\x72\x2e\x70");
   CHECK(result.IsEmpty());
 }
 
 
 void GetThisX(const v8::FunctionCallbackInfo<v8::Value>& info) {
   info.GetReturnValue().Set(
-      info.GetIsolate()->GetCurrentContext()->Global()->Get(v8_str("x")));
+      info.GetIsolate()->GetCurrentContext()->Global()->Get(v8_str("\x78")));
 }
 
 
@@ -9065,31 +9065,31 @@ TEST(DetachedAccesses) {
   Local<ObjectTemplate> inner_global_template =
       FunctionTemplate::New(env1->GetIsolate())->InstanceTemplate();
   inner_global_template ->SetAccessorProperty(
-      v8_str("this_x"), FunctionTemplate::New(env1->GetIsolate(), GetThisX));
+      v8_str("\x74\x68\x69\x73\x5f\x78"), FunctionTemplate::New(env1->GetIsolate(), GetThisX));
   v8::Local<Context> env2 =
       Context::New(env1->GetIsolate(), NULL, inner_global_template);
 
-  Local<Value> foo = v8_str("foo");
+  Local<Value> foo = v8_str("\x66\x6f\x6f");
 
   // Set same security token for env1 and env2.
   env1->SetSecurityToken(foo);
   env2->SetSecurityToken(foo);
 
-  env1->Global()->Set(v8_str("x"), v8_str("env1_x"));
+  env1->Global()->Set(v8_str("\x78"), v8_str("\x65\x6e\x76\x31\x5f\x78"));
 
   {
     v8::Context::Scope scope(env2);
-    env2->Global()->Set(v8_str("x"), v8_str("env2_x"));
+    env2->Global()->Set(v8_str("\x78"), v8_str("\x65\x6e\x76\x32\x5f\x78"));
     CompileRun(
-        "function bound_x() { return x; }"
-        "function get_x()   { return this.x; }"
-        "function get_x_w() { return (function() {return this.x;})(); }");
-    env1->Global()->Set(v8_str("bound_x"), CompileRun("bound_x"));
-    env1->Global()->Set(v8_str("get_x"), CompileRun("get_x"));
-    env1->Global()->Set(v8_str("get_x_w"), CompileRun("get_x_w"));
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x6f\x75\x6e\x64\x5f\x78\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d"
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x5f\x78\x28\x29\x20\x20\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x78\x3b\x20\x7d"
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x5f\x78\x5f\x77\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x78\x3b\x7d\x29\x28\x29\x3b\x20\x7d");
+    env1->Global()->Set(v8_str("\x62\x6f\x75\x6e\x64\x5f\x78"), CompileRun("\x62\x6f\x75\x6e\x64\x5f\x78"));
+    env1->Global()->Set(v8_str("\x67\x65\x74\x5f\x78"), CompileRun("\x67\x65\x74\x5f\x78"));
+    env1->Global()->Set(v8_str("\x67\x65\x74\x5f\x78\x5f\x77"), CompileRun("\x67\x65\x74\x5f\x78\x5f\x77"));
     env1->Global()->Set(
-        v8_str("this_x"),
-        CompileRun("Object.getOwnPropertyDescriptor(this, 'this_x').get"));
+        v8_str("\x74\x68\x69\x73\x5f\x78"),
+        CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x74\x68\x69\x73\x2c\x20\x27\x74\x68\x69\x73\x5f\x78\x27\x29\x2e\x67\x65\x74"));
   }
 
   Local<Object> env2_global = env2->Global();
@@ -9097,14 +9097,14 @@ TEST(DetachedAccesses) {
   env2->DetachGlobal();
 
   Local<Value> result;
-  result = CompileRun("bound_x()");
-  CHECK_EQ(v8_str("env2_x"), result);
-  result = CompileRun("get_x()");
+  result = CompileRun("\x62\x6f\x75\x6e\x64\x5f\x78\x28\x29");
+  CHECK_EQ(v8_str("\x65\x6e\x76\x32\x5f\x78"), result);
+  result = CompileRun("\x67\x65\x74\x5f\x78\x28\x29");
   CHECK(result.IsEmpty());
-  result = CompileRun("get_x_w()");
+  result = CompileRun("\x67\x65\x74\x5f\x78\x5f\x77\x28\x29");
   CHECK(result.IsEmpty());
-  result = CompileRun("this_x()");
-  CHECK_EQ(v8_str("env2_x"), result);
+  result = CompileRun("\x74\x68\x69\x73\x5f\x78\x28\x29");
+  CHECK_EQ(v8_str("\x65\x6e\x76\x32\x5f\x78"), result);
 
   // Reattach env2's proxy
   env2 = Context::New(env1->GetIsolate(),
@@ -9114,61 +9114,61 @@ TEST(DetachedAccesses) {
   env2->SetSecurityToken(foo);
   {
     v8::Context::Scope scope(env2);
-    env2->Global()->Set(v8_str("x"), v8_str("env3_x"));
-    env2->Global()->Set(v8_str("env1"), env1->Global());
+    env2->Global()->Set(v8_str("\x78"), v8_str("\x65\x6e\x76\x33\x5f\x78"));
+    env2->Global()->Set(v8_str("\x65\x6e\x76\x31"), env1->Global());
     result = CompileRun(
-        "results = [];"
-        "for (var i = 0; i < 4; i++ ) {"
-        "  results.push(env1.bound_x());"
-        "  results.push(env1.get_x());"
-        "  results.push(env1.get_x_w());"
-        "  results.push(env1.this_x());"
-        "}"
-        "results");
+        "\x72\x65\x73\x75\x6c\x74\x73\x20\x3d\x20\x5b\x5d\x3b"
+        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x34\x3b\x20\x69\x2b\x2b\x20\x29\x20\x7b"
+        "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x65\x6e\x76\x31\x2e\x62\x6f\x75\x6e\x64\x5f\x78\x28\x29\x29\x3b"
+        "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x65\x6e\x76\x31\x2e\x67\x65\x74\x5f\x78\x28\x29\x29\x3b"
+        "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x65\x6e\x76\x31\x2e\x67\x65\x74\x5f\x78\x5f\x77\x28\x29\x29\x3b"
+        "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x65\x6e\x76\x31\x2e\x74\x68\x69\x73\x5f\x78\x28\x29\x29\x3b"
+        "\x7d"
+        "\x72\x65\x73\x75\x6c\x74\x73");
     Local<v8::Array> results = Local<v8::Array>::Cast(result);
     CHECK_EQ(16, results->Length());
     for (int i = 0; i < 16; i += 4) {
-      CHECK_EQ(v8_str("env2_x"), results->Get(i + 0));
-      CHECK_EQ(v8_str("env1_x"), results->Get(i + 1));
-      CHECK_EQ(v8_str("env3_x"), results->Get(i + 2));
-      CHECK_EQ(v8_str("env2_x"), results->Get(i + 3));
+      CHECK_EQ(v8_str("\x65\x6e\x76\x32\x5f\x78"), results->Get(i + 0));
+      CHECK_EQ(v8_str("\x65\x6e\x76\x31\x5f\x78"), results->Get(i + 1));
+      CHECK_EQ(v8_str("\x65\x6e\x76\x33\x5f\x78"), results->Get(i + 2));
+      CHECK_EQ(v8_str("\x65\x6e\x76\x32\x5f\x78"), results->Get(i + 3));
     }
   }
 
   result = CompileRun(
-      "results = [];"
-      "for (var i = 0; i < 4; i++ ) {"
-      "  results.push(bound_x());"
-      "  results.push(get_x());"
-      "  results.push(get_x_w());"
-      "  results.push(this_x());"
-      "}"
-      "results");
+      "\x72\x65\x73\x75\x6c\x74\x73\x20\x3d\x20\x5b\x5d\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x34\x3b\x20\x69\x2b\x2b\x20\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x62\x6f\x75\x6e\x64\x5f\x78\x28\x29\x29\x3b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x67\x65\x74\x5f\x78\x28\x29\x29\x3b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x67\x65\x74\x5f\x78\x5f\x77\x28\x29\x29\x3b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x74\x68\x69\x73\x5f\x78\x28\x29\x29\x3b"
+      "\x7d"
+      "\x72\x65\x73\x75\x6c\x74\x73");
   Local<v8::Array> results = Local<v8::Array>::Cast(result);
   CHECK_EQ(16, results->Length());
   for (int i = 0; i < 16; i += 4) {
-    CHECK_EQ(v8_str("env2_x"), results->Get(i + 0));
-    CHECK_EQ(v8_str("env3_x"), results->Get(i + 1));
-    CHECK_EQ(v8_str("env3_x"), results->Get(i + 2));
-    CHECK_EQ(v8_str("env2_x"), results->Get(i + 3));
+    CHECK_EQ(v8_str("\x65\x6e\x76\x32\x5f\x78"), results->Get(i + 0));
+    CHECK_EQ(v8_str("\x65\x6e\x76\x33\x5f\x78"), results->Get(i + 1));
+    CHECK_EQ(v8_str("\x65\x6e\x76\x33\x5f\x78"), results->Get(i + 2));
+    CHECK_EQ(v8_str("\x65\x6e\x76\x32\x5f\x78"), results->Get(i + 3));
   }
 
   result = CompileRun(
-      "results = [];"
-      "for (var i = 0; i < 4; i++ ) {"
-      "  results.push(this.bound_x());"
-      "  results.push(this.get_x());"
-      "  results.push(this.get_x_w());"
-      "  results.push(this.this_x());"
-      "}"
-      "results");
+      "\x72\x65\x73\x75\x6c\x74\x73\x20\x3d\x20\x5b\x5d\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x34\x3b\x20\x69\x2b\x2b\x20\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x74\x68\x69\x73\x2e\x62\x6f\x75\x6e\x64\x5f\x78\x28\x29\x29\x3b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x74\x68\x69\x73\x2e\x67\x65\x74\x5f\x78\x28\x29\x29\x3b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x74\x68\x69\x73\x2e\x67\x65\x74\x5f\x78\x5f\x77\x28\x29\x29\x3b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x73\x2e\x70\x75\x73\x68\x28\x74\x68\x69\x73\x2e\x74\x68\x69\x73\x5f\x78\x28\x29\x29\x3b"
+      "\x7d"
+      "\x72\x65\x73\x75\x6c\x74\x73");
   results = Local<v8::Array>::Cast(result);
   CHECK_EQ(16, results->Length());
   for (int i = 0; i < 16; i += 4) {
-    CHECK_EQ(v8_str("env2_x"), results->Get(i + 0));
-    CHECK_EQ(v8_str("env1_x"), results->Get(i + 1));
-    CHECK_EQ(v8_str("env3_x"), results->Get(i + 2));
-    CHECK_EQ(v8_str("env2_x"), results->Get(i + 3));
+    CHECK_EQ(v8_str("\x65\x6e\x76\x32\x5f\x78"), results->Get(i + 0));
+    CHECK_EQ(v8_str("\x65\x6e\x76\x31\x5f\x78"), results->Get(i + 1));
+    CHECK_EQ(v8_str("\x65\x6e\x76\x33\x5f\x78"), results->Get(i + 2));
+    CHECK_EQ(v8_str("\x65\x6e\x76\x32\x5f\x78"), results->Get(i + 3));
   }
 }
 
@@ -9241,20 +9241,20 @@ TEST(AccessControl) {
 
   // Add an accessor accessible by cross-domain JS code.
   global_template->SetAccessor(
-      v8_str("accessible_prop"),
+      v8_str("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x70"),
       EchoGetter, EchoSetter,
       v8::Handle<Value>(),
       v8::AccessControl(v8::ALL_CAN_READ | v8::ALL_CAN_WRITE));
 
 
   // Add an accessor that is not accessible by cross-domain JS code.
-  global_template->SetAccessor(v8_str("blocked_prop"),
+  global_template->SetAccessor(v8_str("\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x70\x72\x6f\x70"),
                                UnreachableGetter, UnreachableSetter,
                                v8::Handle<Value>(),
                                v8::DEFAULT);
 
   global_template->SetAccessorProperty(
-      v8_str("blocked_js_prop"),
+      v8_str("\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x6a\x73\x5f\x70\x72\x6f\x70"),
       v8::FunctionTemplate::New(isolate, UnreachableFunction),
       v8::FunctionTemplate::New(isolate, UnreachableFunction),
       v8::None,
@@ -9268,24 +9268,24 @@ TEST(AccessControl) {
 
   // Define a property with JS getter and setter.
   CompileRun(
-      "function getter() { return 'getter'; };\n"
-      "function setter() { return 'setter'; }\n"
-      "Object.defineProperty(this, 'js_accessor_p', {get:getter, set:setter})");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x74\x65\x72\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x67\x65\x74\x74\x65\x72\x27\x3b\x20\x7d\x3b\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x74\x65\x72\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x73\x65\x74\x74\x65\x72\x27\x3b\x20\x7d\xa"
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x74\x68\x69\x73\x2c\x20\x27\x6a\x73\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x70\x27\x2c\x20\x7b\x67\x65\x74\x3a\x67\x65\x74\x74\x65\x72\x2c\x20\x73\x65\x74\x3a\x73\x65\x74\x74\x65\x72\x7d\x29");
 
-  Local<Value> getter = global0->Get(v8_str("getter"));
-  Local<Value> setter = global0->Get(v8_str("setter"));
+  Local<Value> getter = global0->Get(v8_str("\x67\x65\x74\x74\x65\x72"));
+  Local<Value> setter = global0->Get(v8_str("\x73\x65\x74\x74\x65\x72"));
 
   // And define normal element.
-  global0->Set(239, v8_str("239"));
+  global0->Set(239, v8_str("\x32\x33\x39"));
 
   // Define an element with JS getter and setter.
   CompileRun(
-      "function el_getter() { return 'el_getter'; };\n"
-      "function el_setter() { return 'el_setter'; };\n"
-      "Object.defineProperty(this, '42', {get: el_getter, set: el_setter});");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x6c\x5f\x67\x65\x74\x74\x65\x72\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x65\x6c\x5f\x67\x65\x74\x74\x65\x72\x27\x3b\x20\x7d\x3b\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x6c\x5f\x73\x65\x74\x74\x65\x72\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x65\x6c\x5f\x73\x65\x74\x74\x65\x72\x27\x3b\x20\x7d\x3b\xa"
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x74\x68\x69\x73\x2c\x20\x27\x34\x32\x27\x2c\x20\x7b\x67\x65\x74\x3a\x20\x65\x6c\x5f\x67\x65\x74\x74\x65\x72\x2c\x20\x73\x65\x74\x3a\x20\x65\x6c\x5f\x73\x65\x74\x74\x65\x72\x7d\x29\x3b");
 
-  Local<Value> el_getter = global0->Get(v8_str("el_getter"));
-  Local<Value> el_setter = global0->Get(v8_str("el_setter"));
+  Local<Value> el_getter = global0->Get(v8_str("\x65\x6c\x5f\x67\x65\x74\x74\x65\x72"));
+  Local<Value> el_setter = global0->Get(v8_str("\x65\x6c\x5f\x73\x65\x74\x74\x65\x72"));
 
   v8::HandleScope scope1(isolate);
 
@@ -9293,70 +9293,70 @@ TEST(AccessControl) {
   context1->Enter();
 
   v8::Handle<v8::Object> global1 = context1->Global();
-  global1->Set(v8_str("other"), global0);
+  global1->Set(v8_str("\x6f\x74\x68\x65\x72"), global0);
 
   // Access blocked property.
-  CompileRun("other.blocked_prop = 1");
+  CompileRun("\x6f\x74\x68\x65\x72\x2e\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x70\x72\x6f\x70\x20\x3d\x20\x31");
 
-  CHECK(CompileRun("other.blocked_prop").IsEmpty());
-  CHECK(CompileRun("Object.getOwnPropertyDescriptor(other, 'blocked_prop')")
+  CHECK(CompileRun("\x6f\x74\x68\x65\x72\x2e\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x70\x72\x6f\x70").IsEmpty());
+  CHECK(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x70\x72\x6f\x70\x27\x29")
             .IsEmpty());
   CHECK(
-      CompileRun("propertyIsEnumerable.call(other, 'blocked_prop')").IsEmpty());
+      CompileRun("\x70\x72\x6f\x70\x65\x72\x74\x79\x49\x73\x45\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x2e\x63\x61\x6c\x6c\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x70\x72\x6f\x70\x27\x29").IsEmpty());
 
   // Access blocked element.
-  CHECK(CompileRun("other[239] = 1").IsEmpty());
+  CHECK(CompileRun("\x6f\x74\x68\x65\x72\x5b\x32\x33\x39\x5d\x20\x3d\x20\x31").IsEmpty());
 
-  CHECK(CompileRun("other[239]").IsEmpty());
-  CHECK(CompileRun("Object.getOwnPropertyDescriptor(other, '239')").IsEmpty());
-  CHECK(CompileRun("propertyIsEnumerable.call(other, '239')").IsEmpty());
+  CHECK(CompileRun("\x6f\x74\x68\x65\x72\x5b\x32\x33\x39\x5d").IsEmpty());
+  CHECK(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x32\x33\x39\x27\x29").IsEmpty());
+  CHECK(CompileRun("\x70\x72\x6f\x70\x65\x72\x74\x79\x49\x73\x45\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x2e\x63\x61\x6c\x6c\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x32\x33\x39\x27\x29").IsEmpty());
 
   // Enable ACCESS_HAS
   allowed_access_type[v8::ACCESS_HAS] = true;
-  CHECK(CompileRun("other[239]").IsEmpty());
+  CHECK(CompileRun("\x6f\x74\x68\x65\x72\x5b\x32\x33\x39\x5d").IsEmpty());
   // ... and now we can get the descriptor...
-  CHECK(CompileRun("Object.getOwnPropertyDescriptor(other, '239').value")
+  CHECK(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x32\x33\x39\x27\x29\x2e\x76\x61\x6c\x75\x65")
             .IsEmpty());
   // ... and enumerate the property.
-  ExpectTrue("propertyIsEnumerable.call(other, '239')");
+  ExpectTrue("\x70\x72\x6f\x70\x65\x72\x74\x79\x49\x73\x45\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x2e\x63\x61\x6c\x6c\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x32\x33\x39\x27\x29");
   allowed_access_type[v8::ACCESS_HAS] = false;
 
   // Access a property with JS accessor.
-  CHECK(CompileRun("other.js_accessor_p = 2").IsEmpty());
+  CHECK(CompileRun("\x6f\x74\x68\x65\x72\x2e\x6a\x73\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x70\x20\x3d\x20\x32").IsEmpty());
 
-  CHECK(CompileRun("other.js_accessor_p").IsEmpty());
-  CHECK(CompileRun("Object.getOwnPropertyDescriptor(other, 'js_accessor_p')")
+  CHECK(CompileRun("\x6f\x74\x68\x65\x72\x2e\x6a\x73\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x70").IsEmpty());
+  CHECK(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x6a\x73\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x70\x27\x29")
             .IsEmpty());
 
   // Enable both ACCESS_HAS and ACCESS_GET.
   allowed_access_type[v8::ACCESS_HAS] = true;
   allowed_access_type[v8::ACCESS_GET] = true;
 
-  ExpectString("other.js_accessor_p", "getter");
+  ExpectString("\x6f\x74\x68\x65\x72\x2e\x6a\x73\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x70", "\x67\x65\x74\x74\x65\x72");
   ExpectObject(
-      "Object.getOwnPropertyDescriptor(other, 'js_accessor_p').get", getter);
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x6a\x73\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x70\x27\x29\x2e\x67\x65\x74", getter);
   ExpectObject(
-      "Object.getOwnPropertyDescriptor(other, 'js_accessor_p').set", setter);
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x6a\x73\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x70\x27\x29\x2e\x73\x65\x74", setter);
   ExpectUndefined(
-      "Object.getOwnPropertyDescriptor(other, 'js_accessor_p').value");
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x6a\x73\x5f\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x70\x27\x29\x2e\x76\x61\x6c\x75\x65");
 
   allowed_access_type[v8::ACCESS_HAS] = false;
   allowed_access_type[v8::ACCESS_GET] = false;
 
   // Access an element with JS accessor.
-  CHECK(CompileRun("other[42] = 2").IsEmpty());
+  CHECK(CompileRun("\x6f\x74\x68\x65\x72\x5b\x34\x32\x5d\x20\x3d\x20\x32").IsEmpty());
 
-  CHECK(CompileRun("other[42]").IsEmpty());
-  CHECK(CompileRun("Object.getOwnPropertyDescriptor(other, '42')").IsEmpty());
+  CHECK(CompileRun("\x6f\x74\x68\x65\x72\x5b\x34\x32\x5d").IsEmpty());
+  CHECK(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x34\x32\x27\x29").IsEmpty());
 
   // Enable both ACCESS_HAS and ACCESS_GET.
   allowed_access_type[v8::ACCESS_HAS] = true;
   allowed_access_type[v8::ACCESS_GET] = true;
 
-  ExpectString("other[42]", "el_getter");
-  ExpectObject("Object.getOwnPropertyDescriptor(other, '42').get", el_getter);
-  ExpectObject("Object.getOwnPropertyDescriptor(other, '42').set", el_setter);
-  ExpectUndefined("Object.getOwnPropertyDescriptor(other, '42').value");
+  ExpectString("\x6f\x74\x68\x65\x72\x5b\x34\x32\x5d", "\x65\x6c\x5f\x67\x65\x74\x74\x65\x72");
+  ExpectObject("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x34\x32\x27\x29\x2e\x67\x65\x74", el_getter);
+  ExpectObject("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x34\x32\x27\x29\x2e\x73\x65\x74", el_setter);
+  ExpectUndefined("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x34\x32\x27\x29\x2e\x76\x61\x6c\x75\x65");
 
   allowed_access_type[v8::ACCESS_HAS] = false;
   allowed_access_type[v8::ACCESS_GET] = false;
@@ -9364,41 +9364,41 @@ TEST(AccessControl) {
   v8::Handle<Value> value;
 
   // Access accessible property
-  value = CompileRun("other.accessible_prop = 3");
+  value = CompileRun("\x6f\x74\x68\x65\x72\x2e\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x70\x20\x3d\x20\x33");
   CHECK(value->IsNumber());
   CHECK_EQ(3, value->Int32Value());
   CHECK_EQ(3, g_echo_value);
 
-  value = CompileRun("other.accessible_prop");
+  value = CompileRun("\x6f\x74\x68\x65\x72\x2e\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x70");
   CHECK(value->IsNumber());
   CHECK_EQ(3, value->Int32Value());
 
   value = CompileRun(
-      "Object.getOwnPropertyDescriptor(other, 'accessible_prop').value");
+      "\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x70\x27\x29\x2e\x76\x61\x6c\x75\x65");
   CHECK(value->IsNumber());
   CHECK_EQ(3, value->Int32Value());
 
-  value = CompileRun("propertyIsEnumerable.call(other, 'accessible_prop')");
+  value = CompileRun("\x70\x72\x6f\x70\x65\x72\x74\x79\x49\x73\x45\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x2e\x63\x61\x6c\x6c\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x70\x27\x29");
   CHECK(value->IsTrue());
 
   // Enumeration doesn't enumerate accessors from inaccessible objects in
   // the prototype chain even if the accessors are in themselves accessible.
   value = CompileRun(
-      "(function() {"
-      "  var obj = { '__proto__': other };"
-      "  try {"
-      "    for (var p in obj) {"
-      "      if (p == 'accessible_prop' ||"
-      "          p == 'blocked_js_prop' ||"
-      "          p == 'blocked_js_prop') {"
-      "        return false;"
-      "      }"
-      "    }"
-      "    return false;"
-      "  } catch (e) {"
-      "    return true;"
-      "  }"
-      "})()");
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x20\x27\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x27\x3a\x20\x6f\x74\x68\x65\x72\x20\x7d\x3b"
+      "\x20\x20\x74\x72\x79\x20\x7b"
+      "\x20\x20\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x70\x20\x69\x6e\x20\x6f\x62\x6a\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x69\x66\x20\x28\x70\x20\x3d\x3d\x20\x27\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x70\x27\x20\x7c\x7c"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x70\x20\x3d\x3d\x20\x27\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x6a\x73\x5f\x70\x72\x6f\x70\x27\x20\x7c\x7c"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x70\x20\x3d\x3d\x20\x27\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x6a\x73\x5f\x70\x72\x6f\x70\x27\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x61\x6c\x73\x65\x3b"
+      "\x20\x20\x20\x20\x20\x20\x7d"
+      "\x20\x20\x20\x20\x7d"
+      "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x61\x6c\x73\x65\x3b"
+      "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+      "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x72\x75\x65\x3b"
+      "\x20\x20\x7d"
+      "\x7d\x29\x28\x29");
   CHECK(value->IsTrue());
 
   context1->Exit();
@@ -9417,14 +9417,14 @@ TEST(AccessControlES5) {
 
   // Add accessible accessor.
   global_template->SetAccessor(
-      v8_str("accessible_prop"),
+      v8_str("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x70"),
       EchoGetter, EchoSetter,
       v8::Handle<Value>(),
       v8::AccessControl(v8::ALL_CAN_READ | v8::ALL_CAN_WRITE));
 
 
   // Add an accessor that is not accessible by cross-domain JS code.
-  global_template->SetAccessor(v8_str("blocked_prop"),
+  global_template->SetAccessor(v8_str("\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x70\x72\x6f\x70"),
                                UnreachableGetter, UnreachableSetter,
                                v8::Handle<Value>(),
                                v8::DEFAULT);
@@ -9438,40 +9438,40 @@ TEST(AccessControlES5) {
   v8::Local<Context> context1 = Context::New(isolate);
   context1->Enter();
   v8::Handle<v8::Object> global1 = context1->Global();
-  global1->Set(v8_str("other"), global0);
+  global1->Set(v8_str("\x6f\x74\x68\x65\x72"), global0);
 
   // Regression test for issue 1154.
-  CHECK(CompileRun("Object.keys(other)").IsEmpty());
-  CHECK(CompileRun("other.blocked_prop").IsEmpty());
+  CHECK(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x6b\x65\x79\x73\x28\x6f\x74\x68\x65\x72\x29").IsEmpty());
+  CHECK(CompileRun("\x6f\x74\x68\x65\x72\x2e\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x70\x72\x6f\x70").IsEmpty());
 
   // Regression test for issue 1027.
-  CompileRun("Object.defineProperty(\n"
-             "  other, 'blocked_prop', {configurable: false})");
-  CHECK(CompileRun("other.blocked_prop").IsEmpty());
-  CHECK(CompileRun("Object.getOwnPropertyDescriptor(other, 'blocked_prop')")
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\xa"
+             "\x20\x20\x6f\x74\x68\x65\x72\x2c\x20\x27\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x70\x72\x6f\x70\x27\x2c\x20\x7b\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x66\x61\x6c\x73\x65\x7d\x29");
+  CHECK(CompileRun("\x6f\x74\x68\x65\x72\x2e\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x70\x72\x6f\x70").IsEmpty());
+  CHECK(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x62\x6c\x6f\x63\x6b\x65\x64\x5f\x70\x72\x6f\x70\x27\x29")
             .IsEmpty());
 
   // Regression test for issue 1171.
-  ExpectTrue("Object.isExtensible(other)");
-  CompileRun("Object.preventExtensions(other)");
-  ExpectTrue("Object.isExtensible(other)");
+  ExpectTrue("\x4f\x62\x6a\x65\x63\x74\x2e\x69\x73\x45\x78\x74\x65\x6e\x73\x69\x62\x6c\x65\x28\x6f\x74\x68\x65\x72\x29");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x65\x76\x65\x6e\x74\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x73\x28\x6f\x74\x68\x65\x72\x29");
+  ExpectTrue("\x4f\x62\x6a\x65\x63\x74\x2e\x69\x73\x45\x78\x74\x65\x6e\x73\x69\x62\x6c\x65\x28\x6f\x74\x68\x65\x72\x29");
 
   // Object.seal and Object.freeze.
-  CompileRun("Object.freeze(other)");
-  ExpectTrue("Object.isExtensible(other)");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x66\x72\x65\x65\x7a\x65\x28\x6f\x74\x68\x65\x72\x29");
+  ExpectTrue("\x4f\x62\x6a\x65\x63\x74\x2e\x69\x73\x45\x78\x74\x65\x6e\x73\x69\x62\x6c\x65\x28\x6f\x74\x68\x65\x72\x29");
 
-  CompileRun("Object.seal(other)");
-  ExpectTrue("Object.isExtensible(other)");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x73\x65\x61\x6c\x28\x6f\x74\x68\x65\x72\x29");
+  ExpectTrue("\x4f\x62\x6a\x65\x63\x74\x2e\x69\x73\x45\x78\x74\x65\x6e\x73\x69\x62\x6c\x65\x28\x6f\x74\x68\x65\x72\x29");
 
   // Regression test for issue 1250.
   // Make sure that we can set the accessible accessors value using normal
   // assignment.
-  CompileRun("other.accessible_prop = 42");
+  CompileRun("\x6f\x74\x68\x65\x72\x2e\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x70\x20\x3d\x20\x34\x32");
   CHECK_EQ(42, g_echo_value);
 
   v8::Handle<Value> value;
-  CompileRun("Object.defineProperty(other, 'accessible_prop', {value: -1})");
-  value = CompileRun("other.accessible_prop == 42");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x70\x27\x2c\x20\x7b\x76\x61\x6c\x75\x65\x3a\x20\x2d\x31\x7d\x29");
+  value = CompileRun("\x6f\x74\x68\x65\x72\x2e\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5f\x70\x72\x6f\x70\x20\x3d\x3d\x20\x34\x32");
   CHECK(value->IsTrue());
 }
 
@@ -9498,7 +9498,7 @@ THREADED_TEST(AccessControlGetOwnPropertyNames) {
   v8::Handle<v8::ObjectTemplate> obj_template =
       v8::ObjectTemplate::New(isolate);
 
-  obj_template->Set(v8_str("x"), v8::Integer::New(isolate, 42));
+  obj_template->Set(v8_str("\x78"), v8::Integer::New(isolate, 42));
   obj_template->SetAccessCheckCallbacks(GetOwnPropertyNamesNamedBlocker,
                                         GetOwnPropertyNamesIndexedBlocker);
 
@@ -9514,8 +9514,8 @@ THREADED_TEST(AccessControlGetOwnPropertyNames) {
   context1->Enter();
 
   v8::Handle<v8::Object> global1 = context1->Global();
-  global1->Set(v8_str("other"), global0);
-  global1->Set(v8_str("object"), obj_template->NewInstance());
+  global1->Set(v8_str("\x6f\x74\x68\x65\x72"), global0);
+  global1->Set(v8_str("\x6f\x62\x6a\x65\x63\x74"), obj_template->NewInstance());
 
   v8::Handle<Value> value;
 
@@ -9524,10 +9524,10 @@ THREADED_TEST(AccessControlGetOwnPropertyNames) {
   // global object should be blocked by access checks on the global
   // proxy object.  Accessing the object that requires access checks
   // is blocked by the access checks on the object itself.
-  value = CompileRun("Object.getOwnPropertyNames(other).length == 0");
+  value = CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x6f\x74\x68\x65\x72\x29\x2e\x6c\x65\x6e\x67\x74\x68\x20\x3d\x3d\x20\x30");
   CHECK(value.IsEmpty());
 
-  value = CompileRun("Object.getOwnPropertyNames(object).length == 0");
+  value = CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x6f\x62\x6a\x65\x63\x74\x29\x2e\x6c\x65\x6e\x67\x74\x68\x20\x3d\x3d\x20\x30");
   CHECK(value.IsEmpty());
 
   context1->Exit();
@@ -9547,7 +9547,7 @@ static void IndexedPropertyEnumerator(
 static void NamedPropertyEnumerator(
     const v8::PropertyCallbackInfo<v8::Array>& info) {
   v8::Handle<v8::Array> result = v8::Array::New(info.GetIsolate(), 2);
-  result->Set(0, v8_str("x"));
+  result->Set(0, v8_str("\x78"));
   result->Set(1, v8::Object::New(info.GetIsolate()));
   info.GetReturnValue().Set(result);
 }
@@ -9559,8 +9559,8 @@ THREADED_TEST(GetOwnPropertyNamesWithInterceptor) {
   v8::Handle<v8::ObjectTemplate> obj_template =
       v8::ObjectTemplate::New(isolate);
 
-  obj_template->Set(v8_str("7"), v8::Integer::New(CcTest::isolate(), 7));
-  obj_template->Set(v8_str("x"), v8::Integer::New(CcTest::isolate(), 42));
+  obj_template->Set(v8_str("\x37"), v8::Integer::New(CcTest::isolate(), 7));
+  obj_template->Set(v8_str("\x78"), v8::Integer::New(CcTest::isolate(), 42));
   obj_template->SetIndexedPropertyHandler(NULL, NULL, NULL, NULL,
                                           IndexedPropertyEnumerator);
   obj_template->SetNamedPropertyHandler(NULL, NULL, NULL, NULL,
@@ -9568,19 +9568,19 @@ THREADED_TEST(GetOwnPropertyNamesWithInterceptor) {
 
   LocalContext context;
   v8::Handle<v8::Object> global = context->Global();
-  global->Set(v8_str("object"), obj_template->NewInstance());
+  global->Set(v8_str("\x6f\x62\x6a\x65\x63\x74"), obj_template->NewInstance());
 
   v8::Handle<v8::Value> result =
-      CompileRun("Object.getOwnPropertyNames(object)");
+      CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x6f\x62\x6a\x65\x63\x74\x29");
   CHECK(result->IsArray());
   v8::Handle<v8::Array> result_array = v8::Handle<v8::Array>::Cast(result);
   CHECK_EQ(3, result_array->Length());
   CHECK(result_array->Get(0)->IsString());
   CHECK(result_array->Get(1)->IsString());
   CHECK(result_array->Get(2)->IsString());
-  CHECK_EQ(v8_str("7"), result_array->Get(0));
-  CHECK_EQ(v8_str("[object Object]"), result_array->Get(1));
-  CHECK_EQ(v8_str("x"), result_array->Get(2));
+  CHECK_EQ(v8_str("\x37"), result_array->Get(0));
+  CHECK_EQ(v8_str("\x5b\x6f\x62\x6a\x65\x63\x74\x20\x4f\x62\x6a\x65\x63\x74\x5d"), result_array->Get(1));
+  CHECK_EQ(v8_str("\x78"), result_array->Get(2));
 }
 
 
@@ -9604,13 +9604,13 @@ THREADED_TEST(CrossDomainAccessors) {
       func_template->PrototypeTemplate();
 
   // Add an accessor to proto that's accessible by cross-domain JS code.
-  proto_template->SetAccessor(v8_str("accessible"),
+  proto_template->SetAccessor(v8_str("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65"),
                               ConstTenGetter, 0,
                               v8::Handle<Value>(),
                               v8::ALL_CAN_READ);
 
   // Add an accessor that is not accessible by cross-domain JS code.
-  global_template->SetAccessor(v8_str("unreachable"),
+  global_template->SetAccessor(v8_str("\x75\x6e\x72\x65\x61\x63\x68\x61\x62\x6c\x65"),
                                UnreachableGetter, 0,
                                v8::Handle<Value>(),
                                v8::DEFAULT);
@@ -9620,7 +9620,7 @@ THREADED_TEST(CrossDomainAccessors) {
 
   Local<v8::Object> global = context0->Global();
   // Add a normal property that shadows 'accessible'
-  global->Set(v8_str("accessible"), v8_num(11));
+  global->Set(v8_str("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65"), v8_num(11));
 
   // Enter a new context.
   v8::HandleScope scope1(CcTest::isolate());
@@ -9628,14 +9628,14 @@ THREADED_TEST(CrossDomainAccessors) {
   context1->Enter();
 
   v8::Handle<v8::Object> global1 = context1->Global();
-  global1->Set(v8_str("other"), global);
+  global1->Set(v8_str("\x6f\x74\x68\x65\x72"), global);
 
   // Should return 10, instead of 11
-  v8::Handle<Value> value = v8_compile("other.accessible")->Run();
+  v8::Handle<Value> value = v8_compile("\x6f\x74\x68\x65\x72\x2e\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65")->Run();
   CHECK(value->IsNumber());
   CHECK_EQ(10, value->Int32Value());
 
-  value = v8_compile("other.unreachable")->Run();
+  value = v8_compile("\x6f\x74\x68\x65\x72\x2e\x75\x6e\x72\x65\x61\x63\x68\x61\x62\x6c\x65")->Run();
   CHECK(value.IsEmpty());
 
   context1->Exit();
@@ -9695,85 +9695,85 @@ TEST(AccessControlIC) {
 
   // Make easy access to the object from the other environment.
   v8::Handle<v8::Object> global1 = context1->Global();
-  global1->Set(v8_str("obj"), object);
+  global1->Set(v8_str("\x6f\x62\x6a"), object);
 
   v8::Handle<Value> value;
 
   // Check that the named access-control function is called every time.
-  CompileRun("function testProp(obj) {"
-             "  for (var i = 0; i < 10; i++) obj.prop = 1;"
-             "  for (var j = 0; j < 10; j++) obj.prop;"
-             "  return obj.prop"
-             "}");
-  value = CompileRun("testProp(obj)");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x50\x72\x6f\x70\x28\x6f\x62\x6a\x29\x20\x7b"
+             "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x2e\x70\x72\x6f\x70\x20\x3d\x20\x31\x3b"
+             "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x31\x30\x3b\x20\x6a\x2b\x2b\x29\x20\x6f\x62\x6a\x2e\x70\x72\x6f\x70\x3b"
+             "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x62\x6a\x2e\x70\x72\x6f\x70"
+             "\x7d");
+  value = CompileRun("\x74\x65\x73\x74\x50\x72\x6f\x70\x28\x6f\x62\x6a\x29");
   CHECK(value->IsNumber());
   CHECK_EQ(1, value->Int32Value());
   CHECK_EQ(21, named_access_count);
 
   // Check that the named access-control function is called every time.
-  CompileRun("var p = 'prop';"
-             "function testKeyed(obj) {"
-             "  for (var i = 0; i < 10; i++) obj[p] = 1;"
-             "  for (var j = 0; j < 10; j++) obj[p];"
-             "  return obj[p];"
-             "}");
+  CompileRun("\x76\x61\x72\x20\x70\x20\x3d\x20\x27\x70\x72\x6f\x70\x27\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x4b\x65\x79\x65\x64\x28\x6f\x62\x6a\x29\x20\x7b"
+             "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x5b\x70\x5d\x20\x3d\x20\x31\x3b"
+             "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x31\x30\x3b\x20\x6a\x2b\x2b\x29\x20\x6f\x62\x6a\x5b\x70\x5d\x3b"
+             "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x62\x6a\x5b\x70\x5d\x3b"
+             "\x7d");
   // Use obj which requires access checks.  No inline caching is used
   // in that case.
-  value = CompileRun("testKeyed(obj)");
+  value = CompileRun("\x74\x65\x73\x74\x4b\x65\x79\x65\x64\x28\x6f\x62\x6a\x29");
   CHECK(value->IsNumber());
   CHECK_EQ(1, value->Int32Value());
   CHECK_EQ(42, named_access_count);
   // Force the inline caches into generic state and try again.
-  CompileRun("testKeyed({ a: 0 })");
-  CompileRun("testKeyed({ b: 0 })");
-  value = CompileRun("testKeyed(obj)");
+  CompileRun("\x74\x65\x73\x74\x4b\x65\x79\x65\x64\x28\x7b\x20\x61\x3a\x20\x30\x20\x7d\x29");
+  CompileRun("\x74\x65\x73\x74\x4b\x65\x79\x65\x64\x28\x7b\x20\x62\x3a\x20\x30\x20\x7d\x29");
+  value = CompileRun("\x74\x65\x73\x74\x4b\x65\x79\x65\x64\x28\x6f\x62\x6a\x29");
   CHECK(value->IsNumber());
   CHECK_EQ(1, value->Int32Value());
   CHECK_EQ(63, named_access_count);
 
   // Check that the indexed access-control function is called every time.
-  CompileRun("function testIndexed(obj) {"
-             "  for (var i = 0; i < 10; i++) obj[0] = 1;"
-             "  for (var j = 0; j < 10; j++) obj[0];"
-             "  return obj[0]"
-             "}");
-  value = CompileRun("testIndexed(obj)");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x49\x6e\x64\x65\x78\x65\x64\x28\x6f\x62\x6a\x29\x20\x7b"
+             "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x5b\x30\x5d\x20\x3d\x20\x31\x3b"
+             "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x31\x30\x3b\x20\x6a\x2b\x2b\x29\x20\x6f\x62\x6a\x5b\x30\x5d\x3b"
+             "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x62\x6a\x5b\x30\x5d"
+             "\x7d");
+  value = CompileRun("\x74\x65\x73\x74\x49\x6e\x64\x65\x78\x65\x64\x28\x6f\x62\x6a\x29");
   CHECK(value->IsNumber());
   CHECK_EQ(1, value->Int32Value());
   CHECK_EQ(21, indexed_access_count);
   // Force the inline caches into generic state.
-  CompileRun("testIndexed(new Array(1))");
+  CompileRun("\x74\x65\x73\x74\x49\x6e\x64\x65\x78\x65\x64\x28\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x31\x29\x29");
   // Test that the indexed access check is called.
-  value = CompileRun("testIndexed(obj)");
+  value = CompileRun("\x74\x65\x73\x74\x49\x6e\x64\x65\x78\x65\x64\x28\x6f\x62\x6a\x29");
   CHECK(value->IsNumber());
   CHECK_EQ(1, value->Int32Value());
   CHECK_EQ(42, indexed_access_count);
 
   // Check that the named access check is called when invoking
   // functions on an object that requires access checks.
-  CompileRun("obj.f = function() {}");
-  CompileRun("function testCallNormal(obj) {"
-             "  for (var i = 0; i < 10; i++) obj.f();"
-             "}");
-  CompileRun("testCallNormal(obj)");
+  CompileRun("\x6f\x62\x6a\x2e\x66\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x7d");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x43\x61\x6c\x6c\x4e\x6f\x72\x6d\x61\x6c\x28\x6f\x62\x6a\x29\x20\x7b"
+             "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x2e\x66\x28\x29\x3b"
+             "\x7d");
+  CompileRun("\x74\x65\x73\x74\x43\x61\x6c\x6c\x4e\x6f\x72\x6d\x61\x6c\x28\x6f\x62\x6a\x29");
   CHECK_EQ(74, named_access_count);
 
   // Force obj into slow case.
-  value = CompileRun("delete obj.prop");
+  value = CompileRun("\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x2e\x70\x72\x6f\x70");
   CHECK(value->BooleanValue());
   // Force inline caches into dictionary probing mode.
-  CompileRun("var o = { x: 0 }; delete o.x; testProp(o);");
+  CompileRun("\x76\x61\x72\x20\x6f\x20\x3d\x20\x7b\x20\x78\x3a\x20\x30\x20\x7d\x3b\x20\x64\x65\x6c\x65\x74\x65\x20\x6f\x2e\x78\x3b\x20\x74\x65\x73\x74\x50\x72\x6f\x70\x28\x6f\x29\x3b");
   // Test that the named access check is called.
-  value = CompileRun("testProp(obj);");
+  value = CompileRun("\x74\x65\x73\x74\x50\x72\x6f\x70\x28\x6f\x62\x6a\x29\x3b");
   CHECK(value->IsNumber());
   CHECK_EQ(1, value->Int32Value());
   CHECK_EQ(96, named_access_count);
 
   // Force the call inline cache into dictionary probing mode.
-  CompileRun("o.f = function() {}; testCallNormal(o)");
+  CompileRun("\x6f\x2e\x66\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x7d\x3b\x20\x74\x65\x73\x74\x43\x61\x6c\x6c\x4e\x6f\x72\x6d\x61\x6c\x28\x6f\x29");
   // Test that the named access check is still called for each
   // invocation of the function.
-  value = CompileRun("testCallNormal(obj)");
+  value = CompileRun("\x74\x65\x73\x74\x43\x61\x6c\x6c\x4e\x6f\x72\x6d\x61\x6c\x28\x6f\x62\x6a\x29");
   CHECK_EQ(106, named_access_count);
 
   context1->Exit();
@@ -9844,12 +9844,12 @@ THREADED_TEST(AccessControlFlatten) {
 
   // Make easy access to the object from the other environment.
   v8::Handle<v8::Object> global1 = context1->Global();
-  global1->Set(v8_str("obj"), object);
+  global1->Set(v8_str("\x6f\x62\x6a"), object);
 
   v8::Handle<Value> value;
 
-  value = v8_compile("var p = 'as' + 'df';")->Run();
-  value = v8_compile("obj[p];")->Run();
+  value = v8_compile("\x76\x61\x72\x20\x70\x20\x3d\x20\x27\x61\x73\x27\x20\x2b\x20\x27\x64\x66\x27\x3b")->Run();
+  value = v8_compile("\x6f\x62\x6a\x5b\x70\x5d\x3b")->Run();
 
   context1->Exit();
   context0->Exit();
@@ -9918,32 +9918,32 @@ THREADED_TEST(AccessControlInterceptorIC) {
 
   // Make easy access to the object from the other environment.
   v8::Handle<v8::Object> global1 = context1->Global();
-  global1->Set(v8_str("obj"), object);
+  global1->Set(v8_str("\x6f\x62\x6a"), object);
 
   v8::Handle<Value> value;
 
   // Check that the named access-control function is called every time
   // eventhough there is an interceptor on the object.
-  value = v8_compile("for (var i = 0; i < 10; i++) obj.x = 1;")->Run();
-  value = v8_compile("for (var i = 0; i < 10; i++) obj.x;"
-                     "obj.x")->Run();
+  value = v8_compile("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x2e\x78\x20\x3d\x20\x31\x3b")->Run();
+  value = v8_compile("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x2e\x78\x3b"
+                     "\x6f\x62\x6a\x2e\x78")->Run();
   CHECK(value->IsNumber());
   CHECK_EQ(42, value->Int32Value());
   CHECK_EQ(21, named_access_count);
 
-  value = v8_compile("var p = 'x';")->Run();
-  value = v8_compile("for (var i = 0; i < 10; i++) obj[p] = 1;")->Run();
-  value = v8_compile("for (var i = 0; i < 10; i++) obj[p];"
-                     "obj[p]")->Run();
+  value = v8_compile("\x76\x61\x72\x20\x70\x20\x3d\x20\x27\x78\x27\x3b")->Run();
+  value = v8_compile("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x5b\x70\x5d\x20\x3d\x20\x31\x3b")->Run();
+  value = v8_compile("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x5b\x70\x5d\x3b"
+                     "\x6f\x62\x6a\x5b\x70\x5d")->Run();
   CHECK(value->IsNumber());
   CHECK_EQ(42, value->Int32Value());
   CHECK_EQ(42, named_access_count);
 
   // Check that the indexed access-control function is called every
   // time eventhough there is an interceptor on the object.
-  value = v8_compile("for (var i = 0; i < 10; i++) obj[0] = 1;")->Run();
-  value = v8_compile("for (var i = 0; i < 10; i++) obj[0];"
-                     "obj[0]")->Run();
+  value = v8_compile("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x5b\x30\x5d\x20\x3d\x20\x31\x3b")->Run();
+  value = v8_compile("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x62\x6a\x5b\x30\x5d\x3b"
+                     "\x6f\x62\x6a\x5b\x30\x5d")->Run();
   CHECK(value->IsNumber());
   CHECK_EQ(42, value->Int32Value());
   CHECK_EQ(21, indexed_access_count);
@@ -9973,17 +9973,17 @@ THREADED_TEST(InstanceProperties) {
   Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate);
   Local<ObjectTemplate> instance = t->InstanceTemplate();
 
-  instance->Set(v8_str("x"), v8_num(42));
-  instance->Set(v8_str("f"),
+  instance->Set(v8_str("\x78"), v8_num(42));
+  instance->Set(v8_str("\x66"),
                 v8::FunctionTemplate::New(isolate, InstanceFunctionCallback));
 
   Local<Value> o = t->GetFunction()->NewInstance();
 
-  context->Global()->Set(v8_str("i"), o);
-  Local<Value> value = CompileRun("i.x");
+  context->Global()->Set(v8_str("\x69"), o);
+  Local<Value> value = CompileRun("\x69\x2e\x78");
   CHECK_EQ(42, value->Int32Value());
 
-  value = CompileRun("i.f()");
+  value = CompileRun("\x69\x2e\x66\x28\x29");
   CHECK_EQ(12, value->Int32Value());
 }
 
@@ -10005,26 +10005,26 @@ THREADED_TEST(GlobalObjectInstanceProperties) {
   t->InstanceTemplate()->SetNamedPropertyHandler(
       GlobalObjectInstancePropertiesGet);
   Local<ObjectTemplate> instance_template = t->InstanceTemplate();
-  instance_template->Set(v8_str("x"), v8_num(42));
-  instance_template->Set(v8_str("f"),
+  instance_template->Set(v8_str("\x78"), v8_num(42));
+  instance_template->Set(v8_str("\x66"),
                          v8::FunctionTemplate::New(isolate,
                                                    InstanceFunctionCallback));
 
   // The script to check how Crankshaft compiles missing global function
   // invocations.  function g is not defined and should throw on call.
   const char* script =
-      "function wrapper(call) {"
-      "  var x = 0, y = 1;"
-      "  for (var i = 0; i < 1000; i++) {"
-      "    x += i * 100;"
-      "    y += i * 100;"
-      "  }"
-      "  if (call) g();"
-      "}"
-      "for (var i = 0; i < 17; i++) wrapper(false);"
-      "var thrown = 0;"
-      "try { wrapper(true); } catch (e) { thrown = 1; };"
-      "thrown";
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x77\x72\x61\x70\x70\x65\x72\x28\x63\x61\x6c\x6c\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x2c\x20\x79\x20\x3d\x20\x31\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x78\x20\x2b\x3d\x20\x69\x20\x2a\x20\x31\x30\x30\x3b"
+      "\x20\x20\x20\x20\x79\x20\x2b\x3d\x20\x69\x20\x2a\x20\x31\x30\x30\x3b"
+      "\x20\x20\x7d"
+      "\x20\x20\x69\x66\x20\x28\x63\x61\x6c\x6c\x29\x20\x67\x28\x29\x3b"
+      "\x7d"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x37\x3b\x20\x69\x2b\x2b\x29\x20\x77\x72\x61\x70\x70\x65\x72\x28\x66\x61\x6c\x73\x65\x29\x3b"
+      "\x76\x61\x72\x20\x74\x68\x72\x6f\x77\x6e\x20\x3d\x20\x30\x3b"
+      "\x74\x72\x79\x20\x7b\x20\x77\x72\x61\x70\x70\x65\x72\x28\x74\x72\x75\x65\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x6e\x20\x3d\x20\x31\x3b\x20\x7d\x3b"
+      "\x74\x68\x72\x6f\x77\x6e";
 
   {
     LocalContext env(NULL, instance_template);
@@ -10032,9 +10032,9 @@ THREADED_TEST(GlobalObjectInstanceProperties) {
     // environment initialization.
     global_object = env->Global();
 
-    Local<Value> value = CompileRun("x");
+    Local<Value> value = CompileRun("\x78");
     CHECK_EQ(42, value->Int32Value());
-    value = CompileRun("f()");
+    value = CompileRun("\x66\x28\x29");
     CHECK_EQ(12, value->Int32Value());
     value = CompileRun(script);
     CHECK_EQ(1, value->Int32Value());
@@ -10043,9 +10043,9 @@ THREADED_TEST(GlobalObjectInstanceProperties) {
   {
     // Create new environment reusing the global object.
     LocalContext env(NULL, instance_template, global_object);
-    Local<Value> value = CompileRun("x");
+    Local<Value> value = CompileRun("\x78");
     CHECK_EQ(42, value->Int32Value());
-    value = CompileRun("f()");
+    value = CompileRun("\x66\x28\x29");
     CHECK_EQ(12, value->Int32Value());
     value = CompileRun(script);
     CHECK_EQ(1, value->Int32Value());
@@ -10069,12 +10069,12 @@ THREADED_TEST(CallKnownGlobalReceiver) {
   // from arguments evaluation and to force CallIC to take
   // CallIC_Miss code path that can't cope with global proxy.
   const char* script =
-      "function bar(x, y) { try { } finally { } }"
-      "function baz(x) { try { } finally { } }"
-      "function bom(x) { try { } finally { } }"
-      "function foo(x) { bar([x], bom(2)); }"
-      "for (var i = 0; i < 10000; i++) foo(1);"
-      "foo";
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x78\x2c\x20\x79\x29\x20\x7b\x20\x74\x72\x79\x20\x7b\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x20\x7d\x20\x7d"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x7a\x28\x78\x29\x20\x7b\x20\x74\x72\x79\x20\x7b\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x20\x7d\x20\x7d"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x6f\x6d\x28\x78\x29\x20\x7b\x20\x74\x72\x79\x20\x7b\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x20\x7d\x20\x7d"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20\x62\x61\x72\x28\x5b\x78\x5d\x2c\x20\x62\x6f\x6d\x28\x32\x29\x29\x3b\x20\x7d"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x66\x6f\x6f\x28\x31\x29\x3b"
+      "\x66\x6f\x6f";
 
   Local<Value> foo;
   {
@@ -10088,8 +10088,8 @@ THREADED_TEST(CallKnownGlobalReceiver) {
   {
     // Create new environment reusing the global object.
     LocalContext env(NULL, instance_template, global_object);
-    env->Global()->Set(v8_str("foo"), foo);
-    CompileRun("foo()");
+    env->Global()->Set(v8_str("\x66\x6f\x6f"), foo);
+    CompileRun("\x66\x6f\x6f\x28\x29");
   }
 }
 
@@ -10146,31 +10146,31 @@ THREADED_TEST(ShadowObject) {
   Local<ObjectTemplate> proto = t->PrototypeTemplate();
   Local<ObjectTemplate> instance = t->InstanceTemplate();
 
-  proto->Set(v8_str("f"),
+  proto->Set(v8_str("\x66"),
              v8::FunctionTemplate::New(isolate,
                                        ShadowFunctionCallback,
                                        Local<Value>()));
-  proto->Set(v8_str("x"), v8_num(12));
+  proto->Set(v8_str("\x78"), v8_num(12));
 
-  instance->SetAccessor(v8_str("y"), ShadowYGetter, ShadowYSetter);
+  instance->SetAccessor(v8_str("\x79"), ShadowYGetter, ShadowYSetter);
 
   Local<Value> o = t->GetFunction()->NewInstance();
-  context->Global()->Set(v8_str("__proto__"), o);
+  context->Global()->Set(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), o);
 
   Local<Value> value =
-      CompileRun("this.propertyIsEnumerable(0)");
+      CompileRun("\x74\x68\x69\x73\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x49\x73\x45\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x28\x30\x29");
   CHECK(value->IsBoolean());
   CHECK(!value->BooleanValue());
 
-  value = CompileRun("x");
+  value = CompileRun("\x78");
   CHECK_EQ(12, value->Int32Value());
 
-  value = CompileRun("f()");
+  value = CompileRun("\x66\x28\x29");
   CHECK_EQ(42, value->Int32Value());
 
-  CompileRun("y = 43");
+  CompileRun("\x79\x20\x3d\x20\x34\x33");
   CHECK_EQ(1, shadow_y_setter_call_count);
-  value = CompileRun("y");
+  value = CompileRun("\x79");
   CHECK_EQ(1, shadow_y_getter_call_count);
   CHECK_EQ(42, value->Int32Value());
 }
@@ -10182,15 +10182,15 @@ THREADED_TEST(HiddenPrototype) {
   v8::HandleScope handle_scope(isolate);
 
   Local<v8::FunctionTemplate> t0 = v8::FunctionTemplate::New(isolate);
-  t0->InstanceTemplate()->Set(v8_str("x"), v8_num(0));
+  t0->InstanceTemplate()->Set(v8_str("\x78"), v8_num(0));
   Local<v8::FunctionTemplate> t1 = v8::FunctionTemplate::New(isolate);
   t1->SetHiddenPrototype(true);
-  t1->InstanceTemplate()->Set(v8_str("y"), v8_num(1));
+  t1->InstanceTemplate()->Set(v8_str("\x79"), v8_num(1));
   Local<v8::FunctionTemplate> t2 = v8::FunctionTemplate::New(isolate);
   t2->SetHiddenPrototype(true);
-  t2->InstanceTemplate()->Set(v8_str("z"), v8_num(2));
+  t2->InstanceTemplate()->Set(v8_str("\x7a"), v8_num(2));
   Local<v8::FunctionTemplate> t3 = v8::FunctionTemplate::New(isolate);
-  t3->InstanceTemplate()->Set(v8_str("u"), v8_num(3));
+  t3->InstanceTemplate()->Set(v8_str("\x75"), v8_num(3));
 
   Local<v8::Object> o0 = t0->GetFunction()->NewInstance();
   Local<v8::Object> o1 = t1->GetFunction()->NewInstance();
@@ -10198,26 +10198,26 @@ THREADED_TEST(HiddenPrototype) {
   Local<v8::Object> o3 = t3->GetFunction()->NewInstance();
 
   // Setting the prototype on an object skips hidden prototypes.
-  CHECK_EQ(0, o0->Get(v8_str("x"))->Int32Value());
-  o0->Set(v8_str("__proto__"), o1);
-  CHECK_EQ(0, o0->Get(v8_str("x"))->Int32Value());
-  CHECK_EQ(1, o0->Get(v8_str("y"))->Int32Value());
-  o0->Set(v8_str("__proto__"), o2);
-  CHECK_EQ(0, o0->Get(v8_str("x"))->Int32Value());
-  CHECK_EQ(1, o0->Get(v8_str("y"))->Int32Value());
-  CHECK_EQ(2, o0->Get(v8_str("z"))->Int32Value());
-  o0->Set(v8_str("__proto__"), o3);
-  CHECK_EQ(0, o0->Get(v8_str("x"))->Int32Value());
-  CHECK_EQ(1, o0->Get(v8_str("y"))->Int32Value());
-  CHECK_EQ(2, o0->Get(v8_str("z"))->Int32Value());
-  CHECK_EQ(3, o0->Get(v8_str("u"))->Int32Value());
+  CHECK_EQ(0, o0->Get(v8_str("\x78"))->Int32Value());
+  o0->Set(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), o1);
+  CHECK_EQ(0, o0->Get(v8_str("\x78"))->Int32Value());
+  CHECK_EQ(1, o0->Get(v8_str("\x79"))->Int32Value());
+  o0->Set(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), o2);
+  CHECK_EQ(0, o0->Get(v8_str("\x78"))->Int32Value());
+  CHECK_EQ(1, o0->Get(v8_str("\x79"))->Int32Value());
+  CHECK_EQ(2, o0->Get(v8_str("\x7a"))->Int32Value());
+  o0->Set(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), o3);
+  CHECK_EQ(0, o0->Get(v8_str("\x78"))->Int32Value());
+  CHECK_EQ(1, o0->Get(v8_str("\x79"))->Int32Value());
+  CHECK_EQ(2, o0->Get(v8_str("\x7a"))->Int32Value());
+  CHECK_EQ(3, o0->Get(v8_str("\x75"))->Int32Value());
 
   // Getting the prototype of o0 should get the first visible one
   // which is o3.  Therefore, z should not be defined on the prototype
   // object.
-  Local<Value> proto = o0->Get(v8_str("__proto__"));
+  Local<Value> proto = o0->Get(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"));
   CHECK(proto->IsObject());
-  CHECK(proto.As<v8::Object>()->Get(v8_str("z"))->IsUndefined());
+  CHECK(proto.As<v8::Object>()->Get(v8_str("\x7a"))->IsUndefined());
 }
 
 
@@ -10230,36 +10230,36 @@ THREADED_TEST(HiddenPrototypeSet) {
   Local<v8::FunctionTemplate> ht = v8::FunctionTemplate::New(isolate);
   ht->SetHiddenPrototype(true);
   Local<v8::FunctionTemplate> pt = v8::FunctionTemplate::New(isolate);
-  ht->InstanceTemplate()->Set(v8_str("x"), v8_num(0));
+  ht->InstanceTemplate()->Set(v8_str("\x78"), v8_num(0));
 
   Local<v8::Object> o = ot->GetFunction()->NewInstance();
   Local<v8::Object> h = ht->GetFunction()->NewInstance();
   Local<v8::Object> p = pt->GetFunction()->NewInstance();
-  o->Set(v8_str("__proto__"), h);
-  h->Set(v8_str("__proto__"), p);
+  o->Set(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), h);
+  h->Set(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), p);
 
   // Setting a property that exists on the hidden prototype goes there.
-  o->Set(v8_str("x"), v8_num(7));
-  CHECK_EQ(7, o->Get(v8_str("x"))->Int32Value());
-  CHECK_EQ(7, h->Get(v8_str("x"))->Int32Value());
-  CHECK(p->Get(v8_str("x"))->IsUndefined());
+  o->Set(v8_str("\x78"), v8_num(7));
+  CHECK_EQ(7, o->Get(v8_str("\x78"))->Int32Value());
+  CHECK_EQ(7, h->Get(v8_str("\x78"))->Int32Value());
+  CHECK(p->Get(v8_str("\x78"))->IsUndefined());
 
   // Setting a new property should not be forwarded to the hidden prototype.
-  o->Set(v8_str("y"), v8_num(6));
-  CHECK_EQ(6, o->Get(v8_str("y"))->Int32Value());
-  CHECK(h->Get(v8_str("y"))->IsUndefined());
-  CHECK(p->Get(v8_str("y"))->IsUndefined());
+  o->Set(v8_str("\x79"), v8_num(6));
+  CHECK_EQ(6, o->Get(v8_str("\x79"))->Int32Value());
+  CHECK(h->Get(v8_str("\x79"))->IsUndefined());
+  CHECK(p->Get(v8_str("\x79"))->IsUndefined());
 
   // Setting a property that only exists on a prototype of the hidden prototype
   // is treated normally again.
-  p->Set(v8_str("z"), v8_num(8));
-  CHECK_EQ(8, o->Get(v8_str("z"))->Int32Value());
-  CHECK_EQ(8, h->Get(v8_str("z"))->Int32Value());
-  CHECK_EQ(8, p->Get(v8_str("z"))->Int32Value());
-  o->Set(v8_str("z"), v8_num(9));
-  CHECK_EQ(9, o->Get(v8_str("z"))->Int32Value());
-  CHECK_EQ(8, h->Get(v8_str("z"))->Int32Value());
-  CHECK_EQ(8, p->Get(v8_str("z"))->Int32Value());
+  p->Set(v8_str("\x7a"), v8_num(8));
+  CHECK_EQ(8, o->Get(v8_str("\x7a"))->Int32Value());
+  CHECK_EQ(8, h->Get(v8_str("\x7a"))->Int32Value());
+  CHECK_EQ(8, p->Get(v8_str("\x7a"))->Int32Value());
+  o->Set(v8_str("\x7a"), v8_num(9));
+  CHECK_EQ(9, o->Get(v8_str("\x7a"))->Int32Value());
+  CHECK_EQ(8, h->Get(v8_str("\x7a"))->Int32Value());
+  CHECK_EQ(8, p->Get(v8_str("\x7a"))->Int32Value());
 }
 
 
@@ -10270,14 +10270,14 @@ THREADED_TEST(HiddenPrototypeIdentityHash) {
 
   Handle<FunctionTemplate> t = FunctionTemplate::New(context->GetIsolate());
   t->SetHiddenPrototype(true);
-  t->InstanceTemplate()->Set(v8_str("foo"), v8_num(75));
+  t->InstanceTemplate()->Set(v8_str("\x66\x6f\x6f"), v8_num(75));
   Handle<Object> p = t->GetFunction()->NewInstance();
   Handle<Object> o = Object::New(context->GetIsolate());
   o->SetPrototype(p);
 
   int hash = o->GetIdentityHash();
   USE(hash);
-  o->Set(v8_str("foo"), v8_num(42));
+  o->Set(v8_str("\x66\x6f\x6f"), v8_num(42));
   DCHECK_EQ(hash, o->GetIdentityHash());
 }
 
@@ -10288,15 +10288,15 @@ THREADED_TEST(SetPrototype) {
   v8::HandleScope handle_scope(isolate);
 
   Local<v8::FunctionTemplate> t0 = v8::FunctionTemplate::New(isolate);
-  t0->InstanceTemplate()->Set(v8_str("x"), v8_num(0));
+  t0->InstanceTemplate()->Set(v8_str("\x78"), v8_num(0));
   Local<v8::FunctionTemplate> t1 = v8::FunctionTemplate::New(isolate);
   t1->SetHiddenPrototype(true);
-  t1->InstanceTemplate()->Set(v8_str("y"), v8_num(1));
+  t1->InstanceTemplate()->Set(v8_str("\x79"), v8_num(1));
   Local<v8::FunctionTemplate> t2 = v8::FunctionTemplate::New(isolate);
   t2->SetHiddenPrototype(true);
-  t2->InstanceTemplate()->Set(v8_str("z"), v8_num(2));
+  t2->InstanceTemplate()->Set(v8_str("\x7a"), v8_num(2));
   Local<v8::FunctionTemplate> t3 = v8::FunctionTemplate::New(isolate);
-  t3->InstanceTemplate()->Set(v8_str("u"), v8_num(3));
+  t3->InstanceTemplate()->Set(v8_str("\x75"), v8_num(3));
 
   Local<v8::Object> o0 = t0->GetFunction()->NewInstance();
   Local<v8::Object> o1 = t1->GetFunction()->NewInstance();
@@ -10304,24 +10304,24 @@ THREADED_TEST(SetPrototype) {
   Local<v8::Object> o3 = t3->GetFunction()->NewInstance();
 
   // Setting the prototype on an object does not skip hidden prototypes.
-  CHECK_EQ(0, o0->Get(v8_str("x"))->Int32Value());
+  CHECK_EQ(0, o0->Get(v8_str("\x78"))->Int32Value());
   CHECK(o0->SetPrototype(o1));
-  CHECK_EQ(0, o0->Get(v8_str("x"))->Int32Value());
-  CHECK_EQ(1, o0->Get(v8_str("y"))->Int32Value());
+  CHECK_EQ(0, o0->Get(v8_str("\x78"))->Int32Value());
+  CHECK_EQ(1, o0->Get(v8_str("\x79"))->Int32Value());
   CHECK(o1->SetPrototype(o2));
-  CHECK_EQ(0, o0->Get(v8_str("x"))->Int32Value());
-  CHECK_EQ(1, o0->Get(v8_str("y"))->Int32Value());
-  CHECK_EQ(2, o0->Get(v8_str("z"))->Int32Value());
+  CHECK_EQ(0, o0->Get(v8_str("\x78"))->Int32Value());
+  CHECK_EQ(1, o0->Get(v8_str("\x79"))->Int32Value());
+  CHECK_EQ(2, o0->Get(v8_str("\x7a"))->Int32Value());
   CHECK(o2->SetPrototype(o3));
-  CHECK_EQ(0, o0->Get(v8_str("x"))->Int32Value());
-  CHECK_EQ(1, o0->Get(v8_str("y"))->Int32Value());
-  CHECK_EQ(2, o0->Get(v8_str("z"))->Int32Value());
-  CHECK_EQ(3, o0->Get(v8_str("u"))->Int32Value());
+  CHECK_EQ(0, o0->Get(v8_str("\x78"))->Int32Value());
+  CHECK_EQ(1, o0->Get(v8_str("\x79"))->Int32Value());
+  CHECK_EQ(2, o0->Get(v8_str("\x7a"))->Int32Value());
+  CHECK_EQ(3, o0->Get(v8_str("\x75"))->Int32Value());
 
   // Getting the prototype of o0 should get the first visible one
   // which is o3.  Therefore, z should not be defined on the prototype
   // object.
-  Local<Value> proto = o0->Get(v8_str("__proto__"));
+  Local<Value> proto = o0->Get(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"));
   CHECK(proto->IsObject());
   CHECK_EQ(proto.As<v8::Object>(), o3);
 
@@ -10351,22 +10351,22 @@ THREADED_TEST(Regress91517) {
 
   Local<v8::FunctionTemplate> t1 = v8::FunctionTemplate::New(isolate);
   t1->SetHiddenPrototype(true);
-  t1->InstanceTemplate()->Set(v8_str("foo"), v8_num(1));
+  t1->InstanceTemplate()->Set(v8_str("\x66\x6f\x6f"), v8_num(1));
   Local<v8::FunctionTemplate> t2 = v8::FunctionTemplate::New(isolate);
   t2->SetHiddenPrototype(true);
-  t2->InstanceTemplate()->Set(v8_str("fuz1"), v8_num(2));
-  t2->InstanceTemplate()->Set(v8_str("objects"), v8::Object::New(isolate));
-  t2->InstanceTemplate()->Set(v8_str("fuz2"), v8_num(2));
+  t2->InstanceTemplate()->Set(v8_str("\x66\x75\x7a\x31"), v8_num(2));
+  t2->InstanceTemplate()->Set(v8_str("\x6f\x62\x6a\x65\x63\x74\x73"), v8::Object::New(isolate));
+  t2->InstanceTemplate()->Set(v8_str("\x66\x75\x7a\x32"), v8_num(2));
   Local<v8::FunctionTemplate> t3 = v8::FunctionTemplate::New(isolate);
   t3->SetHiddenPrototype(true);
-  t3->InstanceTemplate()->Set(v8_str("boo"), v8_num(3));
+  t3->InstanceTemplate()->Set(v8_str("\x62\x6f\x6f"), v8_num(3));
   Local<v8::FunctionTemplate> t4 = v8::FunctionTemplate::New(isolate);
-  t4->InstanceTemplate()->Set(v8_str("baz"), v8_num(4));
+  t4->InstanceTemplate()->Set(v8_str("\x62\x61\x7a"), v8_num(4));
 
   // Force dictionary-based properties.
   i::ScopedVector<char> name_buf(1024);
   for (int i = 1; i <= 1000; i++) {
-    i::SNPrintF(name_buf, "sdf%d", i);
+    i::SNPrintF(name_buf, "\x73\x64\x66\x6c\x84", i);
     t2->InstanceTemplate()->Set(v8_str(name_buf.start()), v8_num(2));
   }
 
@@ -10382,17 +10382,17 @@ THREADED_TEST(Regress91517) {
 
   // Call the runtime version of GetOwnPropertyNames() on the natively
   // created object through JavaScript.
-  context->Global()->Set(v8_str("obj"), o4);
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), o4);
   // PROPERTY_ATTRIBUTES_NONE = 0
-  CompileRun("var names = %GetOwnPropertyNames(obj, 0);");
+  CompileRun("\x76\x61\x72\x20\x6e\x61\x6d\x65\x73\x20\x3d\x20\x6c\xc7\x85\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x6f\x62\x6a\x2c\x20\x30\x29\x3b");
 
-  ExpectInt32("names.length", 1006);
-  ExpectTrue("names.indexOf(\"baz\") >= 0");
-  ExpectTrue("names.indexOf(\"boo\") >= 0");
-  ExpectTrue("names.indexOf(\"foo\") >= 0");
-  ExpectTrue("names.indexOf(\"fuz1\") >= 0");
-  ExpectTrue("names.indexOf(\"fuz2\") >= 0");
-  ExpectFalse("names[1005] == undefined");
+  ExpectInt32("\x6e\x61\x6d\x65\x73\x2e\x6c\x65\x6e\x67\x74\x68", 1006);
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x62\x61\x7a\x22\x29\x20\x3e\x3d\x20\x30");
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x62\x6f\x6f\x22\x29\x20\x3e\x3d\x20\x30");
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x66\x6f\x6f\x22\x29\x20\x3e\x3d\x20\x30");
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x66\x75\x7a\x31\x22\x29\x20\x3e\x3d\x20\x30");
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x66\x75\x7a\x32\x22\x29\x20\x3e\x3d\x20\x30");
+  ExpectFalse("\x6e\x61\x6d\x65\x73\x5b\x31\x30\x30\x35\x5d\x20\x3d\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64");
 }
 
 
@@ -10408,14 +10408,14 @@ THREADED_TEST(Regress269562) {
   t1->SetHiddenPrototype(true);
 
   Local<v8::ObjectTemplate> i1 = t1->InstanceTemplate();
-  i1->SetAccessor(v8_str("foo"),
+  i1->SetAccessor(v8_str("\x66\x6f\x6f"),
                   SimpleAccessorGetter, SimpleAccessorSetter);
-  i1->SetAccessor(v8_str("bar"),
+  i1->SetAccessor(v8_str("\x62\x61\x72"),
                   SimpleAccessorGetter, SimpleAccessorSetter);
-  i1->SetAccessor(v8_str("baz"),
+  i1->SetAccessor(v8_str("\x62\x61\x7a"),
                   SimpleAccessorGetter, SimpleAccessorSetter);
-  i1->Set(v8_str("n1"), v8_num(1));
-  i1->Set(v8_str("n2"), v8_num(2));
+  i1->Set(v8_str("\x6e\x31"), v8_num(1));
+  i1->Set(v8_str("\x6e\x32"), v8_num(2));
 
   Local<v8::Object> o1 = t1->GetFunction()->NewInstance();
   Local<v8::FunctionTemplate> t2 =
@@ -10424,32 +10424,32 @@ THREADED_TEST(Regress269562) {
 
   // Inherit from t1 and mark prototype as hidden.
   t2->Inherit(t1);
-  t2->InstanceTemplate()->Set(v8_str("mine"), v8_num(4));
+  t2->InstanceTemplate()->Set(v8_str("\x6d\x69\x6e\x65"), v8_num(4));
 
   Local<v8::Object> o2 = t2->GetFunction()->NewInstance();
   CHECK(o2->SetPrototype(o1));
 
   v8::Local<v8::Symbol> sym =
-      v8::Symbol::New(context->GetIsolate(), v8_str("s1"));
+      v8::Symbol::New(context->GetIsolate(), v8_str("\x73\x31"));
   o1->Set(sym, v8_num(3));
   o1->SetHiddenValue(
-      v8_str("h1"), v8::Integer::New(context->GetIsolate(), 2013));
+      v8_str("\x68\x31"), v8::Integer::New(context->GetIsolate(), 2013));
 
   // Call the runtime version of GetOwnPropertyNames() on
   // the natively created object through JavaScript.
-  context->Global()->Set(v8_str("obj"), o2);
-  context->Global()->Set(v8_str("sym"), sym);
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), o2);
+  context->Global()->Set(v8_str("\x73\x79\x6d"), sym);
   // PROPERTY_ATTRIBUTES_NONE = 0
-  CompileRun("var names = %GetOwnPropertyNames(obj, 0);");
+  CompileRun("\x76\x61\x72\x20\x6e\x61\x6d\x65\x73\x20\x3d\x20\x6c\xc7\x85\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x6f\x62\x6a\x2c\x20\x30\x29\x3b");
 
-  ExpectInt32("names.length", 7);
-  ExpectTrue("names.indexOf(\"foo\") >= 0");
-  ExpectTrue("names.indexOf(\"bar\") >= 0");
-  ExpectTrue("names.indexOf(\"baz\") >= 0");
-  ExpectTrue("names.indexOf(\"n1\") >= 0");
-  ExpectTrue("names.indexOf(\"n2\") >= 0");
-  ExpectTrue("names.indexOf(sym) >= 0");
-  ExpectTrue("names.indexOf(\"mine\") >= 0");
+  ExpectInt32("\x6e\x61\x6d\x65\x73\x2e\x6c\x65\x6e\x67\x74\x68", 7);
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x66\x6f\x6f\x22\x29\x20\x3e\x3d\x20\x30");
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x62\x61\x72\x22\x29\x20\x3e\x3d\x20\x30");
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x62\x61\x7a\x22\x29\x20\x3e\x3d\x20\x30");
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x6e\x31\x22\x29\x20\x3e\x3d\x20\x30");
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x6e\x32\x22\x29\x20\x3e\x3d\x20\x30");
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x73\x79\x6d\x29\x20\x3e\x3d\x20\x30");
+  ExpectTrue("\x6e\x61\x6d\x65\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x22\x6d\x69\x6e\x65\x22\x29\x20\x3e\x3d\x20\x30");
 }
 
 
@@ -10459,29 +10459,29 @@ THREADED_TEST(FunctionReadOnlyPrototype) {
   v8::HandleScope handle_scope(isolate);
 
   Local<v8::FunctionTemplate> t1 = v8::FunctionTemplate::New(isolate);
-  t1->PrototypeTemplate()->Set(v8_str("x"), v8::Integer::New(isolate, 42));
+  t1->PrototypeTemplate()->Set(v8_str("\x78"), v8::Integer::New(isolate, 42));
   t1->ReadOnlyPrototype();
-  context->Global()->Set(v8_str("func1"), t1->GetFunction());
+  context->Global()->Set(v8_str("\x66\x75\x6e\x63\x31"), t1->GetFunction());
   // Configured value of ReadOnly flag.
   CHECK(CompileRun(
-      "(function() {"
-      "  descriptor = Object.getOwnPropertyDescriptor(func1, 'prototype');"
-      "  return (descriptor['writable'] == false);"
-      "})()")->BooleanValue());
-  CHECK_EQ(42, CompileRun("func1.prototype.x")->Int32Value());
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+      "\x20\x20\x64\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x66\x75\x6e\x63\x31\x2c\x20\x27\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x27\x29\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x28\x64\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x5b\x27\x77\x72\x69\x74\x61\x62\x6c\x65\x27\x5d\x20\x3d\x3d\x20\x66\x61\x6c\x73\x65\x29\x3b"
+      "\x7d\x29\x28\x29")->BooleanValue());
+  CHECK_EQ(42, CompileRun("\x66\x75\x6e\x63\x31\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x78")->Int32Value());
   CHECK_EQ(42,
-           CompileRun("func1.prototype = {}; func1.prototype.x")->Int32Value());
+           CompileRun("\x66\x75\x6e\x63\x31\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x7b\x7d\x3b\x20\x66\x75\x6e\x63\x31\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x78")->Int32Value());
 
   Local<v8::FunctionTemplate> t2 = v8::FunctionTemplate::New(isolate);
-  t2->PrototypeTemplate()->Set(v8_str("x"), v8::Integer::New(isolate, 42));
-  context->Global()->Set(v8_str("func2"), t2->GetFunction());
+  t2->PrototypeTemplate()->Set(v8_str("\x78"), v8::Integer::New(isolate, 42));
+  context->Global()->Set(v8_str("\x66\x75\x6e\x63\x32"), t2->GetFunction());
   // Default value of ReadOnly flag.
   CHECK(CompileRun(
-      "(function() {"
-      "  descriptor = Object.getOwnPropertyDescriptor(func2, 'prototype');"
-      "  return (descriptor['writable'] == true);"
-      "})()")->BooleanValue());
-  CHECK_EQ(42, CompileRun("func2.prototype.x")->Int32Value());
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+      "\x20\x20\x64\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x66\x75\x6e\x63\x32\x2c\x20\x27\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x27\x29\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x28\x64\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x5b\x27\x77\x72\x69\x74\x61\x62\x6c\x65\x27\x5d\x20\x3d\x3d\x20\x74\x72\x75\x65\x29\x3b"
+      "\x7d\x29\x28\x29")->BooleanValue());
+  CHECK_EQ(42, CompileRun("\x66\x75\x6e\x63\x32\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x78")->Int32Value());
 }
 
 
@@ -10503,7 +10503,7 @@ THREADED_TEST(SetPrototypeThrows) {
   CHECK(!try_catch.HasCaught());
   DCHECK(!CcTest::i_isolate()->has_pending_exception());
 
-  CHECK_EQ(42, CompileRun("function f() { return 42; }; f()")->Int32Value());
+  CHECK_EQ(42, CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b\x20\x7d\x3b\x20\x66\x28\x29")->Int32Value());
 }
 
 
@@ -10515,11 +10515,11 @@ THREADED_TEST(FunctionRemovePrototype) {
   Local<v8::FunctionTemplate> t1 = v8::FunctionTemplate::New(isolate);
   t1->RemovePrototype();
   Local<v8::Function> fun = t1->GetFunction();
-  context->Global()->Set(v8_str("fun"), fun);
-  CHECK(!CompileRun("'prototype' in fun")->BooleanValue());
+  context->Global()->Set(v8_str("\x66\x75\x6e"), fun);
+  CHECK(!CompileRun("\x27\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x27\x20\x69\x6e\x20\x66\x75\x6e")->BooleanValue());
 
   v8::TryCatch try_catch;
-  CompileRun("new fun()");
+  CompileRun("\x6e\x65\x77\x20\x66\x75\x6e\x28\x29");
   CHECK(try_catch.HasCaught());
 
   try_catch.Reset();
@@ -10533,22 +10533,22 @@ THREADED_TEST(GetterSetterExceptions) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   CompileRun(
-    "function Foo() { };"
-    "function Throw() { throw 5; };"
-    "var x = { };"
-    "x.__defineSetter__('set', Throw);"
-    "x.__defineGetter__('get', Throw);");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x6f\x6f\x28\x29\x20\x7b\x20\x7d\x3b"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x54\x68\x72\x6f\x77\x28\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x35\x3b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x78\x20\x3d\x20\x7b\x20\x7d\x3b"
+    "\x78\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x53\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x73\x65\x74\x27\x2c\x20\x54\x68\x72\x6f\x77\x29\x3b"
+    "\x78\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x67\x65\x74\x27\x2c\x20\x54\x68\x72\x6f\x77\x29\x3b");
   Local<v8::Object> x =
-      Local<v8::Object>::Cast(context->Global()->Get(v8_str("x")));
+      Local<v8::Object>::Cast(context->Global()->Get(v8_str("\x78")));
   v8::TryCatch try_catch;
-  x->Set(v8_str("set"), v8::Integer::New(isolate, 8));
-  x->Get(v8_str("get"));
-  x->Set(v8_str("set"), v8::Integer::New(isolate, 8));
-  x->Get(v8_str("get"));
-  x->Set(v8_str("set"), v8::Integer::New(isolate, 8));
-  x->Get(v8_str("get"));
-  x->Set(v8_str("set"), v8::Integer::New(isolate, 8));
-  x->Get(v8_str("get"));
+  x->Set(v8_str("\x73\x65\x74"), v8::Integer::New(isolate, 8));
+  x->Get(v8_str("\x67\x65\x74"));
+  x->Set(v8_str("\x73\x65\x74"), v8::Integer::New(isolate, 8));
+  x->Get(v8_str("\x67\x65\x74"));
+  x->Set(v8_str("\x73\x65\x74"), v8::Integer::New(isolate, 8));
+  x->Get(v8_str("\x67\x65\x74"));
+  x->Set(v8_str("\x73\x65\x74"), v8::Integer::New(isolate, 8));
+  x->Get(v8_str("\x67\x65\x74"));
 }
 
 
@@ -10557,13 +10557,13 @@ THREADED_TEST(Constructor) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   Local<v8::FunctionTemplate> templ = v8::FunctionTemplate::New(isolate);
-  templ->SetClassName(v8_str("Fun"));
+  templ->SetClassName(v8_str("\x46\x75\x6e"));
   Local<Function> cons = templ->GetFunction();
-  context->Global()->Set(v8_str("Fun"), cons);
+  context->Global()->Set(v8_str("\x46\x75\x6e"), cons);
   Local<v8::Object> inst = cons->NewInstance();
   i::Handle<i::JSObject> obj(v8::Utils::OpenHandle(*inst));
   CHECK(obj->IsJSObject());
-  Local<Value> value = CompileRun("(new Fun()).constructor === Fun");
+  Local<Value> value = CompileRun("\x28\x6e\x65\x77\x20\x46\x75\x6e\x28\x29\x29\x2e\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x20\x3d\x3d\x3d\x20\x46\x75\x6e");
   CHECK(value->BooleanValue());
 }
 
@@ -10584,7 +10584,7 @@ static void ConstructorCallback(
     This = args.This();
   }
 
-  This->Set(v8_str("a"), args[0]);
+  This->Set(v8_str("\x61"), args[0]);
   args.GetReturnValue().Set(This);
 }
 
@@ -10604,13 +10604,13 @@ THREADED_TEST(ConstructorForObject) {
   { Local<ObjectTemplate> instance_template = ObjectTemplate::New(isolate);
     instance_template->SetCallAsFunctionHandler(ConstructorCallback);
     Local<Object> instance = instance_template->NewInstance();
-    context->Global()->Set(v8_str("obj"), instance);
+    context->Global()->Set(v8_str("\x6f\x62\x6a"), instance);
     v8::TryCatch try_catch;
     Local<Value> value;
     CHECK(!try_catch.HasCaught());
 
     // Call the Object's constructor with a 32-bit signed integer.
-    value = CompileRun("(function() { var o = new obj(28); return o.a; })()");
+    value = CompileRun("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x6f\x20\x3d\x20\x6e\x65\x77\x20\x6f\x62\x6a\x28\x32\x38\x29\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x2e\x61\x3b\x20\x7d\x29\x28\x29");
     CHECK(!try_catch.HasCaught());
     CHECK(value->IsInt32());
     CHECK_EQ(28, value->Int32Value());
@@ -10619,31 +10619,31 @@ THREADED_TEST(ConstructorForObject) {
     Local<Value> value_obj1 = instance->CallAsConstructor(1, args1);
     CHECK(value_obj1->IsObject());
     Local<Object> object1 = Local<Object>::Cast(value_obj1);
-    value = object1->Get(v8_str("a"));
+    value = object1->Get(v8_str("\x61"));
     CHECK(value->IsInt32());
     CHECK(!try_catch.HasCaught());
     CHECK_EQ(28, value->Int32Value());
 
     // Call the Object's constructor with a String.
     value = CompileRun(
-        "(function() { var o = new obj('tipli'); return o.a; })()");
+        "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x6f\x20\x3d\x20\x6e\x65\x77\x20\x6f\x62\x6a\x28\x27\x74\x69\x70\x6c\x69\x27\x29\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x2e\x61\x3b\x20\x7d\x29\x28\x29");
     CHECK(!try_catch.HasCaught());
     CHECK(value->IsString());
     String::Utf8Value string_value1(value->ToString());
-    CHECK_EQ("tipli", *string_value1);
+    CHECK_EQ("\x74\x69\x70\x6c\x69", *string_value1);
 
-    Local<Value> args2[] = { v8_str("tipli") };
+    Local<Value> args2[] = { v8_str("\x74\x69\x70\x6c\x69") };
     Local<Value> value_obj2 = instance->CallAsConstructor(1, args2);
     CHECK(value_obj2->IsObject());
     Local<Object> object2 = Local<Object>::Cast(value_obj2);
-    value = object2->Get(v8_str("a"));
+    value = object2->Get(v8_str("\x61"));
     CHECK(!try_catch.HasCaught());
     CHECK(value->IsString());
     String::Utf8Value string_value2(value->ToString());
-    CHECK_EQ("tipli", *string_value2);
+    CHECK_EQ("\x74\x69\x70\x6c\x69", *string_value2);
 
     // Call the Object's constructor with a Boolean.
-    value = CompileRun("(function() { var o = new obj(true); return o.a; })()");
+    value = CompileRun("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x6f\x20\x3d\x20\x6e\x65\x77\x20\x6f\x62\x6a\x28\x74\x72\x75\x65\x29\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x2e\x61\x3b\x20\x7d\x29\x28\x29");
     CHECK(!try_catch.HasCaught());
     CHECK(value->IsBoolean());
     CHECK_EQ(true, value->BooleanValue());
@@ -10652,7 +10652,7 @@ THREADED_TEST(ConstructorForObject) {
     Local<Value> value_obj3 = instance->CallAsConstructor(1, args3);
     CHECK(value_obj3->IsObject());
     Local<Object> object3 = Local<Object>::Cast(value_obj3);
-    value = object3->Get(v8_str("a"));
+    value = object3->Get(v8_str("\x61"));
     CHECK(!try_catch.HasCaught());
     CHECK(value->IsBoolean());
     CHECK_EQ(true, value->BooleanValue());
@@ -10662,7 +10662,7 @@ THREADED_TEST(ConstructorForObject) {
     Local<Value> value_obj4 = instance->CallAsConstructor(1, args4);
     CHECK(value_obj4->IsObject());
     Local<Object> object4 = Local<Object>::Cast(value_obj4);
-    value = object4->Get(v8_str("a"));
+    value = object4->Get(v8_str("\x61"));
     CHECK(!try_catch.HasCaught());
     CHECK(value->IsUndefined());
 
@@ -10671,7 +10671,7 @@ THREADED_TEST(ConstructorForObject) {
     Local<Value> value_obj5 = instance->CallAsConstructor(1, args5);
     CHECK(value_obj5->IsObject());
     Local<Object> object5 = Local<Object>::Cast(value_obj5);
-    value = object5->Get(v8_str("a"));
+    value = object5->Get(v8_str("\x61"));
     CHECK(!try_catch.HasCaught());
     CHECK(value->IsNull());
   }
@@ -10679,22 +10679,22 @@ THREADED_TEST(ConstructorForObject) {
   // Check exception handling when there is no constructor set for the Object.
   { Local<ObjectTemplate> instance_template = ObjectTemplate::New(isolate);
     Local<Object> instance = instance_template->NewInstance();
-    context->Global()->Set(v8_str("obj2"), instance);
+    context->Global()->Set(v8_str("\x6f\x62\x6a\x32"), instance);
     v8::TryCatch try_catch;
     Local<Value> value;
     CHECK(!try_catch.HasCaught());
 
-    value = CompileRun("new obj2(28)");
+    value = CompileRun("\x6e\x65\x77\x20\x6f\x62\x6a\x32\x28\x32\x38\x29");
     CHECK(try_catch.HasCaught());
     String::Utf8Value exception_value1(try_catch.Exception());
-    CHECK_EQ("TypeError: object is not a function", *exception_value1);
+    CHECK_EQ("\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x6f\x62\x6a\x65\x63\x74\x20\x69\x73\x20\x6e\x6f\x74\x20\x61\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e", *exception_value1);
     try_catch.Reset();
 
     Local<Value> args[] = { v8_num(29) };
     value = instance->CallAsConstructor(1, args);
     CHECK(try_catch.HasCaught());
     String::Utf8Value exception_value2(try_catch.Exception());
-    CHECK_EQ("TypeError: #<Object> is not a function", *exception_value2);
+    CHECK_EQ("\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x23\x3c\x4f\x62\x6a\x65\x63\x74\x3e\x20\x69\x73\x20\x6e\x6f\x74\x20\x61\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e", *exception_value2);
     try_catch.Reset();
   }
 
@@ -10702,22 +10702,22 @@ THREADED_TEST(ConstructorForObject) {
   { Local<ObjectTemplate> instance_template = ObjectTemplate::New(isolate);
     instance_template->SetCallAsFunctionHandler(ThrowValue);
     Local<Object> instance = instance_template->NewInstance();
-    context->Global()->Set(v8_str("obj3"), instance);
+    context->Global()->Set(v8_str("\x6f\x62\x6a\x33"), instance);
     v8::TryCatch try_catch;
     Local<Value> value;
     CHECK(!try_catch.HasCaught());
 
-    value = CompileRun("new obj3(22)");
+    value = CompileRun("\x6e\x65\x77\x20\x6f\x62\x6a\x33\x28\x32\x32\x29");
     CHECK(try_catch.HasCaught());
     String::Utf8Value exception_value1(try_catch.Exception());
-    CHECK_EQ("22", *exception_value1);
+    CHECK_EQ("\x32\x32", *exception_value1);
     try_catch.Reset();
 
     Local<Value> args[] = { v8_num(23) };
     value = instance->CallAsConstructor(1, args);
     CHECK(try_catch.HasCaught());
     String::Utf8Value exception_value2(try_catch.Exception());
-    CHECK_EQ("23", *exception_value2);
+    CHECK_EQ("\x32\x33", *exception_value2);
     try_catch.Reset();
   }
 
@@ -10726,7 +10726,7 @@ THREADED_TEST(ConstructorForObject) {
         FunctionTemplate::New(isolate, FakeConstructorCallback);
     Local<Function> function = function_template->GetFunction();
     Local<Object> instance1 = function;
-    context->Global()->Set(v8_str("obj4"), instance1);
+    context->Global()->Set(v8_str("\x6f\x62\x6a\x34"), instance1);
     v8::TryCatch try_catch;
     Local<Value> value;
     CHECK(!try_catch.HasCaught());
@@ -10734,7 +10734,7 @@ THREADED_TEST(ConstructorForObject) {
     CHECK(instance1->IsObject());
     CHECK(instance1->IsFunction());
 
-    value = CompileRun("new obj4(28)");
+    value = CompileRun("\x6e\x65\x77\x20\x6f\x62\x6a\x34\x28\x32\x38\x29");
     CHECK(!try_catch.HasCaught());
     CHECK(value->IsObject());
 
@@ -10746,13 +10746,13 @@ THREADED_TEST(ConstructorForObject) {
     Local<ObjectTemplate> instance_template = ObjectTemplate::New(isolate);
     instance_template->SetCallAsFunctionHandler(FakeConstructorCallback);
     Local<Object> instance2 = instance_template->NewInstance();
-    context->Global()->Set(v8_str("obj5"), instance2);
+    context->Global()->Set(v8_str("\x6f\x62\x6a\x35"), instance2);
     CHECK(!try_catch.HasCaught());
 
     CHECK(instance2->IsObject());
     CHECK(!instance2->IsFunction());
 
-    value = CompileRun("new obj5(28)");
+    value = CompileRun("\x6e\x65\x77\x20\x6f\x62\x6a\x35\x28\x32\x38\x29");
     CHECK(!try_catch.HasCaught());
     CHECK(!value->IsObject());
 
@@ -10769,23 +10769,23 @@ THREADED_TEST(FunctionDescriptorException) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   Local<v8::FunctionTemplate> templ = v8::FunctionTemplate::New(isolate);
-  templ->SetClassName(v8_str("Fun"));
+  templ->SetClassName(v8_str("\x46\x75\x6e"));
   Local<Function> cons = templ->GetFunction();
-  context->Global()->Set(v8_str("Fun"), cons);
+  context->Global()->Set(v8_str("\x46\x75\x6e"), cons);
   Local<Value> value = CompileRun(
-    "function test() {"
-    "  try {"
-    "    (new Fun()).blah()"
-    "  } catch (e) {"
-    "    var str = String(e);"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x28\x29\x20\x7b"
+    "\x20\x20\x74\x72\x79\x20\x7b"
+    "\x20\x20\x20\x20\x28\x6e\x65\x77\x20\x46\x75\x6e\x28\x29\x29\x2e\x62\x6c\x61\x68\x28\x29"
+    "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+    "\x20\x20\x20\x20\x76\x61\x72\x20\x73\x74\x72\x20\x3d\x20\x53\x74\x72\x69\x6e\x67\x28\x65\x29\x3b"
     // "    if (str.indexOf('TypeError') == -1) return 1;"
     // "    if (str.indexOf('[object Fun]') != -1) return 2;"
     // "    if (str.indexOf('#<Fun>') == -1) return 3;"
-    "    return 0;"
-    "  }"
-    "  return 4;"
-    "}"
-    "test();");
+    "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x30\x3b"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x3b"
+    "\x7d"
+    "\x74\x65\x73\x74\x28\x29\x3b");
   CHECK_EQ(0, value->Int32Value());
 }
 
@@ -10796,31 +10796,31 @@ THREADED_TEST(EvalAliasedDynamic) {
 
   // Tests where aliased eval can only be resolved dynamically.
   Local<Script> script = v8_compile(
-      "function f(x) { "
-      "  var foo = 2;"
-      "  with (x) { return eval('foo'); }"
-      "}"
-      "foo = 0;"
-      "result1 = f(new Object());"
-      "result2 = f(this);"
-      "var x = new Object();"
-      "x.eval = function(x) { return 1; };"
-      "result3 = f(x);");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20"
+      "\x20\x20\x76\x61\x72\x20\x66\x6f\x6f\x20\x3d\x20\x32\x3b"
+      "\x20\x20\x77\x69\x74\x68\x20\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x76\x61\x6c\x28\x27\x66\x6f\x6f\x27\x29\x3b\x20\x7d"
+      "\x7d"
+      "\x66\x6f\x6f\x20\x3d\x20\x30\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x31\x20\x3d\x20\x66\x28\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x29\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x32\x20\x3d\x20\x66\x28\x74\x68\x69\x73\x29\x3b"
+      "\x76\x61\x72\x20\x78\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+      "\x78\x2e\x65\x76\x61\x6c\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x3b\x20\x7d\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x33\x20\x3d\x20\x66\x28\x78\x29\x3b");
   script->Run();
-  CHECK_EQ(2, current->Global()->Get(v8_str("result1"))->Int32Value());
-  CHECK_EQ(0, current->Global()->Get(v8_str("result2"))->Int32Value());
-  CHECK_EQ(1, current->Global()->Get(v8_str("result3"))->Int32Value());
+  CHECK_EQ(2, current->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74\x31"))->Int32Value());
+  CHECK_EQ(0, current->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74\x32"))->Int32Value());
+  CHECK_EQ(1, current->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74\x33"))->Int32Value());
 
   v8::TryCatch try_catch;
   script = v8_compile(
-      "function f(x) { "
-      "  var bar = 2;"
-      "  with (x) { return eval('bar'); }"
-      "}"
-      "result4 = f(this)");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20"
+      "\x20\x20\x76\x61\x72\x20\x62\x61\x72\x20\x3d\x20\x32\x3b"
+      "\x20\x20\x77\x69\x74\x68\x20\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x76\x61\x6c\x28\x27\x62\x61\x72\x27\x29\x3b\x20\x7d"
+      "\x7d"
+      "\x72\x65\x73\x75\x6c\x74\x34\x20\x3d\x20\x66\x28\x74\x68\x69\x73\x29");
   script->Run();
   CHECK(!try_catch.HasCaught());
-  CHECK_EQ(2, current->Global()->Get(v8_str("result4"))->Int32Value());
+  CHECK_EQ(2, current->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74\x34"))->Int32Value());
 
   try_catch.Reset();
 }
@@ -10831,31 +10831,31 @@ THREADED_TEST(CrossEval) {
   LocalContext other;
   LocalContext current;
 
-  Local<String> token = v8_str("<security token>");
+  Local<String> token = v8_str("\x3c\x73\x65\x63\x75\x72\x69\x74\x79\x20\x74\x6f\x6b\x65\x6e\x3e");
   other->SetSecurityToken(token);
   current->SetSecurityToken(token);
 
   // Set up reference from current to other.
-  current->Global()->Set(v8_str("other"), other->Global());
+  current->Global()->Set(v8_str("\x6f\x74\x68\x65\x72"), other->Global());
 
   // Check that new variables are introduced in other context.
-  Local<Script> script = v8_compile("other.eval('var foo = 1234')");
+  Local<Script> script = v8_compile("\x6f\x74\x68\x65\x72\x2e\x65\x76\x61\x6c\x28\x27\x76\x61\x72\x20\x66\x6f\x6f\x20\x3d\x20\x31\x32\x33\x34\x27\x29");
   script->Run();
-  Local<Value> foo = other->Global()->Get(v8_str("foo"));
+  Local<Value> foo = other->Global()->Get(v8_str("\x66\x6f\x6f"));
   CHECK_EQ(1234, foo->Int32Value());
-  CHECK(!current->Global()->Has(v8_str("foo")));
+  CHECK(!current->Global()->Has(v8_str("\x66\x6f\x6f")));
 
   // Check that writing to non-existing properties introduces them in
   // the other context.
-  script = v8_compile("other.eval('na = 1234')");
+  script = v8_compile("\x6f\x74\x68\x65\x72\x2e\x65\x76\x61\x6c\x28\x27\x6e\x61\x20\x3d\x20\x31\x32\x33\x34\x27\x29");
   script->Run();
-  CHECK_EQ(1234, other->Global()->Get(v8_str("na"))->Int32Value());
-  CHECK(!current->Global()->Has(v8_str("na")));
+  CHECK_EQ(1234, other->Global()->Get(v8_str("\x6e\x61"))->Int32Value());
+  CHECK(!current->Global()->Has(v8_str("\x6e\x61")));
 
   // Check that global variables in current context are not visible in other
   // context.
   v8::TryCatch try_catch;
-  script = v8_compile("var bar = 42; other.eval('bar');");
+  script = v8_compile("\x76\x61\x72\x20\x62\x61\x72\x20\x3d\x20\x34\x32\x3b\x20\x6f\x74\x68\x65\x72\x2e\x65\x76\x61\x6c\x28\x27\x62\x61\x72\x27\x29\x3b");
   Local<Value> result = script->Run();
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
@@ -10863,39 +10863,39 @@ THREADED_TEST(CrossEval) {
   // Check that local variables in current context are not visible in other
   // context.
   script = v8_compile(
-      "(function() { "
-      "  var baz = 87;"
-      "  return other.eval('baz');"
-      "})();");
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20"
+      "\x20\x20\x76\x61\x72\x20\x62\x61\x7a\x20\x3d\x20\x38\x37\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x74\x68\x65\x72\x2e\x65\x76\x61\x6c\x28\x27\x62\x61\x7a\x27\x29\x3b"
+      "\x7d\x29\x28\x29\x3b");
   result = script->Run();
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
 
   // Check that global variables in the other environment are visible
   // when evaluting code.
-  other->Global()->Set(v8_str("bis"), v8_num(1234));
-  script = v8_compile("other.eval('bis')");
+  other->Global()->Set(v8_str("\x62\x69\x73"), v8_num(1234));
+  script = v8_compile("\x6f\x74\x68\x65\x72\x2e\x65\x76\x61\x6c\x28\x27\x62\x69\x73\x27\x29");
   CHECK_EQ(1234, script->Run()->Int32Value());
   CHECK(!try_catch.HasCaught());
 
   // Check that the 'this' pointer points to the global object evaluating
   // code.
-  other->Global()->Set(v8_str("t"), other->Global());
-  script = v8_compile("other.eval('this == t')");
+  other->Global()->Set(v8_str("\x74"), other->Global());
+  script = v8_compile("\x6f\x74\x68\x65\x72\x2e\x65\x76\x61\x6c\x28\x27\x74\x68\x69\x73\x20\x3d\x3d\x20\x74\x27\x29");
   result = script->Run();
   CHECK(result->IsTrue());
   CHECK(!try_catch.HasCaught());
 
   // Check that variables introduced in with-statement are not visible in
   // other context.
-  script = v8_compile("with({x:2}){other.eval('x')}");
+  script = v8_compile("\x77\x69\x74\x68\x28\x7b\x78\x3a\x32\x7d\x29\x7b\x6f\x74\x68\x65\x72\x2e\x65\x76\x61\x6c\x28\x27\x78\x27\x29\x7d");
   result = script->Run();
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
 
   // Check that you cannot use 'eval.call' with another object than the
   // current global object.
-  script = v8_compile("other.y = 1; eval.call(other, 'y')");
+  script = v8_compile("\x6f\x74\x68\x65\x72\x2e\x79\x20\x3d\x20\x31\x3b\x20\x65\x76\x61\x6c\x2e\x63\x61\x6c\x6c\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x79\x27\x29");
   result = script->Run();
   CHECK(try_catch.HasCaught());
 }
@@ -10914,23 +10914,23 @@ THREADED_TEST(EvalInDetachedGlobal) {
   // Set up function in context0 that uses eval from context0.
   context0->Enter();
   v8::Handle<v8::Value> fun =
-      CompileRun("var x = 42;"
-                 "(function() {"
-                 "  var e = eval;"
-                 "  return function(s) { return e(s); }"
-                 "})()");
+      CompileRun("\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x32\x3b"
+                 "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+                 "\x20\x20\x76\x61\x72\x20\x65\x20\x3d\x20\x65\x76\x61\x6c\x3b"
+                 "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x73\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x28\x73\x29\x3b\x20\x7d"
+                 "\x7d\x29\x28\x29");
   context0->Exit();
 
   // Put the function into context1 and call it before and after
   // detaching the global.  Before detaching, the call succeeds and
   // after detaching and exception is thrown.
   context1->Enter();
-  context1->Global()->Set(v8_str("fun"), fun);
-  v8::Handle<v8::Value> x_value = CompileRun("fun('x')");
+  context1->Global()->Set(v8_str("\x66\x75\x6e"), fun);
+  v8::Handle<v8::Value> x_value = CompileRun("\x66\x75\x6e\x28\x27\x78\x27\x29");
   CHECK_EQ(42, x_value->Int32Value());
   context0->DetachGlobal();
   v8::TryCatch catcher;
-  x_value = CompileRun("fun('x')");
+  x_value = CompileRun("\x66\x75\x6e\x28\x27\x78\x27\x29");
   CHECK(x_value.IsEmpty());
   CHECK(catcher.HasCaught());
   context1->Exit();
@@ -10942,15 +10942,15 @@ THREADED_TEST(CrossLazyLoad) {
   LocalContext other;
   LocalContext current;
 
-  Local<String> token = v8_str("<security token>");
+  Local<String> token = v8_str("\x3c\x73\x65\x63\x75\x72\x69\x74\x79\x20\x74\x6f\x6b\x65\x6e\x3e");
   other->SetSecurityToken(token);
   current->SetSecurityToken(token);
 
   // Set up reference from current to other.
-  current->Global()->Set(v8_str("other"), other->Global());
+  current->Global()->Set(v8_str("\x6f\x74\x68\x65\x72"), other->Global());
 
   // Trigger lazy loading in other context.
-  Local<Script> script = v8_compile("other.eval('new Date(42)')");
+  Local<Script> script = v8_compile("\x6f\x74\x68\x65\x72\x2e\x65\x76\x61\x6c\x28\x27\x6e\x65\x77\x20\x44\x61\x74\x65\x28\x34\x32\x29\x27\x29");
   Local<Value> value = script->Run();
   CHECK_EQ(42.0, value->NumberValue());
 }
@@ -10986,44 +10986,44 @@ THREADED_TEST(CallAsFunction) {
     Local<ObjectTemplate> instance_template = t->InstanceTemplate();
     instance_template->SetCallAsFunctionHandler(call_as_function);
     Local<v8::Object> instance = t->GetFunction()->NewInstance();
-    context->Global()->Set(v8_str("obj"), instance);
+    context->Global()->Set(v8_str("\x6f\x62\x6a"), instance);
     v8::TryCatch try_catch;
     Local<Value> value;
     CHECK(!try_catch.HasCaught());
 
-    value = CompileRun("obj(42)");
+    value = CompileRun("\x6f\x62\x6a\x28\x34\x32\x29");
     CHECK(!try_catch.HasCaught());
     CHECK_EQ(42, value->Int32Value());
 
-    value = CompileRun("(function(o){return o(49)})(obj)");
+    value = CompileRun("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x6f\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x6f\x28\x34\x39\x29\x7d\x29\x28\x6f\x62\x6a\x29");
     CHECK(!try_catch.HasCaught());
     CHECK_EQ(49, value->Int32Value());
 
     // test special case of call as function
-    value = CompileRun("[obj]['0'](45)");
+    value = CompileRun("\x5b\x6f\x62\x6a\x5d\x5b\x27\x30\x27\x5d\x28\x34\x35\x29");
     CHECK(!try_catch.HasCaught());
     CHECK_EQ(45, value->Int32Value());
 
-    value = CompileRun("obj.call = Function.prototype.call;"
-                       "obj.call(null, 87)");
+    value = CompileRun("\x6f\x62\x6a\x2e\x63\x61\x6c\x6c\x20\x3d\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x61\x6c\x6c\x3b"
+                       "\x6f\x62\x6a\x2e\x63\x61\x6c\x6c\x28\x6e\x75\x6c\x6c\x2c\x20\x38\x37\x29");
     CHECK(!try_catch.HasCaught());
     CHECK_EQ(87, value->Int32Value());
 
     // Regression tests for bug #1116356: Calling call through call/apply
     // must work for non-function receivers.
-    const char* apply_99 = "Function.prototype.call.apply(obj, [this, 99])";
+    const char* apply_99 = "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x61\x6c\x6c\x2e\x61\x70\x70\x6c\x79\x28\x6f\x62\x6a\x2c\x20\x5b\x74\x68\x69\x73\x2c\x20\x39\x39\x5d\x29";
     value = CompileRun(apply_99);
     CHECK(!try_catch.HasCaught());
     CHECK_EQ(99, value->Int32Value());
 
-    const char* call_17 = "Function.prototype.call.call(obj, this, 17)";
+    const char* call_17 = "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x61\x6c\x6c\x2e\x63\x61\x6c\x6c\x28\x6f\x62\x6a\x2c\x20\x74\x68\x69\x73\x2c\x20\x31\x37\x29";
     value = CompileRun(call_17);
     CHECK(!try_catch.HasCaught());
     CHECK_EQ(17, value->Int32Value());
 
     // Check that the call-as-function handler can be called through
     // new.
-    value = CompileRun("new obj(43)");
+    value = CompileRun("\x6e\x65\x77\x20\x6f\x62\x6a\x28\x34\x33\x29");
     CHECK(!try_catch.HasCaught());
     CHECK_EQ(-43, value->Int32Value());
 
@@ -11039,29 +11039,29 @@ THREADED_TEST(CallAsFunction) {
     Local<ObjectTemplate> instance_template(t->InstanceTemplate());
     USE(instance_template);
     Local<v8::Object> instance = t->GetFunction()->NewInstance();
-    context->Global()->Set(v8_str("obj2"), instance);
+    context->Global()->Set(v8_str("\x6f\x62\x6a\x32"), instance);
     v8::TryCatch try_catch;
     Local<Value> value;
     CHECK(!try_catch.HasCaught());
 
     // Call an object without call-as-function handler through the JS
-    value = CompileRun("obj2(28)");
+    value = CompileRun("\x6f\x62\x6a\x32\x28\x32\x38\x29");
     CHECK(value.IsEmpty());
     CHECK(try_catch.HasCaught());
     String::Utf8Value exception_value1(try_catch.Exception());
     // TODO(verwaest): Better message
-    CHECK_EQ("TypeError: object is not a function",
+    CHECK_EQ("\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x6f\x62\x6a\x65\x63\x74\x20\x69\x73\x20\x6e\x6f\x74\x20\x61\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e",
              *exception_value1);
     try_catch.Reset();
 
     // Call an object without call-as-function handler through the API
-    value = CompileRun("obj2(28)");
+    value = CompileRun("\x6f\x62\x6a\x32\x28\x32\x38\x29");
     v8::Handle<Value> args[] = { v8_num(28) };
     value = instance->CallAsFunction(instance, 1, args);
     CHECK(value.IsEmpty());
     CHECK(try_catch.HasCaught());
     String::Utf8Value exception_value2(try_catch.Exception());
-    CHECK_EQ("TypeError: [object Object] is not a function", *exception_value2);
+    CHECK_EQ("\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x5b\x6f\x62\x6a\x65\x63\x74\x20\x4f\x62\x6a\x65\x63\x74\x5d\x20\x69\x73\x20\x6e\x6f\x74\x20\x61\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e", *exception_value2);
     try_catch.Reset();
   }
 
@@ -11069,23 +11069,23 @@ THREADED_TEST(CallAsFunction) {
     Local<ObjectTemplate> instance_template = t->InstanceTemplate();
     instance_template->SetCallAsFunctionHandler(ThrowValue);
     Local<v8::Object> instance = t->GetFunction()->NewInstance();
-    context->Global()->Set(v8_str("obj3"), instance);
+    context->Global()->Set(v8_str("\x6f\x62\x6a\x33"), instance);
     v8::TryCatch try_catch;
     Local<Value> value;
     CHECK(!try_catch.HasCaught());
 
     // Catch the exception which is thrown by call-as-function handler
-    value = CompileRun("obj3(22)");
+    value = CompileRun("\x6f\x62\x6a\x33\x28\x32\x32\x29");
     CHECK(try_catch.HasCaught());
     String::Utf8Value exception_value1(try_catch.Exception());
-    CHECK_EQ("22", *exception_value1);
+    CHECK_EQ("\x32\x32", *exception_value1);
     try_catch.Reset();
 
     v8::Handle<Value> args[] = { v8_num(23) };
     value = instance->CallAsFunction(instance, 1, args);
     CHECK(try_catch.HasCaught());
     String::Utf8Value exception_value2(try_catch.Exception());
-    CHECK_EQ("23", *exception_value2);
+    CHECK_EQ("\x32\x33", *exception_value2);
     try_catch.Reset();
   }
 
@@ -11104,7 +11104,7 @@ THREADED_TEST(CallAsFunction) {
         instance->CallAsFunction(v8_num(42), 0, NULL);
     CHECK(a3->StrictEquals(instance));
     Local<v8::Value> a4 =
-        instance->CallAsFunction(v8_str("hello"), 0, NULL);
+        instance->CallAsFunction(v8_str("\x68\x65\x6c\x6c\x6f"), 0, NULL);
     CHECK(a4->StrictEquals(instance));
     Local<v8::Value> a5 =
         instance->CallAsFunction(v8::True(isolate), 0, NULL);
@@ -11112,19 +11112,19 @@ THREADED_TEST(CallAsFunction) {
   }
 
   { CompileRun(
-      "function ReturnThisSloppy() {"
-      "  return this;"
-      "}"
-      "function ReturnThisStrict() {"
-      "  'use strict';"
-      "  return this;"
-      "}");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x52\x65\x74\x75\x72\x6e\x54\x68\x69\x73\x53\x6c\x6f\x70\x70\x79\x28\x29\x20\x7b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x3b"
+      "\x7d"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x52\x65\x74\x75\x72\x6e\x54\x68\x69\x73\x53\x74\x72\x69\x63\x74\x28\x29\x20\x7b"
+      "\x20\x20\x27\x75\x73\x65\x20\x73\x74\x72\x69\x63\x74\x27\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x3b"
+      "\x7d");
     Local<Function> ReturnThisSloppy =
         Local<Function>::Cast(
-            context->Global()->Get(v8_str("ReturnThisSloppy")));
+            context->Global()->Get(v8_str("\x52\x65\x74\x75\x72\x6e\x54\x68\x69\x73\x53\x6c\x6f\x70\x70\x79")));
     Local<Function> ReturnThisStrict =
         Local<Function>::Cast(
-            context->Global()->Get(v8_str("ReturnThisStrict")));
+            context->Global()->Get(v8_str("\x52\x65\x74\x75\x72\x6e\x54\x68\x69\x73\x53\x74\x72\x69\x63\x74")));
 
     Local<v8::Value> a1 =
         ReturnThisSloppy->CallAsFunction(v8::Undefined(isolate), 0, NULL);
@@ -11137,9 +11137,9 @@ THREADED_TEST(CallAsFunction) {
     CHECK(a3->IsNumberObject());
     CHECK_EQ(42.0, a3.As<v8::NumberObject>()->ValueOf());
     Local<v8::Value> a4 =
-        ReturnThisSloppy->CallAsFunction(v8_str("hello"), 0, NULL);
+        ReturnThisSloppy->CallAsFunction(v8_str("\x68\x65\x6c\x6c\x6f"), 0, NULL);
     CHECK(a4->IsStringObject());
-    CHECK(a4.As<v8::StringObject>()->ValueOf()->StrictEquals(v8_str("hello")));
+    CHECK(a4.As<v8::StringObject>()->ValueOf()->StrictEquals(v8_str("\x68\x65\x6c\x6c\x6f")));
     Local<v8::Value> a5 =
         ReturnThisSloppy->CallAsFunction(v8::True(isolate), 0, NULL);
     CHECK(a5->IsBooleanObject());
@@ -11155,8 +11155,8 @@ THREADED_TEST(CallAsFunction) {
         ReturnThisStrict->CallAsFunction(v8_num(42), 0, NULL);
     CHECK(a8->StrictEquals(v8_num(42)));
     Local<v8::Value> a9 =
-        ReturnThisStrict->CallAsFunction(v8_str("hello"), 0, NULL);
-    CHECK(a9->StrictEquals(v8_str("hello")));
+        ReturnThisStrict->CallAsFunction(v8_str("\x68\x65\x6c\x6c\x6f"), 0, NULL);
+    CHECK(a9->StrictEquals(v8_str("\x68\x65\x6c\x6c\x6f")));
     Local<v8::Value> a10 =
         ReturnThisStrict->CallAsFunction(v8::True(isolate), 0, NULL);
     CHECK(a10->StrictEquals(v8::True(isolate)));
@@ -11268,18 +11268,18 @@ THREADED_TEST(InterceptorHasOwnProperty) {
   Local<v8::ObjectTemplate> instance_templ = fun_templ->InstanceTemplate();
   instance_templ->SetNamedPropertyHandler(InterceptorHasOwnPropertyGetter);
   Local<Function> function = fun_templ->GetFunction();
-  context->Global()->Set(v8_str("constructor"), function);
+  context->Global()->Set(v8_str("\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72"), function);
   v8::Handle<Value> value = CompileRun(
-      "var o = new constructor();"
-      "o.hasOwnProperty('ostehaps');");
+      "\x76\x61\x72\x20\x6f\x20\x3d\x20\x6e\x65\x77\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x28\x29\x3b"
+      "\x6f\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x6f\x73\x74\x65\x68\x61\x70\x73\x27\x29\x3b");
   CHECK_EQ(false, value->BooleanValue());
   value = CompileRun(
-      "o.ostehaps = 42;"
-      "o.hasOwnProperty('ostehaps');");
+      "\x6f\x2e\x6f\x73\x74\x65\x68\x61\x70\x73\x20\x3d\x20\x34\x32\x3b"
+      "\x6f\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x6f\x73\x74\x65\x68\x61\x70\x73\x27\x29\x3b");
   CHECK_EQ(true, value->BooleanValue());
   value = CompileRun(
-      "var p = new constructor();"
-      "p.hasOwnProperty('ostehaps');");
+      "\x76\x61\x72\x20\x70\x20\x3d\x20\x6e\x65\x77\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x28\x29\x3b"
+      "\x70\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x6f\x73\x74\x65\x68\x61\x70\x73\x27\x29\x3b");
   CHECK_EQ(false, value->BooleanValue());
 }
 
@@ -11300,24 +11300,24 @@ THREADED_TEST(InterceptorHasOwnPropertyCausingGC) {
   Local<v8::ObjectTemplate> instance_templ = fun_templ->InstanceTemplate();
   instance_templ->SetNamedPropertyHandler(InterceptorHasOwnPropertyGetterGC);
   Local<Function> function = fun_templ->GetFunction();
-  context->Global()->Set(v8_str("constructor"), function);
+  context->Global()->Set(v8_str("\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72"), function);
   // Let's first make some stuff so we can be sure to get a good GC.
   CompileRun(
-      "function makestr(size) {"
-      "  switch (size) {"
-      "    case 1: return 'f';"
-      "    case 2: return 'fo';"
-      "    case 3: return 'foo';"
-      "  }"
-      "  return makestr(size >> 1) + makestr((size + 1) >> 1);"
-      "}"
-      "var x = makestr(12345);"
-      "x = makestr(31415);"
-      "x = makestr(23456);");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6d\x61\x6b\x65\x73\x74\x72\x28\x73\x69\x7a\x65\x29\x20\x7b"
+      "\x20\x20\x73\x77\x69\x74\x63\x68\x20\x28\x73\x69\x7a\x65\x29\x20\x7b"
+      "\x20\x20\x20\x20\x63\x61\x73\x65\x20\x31\x3a\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x66\x27\x3b"
+      "\x20\x20\x20\x20\x63\x61\x73\x65\x20\x32\x3a\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x66\x6f\x27\x3b"
+      "\x20\x20\x20\x20\x63\x61\x73\x65\x20\x33\x3a\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x66\x6f\x6f\x27\x3b"
+      "\x20\x20\x7d"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6d\x61\x6b\x65\x73\x74\x72\x28\x73\x69\x7a\x65\x20\x3e\x3e\x20\x31\x29\x20\x2b\x20\x6d\x61\x6b\x65\x73\x74\x72\x28\x28\x73\x69\x7a\x65\x20\x2b\x20\x31\x29\x20\x3e\x3e\x20\x31\x29\x3b"
+      "\x7d"
+      "\x76\x61\x72\x20\x78\x20\x3d\x20\x6d\x61\x6b\x65\x73\x74\x72\x28\x31\x32\x33\x34\x35\x29\x3b"
+      "\x78\x20\x3d\x20\x6d\x61\x6b\x65\x73\x74\x72\x28\x33\x31\x34\x31\x35\x29\x3b"
+      "\x78\x20\x3d\x20\x6d\x61\x6b\x65\x73\x74\x72\x28\x32\x33\x34\x35\x36\x29\x3b");
   v8::Handle<Value> value = CompileRun(
-      "var o = new constructor();"
-      "o.__proto__ = new String(x);"
-      "o.hasOwnProperty('ostehaps');");
+      "\x76\x61\x72\x20\x6f\x20\x3d\x20\x6e\x65\x77\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x28\x29\x3b"
+      "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6e\x65\x77\x20\x53\x74\x72\x69\x6e\x67\x28\x78\x29\x3b"
+      "\x6f\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x6f\x73\x74\x65\x68\x61\x70\x73\x27\x29\x3b");
   CHECK_EQ(false, value->BooleanValue());
 }
 
@@ -11333,9 +11333,9 @@ static void CheckInterceptorLoadIC(NamedPropertyGetter getter,
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetNamedPropertyHandler(getter, 0, 0, 0, 0, v8_str("data"));
+  templ->SetNamedPropertyHandler(getter, 0, 0, 0, 0, v8_str("\x64\x61\x74\x61"));
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   v8::Handle<Value> value = CompileRun(source);
   CHECK_EQ(expected, value->Int32Value());
 }
@@ -11347,8 +11347,8 @@ static void InterceptorLoadICGetter(
   ApiTestFuzzer::Fuzz();
   v8::Isolate* isolate = CcTest::isolate();
   CHECK_EQ(isolate, info.GetIsolate());
-  CHECK_EQ(v8_str("data"), info.Data());
-  CHECK_EQ(v8_str("x"), name);
+  CHECK_EQ(v8_str("\x64\x61\x74\x61"), info.Data());
+  CHECK_EQ(v8_str("\x78"), name);
   info.GetReturnValue().Set(v8::Integer::New(isolate, 42));
 }
 
@@ -11356,10 +11356,10 @@ static void InterceptorLoadICGetter(
 // This test should hit the load IC for the interceptor case.
 THREADED_TEST(InterceptorLoadIC) {
   CheckInterceptorLoadIC(InterceptorLoadICGetter,
-    "var result = 0;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result = o.x;"
-    "}",
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x78\x3b"
+    "\x7d",
     42);
 }
 
@@ -11373,7 +11373,7 @@ static void InterceptorLoadXICGetter(
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
   info.GetReturnValue().Set(
-      v8_str("x")->Equals(name) ?
+      v8_str("\x78")->Equals(name) ?
           v8::Handle<v8::Value>(v8::Integer::New(info.GetIsolate(), 42)) :
           v8::Handle<v8::Value>());
 }
@@ -11381,61 +11381,61 @@ static void InterceptorLoadXICGetter(
 
 THREADED_TEST(InterceptorLoadICWithFieldOnHolder) {
   CheckInterceptorLoadIC(InterceptorLoadXICGetter,
-    "var result = 0;"
-    "o.y = 239;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result = o.y;"
-    "}",
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x6f\x2e\x79\x20\x3d\x20\x32\x33\x39\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x79\x3b"
+    "\x7d",
     239);
 }
 
 
 THREADED_TEST(InterceptorLoadICWithSubstitutedProto) {
   CheckInterceptorLoadIC(InterceptorLoadXICGetter,
-    "var result = 0;"
-    "o.__proto__ = { 'y': 239 };"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result = o.y + o.x;"
-    "}",
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x7b\x20\x27\x79\x27\x3a\x20\x32\x33\x39\x20\x7d\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x79\x20\x2b\x20\x6f\x2e\x78\x3b"
+    "\x7d",
     239 + 42);
 }
 
 
 THREADED_TEST(InterceptorLoadICWithPropertyOnProto) {
   CheckInterceptorLoadIC(InterceptorLoadXICGetter,
-    "var result = 0;"
-    "o.__proto__.y = 239;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result = o.y + o.x;"
-    "}",
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x2e\x79\x20\x3d\x20\x32\x33\x39\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x79\x20\x2b\x20\x6f\x2e\x78\x3b"
+    "\x7d",
     239 + 42);
 }
 
 
 THREADED_TEST(InterceptorLoadICUndefined) {
   CheckInterceptorLoadIC(InterceptorLoadXICGetter,
-    "var result = 0;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result = (o.y == undefined) ? 239 : 42;"
-    "}",
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x28\x6f\x2e\x79\x20\x3d\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x29\x20\x3f\x20\x32\x33\x39\x20\x3a\x20\x34\x32\x3b"
+    "\x7d",
     239);
 }
 
 
 THREADED_TEST(InterceptorLoadICWithOverride) {
   CheckInterceptorLoadIC(InterceptorLoadXICGetter,
-    "fst = new Object();  fst.__proto__ = o;"
-    "snd = new Object();  snd.__proto__ = fst;"
-    "var result1 = 0;"
-    "for (var i = 0; i < 1000;  i++) {"
-    "  result1 = snd.x;"
-    "}"
-    "fst.x = 239;"
-    "var result = 0;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result = snd.x;"
-    "}"
-    "result + result1",
+    "\x66\x73\x74\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b\x20\x20\x66\x73\x74\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+    "\x73\x6e\x64\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b\x20\x20\x73\x6e\x64\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x66\x73\x74\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x31\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x31\x20\x3d\x20\x73\x6e\x64\x2e\x78\x3b"
+    "\x7d"
+    "\x66\x73\x74\x2e\x78\x20\x3d\x20\x32\x33\x39\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x73\x6e\x64\x2e\x78\x3b"
+    "\x7d"
+    "\x72\x65\x73\x75\x6c\x74\x20\x2b\x20\x72\x65\x73\x75\x6c\x74\x31",
     239 + 42);
 }
 
@@ -11444,18 +11444,18 @@ THREADED_TEST(InterceptorLoadICWithOverride) {
 // a stub, but interceptor produced value on its own.
 THREADED_TEST(InterceptorLoadICFieldNotNeeded) {
   CheckInterceptorLoadIC(InterceptorLoadXICGetter,
-    "proto = new Object();"
-    "o.__proto__ = proto;"
-    "proto.x = 239;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  o.x;"
+    "\x70\x72\x6f\x74\x6f\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x3b"
+    "\x70\x72\x6f\x74\x6f\x2e\x78\x20\x3d\x20\x32\x33\x39\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x6f\x2e\x78\x3b"
     // Now it should be ICed and keep a reference to x defined on proto
-    "}"
-    "var result = 0;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result += o.x;"
-    "}"
-    "result;",
+    "\x7d"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x2e\x78\x3b"
+    "\x7d"
+    "\x72\x65\x73\x75\x6c\x74\x3b",
     42 * 1000);
 }
 
@@ -11464,21 +11464,21 @@ THREADED_TEST(InterceptorLoadICFieldNotNeeded) {
 // a stub, but it got invalidated later on.
 THREADED_TEST(InterceptorLoadICInvalidatedField) {
   CheckInterceptorLoadIC(InterceptorLoadXICGetter,
-    "proto1 = new Object();"
-    "proto2 = new Object();"
-    "o.__proto__ = proto1;"
-    "proto1.__proto__ = proto2;"
-    "proto2.y = 239;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  o.y;"
+    "\x70\x72\x6f\x74\x6f\x31\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x70\x72\x6f\x74\x6f\x32\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x31\x3b"
+    "\x70\x72\x6f\x74\x6f\x31\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x32\x3b"
+    "\x70\x72\x6f\x74\x6f\x32\x2e\x79\x20\x3d\x20\x32\x33\x39\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x6f\x2e\x79\x3b"
     // Now it should be ICed and keep a reference to y defined on proto2
-    "}"
-    "proto1.y = 42;"
-    "var result = 0;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result += o.y;"
-    "}"
-    "result;",
+    "\x7d"
+    "\x70\x72\x6f\x74\x6f\x31\x2e\x79\x20\x3d\x20\x34\x32\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x2e\x79\x3b"
+    "\x7d"
+    "\x72\x65\x73\x75\x6c\x74\x3b",
     42 * 1000);
 }
 
@@ -11496,20 +11496,20 @@ static void InterceptorLoadNotHandled(
 THREADED_TEST(InterceptorLoadICPostInterceptor) {
   interceptor_load_not_handled_calls = 0;
   CheckInterceptorLoadIC(InterceptorLoadNotHandled,
-    "receiver = new Object();"
-    "receiver.__proto__ = o;"
-    "proto = new Object();"
-    "/* Make proto a slow-case object. */"
-    "for (var i = 0; i < 1000; i++) {"
-    "  proto[\"xxxxxxxx\" + i] = [];"
-    "}"
-    "proto.x = 17;"
-    "o.__proto__ = proto;"
-    "var result = 0;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result += receiver.x;"
-    "}"
-    "result;",
+    "\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+    "\x70\x72\x6f\x74\x6f\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x2f\x2a\x20\x4d\x61\x6b\x65\x20\x70\x72\x6f\x74\x6f\x20\x61\x20\x73\x6c\x6f\x77\x2d\x63\x61\x73\x65\x20\x6f\x62\x6a\x65\x63\x74\x2e\x20\x2a\x2f"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x70\x72\x6f\x74\x6f\x5b\x22\x78\x78\x78\x78\x78\x78\x78\x78\x22\x20\x2b\x20\x69\x5d\x20\x3d\x20\x5b\x5d\x3b"
+    "\x7d"
+    "\x70\x72\x6f\x74\x6f\x2e\x78\x20\x3d\x20\x31\x37\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x78\x3b"
+    "\x7d"
+    "\x72\x65\x73\x75\x6c\x74\x3b",
     17 * 1000);
   CHECK_EQ(1000, interceptor_load_not_handled_calls);
 }
@@ -11520,18 +11520,18 @@ THREADED_TEST(InterceptorLoadICPostInterceptor) {
 // global object which is between interceptor and fields' holders.
 THREADED_TEST(InterceptorLoadICInvalidatedFieldViaGlobal) {
   CheckInterceptorLoadIC(InterceptorLoadXICGetter,
-    "o.__proto__ = this;"  // set a global to be a proto of o.
-    "this.__proto__.y = 239;"
-    "for (var i = 0; i < 10; i++) {"
-    "  if (o.y != 239) throw 'oops: ' + o.y;"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x74\x68\x69\x73\x3b"  // set a global to be a proto of o.
+    "\x74\x68\x69\x73\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x2e\x79\x20\x3d\x20\x32\x33\x39\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x6f\x2e\x79\x20\x21\x3d\x20\x32\x33\x39\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x6f\x6f\x70\x73\x3a\x20\x27\x20\x2b\x20\x6f\x2e\x79\x3b"
     // Now it should be ICed and keep a reference to y defined on field_holder.
-    "}"
-    "this.y = 42;"  // Assign on a global.
-    "var result = 0;"
-    "for (var i = 0; i < 10; i++) {"
-    "  result += o.y;"
-    "}"
-    "result;",
+    "\x7d"
+    "\x74\x68\x69\x73\x2e\x79\x20\x3d\x20\x34\x32\x3b"  // Assign on a global.
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x2e\x79\x3b"
+    "\x7d"
+    "\x72\x65\x73\x75\x6c\x74\x3b",
     42 * 10);
 }
 
@@ -11548,27 +11548,27 @@ THREADED_TEST(InterceptorLoadICWithCallbackOnHolder) {
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorLoadXICGetter);
-  templ->SetAccessor(v8_str("y"), Return239Callback);
+  templ->SetAccessor(v8_str("\x79"), Return239Callback);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
 
   // Check the case when receiver and interceptor's holder
   // are the same objects.
   v8::Handle<Value> value = CompileRun(
-      "var result = 0;"
-      "for (var i = 0; i < 7; i++) {"
-      "  result = o.y;"
-      "}");
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x79\x3b"
+      "\x7d");
   CHECK_EQ(239, value->Int32Value());
 
   // Check the case when interceptor's holder is in proto chain
   // of receiver.
   value = CompileRun(
-      "r = { __proto__: o };"
-      "var result = 0;"
-      "for (var i = 0; i < 7; i++) {"
-      "  result = r.y;"
-      "}");
+      "\x72\x20\x3d\x20\x7b\x20\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3a\x20\x6f\x20\x7d\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x2e\x79\x3b"
+      "\x7d");
   CHECK_EQ(239, value->Int32Value());
 }
 
@@ -11579,30 +11579,30 @@ THREADED_TEST(InterceptorLoadICWithCallbackOnProto) {
   v8::Handle<v8::ObjectTemplate> templ_o = ObjectTemplate::New(isolate);
   templ_o->SetNamedPropertyHandler(InterceptorLoadXICGetter);
   v8::Handle<v8::ObjectTemplate> templ_p = ObjectTemplate::New(isolate);
-  templ_p->SetAccessor(v8_str("y"), Return239Callback);
+  templ_p->SetAccessor(v8_str("\x79"), Return239Callback);
 
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ_o->NewInstance());
-  context->Global()->Set(v8_str("p"), templ_p->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ_o->NewInstance());
+  context->Global()->Set(v8_str("\x70"), templ_p->NewInstance());
 
   // Check the case when receiver and interceptor's holder
   // are the same objects.
   v8::Handle<Value> value = CompileRun(
-      "o.__proto__ = p;"
-      "var result = 0;"
-      "for (var i = 0; i < 7; i++) {"
-      "  result = o.x + o.y;"
-      "}");
+      "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x78\x20\x2b\x20\x6f\x2e\x79\x3b"
+      "\x7d");
   CHECK_EQ(239 + 42, value->Int32Value());
 
   // Check the case when interceptor's holder is in proto chain
   // of receiver.
   value = CompileRun(
-      "r = { __proto__: o };"
-      "var result = 0;"
-      "for (var i = 0; i < 7; i++) {"
-      "  result = r.x + r.y;"
-      "}");
+      "\x72\x20\x3d\x20\x7b\x20\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3a\x20\x6f\x20\x7d\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x2e\x78\x20\x2b\x20\x72\x2e\x79\x3b"
+      "\x7d");
   CHECK_EQ(239 + 42, value->Int32Value());
 }
 
@@ -11612,24 +11612,24 @@ THREADED_TEST(InterceptorLoadICForCallbackWithOverride) {
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorLoadXICGetter);
-  templ->SetAccessor(v8_str("y"), Return239Callback);
+  templ->SetAccessor(v8_str("\x79"), Return239Callback);
 
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
 
   v8::Handle<Value> value = CompileRun(
-    "fst = new Object();  fst.__proto__ = o;"
-    "snd = new Object();  snd.__proto__ = fst;"
-    "var result1 = 0;"
-    "for (var i = 0; i < 7;  i++) {"
-    "  result1 = snd.x;"
-    "}"
-    "fst.x = 239;"
-    "var result = 0;"
-    "for (var i = 0; i < 7; i++) {"
-    "  result = snd.x;"
-    "}"
-    "result + result1");
+    "\x66\x73\x74\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b\x20\x20\x66\x73\x74\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+    "\x73\x6e\x64\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b\x20\x20\x73\x6e\x64\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x66\x73\x74\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x31\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x31\x20\x3d\x20\x73\x6e\x64\x2e\x78\x3b"
+    "\x7d"
+    "\x66\x73\x74\x2e\x78\x20\x3d\x20\x32\x33\x39\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x73\x6e\x64\x2e\x78\x3b"
+    "\x7d"
+    "\x72\x65\x73\x75\x6c\x74\x20\x2b\x20\x72\x65\x73\x75\x6c\x74\x31");
   CHECK_EQ(239 + 42, value->Int32Value());
 }
 
@@ -11642,23 +11642,23 @@ THREADED_TEST(InterceptorLoadICCallbackNotNeeded) {
   v8::Handle<v8::ObjectTemplate> templ_o = ObjectTemplate::New(isolate);
   templ_o->SetNamedPropertyHandler(InterceptorLoadXICGetter);
   v8::Handle<v8::ObjectTemplate> templ_p = ObjectTemplate::New(isolate);
-  templ_p->SetAccessor(v8_str("y"), Return239Callback);
+  templ_p->SetAccessor(v8_str("\x79"), Return239Callback);
 
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ_o->NewInstance());
-  context->Global()->Set(v8_str("p"), templ_p->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ_o->NewInstance());
+  context->Global()->Set(v8_str("\x70"), templ_p->NewInstance());
 
   v8::Handle<Value> value = CompileRun(
-    "o.__proto__ = p;"
-    "for (var i = 0; i < 7; i++) {"
-    "  o.x;"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x6f\x2e\x78\x3b"
     // Now it should be ICed and keep a reference to x defined on p
-    "}"
-    "var result = 0;"
-    "for (var i = 0; i < 7; i++) {"
-    "  result += o.x;"
-    "}"
-    "result");
+    "\x7d"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x2e\x78\x3b"
+    "\x7d"
+    "\x72\x65\x73\x75\x6c\x74");
   CHECK_EQ(42 * 7, value->Int32Value());
 }
 
@@ -11671,26 +11671,26 @@ THREADED_TEST(InterceptorLoadICInvalidatedCallback) {
   v8::Handle<v8::ObjectTemplate> templ_o = ObjectTemplate::New(isolate);
   templ_o->SetNamedPropertyHandler(InterceptorLoadXICGetter);
   v8::Handle<v8::ObjectTemplate> templ_p = ObjectTemplate::New(isolate);
-  templ_p->SetAccessor(v8_str("y"), Return239Callback, SetOnThis);
+  templ_p->SetAccessor(v8_str("\x79"), Return239Callback, SetOnThis);
 
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ_o->NewInstance());
-  context->Global()->Set(v8_str("p"), templ_p->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ_o->NewInstance());
+  context->Global()->Set(v8_str("\x70"), templ_p->NewInstance());
 
   v8::Handle<Value> value = CompileRun(
-    "inbetween = new Object();"
-    "o.__proto__ = inbetween;"
-    "inbetween.__proto__ = p;"
-    "for (var i = 0; i < 10; i++) {"
-    "  o.y;"
+    "\x69\x6e\x62\x65\x74\x77\x65\x65\x6e\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x69\x6e\x62\x65\x74\x77\x65\x65\x6e\x3b"
+    "\x69\x6e\x62\x65\x74\x77\x65\x65\x6e\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x6f\x2e\x79\x3b"
     // Now it should be ICed and keep a reference to y defined on p
-    "}"
-    "inbetween.y = 42;"
-    "var result = 0;"
-    "for (var i = 0; i < 10; i++) {"
-    "  result += o.y;"
-    "}"
-    "result");
+    "\x7d"
+    "\x69\x6e\x62\x65\x74\x77\x65\x65\x6e\x2e\x79\x20\x3d\x20\x34\x32\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x2e\x79\x3b"
+    "\x7d"
+    "\x72\x65\x73\x75\x6c\x74");
   CHECK_EQ(42 * 10, value->Int32Value());
 }
 
@@ -11704,25 +11704,25 @@ THREADED_TEST(InterceptorLoadICInvalidatedCallbackViaGlobal) {
   v8::Handle<v8::ObjectTemplate> templ_o = ObjectTemplate::New(isolate);
   templ_o->SetNamedPropertyHandler(InterceptorLoadXICGetter);
   v8::Handle<v8::ObjectTemplate> templ_p = ObjectTemplate::New(isolate);
-  templ_p->SetAccessor(v8_str("y"), Return239Callback, SetOnThis);
+  templ_p->SetAccessor(v8_str("\x79"), Return239Callback, SetOnThis);
 
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ_o->NewInstance());
-  context->Global()->Set(v8_str("p"), templ_p->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ_o->NewInstance());
+  context->Global()->Set(v8_str("\x70"), templ_p->NewInstance());
 
   v8::Handle<Value> value = CompileRun(
-    "o.__proto__ = this;"
-    "this.__proto__ = p;"
-    "for (var i = 0; i < 10; i++) {"
-    "  if (o.y != 239) throw 'oops: ' + o.y;"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x74\x68\x69\x73\x3b"
+    "\x74\x68\x69\x73\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x6f\x2e\x79\x20\x21\x3d\x20\x32\x33\x39\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x6f\x6f\x70\x73\x3a\x20\x27\x20\x2b\x20\x6f\x2e\x79\x3b"
     // Now it should be ICed and keep a reference to y defined on p
-    "}"
-    "this.y = 42;"
-    "var result = 0;"
-    "for (var i = 0; i < 10; i++) {"
-    "  result += o.y;"
-    "}"
-    "result");
+    "\x7d"
+    "\x74\x68\x69\x73\x2e\x79\x20\x3d\x20\x34\x32\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x2e\x79\x3b"
+    "\x7d"
+    "\x72\x65\x73\x75\x6c\x74");
   CHECK_EQ(42 * 10, value->Int32Value());
 }
 
@@ -11731,14 +11731,14 @@ static void InterceptorLoadICGetter0(
     Local<String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  CHECK(v8_str("x")->Equals(name));
+  CHECK(v8_str("\x78")->Equals(name));
   info.GetReturnValue().Set(v8::Integer::New(info.GetIsolate(), 0));
 }
 
 
 THREADED_TEST(InterceptorReturningZero) {
   CheckInterceptorLoadIC(InterceptorLoadICGetter0,
-     "o.x == undefined ? 1 : 0",
+     "\x6f\x2e\x78\x20\x3d\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x20\x3f\x20\x31\x20\x3a\x20\x30",
      0);
 }
 
@@ -11747,7 +11747,7 @@ static void InterceptorStoreICSetter(
     Local<String> key,
     Local<Value> value,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  CHECK(v8_str("x")->Equals(key));
+  CHECK(v8_str("\x78")->Equals(key));
   CHECK_EQ(42, value->Int32Value());
   info.GetReturnValue().Set(value);
 }
@@ -11760,13 +11760,13 @@ THREADED_TEST(InterceptorStoreIC) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorLoadICGetter,
                                  InterceptorStoreICSetter,
-                                 0, 0, 0, v8_str("data"));
+                                 0, 0, 0, v8_str("\x64\x61\x74\x61"));
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   CompileRun(
-      "for (var i = 0; i < 1000; i++) {"
-      "  o.x = 42;"
-      "}");
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x6f\x2e\x78\x20\x3d\x20\x34\x32\x3b"
+      "\x7d");
 }
 
 
@@ -11776,12 +11776,12 @@ THREADED_TEST(InterceptorStoreICWithNoSetter) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorLoadXICGetter);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   v8::Handle<Value> value = CompileRun(
-    "for (var i = 0; i < 1000; i++) {"
-    "  o.y = 239;"
-    "}"
-    "42 + o.y");
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x6f\x2e\x79\x20\x3d\x20\x32\x33\x39\x3b"
+    "\x7d"
+    "\x34\x32\x20\x2b\x20\x6f\x2e\x79");
   CHECK_EQ(239 + 42, value->Int32Value());
 }
 
@@ -11796,7 +11796,7 @@ static void InterceptorCallICGetter(
     Local<String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  CHECK(v8_str("x")->Equals(name));
+  CHECK(v8_str("\x78")->Equals(name));
   info.GetReturnValue().Set(call_ic_function);
 }
 
@@ -11808,14 +11808,14 @@ THREADED_TEST(InterceptorCallIC) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorCallICGetter);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   call_ic_function =
-      v8_compile("function f(x) { return x + 1; }; f")->Run();
+      v8_compile("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b\x20\x66")->Run();
   v8::Handle<Value> value = CompileRun(
-    "var result = 0;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result = o.x(41);"
-    "}");
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x78\x28\x34\x31\x29\x3b"
+    "\x7d");
   CHECK_EQ(42, value->Int32Value());
 }
 
@@ -11828,13 +11828,13 @@ THREADED_TEST(InterceptorCallICSeesOthers) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(NoBlockGetterX);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   v8::Handle<Value> value = CompileRun(
-    "o.x = function f(x) { return x + 1; };"
-    "var result = 0;"
-    "for (var i = 0; i < 7; i++) {"
-    "  result = o.x(41);"
-    "}");
+    "\x6f\x2e\x78\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x78\x28\x34\x31\x29\x3b"
+    "\x7d");
   CHECK_EQ(42, value->Int32Value());
 }
 
@@ -11844,7 +11844,7 @@ static void InterceptorCallICGetter4(
     Local<String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  CHECK(v8_str("x")->Equals(name));
+  CHECK(v8_str("\x78")->Equals(name));
   info.GetReturnValue().Set(call_ic_function4);
 }
 
@@ -11858,15 +11858,15 @@ THREADED_TEST(InterceptorCallICCacheableNotNeeded) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorCallICGetter4);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   call_ic_function4 =
-      v8_compile("function f(x) { return x - 1; }; f")->Run();
+      v8_compile("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b\x20\x66")->Run();
   v8::Handle<Value> value = CompileRun(
-    "Object.getPrototypeOf(o).x = function(x) { return x + 1; };"
-    "var result = 0;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result = o.x(42);"
-    "}");
+    "\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66\x28\x6f\x29\x2e\x78\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x78\x28\x34\x32\x29\x3b"
+    "\x7d");
   CHECK_EQ(41, value->Int32Value());
 }
 
@@ -11879,22 +11879,22 @@ THREADED_TEST(InterceptorCallICInvalidatedCacheable) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(NoBlockGetterX);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   v8::Handle<Value> value = CompileRun(
-    "proto1 = new Object();"
-    "proto2 = new Object();"
-    "o.__proto__ = proto1;"
-    "proto1.__proto__ = proto2;"
-    "proto2.y = function(x) { return x + 1; };"
+    "\x70\x72\x6f\x74\x6f\x31\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x70\x72\x6f\x74\x6f\x32\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x31\x3b"
+    "\x70\x72\x6f\x74\x6f\x31\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x32\x3b"
+    "\x70\x72\x6f\x74\x6f\x32\x2e\x79\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
     // Invoke it many times to compile a stub
-    "for (var i = 0; i < 7; i++) {"
-    "  o.y(42);"
-    "}"
-    "proto1.y = function(x) { return x - 1; };"
-    "var result = 0;"
-    "for (var i = 0; i < 7; i++) {"
-    "  result += o.y(42);"
-    "}");
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x6f\x2e\x79\x28\x34\x32\x29\x3b"
+    "\x7d"
+    "\x70\x72\x6f\x74\x6f\x31\x2e\x79\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x2e\x79\x28\x34\x32\x29\x3b"
+    "\x7d");
   CHECK_EQ(41 * 7, value->Int32Value());
 }
 
@@ -11907,15 +11907,15 @@ THREADED_TEST(InterceptorCallICConstantFunctionUsed) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(NoBlockGetterX);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   v8::Handle<Value> value = CompileRun(
-    "function inc(x) { return x + 1; };"
-    "inc(1);"
-    "o.x = inc;"
-    "var result = 0;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result = o.x(42);"
-    "}");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x63\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x69\x6e\x63\x28\x31\x29\x3b"
+    "\x6f\x2e\x78\x20\x3d\x20\x69\x6e\x63\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x78\x28\x34\x32\x29\x3b"
+    "\x7d");
   CHECK_EQ(43, value->Int32Value());
 }
 
@@ -11925,7 +11925,7 @@ static void InterceptorCallICGetter5(
     Local<String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  if (v8_str("x")->Equals(name))
+  if (v8_str("\x78")->Equals(name))
     info.GetReturnValue().Set(call_ic_function5);
 }
 
@@ -11939,17 +11939,17 @@ THREADED_TEST(InterceptorCallICConstantFunctionNotNeeded) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorCallICGetter5);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   call_ic_function5 =
-      v8_compile("function f(x) { return x - 1; }; f")->Run();
+      v8_compile("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b\x20\x66")->Run();
   v8::Handle<Value> value = CompileRun(
-    "function inc(x) { return x + 1; };"
-    "inc(1);"
-    "o.x = inc;"
-    "var result = 0;"
-    "for (var i = 0; i < 1000; i++) {"
-    "  result = o.x(42);"
-    "}");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x63\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x69\x6e\x63\x28\x31\x29\x3b"
+    "\x6f\x2e\x78\x20\x3d\x20\x69\x6e\x63\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x78\x28\x34\x32\x29\x3b"
+    "\x7d");
   CHECK_EQ(41, value->Int32Value());
 }
 
@@ -11959,7 +11959,7 @@ static void InterceptorCallICGetter6(
     Local<String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  if (v8_str("x")->Equals(name))
+  if (v8_str("\x78")->Equals(name))
     info.GetReturnValue().Set(call_ic_function6);
 }
 
@@ -11973,25 +11973,25 @@ THREADED_TEST(InterceptorCallICConstantFunctionNotNeededWrapped) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorCallICGetter6);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   call_ic_function6 =
-      v8_compile("function f(x) { return x - 1; }; f")->Run();
+      v8_compile("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b\x20\x66")->Run();
   v8::Handle<Value> value = CompileRun(
-    "function inc(x) { return x + 1; };"
-    "inc(1);"
-    "o.x = inc;"
-    "function test() {"
-    "  var result = 0;"
-    "  for (var i = 0; i < 1000; i++) {"
-    "    result = o.x(42);"
-    "  }"
-    "  return result;"
-    "};"
-    "test();"
-    "test();"
-    "test();"
-    "%OptimizeFunctionOnNextCall(test);"
-    "test()");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x63\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x69\x6e\x63\x28\x31\x29\x3b"
+    "\x6f\x2e\x78\x20\x3d\x20\x69\x6e\x63\x3b"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x28\x29\x20\x7b"
+    "\x20\x20\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x78\x28\x34\x32\x29\x3b"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x72\x65\x73\x75\x6c\x74\x3b"
+    "\x7d\x3b"
+    "\x74\x65\x73\x74\x28\x29\x3b"
+    "\x74\x65\x73\x74\x28\x29\x3b"
+    "\x74\x65\x73\x74\x28\x29\x3b"
+    "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x74\x65\x73\x74\x29\x3b"
+    "\x74\x65\x73\x74\x28\x29");
   CHECK_EQ(41, value->Int32Value());
 }
 
@@ -12004,24 +12004,24 @@ THREADED_TEST(InterceptorCallICInvalidatedConstantFunction) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(NoBlockGetterX);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   v8::Handle<Value> value = CompileRun(
-    "function inc(x) { return x + 1; };"
-    "inc(1);"
-    "proto1 = new Object();"
-    "proto2 = new Object();"
-    "o.__proto__ = proto1;"
-    "proto1.__proto__ = proto2;"
-    "proto2.y = inc;"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x63\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x69\x6e\x63\x28\x31\x29\x3b"
+    "\x70\x72\x6f\x74\x6f\x31\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x70\x72\x6f\x74\x6f\x32\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x31\x3b"
+    "\x70\x72\x6f\x74\x6f\x31\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x32\x3b"
+    "\x70\x72\x6f\x74\x6f\x32\x2e\x79\x20\x3d\x20\x69\x6e\x63\x3b"
     // Invoke it many times to compile a stub
-    "for (var i = 0; i < 7; i++) {"
-    "  o.y(42);"
-    "}"
-    "proto1.y = function(x) { return x - 1; };"
-    "var result = 0;"
-    "for (var i = 0; i < 7; i++) {"
-    "  result += o.y(42);"
-    "}");
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x6f\x2e\x79\x28\x34\x32\x29\x3b"
+    "\x7d"
+    "\x70\x72\x6f\x74\x6f\x31\x2e\x79\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x2e\x79\x28\x34\x32\x29\x3b"
+    "\x7d");
   CHECK_EQ(41 * 7, value->Int32Value());
 }
 
@@ -12035,21 +12035,21 @@ THREADED_TEST(InterceptorCallICInvalidatedConstantFunctionViaGlobal) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(NoBlockGetterX);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   v8::Handle<Value> value = CompileRun(
-    "function inc(x) { return x + 1; };"
-    "inc(1);"
-    "o.__proto__ = this;"
-    "this.__proto__.y = inc;"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x63\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x69\x6e\x63\x28\x31\x29\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x74\x68\x69\x73\x3b"
+    "\x74\x68\x69\x73\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x2e\x79\x20\x3d\x20\x69\x6e\x63\x3b"
     // Invoke it many times to compile a stub
-    "for (var i = 0; i < 7; i++) {"
-    "  if (o.y(42) != 43) throw 'oops: ' + o.y(42);"
-    "}"
-    "this.y = function(x) { return x - 1; };"
-    "var result = 0;"
-    "for (var i = 0; i < 7; i++) {"
-    "  result += o.y(42);"
-    "}");
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x6f\x2e\x79\x28\x34\x32\x29\x20\x21\x3d\x20\x34\x33\x29\x20\x74\x68\x72\x6f\x77\x20\x27\x6f\x6f\x70\x73\x3a\x20\x27\x20\x2b\x20\x6f\x2e\x79\x28\x34\x32\x29\x3b"
+    "\x7d"
+    "\x74\x68\x69\x73\x2e\x79\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x37\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x2e\x79\x28\x34\x32\x29\x3b"
+    "\x7d");
   CHECK_EQ(41 * 7, value->Int32Value());
 }
 
@@ -12062,24 +12062,24 @@ THREADED_TEST(InterceptorCallICCachedFromGlobal) {
   templ_o->SetNamedPropertyHandler(NoBlockGetterX);
 
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ_o->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ_o->NewInstance());
 
   v8::Handle<Value> value = CompileRun(
-    "try {"
-    "  o.__proto__ = this;"
-    "  for (var i = 0; i < 10; i++) {"
-    "    var v = o.parseFloat('239');"
-    "    if (v != 239) throw v;"
+    "\x74\x72\x79\x20\x7b"
+    "\x20\x20\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x74\x68\x69\x73\x3b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6f\x2e\x70\x61\x72\x73\x65\x46\x6c\x6f\x61\x74\x28\x27\x32\x33\x39\x27\x29\x3b"
+    "\x20\x20\x20\x20\x69\x66\x20\x28\x76\x20\x21\x3d\x20\x32\x33\x39\x29\x20\x74\x68\x72\x6f\x77\x20\x76\x3b"
       // Now it should be ICed and keep a reference to parseFloat.
-    "  }"
-    "  var result = 0;"
-    "  for (var i = 0; i < 10; i++) {"
-    "    result += o.parseFloat('239');"
-    "  }"
-    "  result"
-    "} catch(e) {"
-    "  e"
-    "};");
+    "\x20\x20\x7d"
+    "\x20\x20\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x2e\x70\x61\x72\x73\x65\x46\x6c\x6f\x61\x74\x28\x27\x32\x33\x39\x27\x29\x3b"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74"
+    "\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+    "\x20\x20\x65"
+    "\x7d\x3b");
   CHECK_EQ(239 * 10, value->Int32Value());
 }
 
@@ -12103,7 +12103,7 @@ static void FastApiCallback_TrivialSignature(
   v8::Isolate* isolate = CcTest::isolate();
   CHECK_EQ(isolate, args.GetIsolate());
   CHECK_EQ(args.This(), args.Holder());
-  CHECK(args.Data()->Equals(v8_str("method_data")));
+  CHECK(args.Data()->Equals(v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61")));
   args.GetReturnValue().Set(args[0]->Int32Value() + 1);
 }
 
@@ -12114,10 +12114,10 @@ static void FastApiCallback_SimpleSignature(
   v8::Isolate* isolate = CcTest::isolate();
   CHECK_EQ(isolate, args.GetIsolate());
   CHECK_EQ(args.This()->GetPrototype(), args.Holder());
-  CHECK(args.Data()->Equals(v8_str("method_data")));
+  CHECK(args.Data()->Equals(v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61")));
   // Note, we're using HasRealNamedProperty instead of Has to avoid
   // invoking the interceptor again.
-  CHECK(args.Holder()->HasRealNamedProperty(v8_str("foo")));
+  CHECK(args.Holder()->HasRealNamedProperty(v8_str("\x66\x6f\x6f")));
   args.GetReturnValue().Set(args[0]->Int32Value() + 1);
 }
 
@@ -12125,11 +12125,11 @@ static void FastApiCallback_SimpleSignature(
 // Helper to maximize the odds of object moving.
 static void GenerateSomeGarbage() {
   CompileRun(
-      "var garbage;"
-      "for (var i = 0; i < 1000; i++) {"
-      "  garbage = [1/i, \"garbage\" + i, garbage, {foo: garbage}];"
-      "}"
-      "garbage = undefined;");
+      "\x76\x61\x72\x20\x67\x61\x72\x62\x61\x67\x65\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x67\x61\x72\x62\x61\x67\x65\x20\x3d\x20\x5b\x31\x2f\x69\x2c\x20\x22\x67\x61\x72\x62\x61\x67\x65\x22\x20\x2b\x20\x69\x2c\x20\x67\x61\x72\x62\x61\x67\x65\x2c\x20\x7b\x66\x6f\x6f\x3a\x20\x67\x61\x72\x62\x61\x67\x65\x7d\x5d\x3b"
+      "\x7d"
+      "\x67\x61\x72\x62\x61\x67\x65\x20\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3b");
 }
 
 
@@ -12149,25 +12149,25 @@ THREADED_TEST(CallICFastApi_DirectCall_GCMoveStub) {
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> nativeobject_templ =
       v8::ObjectTemplate::New(isolate);
-  nativeobject_templ->Set(isolate, "callback",
+  nativeobject_templ->Set(isolate, "\x63\x61\x6c\x6c\x62\x61\x63\x6b",
                           v8::FunctionTemplate::New(isolate,
                                                     DirectApiCallback));
   v8::Local<v8::Object> nativeobject_obj = nativeobject_templ->NewInstance();
-  context->Global()->Set(v8_str("nativeobject"), nativeobject_obj);
+  context->Global()->Set(v8_str("\x6e\x61\x74\x69\x76\x65\x6f\x62\x6a\x65\x63\x74"), nativeobject_obj);
   // call the api function multiple times to ensure direct call stub creation.
   CompileRun(
-        "function f() {"
-        "  for (var i = 1; i <= 30; i++) {"
-        "    nativeobject.callback();"
-        "  }"
-        "}"
-        "f();");
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+        "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x31\x3b\x20\x69\x20\x3c\x3d\x20\x33\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+        "\x20\x20\x20\x20\x6e\x61\x74\x69\x76\x65\x6f\x62\x6a\x65\x63\x74\x2e\x63\x61\x6c\x6c\x62\x61\x63\x6b\x28\x29\x3b"
+        "\x20\x20\x7d"
+        "\x7d"
+        "\x66\x28\x29\x3b");
 }
 
 
 void ThrowingDirectApiCallback(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
-  args.GetIsolate()->ThrowException(v8_str("g"));
+  args.GetIsolate()->ThrowException(v8_str("\x67"));
 }
 
 
@@ -12177,21 +12177,21 @@ THREADED_TEST(CallICFastApi_DirectCall_Throw) {
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> nativeobject_templ =
       v8::ObjectTemplate::New(isolate);
-  nativeobject_templ->Set(isolate, "callback",
+  nativeobject_templ->Set(isolate, "\x63\x61\x6c\x6c\x62\x61\x63\x6b",
                           v8::FunctionTemplate::New(isolate,
                                                     ThrowingDirectApiCallback));
   v8::Local<v8::Object> nativeobject_obj = nativeobject_templ->NewInstance();
-  context->Global()->Set(v8_str("nativeobject"), nativeobject_obj);
+  context->Global()->Set(v8_str("\x6e\x61\x74\x69\x76\x65\x6f\x62\x6a\x65\x63\x74"), nativeobject_obj);
   // call the api function multiple times to ensure direct call stub creation.
   v8::Handle<Value> result = CompileRun(
-      "var result = '';"
-      "function f() {"
-      "  for (var i = 1; i <= 5; i++) {"
-      "    try { nativeobject.callback(); } catch (e) { result += e; }"
-      "  }"
-      "}"
-      "f(); result;");
-  CHECK_EQ(v8_str("ggggg"), result);
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x27\x27\x3b"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x31\x3b\x20\x69\x20\x3c\x3d\x20\x35\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x74\x72\x79\x20\x7b\x20\x6e\x61\x74\x69\x76\x65\x6f\x62\x6a\x65\x63\x74\x2e\x63\x61\x6c\x6c\x62\x61\x63\x6b\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x65\x3b\x20\x7d"
+      "\x20\x20\x7d"
+      "\x7d"
+      "\x66\x28\x29\x3b\x20\x72\x65\x73\x75\x6c\x74\x3b");
+  CHECK_EQ(v8_str("\x67\x67\x67\x67\x67"), result);
 }
 
 
@@ -12200,7 +12200,7 @@ static Handle<Value> DoDirectGetter() {
     CcTest::heap()->CollectAllGarbage(i::Heap::kAbortIncrementalMarkingMask);
     GenerateSomeGarbage();
   }
-  return v8_str("Direct Getter Result");
+  return v8_str("\x44\x69\x72\x65\x63\x74\x20\x47\x65\x74\x74\x65\x72\x20\x52\x65\x73\x75\x6c\x74");
 }
 
 static void DirectGetterCallback(
@@ -12217,16 +12217,16 @@ static void LoadICFastApi_DirectCall_GCMoveStub(Accessor accessor) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> obj = v8::ObjectTemplate::New(isolate);
-  obj->SetAccessor(v8_str("p1"), accessor);
-  context->Global()->Set(v8_str("o1"), obj->NewInstance());
+  obj->SetAccessor(v8_str("\x70\x31"), accessor);
+  context->Global()->Set(v8_str("\x6f\x31"), obj->NewInstance());
   p_getter_count = 0;
   v8::Handle<v8::Value> result = CompileRun(
-      "function f() {"
-      "  for (var i = 0; i < 30; i++) o1.p1;"
-      "  return o1.p1"
-      "}"
-      "f();");
-  CHECK_EQ(v8_str("Direct Getter Result"), result);
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x33\x30\x3b\x20\x69\x2b\x2b\x29\x20\x6f\x31\x2e\x70\x31\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x31\x2e\x70\x31"
+      "\x7d"
+      "\x66\x28\x29\x3b");
+  CHECK_EQ(v8_str("\x44\x69\x72\x65\x63\x74\x20\x47\x65\x74\x74\x65\x72\x20\x52\x65\x73\x75\x6c\x74"), result);
   CHECK_EQ(31, p_getter_count);
 }
 
@@ -12239,7 +12239,7 @@ THREADED_PROFILED_TEST(LoadICFastApi_DirectCall_GCMoveStub) {
 void ThrowingDirectGetterCallback(
     Local<String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  info.GetIsolate()->ThrowException(v8_str("g"));
+  info.GetIsolate()->ThrowException(v8_str("\x67"));
 }
 
 
@@ -12248,15 +12248,15 @@ THREADED_TEST(LoadICFastApi_DirectCall_Throw) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> obj = v8::ObjectTemplate::New(isolate);
-  obj->SetAccessor(v8_str("p1"), ThrowingDirectGetterCallback);
-  context->Global()->Set(v8_str("o1"), obj->NewInstance());
+  obj->SetAccessor(v8_str("\x70\x31"), ThrowingDirectGetterCallback);
+  context->Global()->Set(v8_str("\x6f\x31"), obj->NewInstance());
   v8::Handle<Value> result = CompileRun(
-      "var result = '';"
-      "for (var i = 0; i < 5; i++) {"
-      "    try { o1.p1; } catch (e) { result += e; }"
-      "}"
-      "result;");
-  CHECK_EQ(v8_str("ggggg"), result);
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x27\x27\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x35\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x74\x72\x79\x20\x7b\x20\x6f\x31\x2e\x70\x31\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x65\x3b\x20\x7d"
+      "\x7d"
+      "\x72\x65\x73\x75\x6c\x74\x3b");
+  CHECK_EQ(v8_str("\x67\x67\x67\x67\x67"), result);
 }
 
 
@@ -12269,10 +12269,10 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_TrivialSignature) {
   v8::Handle<v8::FunctionTemplate> method_templ =
       v8::FunctionTemplate::New(isolate,
                                 FastApiCallback_TrivialSignature,
-                                v8_str("method_data"),
+                                v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
                                 v8::Handle<v8::Signature>());
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   v8::Handle<v8::ObjectTemplate> templ = fun_templ->InstanceTemplate();
   templ->SetNamedPropertyHandler(
       InterceptorCallICFastApi, NULL, NULL, NULL, NULL,
@@ -12280,13 +12280,13 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_TrivialSignature) {
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   CompileRun(
-      "var result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = o.method(41);"
-      "}");
-  CHECK_EQ(42, context->Global()->Get(v8_str("result"))->Int32Value());
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x7d");
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
   CHECK_EQ(100, interceptor_call_count);
 }
 
@@ -12298,10 +12298,10 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_SimpleSignature) {
   v8::Handle<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(isolate);
   v8::Handle<v8::FunctionTemplate> method_templ = v8::FunctionTemplate::New(
-      isolate, FastApiCallback_SimpleSignature, v8_str("method_data"),
+      isolate, FastApiCallback_SimpleSignature, v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
       v8::Signature::New(isolate, fun_templ));
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   fun_templ->SetHiddenPrototype(true);
   v8::Handle<v8::ObjectTemplate> templ = fun_templ->InstanceTemplate();
   templ->SetNamedPropertyHandler(
@@ -12310,16 +12310,16 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_SimpleSignature) {
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   CompileRun(
-      "o.foo = 17;"
-      "var receiver = {};"
-      "receiver.__proto__ = o;"
-      "var result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = receiver.method(41);"
-      "}");
-  CHECK_EQ(42, context->Global()->Get(v8_str("result"))->Int32Value());
+      "\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x31\x37\x3b"
+      "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x7d");
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
   CHECK_EQ(100, interceptor_call_count);
 }
 
@@ -12331,10 +12331,10 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_SimpleSignature_Miss1) {
   v8::Handle<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(isolate);
   v8::Handle<v8::FunctionTemplate> method_templ = v8::FunctionTemplate::New(
-      isolate, FastApiCallback_SimpleSignature, v8_str("method_data"),
+      isolate, FastApiCallback_SimpleSignature, v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
       v8::Signature::New(isolate, fun_templ));
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   fun_templ->SetHiddenPrototype(true);
   v8::Handle<v8::ObjectTemplate> templ = fun_templ->InstanceTemplate();
   templ->SetNamedPropertyHandler(
@@ -12343,22 +12343,22 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_SimpleSignature_Miss1) {
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   CompileRun(
-      "o.foo = 17;"
-      "var receiver = {};"
-      "receiver.__proto__ = o;"
-      "var result = 0;"
-      "var saved_result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = receiver.method(41);"
-      "  if (i == 50) {"
-      "    saved_result = result;"
-      "    receiver = {method: function(x) { return x - 1 }};"
-      "  }"
-      "}");
-  CHECK_EQ(40, context->Global()->Get(v8_str("result"))->Int32Value());
-  CHECK_EQ(42, context->Global()->Get(v8_str("saved_result"))->Int32Value());
+      "\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x31\x37\x3b"
+      "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x73\x75\x6c\x74\x3b"
+      "\x20\x20\x20\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x6d\x65\x74\x68\x6f\x64\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x20\x7d\x7d\x3b"
+      "\x20\x20\x7d"
+      "\x7d");
+  CHECK_EQ(40, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74"))->Int32Value());
   CHECK_GE(interceptor_call_count, 50);
 }
 
@@ -12370,10 +12370,10 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_SimpleSignature_Miss2) {
   v8::Handle<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(isolate);
   v8::Handle<v8::FunctionTemplate> method_templ = v8::FunctionTemplate::New(
-      isolate, FastApiCallback_SimpleSignature, v8_str("method_data"),
+      isolate, FastApiCallback_SimpleSignature, v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
       v8::Signature::New(isolate, fun_templ));
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   fun_templ->SetHiddenPrototype(true);
   v8::Handle<v8::ObjectTemplate> templ = fun_templ->InstanceTemplate();
   templ->SetNamedPropertyHandler(
@@ -12382,22 +12382,22 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_SimpleSignature_Miss2) {
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   CompileRun(
-      "o.foo = 17;"
-      "var receiver = {};"
-      "receiver.__proto__ = o;"
-      "var result = 0;"
-      "var saved_result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = receiver.method(41);"
-      "  if (i == 50) {"
-      "    saved_result = result;"
-      "    o.method = function(x) { return x - 1 };"
-      "  }"
-      "}");
-  CHECK_EQ(40, context->Global()->Get(v8_str("result"))->Int32Value());
-  CHECK_EQ(42, context->Global()->Get(v8_str("saved_result"))->Int32Value());
+      "\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x31\x37\x3b"
+      "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x73\x75\x6c\x74\x3b"
+      "\x20\x20\x20\x20\x6f\x2e\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x20\x7d\x3b"
+      "\x20\x20\x7d"
+      "\x7d");
+  CHECK_EQ(40, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74"))->Int32Value());
   CHECK_GE(interceptor_call_count, 50);
 }
 
@@ -12409,10 +12409,10 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_SimpleSignature_Miss3) {
   v8::Handle<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(isolate);
   v8::Handle<v8::FunctionTemplate> method_templ = v8::FunctionTemplate::New(
-      isolate, FastApiCallback_SimpleSignature, v8_str("method_data"),
+      isolate, FastApiCallback_SimpleSignature, v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
       v8::Signature::New(isolate, fun_templ));
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   fun_templ->SetHiddenPrototype(true);
   v8::Handle<v8::ObjectTemplate> templ = fun_templ->InstanceTemplate();
   templ->SetNamedPropertyHandler(
@@ -12421,26 +12421,26 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_SimpleSignature_Miss3) {
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   v8::TryCatch try_catch;
   CompileRun(
-      "o.foo = 17;"
-      "var receiver = {};"
-      "receiver.__proto__ = o;"
-      "var result = 0;"
-      "var saved_result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = receiver.method(41);"
-      "  if (i == 50) {"
-      "    saved_result = result;"
-      "    receiver = 333;"
-      "  }"
-      "}");
+      "\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x31\x37\x3b"
+      "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x73\x75\x6c\x74\x3b"
+      "\x20\x20\x20\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x33\x33\x33\x3b"
+      "\x20\x20\x7d"
+      "\x7d");
   CHECK(try_catch.HasCaught());
   // TODO(verwaest): Adjust message.
-  CHECK_EQ(v8_str("TypeError: undefined is not a function"),
+  CHECK_EQ(v8_str("\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x20\x69\x73\x20\x6e\x6f\x74\x20\x61\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e"),
            try_catch.Exception()->ToString());
-  CHECK_EQ(42, context->Global()->Get(v8_str("saved_result"))->Int32Value());
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74"))->Int32Value());
   CHECK_GE(interceptor_call_count, 50);
 }
 
@@ -12452,10 +12452,10 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_SimpleSignature_TypeError) {
   v8::Handle<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(isolate);
   v8::Handle<v8::FunctionTemplate> method_templ = v8::FunctionTemplate::New(
-      isolate, FastApiCallback_SimpleSignature, v8_str("method_data"),
+      isolate, FastApiCallback_SimpleSignature, v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
       v8::Signature::New(isolate, fun_templ));
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   fun_templ->SetHiddenPrototype(true);
   v8::Handle<v8::ObjectTemplate> templ = fun_templ->InstanceTemplate();
   templ->SetNamedPropertyHandler(
@@ -12464,25 +12464,25 @@ THREADED_PROFILED_TEST(InterceptorCallICFastApi_SimpleSignature_TypeError) {
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   v8::TryCatch try_catch;
   CompileRun(
-      "o.foo = 17;"
-      "var receiver = {};"
-      "receiver.__proto__ = o;"
-      "var result = 0;"
-      "var saved_result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = receiver.method(41);"
-      "  if (i == 50) {"
-      "    saved_result = result;"
-      "    receiver = {method: receiver.method};"
-      "  }"
-      "}");
+      "\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x31\x37\x3b"
+      "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x73\x75\x6c\x74\x3b"
+      "\x20\x20\x20\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x6d\x65\x74\x68\x6f\x64\x3a\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x6d\x65\x74\x68\x6f\x64\x7d\x3b"
+      "\x20\x20\x7d"
+      "\x7d");
   CHECK(try_catch.HasCaught());
-  CHECK_EQ(v8_str("TypeError: Illegal invocation"),
+  CHECK_EQ(v8_str("\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x49\x6c\x6c\x65\x67\x61\x6c\x20\x69\x6e\x76\x6f\x63\x61\x74\x69\x6f\x6e"),
            try_catch.Exception()->ToString());
-  CHECK_EQ(42, context->Global()->Get(v8_str("saved_result"))->Int32Value());
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74"))->Int32Value());
   CHECK_GE(interceptor_call_count, 50);
 }
 
@@ -12495,23 +12495,23 @@ THREADED_PROFILED_TEST(CallICFastApi_TrivialSignature) {
   v8::Handle<v8::FunctionTemplate> method_templ =
       v8::FunctionTemplate::New(isolate,
                                 FastApiCallback_TrivialSignature,
-                                v8_str("method_data"),
+                                v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
                                 v8::Handle<v8::Signature>());
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   v8::Handle<v8::ObjectTemplate> templ(fun_templ->InstanceTemplate());
   USE(templ);
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   CompileRun(
-      "var result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = o.method(41);"
-      "}");
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x7d");
 
-  CHECK_EQ(42, context->Global()->Get(v8_str("result"))->Int32Value());
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12521,27 +12521,27 @@ THREADED_PROFILED_TEST(CallICFastApi_SimpleSignature) {
   v8::Handle<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(isolate);
   v8::Handle<v8::FunctionTemplate> method_templ = v8::FunctionTemplate::New(
-      isolate, FastApiCallback_SimpleSignature, v8_str("method_data"),
+      isolate, FastApiCallback_SimpleSignature, v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
       v8::Signature::New(isolate, fun_templ));
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   fun_templ->SetHiddenPrototype(true);
   v8::Handle<v8::ObjectTemplate> templ(fun_templ->InstanceTemplate());
   CHECK(!templ.IsEmpty());
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   CompileRun(
-      "o.foo = 17;"
-      "var receiver = {};"
-      "receiver.__proto__ = o;"
-      "var result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = receiver.method(41);"
-      "}");
+      "\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x31\x37\x3b"
+      "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x7d");
 
-  CHECK_EQ(42, context->Global()->Get(v8_str("result"))->Int32Value());
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12551,32 +12551,32 @@ THREADED_PROFILED_TEST(CallICFastApi_SimpleSignature_Miss1) {
   v8::Handle<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(isolate);
   v8::Handle<v8::FunctionTemplate> method_templ = v8::FunctionTemplate::New(
-      isolate, FastApiCallback_SimpleSignature, v8_str("method_data"),
+      isolate, FastApiCallback_SimpleSignature, v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
       v8::Signature::New(isolate, fun_templ));
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   fun_templ->SetHiddenPrototype(true);
   v8::Handle<v8::ObjectTemplate> templ(fun_templ->InstanceTemplate());
   CHECK(!templ.IsEmpty());
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   CompileRun(
-      "o.foo = 17;"
-      "var receiver = {};"
-      "receiver.__proto__ = o;"
-      "var result = 0;"
-      "var saved_result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = receiver.method(41);"
-      "  if (i == 50) {"
-      "    saved_result = result;"
-      "    receiver = {method: function(x) { return x - 1 }};"
-      "  }"
-      "}");
-  CHECK_EQ(40, context->Global()->Get(v8_str("result"))->Int32Value());
-  CHECK_EQ(42, context->Global()->Get(v8_str("saved_result"))->Int32Value());
+      "\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x31\x37\x3b"
+      "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x73\x75\x6c\x74\x3b"
+      "\x20\x20\x20\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x6d\x65\x74\x68\x6f\x64\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x20\x7d\x7d\x3b"
+      "\x20\x20\x7d"
+      "\x7d");
+  CHECK_EQ(40, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12586,36 +12586,36 @@ THREADED_PROFILED_TEST(CallICFastApi_SimpleSignature_Miss2) {
   v8::Handle<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(isolate);
   v8::Handle<v8::FunctionTemplate> method_templ = v8::FunctionTemplate::New(
-      isolate, FastApiCallback_SimpleSignature, v8_str("method_data"),
+      isolate, FastApiCallback_SimpleSignature, v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
       v8::Signature::New(isolate, fun_templ));
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   fun_templ->SetHiddenPrototype(true);
   v8::Handle<v8::ObjectTemplate> templ(fun_templ->InstanceTemplate());
   CHECK(!templ.IsEmpty());
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   v8::TryCatch try_catch;
   CompileRun(
-      "o.foo = 17;"
-      "var receiver = {};"
-      "receiver.__proto__ = o;"
-      "var result = 0;"
-      "var saved_result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = receiver.method(41);"
-      "  if (i == 50) {"
-      "    saved_result = result;"
-      "    receiver = 333;"
-      "  }"
-      "}");
+      "\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x31\x37\x3b"
+      "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x73\x75\x6c\x74\x3b"
+      "\x20\x20\x20\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x33\x33\x33\x3b"
+      "\x20\x20\x7d"
+      "\x7d");
   CHECK(try_catch.HasCaught());
   // TODO(verwaest): Adjust message.
-  CHECK_EQ(v8_str("TypeError: undefined is not a function"),
+  CHECK_EQ(v8_str("\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x20\x69\x73\x20\x6e\x6f\x74\x20\x61\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e"),
            try_catch.Exception()->ToString());
-  CHECK_EQ(42, context->Global()->Get(v8_str("saved_result"))->Int32Value());
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12625,35 +12625,35 @@ THREADED_PROFILED_TEST(CallICFastApi_SimpleSignature_TypeError) {
   v8::Handle<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(isolate);
   v8::Handle<v8::FunctionTemplate> method_templ = v8::FunctionTemplate::New(
-      isolate, FastApiCallback_SimpleSignature, v8_str("method_data"),
+      isolate, FastApiCallback_SimpleSignature, v8_str("\x6d\x65\x74\x68\x6f\x64\x5f\x64\x61\x74\x61"),
       v8::Signature::New(isolate, fun_templ));
   v8::Handle<v8::ObjectTemplate> proto_templ = fun_templ->PrototypeTemplate();
-  proto_templ->Set(v8_str("method"), method_templ);
+  proto_templ->Set(v8_str("\x6d\x65\x74\x68\x6f\x64"), method_templ);
   fun_templ->SetHiddenPrototype(true);
   v8::Handle<v8::ObjectTemplate> templ(fun_templ->InstanceTemplate());
   CHECK(!templ.IsEmpty());
   LocalContext context;
   v8::Handle<v8::Function> fun = fun_templ->GetFunction();
   GenerateSomeGarbage();
-  context->Global()->Set(v8_str("o"), fun->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), fun->NewInstance());
   v8::TryCatch try_catch;
   CompileRun(
-      "o.foo = 17;"
-      "var receiver = {};"
-      "receiver.__proto__ = o;"
-      "var result = 0;"
-      "var saved_result = 0;"
-      "for (var i = 0; i < 100; i++) {"
-      "  result = receiver.method(41);"
-      "  if (i == 50) {"
-      "    saved_result = result;"
-      "    receiver = Object.create(receiver);"
-      "  }"
-      "}");
+      "\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x31\x37\x3b"
+      "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x63\x65\x69\x76\x65\x72\x2e\x6d\x65\x74\x68\x6f\x64\x28\x34\x31\x29\x3b"
+      "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x73\x75\x6c\x74\x3b"
+      "\x20\x20\x20\x20\x72\x65\x63\x65\x69\x76\x65\x72\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x63\x72\x65\x61\x74\x65\x28\x72\x65\x63\x65\x69\x76\x65\x72\x29\x3b"
+      "\x20\x20\x7d"
+      "\x7d");
   CHECK(try_catch.HasCaught());
-  CHECK_EQ(v8_str("TypeError: Illegal invocation"),
+  CHECK_EQ(v8_str("\x54\x79\x70\x65\x45\x72\x72\x6f\x72\x3a\x20\x49\x6c\x6c\x65\x67\x61\x6c\x20\x69\x6e\x76\x6f\x63\x61\x74\x69\x6f\x6e"),
            try_catch.Exception()->ToString());
-  CHECK_EQ(42, context->Global()->Get(v8_str("saved_result"))->Int32Value());
+  CHECK_EQ(42, context->Global()->Get(v8_str("\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12663,7 +12663,7 @@ static void InterceptorKeyedCallICGetter(
     Local<String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  if (v8_str("x")->Equals(name)) {
+  if (v8_str("\x78")->Equals(name)) {
     info.GetReturnValue().Set(keyed_call_ic_function);
   }
 }
@@ -12677,19 +12677,19 @@ THREADED_TEST(InterceptorKeyedCallICKeyChange1) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(NoBlockGetterX);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   CompileRun(
-    "proto = new Object();"
-    "proto.y = function(x) { return x + 1; };"
-    "proto.z = function(x) { return x - 1; };"
-    "o.__proto__ = proto;"
-    "var result = 0;"
-    "var method = 'y';"
-    "for (var i = 0; i < 10; i++) {"
-    "  if (i == 5) { method = 'z'; };"
-    "  result += o[method](41);"
-    "}");
-  CHECK_EQ(42*5 + 40*5, context->Global()->Get(v8_str("result"))->Int32Value());
+    "\x70\x72\x6f\x74\x6f\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x70\x72\x6f\x74\x6f\x2e\x79\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x70\x72\x6f\x74\x6f\x2e\x7a\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x76\x61\x72\x20\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x27\x79\x27\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x7b\x20\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x27\x7a\x27\x3b\x20\x7d\x3b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x5b\x6d\x65\x74\x68\x6f\x64\x5d\x28\x34\x31\x29\x3b"
+    "\x7d");
+  CHECK_EQ(42*5 + 40*5, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12702,23 +12702,23 @@ THREADED_TEST(InterceptorKeyedCallICKeyChange2) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorKeyedCallICGetter);
   LocalContext context;
-  context->Global()->Set(v8_str("proto1"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x70\x72\x6f\x74\x6f\x31"), templ->NewInstance());
   keyed_call_ic_function =
-      v8_compile("function f(x) { return x - 1; }; f")->Run();
+      v8_compile("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b\x20\x66")->Run();
   CompileRun(
-    "o = new Object();"
-    "proto2 = new Object();"
-    "o.y = function(x) { return x + 1; };"
-    "proto2.y = function(x) { return x + 2; };"
-    "o.__proto__ = proto1;"
-    "proto1.__proto__ = proto2;"
-    "var result = 0;"
-    "var method = 'x';"
-    "for (var i = 0; i < 10; i++) {"
-    "  if (i == 5) { method = 'y'; };"
-    "  result += o[method](41);"
-    "}");
-  CHECK_EQ(42*5 + 40*5, context->Global()->Get(v8_str("result"))->Int32Value());
+    "\x6f\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x70\x72\x6f\x74\x6f\x32\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x6f\x2e\x79\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x70\x72\x6f\x74\x6f\x32\x2e\x79\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x32\x3b\x20\x7d\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x31\x3b"
+    "\x70\x72\x6f\x74\x6f\x31\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x32\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x76\x61\x72\x20\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x27\x78\x27\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x7b\x20\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x27\x79\x27\x3b\x20\x7d\x3b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x5b\x6d\x65\x74\x68\x6f\x64\x5d\x28\x34\x31\x29\x3b"
+    "\x7d");
+  CHECK_EQ(42*5 + 40*5, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12730,22 +12730,22 @@ THREADED_TEST(InterceptorKeyedCallICKeyChangeOnGlobal) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(NoBlockGetterX);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ->NewInstance());
   CompileRun(
-    "function inc(x) { return x + 1; };"
-    "inc(1);"
-    "function dec(x) { return x - 1; };"
-    "dec(1);"
-    "o.__proto__ = this;"
-    "this.__proto__.x = inc;"
-    "this.__proto__.y = dec;"
-    "var result = 0;"
-    "var method = 'x';"
-    "for (var i = 0; i < 10; i++) {"
-    "  if (i == 5) { method = 'y'; };"
-    "  result += o[method](41);"
-    "}");
-  CHECK_EQ(42*5 + 40*5, context->Global()->Get(v8_str("result"))->Int32Value());
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x63\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x69\x6e\x63\x28\x31\x29\x3b"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x64\x65\x63\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b"
+    "\x64\x65\x63\x28\x31\x29\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x74\x68\x69\x73\x3b"
+    "\x74\x68\x69\x73\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x2e\x78\x20\x3d\x20\x69\x6e\x63\x3b"
+    "\x74\x68\x69\x73\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x2e\x79\x20\x3d\x20\x64\x65\x63\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x76\x61\x72\x20\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x27\x78\x27\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x7b\x20\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x27\x79\x27\x3b\x20\x7d\x3b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x5b\x6d\x65\x74\x68\x6f\x64\x5d\x28\x34\x31\x29\x3b"
+    "\x7d");
+  CHECK_EQ(42*5 + 40*5, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12756,22 +12756,22 @@ THREADED_TEST(InterceptorKeyedCallICFromGlobal) {
   v8::Handle<v8::ObjectTemplate> templ_o = ObjectTemplate::New(isolate);
   templ_o->SetNamedPropertyHandler(NoBlockGetterX);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ_o->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ_o->NewInstance());
 
   CompileRun(
-    "function len(x) { return x.length; };"
-    "o.__proto__ = this;"
-    "var m = 'parseFloat';"
-    "var result = 0;"
-    "for (var i = 0; i < 10; i++) {"
-    "  if (i == 5) {"
-    "    m = 'len';"
-    "    saved_result = result;"
-    "  };"
-    "  result = o[m]('239');"
-    "}");
-  CHECK_EQ(3, context->Global()->Get(v8_str("result"))->Int32Value());
-  CHECK_EQ(239, context->Global()->Get(v8_str("saved_result"))->Int32Value());
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x65\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x2e\x6c\x65\x6e\x67\x74\x68\x3b\x20\x7d\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x74\x68\x69\x73\x3b"
+    "\x76\x61\x72\x20\x6d\x20\x3d\x20\x27\x70\x61\x72\x73\x65\x46\x6c\x6f\x61\x74\x27\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x7b"
+    "\x20\x20\x20\x20\x6d\x20\x3d\x20\x27\x6c\x65\x6e\x27\x3b"
+    "\x20\x20\x20\x20\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x72\x65\x73\x75\x6c\x74\x3b"
+    "\x20\x20\x7d\x3b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x5b\x6d\x5d\x28\x27\x32\x33\x39\x27\x29\x3b"
+    "\x7d");
+  CHECK_EQ(3, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
+  CHECK_EQ(239, context->Global()->Get(v8_str("\x73\x61\x76\x65\x64\x5f\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12782,19 +12782,19 @@ THREADED_TEST(InterceptorKeyedCallICMapChangeBefore) {
   v8::Handle<v8::ObjectTemplate> templ_o = ObjectTemplate::New(isolate);
   templ_o->SetNamedPropertyHandler(NoBlockGetterX);
   LocalContext context;
-  context->Global()->Set(v8_str("proto"), templ_o->NewInstance());
+  context->Global()->Set(v8_str("\x70\x72\x6f\x74\x6f"), templ_o->NewInstance());
 
   CompileRun(
-    "var o = new Object();"
-    "o.__proto__ = proto;"
-    "o.method = function(x) { return x + 1; };"
-    "var m = 'method';"
-    "var result = 0;"
-    "for (var i = 0; i < 10; i++) {"
-    "  if (i == 5) { o.method = function(x) { return x - 1; }; };"
-    "  result += o[m](41);"
-    "}");
-  CHECK_EQ(42*5 + 40*5, context->Global()->Get(v8_str("result"))->Int32Value());
+    "\x76\x61\x72\x20\x6f\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x3b"
+    "\x6f\x2e\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x6d\x20\x3d\x20\x27\x6d\x65\x74\x68\x6f\x64\x27\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x7b\x20\x6f\x2e\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b\x20\x7d\x3b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x5b\x6d\x5d\x28\x34\x31\x29\x3b"
+    "\x7d");
+  CHECK_EQ(42*5 + 40*5, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12805,19 +12805,19 @@ THREADED_TEST(InterceptorKeyedCallICMapChangeAfter) {
   v8::Handle<v8::ObjectTemplate> templ_o = ObjectTemplate::New(isolate);
   templ_o->SetNamedPropertyHandler(NoBlockGetterX);
   LocalContext context;
-  context->Global()->Set(v8_str("o"), templ_o->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), templ_o->NewInstance());
 
   CompileRun(
-    "var proto = new Object();"
-    "o.__proto__ = proto;"
-    "proto.method = function(x) { return x + 1; };"
-    "var m = 'method';"
-    "var result = 0;"
-    "for (var i = 0; i < 10; i++) {"
-    "  if (i == 5) { proto.method = function(x) { return x - 1; }; };"
-    "  result += o[m](41);"
-    "}");
-  CHECK_EQ(42*5 + 40*5, context->Global()->Get(v8_str("result"))->Int32Value());
+    "\x76\x61\x72\x20\x70\x72\x6f\x74\x6f\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+    "\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x3b"
+    "\x70\x72\x6f\x74\x6f\x2e\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x6d\x20\x3d\x20\x27\x6d\x65\x74\x68\x6f\x64\x27\x3b"
+    "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x30\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x35\x29\x20\x7b\x20\x70\x72\x6f\x74\x6f\x2e\x6d\x65\x74\x68\x6f\x64\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\x3b\x20\x7d\x3b"
+    "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x2b\x3d\x20\x6f\x5b\x6d\x5d\x28\x34\x31\x29\x3b"
+    "\x7d");
+  CHECK_EQ(42*5 + 40*5, context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
 }
 
 
@@ -12827,7 +12827,7 @@ static void InterceptorICRefErrorGetter(
     Local<String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  if (v8_str("x")->Equals(name) && interceptor_call_count++ < 20) {
+  if (v8_str("\x78")->Equals(name) && interceptor_call_count++ < 20) {
     info.GetReturnValue().Set(call_ic_function2);
   }
 }
@@ -12842,25 +12842,25 @@ THREADED_TEST(InterceptorICReferenceErrors) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorICRefErrorGetter);
   LocalContext context(0, templ, v8::Handle<Value>());
-  call_ic_function2 = v8_compile("function h(x) { return x; }; h")->Run();
+  call_ic_function2 = v8_compile("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d\x3b\x20\x68")->Run();
   v8::Handle<Value> value = CompileRun(
-    "function f() {"
-    "  for (var i = 0; i < 1000; i++) {"
-    "    try { x; } catch(e) { return true; }"
-    "  }"
-    "  return false;"
-    "};"
-    "f();");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x20\x20\x74\x72\x79\x20\x7b\x20\x78\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x72\x75\x65\x3b\x20\x7d"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x61\x6c\x73\x65\x3b"
+    "\x7d\x3b"
+    "\x66\x28\x29\x3b");
   CHECK_EQ(true, value->BooleanValue());
   interceptor_call_count = 0;
   value = CompileRun(
-    "function g() {"
-    "  for (var i = 0; i < 1000; i++) {"
-    "    try { x(42); } catch(e) { return true; }"
-    "  }"
-    "  return false;"
-    "};"
-    "g();");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x20\x20\x74\x72\x79\x20\x7b\x20\x78\x28\x34\x32\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x72\x75\x65\x3b\x20\x7d"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x61\x6c\x73\x65\x3b"
+    "\x7d\x3b"
+    "\x67\x28\x29\x3b");
   CHECK_EQ(true, value->BooleanValue());
 }
 
@@ -12871,7 +12871,7 @@ static void InterceptorICExceptionGetter(
     Local<String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
   ApiTestFuzzer::Fuzz();
-  if (v8_str("x")->Equals(name) && ++interceptor_ic_exception_get_count < 20) {
+  if (v8_str("\x78")->Equals(name) && ++interceptor_ic_exception_get_count < 20) {
     info.GetReturnValue().Set(call_ic_function3);
   }
   if (interceptor_ic_exception_get_count == 20) {
@@ -12890,25 +12890,25 @@ THREADED_TEST(InterceptorICGetterExceptions) {
   v8::Handle<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetNamedPropertyHandler(InterceptorICExceptionGetter);
   LocalContext context(0, templ, v8::Handle<Value>());
-  call_ic_function3 = v8_compile("function h(x) { return x; }; h")->Run();
+  call_ic_function3 = v8_compile("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d\x3b\x20\x68")->Run();
   v8::Handle<Value> value = CompileRun(
-    "function f() {"
-    "  for (var i = 0; i < 100; i++) {"
-    "    try { x; } catch(e) { return true; }"
-    "  }"
-    "  return false;"
-    "};"
-    "f();");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x20\x20\x74\x72\x79\x20\x7b\x20\x78\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x72\x75\x65\x3b\x20\x7d"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x61\x6c\x73\x65\x3b"
+    "\x7d\x3b"
+    "\x66\x28\x29\x3b");
   CHECK_EQ(true, value->BooleanValue());
   interceptor_ic_exception_get_count = 0;
   value = CompileRun(
-    "function f() {"
-    "  for (var i = 0; i < 100; i++) {"
-    "    try { x(42); } catch(e) { return true; }"
-    "  }"
-    "  return false;"
-    "};"
-    "f();");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x20\x20\x74\x72\x79\x20\x7b\x20\x78\x28\x34\x32\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x72\x75\x65\x3b\x20\x7d"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x61\x6c\x73\x65\x3b"
+    "\x7d\x3b"
+    "\x66\x28\x29\x3b");
   CHECK_EQ(true, value->BooleanValue());
 }
 
@@ -12936,13 +12936,13 @@ THREADED_TEST(InterceptorICSetterExceptions) {
   templ->SetNamedPropertyHandler(0, InterceptorICExceptionSetter);
   LocalContext context(0, templ, v8::Handle<Value>());
   v8::Handle<Value> value = CompileRun(
-    "function f() {"
-    "  for (var i = 0; i < 100; i++) {"
-    "    try { x = 42; } catch(e) { return true; }"
-    "  }"
-    "  return false;"
-    "};"
-    "f();");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x20\x20\x74\x72\x79\x20\x7b\x20\x78\x20\x3d\x20\x34\x32\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x72\x75\x65\x3b\x20\x7d"
+    "\x20\x20\x7d"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x61\x6c\x73\x65\x3b"
+    "\x7d\x3b"
+    "\x66\x28\x29\x3b");
   CHECK_EQ(true, value->BooleanValue());
 }
 
@@ -12955,10 +12955,10 @@ THREADED_TEST(NullNamedInterceptor) {
   templ->SetNamedPropertyHandler(
       static_cast<v8::NamedPropertyGetterCallback>(0));
   LocalContext context;
-  templ->Set(CcTest::isolate(), "x", v8_num(42));
+  templ->Set(CcTest::isolate(), "\x78", v8_num(42));
   v8::Handle<v8::Object> obj = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), obj);
-  v8::Handle<Value> value = CompileRun("obj.x");
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
+  v8::Handle<Value> value = CompileRun("\x6f\x62\x6a\x2e\x78");
   CHECK(value->IsInt32());
   CHECK_EQ(42, value->Int32Value());
 }
@@ -12972,10 +12972,10 @@ THREADED_TEST(NullIndexedInterceptor) {
   templ->SetIndexedPropertyHandler(
       static_cast<v8::IndexedPropertyGetterCallback>(0));
   LocalContext context;
-  templ->Set(CcTest::isolate(), "42", v8_num(42));
+  templ->Set(CcTest::isolate(), "\x34\x32", v8_num(42));
   v8::Handle<v8::Object> obj = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), obj);
-  v8::Handle<Value> value = CompileRun("obj[42]");
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
+  v8::Handle<Value> value = CompileRun("\x6f\x62\x6a\x5b\x34\x32\x5d");
   CHECK(value->IsInt32());
   CHECK_EQ(42, value->Int32Value());
 }
@@ -12987,10 +12987,10 @@ THREADED_TEST(NamedPropertyHandlerGetterAttributes) {
   v8::Handle<v8::FunctionTemplate> templ = v8::FunctionTemplate::New(isolate);
   templ->InstanceTemplate()->SetNamedPropertyHandler(InterceptorLoadXICGetter);
   LocalContext env;
-  env->Global()->Set(v8_str("obj"),
+  env->Global()->Set(v8_str("\x6f\x62\x6a"),
                      templ->GetFunction()->NewInstance());
-  ExpectTrue("obj.x === 42");
-  ExpectTrue("!obj.propertyIsEnumerable('x')");
+  ExpectTrue("\x6f\x62\x6a\x2e\x78\x20\x3d\x3d\x3d\x20\x34\x32");
+  ExpectTrue("\x21\x6f\x62\x6a\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x49\x73\x45\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x28\x27\x78\x27\x29");
 }
 
 
@@ -13008,7 +13008,7 @@ THREADED_TEST(VariousGetPropertiesAndThrowingCallbacks) {
 
   Local<FunctionTemplate> templ = FunctionTemplate::New(context->GetIsolate());
   Local<ObjectTemplate> instance_templ = templ->InstanceTemplate();
-  instance_templ->SetAccessor(v8_str("f"), ThrowingGetter);
+  instance_templ->SetAccessor(v8_str("\x66"), ThrowingGetter);
 
   Local<Object> instance = templ->GetFunction()->NewInstance();
 
@@ -13016,39 +13016,39 @@ THREADED_TEST(VariousGetPropertiesAndThrowingCallbacks) {
   another->SetPrototype(instance);
 
   Local<Object> with_js_getter = CompileRun(
-      "o = {};\n"
-      "o.__defineGetter__('f', function() { throw undefined; });\n"
-      "o\n").As<Object>();
+      "\x6f\x20\x3d\x20\x7b\x7d\x3b\xa"
+      "\x6f\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x66\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3b\x20\x7d\x29\x3b\xa"
+      "\x6f\xa").As<Object>();
   CHECK(!with_js_getter.IsEmpty());
 
   TryCatch try_catch;
 
-  Local<Value> result = instance->GetRealNamedProperty(v8_str("f"));
+  Local<Value> result = instance->GetRealNamedProperty(v8_str("\x66"));
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
   CHECK(result.IsEmpty());
 
-  result = another->GetRealNamedProperty(v8_str("f"));
+  result = another->GetRealNamedProperty(v8_str("\x66"));
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
   CHECK(result.IsEmpty());
 
-  result = another->GetRealNamedPropertyInPrototypeChain(v8_str("f"));
+  result = another->GetRealNamedPropertyInPrototypeChain(v8_str("\x66"));
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
   CHECK(result.IsEmpty());
 
-  result = another->Get(v8_str("f"));
+  result = another->Get(v8_str("\x66"));
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
   CHECK(result.IsEmpty());
 
-  result = with_js_getter->GetRealNamedProperty(v8_str("f"));
+  result = with_js_getter->GetRealNamedProperty(v8_str("\x66"));
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
   CHECK(result.IsEmpty());
 
-  result = with_js_getter->Get(v8_str("f"));
+  result = with_js_getter->Get(v8_str("\x66"));
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
   CHECK(result.IsEmpty());
@@ -13061,7 +13061,7 @@ static void ThrowingCallbackWithTryCatch(
   // Verboseness is important: it triggers message delivery which can call into
   // external code.
   try_catch.SetVerbose(true);
-  CompileRun("throw 'from JS';");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x27\x66\x72\x6f\x6d\x20\x4a\x53\x27\x3b");
   CHECK(try_catch.HasCaught());
   CHECK(!CcTest::i_isolate()->has_pending_exception());
   CHECK(!CcTest::i_isolate()->has_scheduled_exception());
@@ -13077,12 +13077,12 @@ static void WithTryCatch(Handle<Message> message, Handle<Value> data) {
 
 
 static void ThrowFromJS(Handle<Message> message, Handle<Value> data) {
-  if (--call_depth) CompileRun("throw 'ThrowInJS';");
+  if (--call_depth) CompileRun("\x74\x68\x72\x6f\x77\x20\x27\x54\x68\x72\x6f\x77\x49\x6e\x4a\x53\x27\x3b");
 }
 
 
 static void ThrowViaApi(Handle<Message> message, Handle<Value> data) {
-  if (--call_depth) CcTest::isolate()->ThrowException(v8_str("ThrowViaApi"));
+  if (--call_depth) CcTest::isolate()->ThrowException(v8_str("\x54\x68\x72\x6f\x77\x56\x69\x61\x41\x70\x69"));
 }
 
 
@@ -13102,7 +13102,7 @@ THREADED_TEST(ExceptionsDoNotPropagatePastTryCatch) {
   Local<Function> func =
       FunctionTemplate::New(isolate,
                             ThrowingCallbackWithTryCatch)->GetFunction();
-  context->Global()->Set(v8_str("func"), func);
+  context->Global()->Set(v8_str("\x66\x75\x6e\x63"), func);
 
   MessageCallback callbacks[] =
       { NULL, WebKitLike, ThrowViaApi, ThrowFromJS, WithTryCatch };
@@ -13115,9 +13115,9 @@ THREADED_TEST(ExceptionsDoNotPropagatePastTryCatch) {
     // throw an exception.
     call_depth = 5;
     ExpectFalse(
-        "var thrown = false;\n"
-        "try { func(); } catch(e) { thrown = true; }\n"
-        "thrown\n");
+        "\x76\x61\x72\x20\x74\x68\x72\x6f\x77\x6e\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b\xa"
+        "\x74\x72\x79\x20\x7b\x20\x66\x75\x6e\x63\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x6e\x20\x3d\x20\x74\x72\x75\x65\x3b\x20\x7d\xa"
+        "\x74\x68\x72\x6f\x77\x6e\xa");
     if (callback != NULL) {
       V8::RemoveMessageListeners(callback);
     }
@@ -13148,7 +13148,7 @@ THREADED_TEST(Overriding) {
   Local<v8::FunctionTemplate> parent_templ = v8::FunctionTemplate::New(isolate);
   Local<ObjectTemplate> parent_instance_templ =
       parent_templ->InstanceTemplate();
-  parent_instance_templ->SetAccessor(v8_str("f"), ParentGetter);
+  parent_instance_templ->SetAccessor(v8_str("\x66"), ParentGetter);
 
   // Template that inherits from the parent template.
   Local<v8::FunctionTemplate> child_templ = v8::FunctionTemplate::New(isolate);
@@ -13157,21 +13157,21 @@ THREADED_TEST(Overriding) {
   child_templ->Inherit(parent_templ);
   // Override 'f'.  The child version of 'f' should get called for child
   // instances.
-  child_instance_templ->SetAccessor(v8_str("f"), ChildGetter);
+  child_instance_templ->SetAccessor(v8_str("\x66"), ChildGetter);
   // Add 'g' twice.  The 'g' added last should get called for instances.
-  child_instance_templ->SetAccessor(v8_str("g"), ParentGetter);
-  child_instance_templ->SetAccessor(v8_str("g"), ChildGetter);
+  child_instance_templ->SetAccessor(v8_str("\x67"), ParentGetter);
+  child_instance_templ->SetAccessor(v8_str("\x67"), ChildGetter);
 
   // Add 'h' as an accessor to the proto template with ReadOnly attributes
   // so 'h' can be shadowed on the instance object.
   Local<ObjectTemplate> child_proto_templ = child_templ->PrototypeTemplate();
-  child_proto_templ->SetAccessor(v8_str("h"), ParentGetter, 0,
+  child_proto_templ->SetAccessor(v8_str("\x68"), ParentGetter, 0,
       v8::Handle<Value>(), v8::DEFAULT, v8::ReadOnly);
 
   // Add 'i' as an accessor to the instance template with ReadOnly attributes
   // but the attribute does not have effect because it is duplicated with
   // NULL setter.
-  child_instance_templ->SetAccessor(v8_str("i"), ChildGetter, 0,
+  child_instance_templ->SetAccessor(v8_str("\x69"), ChildGetter, 0,
       v8::Handle<Value>(), v8::DEFAULT, v8::ReadOnly);
 
 
@@ -13180,19 +13180,19 @@ THREADED_TEST(Overriding) {
   Local<v8::Object> instance = child_templ->GetFunction()->NewInstance();
 
   // Check that the child function overrides the parent one.
-  context->Global()->Set(v8_str("o"), instance);
-  Local<Value> value = v8_compile("o.f")->Run();
+  context->Global()->Set(v8_str("\x6f"), instance);
+  Local<Value> value = v8_compile("\x6f\x2e\x66")->Run();
   // Check that the 'g' that was added last is hit.
   CHECK_EQ(42, value->Int32Value());
-  value = v8_compile("o.g")->Run();
+  value = v8_compile("\x6f\x2e\x67")->Run();
   CHECK_EQ(42, value->Int32Value());
 
   // Check that 'h' cannot be shadowed.
-  value = v8_compile("o.h = 3; o.h")->Run();
+  value = v8_compile("\x6f\x2e\x68\x20\x3d\x20\x33\x3b\x20\x6f\x2e\x68")->Run();
   CHECK_EQ(1, value->Int32Value());
 
   // Check that 'i' cannot be shadowed or changed.
-  value = v8_compile("o.i = 3; o.i")->Run();
+  value = v8_compile("\x6f\x2e\x69\x20\x3d\x20\x33\x3b\x20\x6f\x2e\x69")->Run();
   CHECK_EQ(42, value->Int32Value());
 }
 
@@ -13214,10 +13214,10 @@ THREADED_TEST(IsConstructCall) {
 
   LocalContext context;
 
-  context->Global()->Set(v8_str("f"), templ->GetFunction());
-  Local<Value> value = v8_compile("f()")->Run();
+  context->Global()->Set(v8_str("\x66"), templ->GetFunction());
+  Local<Value> value = v8_compile("\x66\x28\x29")->Run();
   CHECK(!value->BooleanValue());
-  value = v8_compile("new f()")->Run();
+  value = v8_compile("\x6e\x65\x77\x20\x66\x28\x29")->Run();
   CHECK(value->BooleanValue());
 }
 
@@ -13226,16 +13226,16 @@ THREADED_TEST(ObjectProtoToString) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<v8::FunctionTemplate> templ = v8::FunctionTemplate::New(isolate);
-  templ->SetClassName(v8_str("MyClass"));
+  templ->SetClassName(v8_str("\x4d\x79\x43\x6c\x61\x73\x73"));
 
   LocalContext context;
 
-  Local<String> customized_tostring = v8_str("customized toString");
+  Local<String> customized_tostring = v8_str("\x63\x75\x73\x74\x6f\x6d\x69\x7a\x65\x64\x20\x74\x6f\x53\x74\x72\x69\x6e\x67");
 
   // Replace Object.prototype.toString
-  v8_compile("Object.prototype.toString = function() {"
-                  "  return 'customized toString';"
-                  "}")->Run();
+  v8_compile("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+                  "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x63\x75\x73\x74\x6f\x6d\x69\x7a\x65\x64\x20\x74\x6f\x53\x74\x72\x69\x6e\x67\x27\x3b"
+                  "\x7d")->Run();
 
   // Normal ToString call should call replaced Object.prototype.toString
   Local<v8::Object> instance = templ->GetFunction()->NewInstance();
@@ -13244,41 +13244,41 @@ THREADED_TEST(ObjectProtoToString) {
 
   // ObjectProtoToString should not call replace toString function.
   value = instance->ObjectProtoToString();
-  CHECK(value->IsString() && value->Equals(v8_str("[object MyClass]")));
+  CHECK(value->IsString() && value->Equals(v8_str("\x5b\x6f\x62\x6a\x65\x63\x74\x20\x4d\x79\x43\x6c\x61\x73\x73\x5d")));
 
   // Check global
   value = context->Global()->ObjectProtoToString();
-  CHECK(value->IsString() && value->Equals(v8_str("[object global]")));
+  CHECK(value->IsString() && value->Equals(v8_str("\x5b\x6f\x62\x6a\x65\x63\x74\x20\x67\x6c\x6f\x62\x61\x6c\x5d")));
 
   // Check ordinary object
-  Local<Value> object = v8_compile("new Object()")->Run();
+  Local<Value> object = v8_compile("\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29")->Run();
   value = object.As<v8::Object>()->ObjectProtoToString();
-  CHECK(value->IsString() && value->Equals(v8_str("[object Object]")));
+  CHECK(value->IsString() && value->Equals(v8_str("\x5b\x6f\x62\x6a\x65\x63\x74\x20\x4f\x62\x6a\x65\x63\x74\x5d")));
 }
 
 
 THREADED_TEST(ObjectGetConstructorName) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
-  v8_compile("function Parent() {};"
-             "function Child() {};"
-             "Child.prototype = new Parent();"
-             "var outer = { inner: function() { } };"
-             "var p = new Parent();"
-             "var c = new Child();"
-             "var x = new outer.inner();")->Run();
+  v8_compile("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x50\x61\x72\x65\x6e\x74\x28\x29\x20\x7b\x7d\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x68\x69\x6c\x64\x28\x29\x20\x7b\x7d\x3b"
+             "\x43\x68\x69\x6c\x64\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x6e\x65\x77\x20\x50\x61\x72\x65\x6e\x74\x28\x29\x3b"
+             "\x76\x61\x72\x20\x6f\x75\x74\x65\x72\x20\x3d\x20\x7b\x20\x69\x6e\x6e\x65\x72\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x7d\x20\x7d\x3b"
+             "\x76\x61\x72\x20\x70\x20\x3d\x20\x6e\x65\x77\x20\x50\x61\x72\x65\x6e\x74\x28\x29\x3b"
+             "\x76\x61\x72\x20\x63\x20\x3d\x20\x6e\x65\x77\x20\x43\x68\x69\x6c\x64\x28\x29\x3b"
+             "\x76\x61\x72\x20\x78\x20\x3d\x20\x6e\x65\x77\x20\x6f\x75\x74\x65\x72\x2e\x69\x6e\x6e\x65\x72\x28\x29\x3b")->Run();
 
-  Local<v8::Value> p = context->Global()->Get(v8_str("p"));
+  Local<v8::Value> p = context->Global()->Get(v8_str("\x70"));
   CHECK(p->IsObject() && p->ToObject()->GetConstructorName()->Equals(
-      v8_str("Parent")));
+      v8_str("\x50\x61\x72\x65\x6e\x74")));
 
-  Local<v8::Value> c = context->Global()->Get(v8_str("c"));
+  Local<v8::Value> c = context->Global()->Get(v8_str("\x63"));
   CHECK(c->IsObject() && c->ToObject()->GetConstructorName()->Equals(
-      v8_str("Child")));
+      v8_str("\x43\x68\x69\x6c\x64")));
 
-  Local<v8::Value> x = context->Global()->Get(v8_str("x"));
+  Local<v8::Value> x = context->Global()->Get(v8_str("\x78"));
   CHECK(x->IsObject() && x->ToObject()->GetConstructorName()->Equals(
-      v8_str("outer.inner")));
+      v8_str("\x6f\x75\x74\x65\x72\x2e\x69\x6e\x6e\x65\x72")));
 }
 
 
@@ -13305,11 +13305,11 @@ bool ApiTestFuzzer::NextThread() {
   const char* test_name = RegisterThreadedTest::nth(current_)->name();
   if (test_position == current_) {
     if (kLogThreading)
-      printf("Stay with %s\n", test_name);
+      printf("\x53\x74\x61\x79\x20\x77\x69\x74\x68\x20\x6c\xa2\xa", test_name);
     return false;
   }
   if (kLogThreading) {
-    printf("Switch from %s to %s\n",
+    printf("\x53\x77\x69\x74\x63\x68\x20\x66\x72\x6f\x6d\x20\x6c\xa2\x20\x74\x6f\x20\x6c\xa2\xa",
            test_name,
            RegisterThreadedTest::nth(test_position)->name());
   }
@@ -13437,10 +13437,10 @@ TEST(Threading4) {
 void ApiTestFuzzer::CallTest() {
   v8::Isolate::Scope scope(CcTest::isolate());
   if (kLogThreading)
-    printf("Start test %d\n", test_number_);
+    printf("\x53\x74\x61\x72\x74\x20\x74\x65\x73\x74\x20\x6c\x84\xa", test_number_);
   CallTestNumber(test_number_);
   if (kLogThreading)
-    printf("End test %d\n", test_number_);
+    printf("\x45\x6e\x64\x20\x74\x65\x73\x74\x20\x6c\x84\xa", test_number_);
 }
 
 
@@ -13449,7 +13449,7 @@ static void ThrowInJS(const v8::FunctionCallbackInfo<v8::Value>& args) {
   CHECK(v8::Locker::IsLocked(isolate));
   ApiTestFuzzer::Fuzz();
   v8::Unlocker unlocker(isolate);
-  const char* code = "throw 7;";
+  const char* code = "\x74\x68\x72\x6f\x77\x20\x37\x3b";
   {
     v8::Locker nested_locker(isolate);
     v8::HandleScope scope(isolate);
@@ -13472,13 +13472,13 @@ static void ThrowInJSNoCatch(const v8::FunctionCallbackInfo<v8::Value>& args) {
   CHECK(v8::Locker::IsLocked(CcTest::isolate()));
   ApiTestFuzzer::Fuzz();
   v8::Unlocker unlocker(CcTest::isolate());
-  const char* code = "throw 7;";
+  const char* code = "\x74\x68\x72\x6f\x77\x20\x37\x3b";
   {
     v8::Locker nested_locker(CcTest::isolate());
     v8::HandleScope scope(args.GetIsolate());
     v8::Handle<Value> value = CompileRun(code);
     CHECK(value.IsEmpty());
-    args.GetReturnValue().Set(v8_str("foo"));
+    args.GetReturnValue().Set(v8_str("\x66\x6f\x6f"));
   }
 }
 
@@ -13494,15 +13494,15 @@ TEST(NestedLockers) {
   Local<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(isolate, ThrowInJS);
   Local<Function> fun = fun_templ->GetFunction();
-  env->Global()->Set(v8_str("throw_in_js"), fun);
-  Local<Script> script = v8_compile("(function () {"
-                                    "  try {"
-                                    "    throw_in_js();"
-                                    "    return 42;"
-                                    "  } catch (e) {"
-                                    "    return e * 13;"
-                                    "  }"
-                                    "})();");
+  env->Global()->Set(v8_str("\x74\x68\x72\x6f\x77\x5f\x69\x6e\x5f\x6a\x73"), fun);
+  Local<Script> script = v8_compile("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x29\x20\x7b"
+                                    "\x20\x20\x74\x72\x79\x20\x7b"
+                                    "\x20\x20\x20\x20\x74\x68\x72\x6f\x77\x5f\x69\x6e\x5f\x6a\x73\x28\x29\x3b"
+                                    "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b"
+                                    "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+                                    "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x20\x2a\x20\x31\x33\x3b"
+                                    "\x20\x20\x7d"
+                                    "\x7d\x29\x28\x29\x3b");
   CHECK_EQ(91, script->Run()->Int32Value());
 }
 
@@ -13516,15 +13516,15 @@ TEST(NestedLockersNoTryCatch) {
   Local<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(env->GetIsolate(), ThrowInJSNoCatch);
   Local<Function> fun = fun_templ->GetFunction();
-  env->Global()->Set(v8_str("throw_in_js"), fun);
-  Local<Script> script = v8_compile("(function () {"
-                                    "  try {"
-                                    "    throw_in_js();"
-                                    "    return 42;"
-                                    "  } catch (e) {"
-                                    "    return e * 13;"
-                                    "  }"
-                                    "})();");
+  env->Global()->Set(v8_str("\x74\x68\x72\x6f\x77\x5f\x69\x6e\x5f\x6a\x73"), fun);
+  Local<Script> script = v8_compile("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x29\x20\x7b"
+                                    "\x20\x20\x74\x72\x79\x20\x7b"
+                                    "\x20\x20\x20\x20\x74\x68\x72\x6f\x77\x5f\x69\x6e\x5f\x6a\x73\x28\x29\x3b"
+                                    "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b"
+                                    "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+                                    "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x20\x2a\x20\x31\x33\x3b"
+                                    "\x20\x20\x7d"
+                                    "\x7d\x29\x28\x29\x3b");
   CHECK_EQ(91, script->Run()->Int32Value());
 }
 
@@ -13552,11 +13552,11 @@ THREADED_TEST(LockUnlockLock) {
     Local<v8::FunctionTemplate> fun_templ =
         v8::FunctionTemplate::New(CcTest::isolate(), UnlockForAMoment);
     Local<Function> fun = fun_templ->GetFunction();
-    env->Global()->Set(v8_str("unlock_for_a_moment"), fun);
-    Local<Script> script = v8_compile("(function () {"
-                                      "  unlock_for_a_moment();"
-                                      "  return 42;"
-                                      "})();");
+    env->Global()->Set(v8_str("\x75\x6e\x6c\x6f\x63\x6b\x5f\x66\x6f\x72\x5f\x61\x5f\x6d\x6f\x6d\x65\x6e\x74"), fun);
+    Local<Script> script = v8_compile("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x29\x20\x7b"
+                                      "\x20\x20\x75\x6e\x6c\x6f\x63\x6b\x5f\x66\x6f\x72\x5f\x61\x5f\x6d\x6f\x6d\x65\x6e\x74\x28\x29\x3b"
+                                      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b"
+                                      "\x7d\x29\x28\x29\x3b");
     CHECK_EQ(42, script->Run()->Int32Value());
   }
   {
@@ -13566,11 +13566,11 @@ THREADED_TEST(LockUnlockLock) {
     Local<v8::FunctionTemplate> fun_templ =
         v8::FunctionTemplate::New(CcTest::isolate(), UnlockForAMoment);
     Local<Function> fun = fun_templ->GetFunction();
-    env->Global()->Set(v8_str("unlock_for_a_moment"), fun);
-    Local<Script> script = v8_compile("(function () {"
-                                      "  unlock_for_a_moment();"
-                                      "  return 42;"
-                                      "})();");
+    env->Global()->Set(v8_str("\x75\x6e\x6c\x6f\x63\x6b\x5f\x66\x6f\x72\x5f\x61\x5f\x6d\x6f\x6d\x65\x6e\x74"), fun);
+    Local<Script> script = v8_compile("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x29\x20\x7b"
+                                      "\x20\x20\x75\x6e\x6c\x6f\x63\x6b\x5f\x66\x6f\x72\x5f\x61\x5f\x6d\x6f\x6d\x65\x6e\x74\x28\x29\x3b"
+                                      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b"
+                                      "\x7d\x29\x28\x29\x3b");
     CHECK_EQ(42, script->Run()->Int32Value());
   }
 }
@@ -13616,23 +13616,23 @@ TEST(DontLeakGlobalObjects) {
 
     { v8::HandleScope scope(CcTest::isolate());
       LocalContext context;
-      v8_compile("Date")->Run();
+      v8_compile("\x44\x61\x74\x65")->Run();
     }
     CcTest::isolate()->ContextDisposedNotification();
     CheckSurvivingGlobalObjectsCount(0);
 
     { v8::HandleScope scope(CcTest::isolate());
       LocalContext context;
-      v8_compile("/aaa/")->Run();
+      v8_compile("\x2f\x61\x61\x61\x2f")->Run();
     }
     CcTest::isolate()->ContextDisposedNotification();
     CheckSurvivingGlobalObjectsCount(0);
 
     { v8::HandleScope scope(CcTest::isolate());
-      const char* extension_list[] = { "v8/gc" };
+      const char* extension_list[] = { "\x76\x38\x2f\x67\x63" };
       v8::ExtensionConfiguration extensions(1, extension_list);
       LocalContext context(&extensions);
-      v8_compile("gc();")->Run();
+      v8_compile("\x67\x63\x28\x29\x3b")->Run();
     }
     CcTest::isolate()->ContextDisposedNotification();
     CheckSurvivingGlobalObjectsCount(0);
@@ -13670,7 +13670,7 @@ TEST(CopyablePersistent) {
 
 static void WeakApiCallback(
     const v8::WeakCallbackData<v8::Object, Persistent<v8::Object> >& data) {
-  Local<Value> value = data.GetValue()->Get(v8_str("key"));
+  Local<Value> value = data.GetValue()->Get(v8_str("\x6b\x65\x79"));
   CHECK_EQ(231, static_cast<int32_t>(Local<v8::Integer>::Cast(value)->Value()));
   data.GetParameter()->Reset();
   delete data.GetParameter();
@@ -13686,7 +13686,7 @@ TEST(WeakCallbackApi) {
   {
     v8::HandleScope scope(isolate);
     v8::Local<v8::Object> obj = v8::Object::New(isolate);
-    obj->Set(v8_str("key"), v8::Integer::New(isolate, 231));
+    obj->Set(v8_str("\x6b\x65\x79"), v8::Integer::New(isolate, 231));
     v8::Persistent<v8::Object>* handle =
         new v8::Persistent<v8::Object>(isolate, obj);
     handle->SetWeak<v8::Object, v8::Persistent<v8::Object> >(handle,
@@ -13792,8 +13792,8 @@ THREADED_TEST(CheckForCrossContextObjectLiterals) {
 
   const int nof = 2;
   const char* sources[nof] = {
-    "try { [ 2, 3, 4 ].forEach(5); } catch(e) { e.toString(); }",
-    "Object()"
+    "\x74\x72\x79\x20\x7b\x20\x5b\x20\x32\x2c\x20\x33\x2c\x20\x34\x20\x5d\x2e\x66\x6f\x72\x45\x61\x63\x68\x28\x35\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x3b\x20\x7d",
+    "\x4f\x62\x6a\x65\x63\x74\x28\x29"
   };
 
   for (int i = 0; i < nof; i++) {
@@ -14072,36 +14072,36 @@ void SetFunctionEntryHookTest::RunLoopInNewEnv(v8::Isolate* isolate) {
   env->Enter();
 
   Local<ObjectTemplate> t = ObjectTemplate::New(isolate);
-  t->Set(v8_str("asdf"), v8::FunctionTemplate::New(isolate, RuntimeCallback));
-  env->Global()->Set(v8_str("obj"), t->NewInstance());
+  t->Set(v8_str("\x61\x73\x64\x66"), v8::FunctionTemplate::New(isolate, RuntimeCallback));
+  env->Global()->Set(v8_str("\x6f\x62\x6a"), t->NewInstance());
 
   const char* script =
-      "function bar() {\n"
-      "  var sum = 0;\n"
-      "  for (i = 0; i < 100; ++i)\n"
-      "    sum = foo(i);\n"
-      "  return sum;\n"
-      "}\n"
-      "function foo(i) { return i * i; }\n"
-      "// Invoke on the runtime function.\n"
-      "obj.asdf()";
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\xa"
+      "\x20\x20\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b\xa"
+      "\x20\x20\x66\x6f\x72\x20\x28\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x2b\x2b\x69\x29\xa"
+      "\x20\x20\x20\x20\x73\x75\x6d\x20\x3d\x20\x66\x6f\x6f\x28\x69\x29\x3b\xa"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b\xa"
+      "\x7d\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x69\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x69\x20\x2a\x20\x69\x3b\x20\x7d\xa"
+      "\x2f\x2f\x20\x49\x6e\x76\x6f\x6b\x65\x20\x6f\x6e\x20\x74\x68\x65\x20\x72\x75\x6e\x74\x69\x6d\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x2e\xa"
+      "\x6f\x62\x6a\x2e\x61\x73\x64\x66\x28\x29";
   CompileRun(script);
   bar_func_ = i::Handle<i::JSFunction>::cast(
-          v8::Utils::OpenHandle(*env->Global()->Get(v8_str("bar"))));
+          v8::Utils::OpenHandle(*env->Global()->Get(v8_str("\x62\x61\x72"))));
   DCHECK(!bar_func_.is_null());
 
   foo_func_ =
       i::Handle<i::JSFunction>::cast(
-           v8::Utils::OpenHandle(*env->Global()->Get(v8_str("foo"))));
+           v8::Utils::OpenHandle(*env->Global()->Get(v8_str("\x66\x6f\x6f"))));
   DCHECK(!foo_func_.is_null());
 
-  v8::Handle<v8::Value> value = CompileRun("bar();");
+  v8::Handle<v8::Value> value = CompileRun("\x62\x61\x72\x28\x29\x3b");
   CHECK(value->IsNumber());
   CHECK_EQ(9801.0, v8::Number::Cast(*value)->Value());
 
   // Test the optimized codegen path.
-  value = CompileRun("%OptimizeFunctionOnNextCall(foo);"
-                     "bar();");
+  value = CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x6f\x6f\x29\x3b"
+                     "\x62\x61\x72\x28\x29\x3b");
   CHECK(value->IsNumber());
   CHECK_EQ(9801.0, v8::Number::Cast(*value)->Value());
 
@@ -14127,14 +14127,14 @@ void SetFunctionEntryHookTest::RunTest() {
     RunLoopInNewEnv(isolate);
 
     // Check the exepected invocation counts.
-    CHECK_EQ(2, CountInvocations(NULL, "bar"));
-    CHECK_EQ(200, CountInvocations("bar", "foo"));
-    CHECK_EQ(200, CountInvocations(NULL, "foo"));
+    CHECK_EQ(2, CountInvocations(NULL, "\x62\x61\x72"));
+    CHECK_EQ(200, CountInvocations("\x62\x61\x72", "\x66\x6f\x6f"));
+    CHECK_EQ(200, CountInvocations(NULL, "\x66\x6f\x6f"));
 
     // Verify that we have an entry hook on some specific stubs.
-    CHECK_NE(0, CountInvocations(NULL, "CEntryStub"));
-    CHECK_NE(0, CountInvocations(NULL, "JSEntryStub"));
-    CHECK_NE(0, CountInvocations(NULL, "JSEntryTrampoline"));
+    CHECK_NE(0, CountInvocations(NULL, "\x43\x45\x6e\x74\x72\x79\x53\x74\x75\x62"));
+    CHECK_NE(0, CountInvocations(NULL, "\x4a\x53\x45\x6e\x74\x72\x79\x53\x74\x75\x62"));
+    CHECK_NE(0, CountInvocations(NULL, "\x4a\x53\x45\x6e\x74\x72\x79\x54\x72\x61\x6d\x70\x6f\x6c\x69\x6e\x65"));
   }
   isolate->Dispose();
 
@@ -14183,7 +14183,7 @@ static bool FunctionNameIs(const char* expected,
   // Log lines for functions are of the general form:
   // "LazyCompile:<type><function_name>", where the type is one of
   // "*", "~" or "".
-  static const char kPreamble[] = "LazyCompile:";
+  static const char kPreamble[] = "\x4c\x61\x7a\x79\x43\x6f\x6d\x70\x69\x6c\x65\x3a";
   static size_t kPreambleLen = sizeof(kPreamble) - 1;
 
   if (event->name.len < sizeof(kPreamble) - 1 ||
@@ -14194,15 +14194,15 @@ static bool FunctionNameIs(const char* expected,
   const char* tail = event->name.str + kPreambleLen;
   size_t tail_len = event->name.len - kPreambleLen;
   size_t expected_len = strlen(expected);
-  if (tail_len > 1 && (*tail == '*' || *tail == '~')) {
+  if (tail_len > 1 && (*tail == '\x2a' || *tail == '\x7e')) {
     --tail_len;
     ++tail;
   }
 
   // Check for tails like 'bar :1'.
   if (tail_len > expected_len + 2 &&
-      tail[expected_len] == ' ' &&
-      tail[expected_len + 1] == ':' &&
+      tail[expected_len] == '\x20' &&
+      tail[expected_len + 1] == '\x3a' &&
       tail[expected_len + 2] &&
       !strncmp(tail, expected, expected_len)) {
     return true;
@@ -14234,7 +14234,7 @@ static void event_handler(const v8::JitCodeEvent* event) {
                              true);
         entry->value = reinterpret_cast<void*>(event->code_len);
 
-        if (FunctionNameIs("bar", event)) {
+        if (FunctionNameIs("\x62\x61\x72", event)) {
           ++saw_bar;
         }
       }
@@ -14320,14 +14320,14 @@ UNINITIALIZED_TEST(SetJitCodeEventHandler) {
   i::FLAG_incremental_marking = false;
   if (i::FLAG_never_compact) return;
   const char* script =
-    "function bar() {"
-    "  var sum = 0;"
-    "  for (i = 0; i < 100; ++i)"
-    "    sum = foo(i);"
-    "  return sum;"
-    "}"
-    "function foo(i) { return i * i; };"
-    "bar();";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b"
+    "\x20\x20\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+    "\x20\x20\x66\x6f\x72\x20\x28\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x2b\x2b\x69\x29"
+    "\x20\x20\x20\x20\x73\x75\x6d\x20\x3d\x20\x66\x6f\x6f\x28\x69\x29\x3b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b"
+    "\x7d"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x69\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x69\x20\x2a\x20\x69\x3b\x20\x7d\x3b"
+    "\x62\x61\x72\x28\x29\x3b";
 
   // Run this test in a new isolate to make sure we don't
   // have remnants of state from other code.
@@ -14360,16 +14360,16 @@ UNINITIALIZED_TEST(SetJitCodeEventHandler) {
 
       // Keep a strong reference to the code object in the handle scope.
       i::Handle<i::Code> bar_code(i::Handle<i::JSFunction>::cast(
-          v8::Utils::OpenHandle(*env->Global()->Get(v8_str("bar"))))->code());
+          v8::Utils::OpenHandle(*env->Global()->Get(v8_str("\x62\x61\x72"))))->code());
       i::Handle<i::Code> foo_code(i::Handle<i::JSFunction>::cast(
-          v8::Utils::OpenHandle(*env->Global()->Get(v8_str("foo"))))->code());
+          v8::Utils::OpenHandle(*env->Global()->Get(v8_str("\x66\x6f\x6f"))))->code());
 
       // Clear the compilation cache to get more wastage.
       reinterpret_cast<i::Isolate*>(isolate)->compilation_cache()->Clear();
     }
 
     // Force code movement.
-    heap->CollectAllAvailableGarbage("TestSetJitCodeEventHandler");
+    heap->CollectAllAvailableGarbage("\x54\x65\x73\x74\x53\x65\x74\x4a\x69\x74\x43\x6f\x64\x65\x45\x76\x65\x6e\x74\x48\x61\x6e\x64\x6c\x65\x72");
 
     V8::SetJitCodeEventHandler(v8::kJitCodeEventDefault, NULL);
 
@@ -14460,11 +14460,11 @@ TEST(CatchStackOverflow) {
   v8::HandleScope scope(context->GetIsolate());
   v8::TryCatch try_catch;
   v8::Handle<v8::Value> result = CompileRun(
-    "function f() {"
-    "  return f();"
-    "}"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x28\x29\x3b"
+    "\x7d"
     ""
-    "f();");
+    "\x66\x28\x29\x3b");
   CHECK(result.IsEmpty());
 }
 
@@ -14485,7 +14485,7 @@ static void CheckTryCatchSourceInfo(v8::Handle<v8::Script> script,
   CHECK_EQ(2, message->GetStartColumn());
   CHECK_EQ(3, message->GetEndColumn());
   v8::String::Utf8Value line(message->GetSourceLine());
-  CHECK_EQ("  throw 'nirk';", *line);
+  CHECK_EQ("\x20\x20\x74\x68\x72\x6f\x77\x20\x27\x6e\x69\x72\x6b\x27\x3b", *line);
   v8::String::Utf8Value name(message->GetScriptOrigin().ResourceName());
   CHECK_EQ(resource_name, *name);
 }
@@ -14495,33 +14495,33 @@ THREADED_TEST(TryCatchSourceInfo) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
   v8::Local<v8::String> source = v8_str(
-      "function Foo() {\n"
-      "  return Bar();\n"
-      "}\n"
-      "\n"
-      "function Bar() {\n"
-      "  return Baz();\n"
-      "}\n"
-      "\n"
-      "function Baz() {\n"
-      "  throw 'nirk';\n"
-      "}\n"
-      "\n"
-      "Foo();\n");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x6f\x6f\x28\x29\x20\x7b\xa"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x42\x61\x72\x28\x29\x3b\xa"
+      "\x7d\xa"
+      "\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x42\x61\x72\x28\x29\x20\x7b\xa"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x42\x61\x7a\x28\x29\x3b\xa"
+      "\x7d\xa"
+      "\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x42\x61\x7a\x28\x29\x20\x7b\xa"
+      "\x20\x20\x74\x68\x72\x6f\x77\x20\x27\x6e\x69\x72\x6b\x27\x3b\xa"
+      "\x7d\xa"
+      "\xa"
+      "\x46\x6f\x6f\x28\x29\x3b\xa");
 
   const char* resource_name;
   v8::Handle<v8::Script> script;
-  resource_name = "test.js";
+  resource_name = "\x74\x65\x73\x74\x2e\x6a\x73";
   script = CompileWithOrigin(source, resource_name);
   CheckTryCatchSourceInfo(script, resource_name, 0);
 
-  resource_name = "test1.js";
+  resource_name = "\x74\x65\x73\x74\x31\x2e\x6a\x73";
   v8::ScriptOrigin origin1(
       v8::String::NewFromUtf8(context->GetIsolate(), resource_name));
   script = v8::Script::Compile(source, &origin1);
   CheckTryCatchSourceInfo(script, resource_name, 0);
 
-  resource_name = "test2.js";
+  resource_name = "\x74\x65\x73\x74\x32\x2e\x6a\x73";
   v8::ScriptOrigin origin2(
       v8::String::NewFromUtf8(context->GetIsolate(), resource_name),
       v8::Integer::New(context->GetIsolate(), 7));
@@ -14534,11 +14534,11 @@ THREADED_TEST(CompilationCache) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
   v8::Handle<v8::String> source0 =
-      v8::String::NewFromUtf8(context->GetIsolate(), "1234");
+      v8::String::NewFromUtf8(context->GetIsolate(), "\x31\x32\x33\x34");
   v8::Handle<v8::String> source1 =
-      v8::String::NewFromUtf8(context->GetIsolate(), "1234");
-  v8::Handle<v8::Script> script0 = CompileWithOrigin(source0, "test.js");
-  v8::Handle<v8::Script> script1 = CompileWithOrigin(source1, "test.js");
+      v8::String::NewFromUtf8(context->GetIsolate(), "\x31\x32\x33\x34");
+  v8::Handle<v8::Script> script0 = CompileWithOrigin(source0, "\x74\x65\x73\x74\x2e\x6a\x73");
+  v8::Handle<v8::Script> script1 = CompileWithOrigin(source1, "\x74\x65\x73\x74\x2e\x6a\x73");
   v8::Handle<v8::Script> script2 =
       v8::Script::Compile(source0);  // different origin
   CHECK_EQ(1234, script0->Run()->Int32Value());
@@ -14559,13 +14559,13 @@ THREADED_TEST(CallbackFunctionName) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> t = ObjectTemplate::New(isolate);
-  t->Set(v8_str("asdf"),
+  t->Set(v8_str("\x61\x73\x64\x66"),
          v8::FunctionTemplate::New(isolate, FunctionNameCallback));
-  context->Global()->Set(v8_str("obj"), t->NewInstance());
-  v8::Handle<v8::Value> value = CompileRun("obj.asdf.name");
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), t->NewInstance());
+  v8::Handle<v8::Value> value = CompileRun("\x6f\x62\x6a\x2e\x61\x73\x64\x66\x2e\x6e\x61\x6d\x65");
   CHECK(value->IsString());
   v8::String::Utf8Value name(value);
-  CHECK_EQ("asdf", *name);
+  CHECK_EQ("\x61\x73\x64\x66", *name);
 }
 
 
@@ -14612,14 +14612,14 @@ THREADED_TEST(PropertyEnumeration) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::Value> obj = CompileRun(
-      "var result = [];"
-      "result[0] = {};"
-      "result[1] = {a: 1, b: 2};"
-      "result[2] = [1, 2, 3];"
-      "var proto = {x: 1, y: 2, z: 3};"
-      "var x = { __proto__: proto, w: 0, z: 1 };"
-      "result[3] = x;"
-      "result;");
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x5b\x5d\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x5b\x30\x5d\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x5b\x31\x5d\x20\x3d\x20\x7b\x61\x3a\x20\x31\x2c\x20\x62\x3a\x20\x32\x7d\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x5b\x32\x5d\x20\x3d\x20\x5b\x31\x2c\x20\x32\x2c\x20\x33\x5d\x3b"
+      "\x76\x61\x72\x20\x70\x72\x6f\x74\x6f\x20\x3d\x20\x7b\x78\x3a\x20\x31\x2c\x20\x79\x3a\x20\x32\x2c\x20\x7a\x3a\x20\x33\x7d\x3b"
+      "\x76\x61\x72\x20\x78\x20\x3d\x20\x7b\x20\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3a\x20\x70\x72\x6f\x74\x6f\x2c\x20\x77\x3a\x20\x30\x2c\x20\x7a\x3a\x20\x31\x20\x7d\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x5b\x33\x5d\x20\x3d\x20\x78\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x3b");
   v8::Handle<v8::Array> elms = obj.As<v8::Array>();
   CHECK_EQ(4, elms->Length());
   int elmc0 = 0;
@@ -14629,23 +14629,23 @@ THREADED_TEST(PropertyEnumeration) {
   CheckOwnProperties(
       isolate, elms->Get(v8::Integer::New(isolate, 0)), elmc0, elmv0);
   int elmc1 = 2;
-  const char* elmv1[] = {"a", "b"};
+  const char* elmv1[] = {"\x61", "\x62"};
   CheckProperties(
       isolate, elms->Get(v8::Integer::New(isolate, 1)), elmc1, elmv1);
   CheckOwnProperties(
       isolate, elms->Get(v8::Integer::New(isolate, 1)), elmc1, elmv1);
   int elmc2 = 3;
-  const char* elmv2[] = {"0", "1", "2"};
+  const char* elmv2[] = {"\x30", "\x31", "\x32"};
   CheckProperties(
       isolate, elms->Get(v8::Integer::New(isolate, 2)), elmc2, elmv2);
   CheckOwnProperties(
       isolate, elms->Get(v8::Integer::New(isolate, 2)), elmc2, elmv2);
   int elmc3 = 4;
-  const char* elmv3[] = {"w", "z", "x", "y"};
+  const char* elmv3[] = {"\x77", "\x7a", "\x78", "\x79"};
   CheckProperties(
       isolate, elms->Get(v8::Integer::New(isolate, 3)), elmc3, elmv3);
   int elmc4 = 2;
-  const char* elmv4[] = {"w", "z"};
+  const char* elmv4[] = {"\x77", "\x7a"};
   CheckOwnProperties(
       isolate, elms->Get(v8::Integer::New(isolate, 3)), elmc4, elmv4);
 }
@@ -14656,14 +14656,14 @@ THREADED_TEST(PropertyEnumeration2) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::Value> obj = CompileRun(
-      "var result = [];"
-      "result[0] = {};"
-      "result[1] = {a: 1, b: 2};"
-      "result[2] = [1, 2, 3];"
-      "var proto = {x: 1, y: 2, z: 3};"
-      "var x = { __proto__: proto, w: 0, z: 1 };"
-      "result[3] = x;"
-      "result;");
+      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x5b\x5d\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x5b\x30\x5d\x20\x3d\x20\x7b\x7d\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x5b\x31\x5d\x20\x3d\x20\x7b\x61\x3a\x20\x31\x2c\x20\x62\x3a\x20\x32\x7d\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x5b\x32\x5d\x20\x3d\x20\x5b\x31\x2c\x20\x32\x2c\x20\x33\x5d\x3b"
+      "\x76\x61\x72\x20\x70\x72\x6f\x74\x6f\x20\x3d\x20\x7b\x78\x3a\x20\x31\x2c\x20\x79\x3a\x20\x32\x2c\x20\x7a\x3a\x20\x33\x7d\x3b"
+      "\x76\x61\x72\x20\x78\x20\x3d\x20\x7b\x20\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3a\x20\x70\x72\x6f\x74\x6f\x2c\x20\x77\x3a\x20\x30\x2c\x20\x7a\x3a\x20\x31\x20\x7d\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x5b\x33\x5d\x20\x3d\x20\x78\x3b"
+      "\x72\x65\x73\x75\x6c\x74\x3b");
   v8::Handle<v8::Array> elms = obj.As<v8::Array>();
   CHECK_EQ(4, elms->Length());
   int elmc0 = 0;
@@ -14675,7 +14675,7 @@ THREADED_TEST(PropertyEnumeration2) {
   v8::Handle<v8::Array> props = val.As<v8::Object>()->GetPropertyNames();
   CHECK_EQ(0, props->Length());
   for (uint32_t i = 0; i < props->Length(); i++) {
-    printf("p[%d]\n", i);
+    printf("\x70\x5b\x6c\x84\x5d\xa", i);
   }
 }
 
@@ -14702,10 +14702,10 @@ THREADED_TEST(DisableAccessChecksWhileConfiguring) {
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetAccessCheckCallbacks(NamedSetAccessBlocker,
                                  IndexedSetAccessBlocker);
-  templ->Set(v8_str("x"), v8::True(isolate));
+  templ->Set(v8_str("\x78"), v8::True(isolate));
   Local<v8::Object> instance = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), instance);
-  Local<Value> value = CompileRun("obj.x");
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), instance);
+  Local<Value> value = CompileRun("\x6f\x62\x6a\x2e\x78");
   CHECK(value->BooleanValue());
 }
 
@@ -14734,16 +14734,16 @@ THREADED_TEST(AccessChecksReenabledCorrectly) {
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
   templ->SetAccessCheckCallbacks(NamedGetAccessBlocker,
                                  IndexedGetAccessBlocker);
-  templ->Set(v8_str("a"), v8_str("a"));
+  templ->Set(v8_str("\x61"), v8_str("\x61"));
   // Add more than 8 (see kMaxFastProperties) properties
   // so that the constructor will force copying map.
   // Cannot sprintf, gcc complains unsafety.
   char buf[4];
-  for (char i = '0'; i <= '9' ; i++) {
+  for (char i = '\x30'; i <= '\x39' ; i++) {
     buf[0] = i;
-    for (char j = '0'; j <= '9'; j++) {
+    for (char j = '\x30'; j <= '\x39'; j++) {
       buf[1] = j;
-      for (char k = '0'; k <= '9'; k++) {
+      for (char k = '\x30'; k <= '\x39'; k++) {
         buf[2] = k;
         buf[3] = 0;
         templ->Set(v8_str(buf), v8::Number::New(isolate, k));
@@ -14752,15 +14752,15 @@ THREADED_TEST(AccessChecksReenabledCorrectly) {
   }
 
   Local<v8::Object> instance_1 = templ->NewInstance();
-  context->Global()->Set(v8_str("obj_1"), instance_1);
+  context->Global()->Set(v8_str("\x6f\x62\x6a\x5f\x31"), instance_1);
 
-  Local<Value> value_1 = CompileRun("obj_1.a");
+  Local<Value> value_1 = CompileRun("\x6f\x62\x6a\x5f\x31\x2e\x61");
   CHECK(value_1.IsEmpty());
 
   Local<v8::Object> instance_2 = templ->NewInstance();
-  context->Global()->Set(v8_str("obj_2"), instance_2);
+  context->Global()->Set(v8_str("\x6f\x62\x6a\x5f\x32"), instance_2);
 
-  Local<Value> value_2 = CompileRun("obj_2.a");
+  Local<Value> value_2 = CompileRun("\x6f\x62\x6a\x5f\x32\x2e\x61");
   CHECK(value_2.IsEmpty());
 }
 
@@ -14802,22 +14802,22 @@ THREADED_TEST(TurnOnAccessCheck) {
   Context::Scope context_scope(context);
 
   // Set up a property and a number of functions.
-  context->Global()->Set(v8_str("a"), v8_num(1));
-  CompileRun("function f1() {return a;}"
-             "function f2() {return a;}"
-             "function g1() {return h();}"
-             "function g2() {return h();}"
-             "function h() {return 1;}");
+  context->Global()->Set(v8_str("\x61"), v8_num(1));
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x31\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x61\x3b\x7d"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x32\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x61\x3b\x7d"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x31\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x68\x28\x29\x3b\x7d"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x32\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x68\x28\x29\x3b\x7d"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x31\x3b\x7d");
   Local<Function> f1 =
-      Local<Function>::Cast(context->Global()->Get(v8_str("f1")));
+      Local<Function>::Cast(context->Global()->Get(v8_str("\x66\x31")));
   Local<Function> f2 =
-      Local<Function>::Cast(context->Global()->Get(v8_str("f2")));
+      Local<Function>::Cast(context->Global()->Get(v8_str("\x66\x32")));
   Local<Function> g1 =
-      Local<Function>::Cast(context->Global()->Get(v8_str("g1")));
+      Local<Function>::Cast(context->Global()->Get(v8_str("\x67\x31")));
   Local<Function> g2 =
-      Local<Function>::Cast(context->Global()->Get(v8_str("g2")));
+      Local<Function>::Cast(context->Global()->Get(v8_str("\x67\x32")));
   Local<Function> h =
-      Local<Function>::Cast(context->Global()->Get(v8_str("h")));
+      Local<Function>::Cast(context->Global()->Get(v8_str("\x68")));
 
   // Get the global object.
   v8::Handle<v8::Object> global = context->Global();
@@ -14853,8 +14853,8 @@ THREADED_TEST(TurnOnAccessCheck) {
 }
 
 
-static const char* kPropertyA = "a";
-static const char* kPropertyH = "h";
+static const char* kPropertyA = "\x61";
+static const char* kPropertyH = "\x68";
 
 static bool NamedGetAccessBlockAandH(Local<v8::Object> obj,
                                        Local<Value> name,
@@ -14885,12 +14885,12 @@ THREADED_TEST(TurnOnAccessCheckAndRecompile) {
   Context::Scope context_scope(context);
 
   // Set up a property and a number of functions.
-  context->Global()->Set(v8_str("a"), v8_num(1));
-  static const char* source = "function f1() {return a;}"
-                              "function f2() {return a;}"
-                              "function g1() {return h();}"
-                              "function g2() {return h();}"
-                              "function h() {return 1;}";
+  context->Global()->Set(v8_str("\x61"), v8_num(1));
+  static const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x31\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x61\x3b\x7d"
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x32\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x61\x3b\x7d"
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x31\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x68\x28\x29\x3b\x7d"
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x32\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x68\x28\x29\x3b\x7d"
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x31\x3b\x7d";
 
   CompileRun(source);
   Local<Function> f1;
@@ -14898,11 +14898,11 @@ THREADED_TEST(TurnOnAccessCheckAndRecompile) {
   Local<Function> g1;
   Local<Function> g2;
   Local<Function> h;
-  f1 = Local<Function>::Cast(context->Global()->Get(v8_str("f1")));
-  f2 = Local<Function>::Cast(context->Global()->Get(v8_str("f2")));
-  g1 = Local<Function>::Cast(context->Global()->Get(v8_str("g1")));
-  g2 = Local<Function>::Cast(context->Global()->Get(v8_str("g2")));
-  h =  Local<Function>::Cast(context->Global()->Get(v8_str("h")));
+  f1 = Local<Function>::Cast(context->Global()->Get(v8_str("\x66\x31")));
+  f2 = Local<Function>::Cast(context->Global()->Get(v8_str("\x66\x32")));
+  g1 = Local<Function>::Cast(context->Global()->Get(v8_str("\x67\x31")));
+  g2 = Local<Function>::Cast(context->Global()->Get(v8_str("\x67\x32")));
+  h =  Local<Function>::Cast(context->Global()->Get(v8_str("\x68")));
 
   // Get the global object.
   v8::Handle<v8::Object> global = context->Global();
@@ -14940,11 +14940,11 @@ THREADED_TEST(TurnOnAccessCheckAndRecompile) {
   // Now compile the source again. And get the newly compiled functions, except
   // for h for which access is blocked.
   CompileRun(source);
-  f1 = Local<Function>::Cast(hidden_global->Get(v8_str("f1")));
-  f2 = Local<Function>::Cast(hidden_global->Get(v8_str("f2")));
-  g1 = Local<Function>::Cast(hidden_global->Get(v8_str("g1")));
-  g2 = Local<Function>::Cast(hidden_global->Get(v8_str("g2")));
-  CHECK(hidden_global->Get(v8_str("h")).IsEmpty());
+  f1 = Local<Function>::Cast(hidden_global->Get(v8_str("\x66\x31")));
+  f2 = Local<Function>::Cast(hidden_global->Get(v8_str("\x66\x32")));
+  g1 = Local<Function>::Cast(hidden_global->Get(v8_str("\x67\x31")));
+  g2 = Local<Function>::Cast(hidden_global->Get(v8_str("\x67\x32")));
+  CHECK(hidden_global->Get(v8_str("\x68")).IsEmpty());
 
   // Failing access check results in exception.
   v8::Local<v8::Value> result = f1->Call(global, 0, NULL);
@@ -14964,7 +14964,7 @@ TEST(PreCompileSerialization) {
   HandleScope handle_scope(isolate);
 
   i::FLAG_min_preparse_length = 0;
-  const char* script = "function foo(a) { return a+1; }";
+  const char* script = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x2b\x31\x3b\x20\x7d";
   v8::ScriptCompiler::Source source(v8_str(script));
   v8::ScriptCompiler::Compile(isolate, &source,
                               v8::ScriptCompiler::kProduceParserCache);
@@ -14995,16 +14995,16 @@ THREADED_TEST(DictionaryICLoadedFunction) {
   // Test LoadIC.
   for (int i = 0; i < 2; i++) {
     LocalContext context;
-    context->Global()->Set(v8_str("tmp"), v8::True(CcTest::isolate()));
-    context->Global()->Delete(v8_str("tmp"));
-    CompileRun("for (var j = 0; j < 10; j++) new RegExp('');");
+    context->Global()->Set(v8_str("\x74\x6d\x70"), v8::True(CcTest::isolate()));
+    context->Global()->Delete(v8_str("\x74\x6d\x70"));
+    CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x31\x30\x3b\x20\x6a\x2b\x2b\x29\x20\x6e\x65\x77\x20\x52\x65\x67\x45\x78\x70\x28\x27\x27\x29\x3b");
   }
   // Test CallIC.
   for (int i = 0; i < 2; i++) {
     LocalContext context;
-    context->Global()->Set(v8_str("tmp"), v8::True(CcTest::isolate()));
-    context->Global()->Delete(v8_str("tmp"));
-    CompileRun("for (var j = 0; j < 10; j++) RegExp('')");
+    context->Global()->Set(v8_str("\x74\x6d\x70"), v8::True(CcTest::isolate()));
+    context->Global()->Delete(v8_str("\x74\x6d\x70"));
+    CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x31\x30\x3b\x20\x6a\x2b\x2b\x29\x20\x52\x65\x67\x45\x78\x70\x28\x27\x27\x29");
   }
 }
 
@@ -15018,21 +15018,21 @@ THREADED_TEST(CrossContextNew) {
   v8::Local<Context> context1 = Context::New(isolate);
 
   // Allow cross-domain access.
-  Local<String> token = v8_str("<security token>");
+  Local<String> token = v8_str("\x3c\x73\x65\x63\x75\x72\x69\x74\x79\x20\x74\x6f\x6b\x65\x6e\x3e");
   context0->SetSecurityToken(token);
   context1->SetSecurityToken(token);
 
   // Set an 'x' property on the Object prototype and define a
   // constructor function in context0.
   context0->Enter();
-  CompileRun("Object.prototype.x = 42; function C() {};");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x78\x20\x3d\x20\x34\x32\x3b\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x28\x29\x20\x7b\x7d\x3b");
   context0->Exit();
 
   // Call the constructor function from context0 and check that the
   // result has the 'x' property.
   context1->Enter();
-  context1->Global()->Set(v8_str("other"), context0->Global());
-  Local<Value> value = CompileRun("var instance = new other.C(); instance.x");
+  context1->Global()->Set(v8_str("\x6f\x74\x68\x65\x72"), context0->Global());
+  Local<Value> value = CompileRun("\x76\x61\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x3d\x20\x6e\x65\x77\x20\x6f\x74\x68\x65\x72\x2e\x43\x28\x29\x3b\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x2e\x78");
   CHECK(value->IsInt32());
   CHECK_EQ(42, value->Int32Value());
   context1->Exit();
@@ -15046,31 +15046,31 @@ TEST(ObjectClone) {
   v8::HandleScope scope(isolate);
 
   const char* sample =
-    "var rv = {};"      \
-    "rv.alpha = 'hello';" \
-    "rv.beta = 123;"     \
-    "rv;";
+    "\x76\x61\x72\x20\x72\x76\x20\x3d\x20\x7b\x7d\x3b"      \
+    "\x72\x76\x2e\x61\x6c\x70\x68\x61\x20\x3d\x20\x27\x68\x65\x6c\x6c\x6f\x27\x3b" \
+    "\x72\x76\x2e\x62\x65\x74\x61\x20\x3d\x20\x31\x32\x33\x3b"     \
+    "\x72\x76\x3b";
 
   // Create an object, verify basics.
   Local<Value> val = CompileRun(sample);
   CHECK(val->IsObject());
   Local<v8::Object> obj = val.As<v8::Object>();
-  obj->Set(v8_str("gamma"), v8_str("cloneme"));
+  obj->Set(v8_str("\x67\x61\x6d\x6d\x61"), v8_str("\x63\x6c\x6f\x6e\x65\x6d\x65"));
 
-  CHECK_EQ(v8_str("hello"), obj->Get(v8_str("alpha")));
-  CHECK_EQ(v8::Integer::New(isolate, 123), obj->Get(v8_str("beta")));
-  CHECK_EQ(v8_str("cloneme"), obj->Get(v8_str("gamma")));
+  CHECK_EQ(v8_str("\x68\x65\x6c\x6c\x6f"), obj->Get(v8_str("\x61\x6c\x70\x68\x61")));
+  CHECK_EQ(v8::Integer::New(isolate, 123), obj->Get(v8_str("\x62\x65\x74\x61")));
+  CHECK_EQ(v8_str("\x63\x6c\x6f\x6e\x65\x6d\x65"), obj->Get(v8_str("\x67\x61\x6d\x6d\x61")));
 
   // Clone it.
   Local<v8::Object> clone = obj->Clone();
-  CHECK_EQ(v8_str("hello"), clone->Get(v8_str("alpha")));
-  CHECK_EQ(v8::Integer::New(isolate, 123), clone->Get(v8_str("beta")));
-  CHECK_EQ(v8_str("cloneme"), clone->Get(v8_str("gamma")));
+  CHECK_EQ(v8_str("\x68\x65\x6c\x6c\x6f"), clone->Get(v8_str("\x61\x6c\x70\x68\x61")));
+  CHECK_EQ(v8::Integer::New(isolate, 123), clone->Get(v8_str("\x62\x65\x74\x61")));
+  CHECK_EQ(v8_str("\x63\x6c\x6f\x6e\x65\x6d\x65"), clone->Get(v8_str("\x67\x61\x6d\x6d\x61")));
 
   // Set a property on the clone, verify each object.
-  clone->Set(v8_str("beta"), v8::Integer::New(isolate, 456));
-  CHECK_EQ(v8::Integer::New(isolate, 123), obj->Get(v8_str("beta")));
-  CHECK_EQ(v8::Integer::New(isolate, 456), clone->Get(v8_str("beta")));
+  clone->Set(v8_str("\x62\x65\x74\x61"), v8::Integer::New(isolate, 456));
+  CHECK_EQ(v8::Integer::New(isolate, 123), obj->Get(v8_str("\x62\x65\x74\x61")));
+  CHECK_EQ(v8::Integer::New(isolate, 456), clone->Get(v8_str("\x62\x65\x74\x61")));
 }
 
 
@@ -15126,8 +15126,8 @@ static void MorphAString(i::String* string,
 // from have been turned into 16 bit strings in the mean time.
 THREADED_TEST(MorphCompositeStringTest) {
   char utf_buffer[129];
-  const char* c_string = "Now is the time for all good men"
-                         " to come to the aid of the party";
+  const char* c_string = "\x4e\x6f\x77\x20\x69\x73\x20\x74\x68\x65\x20\x74\x69\x6d\x65\x20\x66\x6f\x72\x20\x61\x6c\x6c\x20\x67\x6f\x6f\x64\x20\x6d\x65\x6e"
+                         "\x20\x74\x6f\x20\x63\x6f\x6d\x65\x20\x74\x6f\x20\x74\x68\x65\x20\x61\x69\x64\x20\x6f\x66\x20\x74\x68\x65\x20\x70\x61\x72\x74\x79";
   uint16_t* two_byte_string = AsciiToTwoByteString(c_string);
   {
     LocalContext env;
@@ -15146,13 +15146,13 @@ THREADED_TEST(MorphCompositeStringTest) {
         factory->NewExternalStringFromAscii(&ascii_resource)
             .ToHandleChecked()));
 
-    env->Global()->Set(v8_str("lhs"), lhs);
-    env->Global()->Set(v8_str("rhs"), rhs);
+    env->Global()->Set(v8_str("\x6c\x68\x73"), lhs);
+    env->Global()->Set(v8_str("\x72\x68\x73"), rhs);
 
     CompileRun(
-        "var cons = lhs + rhs;"
-        "var slice = lhs.substring(1, lhs.length - 1);"
-        "var slice_on_cons = (lhs + rhs).substring(1, lhs.length *2 - 1);");
+        "\x76\x61\x72\x20\x63\x6f\x6e\x73\x20\x3d\x20\x6c\x68\x73\x20\x2b\x20\x72\x68\x73\x3b"
+        "\x76\x61\x72\x20\x73\x6c\x69\x63\x65\x20\x3d\x20\x6c\x68\x73\x2e\x73\x75\x62\x73\x74\x72\x69\x6e\x67\x28\x31\x2c\x20\x6c\x68\x73\x2e\x6c\x65\x6e\x67\x74\x68\x20\x2d\x20\x31\x29\x3b"
+        "\x76\x61\x72\x20\x73\x6c\x69\x63\x65\x5f\x6f\x6e\x5f\x63\x6f\x6e\x73\x20\x3d\x20\x28\x6c\x68\x73\x20\x2b\x20\x72\x68\x73\x29\x2e\x73\x75\x62\x73\x74\x72\x69\x6e\x67\x28\x31\x2c\x20\x6c\x68\x73\x2e\x6c\x65\x6e\x67\x74\x68\x20\x2a\x32\x20\x2d\x20\x31\x29\x3b");
 
     CHECK(lhs->IsOneByte());
     CHECK(rhs->IsOneByte());
@@ -15161,35 +15161,35 @@ THREADED_TEST(MorphCompositeStringTest) {
     MorphAString(*v8::Utils::OpenHandle(*rhs), &ascii_resource, &uc16_resource);
 
     // This should UTF-8 without flattening, since everything is ASCII.
-    Handle<String> cons = v8_compile("cons")->Run().As<String>();
+    Handle<String> cons = v8_compile("\x63\x6f\x6e\x73")->Run().As<String>();
     CHECK_EQ(128, cons->Utf8Length());
     int nchars = -1;
     CHECK_EQ(129, cons->WriteUtf8(utf_buffer, -1, &nchars));
     CHECK_EQ(128, nchars);
     CHECK_EQ(0, strcmp(
         utf_buffer,
-        "Now is the time for all good men to come to the aid of the party"
-        "Now is the time for all good men to come to the aid of the party"));
+        "\x4e\x6f\x77\x20\x69\x73\x20\x74\x68\x65\x20\x74\x69\x6d\x65\x20\x66\x6f\x72\x20\x61\x6c\x6c\x20\x67\x6f\x6f\x64\x20\x6d\x65\x6e\x20\x74\x6f\x20\x63\x6f\x6d\x65\x20\x74\x6f\x20\x74\x68\x65\x20\x61\x69\x64\x20\x6f\x66\x20\x74\x68\x65\x20\x70\x61\x72\x74\x79"
+        "\x4e\x6f\x77\x20\x69\x73\x20\x74\x68\x65\x20\x74\x69\x6d\x65\x20\x66\x6f\x72\x20\x61\x6c\x6c\x20\x67\x6f\x6f\x64\x20\x6d\x65\x6e\x20\x74\x6f\x20\x63\x6f\x6d\x65\x20\x74\x6f\x20\x74\x68\x65\x20\x61\x69\x64\x20\x6f\x66\x20\x74\x68\x65\x20\x70\x61\x72\x74\x79"));
 
     // Now do some stuff to make sure the strings are flattened, etc.
     CompileRun(
-        "/[^a-z]/.test(cons);"
-        "/[^a-z]/.test(slice);"
-        "/[^a-z]/.test(slice_on_cons);");
+        "\x2f\x5b\x5e\x61\x2d\x7a\x5d\x2f\x2e\x74\x65\x73\x74\x28\x63\x6f\x6e\x73\x29\x3b"
+        "\x2f\x5b\x5e\x61\x2d\x7a\x5d\x2f\x2e\x74\x65\x73\x74\x28\x73\x6c\x69\x63\x65\x29\x3b"
+        "\x2f\x5b\x5e\x61\x2d\x7a\x5d\x2f\x2e\x74\x65\x73\x74\x28\x73\x6c\x69\x63\x65\x5f\x6f\x6e\x5f\x63\x6f\x6e\x73\x29\x3b");
     const char* expected_cons =
-        "Now is the time for all good men to come to the aid of the party"
-        "Now is the time for all good men to come to the aid of the party";
+        "\x4e\x6f\x77\x20\x69\x73\x20\x74\x68\x65\x20\x74\x69\x6d\x65\x20\x66\x6f\x72\x20\x61\x6c\x6c\x20\x67\x6f\x6f\x64\x20\x6d\x65\x6e\x20\x74\x6f\x20\x63\x6f\x6d\x65\x20\x74\x6f\x20\x74\x68\x65\x20\x61\x69\x64\x20\x6f\x66\x20\x74\x68\x65\x20\x70\x61\x72\x74\x79"
+        "\x4e\x6f\x77\x20\x69\x73\x20\x74\x68\x65\x20\x74\x69\x6d\x65\x20\x66\x6f\x72\x20\x61\x6c\x6c\x20\x67\x6f\x6f\x64\x20\x6d\x65\x6e\x20\x74\x6f\x20\x63\x6f\x6d\x65\x20\x74\x6f\x20\x74\x68\x65\x20\x61\x69\x64\x20\x6f\x66\x20\x74\x68\x65\x20\x70\x61\x72\x74\x79";
     const char* expected_slice =
-        "ow is the time for all good men to come to the aid of the part";
+        "\x6f\x77\x20\x69\x73\x20\x74\x68\x65\x20\x74\x69\x6d\x65\x20\x66\x6f\x72\x20\x61\x6c\x6c\x20\x67\x6f\x6f\x64\x20\x6d\x65\x6e\x20\x74\x6f\x20\x63\x6f\x6d\x65\x20\x74\x6f\x20\x74\x68\x65\x20\x61\x69\x64\x20\x6f\x66\x20\x74\x68\x65\x20\x70\x61\x72\x74";
     const char* expected_slice_on_cons =
-        "ow is the time for all good men to come to the aid of the party"
-        "Now is the time for all good men to come to the aid of the part";
+        "\x6f\x77\x20\x69\x73\x20\x74\x68\x65\x20\x74\x69\x6d\x65\x20\x66\x6f\x72\x20\x61\x6c\x6c\x20\x67\x6f\x6f\x64\x20\x6d\x65\x6e\x20\x74\x6f\x20\x63\x6f\x6d\x65\x20\x74\x6f\x20\x74\x68\x65\x20\x61\x69\x64\x20\x6f\x66\x20\x74\x68\x65\x20\x70\x61\x72\x74\x79"
+        "\x4e\x6f\x77\x20\x69\x73\x20\x74\x68\x65\x20\x74\x69\x6d\x65\x20\x66\x6f\x72\x20\x61\x6c\x6c\x20\x67\x6f\x6f\x64\x20\x6d\x65\x6e\x20\x74\x6f\x20\x63\x6f\x6d\x65\x20\x74\x6f\x20\x74\x68\x65\x20\x61\x69\x64\x20\x6f\x66\x20\x74\x68\x65\x20\x70\x61\x72\x74";
     CHECK_EQ(String::NewFromUtf8(env->GetIsolate(), expected_cons),
-             env->Global()->Get(v8_str("cons")));
+             env->Global()->Get(v8_str("\x63\x6f\x6e\x73")));
     CHECK_EQ(String::NewFromUtf8(env->GetIsolate(), expected_slice),
-             env->Global()->Get(v8_str("slice")));
+             env->Global()->Get(v8_str("\x73\x6c\x69\x63\x65")));
     CHECK_EQ(String::NewFromUtf8(env->GetIsolate(), expected_slice_on_cons),
-             env->Global()->Get(v8_str("slice_on_cons")));
+             env->Global()->Get(v8_str("\x73\x6c\x69\x63\x65\x5f\x6f\x6e\x5f\x63\x6f\x6e\x73")));
   }
   i::DeleteArray(two_byte_string);
 }
@@ -15202,9 +15202,9 @@ TEST(CompileExternalTwoByteSource) {
   // This is a very short list of sources, which currently is to check for a
   // regression caused by r2703.
   const char* ascii_sources[] = {
-    "0.5",
-    "-0.5",   // This mainly testes PushBack in the Scanner.
-    "--0.5",  // This mainly testes PushBack in the Scanner.
+    "\x30\x2e\x35",
+    "\x2d\x30\x2e\x35",   // This mainly testes PushBack in the Scanner.
+    "\x2d\x2d\x30\x2e\x35",  // This mainly testes PushBack in the Scanner.
     NULL
   };
 
@@ -15231,7 +15231,7 @@ struct RegExpInterruptionData {
 class RegExpInterruptionThread : public v8::base::Thread {
  public:
   explicit RegExpInterruptionThread(v8::Isolate* isolate)
-      : Thread(Options("TimeoutThread")), isolate_(isolate) {}
+      : Thread(Options("\x54\x69\x6d\x65\x6f\x75\x74\x54\x68\x72\x65\x61\x64")), isolate_(isolate) {}
 
   virtual void Run() {
     for (regexp_interruption_data.loop_count = 0;
@@ -15269,11 +15269,11 @@ TEST(RegExpInterruption) {
   RegExpInterruptionThread timeout_thread(CcTest::isolate());
 
   v8::V8::AddGCPrologueCallback(RunBeforeGC);
-  static const char* ascii_content = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  static const char* ascii_content = "\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61\x61";
   i::uc16* uc16_content = AsciiToTwoByteString(ascii_content);
   v8::Local<v8::String> string = v8_str(ascii_content);
 
-  CcTest::global()->Set(v8_str("a"), string);
+  CcTest::global()->Set(v8_str("\x61"), string);
   regexp_interruption_data.string.Reset(CcTest::isolate(), string);
   regexp_interruption_data.string_resource = new UC16VectorResource(
       i::Vector<const i::uc16>(uc16_content, i::StrLength(ascii_content)));
@@ -15281,7 +15281,7 @@ TEST(RegExpInterruption) {
   v8::TryCatch try_catch;
   timeout_thread.Start();
 
-  CompileRun("/((a*)*)*b/.exec(a)");
+  CompileRun("\x2f\x28\x28\x61\x2a\x29\x2a\x29\x2a\x62\x2f\x2e\x65\x78\x65\x63\x28\x61\x29");
   CHECK(try_catch.HasTerminated());
 
   timeout_thread.Join();
@@ -15302,20 +15302,20 @@ TEST(ReadOnlyPropertyInGlobalProto) {
   LocalContext context(0, templ);
   v8::Handle<v8::Object> global = context->Global();
   v8::Handle<v8::Object> global_proto =
-      v8::Handle<v8::Object>::Cast(global->Get(v8_str("__proto__")));
-  global_proto->ForceSet(v8_str("x"), v8::Integer::New(isolate, 0),
+      v8::Handle<v8::Object>::Cast(global->Get(v8_str("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f")));
+  global_proto->ForceSet(v8_str("\x78"), v8::Integer::New(isolate, 0),
                          v8::ReadOnly);
-  global_proto->ForceSet(v8_str("y"), v8::Integer::New(isolate, 0),
+  global_proto->ForceSet(v8_str("\x79"), v8::Integer::New(isolate, 0),
                          v8::ReadOnly);
   // Check without 'eval' or 'with'.
   v8::Handle<v8::Value> res =
-      CompileRun("function f() { x = 42; return x; }; f()");
+      CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x78\x20\x3d\x20\x34\x32\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d\x3b\x20\x66\x28\x29");
   CHECK_EQ(v8::Integer::New(isolate, 0), res);
   // Check with 'eval'.
-  res = CompileRun("function f() { eval('1'); y = 43; return y; }; f()");
+  res = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x65\x76\x61\x6c\x28\x27\x31\x27\x29\x3b\x20\x79\x20\x3d\x20\x34\x33\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x79\x3b\x20\x7d\x3b\x20\x66\x28\x29");
   CHECK_EQ(v8::Integer::New(isolate, 0), res);
   // Check with 'with'.
-  res = CompileRun("function f() { with (this) { y = 44 }; return y; }; f()");
+  res = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x77\x69\x74\x68\x20\x28\x74\x68\x69\x73\x29\x20\x7b\x20\x79\x20\x3d\x20\x34\x34\x20\x7d\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x79\x3b\x20\x7d\x3b\x20\x66\x28\x29");
   CHECK_EQ(v8::Integer::New(isolate, 0), res);
 }
 
@@ -15356,14 +15356,14 @@ TEST(ForceSet) {
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> templ = v8::ObjectTemplate::New(isolate);
   v8::Handle<v8::String> access_property =
-      v8::String::NewFromUtf8(isolate, "a");
+      v8::String::NewFromUtf8(isolate, "\x61");
   templ->SetAccessor(access_property, ForceSetGetter, ForceSetSetter);
   LocalContext context(NULL, templ);
   v8::Handle<v8::Object> global = context->Global();
 
   // Ordinary properties
   v8::Handle<v8::String> simple_property =
-      v8::String::NewFromUtf8(isolate, "p");
+      v8::String::NewFromUtf8(isolate, "\x70");
   global->ForceSet(simple_property, v8::Int32::New(isolate, 4), v8::ReadOnly);
   CHECK_EQ(4, global->Get(simple_property)->Int32Value());
   // This should fail because the property is read-only
@@ -15405,7 +15405,7 @@ TEST(ForceSetWithInterceptor) {
   v8::Handle<v8::Object> global = context->Global();
 
   v8::Handle<v8::String> some_property =
-      v8::String::NewFromUtf8(isolate, "a");
+      v8::String::NewFromUtf8(isolate, "\x61");
   CHECK_EQ(0, force_set_set_count);
   CHECK_EQ(0, force_set_get_count);
   CHECK_EQ(3, global->Get(some_property)->Int32Value());
@@ -15435,7 +15435,7 @@ TEST(ForceSetWithInterceptor) {
   CHECK_EQ(1, force_set_set_count);
   CHECK_EQ(5, force_set_get_count);
   // The interceptor should also work for other properties
-  CHECK_EQ(3, global->Get(v8::String::NewFromUtf8(isolate, "b"))
+  CHECK_EQ(3, global->Get(v8::String::NewFromUtf8(isolate, "\x62"))
                   ->Int32Value());
   CHECK_EQ(1, force_set_set_count);
   CHECK_EQ(6, force_set_get_count);
@@ -15451,7 +15451,7 @@ THREADED_TEST(ForceDelete) {
 
   // Ordinary properties
   v8::Handle<v8::String> simple_property =
-      v8::String::NewFromUtf8(isolate, "p");
+      v8::String::NewFromUtf8(isolate, "\x70");
   global->ForceSet(simple_property, v8::Int32::New(isolate, 4), v8::DontDelete);
   CHECK_EQ(4, global->Get(simple_property)->Int32Value());
   // This should fail because the property is dont-delete.
@@ -15488,7 +15488,7 @@ THREADED_TEST(ForceDeleteWithInterceptor) {
   v8::Handle<v8::Object> global = context->Global();
 
   v8::Handle<v8::String> some_property =
-      v8::String::NewFromUtf8(isolate, "a");
+      v8::String::NewFromUtf8(isolate, "\x61");
   global->ForceSet(some_property, v8::Integer::New(isolate, 42),
                    v8::DontDelete);
 
@@ -15518,19 +15518,19 @@ THREADED_TEST(ForceDeleteIC) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
   // Create a DontDelete variable on the global object.
-  CompileRun("this.__proto__ = { foo: 'horse' };"
-             "var foo = 'fish';"
-             "function f() { return foo.length; }");
+  CompileRun("\x74\x68\x69\x73\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x7b\x20\x66\x6f\x6f\x3a\x20\x27\x68\x6f\x72\x73\x65\x27\x20\x7d\x3b"
+             "\x76\x61\x72\x20\x66\x6f\x6f\x20\x3d\x20\x27\x66\x69\x73\x68\x27\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x2e\x6c\x65\x6e\x67\x74\x68\x3b\x20\x7d");
   // Initialize the IC for foo in f.
-  CompileRun("for (var i = 0; i < 4; i++) f();");
+  CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x34\x3b\x20\x69\x2b\x2b\x29\x20\x66\x28\x29\x3b");
   // Make sure the value of foo is correct before the deletion.
-  CHECK_EQ(4, CompileRun("f()")->Int32Value());
+  CHECK_EQ(4, CompileRun("\x66\x28\x29")->Int32Value());
   // Force the deletion of foo.
-  CHECK(context->Global()->ForceDelete(v8_str("foo")));
+  CHECK(context->Global()->ForceDelete(v8_str("\x66\x6f\x6f")));
   // Make sure the value for foo is read from the prototype, and that
   // we don't get in trouble with reading the deleted cell value
   // sentinel.
-  CHECK_EQ(5, CompileRun("f()")->Int32Value());
+  CHECK_EQ(5, CompileRun("\x66\x28\x29")->Int32Value());
 }
 
 
@@ -15544,30 +15544,30 @@ TEST(InlinedFunctionAcrossContexts) {
 
   {
     v8::HandleScope inner_scope(CcTest::isolate());
-    CompileRun("var G = 42; function foo() { return G; }");
-    v8::Local<v8::Value> foo = ctx1->Global()->Get(v8_str("foo"));
+    CompileRun("\x76\x61\x72\x20\x47\x20\x3d\x20\x34\x32\x3b\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x47\x3b\x20\x7d");
+    v8::Local<v8::Value> foo = ctx1->Global()->Get(v8_str("\x66\x6f\x6f"));
     ctx2->Enter();
-    ctx2->Global()->Set(v8_str("o"), foo);
+    ctx2->Global()->Set(v8_str("\x6f"), foo);
     v8::Local<v8::Value> res = CompileRun(
-        "function f() { return o(); }"
-        "for (var i = 0; i < 10; ++i) f();"
-        "%OptimizeFunctionOnNextCall(f);"
-        "f();");
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x28\x29\x3b\x20\x7d"
+        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x66\x28\x29\x3b"
+        "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
+        "\x66\x28\x29\x3b");
     CHECK_EQ(42, res->Int32Value());
     ctx2->Exit();
     v8::Handle<v8::String> G_property =
-        v8::String::NewFromUtf8(CcTest::isolate(), "G");
+        v8::String::NewFromUtf8(CcTest::isolate(), "\x47");
     CHECK(ctx1->Global()->ForceDelete(G_property));
     ctx2->Enter();
     ExpectString(
-        "(function() {"
-        "  try {"
-        "    return f();"
-        "  } catch(e) {"
-        "    return e.toString();"
-        "  }"
-        " })()",
-        "ReferenceError: G is not defined");
+        "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+        "\x20\x20\x74\x72\x79\x20\x7b"
+        "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x28\x29\x3b"
+        "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+        "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x3b"
+        "\x20\x20\x7d"
+        "\x20\x7d\x29\x28\x29",
+        "\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x3a\x20\x47\x20\x69\x73\x20\x6e\x6f\x74\x20\x64\x65\x66\x69\x6e\x65\x64");
     ctx2->Exit();
     ctx1->Exit();
   }
@@ -15616,7 +15616,7 @@ THREADED_TEST(GetCallingContext) {
   ::calling_context2 = calling_context2;
 
   // Allow cross-domain access.
-  Local<String> token = v8_str("<security token>");
+  Local<String> token = v8_str("\x3c\x73\x65\x63\x75\x72\x69\x74\x79\x20\x74\x6f\x6b\x65\x6e\x3e");
   calling_context0->SetSecurityToken(token);
   calling_context1->SetSecurityToken(token);
   calling_context2->SetSecurityToken(token);
@@ -15625,24 +15625,24 @@ THREADED_TEST(GetCallingContext) {
   calling_context0->Enter();
   Local<v8::FunctionTemplate> callback_templ =
       v8::FunctionTemplate::New(isolate, GetCallingContextCallback);
-  calling_context0->Global()->Set(v8_str("callback"),
+  calling_context0->Global()->Set(v8_str("\x63\x61\x6c\x6c\x62\x61\x63\x6b"),
                                   callback_templ->GetFunction());
   calling_context0->Exit();
 
   // Expose context0 in context1 and set up a function that calls the
   // callback function.
   calling_context1->Enter();
-  calling_context1->Global()->Set(v8_str("context0"),
+  calling_context1->Global()->Set(v8_str("\x63\x6f\x6e\x74\x65\x78\x74\x30"),
                                   calling_context0->Global());
-  CompileRun("function f() { context0.callback() }");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x63\x6f\x6e\x74\x65\x78\x74\x30\x2e\x63\x61\x6c\x6c\x62\x61\x63\x6b\x28\x29\x20\x7d");
   calling_context1->Exit();
 
   // Expose context1 in context2 and call the callback function in
   // context0 indirectly through f in context1.
   calling_context2->Enter();
-  calling_context2->Global()->Set(v8_str("context1"),
+  calling_context2->Global()->Set(v8_str("\x63\x6f\x6e\x74\x65\x78\x74\x31"),
                                   calling_context1->Global());
-  CompileRun("context1.f()");
+  CompileRun("\x63\x6f\x6e\x74\x65\x78\x74\x31\x2e\x66\x28\x29");
   calling_context2->Exit();
   ::calling_context0.Clear();
   ::calling_context1.Clear();
@@ -15656,8 +15656,8 @@ THREADED_TEST(InitGlobalVarInProtoChain) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
   // Introduce a variable in the prototype chain.
-  CompileRun("__proto__.x = 42");
-  v8::Handle<v8::Value> result = CompileRun("var x = 43; x");
+  CompileRun("\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x2e\x78\x20\x3d\x20\x34\x32");
+  v8::Handle<v8::Value> result = CompileRun("\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x33\x3b\x20\x78");
   CHECK(!result->IsUndefined());
   CHECK_EQ(43, result->Int32Value());
 }
@@ -15676,11 +15676,11 @@ THREADED_TEST(ReplaceConstantFunction) {
   v8::Handle<v8::FunctionTemplate> func_templ =
       v8::FunctionTemplate::New(isolate);
   v8::Handle<v8::String> foo_string =
-      v8::String::NewFromUtf8(isolate, "foo");
+      v8::String::NewFromUtf8(isolate, "\x66\x6f\x6f");
   obj->Set(foo_string, func_templ->GetFunction());
   v8::Handle<v8::Object> obj_clone = obj->Clone();
   obj_clone->Set(foo_string,
-                 v8::String::NewFromUtf8(isolate, "Hello"));
+                 v8::String::NewFromUtf8(isolate, "\x48\x65\x6c\x6c\x6f"));
   CHECK(!obj->Get(foo_string)->IsUndefined());
 }
 
@@ -15725,53 +15725,53 @@ THREADED_TEST(PixelArray) {
   // jsobj->set_elements(*pixels);
   obj->SetIndexedPropertiesToPixelData(pixel_data, kElementCount);
   CheckElementValue(isolate, 1, jsobj, 1);
-  obj->Set(v8_str("field"), v8::Int32::New(CcTest::isolate(), 1503));
-  context->Global()->Set(v8_str("pixels"), obj);
-  v8::Handle<v8::Value> result = CompileRun("pixels.field");
+  obj->Set(v8_str("\x66\x69\x65\x6c\x64"), v8::Int32::New(CcTest::isolate(), 1503));
+  context->Global()->Set(v8_str("\x70\x69\x78\x65\x6c\x73"), obj);
+  v8::Handle<v8::Value> result = CompileRun("\x70\x69\x78\x65\x6c\x73\x2e\x66\x69\x65\x6c\x64");
   CHECK_EQ(1503, result->Int32Value());
-  result = CompileRun("pixels[1]");
+  result = CompileRun("\x70\x69\x78\x65\x6c\x73\x5b\x31\x5d");
   CHECK_EQ(1, result->Int32Value());
 
-  result = CompileRun("var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += pixels[i] = pixels[i] = -i;"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x2d\x69\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(-28, result->Int32Value());
 
-  result = CompileRun("var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += pixels[i] = pixels[i] = 0;"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x30\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(0, result->Int32Value());
 
-  result = CompileRun("var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += pixels[i] = pixels[i] = 255;"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x32\x35\x35\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(8 * 255, result->Int32Value());
 
-  result = CompileRun("var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += pixels[i] = pixels[i] = 256 + i;"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x32\x35\x36\x20\x2b\x20\x69\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(2076, result->Int32Value());
 
-  result = CompileRun("var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += pixels[i] = pixels[i] = i;"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(28, result->Int32Value());
 
-  result = CompileRun("var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += pixels[i];"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(28, result->Int32Value());
 
   i::Handle<i::Smi> value(i::Smi::FromInt(2),
@@ -15795,10 +15795,10 @@ THREADED_TEST(PixelArray) {
   USE(no_failure);
   CheckElementValue(isolate, 0, jsobj, 1);
 
-  result = CompileRun("for (var i = 0; i < 8; i++) {"
-                      "  pixels[i] = (i * 65) - 109;"
-                      "}"
-                      "pixels[1] + pixels[6];");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x28\x69\x20\x2a\x20\x36\x35\x29\x20\x2d\x20\x31\x30\x39\x3b"
+                      "\x7d"
+                      "\x70\x69\x78\x65\x6c\x73\x5b\x31\x5d\x20\x2b\x20\x70\x69\x78\x65\x6c\x73\x5b\x36\x5d\x3b");
   CHECK_EQ(255, result->Int32Value());
   CheckElementValue(isolate, 0, jsobj, 0);
   CheckElementValue(isolate, 0, jsobj, 1);
@@ -15808,17 +15808,17 @@ THREADED_TEST(PixelArray) {
   CheckElementValue(isolate, 216, jsobj, 5);
   CheckElementValue(isolate, 255, jsobj, 6);
   CheckElementValue(isolate, 255, jsobj, 7);
-  result = CompileRun("var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += pixels[i];"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(984, result->Int32Value());
 
-  result = CompileRun("for (var i = 0; i < 8; i++) {"
-                      "  pixels[i] = (i * 1.1);"
-                      "}"
-                      "pixels[1] + pixels[6];");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x28\x69\x20\x2a\x20\x31\x2e\x31\x29\x3b"
+                      "\x7d"
+                      "\x70\x69\x78\x65\x6c\x73\x5b\x31\x5d\x20\x2b\x20\x70\x69\x78\x65\x6c\x73\x5b\x36\x5d\x3b");
   CHECK_EQ(8, result->Int32Value());
   CheckElementValue(isolate, 0, jsobj, 0);
   CheckElementValue(isolate, 1, jsobj, 1);
@@ -15829,250 +15829,250 @@ THREADED_TEST(PixelArray) {
   CheckElementValue(isolate, 7, jsobj, 6);
   CheckElementValue(isolate, 8, jsobj, 7);
 
-  result = CompileRun("for (var i = 0; i < 8; i++) {"
-                      "  pixels[7] = undefined;"
-                      "}"
-                      "pixels[7];");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x70\x69\x78\x65\x6c\x73\x5b\x37\x5d\x20\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3b"
+                      "\x7d"
+                      "\x70\x69\x78\x65\x6c\x73\x5b\x37\x5d\x3b");
   CHECK_EQ(0, result->Int32Value());
   CheckElementValue(isolate, 0, jsobj, 7);
 
-  result = CompileRun("for (var i = 0; i < 8; i++) {"
-                      "  pixels[6] = '2.3';"
-                      "}"
-                      "pixels[6];");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x70\x69\x78\x65\x6c\x73\x5b\x36\x5d\x20\x3d\x20\x27\x32\x2e\x33\x27\x3b"
+                      "\x7d"
+                      "\x70\x69\x78\x65\x6c\x73\x5b\x36\x5d\x3b");
   CHECK_EQ(2, result->Int32Value());
   CheckElementValue(isolate, 2, jsobj, 6);
 
-  result = CompileRun("for (var i = 0; i < 8; i++) {"
-                      "  pixels[5] = NaN;"
-                      "}"
-                      "pixels[5];");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x70\x69\x78\x65\x6c\x73\x5b\x35\x5d\x20\x3d\x20\x4e\x61\x4e\x3b"
+                      "\x7d"
+                      "\x70\x69\x78\x65\x6c\x73\x5b\x35\x5d\x3b");
   CHECK_EQ(0, result->Int32Value());
   CheckElementValue(isolate, 0, jsobj, 5);
 
-  result = CompileRun("for (var i = 0; i < 8; i++) {"
-                      "  pixels[8] = Infinity;"
-                      "}"
-                      "pixels[8];");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x70\x69\x78\x65\x6c\x73\x5b\x38\x5d\x20\x3d\x20\x49\x6e\x66\x69\x6e\x69\x74\x79\x3b"
+                      "\x7d"
+                      "\x70\x69\x78\x65\x6c\x73\x5b\x38\x5d\x3b");
   CHECK_EQ(255, result->Int32Value());
   CheckElementValue(isolate, 255, jsobj, 8);
 
-  result = CompileRun("for (var i = 0; i < 8; i++) {"
-                      "  pixels[9] = -Infinity;"
-                      "}"
-                      "pixels[9];");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x70\x69\x78\x65\x6c\x73\x5b\x39\x5d\x20\x3d\x20\x2d\x49\x6e\x66\x69\x6e\x69\x74\x79\x3b"
+                      "\x7d"
+                      "\x70\x69\x78\x65\x6c\x73\x5b\x39\x5d\x3b");
   CHECK_EQ(0, result->Int32Value());
   CheckElementValue(isolate, 0, jsobj, 9);
 
-  result = CompileRun("pixels[3] = 33;"
-                      "delete pixels[3];"
-                      "pixels[3];");
+  result = CompileRun("\x70\x69\x78\x65\x6c\x73\x5b\x33\x5d\x20\x3d\x20\x33\x33\x3b"
+                      "\x64\x65\x6c\x65\x74\x65\x20\x70\x69\x78\x65\x6c\x73\x5b\x33\x5d\x3b"
+                      "\x70\x69\x78\x65\x6c\x73\x5b\x33\x5d\x3b");
   CHECK_EQ(33, result->Int32Value());
 
-  result = CompileRun("pixels[0] = 10; pixels[1] = 11;"
-                      "pixels[2] = 12; pixels[3] = 13;"
-                      "pixels.__defineGetter__('2',"
-                      "function() { return 120; });"
-                      "pixels[2];");
+  result = CompileRun("\x70\x69\x78\x65\x6c\x73\x5b\x30\x5d\x20\x3d\x20\x31\x30\x3b\x20\x70\x69\x78\x65\x6c\x73\x5b\x31\x5d\x20\x3d\x20\x31\x31\x3b"
+                      "\x70\x69\x78\x65\x6c\x73\x5b\x32\x5d\x20\x3d\x20\x31\x32\x3b\x20\x70\x69\x78\x65\x6c\x73\x5b\x33\x5d\x20\x3d\x20\x31\x33\x3b"
+                      "\x70\x69\x78\x65\x6c\x73\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x32\x27\x2c"
+                      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x32\x30\x3b\x20\x7d\x29\x3b"
+                      "\x70\x69\x78\x65\x6c\x73\x5b\x32\x5d\x3b");
   CHECK_EQ(12, result->Int32Value());
 
-  result = CompileRun("var js_array = new Array(40);"
-                      "js_array[0] = 77;"
-                      "js_array;");
-  CHECK_EQ(77, v8::Object::Cast(*result)->Get(v8_str("0"))->Int32Value());
+  result = CompileRun("\x76\x61\x72\x20\x6a\x73\x5f\x61\x72\x72\x61\x79\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x34\x30\x29\x3b"
+                      "\x6a\x73\x5f\x61\x72\x72\x61\x79\x5b\x30\x5d\x20\x3d\x20\x37\x37\x3b"
+                      "\x6a\x73\x5f\x61\x72\x72\x61\x79\x3b");
+  CHECK_EQ(77, v8::Object::Cast(*result)->Get(v8_str("\x30"))->Int32Value());
 
-  result = CompileRun("pixels[1] = 23;"
-                      "pixels.__proto__ = [];"
-                      "js_array.__proto__ = pixels;"
-                      "js_array.concat(pixels);");
-  CHECK_EQ(77, v8::Object::Cast(*result)->Get(v8_str("0"))->Int32Value());
-  CHECK_EQ(23, v8::Object::Cast(*result)->Get(v8_str("1"))->Int32Value());
+  result = CompileRun("\x70\x69\x78\x65\x6c\x73\x5b\x31\x5d\x20\x3d\x20\x32\x33\x3b"
+                      "\x70\x69\x78\x65\x6c\x73\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x5b\x5d\x3b"
+                      "\x6a\x73\x5f\x61\x72\x72\x61\x79\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x69\x78\x65\x6c\x73\x3b"
+                      "\x6a\x73\x5f\x61\x72\x72\x61\x79\x2e\x63\x6f\x6e\x63\x61\x74\x28\x70\x69\x78\x65\x6c\x73\x29\x3b");
+  CHECK_EQ(77, v8::Object::Cast(*result)->Get(v8_str("\x30"))->Int32Value());
+  CHECK_EQ(23, v8::Object::Cast(*result)->Get(v8_str("\x31"))->Int32Value());
 
-  result = CompileRun("pixels[1] = 23;");
+  result = CompileRun("\x70\x69\x78\x65\x6c\x73\x5b\x31\x5d\x20\x3d\x20\x32\x33\x3b");
   CHECK_EQ(23, result->Int32Value());
 
   // Test for index greater than 255.  Regression test for:
   // http://code.google.com/p/chromium/issues/detail?id=26337.
-  result = CompileRun("pixels[256] = 255;");
+  result = CompileRun("\x70\x69\x78\x65\x6c\x73\x5b\x32\x35\x36\x5d\x20\x3d\x20\x32\x35\x35\x3b");
   CHECK_EQ(255, result->Int32Value());
-  result = CompileRun("var i = 0;"
-                      "for (var j = 0; j < 8; j++) { i = pixels[256]; }"
-                      "i");
+  result = CompileRun("\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x38\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x69\x20\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x32\x35\x36\x5d\x3b\x20\x7d"
+                      "\x69");
   CHECK_EQ(255, result->Int32Value());
 
   // Make sure that pixel array ICs recognize when a non-pixel array
   // is passed to it.
-  result = CompileRun("function pa_load(p) {"
-                      "  var sum = 0;"
-                      "  for (var j = 0; j < 256; j++) { sum += p[j]; }"
-                      "  return sum;"
-                      "}"
-                      "for (var i = 0; i < 256; ++i) { pixels[i] = i; }"
-                      "for (var i = 0; i < 10; ++i) { pa_load(pixels); }"
-                      "just_ints = new Object();"
-                      "for (var i = 0; i < 256; ++i) { just_ints[i] = i; }"
-                      "for (var i = 0; i < 10; ++i) {"
-                      "  result = pa_load(just_ints);"
-                      "}"
-                      "result");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x29\x20\x7b"
+                      "\x20\x20\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x5b\x6a\x5d\x3b\x20\x7d"
+                      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b"
+                      "\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x69\x78\x65\x6c\x73\x29\x3b\x20\x7d"
+                      "\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x29\x3b"
+                      "\x7d"
+                      "\x72\x65\x73\x75\x6c\x74");
   CHECK_EQ(32640, result->Int32Value());
 
   // Make sure that pixel array ICs recognize out-of-bound accesses.
-  result = CompileRun("function pa_load(p, start) {"
-                      "  var sum = 0;"
-                      "  for (var j = start; j < 256; j++) { sum += p[j]; }"
-                      "  return sum;"
-                      "}"
-                      "for (var i = 0; i < 256; ++i) { pixels[i] = i; }"
-                      "for (var i = 0; i < 10; ++i) { pa_load(pixels,0); }"
-                      "for (var i = 0; i < 10; ++i) {"
-                      "  result = pa_load(pixels,-10);"
-                      "}"
-                      "result");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x2c\x20\x73\x74\x61\x72\x74\x29\x20\x7b"
+                      "\x20\x20\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x73\x74\x61\x72\x74\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x5b\x6a\x5d\x3b\x20\x7d"
+                      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b"
+                      "\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x69\x78\x65\x6c\x73\x2c\x30\x29\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x69\x78\x65\x6c\x73\x2c\x2d\x31\x30\x29\x3b"
+                      "\x7d"
+                      "\x72\x65\x73\x75\x6c\x74");
   CHECK_EQ(0, result->Int32Value());
 
   // Make sure that generic ICs properly handles a pixel array.
-  result = CompileRun("function pa_load(p) {"
-                      "  var sum = 0;"
-                      "  for (var j = 0; j < 256; j++) { sum += p[j]; }"
-                      "  return sum;"
-                      "}"
-                      "for (var i = 0; i < 256; ++i) { pixels[i] = i; }"
-                      "just_ints = new Object();"
-                      "for (var i = 0; i < 256; ++i) { just_ints[i] = i; }"
-                      "for (var i = 0; i < 10; ++i) { pa_load(just_ints); }"
-                      "for (var i = 0; i < 10; ++i) {"
-                      "  result = pa_load(pixels);"
-                      "}"
-                      "result");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x29\x20\x7b"
+                      "\x20\x20\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x5b\x6a\x5d\x3b\x20\x7d"
+                      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b"
+                      "\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x29\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x69\x78\x65\x6c\x73\x29\x3b"
+                      "\x7d"
+                      "\x72\x65\x73\x75\x6c\x74");
   CHECK_EQ(32640, result->Int32Value());
 
   // Make sure that generic load ICs recognize out-of-bound accesses in
   // pixel arrays.
-  result = CompileRun("function pa_load(p, start) {"
-                      "  var sum = 0;"
-                      "  for (var j = start; j < 256; j++) { sum += p[j]; }"
-                      "  return sum;"
-                      "}"
-                      "for (var i = 0; i < 256; ++i) { pixels[i] = i; }"
-                      "just_ints = new Object();"
-                      "for (var i = 0; i < 256; ++i) { just_ints[i] = i; }"
-                      "for (var i = 0; i < 10; ++i) { pa_load(just_ints,0); }"
-                      "for (var i = 0; i < 10; ++i) { pa_load(pixels,0); }"
-                      "for (var i = 0; i < 10; ++i) {"
-                      "  result = pa_load(pixels,-10);"
-                      "}"
-                      "result");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x2c\x20\x73\x74\x61\x72\x74\x29\x20\x7b"
+                      "\x20\x20\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x73\x74\x61\x72\x74\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x5b\x6a\x5d\x3b\x20\x7d"
+                      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b"
+                      "\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x2c\x30\x29\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x69\x78\x65\x6c\x73\x2c\x30\x29\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x69\x78\x65\x6c\x73\x2c\x2d\x31\x30\x29\x3b"
+                      "\x7d"
+                      "\x72\x65\x73\x75\x6c\x74");
   CHECK_EQ(0, result->Int32Value());
 
   // Make sure that generic ICs properly handles other types than pixel
   // arrays (that the inlined fast pixel array test leaves the right information
   // in the right registers).
-  result = CompileRun("function pa_load(p) {"
-                      "  var sum = 0;"
-                      "  for (var j = 0; j < 256; j++) { sum += p[j]; }"
-                      "  return sum;"
-                      "}"
-                      "for (var i = 0; i < 256; ++i) { pixels[i] = i; }"
-                      "just_ints = new Object();"
-                      "for (var i = 0; i < 256; ++i) { just_ints[i] = i; }"
-                      "for (var i = 0; i < 10; ++i) { pa_load(just_ints); }"
-                      "for (var i = 0; i < 10; ++i) { pa_load(pixels); }"
-                      "sparse_array = new Object();"
-                      "for (var i = 0; i < 256; ++i) { sparse_array[i] = i; }"
-                      "sparse_array[1000000] = 3;"
-                      "for (var i = 0; i < 10; ++i) {"
-                      "  result = pa_load(sparse_array);"
-                      "}"
-                      "result");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x29\x20\x7b"
+                      "\x20\x20\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x5b\x6a\x5d\x3b\x20\x7d"
+                      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b"
+                      "\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x29\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x69\x78\x65\x6c\x73\x29\x3b\x20\x7d"
+                      "\x73\x70\x61\x72\x73\x65\x5f\x61\x72\x72\x61\x79\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x73\x70\x61\x72\x73\x65\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x73\x70\x61\x72\x73\x65\x5f\x61\x72\x72\x61\x79\x5b\x31\x30\x30\x30\x30\x30\x30\x5d\x20\x3d\x20\x33\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x73\x70\x61\x72\x73\x65\x5f\x61\x72\x72\x61\x79\x29\x3b"
+                      "\x7d"
+                      "\x72\x65\x73\x75\x6c\x74");
   CHECK_EQ(32640, result->Int32Value());
 
   // Make sure that pixel array store ICs clamp values correctly.
-  result = CompileRun("function pa_store(p) {"
-                      "  for (var j = 0; j < 256; j++) { p[j] = j * 2; }"
-                      "}"
-                      "pa_store(pixels);"
-                      "var sum = 0;"
-                      "for (var j = 0; j < 256; j++) { sum += pixels[j]; }"
-                      "sum");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x29\x20\x7b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x70\x5b\x6a\x5d\x20\x3d\x20\x6a\x20\x2a\x20\x32\x3b\x20\x7d"
+                      "\x7d"
+                      "\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x69\x78\x65\x6c\x73\x29\x3b"
+                      "\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x6a\x5d\x3b\x20\x7d"
+                      "\x73\x75\x6d");
   CHECK_EQ(48896, result->Int32Value());
 
   // Make sure that pixel array stores correctly handle accesses outside
   // of the pixel array..
-  result = CompileRun("function pa_store(p,start) {"
-                      "  for (var j = 0; j < 256; j++) {"
-                      "    p[j+start] = j * 2;"
-                      "  }"
-                      "}"
-                      "pa_store(pixels,0);"
-                      "pa_store(pixels,-128);"
-                      "var sum = 0;"
-                      "for (var j = 0; j < 256; j++) { sum += pixels[j]; }"
-                      "sum");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x2c\x73\x74\x61\x72\x74\x29\x20\x7b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x20\x20\x70\x5b\x6a\x2b\x73\x74\x61\x72\x74\x5d\x20\x3d\x20\x6a\x20\x2a\x20\x32\x3b"
+                      "\x20\x20\x7d"
+                      "\x7d"
+                      "\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x69\x78\x65\x6c\x73\x2c\x30\x29\x3b"
+                      "\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x69\x78\x65\x6c\x73\x2c\x2d\x31\x32\x38\x29\x3b"
+                      "\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x6a\x5d\x3b\x20\x7d"
+                      "\x73\x75\x6d");
   CHECK_EQ(65280, result->Int32Value());
 
   // Make sure that the generic store stub correctly handle accesses outside
   // of the pixel array..
-  result = CompileRun("function pa_store(p,start) {"
-                      "  for (var j = 0; j < 256; j++) {"
-                      "    p[j+start] = j * 2;"
-                      "  }"
-                      "}"
-                      "pa_store(pixels,0);"
-                      "just_ints = new Object();"
-                      "for (var i = 0; i < 256; ++i) { just_ints[i] = i; }"
-                      "pa_store(just_ints, 0);"
-                      "pa_store(pixels,-128);"
-                      "var sum = 0;"
-                      "for (var j = 0; j < 256; j++) { sum += pixels[j]; }"
-                      "sum");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x2c\x73\x74\x61\x72\x74\x29\x20\x7b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x20\x20\x70\x5b\x6a\x2b\x73\x74\x61\x72\x74\x5d\x20\x3d\x20\x6a\x20\x2a\x20\x32\x3b"
+                      "\x20\x20\x7d"
+                      "\x7d"
+                      "\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x69\x78\x65\x6c\x73\x2c\x30\x29\x3b"
+                      "\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x2c\x20\x30\x29\x3b"
+                      "\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x69\x78\x65\x6c\x73\x2c\x2d\x31\x32\x38\x29\x3b"
+                      "\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x6a\x5d\x3b\x20\x7d"
+                      "\x73\x75\x6d");
   CHECK_EQ(65280, result->Int32Value());
 
   // Make sure that the generic keyed store stub clamps pixel array values
   // correctly.
-  result = CompileRun("function pa_store(p) {"
-                      "  for (var j = 0; j < 256; j++) { p[j] = j * 2; }"
-                      "}"
-                      "pa_store(pixels);"
-                      "just_ints = new Object();"
-                      "pa_store(just_ints);"
-                      "pa_store(pixels);"
-                      "var sum = 0;"
-                      "for (var j = 0; j < 256; j++) { sum += pixels[j]; }"
-                      "sum");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x29\x20\x7b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x70\x5b\x6a\x5d\x20\x3d\x20\x6a\x20\x2a\x20\x32\x3b\x20\x7d"
+                      "\x7d"
+                      "\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x69\x78\x65\x6c\x73\x29\x3b"
+                      "\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+                      "\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x6a\x75\x73\x74\x5f\x69\x6e\x74\x73\x29\x3b"
+                      "\x70\x61\x5f\x73\x74\x6f\x72\x65\x28\x70\x69\x78\x65\x6c\x73\x29\x3b"
+                      "\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x32\x35\x36\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x6a\x5d\x3b\x20\x7d"
+                      "\x73\x75\x6d");
   CHECK_EQ(48896, result->Int32Value());
 
   // Make sure that pixel array loads are optimized by crankshaft.
-  result = CompileRun("function pa_load(p) {"
-                      "  var sum = 0;"
-                      "  for (var i=0; i<256; ++i) {"
-                      "    sum += p[i];"
-                      "  }"
-                      "  return sum; "
-                      "}"
-                      "for (var i = 0; i < 256; ++i) { pixels[i] = i; }"
-                      "for (var i = 0; i < 5000; ++i) {"
-                      "  result = pa_load(pixels);"
-                      "}"
-                      "result");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x29\x20\x7b"
+                      "\x20\x20\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x3d\x30\x3b\x20\x69\x3c\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x5b\x69\x5d\x3b"
+                      "\x20\x20\x7d"
+                      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b\x20"
+                      "\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x35\x30\x30\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x69\x78\x65\x6c\x73\x29\x3b"
+                      "\x7d"
+                      "\x72\x65\x73\x75\x6c\x74");
   CHECK_EQ(32640, result->Int32Value());
 
   // Make sure that pixel array stores are optimized by crankshaft.
-  result = CompileRun("function pa_init(p) {"
-                      "for (var i = 0; i < 256; ++i) { p[i] = i; }"
-                      "}"
-                      "function pa_load(p) {"
-                      "  var sum = 0;"
-                      "  for (var i=0; i<256; ++i) {"
-                      "    sum += p[i];"
-                      "  }"
-                      "  return sum; "
-                      "}"
-                      "for (var i = 0; i < 5000; ++i) {"
-                      "  pa_init(pixels);"
-                      "}"
-                      "result = pa_load(pixels);"
-                      "result");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x69\x6e\x69\x74\x28\x70\x29\x20\x7b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x70\x5b\x69\x5d\x20\x3d\x20\x69\x3b\x20\x7d"
+                      "\x7d"
+                      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x29\x20\x7b"
+                      "\x20\x20\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x3d\x30\x3b\x20\x69\x3c\x32\x35\x36\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x5b\x69\x5d\x3b"
+                      "\x20\x20\x7d"
+                      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b\x20"
+                      "\x7d"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x35\x30\x30\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x70\x61\x5f\x69\x6e\x69\x74\x28\x70\x69\x78\x65\x6c\x73\x29\x3b"
+                      "\x7d"
+                      "\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x70\x61\x5f\x6c\x6f\x61\x64\x28\x70\x69\x78\x65\x6c\x73\x29\x3b"
+                      "\x72\x65\x73\x75\x6c\x74");
   CHECK_EQ(32640, result->Int32Value());
 
   free(pixel_data);
@@ -16130,16 +16130,16 @@ THREADED_TEST(PixelArrayWithInterceptor) {
                                    NotHandledIndexedPropertySetter);
   v8::Handle<v8::Object> obj = templ->NewInstance();
   obj->SetIndexedPropertiesToPixelData(pixel_data, kElementCount);
-  context->Global()->Set(v8_str("pixels"), obj);
-  v8::Handle<v8::Value> result = CompileRun("pixels[1]");
+  context->Global()->Set(v8_str("\x70\x69\x78\x65\x6c\x73"), obj);
+  v8::Handle<v8::Value> result = CompileRun("\x70\x69\x78\x65\x6c\x73\x5b\x31\x5d");
   CHECK_EQ(1, result->Int32Value());
-  result = CompileRun("var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += pixels[i] = pixels[i] = -i;"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x70\x69\x78\x65\x6c\x73\x5b\x69\x5d\x20\x3d\x20\x2d\x69\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(-28, result->Int32Value());
-  result = CompileRun("pixels.hasOwnProperty('1')");
+  result = CompileRun("\x70\x69\x78\x65\x6c\x73\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x31\x27\x29");
   CHECK(result->BooleanValue());
   free(pixel_data);
 }
@@ -16182,73 +16182,73 @@ static void ObjectWithExternalArrayTestHelper(
     int64_t low, int64_t high) {
   i::Handle<i::JSObject> jsobj = v8::Utils::OpenHandle(*obj);
   i::Isolate* isolate = jsobj->GetIsolate();
-  obj->Set(v8_str("field"),
+  obj->Set(v8_str("\x66\x69\x65\x6c\x64"),
            v8::Int32::New(reinterpret_cast<v8::Isolate*>(isolate), 1503));
-  context->Global()->Set(v8_str("ext_array"), obj);
-  v8::Handle<v8::Value> result = CompileRun("ext_array.field");
+  context->Global()->Set(v8_str("\x65\x78\x74\x5f\x61\x72\x72\x61\x79"), obj);
+  v8::Handle<v8::Value> result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x2e\x66\x69\x65\x6c\x64");
   CHECK_EQ(1503, result->Int32Value());
-  result = CompileRun("ext_array[1]");
+  result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x31\x5d");
   CHECK_EQ(1, result->Int32Value());
 
   // Check assigned smis
-  result = CompileRun("for (var i = 0; i < 8; i++) {"
-                      "  ext_array[i] = i;"
-                      "}"
-                      "var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += ext_array[i];"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x69\x3b"
+                      "\x7d"
+                      "\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
 
   CHECK_EQ(28, result->Int32Value());
   // Check pass through of assigned smis
-  result = CompileRun("var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += ext_array[i] = ext_array[i] = -i;"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x2d\x69\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(-28, result->Int32Value());
 
 
   // Check assigned smis in reverse order
-  result = CompileRun("for (var i = 8; --i >= 0; ) {"
-                      "  ext_array[i] = i;"
-                      "}"
-                      "var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  sum += ext_array[i];"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x38\x3b\x20\x2d\x2d\x69\x20\x3e\x3d\x20\x30\x3b\x20\x29\x20\x7b"
+                      "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x69\x3b"
+                      "\x7d"
+                      "\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(28, result->Int32Value());
 
   // Check pass through of assigned HeapNumbers
-  result = CompileRun("var sum = 0;"
-                      "for (var i = 0; i < 16; i+=2) {"
-                      "  sum += ext_array[i] = ext_array[i] = (-i * 0.5);"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x3d\x32\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x28\x2d\x69\x20\x2a\x20\x30\x2e\x35\x29\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(-28, result->Int32Value());
 
   // Check assigned HeapNumbers
-  result = CompileRun("for (var i = 0; i < 16; i+=2) {"
-                      "  ext_array[i] = (i * 0.5);"
-                      "}"
-                      "var sum = 0;"
-                      "for (var i = 0; i < 16; i+=2) {"
-                      "  sum += ext_array[i];"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x3d\x32\x29\x20\x7b"
+                      "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x28\x69\x20\x2a\x20\x30\x2e\x35\x29\x3b"
+                      "\x7d"
+                      "\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x3d\x32\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(28, result->Int32Value());
 
   // Check assigned HeapNumbers in reverse order
-  result = CompileRun("for (var i = 14; i >= 0; i-=2) {"
-                      "  ext_array[i] = (i * 0.5);"
-                      "}"
-                      "var sum = 0;"
-                      "for (var i = 0; i < 16; i+=2) {"
-                      "  sum += ext_array[i];"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x31\x34\x3b\x20\x69\x20\x3e\x3d\x20\x30\x3b\x20\x69\x2d\x3d\x32\x29\x20\x7b"
+                      "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x28\x69\x20\x2a\x20\x30\x2e\x35\x29\x3b"
+                      "\x7d"
+                      "\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x3d\x32\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(28, result->Int32Value());
 
   i::ScopedVector<char> test_buf(1024);
@@ -16256,14 +16256,14 @@ static void ObjectWithExternalArrayTestHelper(
   // Check legal boundary conditions.
   // The repeated loads and stores ensure the ICs are exercised.
   const char* boundary_program =
-      "var res = 0;"
-      "for (var i = 0; i < 16; i++) {"
-      "  ext_array[i] = %lld;"
-      "  if (i > 8) {"
-      "    res = ext_array[i];"
-      "  }"
-      "}"
-      "res;";
+      "\x76\x61\x72\x20\x72\x65\x73\x20\x3d\x20\x30\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x6c\x93\x93\x84\x3b"
+      "\x20\x20\x69\x66\x20\x28\x69\x20\x3e\x20\x38\x29\x20\x7b"
+      "\x20\x20\x20\x20\x72\x65\x73\x20\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x3b"
+      "\x20\x20\x7d"
+      "\x7d"
+      "\x72\x65\x73\x3b";
   i::SNPrintF(test_buf,
               boundary_program,
               low);
@@ -16277,51 +16277,51 @@ static void ObjectWithExternalArrayTestHelper(
   CHECK_EQ(high, result->IntegerValue());
 
   // Check misprediction of type in IC.
-  result = CompileRun("var tmp_array = ext_array;"
-                      "var sum = 0;"
-                      "for (var i = 0; i < 8; i++) {"
-                      "  tmp_array[i] = i;"
-                      "  sum += tmp_array[i];"
-                      "  if (i == 4) {"
-                      "    tmp_array = {};"
-                      "  }"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x76\x61\x72\x20\x74\x6d\x70\x5f\x61\x72\x72\x61\x79\x20\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x3b"
+                      "\x76\x61\x72\x20\x73\x75\x6d\x20\x3d\x20\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x74\x6d\x70\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x69\x3b"
+                      "\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x74\x6d\x70\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x3b"
+                      "\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x34\x29\x20\x7b"
+                      "\x20\x20\x20\x20\x74\x6d\x70\x5f\x61\x72\x72\x61\x79\x20\x3d\x20\x7b\x7d\x3b"
+                      "\x20\x20\x7d"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   // Force GC to trigger verification.
   CcTest::heap()->CollectAllGarbage(i::Heap::kNoGCFlags);
   CHECK_EQ(28, result->Int32Value());
 
   // Make sure out-of-range loads do not throw.
   i::SNPrintF(test_buf,
-              "var caught_exception = false;"
-              "try {"
-              "  ext_array[%d];"
-              "} catch (e) {"
-              "  caught_exception = true;"
-              "}"
-              "caught_exception;",
+              "\x76\x61\x72\x20\x63\x61\x75\x67\x68\x74\x5f\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
+              "\x74\x72\x79\x20\x7b"
+              "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x6c\x84\x5d\x3b"
+              "\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+              "\x20\x20\x63\x61\x75\x67\x68\x74\x5f\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x20\x3d\x20\x74\x72\x75\x65\x3b"
+              "\x7d"
+              "\x63\x61\x75\x67\x68\x74\x5f\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x3b",
               element_count);
   result = CompileRun(test_buf.start());
   CHECK_EQ(false, result->BooleanValue());
 
   // Make sure out-of-range stores do not throw.
   i::SNPrintF(test_buf,
-              "var caught_exception = false;"
-              "try {"
-              "  ext_array[%d] = 1;"
-              "} catch (e) {"
-              "  caught_exception = true;"
-              "}"
-              "caught_exception;",
+              "\x76\x61\x72\x20\x63\x61\x75\x67\x68\x74\x5f\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
+              "\x74\x72\x79\x20\x7b"
+              "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x6c\x84\x5d\x20\x3d\x20\x31\x3b"
+              "\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b"
+              "\x20\x20\x63\x61\x75\x67\x68\x74\x5f\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x20\x3d\x20\x74\x72\x75\x65\x3b"
+              "\x7d"
+              "\x63\x61\x75\x67\x68\x74\x5f\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x3b",
               element_count);
   result = CompileRun(test_buf.start());
   CHECK_EQ(false, result->BooleanValue());
 
   // Check other boundary conditions, values and operations.
-  result = CompileRun("for (var i = 0; i < 8; i++) {"
-                      "  ext_array[7] = undefined;"
-                      "}"
-                      "ext_array[7];");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x37\x5d\x20\x3d\x20\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3b"
+                      "\x7d"
+                      "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x37\x5d\x3b");
   CHECK_EQ(0, result->Int32Value());
   if (array_type == v8::kExternalFloat64Array ||
       array_type == v8::kExternalFloat32Array) {
@@ -16333,10 +16333,10 @@ static void ObjectWithExternalArrayTestHelper(
     CheckElementValue(isolate, 0, jsobj, 7);
   }
 
-  result = CompileRun("for (var i = 0; i < 8; i++) {"
-                      "  ext_array[6] = '2.3';"
-                      "}"
-                      "ext_array[6];");
+  result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                      "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x36\x5d\x20\x3d\x20\x27\x32\x2e\x33\x27\x3b"
+                      "\x7d"
+                      "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x36\x5d\x3b");
   CHECK_EQ(2, result->Int32Value());
   CHECK_EQ(2,
            static_cast<int>(
@@ -16347,48 +16347,48 @@ static void ObjectWithExternalArrayTestHelper(
       array_type != v8::kExternalFloat64Array) {
     // Though the specification doesn't state it, be explicit about
     // converting NaNs and +/-Infinity to zero.
-    result = CompileRun("for (var i = 0; i < 8; i++) {"
-                        "  ext_array[i] = 5;"
-                        "}"
-                        "for (var i = 0; i < 8; i++) {"
-                        "  ext_array[i] = NaN;"
-                        "}"
-                        "ext_array[5];");
+    result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                        "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x35\x3b"
+                        "\x7d"
+                        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                        "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x4e\x61\x4e\x3b"
+                        "\x7d"
+                        "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x35\x5d\x3b");
     CHECK_EQ(0, result->Int32Value());
     CheckElementValue(isolate, 0, jsobj, 5);
 
-    result = CompileRun("for (var i = 0; i < 8; i++) {"
-                        "  ext_array[i] = 5;"
-                        "}"
-                        "for (var i = 0; i < 8; i++) {"
-                        "  ext_array[i] = Infinity;"
-                        "}"
-                        "ext_array[5];");
+    result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                        "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x35\x3b"
+                        "\x7d"
+                        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                        "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x49\x6e\x66\x69\x6e\x69\x74\x79\x3b"
+                        "\x7d"
+                        "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x35\x5d\x3b");
     int expected_value =
         (array_type == v8::kExternalUint8ClampedArray) ? 255 : 0;
     CHECK_EQ(expected_value, result->Int32Value());
     CheckElementValue(isolate, expected_value, jsobj, 5);
 
-    result = CompileRun("for (var i = 0; i < 8; i++) {"
-                        "  ext_array[i] = 5;"
-                        "}"
-                        "for (var i = 0; i < 8; i++) {"
-                        "  ext_array[i] = -Infinity;"
-                        "}"
-                        "ext_array[5];");
+    result = CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                        "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x35\x3b"
+                        "\x7d"
+                        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x38\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                        "\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x3d\x20\x2d\x49\x6e\x66\x69\x6e\x69\x74\x79\x3b"
+                        "\x7d"
+                        "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x35\x5d\x3b");
     CHECK_EQ(0, result->Int32Value());
     CheckElementValue(isolate, 0, jsobj, 5);
 
     // Check truncation behavior of integral arrays.
     const char* unsigned_data =
-        "var source_data = [0.6, 10.6];"
-        "var expected_results = [0, 10];";
+        "\x76\x61\x72\x20\x73\x6f\x75\x72\x63\x65\x5f\x64\x61\x74\x61\x20\x3d\x20\x5b\x30\x2e\x36\x2c\x20\x31\x30\x2e\x36\x5d\x3b"
+        "\x76\x61\x72\x20\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x73\x20\x3d\x20\x5b\x30\x2c\x20\x31\x30\x5d\x3b";
     const char* signed_data =
-        "var source_data = [0.6, 10.6, -0.6, -10.6];"
-        "var expected_results = [0, 10, 0, -10];";
+        "\x76\x61\x72\x20\x73\x6f\x75\x72\x63\x65\x5f\x64\x61\x74\x61\x20\x3d\x20\x5b\x30\x2e\x36\x2c\x20\x31\x30\x2e\x36\x2c\x20\x2d\x30\x2e\x36\x2c\x20\x2d\x31\x30\x2e\x36\x5d\x3b"
+        "\x76\x61\x72\x20\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x73\x20\x3d\x20\x5b\x30\x2c\x20\x31\x30\x2c\x20\x30\x2c\x20\x2d\x31\x30\x5d\x3b";
     const char* pixel_data =
-        "var source_data = [0.6, 10.6];"
-        "var expected_results = [1, 11];";
+        "\x76\x61\x72\x20\x73\x6f\x75\x72\x63\x65\x5f\x64\x61\x74\x61\x20\x3d\x20\x5b\x30\x2e\x36\x2c\x20\x31\x30\x2e\x36\x5d\x3b"
+        "\x76\x61\x72\x20\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x73\x20\x3d\x20\x5b\x31\x2c\x20\x31\x31\x5d\x3b";
     bool is_unsigned =
         (array_type == v8::kExternalUint8Array ||
          array_type == v8::kExternalUint16Array ||
@@ -16396,16 +16396,16 @@ static void ObjectWithExternalArrayTestHelper(
     bool is_pixel_data = array_type == v8::kExternalUint8ClampedArray;
 
     i::SNPrintF(test_buf,
-                "%s"
-                "var all_passed = true;"
-                "for (var i = 0; i < source_data.length; i++) {"
-                "  for (var j = 0; j < 8; j++) {"
-                "    ext_array[j] = source_data[i];"
-                "  }"
-                "  all_passed = all_passed &&"
-                "               (ext_array[5] == expected_results[i]);"
-                "}"
-                "all_passed;",
+                "\x6c\xa2"
+                "\x76\x61\x72\x20\x61\x6c\x6c\x5f\x70\x61\x73\x73\x65\x64\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x73\x6f\x75\x72\x63\x65\x5f\x64\x61\x74\x61\x2e\x6c\x65\x6e\x67\x74\x68\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x38\x3b\x20\x6a\x2b\x2b\x29\x20\x7b"
+                "\x20\x20\x20\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x6a\x5d\x20\x3d\x20\x73\x6f\x75\x72\x63\x65\x5f\x64\x61\x74\x61\x5b\x69\x5d\x3b"
+                "\x20\x20\x7d"
+                "\x20\x20\x61\x6c\x6c\x5f\x70\x61\x73\x73\x65\x64\x20\x3d\x20\x61\x6c\x6c\x5f\x70\x61\x73\x73\x65\x64\x20\x26\x26"
+                "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x28\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x35\x5d\x20\x3d\x3d\x20\x65\x78\x70\x65\x63\x74\x65\x64\x5f\x72\x65\x73\x75\x6c\x74\x73\x5b\x69\x5d\x29\x3b"
+                "\x7d"
+                "\x61\x6c\x6c\x5f\x70\x61\x73\x73\x65\x64\x3b",
                 (is_unsigned ?
                      unsigned_data :
                      (is_pixel_data ? pixel_data : signed_data)));
@@ -16420,60 +16420,60 @@ static void ObjectWithExternalArrayTestHelper(
   }
 
   // Test complex assignments
-  result = CompileRun("function ee_op_test_complex_func(sum) {"
-                      " for (var i = 0; i < 40; ++i) {"
-                      "   sum += (ext_array[i] += 1);"
-                      "   sum += (ext_array[i] -= 1);"
-                      " } "
-                      " return sum;"
-                      "}"
-                      "sum=0;"
-                      "for (var i=0;i<10000;++i) {"
-                      "  sum=ee_op_test_complex_func(sum);"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x65\x5f\x6f\x70\x5f\x74\x65\x73\x74\x5f\x63\x6f\x6d\x70\x6c\x65\x78\x5f\x66\x75\x6e\x63\x28\x73\x75\x6d\x29\x20\x7b"
+                      "\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x34\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x28\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x2b\x3d\x20\x31\x29\x3b"
+                      "\x20\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x28\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x20\x2d\x3d\x20\x31\x29\x3b"
+                      "\x20\x7d\x20"
+                      "\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3d\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x3d\x30\x3b\x69\x3c\x31\x30\x30\x30\x30\x3b\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x3d\x65\x65\x5f\x6f\x70\x5f\x74\x65\x73\x74\x5f\x63\x6f\x6d\x70\x6c\x65\x78\x5f\x66\x75\x6e\x63\x28\x73\x75\x6d\x29\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(16000000, result->Int32Value());
 
   // Test count operations
-  result = CompileRun("function ee_op_test_count_func(sum) {"
-                      " for (var i = 0; i < 40; ++i) {"
-                      "   sum += (++ext_array[i]);"
-                      "   sum += (--ext_array[i]);"
-                      " } "
-                      " return sum;"
-                      "}"
-                      "sum=0;"
-                      "for (var i=0;i<10000;++i) {"
-                      "  sum=ee_op_test_count_func(sum);"
-                      "}"
-                      "sum;");
+  result = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x65\x5f\x6f\x70\x5f\x74\x65\x73\x74\x5f\x63\x6f\x75\x6e\x74\x5f\x66\x75\x6e\x63\x28\x73\x75\x6d\x29\x20\x7b"
+                      "\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x34\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x28\x2b\x2b\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x29\x3b"
+                      "\x20\x20\x20\x73\x75\x6d\x20\x2b\x3d\x20\x28\x2d\x2d\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x69\x5d\x29\x3b"
+                      "\x20\x7d\x20"
+                      "\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x75\x6d\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3d\x30\x3b"
+                      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x3d\x30\x3b\x69\x3c\x31\x30\x30\x30\x30\x3b\x2b\x2b\x69\x29\x20\x7b"
+                      "\x20\x20\x73\x75\x6d\x3d\x65\x65\x5f\x6f\x70\x5f\x74\x65\x73\x74\x5f\x63\x6f\x75\x6e\x74\x5f\x66\x75\x6e\x63\x28\x73\x75\x6d\x29\x3b"
+                      "\x7d"
+                      "\x73\x75\x6d\x3b");
   CHECK_EQ(16000000, result->Int32Value());
 
-  result = CompileRun("ext_array[3] = 33;"
-                      "delete ext_array[3];"
-                      "ext_array[3];");
+  result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x33\x5d\x20\x3d\x20\x33\x33\x3b"
+                      "\x64\x65\x6c\x65\x74\x65\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x33\x5d\x3b"
+                      "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x33\x5d\x3b");
   CHECK_EQ(33, result->Int32Value());
 
-  result = CompileRun("ext_array[0] = 10; ext_array[1] = 11;"
-                      "ext_array[2] = 12; ext_array[3] = 13;"
-                      "ext_array.__defineGetter__('2',"
-                      "function() { return 120; });"
-                      "ext_array[2];");
+  result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x30\x5d\x20\x3d\x20\x31\x30\x3b\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x31\x5d\x20\x3d\x20\x31\x31\x3b"
+                      "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x32\x5d\x20\x3d\x20\x31\x32\x3b\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x33\x5d\x20\x3d\x20\x31\x33\x3b"
+                      "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x32\x27\x2c"
+                      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x32\x30\x3b\x20\x7d\x29\x3b"
+                      "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x32\x5d\x3b");
   CHECK_EQ(12, result->Int32Value());
 
-  result = CompileRun("var js_array = new Array(40);"
-                      "js_array[0] = 77;"
-                      "js_array;");
-  CHECK_EQ(77, v8::Object::Cast(*result)->Get(v8_str("0"))->Int32Value());
+  result = CompileRun("\x76\x61\x72\x20\x6a\x73\x5f\x61\x72\x72\x61\x79\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x34\x30\x29\x3b"
+                      "\x6a\x73\x5f\x61\x72\x72\x61\x79\x5b\x30\x5d\x20\x3d\x20\x37\x37\x3b"
+                      "\x6a\x73\x5f\x61\x72\x72\x61\x79\x3b");
+  CHECK_EQ(77, v8::Object::Cast(*result)->Get(v8_str("\x30"))->Int32Value());
 
-  result = CompileRun("ext_array[1] = 23;"
-                      "ext_array.__proto__ = [];"
-                      "js_array.__proto__ = ext_array;"
-                      "js_array.concat(ext_array);");
-  CHECK_EQ(77, v8::Object::Cast(*result)->Get(v8_str("0"))->Int32Value());
-  CHECK_EQ(23, v8::Object::Cast(*result)->Get(v8_str("1"))->Int32Value());
+  result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x31\x5d\x20\x3d\x20\x32\x33\x3b"
+                      "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x5b\x5d\x3b"
+                      "\x6a\x73\x5f\x61\x72\x72\x61\x79\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x3b"
+                      "\x6a\x73\x5f\x61\x72\x72\x61\x79\x2e\x63\x6f\x6e\x63\x61\x74\x28\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x29\x3b");
+  CHECK_EQ(77, v8::Object::Cast(*result)->Get(v8_str("\x30"))->Int32Value());
+  CHECK_EQ(23, v8::Object::Cast(*result)->Get(v8_str("\x31"))->Int32Value());
 
-  result = CompileRun("ext_array[1] = 23;");
+  result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x31\x5d\x20\x3d\x20\x32\x33\x3b");
   CHECK_EQ(23, result->Int32Value());
 }
 
@@ -16644,7 +16644,7 @@ static void ExternalArrayTestHelper(v8::ExternalArrayType array_type,
     large_obj->SetIndexedPropertiesToExternalArrayData(large_array_data,
                                                        array_type,
                                                        kLargeElementCount);
-    context->Global()->Set(v8_str("large_array"), large_obj);
+    context->Global()->Set(v8_str("\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79"), large_obj);
     // Initialize contents of a few rows.
     for (int x = 0; x < 300; x++) {
       int row = 0;
@@ -16670,35 +16670,35 @@ static void ExternalArrayTestHelper(v8::ExternalArrayType array_type,
     // that the computation of the index (which goes into eax) has
     // high bits set which will not be overwritten by a byte or short
     // load.
-    result = CompileRun("var failed = false;"
-                        "var offset = 0;"
-                        "for (var i = 0; i < 300; i++) {"
-                        "  if (large_array[4 * i] != 127 ||"
-                        "      large_array[4 * i + 1] != 0 ||"
-                        "      large_array[4 * i + 2] != 0 ||"
-                        "      large_array[4 * i + 3] != 127) {"
-                        "    failed = true;"
-                        "  }"
-                        "}"
-                        "offset = 150 * 300 * 4;"
-                        "for (var i = 0; i < 300; i++) {"
-                        "  if (large_array[offset + 4 * i] != 127 ||"
-                        "      large_array[offset + 4 * i + 1] != 0 ||"
-                        "      large_array[offset + 4 * i + 2] != 0 ||"
-                        "      large_array[offset + 4 * i + 3] != 127) {"
-                        "    failed = true;"
-                        "  }"
-                        "}"
-                        "offset = 298 * 300 * 4;"
-                        "for (var i = 0; i < 300; i++) {"
-                        "  if (large_array[offset + 4 * i] != 127 ||"
-                        "      large_array[offset + 4 * i + 1] != 0 ||"
-                        "      large_array[offset + 4 * i + 2] != 0 ||"
-                        "      large_array[offset + 4 * i + 3] != 127) {"
-                        "    failed = true;"
-                        "  }"
-                        "}"
-                        "!failed;");
+    result = CompileRun("\x76\x61\x72\x20\x66\x61\x69\x6c\x65\x64\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
+                        "\x76\x61\x72\x20\x6f\x66\x66\x73\x65\x74\x20\x3d\x20\x30\x3b"
+                        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x33\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                        "\x20\x20\x69\x66\x20\x28\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x34\x20\x2a\x20\x69\x5d\x20\x21\x3d\x20\x31\x32\x37\x20\x7c\x7c"
+                        "\x20\x20\x20\x20\x20\x20\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x34\x20\x2a\x20\x69\x20\x2b\x20\x31\x5d\x20\x21\x3d\x20\x30\x20\x7c\x7c"
+                        "\x20\x20\x20\x20\x20\x20\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x34\x20\x2a\x20\x69\x20\x2b\x20\x32\x5d\x20\x21\x3d\x20\x30\x20\x7c\x7c"
+                        "\x20\x20\x20\x20\x20\x20\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x34\x20\x2a\x20\x69\x20\x2b\x20\x33\x5d\x20\x21\x3d\x20\x31\x32\x37\x29\x20\x7b"
+                        "\x20\x20\x20\x20\x66\x61\x69\x6c\x65\x64\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                        "\x20\x20\x7d"
+                        "\x7d"
+                        "\x6f\x66\x66\x73\x65\x74\x20\x3d\x20\x31\x35\x30\x20\x2a\x20\x33\x30\x30\x20\x2a\x20\x34\x3b"
+                        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x33\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                        "\x20\x20\x69\x66\x20\x28\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x6f\x66\x66\x73\x65\x74\x20\x2b\x20\x34\x20\x2a\x20\x69\x5d\x20\x21\x3d\x20\x31\x32\x37\x20\x7c\x7c"
+                        "\x20\x20\x20\x20\x20\x20\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x6f\x66\x66\x73\x65\x74\x20\x2b\x20\x34\x20\x2a\x20\x69\x20\x2b\x20\x31\x5d\x20\x21\x3d\x20\x30\x20\x7c\x7c"
+                        "\x20\x20\x20\x20\x20\x20\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x6f\x66\x66\x73\x65\x74\x20\x2b\x20\x34\x20\x2a\x20\x69\x20\x2b\x20\x32\x5d\x20\x21\x3d\x20\x30\x20\x7c\x7c"
+                        "\x20\x20\x20\x20\x20\x20\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x6f\x66\x66\x73\x65\x74\x20\x2b\x20\x34\x20\x2a\x20\x69\x20\x2b\x20\x33\x5d\x20\x21\x3d\x20\x31\x32\x37\x29\x20\x7b"
+                        "\x20\x20\x20\x20\x66\x61\x69\x6c\x65\x64\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                        "\x20\x20\x7d"
+                        "\x7d"
+                        "\x6f\x66\x66\x73\x65\x74\x20\x3d\x20\x32\x39\x38\x20\x2a\x20\x33\x30\x30\x20\x2a\x20\x34\x3b"
+                        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x33\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                        "\x20\x20\x69\x66\x20\x28\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x6f\x66\x66\x73\x65\x74\x20\x2b\x20\x34\x20\x2a\x20\x69\x5d\x20\x21\x3d\x20\x31\x32\x37\x20\x7c\x7c"
+                        "\x20\x20\x20\x20\x20\x20\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x6f\x66\x66\x73\x65\x74\x20\x2b\x20\x34\x20\x2a\x20\x69\x20\x2b\x20\x31\x5d\x20\x21\x3d\x20\x30\x20\x7c\x7c"
+                        "\x20\x20\x20\x20\x20\x20\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x6f\x66\x66\x73\x65\x74\x20\x2b\x20\x34\x20\x2a\x20\x69\x20\x2b\x20\x32\x5d\x20\x21\x3d\x20\x30\x20\x7c\x7c"
+                        "\x20\x20\x20\x20\x20\x20\x6c\x61\x72\x67\x65\x5f\x61\x72\x72\x61\x79\x5b\x6f\x66\x66\x73\x65\x74\x20\x2b\x20\x34\x20\x2a\x20\x69\x20\x2b\x20\x33\x5d\x20\x21\x3d\x20\x31\x32\x37\x29\x20\x7b"
+                        "\x20\x20\x20\x20\x66\x61\x69\x6c\x65\x64\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                        "\x20\x20\x7d"
+                        "\x7d"
+                        "\x21\x66\x61\x69\x6c\x65\x64\x3b");
     CHECK_EQ(true, result->BooleanValue());
     free(large_array_data);
   }
@@ -16707,51 +16707,51 @@ static void ExternalArrayTestHelper(v8::ExternalArrayType array_type,
   // the external array. Ensure that setting and accessing the "" property
   // works (it should overwrite the information cached about the external
   // array in the DescriptorArray) in various situations.
-  result = CompileRun("ext_array[''] = 23; ext_array['']");
+  result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x27\x27\x5d\x20\x3d\x20\x32\x33\x3b\x20\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x27\x27\x5d");
   CHECK_EQ(23, result->Int32Value());
 
   // Property "" set after the external array is associated with the object.
   {
     v8::Handle<v8::Object> obj2 = v8::Object::New(context->GetIsolate());
-    obj2->Set(v8_str("ee_test_field"),
+    obj2->Set(v8_str("\x65\x65\x5f\x74\x65\x73\x74\x5f\x66\x69\x65\x6c\x64"),
               v8::Int32::New(context->GetIsolate(), 256));
     obj2->Set(v8_str(""), v8::Int32::New(context->GetIsolate(), 1503));
     // Set the elements to be the external array.
     obj2->SetIndexedPropertiesToExternalArrayData(array_data,
                                                   array_type,
                                                   kElementCount);
-    context->Global()->Set(v8_str("ext_array"), obj2);
-    result = CompileRun("ext_array['']");
+    context->Global()->Set(v8_str("\x65\x78\x74\x5f\x61\x72\x72\x61\x79"), obj2);
+    result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x27\x27\x5d");
     CHECK_EQ(1503, result->Int32Value());
   }
 
   // Property "" set after the external array is associated with the object.
   {
     v8::Handle<v8::Object> obj2 = v8::Object::New(context->GetIsolate());
-    obj2->Set(v8_str("ee_test_field_2"),
+    obj2->Set(v8_str("\x65\x65\x5f\x74\x65\x73\x74\x5f\x66\x69\x65\x6c\x64\x5f\x32"),
               v8::Int32::New(context->GetIsolate(), 256));
     // Set the elements to be the external array.
     obj2->SetIndexedPropertiesToExternalArrayData(array_data,
                                                   array_type,
                                                   kElementCount);
     obj2->Set(v8_str(""), v8::Int32::New(context->GetIsolate(), 1503));
-    context->Global()->Set(v8_str("ext_array"), obj2);
-    result = CompileRun("ext_array['']");
+    context->Global()->Set(v8_str("\x65\x78\x74\x5f\x61\x72\x72\x61\x79"), obj2);
+    result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x27\x27\x5d");
     CHECK_EQ(1503, result->Int32Value());
   }
 
   // Should reuse the map from previous test.
   {
     v8::Handle<v8::Object> obj2 = v8::Object::New(context->GetIsolate());
-    obj2->Set(v8_str("ee_test_field_2"),
+    obj2->Set(v8_str("\x65\x65\x5f\x74\x65\x73\x74\x5f\x66\x69\x65\x6c\x64\x5f\x32"),
               v8::Int32::New(context->GetIsolate(), 256));
     // Set the elements to be the external array. Should re-use the map
     // from previous test.
     obj2->SetIndexedPropertiesToExternalArrayData(array_data,
                                                   array_type,
                                                   kElementCount);
-    context->Global()->Set(v8_str("ext_array"), obj2);
-    result = CompileRun("ext_array['']");
+    context->Global()->Set(v8_str("\x65\x78\x74\x5f\x61\x72\x72\x61\x79"), obj2);
+    result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x27\x27\x5d");
   }
 
   // Property "" is a constant function that shouldn't not be interfered with
@@ -16759,23 +16759,23 @@ static void ExternalArrayTestHelper(v8::ExternalArrayType array_type,
   {
     v8::Handle<v8::Object> obj2 = v8::Object::New(context->GetIsolate());
     // Start
-    obj2->Set(v8_str("ee_test_field3"),
+    obj2->Set(v8_str("\x65\x65\x5f\x74\x65\x73\x74\x5f\x66\x69\x65\x6c\x64\x33"),
               v8::Int32::New(context->GetIsolate(), 256));
 
     // Add a constant function to an object.
-    context->Global()->Set(v8_str("ext_array"), obj2);
-    result = CompileRun("ext_array[''] = function() {return 1503;};"
-                        "ext_array['']();");
+    context->Global()->Set(v8_str("\x65\x78\x74\x5f\x61\x72\x72\x61\x79"), obj2);
+    result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x27\x27\x5d\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x31\x35\x30\x33\x3b\x7d\x3b"
+                        "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x27\x27\x5d\x28\x29\x3b");
 
     // Add an external array transition to the same map that
     // has the constant transition.
     v8::Handle<v8::Object> obj3 = v8::Object::New(context->GetIsolate());
-    obj3->Set(v8_str("ee_test_field3"),
+    obj3->Set(v8_str("\x65\x65\x5f\x74\x65\x73\x74\x5f\x66\x69\x65\x6c\x64\x33"),
               v8::Int32::New(context->GetIsolate(), 256));
     obj3->SetIndexedPropertiesToExternalArrayData(array_data,
                                                   array_type,
                                                   kElementCount);
-    context->Global()->Set(v8_str("ext_array"), obj3);
+    context->Global()->Set(v8_str("\x65\x78\x74\x5f\x61\x72\x72\x61\x79"), obj3);
   }
 
   // If a external array transition is in the map, it should get clobbered
@@ -16783,7 +16783,7 @@ static void ExternalArrayTestHelper(v8::ExternalArrayType array_type,
   {
     // Add an external array transition.
     v8::Handle<v8::Object> obj3 = v8::Object::New(context->GetIsolate());
-    obj3->Set(v8_str("ee_test_field4"),
+    obj3->Set(v8_str("\x65\x65\x5f\x74\x65\x73\x74\x5f\x66\x69\x65\x6c\x64\x34"),
               v8::Int32::New(context->GetIsolate(), 256));
     obj3->SetIndexedPropertiesToExternalArrayData(array_data,
                                                   array_type,
@@ -16792,11 +16792,11 @@ static void ExternalArrayTestHelper(v8::ExternalArrayType array_type,
     // Add a constant function to the same map that just got an external array
     // transition.
     v8::Handle<v8::Object> obj2 = v8::Object::New(context->GetIsolate());
-    obj2->Set(v8_str("ee_test_field4"),
+    obj2->Set(v8_str("\x65\x65\x5f\x74\x65\x73\x74\x5f\x66\x69\x65\x6c\x64\x34"),
               v8::Int32::New(context->GetIsolate(), 256));
-    context->Global()->Set(v8_str("ext_array"), obj2);
-    result = CompileRun("ext_array[''] = function() {return 1503;};"
-                        "ext_array['']();");
+    context->Global()->Set(v8_str("\x65\x78\x74\x5f\x61\x72\x72\x61\x79"), obj2);
+    result = CompileRun("\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x27\x27\x5d\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x72\x65\x74\x75\x72\x6e\x20\x31\x35\x30\x33\x3b\x7d\x3b"
+                        "\x65\x78\x74\x5f\x61\x72\x72\x61\x79\x5b\x27\x27\x5d\x28\x29\x3b");
   }
 
   free(array_data);
@@ -17073,8 +17073,8 @@ THREADED_TEST(DataView) {
     v8::HandleScope handle_scope(isolate);                                    \
                                                                               \
     Handle<Value> result = CompileRun(                                        \
-        "var ab = new ArrayBuffer(128);"                                      \
-        "new " #View "(ab)");                                                 \
+        "\x76\x61\x72\x20\x61\x62\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x28\x31\x32\x38\x29\x3b"                                      \
+        "\x6e\x65\x77\x20" #View "\x28\x61\x62\x29");                                                 \
     CHECK(result->IsArrayBufferView());                                       \
     CHECK(result->Is##View());                                                \
     CheckInternalFieldsAreZero<v8::ArrayBufferView>(result.As<v8::View>());   \
@@ -17098,18 +17098,18 @@ IS_ARRAY_BUFFER_VIEW_TEST(DataView)
 THREADED_TEST(ScriptContextDependence) {
   LocalContext c1;
   v8::HandleScope scope(c1->GetIsolate());
-  const char *source = "foo";
+  const char *source = "\x66\x6f\x6f";
   v8::Handle<v8::Script> dep = v8_compile(source);
   v8::ScriptCompiler::Source script_source(v8::String::NewFromUtf8(
       c1->GetIsolate(), source));
   v8::Handle<v8::UnboundScript> indep =
       v8::ScriptCompiler::CompileUnbound(c1->GetIsolate(), &script_source);
-  c1->Global()->Set(v8::String::NewFromUtf8(c1->GetIsolate(), "foo"),
+  c1->Global()->Set(v8::String::NewFromUtf8(c1->GetIsolate(), "\x66\x6f\x6f"),
                     v8::Integer::New(c1->GetIsolate(), 100));
   CHECK_EQ(dep->Run()->Int32Value(), 100);
   CHECK_EQ(indep->BindToCurrentContext()->Run()->Int32Value(), 100);
   LocalContext c2;
-  c2->Global()->Set(v8::String::NewFromUtf8(c2->GetIsolate(), "foo"),
+  c2->Global()->Set(v8::String::NewFromUtf8(c2->GetIsolate(), "\x66\x6f\x6f"),
                     v8::Integer::New(c2->GetIsolate(), 101));
   CHECK_EQ(dep->Run()->Int32Value(), 100);
   CHECK_EQ(indep->BindToCurrentContext()->Run()->Int32Value(), 101);
@@ -17120,18 +17120,18 @@ THREADED_TEST(StackTrace) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
   v8::TryCatch try_catch;
-  const char *source = "function foo() { FAIL.FAIL; }; foo();";
+  const char *source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20\x46\x41\x49\x4c\x2e\x46\x41\x49\x4c\x3b\x20\x7d\x3b\x20\x66\x6f\x6f\x28\x29\x3b";
   v8::Handle<v8::String> src =
       v8::String::NewFromUtf8(context->GetIsolate(), source);
   v8::Handle<v8::String> origin =
-      v8::String::NewFromUtf8(context->GetIsolate(), "stack-trace-test");
+      v8::String::NewFromUtf8(context->GetIsolate(), "\x73\x74\x61\x63\x6b\x2d\x74\x72\x61\x63\x65\x2d\x74\x65\x73\x74");
   v8::ScriptCompiler::Source script_source(src, v8::ScriptOrigin(origin));
   v8::ScriptCompiler::CompileUnbound(context->GetIsolate(), &script_source)
       ->BindToCurrentContext()
       ->Run();
   CHECK(try_catch.HasCaught());
   v8::String::Utf8Value stack(try_catch.StackTrace());
-  CHECK(strstr(*stack, "at foo (stack-trace-test") != NULL);
+  CHECK(strstr(*stack, "\x61\x74\x20\x66\x6f\x6f\x20\x28\x73\x74\x61\x63\x6b\x2d\x74\x72\x61\x63\x65\x2d\x74\x65\x73\x74") != NULL);
 }
 
 
@@ -17159,7 +17159,7 @@ void checkStackFrame(const char* expected_script_name,
 
 void AnalyzeStackInNativeCode(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::HandleScope scope(args.GetIsolate());
-  const char* origin = "capture-stack-trace-test";
+  const char* origin = "\x63\x61\x70\x74\x75\x72\x65\x2d\x73\x74\x61\x63\x6b\x2d\x74\x72\x61\x63\x65\x2d\x74\x65\x73\x74";
   const int kOverviewTest = 1;
   const int kDetailedTest = 2;
 
@@ -17170,9 +17170,9 @@ void AnalyzeStackInNativeCode(const v8::FunctionCallbackInfo<v8::Value>& args) {
     v8::Handle<v8::StackTrace> stackTrace = v8::StackTrace::CurrentStackTrace(
         args.GetIsolate(), 10, v8::StackTrace::kOverview);
     CHECK_EQ(4, stackTrace->GetFrameCount());
-    checkStackFrame(origin, "bar", 2, 10, false, false,
+    checkStackFrame(origin, "\x62\x61\x72", 2, 10, false, false,
                     stackTrace->GetFrame(0));
-    checkStackFrame(origin, "foo", 6, 3, false, false,
+    checkStackFrame(origin, "\x66\x6f\x6f", 6, 3, false, false,
                     stackTrace->GetFrame(1));
     // This is the source string inside the eval which has the call to foo.
     checkStackFrame(NULL, "", 1, 5, false, false,
@@ -17186,9 +17186,9 @@ void AnalyzeStackInNativeCode(const v8::FunctionCallbackInfo<v8::Value>& args) {
     v8::Handle<v8::StackTrace> stackTrace = v8::StackTrace::CurrentStackTrace(
         args.GetIsolate(), 10, v8::StackTrace::kDetailed);
     CHECK_EQ(4, stackTrace->GetFrameCount());
-    checkStackFrame(origin, "bat", 4, 22, false, false,
+    checkStackFrame(origin, "\x62\x61\x74", 4, 22, false, false,
                     stackTrace->GetFrame(0));
-    checkStackFrame(origin, "baz", 8, 3, false, true,
+    checkStackFrame(origin, "\x62\x61\x7a", 8, 3, false, true,
                     stackTrace->GetFrame(1));
     bool is_eval = true;
     // This is the source string inside the eval which has the call to baz.
@@ -17210,23 +17210,23 @@ TEST(CaptureStackTrace) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::String> origin =
-      v8::String::NewFromUtf8(isolate, "capture-stack-trace-test");
+      v8::String::NewFromUtf8(isolate, "\x63\x61\x70\x74\x75\x72\x65\x2d\x73\x74\x61\x63\x6b\x2d\x74\x72\x61\x63\x65\x2d\x74\x65\x73\x74");
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("AnalyzeStackInNativeCode"),
+  templ->Set(v8_str("\x41\x6e\x61\x6c\x79\x7a\x65\x53\x74\x61\x63\x6b\x49\x6e\x4e\x61\x74\x69\x76\x65\x43\x6f\x64\x65"),
              v8::FunctionTemplate::New(isolate, AnalyzeStackInNativeCode));
   LocalContext context(0, templ);
 
   // Test getting OVERVIEW information. Should ignore information that is not
   // script name, function name, line number, and column offset.
   const char *overview_source =
-    "function bar() {\n"
-    "  var y; AnalyzeStackInNativeCode(1);\n"
-    "}\n"
-    "function foo() {\n"
-    "\n"
-    "  bar();\n"
-    "}\n"
-    "var x;eval('new foo();');";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\xa"
+    "\x20\x20\x76\x61\x72\x20\x79\x3b\x20\x41\x6e\x61\x6c\x79\x7a\x65\x53\x74\x61\x63\x6b\x49\x6e\x4e\x61\x74\x69\x76\x65\x43\x6f\x64\x65\x28\x31\x29\x3b\xa"
+    "\x7d\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+    "\xa"
+    "\x20\x20\x62\x61\x72\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x76\x61\x72\x20\x78\x3b\x65\x76\x61\x6c\x28\x27\x6e\x65\x77\x20\x66\x6f\x6f\x28\x29\x3b\x27\x29\x3b";
   v8::Handle<v8::String> overview_src =
       v8::String::NewFromUtf8(isolate, overview_source);
   v8::ScriptCompiler::Source script_source(overview_src,
@@ -17240,13 +17240,13 @@ TEST(CaptureStackTrace) {
 
   // Test getting DETAILED information.
   const char *detailed_source =
-    "function bat() {AnalyzeStackInNativeCode(2);\n"
-    "}\n"
-    "\n"
-    "function baz() {\n"
-    "  bat();\n"
-    "}\n"
-    "eval('new baz();');";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x74\x28\x29\x20\x7b\x41\x6e\x61\x6c\x79\x7a\x65\x53\x74\x61\x63\x6b\x49\x6e\x4e\x61\x74\x69\x76\x65\x43\x6f\x64\x65\x28\x32\x29\x3b\xa"
+    "\x7d\xa"
+    "\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x7a\x28\x29\x20\x7b\xa"
+    "\x20\x20\x62\x61\x74\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x65\x76\x61\x6c\x28\x27\x6e\x65\x77\x20\x62\x61\x7a\x28\x29\x3b\x27\x29\x3b";
   v8::Handle<v8::String> detailed_src =
       v8::String::NewFromUtf8(isolate, detailed_source);
   // Make the script using a non-zero line and column offset.
@@ -17268,9 +17268,9 @@ static void StackTraceForUncaughtExceptionListener(
     v8::Handle<Value>) {
   v8::Handle<v8::StackTrace> stack_trace = message->GetStackTrace();
   CHECK_EQ(2, stack_trace->GetFrameCount());
-  checkStackFrame("origin", "foo", 2, 3, false, false,
+  checkStackFrame("\x6f\x72\x69\x67\x69\x6e", "\x66\x6f\x6f", 2, 3, false, false,
                   stack_trace->GetFrame(0));
-  checkStackFrame("origin", "bar", 5, 3, false, false,
+  checkStackFrame("\x6f\x72\x69\x67\x69\x6e", "\x62\x61\x72", 5, 3, false, false,
                   stack_trace->GetFrame(1));
 }
 
@@ -17283,15 +17283,15 @@ TEST(CaptureStackTraceForUncaughtException) {
   v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
 
   CompileRunWithOrigin(
-      "function foo() {\n"
-      "  throw 1;\n"
-      "};\n"
-      "function bar() {\n"
-      "  foo();\n"
-      "};",
-      "origin");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+      "\x20\x20\x74\x68\x72\x6f\x77\x20\x31\x3b\xa"
+      "\x7d\x3b\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\xa"
+      "\x20\x20\x66\x6f\x6f\x28\x29\x3b\xa"
+      "\x7d\x3b",
+      "\x6f\x72\x69\x67\x69\x6e");
   v8::Local<v8::Object> global = env->Global();
-  Local<Value> trouble = global->Get(v8_str("bar"));
+  Local<Value> trouble = global->Get(v8_str("\x62\x61\x72"));
   CHECK(trouble->IsFunction());
   Function::Cast(*trouble)->Call(global, 0, NULL);
   v8::V8::SetCaptureStackTraceForUncaughtExceptions(false);
@@ -17307,14 +17307,14 @@ TEST(CaptureStackTraceForUncaughtExceptionAndSetters) {
                                                     v8::StackTrace::kDetailed);
 
   CompileRun(
-      "var setters = ['column', 'lineNumber', 'scriptName',\n"
-      "    'scriptNameOrSourceURL', 'functionName', 'isEval',\n"
-      "    'isConstructor'];\n"
-      "for (var i = 0; i < setters.length; i++) {\n"
-      "  var prop = setters[i];\n"
-      "  Object.prototype.__defineSetter__(prop, function() { throw prop; });\n"
-      "}\n");
-  CompileRun("throw 'exception';");
+      "\x76\x61\x72\x20\x73\x65\x74\x74\x65\x72\x73\x20\x3d\x20\x5b\x27\x63\x6f\x6c\x75\x6d\x6e\x27\x2c\x20\x27\x6c\x69\x6e\x65\x4e\x75\x6d\x62\x65\x72\x27\x2c\x20\x27\x73\x63\x72\x69\x70\x74\x4e\x61\x6d\x65\x27\x2c\xa"
+      "\x20\x20\x20\x20\x27\x73\x63\x72\x69\x70\x74\x4e\x61\x6d\x65\x4f\x72\x53\x6f\x75\x72\x63\x65\x55\x52\x4c\x27\x2c\x20\x27\x66\x75\x6e\x63\x74\x69\x6f\x6e\x4e\x61\x6d\x65\x27\x2c\x20\x27\x69\x73\x45\x76\x61\x6c\x27\x2c\xa"
+      "\x20\x20\x20\x20\x27\x69\x73\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x27\x5d\x3b\xa"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x73\x65\x74\x74\x65\x72\x73\x2e\x6c\x65\x6e\x67\x74\x68\x3b\x20\x69\x2b\x2b\x29\x20\x7b\xa"
+      "\x20\x20\x76\x61\x72\x20\x70\x72\x6f\x70\x20\x3d\x20\x73\x65\x74\x74\x65\x72\x73\x5b\x69\x5d\x3b\xa"
+      "\x20\x20\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x53\x65\x74\x74\x65\x72\x5f\x5f\x28\x70\x72\x6f\x70\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x70\x72\x6f\x70\x3b\x20\x7d\x29\x3b\xa"
+      "\x7d\xa");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x27\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x27\x3b");
   v8::V8::SetCaptureStackTraceForUncaughtExceptions(false);
 }
 
@@ -17343,18 +17343,18 @@ TEST(RethrowStackTrace) {
   // - the stack trace is not overwritten when e1 is rethrown by t().
   // - the stack trace of e2 does not overwrite that of e1.
   const char* source =
-      "function g() { error; }          \n"
-      "function f() { g(); }            \n"
-      "function t(e) { throw e; }       \n"
-      "try {                            \n"
-      "  f();                           \n"
-      "} catch (e1) {                   \n"
-      "  try {                          \n"
-      "    error;                       \n"
-      "  } catch (e2) {                 \n"
-      "    t(e1);                       \n"
-      "  }                              \n"
-      "}                                \n";
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\x20\x65\x72\x72\x6f\x72\x3b\x20\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x67\x28\x29\x3b\x20\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x28\x65\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x65\x3b\x20\x7d\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x74\x72\x79\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x66\x28\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x31\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x74\x72\x79\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x20\x20\x65\x72\x72\x6f\x72\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x32\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x20\x20\x74\x28\x65\x31\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa";
   v8::V8::AddMessageListener(RethrowStackTraceHandler);
   v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
   CompileRun(source);
@@ -17383,14 +17383,14 @@ TEST(RethrowPrimitiveStackTrace) {
   // We do not capture stack trace for non Error objects on creation time.
   // Instead, we capture the stack trace on last throw.
   const char* source =
-      "function g() { throw 404; }      \n"
-      "function f() { g(); }            \n"
-      "function t(e) { throw e; }       \n"
-      "try {                            \n"
-      "  f();                           \n"
-      "} catch (e1) {                   \n"
-      "  t(e1)                          \n"
-      "}                                \n";
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x34\x30\x34\x3b\x20\x7d\x20\x20\x20\x20\x20\x20\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x67\x28\x29\x3b\x20\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x28\x65\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x65\x3b\x20\x7d\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x74\x72\x79\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x66\x28\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x31\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x74\x28\x65\x31\x29\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa";
   v8::V8::AddMessageListener(RethrowPrimitiveStackTraceHandler);
   v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
   CompileRun(source);
@@ -17415,8 +17415,8 @@ TEST(RethrowExistingStackTrace) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   const char* source =
-      "var e = new Error();           \n"
-      "throw e;                       \n";
+      "\x76\x61\x72\x20\x65\x20\x3d\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x74\x68\x72\x6f\x77\x20\x65\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa";
   v8::V8::AddMessageListener(RethrowExistingStackTraceHandler);
   v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
   CompileRun(source);
@@ -17440,8 +17440,8 @@ TEST(RethrowBogusErrorStackTrace) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   const char* source =
-      "var e = {__proto__: new Error()} \n"
-      "throw e;                         \n";
+      "\x76\x61\x72\x20\x65\x20\x3d\x20\x7b\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3a\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x7d\x20\xa"
+      "\x74\x68\x72\x6f\x77\x20\x65\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa";
   v8::V8::AddMessageListener(RethrowBogusErrorStackTraceHandler);
   v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
   CompileRun(source);
@@ -17456,7 +17456,7 @@ void AnalyzeStackOfEvalWithSourceURL(
   v8::Handle<v8::StackTrace> stackTrace = v8::StackTrace::CurrentStackTrace(
       args.GetIsolate(), 10, v8::StackTrace::kDetailed);
   CHECK_EQ(5, stackTrace->GetFrameCount());
-  v8::Handle<v8::String> url = v8_str("eval_url");
+  v8::Handle<v8::String> url = v8_str("\x65\x76\x61\x6c\x5f\x75\x72\x6c");
   for (int i = 0; i < 3; i++) {
     v8::Handle<v8::String> name =
         stackTrace->GetFrame(i)->GetScriptNameOrSourceURL();
@@ -17470,28 +17470,28 @@ TEST(SourceURLInStackTrace) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("AnalyzeStackOfEvalWithSourceURL"),
+  templ->Set(v8_str("\x41\x6e\x61\x6c\x79\x7a\x65\x53\x74\x61\x63\x6b\x4f\x66\x45\x76\x61\x6c\x57\x69\x74\x68\x53\x6f\x75\x72\x63\x65\x55\x52\x4c"),
              v8::FunctionTemplate::New(isolate,
                                        AnalyzeStackOfEvalWithSourceURL));
   LocalContext context(0, templ);
 
   const char *source =
-    "function outer() {\n"
-    "function bar() {\n"
-    "  AnalyzeStackOfEvalWithSourceURL();\n"
-    "}\n"
-    "function foo() {\n"
-    "\n"
-    "  bar();\n"
-    "}\n"
-    "foo();\n"
-    "}\n"
-    "eval('(' + outer +')()%s');";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x75\x74\x65\x72\x28\x29\x20\x7b\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\xa"
+    "\x20\x20\x41\x6e\x61\x6c\x79\x7a\x65\x53\x74\x61\x63\x6b\x4f\x66\x45\x76\x61\x6c\x57\x69\x74\x68\x53\x6f\x75\x72\x63\x65\x55\x52\x4c\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+    "\xa"
+    "\x20\x20\x62\x61\x72\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x66\x6f\x6f\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x65\x76\x61\x6c\x28\x27\x28\x27\x20\x2b\x20\x6f\x75\x74\x65\x72\x20\x2b\x27\x29\x28\x29\x6c\xa2\x27\x29\x3b";
 
   i::ScopedVector<char> code(1024);
-  i::SNPrintF(code, source, "//# sourceURL=eval_url");
+  i::SNPrintF(code, source, "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x65\x76\x61\x6c\x5f\x75\x72\x6c");
   CHECK(CompileRun(code.start())->IsUndefined());
-  i::SNPrintF(code, source, "//@ sourceURL=eval_url");
+  i::SNPrintF(code, source, "\x2f\x2f\x40\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x65\x76\x61\x6c\x5f\x75\x72\x6c");
   CHECK(CompileRun(code.start())->IsUndefined());
 }
 
@@ -17514,17 +17514,17 @@ TEST(ScriptIdInStackTrace) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("AnalyzeScriptIdInStack"),
+  templ->Set(v8_str("\x41\x6e\x61\x6c\x79\x7a\x65\x53\x63\x72\x69\x70\x74\x49\x64\x49\x6e\x53\x74\x61\x63\x6b"),
              v8::FunctionTemplate::New(isolate, AnalyzeScriptIdInStack));
   LocalContext context(0, templ);
 
   v8::Handle<v8::String> scriptSource = v8::String::NewFromUtf8(
     isolate,
-    "function foo() {\n"
-    "  AnalyzeScriptIdInStack();"
-    "}\n"
-    "foo();\n");
-  v8::Local<v8::Script> script = CompileWithOrigin(scriptSource, "test");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+    "\x20\x20\x41\x6e\x61\x6c\x79\x7a\x65\x53\x63\x72\x69\x70\x74\x49\x64\x49\x6e\x53\x74\x61\x63\x6b\x28\x29\x3b"
+    "\x7d\xa"
+    "\x66\x6f\x6f\x28\x29\x3b\xa");
+  v8::Local<v8::Script> script = CompileWithOrigin(scriptSource, "\x74\x65\x73\x74");
   script->Run();
   for (int i = 0; i < 2; i++) {
     CHECK(scriptIdInStack[i] != v8::Message::kNoScriptIdInfo);
@@ -17539,7 +17539,7 @@ void AnalyzeStackOfInlineScriptWithSourceURL(
   v8::Handle<v8::StackTrace> stackTrace = v8::StackTrace::CurrentStackTrace(
       args.GetIsolate(), 10, v8::StackTrace::kDetailed);
   CHECK_EQ(4, stackTrace->GetFrameCount());
-  v8::Handle<v8::String> url = v8_str("url");
+  v8::Handle<v8::String> url = v8_str("\x75\x72\x6c");
   for (int i = 0; i < 3; i++) {
     v8::Handle<v8::String> name =
         stackTrace->GetFrame(i)->GetScriptNameOrSourceURL();
@@ -17553,29 +17553,29 @@ TEST(InlineScriptWithSourceURLInStackTrace) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("AnalyzeStackOfInlineScriptWithSourceURL"),
+  templ->Set(v8_str("\x41\x6e\x61\x6c\x79\x7a\x65\x53\x74\x61\x63\x6b\x4f\x66\x49\x6e\x6c\x69\x6e\x65\x53\x63\x72\x69\x70\x74\x57\x69\x74\x68\x53\x6f\x75\x72\x63\x65\x55\x52\x4c"),
              v8::FunctionTemplate::New(
                  CcTest::isolate(), AnalyzeStackOfInlineScriptWithSourceURL));
   LocalContext context(0, templ);
 
   const char *source =
-    "function outer() {\n"
-    "function bar() {\n"
-    "  AnalyzeStackOfInlineScriptWithSourceURL();\n"
-    "}\n"
-    "function foo() {\n"
-    "\n"
-    "  bar();\n"
-    "}\n"
-    "foo();\n"
-    "}\n"
-    "outer()\n%s";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x75\x74\x65\x72\x28\x29\x20\x7b\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\xa"
+    "\x20\x20\x41\x6e\x61\x6c\x79\x7a\x65\x53\x74\x61\x63\x6b\x4f\x66\x49\x6e\x6c\x69\x6e\x65\x53\x63\x72\x69\x70\x74\x57\x69\x74\x68\x53\x6f\x75\x72\x63\x65\x55\x52\x4c\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+    "\xa"
+    "\x20\x20\x62\x61\x72\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x66\x6f\x6f\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x6f\x75\x74\x65\x72\x28\x29\xa\x6c\xa2";
 
   i::ScopedVector<char> code(1024);
-  i::SNPrintF(code, source, "//# sourceURL=source_url");
-  CHECK(CompileRunWithOrigin(code.start(), "url", 0, 1)->IsUndefined());
-  i::SNPrintF(code, source, "//@ sourceURL=source_url");
-  CHECK(CompileRunWithOrigin(code.start(), "url", 0, 1)->IsUndefined());
+  i::SNPrintF(code, source, "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c");
+  CHECK(CompileRunWithOrigin(code.start(), "\x75\x72\x6c", 0, 1)->IsUndefined());
+  i::SNPrintF(code, source, "\x2f\x2f\x40\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c");
+  CHECK(CompileRunWithOrigin(code.start(), "\x75\x72\x6c", 0, 1)->IsUndefined());
 }
 
 
@@ -17585,7 +17585,7 @@ void AnalyzeStackOfDynamicScriptWithSourceURL(
   v8::Handle<v8::StackTrace> stackTrace = v8::StackTrace::CurrentStackTrace(
       args.GetIsolate(), 10, v8::StackTrace::kDetailed);
   CHECK_EQ(4, stackTrace->GetFrameCount());
-  v8::Handle<v8::String> url = v8_str("source_url");
+  v8::Handle<v8::String> url = v8_str("\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c");
   for (int i = 0; i < 3; i++) {
     v8::Handle<v8::String> name =
         stackTrace->GetFrame(i)->GetScriptNameOrSourceURL();
@@ -17599,29 +17599,29 @@ TEST(DynamicWithSourceURLInStackTrace) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->Set(v8_str("AnalyzeStackOfDynamicScriptWithSourceURL"),
+  templ->Set(v8_str("\x41\x6e\x61\x6c\x79\x7a\x65\x53\x74\x61\x63\x6b\x4f\x66\x44\x79\x6e\x61\x6d\x69\x63\x53\x63\x72\x69\x70\x74\x57\x69\x74\x68\x53\x6f\x75\x72\x63\x65\x55\x52\x4c"),
              v8::FunctionTemplate::New(
                  CcTest::isolate(), AnalyzeStackOfDynamicScriptWithSourceURL));
   LocalContext context(0, templ);
 
   const char *source =
-    "function outer() {\n"
-    "function bar() {\n"
-    "  AnalyzeStackOfDynamicScriptWithSourceURL();\n"
-    "}\n"
-    "function foo() {\n"
-    "\n"
-    "  bar();\n"
-    "}\n"
-    "foo();\n"
-    "}\n"
-    "outer()\n%s";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x75\x74\x65\x72\x28\x29\x20\x7b\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\xa"
+    "\x20\x20\x41\x6e\x61\x6c\x79\x7a\x65\x53\x74\x61\x63\x6b\x4f\x66\x44\x79\x6e\x61\x6d\x69\x63\x53\x63\x72\x69\x70\x74\x57\x69\x74\x68\x53\x6f\x75\x72\x63\x65\x55\x52\x4c\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+    "\xa"
+    "\x20\x20\x62\x61\x72\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x66\x6f\x6f\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x6f\x75\x74\x65\x72\x28\x29\xa\x6c\xa2";
 
   i::ScopedVector<char> code(1024);
-  i::SNPrintF(code, source, "//# sourceURL=source_url");
-  CHECK(CompileRunWithOrigin(code.start(), "url", 0, 0)->IsUndefined());
-  i::SNPrintF(code, source, "//@ sourceURL=source_url");
-  CHECK(CompileRunWithOrigin(code.start(), "url", 0, 0)->IsUndefined());
+  i::SNPrintF(code, source, "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c");
+  CHECK(CompileRunWithOrigin(code.start(), "\x75\x72\x6c", 0, 0)->IsUndefined());
+  i::SNPrintF(code, source, "\x2f\x2f\x40\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c");
+  CHECK(CompileRunWithOrigin(code.start(), "\x75\x72\x6c", 0, 0)->IsUndefined());
 }
 
 
@@ -17630,21 +17630,21 @@ TEST(DynamicWithSourceURLInStackTraceString) {
   v8::HandleScope scope(context->GetIsolate());
 
   const char *source =
-    "function outer() {\n"
-    "  function foo() {\n"
-    "    FAIL.FAIL;\n"
-    "  }\n"
-    "  foo();\n"
-    "}\n"
-    "outer()\n%s";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x75\x74\x65\x72\x28\x29\x20\x7b\xa"
+    "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+    "\x20\x20\x20\x20\x46\x41\x49\x4c\x2e\x46\x41\x49\x4c\x3b\xa"
+    "\x20\x20\x7d\xa"
+    "\x20\x20\x66\x6f\x6f\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\x6f\x75\x74\x65\x72\x28\x29\xa\x6c\xa2";
 
   i::ScopedVector<char> code(1024);
-  i::SNPrintF(code, source, "//# sourceURL=source_url");
+  i::SNPrintF(code, source, "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c");
   v8::TryCatch try_catch;
   CompileRunWithOrigin(code.start(), "", 0, 0);
   CHECK(try_catch.HasCaught());
   v8::String::Utf8Value stack(try_catch.StackTrace());
-  CHECK(strstr(*stack, "at foo (source_url:3:5)") != NULL);
+  CHECK(strstr(*stack, "\x61\x74\x20\x66\x6f\x6f\x20\x28\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c\x3a\x33\x3a\x35\x29") != NULL);
 }
 
 
@@ -17653,13 +17653,13 @@ TEST(EvalWithSourceURLInMessageScriptResourceNameOrSourceURL) {
   v8::HandleScope scope(context->GetIsolate());
 
   const char *source =
-    "function outer() {\n"
-    "  var scriptContents = \"function foo() { FAIL.FAIL; }\\\n"
-    "  //# sourceURL=source_url\";\n"
-    "  eval(scriptContents);\n"
-    "  foo(); }\n"
-    "outer();\n"
-    "//# sourceURL=outer_url";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x75\x74\x65\x72\x28\x29\x20\x7b\xa"
+    "\x20\x20\x76\x61\x72\x20\x73\x63\x72\x69\x70\x74\x43\x6f\x6e\x74\x65\x6e\x74\x73\x20\x3d\x20\x22\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20\x46\x41\x49\x4c\x2e\x46\x41\x49\x4c\x3b\x20\x7d\x5c\xa"
+    "\x20\x20\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c\x22\x3b\xa"
+    "\x20\x20\x65\x76\x61\x6c\x28\x73\x63\x72\x69\x70\x74\x43\x6f\x6e\x74\x65\x6e\x74\x73\x29\x3b\xa"
+    "\x20\x20\x66\x6f\x6f\x28\x29\x3b\x20\x7d\xa"
+    "\x6f\x75\x74\x65\x72\x28\x29\x3b\xa"
+    "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x6f\x75\x74\x65\x72\x5f\x75\x72\x6c";
 
   v8::TryCatch try_catch;
   CompileRun(source);
@@ -17668,7 +17668,7 @@ TEST(EvalWithSourceURLInMessageScriptResourceNameOrSourceURL) {
   Local<v8::Message> message = try_catch.Message();
   Handle<Value> sourceURL =
     message->GetScriptOrigin().ResourceName();
-  CHECK_EQ(*v8::String::Utf8Value(sourceURL), "source_url");
+  CHECK_EQ(*v8::String::Utf8Value(sourceURL), "\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c");
 }
 
 
@@ -17677,13 +17677,13 @@ TEST(RecursionWithSourceURLInMessageScriptResourceNameOrSourceURL) {
   v8::HandleScope scope(context->GetIsolate());
 
   const char *source =
-    "function outer() {\n"
-    "  var scriptContents = \"function boo(){ boo(); }\\\n"
-    "  //# sourceURL=source_url\";\n"
-    "  eval(scriptContents);\n"
-    "  boo(); }\n"
-    "outer();\n"
-    "//# sourceURL=outer_url";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x75\x74\x65\x72\x28\x29\x20\x7b\xa"
+    "\x20\x20\x76\x61\x72\x20\x73\x63\x72\x69\x70\x74\x43\x6f\x6e\x74\x65\x6e\x74\x73\x20\x3d\x20\x22\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x6f\x6f\x28\x29\x7b\x20\x62\x6f\x6f\x28\x29\x3b\x20\x7d\x5c\xa"
+    "\x20\x20\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c\x22\x3b\xa"
+    "\x20\x20\x65\x76\x61\x6c\x28\x73\x63\x72\x69\x70\x74\x43\x6f\x6e\x74\x65\x6e\x74\x73\x29\x3b\xa"
+    "\x20\x20\x62\x6f\x6f\x28\x29\x3b\x20\x7d\xa"
+    "\x6f\x75\x74\x65\x72\x28\x29\x3b\xa"
+    "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x6f\x75\x74\x65\x72\x5f\x75\x72\x6c";
 
   v8::TryCatch try_catch;
   CompileRun(source);
@@ -17692,7 +17692,7 @@ TEST(RecursionWithSourceURLInMessageScriptResourceNameOrSourceURL) {
   Local<v8::Message> message = try_catch.Message();
   Handle<Value> sourceURL =
     message->GetScriptOrigin().ResourceName();
-  CHECK_EQ(*v8::String::Utf8Value(sourceURL), "source_url");
+  CHECK_EQ(*v8::String::Utf8Value(sourceURL), "\x73\x6f\x75\x72\x63\x65\x5f\x75\x72\x6c");
 }
 
 
@@ -17849,8 +17849,8 @@ TEST(SetResourceConstraints) {
   Local<v8::FunctionTemplate> fun_templ =
       v8::FunctionTemplate::New(env->GetIsolate(), GetStackLimitCallback);
   Local<Function> fun = fun_templ->GetFunction();
-  env->Global()->Set(v8_str("get_stack_limit"), fun);
-  CompileRun("get_stack_limit();");
+  env->Global()->Set(v8_str("\x67\x65\x74\x5f\x73\x74\x61\x63\x6b\x5f\x6c\x69\x6d\x69\x74"), fun);
+  CompileRun("\x67\x65\x74\x5f\x73\x74\x61\x63\x6b\x5f\x6c\x69\x6d\x69\x74\x28\x29\x3b");
 
   CHECK(stack_limit == set_limit);
 }
@@ -17873,8 +17873,8 @@ TEST(SetResourceConstraintsInThread) {
     Local<v8::FunctionTemplate> fun_templ =
         v8::FunctionTemplate::New(CcTest::isolate(), GetStackLimitCallback);
     Local<Function> fun = fun_templ->GetFunction();
-    env->Global()->Set(v8_str("get_stack_limit"), fun);
-    CompileRun("get_stack_limit();");
+    env->Global()->Set(v8_str("\x67\x65\x74\x5f\x73\x74\x61\x63\x6b\x5f\x6c\x69\x6d\x69\x74"), fun);
+    CompileRun("\x67\x65\x74\x5f\x73\x74\x61\x63\x6b\x5f\x6c\x69\x6d\x69\x74\x28\x29\x3b");
 
     CHECK(stack_limit == set_limit);
   }
@@ -17937,14 +17937,14 @@ TEST(ExternalizeOldSpaceTwoByteCons) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::Local<v8::String> cons =
-      CompileRun("'Romeo Montague ' + 'Juliet Capulet'")->ToString();
+      CompileRun("\x27\x52\x6f\x6d\x65\x6f\x20\x4d\x6f\x6e\x74\x61\x67\x75\x65\x20\x27\x20\x2b\x20\x27\x4a\x75\x6c\x69\x65\x74\x20\x43\x61\x70\x75\x6c\x65\x74\x27")->ToString();
   CHECK(v8::Utils::OpenHandle(*cons)->IsConsString());
   CcTest::heap()->CollectAllAvailableGarbage();
   CHECK(CcTest::heap()->old_pointer_space()->Contains(
             *v8::Utils::OpenHandle(*cons)));
 
   TestResource* resource = new TestResource(
-      AsciiToTwoByteString("Romeo Montague Juliet Capulet"));
+      AsciiToTwoByteString("\x52\x6f\x6d\x65\x6f\x20\x4d\x6f\x6e\x74\x61\x67\x75\x65\x20\x4a\x75\x6c\x69\x65\x74\x20\x43\x61\x70\x75\x6c\x65\x74"));
   cons->MakeExternal(resource);
 
   CHECK(cons->IsExternal());
@@ -17959,14 +17959,14 @@ TEST(ExternalizeOldSpaceOneByteCons) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::Local<v8::String> cons =
-      CompileRun("'Romeo Montague ' + 'Juliet Capulet'")->ToString();
+      CompileRun("\x27\x52\x6f\x6d\x65\x6f\x20\x4d\x6f\x6e\x74\x61\x67\x75\x65\x20\x27\x20\x2b\x20\x27\x4a\x75\x6c\x69\x65\x74\x20\x43\x61\x70\x75\x6c\x65\x74\x27")->ToString();
   CHECK(v8::Utils::OpenHandle(*cons)->IsConsString());
   CcTest::heap()->CollectAllAvailableGarbage();
   CHECK(CcTest::heap()->old_pointer_space()->Contains(
             *v8::Utils::OpenHandle(*cons)));
 
   TestAsciiResource* resource =
-      new TestAsciiResource(i::StrDup("Romeo Montague Juliet Capulet"));
+      new TestAsciiResource(i::StrDup("\x52\x6f\x6d\x65\x6f\x20\x4d\x6f\x6e\x74\x61\x67\x75\x65\x20\x4a\x75\x6c\x69\x65\x74\x20\x43\x61\x70\x75\x6c\x65\x74"));
   cons->MakeExternal(resource);
 
   CHECK(cons->IsExternalAscii());
@@ -17980,7 +17980,7 @@ TEST(ExternalizeOldSpaceOneByteCons) {
 TEST(VisitExternalStrings) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
-  const char* string = "Some string";
+  const char* string = "\x53\x6f\x6d\x65\x20\x73\x74\x72\x69\x6e\x67";
   uint16_t* two_byte_string = AsciiToTwoByteString(string);
   TestResource* resource[4];
   resource[0] = new TestResource(two_byte_string);
@@ -17997,7 +17997,7 @@ TEST(VisitExternalStrings) {
   CHECK(string2->MakeExternal(resource[2]));
 
   // Symbolized External.
-  resource[3] = new TestResource(AsciiToTwoByteString("Some other string"));
+  resource[3] = new TestResource(AsciiToTwoByteString("\x53\x6f\x6d\x65\x20\x6f\x74\x68\x65\x72\x20\x73\x74\x72\x69\x6e\x67"));
   v8::Local<v8::String> string3 =
       v8::String::NewExternal(env->GetIsolate(), resource[3]);
   CcTest::heap()->CollectAllAvailableGarbage();  // Tenure string.
@@ -18024,7 +18024,7 @@ TEST(ExternalStringCollectedAtTearDown) {
   v8::Isolate* isolate = v8::Isolate::New();
   { v8::Isolate::Scope isolate_scope(isolate);
     v8::HandleScope handle_scope(isolate);
-    const char* s = "One string to test them all, one string to find them.";
+    const char* s = "\x4f\x6e\x65\x20\x73\x74\x72\x69\x6e\x67\x20\x74\x6f\x20\x74\x65\x73\x74\x20\x74\x68\x65\x6d\x20\x61\x6c\x6c\x2c\x20\x6f\x6e\x65\x20\x73\x74\x72\x69\x6e\x67\x20\x74\x6f\x20\x66\x69\x6e\x64\x20\x74\x68\x65\x6d\x2e";
     TestAsciiResource* inscription =
         new TestAsciiResource(i::StrDup(s), &destroyed);
     v8::Local<v8::String> ring = v8::String::NewExternal(isolate, inscription);
@@ -18045,11 +18045,11 @@ TEST(ExternalInternalizedStringCollectedAtTearDown) {
   { v8::Isolate::Scope isolate_scope(isolate);
     LocalContext env(isolate);
     v8::HandleScope handle_scope(isolate);
-    CompileRun("var ring = 'One string to test them all';");
-    const char* s = "One string to test them all";
+    CompileRun("\x76\x61\x72\x20\x72\x69\x6e\x67\x20\x3d\x20\x27\x4f\x6e\x65\x20\x73\x74\x72\x69\x6e\x67\x20\x74\x6f\x20\x74\x65\x73\x74\x20\x74\x68\x65\x6d\x20\x61\x6c\x6c\x27\x3b");
+    const char* s = "\x4f\x6e\x65\x20\x73\x74\x72\x69\x6e\x67\x20\x74\x6f\x20\x74\x65\x73\x74\x20\x74\x68\x65\x6d\x20\x61\x6c\x6c";
     TestAsciiResource* inscription =
         new TestAsciiResource(i::StrDup(s), &destroyed);
-    v8::Local<v8::String> ring = CompileRun("ring")->ToString();
+    v8::Local<v8::String> ring = CompileRun("\x72\x69\x6e\x67")->ToString();
     CHECK(v8::Utils::OpenHandle(*ring)->IsInternalizedString());
     ring->MakeExternal(inscription);
     // Ring is still alive.  Orcs are roaming freely across our lands.
@@ -18067,11 +18067,11 @@ TEST(ExternalInternalizedStringCollectedAtGC) {
   int destroyed = 0;
   { LocalContext env;
     v8::HandleScope handle_scope(env->GetIsolate());
-    CompileRun("var ring = 'One string to test them all';");
-    const char* s = "One string to test them all";
+    CompileRun("\x76\x61\x72\x20\x72\x69\x6e\x67\x20\x3d\x20\x27\x4f\x6e\x65\x20\x73\x74\x72\x69\x6e\x67\x20\x74\x6f\x20\x74\x65\x73\x74\x20\x74\x68\x65\x6d\x20\x61\x6c\x6c\x27\x3b");
+    const char* s = "\x4f\x6e\x65\x20\x73\x74\x72\x69\x6e\x67\x20\x74\x6f\x20\x74\x65\x73\x74\x20\x74\x68\x65\x6d\x20\x61\x6c\x6c";
     TestAsciiResource* inscription =
         new TestAsciiResource(i::StrDup(s), &destroyed);
-    v8::Local<v8::String> ring = CompileRun("ring")->ToString();
+    v8::Local<v8::String> ring = CompileRun("\x72\x69\x6e\x67")->ToString();
     CHECK(v8::Utils::OpenHandle(*ring)->IsInternalizedString());
     ring->MakeExternal(inscription);
     // Ring is still alive.  Orcs are roaming freely across our lands.
@@ -18224,25 +18224,25 @@ THREADED_TEST(SpaghettiStackReThrow) {
   v8::HandleScope scope(isolate);
   LocalContext context;
   context->Global()->Set(
-      v8::String::NewFromUtf8(isolate, "s"),
+      v8::String::NewFromUtf8(isolate, "\x73"),
       v8::FunctionTemplate::New(isolate, SpaghettiIncident)->GetFunction());
   v8::TryCatch try_catch;
   CompileRun(
-      "var i = 0;"
-      "var o = {"
-      "  toString: function () {"
-      "    if (i == 10) {"
-      "      throw 'Hey!';"
-      "    } else {"
-      "      i++;"
-      "      return s(o);"
-      "    }"
-      "  }"
-      "};"
-      "s(o);");
+      "\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x6f\x20\x3d\x20\x7b"
+      "\x20\x20\x74\x6f\x53\x74\x72\x69\x6e\x67\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x29\x20\x7b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x31\x30\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x74\x68\x72\x6f\x77\x20\x27\x48\x65\x79\x21\x27\x3b"
+      "\x20\x20\x20\x20\x7d\x20\x65\x6c\x73\x65\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x69\x2b\x2b\x3b"
+      "\x20\x20\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x28\x6f\x29\x3b"
+      "\x20\x20\x20\x20\x7d"
+      "\x20\x20\x7d"
+      "\x7d\x3b"
+      "\x73\x28\x6f\x29\x3b");
   CHECK(try_catch.HasCaught());
   v8::String::Utf8Value value(try_catch.Exception());
-  CHECK_EQ(0, strcmp(*value, "Hey!"));
+  CHECK_EQ(0, strcmp(*value, "\x48\x65\x79\x21"));
 }
 
 
@@ -18259,7 +18259,7 @@ TEST(Regress528) {
 
   // Context-dependent context data creates reference from the compilation
   // cache to the global object.
-  const char* source_simple = "1";
+  const char* source_simple = "\x31";
   {
     v8::HandleScope scope(isolate);
     v8::Local<Context> context = Context::New(isolate);
@@ -18283,7 +18283,7 @@ TEST(Regress528) {
 
   // Eval in a function creates reference from the compilation cache to the
   // global object.
-  const char* source_eval = "function f(){eval('1')}; f()";
+  const char* source_eval = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x7b\x65\x76\x61\x6c\x28\x27\x31\x27\x29\x7d\x3b\x20\x66\x28\x29";
   {
     v8::HandleScope scope(isolate);
     v8::Local<Context> context = Context::New(isolate);
@@ -18305,7 +18305,7 @@ TEST(Regress528) {
 
   // Looking up the line number for an exception creates reference from the
   // compilation cache to the global object.
-  const char* source_exception = "function f(){throw 1;} f()";
+  const char* source_exception = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x7b\x74\x68\x72\x6f\x77\x20\x31\x3b\x7d\x20\x66\x28\x29";
   {
     v8::HandleScope scope(isolate);
     v8::Local<Context> context = Context::New(isolate);
@@ -18338,21 +18338,21 @@ THREADED_TEST(ScriptOrigin) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "test"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74"));
   v8::Handle<v8::String> script = v8::String::NewFromUtf8(
-      env->GetIsolate(), "function f() {}\n\nfunction g() {}");
+      env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x7d\xa\xaf\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\x7d");
   v8::Script::Compile(script, &origin)->Run();
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   v8::Local<v8::Function> g = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "g")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x67")));
 
   v8::ScriptOrigin script_origin_f = f->GetScriptOrigin();
-  CHECK_EQ("test", *v8::String::Utf8Value(script_origin_f.ResourceName()));
+  CHECK_EQ("\x74\x65\x73\x74", *v8::String::Utf8Value(script_origin_f.ResourceName()));
   CHECK_EQ(0, script_origin_f.ResourceLineOffset()->Int32Value());
 
   v8::ScriptOrigin script_origin_g = g->GetScriptOrigin();
-  CHECK_EQ("test", *v8::String::Utf8Value(script_origin_g.ResourceName()));
+  CHECK_EQ("\x74\x65\x73\x74", *v8::String::Utf8Value(script_origin_g.ResourceName()));
   CHECK_EQ(0, script_origin_g.ResourceLineOffset()->Int32Value());
 }
 
@@ -18361,81 +18361,81 @@ THREADED_TEST(FunctionGetInferredName) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "test"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74"));
   v8::Handle<v8::String> script = v8::String::NewFromUtf8(
       env->GetIsolate(),
-      "var foo = { bar : { baz : function() {}}}; var f = foo.bar.baz;");
+      "\x76\x61\x72\x20\x66\x6f\x6f\x20\x3d\x20\x7b\x20\x62\x61\x72\x20\x3a\x20\x7b\x20\x62\x61\x7a\x20\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x7d\x7d\x7d\x3b\x20\x76\x61\x72\x20\x66\x20\x3d\x20\x66\x6f\x6f\x2e\x62\x61\x72\x2e\x62\x61\x7a\x3b");
   v8::Script::Compile(script, &origin)->Run();
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
-  CHECK_EQ("foo.bar.baz", *v8::String::Utf8Value(f->GetInferredName()));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
+  CHECK_EQ("\x66\x6f\x6f\x2e\x62\x61\x72\x2e\x62\x61\x7a", *v8::String::Utf8Value(f->GetInferredName()));
 }
 
 
 THREADED_TEST(FunctionGetDisplayName) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
-  const char* code = "var error = false;"
-                     "function a() { this.x = 1; };"
-                     "a.displayName = 'display_a';"
-                     "var b = (function() {"
-                     "  var f = function() { this.x = 2; };"
-                     "  f.displayName = 'display_b';"
-                     "  return f;"
-                     "})();"
-                     "var c = function() {};"
-                     "c.__defineGetter__('displayName', function() {"
-                     "  error = true;"
-                     "  throw new Error();"
-                     "});"
-                     "function d() {};"
-                     "d.__defineGetter__('displayName', function() {"
-                     "  error = true;"
-                     "  return 'wrong_display_name';"
-                     "});"
-                     "function e() {};"
-                     "e.displayName = 'wrong_display_name';"
-                     "e.__defineSetter__('displayName', function() {"
-                     "  error = true;"
-                     "  throw new Error();"
-                     "});"
-                     "function f() {};"
-                     "f.displayName = { 'foo': 6, toString: function() {"
-                     "  error = true;"
-                     "  return 'wrong_display_name';"
-                     "}};"
-                     "var g = function() {"
-                     "  arguments.callee.displayName = 'set_in_runtime';"
-                     "}; g();"
+  const char* code = "\x76\x61\x72\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
+                     "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x28\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x31\x3b\x20\x7d\x3b"
+                     "\x61\x2e\x64\x69\x73\x70\x6c\x61\x79\x4e\x61\x6d\x65\x20\x3d\x20\x27\x64\x69\x73\x70\x6c\x61\x79\x5f\x61\x27\x3b"
+                     "\x76\x61\x72\x20\x62\x20\x3d\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+                     "\x20\x20\x76\x61\x72\x20\x66\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x32\x3b\x20\x7d\x3b"
+                     "\x20\x20\x66\x2e\x64\x69\x73\x70\x6c\x61\x79\x4e\x61\x6d\x65\x20\x3d\x20\x27\x64\x69\x73\x70\x6c\x61\x79\x5f\x62\x27\x3b"
+                     "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x3b"
+                     "\x7d\x29\x28\x29\x3b"
+                     "\x76\x61\x72\x20\x63\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x7d\x3b"
+                     "\x63\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x64\x69\x73\x70\x6c\x61\x79\x4e\x61\x6d\x65\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+                     "\x20\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                     "\x20\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x3b"
+                     "\x7d\x29\x3b"
+                     "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x64\x28\x29\x20\x7b\x7d\x3b"
+                     "\x64\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x64\x69\x73\x70\x6c\x61\x79\x4e\x61\x6d\x65\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+                     "\x20\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                     "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x77\x72\x6f\x6e\x67\x5f\x64\x69\x73\x70\x6c\x61\x79\x5f\x6e\x61\x6d\x65\x27\x3b"
+                     "\x7d\x29\x3b"
+                     "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x28\x29\x20\x7b\x7d\x3b"
+                     "\x65\x2e\x64\x69\x73\x70\x6c\x61\x79\x4e\x61\x6d\x65\x20\x3d\x20\x27\x77\x72\x6f\x6e\x67\x5f\x64\x69\x73\x70\x6c\x61\x79\x5f\x6e\x61\x6d\x65\x27\x3b"
+                     "\x65\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x53\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x64\x69\x73\x70\x6c\x61\x79\x4e\x61\x6d\x65\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+                     "\x20\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                     "\x20\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x3b"
+                     "\x7d\x29\x3b"
+                     "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x7d\x3b"
+                     "\x66\x2e\x64\x69\x73\x70\x6c\x61\x79\x4e\x61\x6d\x65\x20\x3d\x20\x7b\x20\x27\x66\x6f\x6f\x27\x3a\x20\x36\x2c\x20\x74\x6f\x53\x74\x72\x69\x6e\x67\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+                     "\x20\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                     "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x77\x72\x6f\x6e\x67\x5f\x64\x69\x73\x70\x6c\x61\x79\x5f\x6e\x61\x6d\x65\x27\x3b"
+                     "\x7d\x7d\x3b"
+                     "\x76\x61\x72\x20\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+                     "\x20\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x2e\x63\x61\x6c\x6c\x65\x65\x2e\x64\x69\x73\x70\x6c\x61\x79\x4e\x61\x6d\x65\x20\x3d\x20\x27\x73\x65\x74\x5f\x69\x6e\x5f\x72\x75\x6e\x74\x69\x6d\x65\x27\x3b"
+                     "\x7d\x3b\x20\x67\x28\x29\x3b"
                      ;
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "test"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74"));
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), code), &origin)
       ->Run();
   v8::Local<v8::Value> error =
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "error"));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x65\x72\x72\x6f\x72"));
   v8::Local<v8::Function> a = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "a")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x61")));
   v8::Local<v8::Function> b = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "b")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x62")));
   v8::Local<v8::Function> c = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "c")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x63")));
   v8::Local<v8::Function> d = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "d")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x64")));
   v8::Local<v8::Function> e = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "e")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x65")));
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   v8::Local<v8::Function> g = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "g")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x67")));
   CHECK_EQ(false, error->BooleanValue());
-  CHECK_EQ("display_a", *v8::String::Utf8Value(a->GetDisplayName()));
-  CHECK_EQ("display_b", *v8::String::Utf8Value(b->GetDisplayName()));
+  CHECK_EQ("\x64\x69\x73\x70\x6c\x61\x79\x5f\x61", *v8::String::Utf8Value(a->GetDisplayName()));
+  CHECK_EQ("\x64\x69\x73\x70\x6c\x61\x79\x5f\x62", *v8::String::Utf8Value(b->GetDisplayName()));
   CHECK(c->GetDisplayName()->IsUndefined());
   CHECK(d->GetDisplayName()->IsUndefined());
   CHECK(e->GetDisplayName()->IsUndefined());
   CHECK(f->GetDisplayName()->IsUndefined());
-  CHECK_EQ("set_in_runtime", *v8::String::Utf8Value(g->GetDisplayName()));
+  CHECK_EQ("\x73\x65\x74\x5f\x69\x6e\x5f\x72\x75\x6e\x74\x69\x6d\x65", *v8::String::Utf8Value(g->GetDisplayName()));
 }
 
 
@@ -18443,14 +18443,14 @@ THREADED_TEST(ScriptLineNumber) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "test"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74"));
   v8::Handle<v8::String> script = v8::String::NewFromUtf8(
-      env->GetIsolate(), "function f() {}\n\nfunction g() {}");
+      env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x7d\xa\xaf\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\x7d");
   v8::Script::Compile(script, &origin)->Run();
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   v8::Local<v8::Function> g = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "g")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x67")));
   CHECK_EQ(0, f->GetScriptLineNumber());
   CHECK_EQ(2, g->GetScriptLineNumber());
 }
@@ -18461,16 +18461,16 @@ THREADED_TEST(ScriptColumnNumber) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(isolate, "test"),
+      v8::ScriptOrigin(v8::String::NewFromUtf8(isolate, "\x74\x65\x73\x74"),
                        v8::Integer::New(isolate, 3),
                        v8::Integer::New(isolate, 2));
   v8::Handle<v8::String> script = v8::String::NewFromUtf8(
-      isolate, "function foo() {}\n\n     function bar() {}");
+      isolate, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa\xa\x20\x20\x20\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\x7d");
   v8::Script::Compile(script, &origin)->Run();
   v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(isolate, "foo")));
+      env->Global()->Get(v8::String::NewFromUtf8(isolate, "\x66\x6f\x6f")));
   v8::Local<v8::Function> bar = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(isolate, "bar")));
+      env->Global()->Get(v8::String::NewFromUtf8(isolate, "\x62\x61\x72")));
   CHECK_EQ(14, foo->GetScriptColumnNumber());
   CHECK_EQ(17, bar->GetScriptColumnNumber());
 }
@@ -18481,15 +18481,15 @@ THREADED_TEST(FunctionIsBuiltin) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Local<v8::Function> f;
-  f = v8::Local<v8::Function>::Cast(CompileRun("Math.floor"));
+  f = v8::Local<v8::Function>::Cast(CompileRun("\x4d\x61\x74\x68\x2e\x66\x6c\x6f\x6f\x72"));
   CHECK(f->IsBuiltin());
-  f = v8::Local<v8::Function>::Cast(CompileRun("Object"));
+  f = v8::Local<v8::Function>::Cast(CompileRun("\x4f\x62\x6a\x65\x63\x74"));
   CHECK(f->IsBuiltin());
-  f = v8::Local<v8::Function>::Cast(CompileRun("Object.__defineSetter__"));
+  f = v8::Local<v8::Function>::Cast(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x53\x65\x74\x74\x65\x72\x5f\x5f"));
   CHECK(f->IsBuiltin());
-  f = v8::Local<v8::Function>::Cast(CompileRun("Array.prototype.toString"));
+  f = v8::Local<v8::Function>::Cast(CompileRun("\x41\x72\x72\x61\x79\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67"));
   CHECK(f->IsBuiltin());
-  f = v8::Local<v8::Function>::Cast(CompileRun("function a() {}; a;"));
+  f = v8::Local<v8::Function>::Cast(CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x28\x29\x20\x7b\x7d\x3b\x20\x61\x3b"));
   CHECK(!f->IsBuiltin());
 }
 
@@ -18499,17 +18499,17 @@ THREADED_TEST(FunctionGetScriptId) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(isolate, "test"),
+      v8::ScriptOrigin(v8::String::NewFromUtf8(isolate, "\x74\x65\x73\x74"),
                        v8::Integer::New(isolate, 3),
                        v8::Integer::New(isolate, 2));
   v8::Handle<v8::String> scriptSource = v8::String::NewFromUtf8(
-      isolate, "function foo() {}\n\n     function bar() {}");
+      isolate, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa\xa\x20\x20\x20\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\x7d");
   v8::Local<v8::Script> script(v8::Script::Compile(scriptSource, &origin));
   script->Run();
   v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(isolate, "foo")));
+      env->Global()->Get(v8::String::NewFromUtf8(isolate, "\x66\x6f\x6f")));
   v8::Local<v8::Function> bar = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(isolate, "bar")));
+      env->Global()->Get(v8::String::NewFromUtf8(isolate, "\x62\x61\x72")));
   CHECK_EQ(script->GetUnboundScript()->GetId(), foo->ScriptId());
   CHECK_EQ(script->GetUnboundScript()->GetId(), bar->ScriptId());
 }
@@ -18519,19 +18519,19 @@ THREADED_TEST(FunctionGetBoundFunction) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::ScriptOrigin origin = v8::ScriptOrigin(v8::String::NewFromUtf8(
-      env->GetIsolate(), "test"));
+      env->GetIsolate(), "\x74\x65\x73\x74"));
   v8::Handle<v8::String> script = v8::String::NewFromUtf8(
       env->GetIsolate(),
-      "var a = new Object();\n"
-      "a.x = 1;\n"
-      "function f () { return this.x };\n"
-      "var g = f.bind(a);\n"
-      "var b = g();");
+      "\x76\x61\x72\x20\x61\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b\xa"
+      "\x61\x2e\x78\x20\x3d\x20\x31\x3b\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x20\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x78\x20\x7d\x3b\xa"
+      "\x76\x61\x72\x20\x67\x20\x3d\x20\x66\x2e\x62\x69\x6e\x64\x28\x61\x29\x3b\xa"
+      "\x76\x61\x72\x20\x62\x20\x3d\x20\x67\x28\x29\x3b");
   v8::Script::Compile(script, &origin)->Run();
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   v8::Local<v8::Function> g = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "g")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x67")));
   CHECK(g->GetBoundFunction()->IsFunction());
   Local<v8::Function> original_function = Local<v8::Function>::Cast(
       g->GetBoundFunction());
@@ -18557,7 +18557,7 @@ static void SetterWhichSetsYOnThisTo23(
     const v8::PropertyCallbackInfo<void>& info) {
   CHECK(v8::Utils::OpenHandle(*info.This())->IsJSObject());
   CHECK(v8::Utils::OpenHandle(*info.Holder())->IsJSObject());
-  Local<Object>::Cast(info.This())->Set(v8_str("y"), v8_num(23));
+  Local<Object>::Cast(info.This())->Set(v8_str("\x79"), v8_num(23));
 }
 
 
@@ -18565,7 +18565,7 @@ void FooGetInterceptor(Local<String> name,
                        const v8::PropertyCallbackInfo<v8::Value>& info) {
   CHECK(v8::Utils::OpenHandle(*info.This())->IsJSObject());
   CHECK(v8::Utils::OpenHandle(*info.Holder())->IsJSObject());
-  if (!name->Equals(v8_str("foo"))) return;
+  if (!name->Equals(v8_str("\x66\x6f\x6f"))) return;
   info.GetReturnValue().Set(v8_num(42));
 }
 
@@ -18575,8 +18575,8 @@ void FooSetInterceptor(Local<String> name,
                        const v8::PropertyCallbackInfo<v8::Value>& info) {
   CHECK(v8::Utils::OpenHandle(*info.This())->IsJSObject());
   CHECK(v8::Utils::OpenHandle(*info.Holder())->IsJSObject());
-  if (!name->Equals(v8_str("foo"))) return;
-  Local<Object>::Cast(info.This())->Set(v8_str("y"), v8_num(23));
+  if (!name->Equals(v8_str("\x66\x6f\x6f"))) return;
+  Local<Object>::Cast(info.This())->Set(v8_str("\x79"), v8_num(23));
   info.GetReturnValue().Set(v8_num(23));
 }
 
@@ -18585,33 +18585,33 @@ TEST(SetterOnConstructorPrototype) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("x"), GetterWhichReturns42,
+  templ->SetAccessor(v8_str("\x78"), GetterWhichReturns42,
                      SetterWhichSetsYOnThisTo23);
   LocalContext context;
-  context->Global()->Set(v8_str("P"), templ->NewInstance());
-  CompileRun("function C1() {"
-             "  this.x = 23;"
-             "};"
-             "C1.prototype = P;"
-             "function C2() {"
-             "  this.x = 23"
-             "};"
-             "C2.prototype = { };"
-             "C2.prototype.__proto__ = P;");
+  context->Global()->Set(v8_str("\x50"), templ->NewInstance());
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x31\x28\x29\x20\x7b"
+             "\x20\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x32\x33\x3b"
+             "\x7d\x3b"
+             "\x43\x31\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x50\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x32\x28\x29\x20\x7b"
+             "\x20\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x32\x33"
+             "\x7d\x3b"
+             "\x43\x32\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x7b\x20\x7d\x3b"
+             "\x43\x32\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x50\x3b");
 
   v8::Local<v8::Script> script;
-  script = v8_compile("new C1();");
+  script = v8_compile("\x6e\x65\x77\x20\x43\x31\x28\x29\x3b");
   for (int i = 0; i < 10; i++) {
     v8::Handle<v8::Object> c1 = v8::Handle<v8::Object>::Cast(script->Run());
-    CHECK_EQ(42, c1->Get(v8_str("x"))->Int32Value());
-    CHECK_EQ(23, c1->Get(v8_str("y"))->Int32Value());
+    CHECK_EQ(42, c1->Get(v8_str("\x78"))->Int32Value());
+    CHECK_EQ(23, c1->Get(v8_str("\x79"))->Int32Value());
   }
 
-script = v8_compile("new C2();");
+script = v8_compile("\x6e\x65\x77\x20\x43\x32\x28\x29\x3b");
   for (int i = 0; i < 10; i++) {
     v8::Handle<v8::Object> c2 = v8::Handle<v8::Object>::Cast(script->Run());
-    CHECK_EQ(42, c2->Get(v8_str("x"))->Int32Value());
-    CHECK_EQ(23, c2->Get(v8_str("y"))->Int32Value());
+    CHECK_EQ(42, c2->Get(v8_str("\x78"))->Int32Value());
+    CHECK_EQ(23, c2->Get(v8_str("\x79"))->Int32Value());
   }
 }
 
@@ -18627,8 +18627,8 @@ static void NamedPropertySetterWhichSetsYOnThisTo23(
     Local<String> name,
     Local<Value> value,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  if (name->Equals(v8_str("x"))) {
-    Local<Object>::Cast(info.This())->Set(v8_str("y"), v8_num(23));
+  if (name->Equals(v8_str("\x78"))) {
+    Local<Object>::Cast(info.This())->Set(v8_str("\x79"), v8_num(23));
   }
 }
 
@@ -18640,39 +18640,39 @@ THREADED_TEST(InterceptorOnConstructorPrototype) {
   templ->SetNamedPropertyHandler(NamedPropertyGetterWhichReturns42,
                                  NamedPropertySetterWhichSetsYOnThisTo23);
   LocalContext context;
-  context->Global()->Set(v8_str("P"), templ->NewInstance());
-  CompileRun("function C1() {"
-             "  this.x = 23;"
-             "};"
-             "C1.prototype = P;"
-             "function C2() {"
-             "  this.x = 23"
-             "};"
-             "C2.prototype = { };"
-             "C2.prototype.__proto__ = P;");
+  context->Global()->Set(v8_str("\x50"), templ->NewInstance());
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x31\x28\x29\x20\x7b"
+             "\x20\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x32\x33\x3b"
+             "\x7d\x3b"
+             "\x43\x31\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x50\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x32\x28\x29\x20\x7b"
+             "\x20\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x32\x33"
+             "\x7d\x3b"
+             "\x43\x32\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x7b\x20\x7d\x3b"
+             "\x43\x32\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x50\x3b");
 
   v8::Local<v8::Script> script;
-  script = v8_compile("new C1();");
+  script = v8_compile("\x6e\x65\x77\x20\x43\x31\x28\x29\x3b");
   for (int i = 0; i < 10; i++) {
     v8::Handle<v8::Object> c1 = v8::Handle<v8::Object>::Cast(script->Run());
-    CHECK_EQ(23, c1->Get(v8_str("x"))->Int32Value());
-    CHECK_EQ(42, c1->Get(v8_str("y"))->Int32Value());
+    CHECK_EQ(23, c1->Get(v8_str("\x78"))->Int32Value());
+    CHECK_EQ(42, c1->Get(v8_str("\x79"))->Int32Value());
   }
 
-  script = v8_compile("new C2();");
+  script = v8_compile("\x6e\x65\x77\x20\x43\x32\x28\x29\x3b");
   for (int i = 0; i < 10; i++) {
     v8::Handle<v8::Object> c2 = v8::Handle<v8::Object>::Cast(script->Run());
-    CHECK_EQ(23, c2->Get(v8_str("x"))->Int32Value());
-    CHECK_EQ(42, c2->Get(v8_str("y"))->Int32Value());
+    CHECK_EQ(23, c2->Get(v8_str("\x78"))->Int32Value());
+    CHECK_EQ(42, c2->Get(v8_str("\x79"))->Int32Value());
   }
 }
 
 
 TEST(Regress618) {
-  const char* source = "function C1() {"
-                       "  this.x = 23;"
-                       "};"
-                       "C1.prototype = P;";
+  const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x31\x28\x29\x20\x7b"
+                       "\x20\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x32\x33\x3b"
+                       "\x7d\x3b"
+                       "\x43\x31\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x50\x3b";
 
   LocalContext context;
   v8::Isolate* isolate = context->GetIsolate();
@@ -18681,35 +18681,35 @@ TEST(Regress618) {
 
   // Use a simple object as prototype.
   v8::Local<v8::Object> prototype = v8::Object::New(isolate);
-  prototype->Set(v8_str("y"), v8_num(42));
-  context->Global()->Set(v8_str("P"), prototype);
+  prototype->Set(v8_str("\x79"), v8_num(42));
+  context->Global()->Set(v8_str("\x50"), prototype);
 
   // This compile will add the code to the compilation cache.
   CompileRun(source);
 
-  script = v8_compile("new C1();");
+  script = v8_compile("\x6e\x65\x77\x20\x43\x31\x28\x29\x3b");
   // Allow enough iterations for the inobject slack tracking logic
   // to finalize instance size and install the fast construct stub.
   for (int i = 0; i < 256; i++) {
     v8::Handle<v8::Object> c1 = v8::Handle<v8::Object>::Cast(script->Run());
-    CHECK_EQ(23, c1->Get(v8_str("x"))->Int32Value());
-    CHECK_EQ(42, c1->Get(v8_str("y"))->Int32Value());
+    CHECK_EQ(23, c1->Get(v8_str("\x78"))->Int32Value());
+    CHECK_EQ(42, c1->Get(v8_str("\x79"))->Int32Value());
   }
 
   // Use an API object with accessors as prototype.
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("x"), GetterWhichReturns42,
+  templ->SetAccessor(v8_str("\x78"), GetterWhichReturns42,
                      SetterWhichSetsYOnThisTo23);
-  context->Global()->Set(v8_str("P"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x50"), templ->NewInstance());
 
   // This compile will get the code from the compilation cache.
   CompileRun(source);
 
-  script = v8_compile("new C1();");
+  script = v8_compile("\x6e\x65\x77\x20\x43\x31\x28\x29\x3b");
   for (int i = 0; i < 10; i++) {
     v8::Handle<v8::Object> c1 = v8::Handle<v8::Object>::Cast(script->Run());
-    CHECK_EQ(42, c1->Get(v8_str("x"))->Int32Value());
-    CHECK_EQ(23, c1->Get(v8_str("y"))->Int32Value());
+    CHECK_EQ(42, c1->Get(v8_str("\x78"))->Int32Value());
+    CHECK_EQ(23, c1->Get(v8_str("\x79"))->Int32Value());
   }
 }
 
@@ -18909,21 +18909,21 @@ THREADED_TEST(AddToJSFunctionResultCache) {
   LocalContext context;
 
   const char* code =
-      "(function() {"
-      "  var key0 = 'a';"
-      "  var key1 = 'b';"
-      "  var r0 = %_GetFromCache(0, key0);"
-      "  var r1 = %_GetFromCache(0, key1);"
-      "  var r0_ = %_GetFromCache(0, key0);"
-      "  if (r0 !== r0_)"
-      "    return 'Different results for ' + key0 + ': ' + r0 + ' vs. ' + r0_;"
-      "  var r1_ = %_GetFromCache(0, key1);"
-      "  if (r1 !== r1_)"
-      "    return 'Different results for ' + key1 + ': ' + r1 + ' vs. ' + r1_;"
-      "  return 'PASSED';"
-      "})()";
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x6b\x65\x79\x30\x20\x3d\x20\x27\x61\x27\x3b"
+      "\x20\x20\x76\x61\x72\x20\x6b\x65\x79\x31\x20\x3d\x20\x27\x62\x27\x3b"
+      "\x20\x20\x76\x61\x72\x20\x72\x30\x20\x3d\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x6b\x65\x79\x30\x29\x3b"
+      "\x20\x20\x76\x61\x72\x20\x72\x31\x20\x3d\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x6b\x65\x79\x31\x29\x3b"
+      "\x20\x20\x76\x61\x72\x20\x72\x30\x5f\x20\x3d\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x6b\x65\x79\x30\x29\x3b"
+      "\x20\x20\x69\x66\x20\x28\x72\x30\x20\x21\x3d\x3d\x20\x72\x30\x5f\x29"
+      "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x44\x69\x66\x66\x65\x72\x65\x6e\x74\x20\x72\x65\x73\x75\x6c\x74\x73\x20\x66\x6f\x72\x20\x27\x20\x2b\x20\x6b\x65\x79\x30\x20\x2b\x20\x27\x3a\x20\x27\x20\x2b\x20\x72\x30\x20\x2b\x20\x27\x20\x76\x73\x2e\x20\x27\x20\x2b\x20\x72\x30\x5f\x3b"
+      "\x20\x20\x76\x61\x72\x20\x72\x31\x5f\x20\x3d\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x6b\x65\x79\x31\x29\x3b"
+      "\x20\x20\x69\x66\x20\x28\x72\x31\x20\x21\x3d\x3d\x20\x72\x31\x5f\x29"
+      "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x44\x69\x66\x66\x65\x72\x65\x6e\x74\x20\x72\x65\x73\x75\x6c\x74\x73\x20\x66\x6f\x72\x20\x27\x20\x2b\x20\x6b\x65\x79\x31\x20\x2b\x20\x27\x3a\x20\x27\x20\x2b\x20\x72\x31\x20\x2b\x20\x27\x20\x76\x73\x2e\x20\x27\x20\x2b\x20\x72\x31\x5f\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x50\x41\x53\x53\x45\x44\x27\x3b"
+      "\x7d\x29\x28\x29";
   CcTest::heap()->ClearJSFunctionResultCaches();
-  ExpectString(code, "PASSED");
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -18933,18 +18933,18 @@ THREADED_TEST(FillJSFunctionResultCache) {
   v8::HandleScope scope(context->GetIsolate());
 
   const char* code =
-      "(function() {"
-      "  var k = 'a';"
-      "  var r = %_GetFromCache(0, k);"
-      "  for (var i = 0; i < 16; i++) {"
-      "    %_GetFromCache(0, 'a' + i);"
-      "  };"
-      "  if (r === %_GetFromCache(0, k))"
-      "    return 'FAILED: k0CacheSize is too small';"
-      "  return 'PASSED';"
-      "})()";
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x6b\x20\x3d\x20\x27\x61\x27\x3b"
+      "\x20\x20\x76\x61\x72\x20\x72\x20\x3d\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x6b\x29\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x27\x61\x27\x20\x2b\x20\x69\x29\x3b"
+      "\x20\x20\x7d\x3b"
+      "\x20\x20\x69\x66\x20\x28\x72\x20\x3d\x3d\x3d\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x6b\x29\x29"
+      "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x46\x41\x49\x4c\x45\x44\x3a\x20\x6b\x30\x43\x61\x63\x68\x65\x53\x69\x7a\x65\x20\x69\x73\x20\x74\x6f\x6f\x20\x73\x6d\x61\x6c\x6c\x27\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x50\x41\x53\x53\x45\x44\x27\x3b"
+      "\x7d\x29\x28\x29";
   CcTest::heap()->ClearJSFunctionResultCaches();
-  ExpectString(code, "PASSED");
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -18954,21 +18954,21 @@ THREADED_TEST(RoundRobinGetFromCache) {
   v8::HandleScope scope(context->GetIsolate());
 
   const char* code =
-      "(function() {"
-      "  var keys = [];"
-      "  for (var i = 0; i < 16; i++) keys.push(i);"
-      "  var values = [];"
-      "  for (var i = 0; i < 16; i++) values[i] = %_GetFromCache(0, keys[i]);"
-      "  for (var i = 0; i < 16; i++) {"
-      "    var v = %_GetFromCache(0, keys[i]);"
-      "    if (v.toString() !== values[i].toString())"
-      "      return 'Wrong value for ' + "
-      "          keys[i] + ': ' + v + ' vs. ' + values[i];"
-      "  };"
-      "  return 'PASSED';"
-      "})()";
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x6b\x65\x79\x73\x20\x3d\x20\x5b\x5d\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x2b\x29\x20\x6b\x65\x79\x73\x2e\x70\x75\x73\x68\x28\x69\x29\x3b"
+      "\x20\x20\x76\x61\x72\x20\x76\x61\x6c\x75\x65\x73\x20\x3d\x20\x5b\x5d\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x2b\x29\x20\x76\x61\x6c\x75\x65\x73\x5b\x69\x5d\x20\x3d\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x6b\x65\x79\x73\x5b\x69\x5d\x29\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x6b\x65\x79\x73\x5b\x69\x5d\x29\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x76\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x21\x3d\x3d\x20\x76\x61\x6c\x75\x65\x73\x5b\x69\x5d\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x29"
+      "\x20\x20\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x66\x6f\x72\x20\x27\x20\x2b\x20"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x6b\x65\x79\x73\x5b\x69\x5d\x20\x2b\x20\x27\x3a\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x76\x73\x2e\x20\x27\x20\x2b\x20\x76\x61\x6c\x75\x65\x73\x5b\x69\x5d\x3b"
+      "\x20\x20\x7d\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x50\x41\x53\x53\x45\x44\x27\x3b"
+      "\x7d\x29\x28\x29";
   CcTest::heap()->ClearJSFunctionResultCaches();
-  ExpectString(code, "PASSED");
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -18978,21 +18978,21 @@ THREADED_TEST(ReverseGetFromCache) {
   v8::HandleScope scope(context->GetIsolate());
 
   const char* code =
-      "(function() {"
-      "  var keys = [];"
-      "  for (var i = 0; i < 16; i++) keys.push(i);"
-      "  var values = [];"
-      "  for (var i = 0; i < 16; i++) values[i] = %_GetFromCache(0, keys[i]);"
-      "  for (var i = 15; i >= 16; i--) {"
-      "    var v = %_GetFromCache(0, keys[i]);"
-      "    if (v !== values[i])"
-      "      return 'Wrong value for ' + "
-      "          keys[i] + ': ' + v + ' vs. ' + values[i];"
-      "  };"
-      "  return 'PASSED';"
-      "})()";
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x6b\x65\x79\x73\x20\x3d\x20\x5b\x5d\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x2b\x29\x20\x6b\x65\x79\x73\x2e\x70\x75\x73\x68\x28\x69\x29\x3b"
+      "\x20\x20\x76\x61\x72\x20\x76\x61\x6c\x75\x65\x73\x20\x3d\x20\x5b\x5d\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x36\x3b\x20\x69\x2b\x2b\x29\x20\x76\x61\x6c\x75\x65\x73\x5b\x69\x5d\x20\x3d\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x6b\x65\x79\x73\x5b\x69\x5d\x29\x3b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x31\x35\x3b\x20\x69\x20\x3e\x3d\x20\x31\x36\x3b\x20\x69\x2d\x2d\x29\x20\x7b"
+      "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x6b\x65\x79\x73\x5b\x69\x5d\x29\x3b"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x76\x20\x21\x3d\x3d\x20\x76\x61\x6c\x75\x65\x73\x5b\x69\x5d\x29"
+      "\x20\x20\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x57\x72\x6f\x6e\x67\x20\x76\x61\x6c\x75\x65\x20\x66\x6f\x72\x20\x27\x20\x2b\x20"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x6b\x65\x79\x73\x5b\x69\x5d\x20\x2b\x20\x27\x3a\x20\x27\x20\x2b\x20\x76\x20\x2b\x20\x27\x20\x76\x73\x2e\x20\x27\x20\x2b\x20\x76\x61\x6c\x75\x65\x73\x5b\x69\x5d\x3b"
+      "\x20\x20\x7d\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x50\x41\x53\x53\x45\x44\x27\x3b"
+      "\x7d\x29\x28\x29";
   CcTest::heap()->ClearJSFunctionResultCaches();
-  ExpectString(code, "PASSED");
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -19002,14 +19002,14 @@ THREADED_TEST(TestEviction) {
   v8::HandleScope scope(context->GetIsolate());
 
   const char* code =
-      "(function() {"
-      "  for (var i = 0; i < 2*16; i++) {"
-      "    %_GetFromCache(0, 'a' + i);"
-      "  };"
-      "  return 'PASSED';"
-      "})()";
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x32\x2a\x31\x36\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+      "\x20\x20\x20\x20\x25\x5f\x47\x65\x74\x46\x72\x6f\x6d\x43\x61\x63\x68\x65\x28\x30\x2c\x20\x27\x61\x27\x20\x2b\x20\x69\x29\x3b"
+      "\x20\x20\x7d\x3b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x50\x41\x53\x53\x45\x44\x27\x3b"
+      "\x7d\x29\x28\x29";
   CcTest::heap()->ClearJSFunctionResultCaches();
-  ExpectString(code, "PASSED");
+  ExpectString(code, "\x50\x41\x53\x53\x45\x44");
 }
 
 
@@ -19019,13 +19019,13 @@ THREADED_TEST(TwoByteStringInAsciiCons) {
   v8::HandleScope scope(context->GetIsolate());
 
   const char* init_code =
-      "var str1 = 'abelspendabel';"
-      "var str2 = str1 + str1 + str1;"
-      "str2;";
+      "\x76\x61\x72\x20\x73\x74\x72\x31\x20\x3d\x20\x27\x61\x62\x65\x6c\x73\x70\x65\x6e\x64\x61\x62\x65\x6c\x27\x3b"
+      "\x76\x61\x72\x20\x73\x74\x72\x32\x20\x3d\x20\x73\x74\x72\x31\x20\x2b\x20\x73\x74\x72\x31\x20\x2b\x20\x73\x74\x72\x31\x3b"
+      "\x73\x74\x72\x32\x3b";
   Local<Value> result = CompileRun(init_code);
 
-  Local<Value> indexof = CompileRun("str2.indexOf('els')");
-  Local<Value> lastindexof = CompileRun("str2.lastIndexOf('dab')");
+  Local<Value> indexof = CompileRun("\x73\x74\x72\x32\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x65\x6c\x73\x27\x29");
+  Local<Value> lastindexof = CompileRun("\x73\x74\x72\x32\x2e\x6c\x61\x73\x74\x49\x6e\x64\x65\x78\x4f\x66\x28\x27\x64\x61\x62\x27\x29");
 
   CHECK(result->IsString());
   i::Handle<i::String> string = v8::Utils::OpenHandle(String::Cast(*result));
@@ -19064,41 +19064,41 @@ THREADED_TEST(TwoByteStringInAsciiCons) {
   // Check that some string operations work.
 
   // Atom RegExp.
-  Local<Value> reresult = CompileRun("str2.match(/abel/g).length;");
+  Local<Value> reresult = CompileRun("\x73\x74\x72\x32\x2e\x6d\x61\x74\x63\x68\x28\x2f\x61\x62\x65\x6c\x2f\x67\x29\x2e\x6c\x65\x6e\x67\x74\x68\x3b");
   CHECK_EQ(6, reresult->Int32Value());
 
   // Nonatom RegExp.
-  reresult = CompileRun("str2.match(/abe./g).length;");
+  reresult = CompileRun("\x73\x74\x72\x32\x2e\x6d\x61\x74\x63\x68\x28\x2f\x61\x62\x65\x2e\x2f\x67\x29\x2e\x6c\x65\x6e\x67\x74\x68\x3b");
   CHECK_EQ(6, reresult->Int32Value());
 
-  reresult = CompileRun("str2.search(/bel/g);");
+  reresult = CompileRun("\x73\x74\x72\x32\x2e\x73\x65\x61\x72\x63\x68\x28\x2f\x62\x65\x6c\x2f\x67\x29\x3b");
   CHECK_EQ(1, reresult->Int32Value());
 
-  reresult = CompileRun("str2.search(/be./g);");
+  reresult = CompileRun("\x73\x74\x72\x32\x2e\x73\x65\x61\x72\x63\x68\x28\x2f\x62\x65\x2e\x2f\x67\x29\x3b");
   CHECK_EQ(1, reresult->Int32Value());
 
-  ExpectTrue("/bel/g.test(str2);");
+  ExpectTrue("\x2f\x62\x65\x6c\x2f\x67\x2e\x74\x65\x73\x74\x28\x73\x74\x72\x32\x29\x3b");
 
-  ExpectTrue("/be./g.test(str2);");
+  ExpectTrue("\x2f\x62\x65\x2e\x2f\x67\x2e\x74\x65\x73\x74\x28\x73\x74\x72\x32\x29\x3b");
 
-  reresult = CompileRun("/bel/g.exec(str2);");
+  reresult = CompileRun("\x2f\x62\x65\x6c\x2f\x67\x2e\x65\x78\x65\x63\x28\x73\x74\x72\x32\x29\x3b");
   CHECK(!reresult->IsNull());
 
-  reresult = CompileRun("/be./g.exec(str2);");
+  reresult = CompileRun("\x2f\x62\x65\x2e\x2f\x67\x2e\x65\x78\x65\x63\x28\x73\x74\x72\x32\x29\x3b");
   CHECK(!reresult->IsNull());
 
-  ExpectString("str2.substring(2, 10);", "elspenda");
+  ExpectString("\x73\x74\x72\x32\x2e\x73\x75\x62\x73\x74\x72\x69\x6e\x67\x28\x32\x2c\x20\x31\x30\x29\x3b", "\x65\x6c\x73\x70\x65\x6e\x64\x61");
 
-  ExpectString("str2.substring(2, 20);", "elspendabelabelspe");
+  ExpectString("\x73\x74\x72\x32\x2e\x73\x75\x62\x73\x74\x72\x69\x6e\x67\x28\x32\x2c\x20\x32\x30\x29\x3b", "\x65\x6c\x73\x70\x65\x6e\x64\x61\x62\x65\x6c\x61\x62\x65\x6c\x73\x70\x65");
 
-  ExpectString("str2.charAt(2);", "e");
+  ExpectString("\x73\x74\x72\x32\x2e\x63\x68\x61\x72\x41\x74\x28\x32\x29\x3b", "\x65");
 
-  ExpectObject("str2.indexOf('els');", indexof);
+  ExpectObject("\x73\x74\x72\x32\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x65\x6c\x73\x27\x29\x3b", indexof);
 
-  ExpectObject("str2.lastIndexOf('dab');", lastindexof);
+  ExpectObject("\x73\x74\x72\x32\x2e\x6c\x61\x73\x74\x49\x6e\x64\x65\x78\x4f\x66\x28\x27\x64\x61\x62\x27\x29\x3b", lastindexof);
 
-  reresult = CompileRun("str2.charCodeAt(2);");
-  CHECK_EQ(static_cast<int32_t>('e'), reresult->Int32Value());
+  reresult = CompileRun("\x73\x74\x72\x32\x2e\x63\x68\x61\x72\x43\x6f\x64\x65\x41\x74\x28\x32\x29\x3b");
+  CHECK_EQ(static_cast<int32_t>('\x65'), reresult->Int32Value());
 }
 
 
@@ -19128,7 +19128,7 @@ TEST(ContainsOnlyOneByte) {
   string = String::NewFromTwoByte(isolate, string_contents);
   CHECK(string->IsOneByte() && string->ContainsOnlyOneByte());
   // Test left right and balanced cons strings.
-  Handle<String> base = String::NewFromUtf8(isolate, "a");
+  Handle<String> base = String::NewFromUtf8(isolate, "\x61");
   Handle<String> left = base;
   Handle<String> right = base;
   for (int i = 0; i < 1000; i++) {
@@ -19203,58 +19203,58 @@ TEST(GCInFailedAccessCheckCallback) {
 
   // Create a context and set an x property on it's global object.
   LocalContext context0(NULL, global_template);
-  context0->Global()->Set(v8_str("x"), v8_num(42));
+  context0->Global()->Set(v8_str("\x78"), v8_num(42));
   v8::Handle<v8::Object> global0 = context0->Global();
 
   // Create a context with a different security token so that the
   // failed access check callback will be called on each access.
   LocalContext context1(NULL, global_template);
-  context1->Global()->Set(v8_str("other"), global0);
+  context1->Global()->Set(v8_str("\x6f\x74\x68\x65\x72"), global0);
 
   // Get property with failed access check.
-  ExpectUndefined("other.x");
+  ExpectUndefined("\x6f\x74\x68\x65\x72\x2e\x78");
 
   // Get element with failed access check.
-  ExpectUndefined("other[0]");
+  ExpectUndefined("\x6f\x74\x68\x65\x72\x5b\x30\x5d");
 
   // Set property with failed access check.
-  v8::Handle<v8::Value> result = CompileRun("other.x = new Object()");
+  v8::Handle<v8::Value> result = CompileRun("\x6f\x74\x68\x65\x72\x2e\x78\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29");
   CHECK(result->IsObject());
 
   // Set element with failed access check.
-  result = CompileRun("other[0] = new Object()");
+  result = CompileRun("\x6f\x74\x68\x65\x72\x5b\x30\x5d\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29");
   CHECK(result->IsObject());
 
   // Get property attribute with failed access check.
-  ExpectFalse("\'x\' in other");
+  ExpectFalse("\x27\x78\x27\x20\x69\x6e\x20\x6f\x74\x68\x65\x72");
 
   // Get property attribute for element with failed access check.
-  ExpectFalse("0 in other");
+  ExpectFalse("\x30\x20\x69\x6e\x20\x6f\x74\x68\x65\x72");
 
   // Delete property.
-  ExpectFalse("delete other.x");
+  ExpectFalse("\x64\x65\x6c\x65\x74\x65\x20\x6f\x74\x68\x65\x72\x2e\x78");
 
   // Delete element.
   CHECK_EQ(false, global0->Delete(0));
 
   // DefineAccessor.
   CHECK_EQ(false,
-           global0->SetAccessor(v8_str("x"), GetXValue, NULL, v8_str("x")));
+           global0->SetAccessor(v8_str("\x78"), GetXValue, NULL, v8_str("\x78")));
 
   // Define JavaScript accessor.
-  ExpectUndefined("Object.prototype.__defineGetter__.call("
-                  "    other, \'x\', function() { return 42; })");
+  ExpectUndefined("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x2e\x63\x61\x6c\x6c\x28"
+                  "\x20\x20\x20\x20\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b\x20\x7d\x29");
 
   // LookupAccessor.
-  ExpectUndefined("Object.prototype.__lookupGetter__.call("
-                  "    other, \'x\')");
+  ExpectUndefined("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x6c\x6f\x6f\x6b\x75\x70\x47\x65\x74\x74\x65\x72\x5f\x5f\x2e\x63\x61\x6c\x6c\x28"
+                  "\x20\x20\x20\x20\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x29");
 
   // HasOwnElement.
-  ExpectFalse("Object.prototype.hasOwnProperty.call(other, \'0\')");
+  ExpectFalse("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x2e\x63\x61\x6c\x6c\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x30\x27\x29");
 
   CHECK_EQ(false, global0->HasRealIndexedProperty(0));
-  CHECK_EQ(false, global0->HasRealNamedProperty(v8_str("x")));
-  CHECK_EQ(false, global0->HasRealNamedCallbackProperty(v8_str("x")));
+  CHECK_EQ(false, global0->HasRealNamedProperty(v8_str("\x78")));
+  CHECK_EQ(false, global0->HasRealNamedCallbackProperty(v8_str("\x78")));
 
   // Reset the failed access check callback so it does not influence
   // the other tests.
@@ -19284,7 +19284,7 @@ UNINITIALIZED_TEST(DisposeIsolateWhenInUse) {
     v8::HandleScope scope(isolate);
     LocalContext context(isolate);
     // Run something in this isolate.
-    ExpectTrue("true");
+    ExpectTrue("\x74\x72\x75\x65");
     v8::V8::SetFatalErrorHandler(StoringErrorCallback);
     last_location = last_message = NULL;
     // Still entered, should fail.
@@ -19312,8 +19312,8 @@ TEST(RunTwoIsolatesOnSingleThread) {
         v8::Local<v8::Context>::New(isolate1, context1);
     v8::Context::Scope context_scope(context);
     // Run something in new isolate.
-    CompileRun("var foo = 'isolate 1';");
-    ExpectString("function f() { return foo; }; f()", "isolate 1");
+    CompileRun("\x76\x61\x72\x20\x66\x6f\x6f\x20\x3d\x20\x27\x69\x73\x6f\x6c\x61\x74\x65\x20\x31\x27\x3b");
+    ExpectString("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x3b\x20\x7d\x3b\x20\x66\x28\x29", "\x69\x73\x6f\x6c\x61\x74\x65\x20\x31");
   }
 
   // Run isolate 2.
@@ -19329,8 +19329,8 @@ TEST(RunTwoIsolatesOnSingleThread) {
     v8::Context::Scope context_scope(context);
 
     // Run something in new isolate.
-    CompileRun("var foo = 'isolate 2';");
-    ExpectString("function f() { return foo; }; f()", "isolate 2");
+    CompileRun("\x76\x61\x72\x20\x66\x6f\x6f\x20\x3d\x20\x27\x69\x73\x6f\x6c\x61\x74\x65\x20\x32\x27\x3b");
+    ExpectString("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x3b\x20\x7d\x3b\x20\x66\x28\x29", "\x69\x73\x6f\x6c\x61\x74\x65\x20\x32");
   }
 
   {
@@ -19339,7 +19339,7 @@ TEST(RunTwoIsolatesOnSingleThread) {
         v8::Local<v8::Context>::New(isolate1, context1);
     v8::Context::Scope context_scope(context);
     // Now again in isolate 1
-    ExpectString("function f() { return foo; }; f()", "isolate 1");
+    ExpectString("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x3b\x20\x7d\x3b\x20\x66\x28\x29", "\x69\x73\x6f\x6c\x61\x74\x65\x20\x31");
   }
 
   isolate1->Exit();
@@ -19360,16 +19360,16 @@ TEST(RunTwoIsolatesOnSingleThread) {
     v8::Context::Scope context_scope(context);
     // Variables in other isolates should be not available, verify there
     // is an exception.
-    ExpectTrue("function f() {"
-               "  try {"
-               "    foo;"
-               "    return false;"
-               "  } catch(e) {"
-               "    return true;"
-               "  }"
-               "};"
-               "var isDefaultIsolate = true;"
-               "f()");
+    ExpectTrue("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+               "\x20\x20\x74\x72\x79\x20\x7b"
+               "\x20\x20\x20\x20\x66\x6f\x6f\x3b"
+               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x61\x6c\x73\x65\x3b"
+               "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x72\x75\x65\x3b"
+               "\x20\x20\x7d"
+               "\x7d\x3b"
+               "\x76\x61\x72\x20\x69\x73\x44\x65\x66\x61\x75\x6c\x74\x49\x73\x6f\x6c\x61\x74\x65\x20\x3d\x20\x74\x72\x75\x65\x3b"
+               "\x66\x28\x29");
   }
 
   isolate1->Enter();
@@ -19380,7 +19380,7 @@ TEST(RunTwoIsolatesOnSingleThread) {
     v8::Local<v8::Context> context =
         v8::Local<v8::Context>::New(isolate2, context2);
     v8::Context::Scope context_scope(context);
-    ExpectString("function f() { return foo; }; f()", "isolate 2");
+    ExpectString("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x3b\x20\x7d\x3b\x20\x66\x28\x29", "\x69\x73\x6f\x6c\x61\x74\x65\x20\x32");
   }
 
   {
@@ -19388,7 +19388,7 @@ TEST(RunTwoIsolatesOnSingleThread) {
     v8::Local<v8::Context> context =
         v8::Local<v8::Context>::New(v8::Isolate::GetCurrent(), context1);
     v8::Context::Scope context_scope(context);
-    ExpectString("function f() { return foo; }; f()", "isolate 1");
+    ExpectString("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x3b\x20\x7d\x3b\x20\x66\x28\x29", "\x69\x73\x6f\x6c\x61\x74\x65\x20\x31");
   }
 
   {
@@ -19416,7 +19416,7 @@ TEST(RunTwoIsolatesOnSingleThread) {
     v8::Local<v8::Context> context =
         v8::Local<v8::Context>::New(CcTest::isolate(), context_default);
     v8::Context::Scope context_scope(context);
-    ExpectTrue("function f() { return isDefaultIsolate; }; f()");
+    ExpectTrue("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x69\x73\x44\x65\x66\x61\x75\x6c\x74\x49\x73\x6f\x6c\x61\x74\x65\x3b\x20\x7d\x3b\x20\x66\x28\x29");
   }
 }
 
@@ -19426,11 +19426,11 @@ static int CalcFibonacci(v8::Isolate* isolate, int limit) {
   v8::HandleScope scope(isolate);
   LocalContext context(isolate);
   i::ScopedVector<char> code(1024);
-  i::SNPrintF(code, "function fib(n) {"
-                    "  if (n <= 2) return 1;"
-                    "  return fib(n-1) + fib(n-2);"
-                    "}"
-                    "fib(%d)", limit);
+  i::SNPrintF(code, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x69\x62\x28\x6e\x29\x20\x7b"
+                    "\x20\x20\x69\x66\x20\x28\x6e\x20\x3c\x3d\x20\x32\x29\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x3b"
+                    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x69\x62\x28\x6e\x2d\x31\x29\x20\x2b\x20\x66\x69\x62\x28\x6e\x2d\x32\x29\x3b"
+                    "\x7d"
+                    "\x66\x69\x62\x28\x6c\x84\x29", limit);
   Local<Value> value = CompileRun(code.start());
   CHECK(value->IsNumber());
   return static_cast<int>(value->NumberValue());
@@ -19439,7 +19439,7 @@ static int CalcFibonacci(v8::Isolate* isolate, int limit) {
 class IsolateThread : public v8::base::Thread {
  public:
   IsolateThread(v8::Isolate* isolate, int fib_limit)
-      : Thread(Options("IsolateThread")),
+      : Thread(Options("\x49\x73\x6f\x6c\x61\x74\x65\x54\x68\x72\x65\x61\x64")),
         isolate_(isolate),
         fib_limit_(fib_limit),
         result_(0) {}
@@ -19494,7 +19494,7 @@ TEST(IsolateDifferentContexts) {
     v8::HandleScope handle_scope(isolate);
     context = v8::Context::New(isolate);
     v8::Context::Scope context_scope(context);
-    Local<Value> v = CompileRun("2");
+    Local<Value> v = CompileRun("\x32");
     CHECK(v->IsNumber());
     CHECK_EQ(2, static_cast<int>(v->NumberValue()));
   }
@@ -19503,7 +19503,7 @@ TEST(IsolateDifferentContexts) {
     v8::HandleScope handle_scope(isolate);
     context = v8::Context::New(isolate);
     v8::Context::Scope context_scope(context);
-    Local<Value> v = CompileRun("22");
+    Local<Value> v = CompileRun("\x32\x32");
     CHECK(v->IsNumber());
     CHECK_EQ(22, static_cast<int>(v->NumberValue()));
   }
@@ -19521,7 +19521,7 @@ class InitDefaultIsolateThread : public v8::base::Thread {
   };
 
   explicit InitDefaultIsolateThread(TestCase testCase)
-      : Thread(Options("InitDefaultIsolateThread")),
+      : Thread(Options("\x49\x6e\x69\x74\x44\x65\x66\x61\x75\x6c\x74\x49\x73\x6f\x6c\x61\x74\x65\x54\x68\x72\x65\x61\x64")),
         testCase_(testCase),
         result_(false) {}
 
@@ -19601,14 +19601,14 @@ TEST(InitializeDefaultIsolateOnSecondaryThread5) {
 
 TEST(StringCheckMultipleContexts) {
   const char* code =
-      "(function() { return \"a\".charAt(0); })()";
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x22\x61\x22\x2e\x63\x68\x61\x72\x41\x74\x28\x30\x29\x3b\x20\x7d\x29\x28\x29";
 
   {
     // Run the code twice in the first context to initialize the call IC.
     LocalContext context1;
     v8::HandleScope scope(context1->GetIsolate());
-    ExpectString(code, "a");
-    ExpectString(code, "a");
+    ExpectString(code, "\x61");
+    ExpectString(code, "\x61");
   }
 
   {
@@ -19616,22 +19616,22 @@ TEST(StringCheckMultipleContexts) {
     // that the right function gets called.
     LocalContext context2;
     v8::HandleScope scope(context2->GetIsolate());
-    CompileRun("String.prototype.charAt = function() { return \"not a\"; }");
-    ExpectString(code, "not a");
+    CompileRun("\x53\x74\x72\x69\x6e\x67\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x68\x61\x72\x41\x74\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x22\x6e\x6f\x74\x20\x61\x22\x3b\x20\x7d");
+    ExpectString(code, "\x6e\x6f\x74\x20\x61");
   }
 }
 
 
 TEST(NumberCheckMultipleContexts) {
   const char* code =
-      "(function() { return (42).toString(); })()";
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x28\x34\x32\x29\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x3b\x20\x7d\x29\x28\x29";
 
   {
     // Run the code twice in the first context to initialize the call IC.
     LocalContext context1;
     v8::HandleScope scope(context1->GetIsolate());
-    ExpectString(code, "42");
-    ExpectString(code, "42");
+    ExpectString(code, "\x34\x32");
+    ExpectString(code, "\x34\x32");
   }
 
   {
@@ -19639,22 +19639,22 @@ TEST(NumberCheckMultipleContexts) {
     // that the right function gets called.
     LocalContext context2;
     v8::HandleScope scope(context2->GetIsolate());
-    CompileRun("Number.prototype.toString = function() { return \"not 42\"; }");
-    ExpectString(code, "not 42");
+    CompileRun("\x4e\x75\x6d\x62\x65\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x22\x6e\x6f\x74\x20\x34\x32\x22\x3b\x20\x7d");
+    ExpectString(code, "\x6e\x6f\x74\x20\x34\x32");
   }
 }
 
 
 TEST(BooleanCheckMultipleContexts) {
   const char* code =
-      "(function() { return true.toString(); })()";
+      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x72\x75\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x3b\x20\x7d\x29\x28\x29";
 
   {
     // Run the code twice in the first context to initialize the call IC.
     LocalContext context1;
     v8::HandleScope scope(context1->GetIsolate());
-    ExpectString(code, "true");
-    ExpectString(code, "true");
+    ExpectString(code, "\x74\x72\x75\x65");
+    ExpectString(code, "\x74\x72\x75\x65");
   }
 
   {
@@ -19662,7 +19662,7 @@ TEST(BooleanCheckMultipleContexts) {
     // that the right function gets called.
     LocalContext context2;
     v8::HandleScope scope(context2->GetIsolate());
-    CompileRun("Boolean.prototype.toString = function() { return \"\"; }");
+    CompileRun("\x42\x6f\x6f\x6c\x65\x61\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x22\x22\x3b\x20\x7d");
     ExpectString(code, "");
   }
 }
@@ -19670,97 +19670,97 @@ TEST(BooleanCheckMultipleContexts) {
 
 TEST(DontDeleteCellLoadIC) {
   const char* function_code =
-      "function readCell() { while (true) { return cell; } }";
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29\x20\x7b\x20\x77\x68\x69\x6c\x65\x20\x28\x74\x72\x75\x65\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x63\x65\x6c\x6c\x3b\x20\x7d\x20\x7d";
 
   {
     // Run the code twice in the first context to initialize the load
     // IC for a don't delete cell.
     LocalContext context1;
     v8::HandleScope scope(context1->GetIsolate());
-    CompileRun("var cell = \"first\";");
-    ExpectBoolean("delete cell", false);
+    CompileRun("\x76\x61\x72\x20\x63\x65\x6c\x6c\x20\x3d\x20\x22\x66\x69\x72\x73\x74\x22\x3b");
+    ExpectBoolean("\x64\x65\x6c\x65\x74\x65\x20\x63\x65\x6c\x6c", false);
     CompileRun(function_code);
-    ExpectString("readCell()", "first");
-    ExpectString("readCell()", "first");
+    ExpectString("\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29", "\x66\x69\x72\x73\x74");
+    ExpectString("\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29", "\x66\x69\x72\x73\x74");
   }
 
   {
     // Use a deletable cell in the second context.
     LocalContext context2;
     v8::HandleScope scope(context2->GetIsolate());
-    CompileRun("cell = \"second\";");
+    CompileRun("\x63\x65\x6c\x6c\x20\x3d\x20\x22\x73\x65\x63\x6f\x6e\x64\x22\x3b");
     CompileRun(function_code);
-    ExpectString("readCell()", "second");
-    ExpectBoolean("delete cell", true);
-    ExpectString("(function() {"
-                 "  try {"
-                 "    return readCell();"
-                 "  } catch(e) {"
-                 "    return e.toString();"
-                 "  }"
-                 "})()",
-                 "ReferenceError: cell is not defined");
-    CompileRun("cell = \"new_second\";");
+    ExpectString("\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29", "\x73\x65\x63\x6f\x6e\x64");
+    ExpectBoolean("\x64\x65\x6c\x65\x74\x65\x20\x63\x65\x6c\x6c", true);
+    ExpectString("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+                 "\x20\x20\x74\x72\x79\x20\x7b"
+                 "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29\x3b"
+                 "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+                 "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x3b"
+                 "\x20\x20\x7d"
+                 "\x7d\x29\x28\x29",
+                 "\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x3a\x20\x63\x65\x6c\x6c\x20\x69\x73\x20\x6e\x6f\x74\x20\x64\x65\x66\x69\x6e\x65\x64");
+    CompileRun("\x63\x65\x6c\x6c\x20\x3d\x20\x22\x6e\x65\x77\x5f\x73\x65\x63\x6f\x6e\x64\x22\x3b");
     CcTest::heap()->CollectAllGarbage(i::Heap::kNoGCFlags);
-    ExpectString("readCell()", "new_second");
-    ExpectString("readCell()", "new_second");
+    ExpectString("\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29", "\x6e\x65\x77\x5f\x73\x65\x63\x6f\x6e\x64");
+    ExpectString("\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29", "\x6e\x65\x77\x5f\x73\x65\x63\x6f\x6e\x64");
   }
 }
 
 
 TEST(DontDeleteCellLoadICForceDelete) {
   const char* function_code =
-      "function readCell() { while (true) { return cell; } }";
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29\x20\x7b\x20\x77\x68\x69\x6c\x65\x20\x28\x74\x72\x75\x65\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x63\x65\x6c\x6c\x3b\x20\x7d\x20\x7d";
 
   // Run the code twice to initialize the load IC for a don't delete
   // cell.
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
-  CompileRun("var cell = \"value\";");
-  ExpectBoolean("delete cell", false);
+  CompileRun("\x76\x61\x72\x20\x63\x65\x6c\x6c\x20\x3d\x20\x22\x76\x61\x6c\x75\x65\x22\x3b");
+  ExpectBoolean("\x64\x65\x6c\x65\x74\x65\x20\x63\x65\x6c\x6c", false);
   CompileRun(function_code);
-  ExpectString("readCell()", "value");
-  ExpectString("readCell()", "value");
+  ExpectString("\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29", "\x76\x61\x6c\x75\x65");
+  ExpectString("\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29", "\x76\x61\x6c\x75\x65");
 
   // Delete the cell using the API and check the inlined code works
   // correctly.
-  CHECK(context->Global()->ForceDelete(v8_str("cell")));
-  ExpectString("(function() {"
-               "  try {"
-               "    return readCell();"
-               "  } catch(e) {"
-               "    return e.toString();"
-               "  }"
-               "})()",
-               "ReferenceError: cell is not defined");
+  CHECK(context->Global()->ForceDelete(v8_str("\x63\x65\x6c\x6c")));
+  ExpectString("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+               "\x20\x20\x74\x72\x79\x20\x7b"
+               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29\x3b"
+               "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x3b"
+               "\x20\x20\x7d"
+               "\x7d\x29\x28\x29",
+               "\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x3a\x20\x63\x65\x6c\x6c\x20\x69\x73\x20\x6e\x6f\x74\x20\x64\x65\x66\x69\x6e\x65\x64");
 }
 
 
 TEST(DontDeleteCellLoadICAPI) {
   const char* function_code =
-      "function readCell() { while (true) { return cell; } }";
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29\x20\x7b\x20\x77\x68\x69\x6c\x65\x20\x28\x74\x72\x75\x65\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x63\x65\x6c\x6c\x3b\x20\x7d\x20\x7d";
 
   // Run the code twice to initialize the load IC for a don't delete
   // cell created using the API.
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
-  context->Global()->ForceSet(v8_str("cell"), v8_str("value"), v8::DontDelete);
-  ExpectBoolean("delete cell", false);
+  context->Global()->ForceSet(v8_str("\x63\x65\x6c\x6c"), v8_str("\x76\x61\x6c\x75\x65"), v8::DontDelete);
+  ExpectBoolean("\x64\x65\x6c\x65\x74\x65\x20\x63\x65\x6c\x6c", false);
   CompileRun(function_code);
-  ExpectString("readCell()", "value");
-  ExpectString("readCell()", "value");
+  ExpectString("\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29", "\x76\x61\x6c\x75\x65");
+  ExpectString("\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29", "\x76\x61\x6c\x75\x65");
 
   // Delete the cell using the API and check the inlined code works
   // correctly.
-  CHECK(context->Global()->ForceDelete(v8_str("cell")));
-  ExpectString("(function() {"
-               "  try {"
-               "    return readCell();"
-               "  } catch(e) {"
-               "    return e.toString();"
-               "  }"
-               "})()",
-               "ReferenceError: cell is not defined");
+  CHECK(context->Global()->ForceDelete(v8_str("\x63\x65\x6c\x6c")));
+  ExpectString("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+               "\x20\x20\x74\x72\x79\x20\x7b"
+               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x72\x65\x61\x64\x43\x65\x6c\x6c\x28\x29\x3b"
+               "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x3b"
+               "\x20\x20\x7d"
+               "\x7d\x29\x28\x29",
+               "\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x3a\x20\x63\x65\x6c\x6c\x20\x69\x73\x20\x6e\x6f\x74\x20\x64\x65\x66\x69\x6e\x65\x64");
 }
 
 
@@ -19847,69 +19847,69 @@ TEST(RegExp) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
 
-  v8::Handle<v8::RegExp> re = v8::RegExp::New(v8_str("foo"), v8::RegExp::kNone);
+  v8::Handle<v8::RegExp> re = v8::RegExp::New(v8_str("\x66\x6f\x6f"), v8::RegExp::kNone);
   CHECK(re->IsRegExp());
-  CHECK(re->GetSource()->Equals(v8_str("foo")));
+  CHECK(re->GetSource()->Equals(v8_str("\x66\x6f\x6f")));
   CHECK_EQ(v8::RegExp::kNone, re->GetFlags());
 
-  re = v8::RegExp::New(v8_str("bar"),
+  re = v8::RegExp::New(v8_str("\x62\x61\x72"),
                        static_cast<v8::RegExp::Flags>(v8::RegExp::kIgnoreCase |
                                                       v8::RegExp::kGlobal));
   CHECK(re->IsRegExp());
-  CHECK(re->GetSource()->Equals(v8_str("bar")));
+  CHECK(re->GetSource()->Equals(v8_str("\x62\x61\x72")));
   CHECK_EQ(v8::RegExp::kIgnoreCase | v8::RegExp::kGlobal,
            static_cast<int>(re->GetFlags()));
 
-  re = v8::RegExp::New(v8_str("baz"),
+  re = v8::RegExp::New(v8_str("\x62\x61\x7a"),
                        static_cast<v8::RegExp::Flags>(v8::RegExp::kIgnoreCase |
                                                       v8::RegExp::kMultiline));
   CHECK(re->IsRegExp());
-  CHECK(re->GetSource()->Equals(v8_str("baz")));
+  CHECK(re->GetSource()->Equals(v8_str("\x62\x61\x7a")));
   CHECK_EQ(v8::RegExp::kIgnoreCase | v8::RegExp::kMultiline,
            static_cast<int>(re->GetFlags()));
 
-  re = CompileRun("/quux/").As<v8::RegExp>();
+  re = CompileRun("\x2f\x71\x75\x75\x78\x2f").As<v8::RegExp>();
   CHECK(re->IsRegExp());
-  CHECK(re->GetSource()->Equals(v8_str("quux")));
+  CHECK(re->GetSource()->Equals(v8_str("\x71\x75\x75\x78")));
   CHECK_EQ(v8::RegExp::kNone, re->GetFlags());
 
-  re = CompileRun("/quux/gm").As<v8::RegExp>();
+  re = CompileRun("\x2f\x71\x75\x75\x78\x2f\x67\x6d").As<v8::RegExp>();
   CHECK(re->IsRegExp());
-  CHECK(re->GetSource()->Equals(v8_str("quux")));
+  CHECK(re->GetSource()->Equals(v8_str("\x71\x75\x75\x78")));
   CHECK_EQ(v8::RegExp::kGlobal | v8::RegExp::kMultiline,
            static_cast<int>(re->GetFlags()));
 
   // Override the RegExp constructor and check the API constructor
   // still works.
-  CompileRun("RegExp = function() {}");
+  CompileRun("\x52\x65\x67\x45\x78\x70\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x7d");
 
-  re = v8::RegExp::New(v8_str("foobar"), v8::RegExp::kNone);
+  re = v8::RegExp::New(v8_str("\x66\x6f\x6f\x62\x61\x72"), v8::RegExp::kNone);
   CHECK(re->IsRegExp());
-  CHECK(re->GetSource()->Equals(v8_str("foobar")));
+  CHECK(re->GetSource()->Equals(v8_str("\x66\x6f\x6f\x62\x61\x72")));
   CHECK_EQ(v8::RegExp::kNone, re->GetFlags());
 
-  re = v8::RegExp::New(v8_str("foobarbaz"),
+  re = v8::RegExp::New(v8_str("\x66\x6f\x6f\x62\x61\x72\x62\x61\x7a"),
                        static_cast<v8::RegExp::Flags>(v8::RegExp::kIgnoreCase |
                                                       v8::RegExp::kMultiline));
   CHECK(re->IsRegExp());
-  CHECK(re->GetSource()->Equals(v8_str("foobarbaz")));
+  CHECK(re->GetSource()->Equals(v8_str("\x66\x6f\x6f\x62\x61\x72\x62\x61\x7a")));
   CHECK_EQ(v8::RegExp::kIgnoreCase | v8::RegExp::kMultiline,
            static_cast<int>(re->GetFlags()));
 
-  context->Global()->Set(v8_str("re"), re);
-  ExpectTrue("re.test('FoobarbaZ')");
+  context->Global()->Set(v8_str("\x72\x65"), re);
+  ExpectTrue("\x72\x65\x2e\x74\x65\x73\x74\x28\x27\x46\x6f\x6f\x62\x61\x72\x62\x61\x5a\x27\x29");
 
   // RegExps are objects on which you can set properties.
-  re->Set(v8_str("property"), v8::Integer::New(context->GetIsolate(), 32));
-  v8::Handle<v8::Value> value(CompileRun("re.property"));
+  re->Set(v8_str("\x70\x72\x6f\x70\x65\x72\x74\x79"), v8::Integer::New(context->GetIsolate(), 32));
+  v8::Handle<v8::Value> value(CompileRun("\x72\x65\x2e\x70\x72\x6f\x70\x65\x72\x74\x79"));
   CHECK_EQ(32, value->Int32Value());
 
   v8::TryCatch try_catch;
-  re = v8::RegExp::New(v8_str("foo["), v8::RegExp::kNone);
+  re = v8::RegExp::New(v8_str("\x66\x6f\x6f\x5b"), v8::RegExp::kNone);
   CHECK(re.IsEmpty());
   CHECK(try_catch.HasCaught());
-  context->Global()->Set(v8_str("ex"), try_catch.Exception());
-  ExpectTrue("ex instanceof SyntaxError");
+  context->Global()->Set(v8_str("\x65\x78"), try_catch.Exception());
+  ExpectTrue("\x65\x78\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x53\x79\x6e\x74\x61\x78\x45\x72\x72\x6f\x72");
 }
 
 
@@ -19934,13 +19934,13 @@ THREADED_TEST(Equals) {
 
 static void Getter(v8::Local<v8::String> property,
                    const v8::PropertyCallbackInfo<v8::Value>& info ) {
-  info.GetReturnValue().Set(v8_str("42!"));
+  info.GetReturnValue().Set(v8_str("\x34\x32\x21"));
 }
 
 
 static void Enumerator(const v8::PropertyCallbackInfo<v8::Array>& info) {
   v8::Handle<v8::Array> result = v8::Array::New(info.GetIsolate());
-  result->Set(0, v8_str("universalAnswer"));
+  result->Set(0, v8_str("\x75\x6e\x69\x76\x65\x72\x73\x61\x6c\x41\x6e\x73\x77\x65\x72"));
   info.GetReturnValue().Set(result);
 }
 
@@ -19953,11 +19953,11 @@ TEST(NamedEnumeratorAndForIn) {
 
   v8::Handle<v8::ObjectTemplate> tmpl = v8::ObjectTemplate::New(isolate);
   tmpl->SetNamedPropertyHandler(Getter, NULL, NULL, NULL, Enumerator);
-  context->Global()->Set(v8_str("o"), tmpl->NewInstance());
+  context->Global()->Set(v8_str("\x6f"), tmpl->NewInstance());
   v8::Handle<v8::Array> result = v8::Handle<v8::Array>::Cast(CompileRun(
-        "var result = []; for (var k in o) result.push(k); result"));
+        "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x5b\x5d\x3b\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6b\x20\x69\x6e\x20\x6f\x29\x20\x72\x65\x73\x75\x6c\x74\x2e\x70\x75\x73\x68\x28\x6b\x29\x3b\x20\x72\x65\x73\x75\x6c\x74"));
   CHECK_EQ(1, result->Length());
-  CHECK_EQ(v8_str("universalAnswer"), result->Get(0));
+  CHECK_EQ(v8_str("\x75\x6e\x69\x76\x65\x72\x73\x61\x6c\x41\x6e\x73\x77\x65\x72"), result->Get(0));
 }
 
 
@@ -19966,12 +19966,12 @@ TEST(DefinePropertyPostDetach) {
   v8::HandleScope scope(context->GetIsolate());
   v8::Handle<v8::Object> proxy = context->Global();
   v8::Handle<v8::Function> define_property =
-      CompileRun("(function() {"
-                 "  Object.defineProperty("
-                 "    this,"
-                 "    1,"
-                 "    { configurable: true, enumerable: true, value: 3 });"
-                 "})").As<Function>();
+      CompileRun("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+                 "\x20\x20\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28"
+                 "\x20\x20\x20\x20\x74\x68\x69\x73\x2c"
+                 "\x20\x20\x20\x20\x31\x2c"
+                 "\x20\x20\x20\x20\x7b\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x61\x62\x6c\x65\x3a\x20\x74\x72\x75\x65\x2c\x20\x65\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x3a\x20\x74\x72\x75\x65\x2c\x20\x76\x61\x6c\x75\x65\x3a\x20\x33\x20\x7d\x29\x3b"
+                 "\x7d\x29").As<Function>();
   context->DetachGlobal();
   define_property->Call(proxy, 0, NULL);
 }
@@ -19979,13 +19979,13 @@ TEST(DefinePropertyPostDetach) {
 
 static void InstallContextId(v8::Handle<Context> context, int id) {
   Context::Scope scope(context);
-  CompileRun("Object.prototype").As<Object>()->
-      Set(v8_str("context_id"), v8::Integer::New(context->GetIsolate(), id));
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65").As<Object>()->
+      Set(v8_str("\x63\x6f\x6e\x74\x65\x78\x74\x5f\x69\x64"), v8::Integer::New(context->GetIsolate(), id));
 }
 
 
 static void CheckContextId(v8::Handle<Object> object, int expected) {
-  CHECK_EQ(expected, object->Get(v8_str("context_id"))->Int32Value());
+  CHECK_EQ(expected, object->Get(v8_str("\x63\x6f\x6e\x74\x65\x78\x74\x5f\x69\x64"))->Int32Value());
 }
 
 
@@ -20081,7 +20081,7 @@ THREADED_TEST(CreationContextOfJsFunction) {
   Local<Object> function;
   {
     Context::Scope scope(context);
-    function = CompileRun("function foo() {}; foo").As<Object>();
+    function = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\x3b\x20\x66\x6f\x6f").As<Object>();
   }
 
   CHECK(function->CreationContext() == context);
@@ -20092,14 +20092,14 @@ THREADED_TEST(CreationContextOfJsFunction) {
 void HasOwnPropertyIndexedPropertyGetter(
     uint32_t index,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  if (index == 42) info.GetReturnValue().Set(v8_str("yes"));
+  if (index == 42) info.GetReturnValue().Set(v8_str("\x79\x65\x73"));
 }
 
 
 void HasOwnPropertyNamedPropertyGetter(
     Local<String> property,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  if (property->Equals(v8_str("foo"))) info.GetReturnValue().Set(v8_str("yes"));
+  if (property->Equals(v8_str("\x66\x6f\x6f"))) info.GetReturnValue().Set(v8_str("\x79\x65\x73"));
 }
 
 
@@ -20112,21 +20112,21 @@ void HasOwnPropertyIndexedPropertyQuery(
 void HasOwnPropertyNamedPropertyQuery(
     Local<String> property,
     const v8::PropertyCallbackInfo<v8::Integer>& info) {
-  if (property->Equals(v8_str("foo"))) info.GetReturnValue().Set(1);
+  if (property->Equals(v8_str("\x66\x6f\x6f"))) info.GetReturnValue().Set(1);
 }
 
 
 void HasOwnPropertyNamedPropertyQuery2(
     Local<String> property,
     const v8::PropertyCallbackInfo<v8::Integer>& info) {
-  if (property->Equals(v8_str("bar"))) info.GetReturnValue().Set(1);
+  if (property->Equals(v8_str("\x62\x61\x72"))) info.GetReturnValue().Set(1);
 }
 
 
 void HasOwnPropertyAccessorGetter(
     Local<String> property,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  info.GetReturnValue().Set(v8_str("yes"));
+  info.GetReturnValue().Set(v8_str("\x79\x65\x73"));
 }
 
 
@@ -20136,61 +20136,61 @@ TEST(HasOwnProperty) {
   v8::HandleScope scope(isolate);
   { // Check normal properties and defined getters.
     Handle<Value> value = CompileRun(
-        "function Foo() {"
-        "    this.foo = 11;"
-        "    this.__defineGetter__('baz', function() { return 1; });"
-        "};"
-        "function Bar() { "
-        "    this.bar = 13;"
-        "    this.__defineGetter__('bla', function() { return 2; });"
-        "};"
-        "Bar.prototype = new Foo();"
-        "new Bar();");
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x6f\x6f\x28\x29\x20\x7b"
+        "\x20\x20\x20\x20\x74\x68\x69\x73\x2e\x66\x6f\x6f\x20\x3d\x20\x31\x31\x3b"
+        "\x20\x20\x20\x20\x74\x68\x69\x73\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x62\x61\x7a\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x3b\x20\x7d\x29\x3b"
+        "\x7d\x3b"
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x42\x61\x72\x28\x29\x20\x7b\x20"
+        "\x20\x20\x20\x20\x74\x68\x69\x73\x2e\x62\x61\x72\x20\x3d\x20\x31\x33\x3b"
+        "\x20\x20\x20\x20\x74\x68\x69\x73\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x62\x6c\x61\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x32\x3b\x20\x7d\x29\x3b"
+        "\x7d\x3b"
+        "\x42\x61\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x6e\x65\x77\x20\x46\x6f\x6f\x28\x29\x3b"
+        "\x6e\x65\x77\x20\x42\x61\x72\x28\x29\x3b");
     CHECK(value->IsObject());
     Handle<Object> object = value->ToObject();
-    CHECK(object->Has(v8_str("foo")));
-    CHECK(!object->HasOwnProperty(v8_str("foo")));
-    CHECK(object->HasOwnProperty(v8_str("bar")));
-    CHECK(object->Has(v8_str("baz")));
-    CHECK(!object->HasOwnProperty(v8_str("baz")));
-    CHECK(object->HasOwnProperty(v8_str("bla")));
+    CHECK(object->Has(v8_str("\x66\x6f\x6f")));
+    CHECK(!object->HasOwnProperty(v8_str("\x66\x6f\x6f")));
+    CHECK(object->HasOwnProperty(v8_str("\x62\x61\x72")));
+    CHECK(object->Has(v8_str("\x62\x61\x7a")));
+    CHECK(!object->HasOwnProperty(v8_str("\x62\x61\x7a")));
+    CHECK(object->HasOwnProperty(v8_str("\x62\x6c\x61")));
   }
   { // Check named getter interceptors.
     Handle<ObjectTemplate> templ = ObjectTemplate::New(isolate);
     templ->SetNamedPropertyHandler(HasOwnPropertyNamedPropertyGetter);
     Handle<Object> instance = templ->NewInstance();
-    CHECK(!instance->HasOwnProperty(v8_str("42")));
-    CHECK(instance->HasOwnProperty(v8_str("foo")));
-    CHECK(!instance->HasOwnProperty(v8_str("bar")));
+    CHECK(!instance->HasOwnProperty(v8_str("\x34\x32")));
+    CHECK(instance->HasOwnProperty(v8_str("\x66\x6f\x6f")));
+    CHECK(!instance->HasOwnProperty(v8_str("\x62\x61\x72")));
   }
   { // Check indexed getter interceptors.
     Handle<ObjectTemplate> templ = ObjectTemplate::New(isolate);
     templ->SetIndexedPropertyHandler(HasOwnPropertyIndexedPropertyGetter);
     Handle<Object> instance = templ->NewInstance();
-    CHECK(instance->HasOwnProperty(v8_str("42")));
-    CHECK(!instance->HasOwnProperty(v8_str("43")));
-    CHECK(!instance->HasOwnProperty(v8_str("foo")));
+    CHECK(instance->HasOwnProperty(v8_str("\x34\x32")));
+    CHECK(!instance->HasOwnProperty(v8_str("\x34\x33")));
+    CHECK(!instance->HasOwnProperty(v8_str("\x66\x6f\x6f")));
   }
   { // Check named query interceptors.
     Handle<ObjectTemplate> templ = ObjectTemplate::New(isolate);
     templ->SetNamedPropertyHandler(0, 0, HasOwnPropertyNamedPropertyQuery);
     Handle<Object> instance = templ->NewInstance();
-    CHECK(instance->HasOwnProperty(v8_str("foo")));
-    CHECK(!instance->HasOwnProperty(v8_str("bar")));
+    CHECK(instance->HasOwnProperty(v8_str("\x66\x6f\x6f")));
+    CHECK(!instance->HasOwnProperty(v8_str("\x62\x61\x72")));
   }
   { // Check indexed query interceptors.
     Handle<ObjectTemplate> templ = ObjectTemplate::New(isolate);
     templ->SetIndexedPropertyHandler(0, 0, HasOwnPropertyIndexedPropertyQuery);
     Handle<Object> instance = templ->NewInstance();
-    CHECK(instance->HasOwnProperty(v8_str("42")));
-    CHECK(!instance->HasOwnProperty(v8_str("41")));
+    CHECK(instance->HasOwnProperty(v8_str("\x34\x32")));
+    CHECK(!instance->HasOwnProperty(v8_str("\x34\x31")));
   }
   { // Check callbacks.
     Handle<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-    templ->SetAccessor(v8_str("foo"), HasOwnPropertyAccessorGetter);
+    templ->SetAccessor(v8_str("\x66\x6f\x6f"), HasOwnPropertyAccessorGetter);
     Handle<Object> instance = templ->NewInstance();
-    CHECK(instance->HasOwnProperty(v8_str("foo")));
-    CHECK(!instance->HasOwnProperty(v8_str("bar")));
+    CHECK(instance->HasOwnProperty(v8_str("\x66\x6f\x6f")));
+    CHECK(!instance->HasOwnProperty(v8_str("\x62\x61\x72")));
   }
   { // Check that query wins on disagreement.
     Handle<ObjectTemplate> templ = ObjectTemplate::New(isolate);
@@ -20198,8 +20198,8 @@ TEST(HasOwnProperty) {
                                    0,
                                    HasOwnPropertyNamedPropertyQuery2);
     Handle<Object> instance = templ->NewInstance();
-    CHECK(!instance->HasOwnProperty(v8_str("foo")));
-    CHECK(instance->HasOwnProperty(v8_str("bar")));
+    CHECK(!instance->HasOwnProperty(v8_str("\x66\x6f\x6f")));
+    CHECK(instance->HasOwnProperty(v8_str("\x62\x61\x72")));
   }
 }
 
@@ -20212,26 +20212,26 @@ TEST(IndexedInterceptorWithStringProto) {
                                    NULL,
                                    HasOwnPropertyIndexedPropertyQuery);
   LocalContext context;
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
-  CompileRun("var s = new String('foobar'); obj.__proto__ = s;");
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
+  CompileRun("\x76\x61\x72\x20\x73\x20\x3d\x20\x6e\x65\x77\x20\x53\x74\x72\x69\x6e\x67\x28\x27\x66\x6f\x6f\x62\x61\x72\x27\x29\x3b\x20\x6f\x62\x6a\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x73\x3b");
   // These should be intercepted.
-  CHECK(CompileRun("42 in obj")->BooleanValue());
-  CHECK(CompileRun("'42' in obj")->BooleanValue());
+  CHECK(CompileRun("\x34\x32\x20\x69\x6e\x20\x6f\x62\x6a")->BooleanValue());
+  CHECK(CompileRun("\x27\x34\x32\x27\x20\x69\x6e\x20\x6f\x62\x6a")->BooleanValue());
   // These should fall through to the String prototype.
-  CHECK(CompileRun("0 in obj")->BooleanValue());
-  CHECK(CompileRun("'0' in obj")->BooleanValue());
+  CHECK(CompileRun("\x30\x20\x69\x6e\x20\x6f\x62\x6a")->BooleanValue());
+  CHECK(CompileRun("\x27\x30\x27\x20\x69\x6e\x20\x6f\x62\x6a")->BooleanValue());
   // And these should both fail.
-  CHECK(!CompileRun("32 in obj")->BooleanValue());
-  CHECK(!CompileRun("'32' in obj")->BooleanValue());
+  CHECK(!CompileRun("\x33\x32\x20\x69\x6e\x20\x6f\x62\x6a")->BooleanValue());
+  CHECK(!CompileRun("\x27\x33\x32\x27\x20\x69\x6e\x20\x6f\x62\x6a")->BooleanValue());
 }
 
 
 void CheckCodeGenerationAllowed() {
-  Handle<Value> result = CompileRun("eval('42')");
+  Handle<Value> result = CompileRun("\x65\x76\x61\x6c\x28\x27\x34\x32\x27\x29");
   CHECK_EQ(42, result->Int32Value());
-  result = CompileRun("(function(e) { return e('42'); })(eval)");
+  result = CompileRun("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x65\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x28\x27\x34\x32\x27\x29\x3b\x20\x7d\x29\x28\x65\x76\x61\x6c\x29");
   CHECK_EQ(42, result->Int32Value());
-  result = CompileRun("var f = new Function('return 42'); f()");
+  result = CompileRun("\x76\x61\x72\x20\x66\x20\x3d\x20\x6e\x65\x77\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x27\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x27\x29\x3b\x20\x66\x28\x29");
   CHECK_EQ(42, result->Int32Value());
 }
 
@@ -20239,17 +20239,17 @@ void CheckCodeGenerationAllowed() {
 void CheckCodeGenerationDisallowed() {
   TryCatch try_catch;
 
-  Handle<Value> result = CompileRun("eval('42')");
+  Handle<Value> result = CompileRun("\x65\x76\x61\x6c\x28\x27\x34\x32\x27\x29");
   CHECK(result.IsEmpty());
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
 
-  result = CompileRun("(function(e) { return e('42'); })(eval)");
+  result = CompileRun("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x65\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x28\x27\x34\x32\x27\x29\x3b\x20\x7d\x29\x28\x65\x76\x61\x6c\x29");
   CHECK(result.IsEmpty());
   CHECK(try_catch.HasCaught());
   try_catch.Reset();
 
-  result = CompileRun("var f = new Function('return 42'); f()");
+  result = CompileRun("\x76\x61\x72\x20\x66\x20\x3d\x20\x6e\x65\x77\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x27\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x27\x29\x3b\x20\x66\x28\x29");
   CHECK(result.IsEmpty());
   CHECK(try_catch.HasCaught());
 }
@@ -20302,12 +20302,12 @@ TEST(SetErrorMessageForCodeGenFromStrings) {
   v8::HandleScope scope(context->GetIsolate());
   TryCatch try_catch;
 
-  Handle<String> message = v8_str("Message") ;
-  Handle<String> expected_message = v8_str("Uncaught EvalError: Message");
+  Handle<String> message = v8_str("\x4d\x65\x73\x73\x61\x67\x65") ;
+  Handle<String> expected_message = v8_str("\x55\x6e\x63\x61\x75\x67\x68\x74\x20\x45\x76\x61\x6c\x45\x72\x72\x6f\x72\x3a\x20\x4d\x65\x73\x73\x61\x67\x65");
   V8::SetAllowCodeGenerationFromStringsCallback(&CodeGenerationDisallowed);
   context->AllowCodeGenerationFromStrings(false);
   context->SetErrorMessageForCodeGenerationFromStrings(message);
-  Handle<Value> result = CompileRun("eval('42')");
+  Handle<Value> result = CompileRun("\x65\x76\x61\x6c\x28\x27\x34\x32\x27\x29");
   CHECK(result.IsEmpty());
   CHECK(try_catch.HasCaught());
   Handle<String> actual_message = try_catch.Message()->Get();
@@ -20326,9 +20326,9 @@ THREADED_TEST(CallAPIFunctionOnNonObject) {
   Handle<FunctionTemplate> templ =
       v8::FunctionTemplate::New(isolate, NonObjectThis);
   Handle<Function> function = templ->GetFunction();
-  context->Global()->Set(v8_str("f"), function);
+  context->Global()->Set(v8_str("\x66"), function);
   TryCatch try_catch;
-  CompileRun("f.call(2)");
+  CompileRun("\x66\x2e\x63\x61\x6c\x6c\x28\x32\x29");
 }
 
 
@@ -20340,18 +20340,18 @@ THREADED_TEST(ReadOnlyIndexedProperties) {
 
   LocalContext context;
   Local<v8::Object> obj = templ->NewInstance();
-  context->Global()->Set(v8_str("obj"), obj);
-  obj->ForceSet(v8_str("1"), v8_str("DONT_CHANGE"), v8::ReadOnly);
-  obj->Set(v8_str("1"), v8_str("foobar"));
-  CHECK_EQ(v8_str("DONT_CHANGE"), obj->Get(v8_str("1")));
-  obj->ForceSet(v8_num(2), v8_str("DONT_CHANGE"), v8::ReadOnly);
-  obj->Set(v8_num(2), v8_str("foobar"));
-  CHECK_EQ(v8_str("DONT_CHANGE"), obj->Get(v8_num(2)));
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), obj);
+  obj->ForceSet(v8_str("\x31"), v8_str("\x44\x4f\x4e\x54\x5f\x43\x48\x41\x4e\x47\x45"), v8::ReadOnly);
+  obj->Set(v8_str("\x31"), v8_str("\x66\x6f\x6f\x62\x61\x72"));
+  CHECK_EQ(v8_str("\x44\x4f\x4e\x54\x5f\x43\x48\x41\x4e\x47\x45"), obj->Get(v8_str("\x31")));
+  obj->ForceSet(v8_num(2), v8_str("\x44\x4f\x4e\x54\x5f\x43\x48\x41\x4e\x47\x45"), v8::ReadOnly);
+  obj->Set(v8_num(2), v8_str("\x66\x6f\x6f\x62\x61\x72"));
+  CHECK_EQ(v8_str("\x44\x4f\x4e\x54\x5f\x43\x48\x41\x4e\x47\x45"), obj->Get(v8_num(2)));
 
   // Test non-smi case.
-  obj->ForceSet(v8_str("2000000000"), v8_str("DONT_CHANGE"), v8::ReadOnly);
-  obj->Set(v8_str("2000000000"), v8_str("foobar"));
-  CHECK_EQ(v8_str("DONT_CHANGE"), obj->Get(v8_str("2000000000")));
+  obj->ForceSet(v8_str("\x32\x30\x30\x30\x30\x30\x30\x30\x30\x30"), v8_str("\x44\x4f\x4e\x54\x5f\x43\x48\x41\x4e\x47\x45"), v8::ReadOnly);
+  obj->Set(v8_str("\x32\x30\x30\x30\x30\x30\x30\x30\x30\x30"), v8_str("\x66\x6f\x6f\x62\x61\x72"));
+  CHECK_EQ(v8_str("\x44\x4f\x4e\x54\x5f\x43\x48\x41\x4e\x47\x45"), obj->Get(v8_str("\x32\x30\x30\x30\x30\x30\x30\x30\x30\x30")));
 }
 
 
@@ -20360,7 +20360,7 @@ THREADED_TEST(Regress1516) {
   v8::HandleScope scope(context->GetIsolate());
 
   { v8::HandleScope temp_scope(context->GetIsolate());
-    CompileRun("({'a': 0})");
+    CompileRun("\x28\x7b\x27\x61\x27\x3a\x20\x30\x7d\x29");
   }
 
   int elements;
@@ -20392,7 +20392,7 @@ static bool BlockProtoNamedSecurityTestCallback(Local<v8::Object> global,
       name->ToString()->Utf8Length() == 9) {
     char buffer[10];
     CHECK_EQ(10, name->ToString()->WriteUtf8(buffer));
-    return strncmp(buffer, "__proto__", 9) != 0;
+    return strncmp(buffer, "\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f", 9) != 0;
   }
 
   return true;
@@ -20460,32 +20460,32 @@ THREADED_TEST(Regress93759) {
   // Template for object for second context. Values to test are put on it as
   // properties.
   Local<ObjectTemplate> global_template = ObjectTemplate::New(isolate);
-  global_template->Set(v8_str("simple"), simple_object);
-  global_template->Set(v8_str("protected"), protected_object);
-  global_template->Set(v8_str("global"), global_object);
-  global_template->Set(v8_str("proxy"), proxy_object);
-  global_template->Set(v8_str("hidden"), object_with_hidden);
-  global_template->Set(v8_str("phidden"), object_with_protected_hidden);
+  global_template->Set(v8_str("\x73\x69\x6d\x70\x6c\x65"), simple_object);
+  global_template->Set(v8_str("\x70\x72\x6f\x74\x65\x63\x74\x65\x64"), protected_object);
+  global_template->Set(v8_str("\x67\x6c\x6f\x62\x61\x6c"), global_object);
+  global_template->Set(v8_str("\x70\x72\x6f\x78\x79"), proxy_object);
+  global_template->Set(v8_str("\x68\x69\x64\x64\x65\x6e"), object_with_hidden);
+  global_template->Set(v8_str("\x70\x68\x69\x64\x64\x65\x6e"), object_with_protected_hidden);
 
   LocalContext context2(NULL, global_template);
 
-  Local<Value> result1 = CompileRun("Object.getPrototypeOf(simple)");
+  Local<Value> result1 = CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66\x28\x73\x69\x6d\x70\x6c\x65\x29");
   CHECK(result1->Equals(simple_object->GetPrototype()));
 
-  Local<Value> result2 = CompileRun("Object.getPrototypeOf(protected)");
+  Local<Value> result2 = CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66\x28\x70\x72\x6f\x74\x65\x63\x74\x65\x64\x29");
   CHECK(result2.IsEmpty());
 
-  Local<Value> result3 = CompileRun("Object.getPrototypeOf(global)");
+  Local<Value> result3 = CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66\x28\x67\x6c\x6f\x62\x61\x6c\x29");
   CHECK(result3->Equals(global_object->GetPrototype()));
 
-  Local<Value> result4 = CompileRun("Object.getPrototypeOf(proxy)");
+  Local<Value> result4 = CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66\x28\x70\x72\x6f\x78\x79\x29");
   CHECK(result4.IsEmpty());
 
-  Local<Value> result5 = CompileRun("Object.getPrototypeOf(hidden)");
+  Local<Value> result5 = CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66\x28\x68\x69\x64\x64\x65\x6e\x29");
   CHECK(result5->Equals(
       object_with_hidden->GetPrototype()->ToObject()->GetPrototype()));
 
-  Local<Value> result6 = CompileRun("Object.getPrototypeOf(phidden)");
+  Local<Value> result6 = CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66\x28\x70\x68\x69\x64\x64\x65\x6e\x29");
   CHECK(result6.IsEmpty());
 }
 
@@ -20495,22 +20495,22 @@ THREADED_TEST(Regress125988) {
   Handle<FunctionTemplate> intercept = FunctionTemplate::New(CcTest::isolate());
   AddInterceptor(intercept, EmptyInterceptorGetter, EmptyInterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Intercept"), intercept->GetFunction());
-  CompileRun("var a = new Object();"
-             "var b = new Intercept();"
-             "var c = new Object();"
-             "c.__proto__ = b;"
-             "b.__proto__ = a;"
-             "a.x = 23;"
-             "for (var i = 0; i < 3; i++) c.x;");
-  ExpectBoolean("c.hasOwnProperty('x')", false);
-  ExpectInt32("c.x", 23);
-  CompileRun("a.y = 42;"
-             "for (var i = 0; i < 3; i++) c.x;");
-  ExpectBoolean("c.hasOwnProperty('x')", false);
-  ExpectInt32("c.x", 23);
-  ExpectBoolean("c.hasOwnProperty('y')", false);
-  ExpectInt32("c.y", 42);
+  env->Global()->Set(v8_str("\x49\x6e\x74\x65\x72\x63\x65\x70\x74"), intercept->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+             "\x76\x61\x72\x20\x62\x20\x3d\x20\x6e\x65\x77\x20\x49\x6e\x74\x65\x72\x63\x65\x70\x74\x28\x29\x3b"
+             "\x76\x61\x72\x20\x63\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b"
+             "\x63\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x62\x3b"
+             "\x62\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x61\x3b"
+             "\x61\x2e\x78\x20\x3d\x20\x32\x33\x3b"
+             "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x33\x3b\x20\x69\x2b\x2b\x29\x20\x63\x2e\x78\x3b");
+  ExpectBoolean("\x63\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x78\x27\x29", false);
+  ExpectInt32("\x63\x2e\x78", 23);
+  CompileRun("\x61\x2e\x79\x20\x3d\x20\x34\x32\x3b"
+             "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x33\x3b\x20\x69\x2b\x2b\x29\x20\x63\x2e\x78\x3b");
+  ExpectBoolean("\x63\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x78\x27\x29", false);
+  ExpectInt32("\x63\x2e\x78", 23);
+  ExpectBoolean("\x63\x2e\x68\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x79\x27\x29", false);
+  ExpectInt32("\x63\x2e\x79", 42);
 }
 
 
@@ -20536,40 +20536,40 @@ THREADED_TEST(ForeignFunctionReceiver) {
   Local<Context> foreign_context = v8::Context::New(isolate);
   foreign_context->Enter();
   Local<Value> foreign_function =
-    CompileRun("function func() { return { 0: this.id, "
-               "                           1: this, "
-               "                           toString: function() { "
-               "                               return this[0];"
-               "                           }"
-               "                         };"
-               "}"
-               "var id = 'i';"
-               "func;");
+    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x75\x6e\x63\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x7b\x20\x30\x3a\x20\x74\x68\x69\x73\x2e\x69\x64\x2c\x20"
+               "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x31\x3a\x20\x74\x68\x69\x73\x2c\x20"
+               "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x74\x6f\x53\x74\x72\x69\x6e\x67\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20"
+               "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x5b\x30\x5d\x3b"
+               "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x7d"
+               "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x7d\x3b"
+               "\x7d"
+               "\x76\x61\x72\x20\x69\x64\x20\x3d\x20\x27\x69\x27\x3b"
+               "\x66\x75\x6e\x63\x3b");
   CHECK(foreign_function->IsFunction());
   foreign_context->Exit();
 
   LocalContext context;
 
-  Local<String> password = v8_str("Password");
+  Local<String> password = v8_str("\x50\x61\x73\x73\x77\x6f\x72\x64");
   // Don't get hit by security checks when accessing foreign_context's
   // global receiver (aka. global proxy).
   context->SetSecurityToken(password);
   foreign_context->SetSecurityToken(password);
 
-  Local<String> i = v8_str("i");
-  Local<String> o = v8_str("o");
-  Local<String> id = v8_str("id");
+  Local<String> i = v8_str("\x69");
+  Local<String> o = v8_str("\x6f");
+  Local<String> id = v8_str("\x69\x64");
 
-  CompileRun("function ownfunc() { return { 0: this.id, "
-             "                              1: this, "
-             "                              toString: function() { "
-             "                                  return this[0];"
-             "                              }"
-             "                             };"
-             "}"
-             "var id = 'o';"
-             "ownfunc");
-  context->Global()->Set(v8_str("func"), foreign_function);
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x77\x6e\x66\x75\x6e\x63\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x7b\x20\x30\x3a\x20\x74\x68\x69\x73\x2e\x69\x64\x2c\x20"
+             "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x31\x3a\x20\x74\x68\x69\x73\x2c\x20"
+             "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x74\x6f\x53\x74\x72\x69\x6e\x67\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20"
+             "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x5b\x30\x5d\x3b"
+             "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x7d"
+             "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x7d\x3b"
+             "\x7d"
+             "\x76\x61\x72\x20\x69\x64\x20\x3d\x20\x27\x6f\x27\x3b"
+             "\x6f\x77\x6e\x66\x75\x6e\x63");
+  context->Global()->Set(v8_str("\x66\x75\x6e\x63"), foreign_function);
 
   // Sanity check the contexts.
   CHECK(i->Equals(foreign_context->Global()->Get(id)));
@@ -20577,42 +20577,42 @@ THREADED_TEST(ForeignFunctionReceiver) {
 
   // Checking local function's receiver.
   // Calling function using its call/apply methods.
-  TestReceiver(o, context->Global(), "ownfunc.call()");
-  TestReceiver(o, context->Global(), "ownfunc.apply()");
+  TestReceiver(o, context->Global(), "\x6f\x77\x6e\x66\x75\x6e\x63\x2e\x63\x61\x6c\x6c\x28\x29");
+  TestReceiver(o, context->Global(), "\x6f\x77\x6e\x66\x75\x6e\x63\x2e\x61\x70\x70\x6c\x79\x28\x29");
   // Making calls through built-in functions.
-  TestReceiver(o, context->Global(), "[1].map(ownfunc)[0]");
-  CHECK(o->Equals(CompileRun("'abcbd'.replace(/b/,ownfunc)[1]")));
-  CHECK(o->Equals(CompileRun("'abcbd'.replace(/b/g,ownfunc)[1]")));
-  CHECK(o->Equals(CompileRun("'abcbd'.replace(/b/g,ownfunc)[3]")));
+  TestReceiver(o, context->Global(), "\x5b\x31\x5d\x2e\x6d\x61\x70\x28\x6f\x77\x6e\x66\x75\x6e\x63\x29\x5b\x30\x5d");
+  CHECK(o->Equals(CompileRun("\x27\x61\x62\x63\x62\x64\x27\x2e\x72\x65\x70\x6c\x61\x63\x65\x28\x2f\x62\x2f\x2c\x6f\x77\x6e\x66\x75\x6e\x63\x29\x5b\x31\x5d")));
+  CHECK(o->Equals(CompileRun("\x27\x61\x62\x63\x62\x64\x27\x2e\x72\x65\x70\x6c\x61\x63\x65\x28\x2f\x62\x2f\x67\x2c\x6f\x77\x6e\x66\x75\x6e\x63\x29\x5b\x31\x5d")));
+  CHECK(o->Equals(CompileRun("\x27\x61\x62\x63\x62\x64\x27\x2e\x72\x65\x70\x6c\x61\x63\x65\x28\x2f\x62\x2f\x67\x2c\x6f\x77\x6e\x66\x75\x6e\x63\x29\x5b\x33\x5d")));
   // Calling with environment record as base.
-  TestReceiver(o, context->Global(), "ownfunc()");
+  TestReceiver(o, context->Global(), "\x6f\x77\x6e\x66\x75\x6e\x63\x28\x29");
   // Calling with no base.
-  TestReceiver(o, context->Global(), "(1,ownfunc)()");
+  TestReceiver(o, context->Global(), "\x28\x31\x2c\x6f\x77\x6e\x66\x75\x6e\x63\x29\x28\x29");
 
   // Checking foreign function return value.
   // Calling function using its call/apply methods.
-  TestReceiver(i, foreign_context->Global(), "func.call()");
-  TestReceiver(i, foreign_context->Global(), "func.apply()");
+  TestReceiver(i, foreign_context->Global(), "\x66\x75\x6e\x63\x2e\x63\x61\x6c\x6c\x28\x29");
+  TestReceiver(i, foreign_context->Global(), "\x66\x75\x6e\x63\x2e\x61\x70\x70\x6c\x79\x28\x29");
   // Calling function using another context's call/apply methods.
   TestReceiver(i, foreign_context->Global(),
-               "Function.prototype.call.call(func)");
+               "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x61\x6c\x6c\x2e\x63\x61\x6c\x6c\x28\x66\x75\x6e\x63\x29");
   TestReceiver(i, foreign_context->Global(),
-               "Function.prototype.call.apply(func)");
+               "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x61\x6c\x6c\x2e\x61\x70\x70\x6c\x79\x28\x66\x75\x6e\x63\x29");
   TestReceiver(i, foreign_context->Global(),
-               "Function.prototype.apply.call(func)");
+               "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x61\x70\x70\x6c\x79\x2e\x63\x61\x6c\x6c\x28\x66\x75\x6e\x63\x29");
   TestReceiver(i, foreign_context->Global(),
-               "Function.prototype.apply.apply(func)");
+               "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x61\x70\x70\x6c\x79\x2e\x61\x70\x70\x6c\x79\x28\x66\x75\x6e\x63\x29");
   // Making calls through built-in functions.
-  TestReceiver(i, foreign_context->Global(), "[1].map(func)[0]");
+  TestReceiver(i, foreign_context->Global(), "\x5b\x31\x5d\x2e\x6d\x61\x70\x28\x66\x75\x6e\x63\x29\x5b\x30\x5d");
   // ToString(func()) is func()[0], i.e., the returned this.id.
-  CHECK(i->Equals(CompileRun("'abcbd'.replace(/b/,func)[1]")));
-  CHECK(i->Equals(CompileRun("'abcbd'.replace(/b/g,func)[1]")));
-  CHECK(i->Equals(CompileRun("'abcbd'.replace(/b/g,func)[3]")));
+  CHECK(i->Equals(CompileRun("\x27\x61\x62\x63\x62\x64\x27\x2e\x72\x65\x70\x6c\x61\x63\x65\x28\x2f\x62\x2f\x2c\x66\x75\x6e\x63\x29\x5b\x31\x5d")));
+  CHECK(i->Equals(CompileRun("\x27\x61\x62\x63\x62\x64\x27\x2e\x72\x65\x70\x6c\x61\x63\x65\x28\x2f\x62\x2f\x67\x2c\x66\x75\x6e\x63\x29\x5b\x31\x5d")));
+  CHECK(i->Equals(CompileRun("\x27\x61\x62\x63\x62\x64\x27\x2e\x72\x65\x70\x6c\x61\x63\x65\x28\x2f\x62\x2f\x67\x2c\x66\x75\x6e\x63\x29\x5b\x33\x5d")));
 
   // Calling with environment record as base.
-  TestReceiver(i, foreign_context->Global(), "func()");
+  TestReceiver(i, foreign_context->Global(), "\x66\x75\x6e\x63\x28\x29");
   // Calling with no base.
-  TestReceiver(i, foreign_context->Global(), "(1,func)()");
+  TestReceiver(i, foreign_context->Global(), "\x28\x31\x2c\x66\x75\x6e\x63\x29\x28\x29");
 }
 
 
@@ -20620,13 +20620,13 @@ uint8_t callback_fired = 0;
 
 
 void CallCompletedCallback1() {
-  v8::base::OS::Print("Firing callback 1.\n");
+  v8::base::OS::Print("\x46\x69\x72\x69\x6e\x67\x20\x63\x61\x6c\x6c\x62\x61\x63\x6b\x20\x31\x2e\xa");
   callback_fired ^= 1;  // Toggle first bit.
 }
 
 
 void CallCompletedCallback2() {
-  v8::base::OS::Print("Firing callback 2.\n");
+  v8::base::OS::Print("\x46\x69\x72\x69\x6e\x67\x20\x63\x61\x6c\x6c\x62\x61\x63\x6b\x20\x32\x2e\xa");
   callback_fired ^= 2;  // Toggle second bit.
 }
 
@@ -20635,15 +20635,15 @@ void RecursiveCall(const v8::FunctionCallbackInfo<v8::Value>& args) {
   int32_t level = args[0]->Int32Value();
   if (level < 3) {
     level++;
-    v8::base::OS::Print("Entering recursion level %d.\n", level);
+    v8::base::OS::Print("\x45\x6e\x74\x65\x72\x69\x6e\x67\x20\x72\x65\x63\x75\x72\x73\x69\x6f\x6e\x20\x6c\x65\x76\x65\x6c\x20\x6c\x84\x2e\xa", level);
     char script[64];
     i::Vector<char> script_vector(script, sizeof(script));
-    i::SNPrintF(script_vector, "recursion(%d)", level);
+    i::SNPrintF(script_vector, "\x72\x65\x63\x75\x72\x73\x69\x6f\x6e\x28\x6c\x84\x29", level);
     CompileRun(script_vector.start());
-    v8::base::OS::Print("Leaving recursion level %d.\n", level);
+    v8::base::OS::Print("\x4c\x65\x61\x76\x69\x6e\x67\x20\x72\x65\x63\x75\x72\x73\x69\x6f\x6e\x20\x6c\x65\x76\x65\x6c\x20\x6c\x84\x2e\xa", level);
     CHECK_EQ(0, callback_fired);
   } else {
-    v8::base::OS::Print("Recursion ends.\n");
+    v8::base::OS::Print("\x52\x65\x63\x75\x72\x73\x69\x6f\x6e\x20\x65\x6e\x64\x73\x2e\xa");
     CHECK_EQ(0, callback_fired);
   }
 }
@@ -20654,28 +20654,28 @@ TEST(CallCompletedCallback) {
   v8::HandleScope scope(env->GetIsolate());
   v8::Handle<v8::FunctionTemplate> recursive_runtime =
       v8::FunctionTemplate::New(env->GetIsolate(), RecursiveCall);
-  env->Global()->Set(v8_str("recursion"),
+  env->Global()->Set(v8_str("\x72\x65\x63\x75\x72\x73\x69\x6f\x6e"),
                      recursive_runtime->GetFunction());
   // Adding the same callback a second time has no effect.
   env->GetIsolate()->AddCallCompletedCallback(CallCompletedCallback1);
   env->GetIsolate()->AddCallCompletedCallback(CallCompletedCallback1);
   env->GetIsolate()->AddCallCompletedCallback(CallCompletedCallback2);
-  v8::base::OS::Print("--- Script (1) ---\n");
+  v8::base::OS::Print("\x2d\x2d\x2d\x20\x53\x63\x72\x69\x70\x74\x20\x28\x31\x29\x20\x2d\x2d\x2d\xa");
   Local<Script> script = v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(), "recursion(0)"));
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x72\x65\x63\x75\x72\x73\x69\x6f\x6e\x28\x30\x29"));
   script->Run();
   CHECK_EQ(3, callback_fired);
 
-  v8::base::OS::Print("\n--- Script (2) ---\n");
+  v8::base::OS::Print("\xa\x2d\x2d\x2d\x20\x53\x63\x72\x69\x70\x74\x20\x28\x32\x29\x20\x2d\x2d\x2d\xa");
   callback_fired = 0;
   env->GetIsolate()->RemoveCallCompletedCallback(CallCompletedCallback1);
   script->Run();
   CHECK_EQ(2, callback_fired);
 
-  v8::base::OS::Print("\n--- Function ---\n");
+  v8::base::OS::Print("\xa\x2d\x2d\x2d\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x20\x2d\x2d\x2d\xa");
   callback_fired = 0;
   Local<Function> recursive_function =
-      Local<Function>::Cast(env->Global()->Get(v8_str("recursion")));
+      Local<Function>::Cast(env->Global()->Get(v8_str("\x72\x65\x63\x75\x72\x73\x69\x6f\x6e")));
   v8::Handle<Value> args[] = { v8_num(0) };
   recursive_function->Call(env->Global(), 1, args);
   CHECK_EQ(2, callback_fired);
@@ -20684,13 +20684,13 @@ TEST(CallCompletedCallback) {
 
 void CallCompletedCallbackNoException() {
   v8::HandleScope scope(CcTest::isolate());
-  CompileRun("1+1;");
+  CompileRun("\x31\x2b\x31\x3b");
 }
 
 
 void CallCompletedCallbackException() {
   v8::HandleScope scope(CcTest::isolate());
-  CompileRun("throw 'second exception';");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x27\x73\x65\x63\x6f\x6e\x64\x20\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x27\x3b");
 }
 
 
@@ -20698,7 +20698,7 @@ TEST(CallCompletedCallbackOneException) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   env->GetIsolate()->AddCallCompletedCallback(CallCompletedCallbackNoException);
-  CompileRun("throw 'exception';");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x27\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x27\x3b");
 }
 
 
@@ -20706,19 +20706,19 @@ TEST(CallCompletedCallbackTwoExceptions) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   env->GetIsolate()->AddCallCompletedCallback(CallCompletedCallbackException);
-  CompileRun("throw 'first exception';");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x27\x66\x69\x72\x73\x74\x20\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x27\x3b");
 }
 
 
 static void MicrotaskOne(const v8::FunctionCallbackInfo<Value>& info) {
   v8::HandleScope scope(info.GetIsolate());
-  CompileRun("ext1Calls++;");
+  CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73\x2b\x2b\x3b");
 }
 
 
 static void MicrotaskTwo(const v8::FunctionCallbackInfo<Value>& info) {
   v8::HandleScope scope(info.GetIsolate());
-  CompileRun("ext2Calls++;");
+  CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73\x2b\x2b\x3b");
 }
 
 
@@ -20734,42 +20734,42 @@ TEST(EnqueueMicrotask) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   CompileRun(
-      "var ext1Calls = 0;"
-      "var ext2Calls = 0;");
-  CompileRun("1+1;");
-  CHECK_EQ(0, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(0, CompileRun("ext2Calls")->Int32Value());
+      "\x76\x61\x72\x20\x65\x78\x74\x31\x43\x61\x6c\x6c\x73\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x65\x78\x74\x32\x43\x61\x6c\x6c\x73\x20\x3d\x20\x30\x3b");
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(0, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(0, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskOne));
-  CompileRun("1+1;");
-  CHECK_EQ(1, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(0, CompileRun("ext2Calls")->Int32Value());
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(1, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(0, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskOne));
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskTwo));
-  CompileRun("1+1;");
-  CHECK_EQ(2, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(1, CompileRun("ext2Calls")->Int32Value());
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(1, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskTwo));
-  CompileRun("1+1;");
-  CHECK_EQ(2, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(2, CompileRun("ext2Calls")->Int32Value());
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
-  CompileRun("1+1;");
-  CHECK_EQ(2, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(2, CompileRun("ext2Calls")->Int32Value());
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   g_passed_to_three = NULL;
   env->GetIsolate()->EnqueueMicrotask(MicrotaskThree);
-  CompileRun("1+1;");
+  CompileRun("\x31\x2b\x31\x3b");
   CHECK_EQ(NULL, g_passed_to_three);
-  CHECK_EQ(2, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(2, CompileRun("ext2Calls")->Int32Value());
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   int dummy;
   env->GetIsolate()->EnqueueMicrotask(
@@ -20777,10 +20777,10 @@ TEST(EnqueueMicrotask) {
   env->GetIsolate()->EnqueueMicrotask(MicrotaskThree, &dummy);
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskTwo));
-  CompileRun("1+1;");
+  CompileRun("\x31\x2b\x31\x3b");
   CHECK_EQ(&dummy, g_passed_to_three);
-  CHECK_EQ(3, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(3, CompileRun("ext2Calls")->Int32Value());
+  CHECK_EQ(3, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(3, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
   g_passed_to_three = NULL;
 }
 
@@ -20788,18 +20788,18 @@ TEST(EnqueueMicrotask) {
 static void MicrotaskExceptionOne(
     const v8::FunctionCallbackInfo<Value>& info) {
   v8::HandleScope scope(info.GetIsolate());
-  CompileRun("exception1Calls++;");
+  CompileRun("\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x31\x43\x61\x6c\x6c\x73\x2b\x2b\x3b");
   info.GetIsolate()->ThrowException(
-      v8::Exception::Error(v8_str("first")));
+      v8::Exception::Error(v8_str("\x66\x69\x72\x73\x74")));
 }
 
 
 static void MicrotaskExceptionTwo(
     const v8::FunctionCallbackInfo<Value>& info) {
   v8::HandleScope scope(info.GetIsolate());
-  CompileRun("exception2Calls++;");
+  CompileRun("\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x32\x43\x61\x6c\x6c\x73\x2b\x2b\x3b");
   info.GetIsolate()->ThrowException(
-      v8::Exception::Error(v8_str("second")));
+      v8::Exception::Error(v8_str("\x73\x65\x63\x6f\x6e\x64")));
 }
 
 
@@ -20808,17 +20808,17 @@ TEST(RunMicrotasksIgnoresThrownExceptions) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
   CompileRun(
-      "var exception1Calls = 0;"
-      "var exception2Calls = 0;");
+      "\x76\x61\x72\x20\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x31\x43\x61\x6c\x6c\x73\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x32\x43\x61\x6c\x6c\x73\x20\x3d\x20\x30\x3b");
   isolate->EnqueueMicrotask(
       Function::New(isolate, MicrotaskExceptionOne));
   isolate->EnqueueMicrotask(
       Function::New(isolate, MicrotaskExceptionTwo));
   TryCatch try_catch;
-  CompileRun("1+1;");
+  CompileRun("\x31\x2b\x31\x3b");
   CHECK(!try_catch.HasCaught());
-  CHECK_EQ(1, CompileRun("exception1Calls")->Int32Value());
-  CHECK_EQ(1, CompileRun("exception2Calls")->Int32Value());
+  CHECK_EQ(1, CompileRun("\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(1, CompileRun("\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 }
 
 
@@ -20826,60 +20826,60 @@ TEST(SetAutorunMicrotasks) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   CompileRun(
-      "var ext1Calls = 0;"
-      "var ext2Calls = 0;");
-  CompileRun("1+1;");
-  CHECK_EQ(0, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(0, CompileRun("ext2Calls")->Int32Value());
+      "\x76\x61\x72\x20\x65\x78\x74\x31\x43\x61\x6c\x6c\x73\x20\x3d\x20\x30\x3b"
+      "\x76\x61\x72\x20\x65\x78\x74\x32\x43\x61\x6c\x6c\x73\x20\x3d\x20\x30\x3b");
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(0, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(0, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskOne));
-  CompileRun("1+1;");
-  CHECK_EQ(1, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(0, CompileRun("ext2Calls")->Int32Value());
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(1, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(0, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   env->GetIsolate()->SetAutorunMicrotasks(false);
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskOne));
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskTwo));
-  CompileRun("1+1;");
-  CHECK_EQ(1, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(0, CompileRun("ext2Calls")->Int32Value());
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(1, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(0, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   env->GetIsolate()->RunMicrotasks();
-  CHECK_EQ(2, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(1, CompileRun("ext2Calls")->Int32Value());
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(1, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskTwo));
-  CompileRun("1+1;");
-  CHECK_EQ(2, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(1, CompileRun("ext2Calls")->Int32Value());
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(1, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   env->GetIsolate()->RunMicrotasks();
-  CHECK_EQ(2, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(2, CompileRun("ext2Calls")->Int32Value());
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   env->GetIsolate()->SetAutorunMicrotasks(true);
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskTwo));
-  CompileRun("1+1;");
-  CHECK_EQ(2, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(3, CompileRun("ext2Calls")->Int32Value());
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(3, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 
   env->GetIsolate()->EnqueueMicrotask(
       Function::New(env->GetIsolate(), MicrotaskTwo));
   {
     v8::Isolate::SuppressMicrotaskExecutionScope scope(env->GetIsolate());
-    CompileRun("1+1;");
-    CHECK_EQ(2, CompileRun("ext1Calls")->Int32Value());
-    CHECK_EQ(3, CompileRun("ext2Calls")->Int32Value());
+    CompileRun("\x31\x2b\x31\x3b");
+    CHECK_EQ(2, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+    CHECK_EQ(3, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
   }
 
-  CompileRun("1+1;");
-  CHECK_EQ(2, CompileRun("ext1Calls")->Int32Value());
-  CHECK_EQ(4, CompileRun("ext2Calls")->Int32Value());
+  CompileRun("\x31\x2b\x31\x3b");
+  CHECK_EQ(2, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
+  CHECK_EQ(4, CompileRun("\x65\x78\x74\x32\x43\x61\x6c\x6c\x73")->Int32Value());
 }
 
 
@@ -20890,13 +20890,13 @@ TEST(RunMicrotasksWithoutEnteringContext) {
   Handle<Context> context = Context::New(isolate);
   {
     Context::Scope context_scope(context);
-    CompileRun("var ext1Calls = 0;");
+    CompileRun("\x76\x61\x72\x20\x65\x78\x74\x31\x43\x61\x6c\x6c\x73\x20\x3d\x20\x30\x3b");
     isolate->EnqueueMicrotask(Function::New(isolate, MicrotaskOne));
   }
   isolate->RunMicrotasks();
   {
     Context::Scope context_scope(context);
-    CHECK_EQ(1, CompileRun("ext1Calls")->Int32Value());
+    CHECK_EQ(1, CompileRun("\x65\x78\x74\x31\x43\x61\x6c\x6c\x73")->Int32Value());
   }
   isolate->SetAutorunMicrotasks(true);
 }
@@ -20906,10 +20906,10 @@ static void DebugEventInObserver(const v8::Debug::EventDetails& event_details) {
   v8::DebugEvent event = event_details.GetEvent();
   if (event != v8::Break) return;
   Handle<Object> exec_state = event_details.GetExecutionState();
-  Handle<Value> break_id = exec_state->Get(v8_str("break_id"));
-  CompileRun("function f(id) { new FrameDetails(id, 0); }");
+  Handle<Value> break_id = exec_state->Get(v8_str("\x62\x72\x65\x61\x6b\x5f\x69\x64"));
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x69\x64\x29\x20\x7b\x20\x6e\x65\x77\x20\x46\x72\x61\x6d\x65\x44\x65\x74\x61\x69\x6c\x73\x28\x69\x64\x2c\x20\x30\x29\x3b\x20\x7d");
   Handle<Function> fun = Handle<Function>::Cast(
-      CcTest::global()->Get(v8_str("f"))->ToObject());
+      CcTest::global()->Get(v8_str("\x66"))->ToObject());
   fun->Call(CcTest::global(), 1, &break_id);
 }
 
@@ -20923,9 +20923,9 @@ TEST(Regress385349) {
   v8::Debug::SetDebugEventListener(DebugEventInObserver);
   {
     Context::Scope context_scope(context);
-    CompileRun("var obj = {};"
-               "Object.observe(obj, function(changes) { debugger; });"
-               "obj.a = 0;");
+    CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
+               "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x63\x68\x61\x6e\x67\x65\x73\x29\x20\x7b\x20\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x20\x7d\x29\x3b"
+               "\x6f\x62\x6a\x2e\x61\x20\x3d\x20\x30\x3b");
   }
   isolate->RunMicrotasks();
   isolate->SetAutorunMicrotasks(true);
@@ -20940,11 +20940,11 @@ static int updates_counter = 0;
 
 
 static int* LookupCounter(const char* name) {
-  if (strcmp(name, "c:V8.MegamorphicStubCacheProbes") == 0) {
+  if (strcmp(name, "\x63\x3a\x56\x38\x2e\x4d\x65\x67\x61\x6d\x6f\x72\x70\x68\x69\x63\x53\x74\x75\x62\x43\x61\x63\x68\x65\x50\x72\x6f\x62\x65\x73") == 0) {
     return &probes_counter;
-  } else if (strcmp(name, "c:V8.MegamorphicStubCacheMisses") == 0) {
+  } else if (strcmp(name, "\x63\x3a\x56\x38\x2e\x4d\x65\x67\x61\x6d\x6f\x72\x70\x68\x69\x63\x53\x74\x75\x62\x43\x61\x63\x68\x65\x4d\x69\x73\x73\x65\x73") == 0) {
     return &misses_counter;
-  } else if (strcmp(name, "c:V8.MegamorphicStubCacheUpdates") == 0) {
+  } else if (strcmp(name, "\x63\x3a\x56\x38\x2e\x4d\x65\x67\x61\x6d\x6f\x72\x70\x68\x69\x63\x53\x74\x75\x62\x43\x61\x63\x68\x65\x55\x70\x64\x61\x74\x65\x73") == 0) {
     return &updates_counter;
   }
   return NULL;
@@ -20952,17 +20952,17 @@ static int* LookupCounter(const char* name) {
 
 
 static const char* kMegamorphicTestProgram =
-    "function ClassA() { };"
-    "function ClassB() { };"
-    "ClassA.prototype.foo = function() { };"
-    "ClassB.prototype.foo = function() { };"
-    "function fooify(obj) { obj.foo(); };"
-    "var a = new ClassA();"
-    "var b = new ClassB();"
-    "for (var i = 0; i < 10000; i++) {"
-    "  fooify(a);"
-    "  fooify(b);"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x6c\x61\x73\x73\x41\x28\x29\x20\x7b\x20\x7d\x3b"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x6c\x61\x73\x73\x42\x28\x29\x20\x7b\x20\x7d\x3b"
+    "\x43\x6c\x61\x73\x73\x41\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x66\x6f\x6f\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x7d\x3b"
+    "\x43\x6c\x61\x73\x73\x42\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x66\x6f\x6f\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x7d\x3b"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x69\x66\x79\x28\x6f\x62\x6a\x29\x20\x7b\x20\x6f\x62\x6a\x2e\x66\x6f\x6f\x28\x29\x3b\x20\x7d\x3b"
+    "\x76\x61\x72\x20\x61\x20\x3d\x20\x6e\x65\x77\x20\x43\x6c\x61\x73\x73\x41\x28\x29\x3b"
+    "\x76\x61\x72\x20\x62\x20\x3d\x20\x6e\x65\x77\x20\x43\x6c\x61\x73\x73\x42\x28\x29\x3b"
+    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+    "\x20\x20\x66\x6f\x6f\x69\x66\x79\x28\x61\x29\x3b"
+    "\x20\x20\x66\x6f\x6f\x69\x66\x79\x28\x62\x29\x3b"
+    "\x7d";
 #endif
 
 
@@ -21011,7 +21011,7 @@ static int cow_arrays_created_runtime = 0;
 
 
 static int* LookupCounterCOWArrays(const char* name) {
-  if (strcmp(name, "c:V8.COWArraysCreatedRuntime") == 0) {
+  if (strcmp(name, "\x63\x3a\x56\x38\x2e\x43\x4f\x57\x41\x72\x72\x61\x79\x73\x43\x72\x65\x61\x74\x65\x64\x52\x75\x6e\x74\x69\x6d\x65") == 0) {
     return &cow_arrays_created_runtime;
   }
   return NULL;
@@ -21026,11 +21026,11 @@ TEST(CheckCOWArraysCreatedRuntimeCounter) {
   env->GetIsolate()->SetCounterFunction(LookupCounterCOWArrays);
   v8::HandleScope scope(env->GetIsolate());
   int initial_cow_arrays = cow_arrays_created_runtime;
-  CompileRun("var o = [1, 2, 3];");
+  CompileRun("\x76\x61\x72\x20\x6f\x20\x3d\x20\x5b\x31\x2c\x20\x32\x2c\x20\x33\x5d\x3b");
   CHECK_EQ(1, cow_arrays_created_runtime - initial_cow_arrays);
-  CompileRun("var o = {foo: [4, 5, 6], bar: [3, 0]};");
+  CompileRun("\x76\x61\x72\x20\x6f\x20\x3d\x20\x7b\x66\x6f\x6f\x3a\x20\x5b\x34\x2c\x20\x35\x2c\x20\x36\x5d\x2c\x20\x62\x61\x72\x3a\x20\x5b\x33\x2c\x20\x30\x5d\x7d\x3b");
   CHECK_EQ(3, cow_arrays_created_runtime - initial_cow_arrays);
-  CompileRun("var o = {foo: [1, 2, 3, [4, 5, 6]], bar: 'hi'};");
+  CompileRun("\x76\x61\x72\x20\x6f\x20\x3d\x20\x7b\x66\x6f\x6f\x3a\x20\x5b\x31\x2c\x20\x32\x2c\x20\x33\x2c\x20\x5b\x34\x2c\x20\x35\x2c\x20\x36\x5d\x5d\x2c\x20\x62\x61\x72\x3a\x20\x27\x68\x69\x27\x7d\x3b");
   CHECK_EQ(4, cow_arrays_created_runtime - initial_cow_arrays);
 #endif
 }
@@ -21098,7 +21098,7 @@ static int instance_checked_getter_count = 0;
 static void InstanceCheckedGetter(
     Local<String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  CHECK_EQ(name, v8_str("foo"));
+  CHECK_EQ(name, v8_str("\x66\x6f\x6f"));
   instance_checked_getter_count++;
   info.GetReturnValue().Set(v8_num(11));
 }
@@ -21108,7 +21108,7 @@ static int instance_checked_setter_count = 0;
 static void InstanceCheckedSetter(Local<String> name,
                       Local<Value> value,
                       const v8::PropertyCallbackInfo<void>& info) {
-  CHECK_EQ(name, v8_str("foo"));
+  CHECK_EQ(name, v8_str("\x66\x6f\x6f"));
   CHECK_EQ(value, v8_num(23));
   instance_checked_setter_count++;
 }
@@ -21136,40 +21136,40 @@ static void CheckInstanceCheckedAccessors(bool expects_callbacks) {
   TryCatch try_catch;
 
   // Test path through generic runtime code.
-  CompileRun("obj.foo");
+  CompileRun("\x6f\x62\x6a\x2e\x66\x6f\x6f");
   CheckInstanceCheckedResult(1, 0, expects_callbacks, &try_catch);
-  CompileRun("obj.foo = 23");
+  CompileRun("\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x32\x33");
   CheckInstanceCheckedResult(1, 1, expects_callbacks, &try_catch);
 
   // Test path through generated LoadIC and StoredIC.
-  CompileRun("function test_get(o) { o.foo; }"
-             "test_get(obj);");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x5f\x67\x65\x74\x28\x6f\x29\x20\x7b\x20\x6f\x2e\x66\x6f\x6f\x3b\x20\x7d"
+             "\x74\x65\x73\x74\x5f\x67\x65\x74\x28\x6f\x62\x6a\x29\x3b");
   CheckInstanceCheckedResult(2, 1, expects_callbacks, &try_catch);
-  CompileRun("test_get(obj);");
+  CompileRun("\x74\x65\x73\x74\x5f\x67\x65\x74\x28\x6f\x62\x6a\x29\x3b");
   CheckInstanceCheckedResult(3, 1, expects_callbacks, &try_catch);
-  CompileRun("test_get(obj);");
+  CompileRun("\x74\x65\x73\x74\x5f\x67\x65\x74\x28\x6f\x62\x6a\x29\x3b");
   CheckInstanceCheckedResult(4, 1, expects_callbacks, &try_catch);
-  CompileRun("function test_set(o) { o.foo = 23; }"
-             "test_set(obj);");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x5f\x73\x65\x74\x28\x6f\x29\x20\x7b\x20\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x32\x33\x3b\x20\x7d"
+             "\x74\x65\x73\x74\x5f\x73\x65\x74\x28\x6f\x62\x6a\x29\x3b");
   CheckInstanceCheckedResult(4, 2, expects_callbacks, &try_catch);
-  CompileRun("test_set(obj);");
+  CompileRun("\x74\x65\x73\x74\x5f\x73\x65\x74\x28\x6f\x62\x6a\x29\x3b");
   CheckInstanceCheckedResult(4, 3, expects_callbacks, &try_catch);
-  CompileRun("test_set(obj);");
+  CompileRun("\x74\x65\x73\x74\x5f\x73\x65\x74\x28\x6f\x62\x6a\x29\x3b");
   CheckInstanceCheckedResult(4, 4, expects_callbacks, &try_catch);
 
   // Test path through optimized code.
-  CompileRun("%OptimizeFunctionOnNextCall(test_get);"
-             "test_get(obj);");
+  CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x74\x65\x73\x74\x5f\x67\x65\x74\x29\x3b"
+             "\x74\x65\x73\x74\x5f\x67\x65\x74\x28\x6f\x62\x6a\x29\x3b");
   CheckInstanceCheckedResult(5, 4, expects_callbacks, &try_catch);
-  CompileRun("%OptimizeFunctionOnNextCall(test_set);"
-             "test_set(obj);");
+  CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x74\x65\x73\x74\x5f\x73\x65\x74\x29\x3b"
+             "\x74\x65\x73\x74\x5f\x73\x65\x74\x28\x6f\x62\x6a\x29\x3b");
   CheckInstanceCheckedResult(5, 5, expects_callbacks, &try_catch);
 
   // Cleanup so that closures start out fresh in next check.
-  CompileRun("%DeoptimizeFunction(test_get);"
-             "%ClearFunctionTypeFeedback(test_get);"
-             "%DeoptimizeFunction(test_set);"
-             "%ClearFunctionTypeFeedback(test_set);");
+  CompileRun("\x25\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x74\x65\x73\x74\x5f\x67\x65\x74\x29\x3b"
+             "\x25\x43\x6c\x65\x61\x72\x46\x75\x6e\x63\x74\x69\x6f\x6e\x54\x79\x70\x65\x46\x65\x65\x64\x62\x61\x63\x6b\x28\x74\x65\x73\x74\x5f\x67\x65\x74\x29\x3b"
+             "\x25\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x74\x65\x73\x74\x5f\x73\x65\x74\x29\x3b"
+             "\x25\x43\x6c\x65\x61\x72\x46\x75\x6e\x63\x74\x69\x6f\x6e\x54\x79\x70\x65\x46\x65\x65\x64\x62\x61\x63\x6b\x28\x74\x65\x73\x74\x5f\x73\x65\x74\x29\x3b");
 }
 
 
@@ -21180,23 +21180,23 @@ THREADED_TEST(InstanceCheckOnInstanceAccessor) {
 
   Local<FunctionTemplate> templ = FunctionTemplate::New(context->GetIsolate());
   Local<ObjectTemplate> inst = templ->InstanceTemplate();
-  inst->SetAccessor(v8_str("foo"),
+  inst->SetAccessor(v8_str("\x66\x6f\x6f"),
                     InstanceCheckedGetter, InstanceCheckedSetter,
                     Handle<Value>(),
                     v8::DEFAULT,
                     v8::None,
                     v8::AccessorSignature::New(context->GetIsolate(), templ));
-  context->Global()->Set(v8_str("f"), templ->GetFunction());
+  context->Global()->Set(v8_str("\x66"), templ->GetFunction());
 
-  printf("Testing positive ...\n");
-  CompileRun("var obj = new f();");
-  CHECK(templ->HasInstance(context->Global()->Get(v8_str("obj"))));
+  printf("\x54\x65\x73\x74\x69\x6e\x67\x20\x70\x6f\x73\x69\x74\x69\x76\x65\x20\x2e\x2e\x2e\xa");
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x66\x28\x29\x3b");
+  CHECK(templ->HasInstance(context->Global()->Get(v8_str("\x6f\x62\x6a"))));
   CheckInstanceCheckedAccessors(true);
 
-  printf("Testing negative ...\n");
-  CompileRun("var obj = {};"
-             "obj.__proto__ = new f();");
-  CHECK(!templ->HasInstance(context->Global()->Get(v8_str("obj"))));
+  printf("\x54\x65\x73\x74\x69\x6e\x67\x20\x6e\x65\x67\x61\x74\x69\x76\x65\x20\x2e\x2e\x2e\xa");
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
+             "\x6f\x62\x6a\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6e\x65\x77\x20\x66\x28\x29\x3b");
+  CHECK(!templ->HasInstance(context->Global()->Get(v8_str("\x6f\x62\x6a"))));
   CheckInstanceCheckedAccessors(false);
 }
 
@@ -21209,23 +21209,23 @@ THREADED_TEST(InstanceCheckOnInstanceAccessorWithInterceptor) {
   Local<FunctionTemplate> templ = FunctionTemplate::New(context->GetIsolate());
   Local<ObjectTemplate> inst = templ->InstanceTemplate();
   AddInterceptor(templ, EmptyInterceptorGetter, EmptyInterceptorSetter);
-  inst->SetAccessor(v8_str("foo"),
+  inst->SetAccessor(v8_str("\x66\x6f\x6f"),
                     InstanceCheckedGetter, InstanceCheckedSetter,
                     Handle<Value>(),
                     v8::DEFAULT,
                     v8::None,
                     v8::AccessorSignature::New(context->GetIsolate(), templ));
-  context->Global()->Set(v8_str("f"), templ->GetFunction());
+  context->Global()->Set(v8_str("\x66"), templ->GetFunction());
 
-  printf("Testing positive ...\n");
-  CompileRun("var obj = new f();");
-  CHECK(templ->HasInstance(context->Global()->Get(v8_str("obj"))));
+  printf("\x54\x65\x73\x74\x69\x6e\x67\x20\x70\x6f\x73\x69\x74\x69\x76\x65\x20\x2e\x2e\x2e\xa");
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x66\x28\x29\x3b");
+  CHECK(templ->HasInstance(context->Global()->Get(v8_str("\x6f\x62\x6a"))));
   CheckInstanceCheckedAccessors(true);
 
-  printf("Testing negative ...\n");
-  CompileRun("var obj = {};"
-             "obj.__proto__ = new f();");
-  CHECK(!templ->HasInstance(context->Global()->Get(v8_str("obj"))));
+  printf("\x54\x65\x73\x74\x69\x6e\x67\x20\x6e\x65\x67\x61\x74\x69\x76\x65\x20\x2e\x2e\x2e\xa");
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
+             "\x6f\x62\x6a\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6e\x65\x77\x20\x66\x28\x29\x3b");
+  CHECK(!templ->HasInstance(context->Global()->Get(v8_str("\x6f\x62\x6a"))));
   CheckInstanceCheckedAccessors(false);
 }
 
@@ -21237,29 +21237,29 @@ THREADED_TEST(InstanceCheckOnPrototypeAccessor) {
 
   Local<FunctionTemplate> templ = FunctionTemplate::New(context->GetIsolate());
   Local<ObjectTemplate> proto = templ->PrototypeTemplate();
-  proto->SetAccessor(v8_str("foo"), InstanceCheckedGetter,
+  proto->SetAccessor(v8_str("\x66\x6f\x6f"), InstanceCheckedGetter,
                      InstanceCheckedSetter, Handle<Value>(), v8::DEFAULT,
                      v8::None,
                      v8::AccessorSignature::New(context->GetIsolate(), templ));
-  context->Global()->Set(v8_str("f"), templ->GetFunction());
+  context->Global()->Set(v8_str("\x66"), templ->GetFunction());
 
-  printf("Testing positive ...\n");
-  CompileRun("var obj = new f();");
-  CHECK(templ->HasInstance(context->Global()->Get(v8_str("obj"))));
+  printf("\x54\x65\x73\x74\x69\x6e\x67\x20\x70\x6f\x73\x69\x74\x69\x76\x65\x20\x2e\x2e\x2e\xa");
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x66\x28\x29\x3b");
+  CHECK(templ->HasInstance(context->Global()->Get(v8_str("\x6f\x62\x6a"))));
   CheckInstanceCheckedAccessors(true);
 
-  printf("Testing negative ...\n");
-  CompileRun("var obj = {};"
-             "obj.__proto__ = new f();");
-  CHECK(!templ->HasInstance(context->Global()->Get(v8_str("obj"))));
+  printf("\x54\x65\x73\x74\x69\x6e\x67\x20\x6e\x65\x67\x61\x74\x69\x76\x65\x20\x2e\x2e\x2e\xa");
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
+             "\x6f\x62\x6a\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6e\x65\x77\x20\x66\x28\x29\x3b");
+  CHECK(!templ->HasInstance(context->Global()->Get(v8_str("\x6f\x62\x6a"))));
   CheckInstanceCheckedAccessors(false);
 
-  printf("Testing positive with modified prototype chain ...\n");
-  CompileRun("var obj = new f();"
-             "var pro = {};"
-             "pro.__proto__ = obj.__proto__;"
-             "obj.__proto__ = pro;");
-  CHECK(templ->HasInstance(context->Global()->Get(v8_str("obj"))));
+  printf("\x54\x65\x73\x74\x69\x6e\x67\x20\x70\x6f\x73\x69\x74\x69\x76\x65\x20\x77\x69\x74\x68\x20\x6d\x6f\x64\x69\x66\x69\x65\x64\x20\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x63\x68\x61\x69\x6e\x20\x2e\x2e\x2e\xa");
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x66\x28\x29\x3b"
+             "\x76\x61\x72\x20\x70\x72\x6f\x20\x3d\x20\x7b\x7d\x3b"
+             "\x70\x72\x6f\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x62\x6a\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3b"
+             "\x6f\x62\x6a\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x3b");
+  CHECK(templ->HasInstance(context->Global()->Get(v8_str("\x6f\x62\x6a"))));
   CheckInstanceCheckedAccessors(true);
 }
 
@@ -21273,12 +21273,12 @@ TEST(TryFinallyMessage) {
     // initialize an IC. (crbug.com/129171)
     TryCatch try_catch;
     const char* trigger_ic =
-        "try {                      \n"
-        "  throw new Error('test'); \n"
-        "} finally {                \n"
-        "  var x = 0;               \n"
-        "  x++;                     \n"  // Trigger an IC initialization here.
-        "}                          \n";
+        "\x74\x72\x79\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+        "\x20\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x27\x74\x65\x73\x74\x27\x29\x3b\x20\xa"
+        "\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+        "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+        "\x20\x20\x78\x2b\x2b\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"  // Trigger an IC initialization here.
+        "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa";
     CompileRun(trigger_ic);
     CHECK(try_catch.HasCaught());
     Local<Message> message = try_catch.Message();
@@ -21291,13 +21291,13 @@ TEST(TryFinallyMessage) {
     // a new error is thrown in the finally block.
     TryCatch try_catch;
     const char* throw_again =
-        "try {                       \n"
-        "  throw new Error('test');  \n"
-        "} finally {                 \n"
-        "  var x = 0;                \n"
-        "  x++;                      \n"
-        "  throw new Error('again'); \n"  // This is the new uncaught error.
-        "}                           \n";
+        "\x74\x72\x79\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+        "\x20\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x27\x74\x65\x73\x74\x27\x29\x3b\x20\x20\xa"
+        "\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+        "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+        "\x20\x20\x78\x2b\x2b\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+        "\x20\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x27\x61\x67\x61\x69\x6e\x27\x29\x3b\x20\xa"  // This is the new uncaught error.
+        "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa";
     CompileRun(throw_again);
     CHECK(try_catch.HasCaught());
     Local<Message> message = try_catch.Message();
@@ -21316,40 +21316,40 @@ static void Helper137002(bool do_store,
   if (interceptor) {
     templ->SetNamedPropertyHandler(FooGetInterceptor, FooSetInterceptor);
   } else {
-    templ->SetAccessor(v8_str("foo"),
+    templ->SetAccessor(v8_str("\x66\x6f\x6f"),
                        GetterWhichReturns42,
                        SetterWhichSetsYOnThisTo23);
   }
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
 
   // Turn monomorphic on slow object with native accessor, then turn
   // polymorphic, finally optimize to create negative lookup and fail.
   CompileRun(do_store ?
-             "function f(x) { x.foo = void 0; }" :
-             "function f(x) { return x.foo; }");
-  CompileRun("obj.y = void 0;");
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x78\x2e\x66\x6f\x6f\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b\x20\x7d" :
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x2e\x66\x6f\x6f\x3b\x20\x7d");
+  CompileRun("\x6f\x62\x6a\x2e\x79\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b");
   if (!interceptor) {
-    CompileRun("%OptimizeObjectForAddingMultipleProperties(obj, 1);");
+    CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x4f\x62\x6a\x65\x63\x74\x46\x6f\x72\x41\x64\x64\x69\x6e\x67\x4d\x75\x6c\x74\x69\x70\x6c\x65\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x6f\x62\x6a\x2c\x20\x31\x29\x3b");
   }
-  CompileRun("obj.__proto__ = null;"
-             "f(obj); f(obj); f(obj);");
+  CompileRun("\x6f\x62\x6a\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6e\x75\x6c\x6c\x3b"
+             "\x66\x28\x6f\x62\x6a\x29\x3b\x20\x66\x28\x6f\x62\x6a\x29\x3b\x20\x66\x28\x6f\x62\x6a\x29\x3b");
   if (polymorphic) {
-    CompileRun("f({});");
+    CompileRun("\x66\x28\x7b\x7d\x29\x3b");
   }
-  CompileRun("obj.y = void 0;"
-             "%OptimizeFunctionOnNextCall(f);");
+  CompileRun("\x6f\x62\x6a\x2e\x79\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b"
+             "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b");
   if (remove_accessor) {
-    CompileRun("delete obj.foo;");
+    CompileRun("\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x2e\x66\x6f\x6f\x3b");
   }
-  CompileRun("var result = f(obj);");
+  CompileRun("\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x66\x28\x6f\x62\x6a\x29\x3b");
   if (do_store) {
-    CompileRun("result = obj.y;");
+    CompileRun("\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6f\x62\x6a\x2e\x79\x3b");
   }
   if (remove_accessor && !interceptor) {
-    CHECK(context->Global()->Get(v8_str("result"))->IsUndefined());
+    CHECK(context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->IsUndefined());
   } else {
     CHECK_EQ(do_store ? 23 : 42,
-             context->Global()->Get(v8_str("result"))->Int32Value());
+             context->Global()->Get(v8_str("\x72\x65\x73\x75\x6c\x74"))->Int32Value());
   }
 }
 
@@ -21370,66 +21370,66 @@ THREADED_TEST(Regress137002b) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("foo"),
+  templ->SetAccessor(v8_str("\x66\x6f\x6f"),
                      GetterWhichReturns42,
                      SetterWhichSetsYOnThisTo23);
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
 
   // Turn monomorphic on slow object with native accessor, then just
   // delete the property and fail.
-  CompileRun("function load(x) { return x.foo; }"
-             "function store(x) { x.foo = void 0; }"
-             "function keyed_load(x, key) { return x[key]; }"
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x6f\x61\x64\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x2e\x66\x6f\x6f\x3b\x20\x7d"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x74\x6f\x72\x65\x28\x78\x29\x20\x7b\x20\x78\x2e\x66\x6f\x6f\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b\x20\x7d"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x28\x78\x2c\x20\x6b\x65\x79\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x5b\x6b\x65\x79\x5d\x3b\x20\x7d"
              // Second version of function has a different source (add void 0)
              // so that it does not share code with the first version.  This
              // ensures that the ICs are monomorphic.
-             "function load2(x) { void 0; return x.foo; }"
-             "function store2(x) { void 0; x.foo = void 0; }"
-             "function keyed_load2(x, key) { void 0; return x[key]; }"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x6f\x61\x64\x32\x28\x78\x29\x20\x7b\x20\x76\x6f\x69\x64\x20\x30\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x2e\x66\x6f\x6f\x3b\x20\x7d"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x74\x6f\x72\x65\x32\x28\x78\x29\x20\x7b\x20\x76\x6f\x69\x64\x20\x30\x3b\x20\x78\x2e\x66\x6f\x6f\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b\x20\x7d"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x32\x28\x78\x2c\x20\x6b\x65\x79\x29\x20\x7b\x20\x76\x6f\x69\x64\x20\x30\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x5b\x6b\x65\x79\x5d\x3b\x20\x7d"
 
-             "obj.y = void 0;"
-             "obj.__proto__ = null;"
-             "var subobj = {};"
-             "subobj.y = void 0;"
-             "subobj.__proto__ = obj;"
-             "%OptimizeObjectForAddingMultipleProperties(obj, 1);"
+             "\x6f\x62\x6a\x2e\x79\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b"
+             "\x6f\x62\x6a\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6e\x75\x6c\x6c\x3b"
+             "\x76\x61\x72\x20\x73\x75\x62\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
+             "\x73\x75\x62\x6f\x62\x6a\x2e\x79\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b"
+             "\x73\x75\x62\x6f\x62\x6a\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x62\x6a\x3b"
+             "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x4f\x62\x6a\x65\x63\x74\x46\x6f\x72\x41\x64\x64\x69\x6e\x67\x4d\x75\x6c\x74\x69\x70\x6c\x65\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x6f\x62\x6a\x2c\x20\x31\x29\x3b"
 
              // Make the ICs monomorphic.
-             "load(obj); load(obj);"
-             "load2(subobj); load2(subobj);"
-             "store(obj); store(obj);"
-             "store2(subobj); store2(subobj);"
-             "keyed_load(obj, 'foo'); keyed_load(obj, 'foo');"
-             "keyed_load2(subobj, 'foo'); keyed_load2(subobj, 'foo');"
+             "\x6c\x6f\x61\x64\x28\x6f\x62\x6a\x29\x3b\x20\x6c\x6f\x61\x64\x28\x6f\x62\x6a\x29\x3b"
+             "\x6c\x6f\x61\x64\x32\x28\x73\x75\x62\x6f\x62\x6a\x29\x3b\x20\x6c\x6f\x61\x64\x32\x28\x73\x75\x62\x6f\x62\x6a\x29\x3b"
+             "\x73\x74\x6f\x72\x65\x28\x6f\x62\x6a\x29\x3b\x20\x73\x74\x6f\x72\x65\x28\x6f\x62\x6a\x29\x3b"
+             "\x73\x74\x6f\x72\x65\x32\x28\x73\x75\x62\x6f\x62\x6a\x29\x3b\x20\x73\x74\x6f\x72\x65\x32\x28\x73\x75\x62\x6f\x62\x6a\x29\x3b"
+             "\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x28\x6f\x62\x6a\x2c\x20\x27\x66\x6f\x6f\x27\x29\x3b\x20\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x28\x6f\x62\x6a\x2c\x20\x27\x66\x6f\x6f\x27\x29\x3b"
+             "\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x32\x28\x73\x75\x62\x6f\x62\x6a\x2c\x20\x27\x66\x6f\x6f\x27\x29\x3b\x20\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x32\x28\x73\x75\x62\x6f\x62\x6a\x2c\x20\x27\x66\x6f\x6f\x27\x29\x3b"
 
              // Actually test the shiny new ICs and better not crash. This
              // serves as a regression test for issue 142088 as well.
-             "load(obj);"
-             "load2(subobj);"
-             "store(obj);"
-             "store2(subobj);"
-             "keyed_load(obj, 'foo');"
-             "keyed_load2(subobj, 'foo');"
+             "\x6c\x6f\x61\x64\x28\x6f\x62\x6a\x29\x3b"
+             "\x6c\x6f\x61\x64\x32\x28\x73\x75\x62\x6f\x62\x6a\x29\x3b"
+             "\x73\x74\x6f\x72\x65\x28\x6f\x62\x6a\x29\x3b"
+             "\x73\x74\x6f\x72\x65\x32\x28\x73\x75\x62\x6f\x62\x6a\x29\x3b"
+             "\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x28\x6f\x62\x6a\x2c\x20\x27\x66\x6f\x6f\x27\x29\x3b"
+             "\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x32\x28\x73\x75\x62\x6f\x62\x6a\x2c\x20\x27\x66\x6f\x6f\x27\x29\x3b"
 
              // Delete the accessor.  It better not be called any more now.
-             "delete obj.foo;"
-             "obj.y = void 0;"
-             "subobj.y = void 0;"
+             "\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x2e\x66\x6f\x6f\x3b"
+             "\x6f\x62\x6a\x2e\x79\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b"
+             "\x73\x75\x62\x6f\x62\x6a\x2e\x79\x20\x3d\x20\x76\x6f\x69\x64\x20\x30\x3b"
 
-             "var load_result = load(obj);"
-             "var load_result2 = load2(subobj);"
-             "var keyed_load_result = keyed_load(obj, 'foo');"
-             "var keyed_load_result2 = keyed_load2(subobj, 'foo');"
-             "store(obj);"
-             "store2(subobj);"
-             "var y_from_obj = obj.y;"
-             "var y_from_subobj = subobj.y;");
-  CHECK(context->Global()->Get(v8_str("load_result"))->IsUndefined());
-  CHECK(context->Global()->Get(v8_str("load_result2"))->IsUndefined());
-  CHECK(context->Global()->Get(v8_str("keyed_load_result"))->IsUndefined());
-  CHECK(context->Global()->Get(v8_str("keyed_load_result2"))->IsUndefined());
-  CHECK(context->Global()->Get(v8_str("y_from_obj"))->IsUndefined());
-  CHECK(context->Global()->Get(v8_str("y_from_subobj"))->IsUndefined());
+             "\x76\x61\x72\x20\x6c\x6f\x61\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6c\x6f\x61\x64\x28\x6f\x62\x6a\x29\x3b"
+             "\x76\x61\x72\x20\x6c\x6f\x61\x64\x5f\x72\x65\x73\x75\x6c\x74\x32\x20\x3d\x20\x6c\x6f\x61\x64\x32\x28\x73\x75\x62\x6f\x62\x6a\x29\x3b"
+             "\x76\x61\x72\x20\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x5f\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x28\x6f\x62\x6a\x2c\x20\x27\x66\x6f\x6f\x27\x29\x3b"
+             "\x76\x61\x72\x20\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x5f\x72\x65\x73\x75\x6c\x74\x32\x20\x3d\x20\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x32\x28\x73\x75\x62\x6f\x62\x6a\x2c\x20\x27\x66\x6f\x6f\x27\x29\x3b"
+             "\x73\x74\x6f\x72\x65\x28\x6f\x62\x6a\x29\x3b"
+             "\x73\x74\x6f\x72\x65\x32\x28\x73\x75\x62\x6f\x62\x6a\x29\x3b"
+             "\x76\x61\x72\x20\x79\x5f\x66\x72\x6f\x6d\x5f\x6f\x62\x6a\x20\x3d\x20\x6f\x62\x6a\x2e\x79\x3b"
+             "\x76\x61\x72\x20\x79\x5f\x66\x72\x6f\x6d\x5f\x73\x75\x62\x6f\x62\x6a\x20\x3d\x20\x73\x75\x62\x6f\x62\x6a\x2e\x79\x3b");
+  CHECK(context->Global()->Get(v8_str("\x6c\x6f\x61\x64\x5f\x72\x65\x73\x75\x6c\x74"))->IsUndefined());
+  CHECK(context->Global()->Get(v8_str("\x6c\x6f\x61\x64\x5f\x72\x65\x73\x75\x6c\x74\x32"))->IsUndefined());
+  CHECK(context->Global()->Get(v8_str("\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x5f\x72\x65\x73\x75\x6c\x74"))->IsUndefined());
+  CHECK(context->Global()->Get(v8_str("\x6b\x65\x79\x65\x64\x5f\x6c\x6f\x61\x64\x5f\x72\x65\x73\x75\x6c\x74\x32"))->IsUndefined());
+  CHECK(context->Global()->Get(v8_str("\x79\x5f\x66\x72\x6f\x6d\x5f\x6f\x62\x6a"))->IsUndefined());
+  CHECK(context->Global()->Get(v8_str("\x79\x5f\x66\x72\x6f\x6d\x5f\x73\x75\x62\x6f\x62\x6a"))->IsUndefined());
 }
 
 
@@ -21439,15 +21439,15 @@ THREADED_TEST(Regress142088) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("foo"),
+  templ->SetAccessor(v8_str("\x66\x6f\x6f"),
                      GetterWhichReturns42,
                      SetterWhichSetsYOnThisTo23);
-  context->Global()->Set(v8_str("obj"), templ->NewInstance());
+  context->Global()->Set(v8_str("\x6f\x62\x6a"), templ->NewInstance());
 
-  CompileRun("function load(x) { return x.foo; }"
-             "var o = Object.create(obj);"
-             "%OptimizeObjectForAddingMultipleProperties(obj, 1);"
-             "load(o); load(o); load(o); load(o);");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x6f\x61\x64\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x2e\x66\x6f\x6f\x3b\x20\x7d"
+             "\x76\x61\x72\x20\x6f\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x63\x72\x65\x61\x74\x65\x28\x6f\x62\x6a\x29\x3b"
+             "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x4f\x62\x6a\x65\x63\x74\x46\x6f\x72\x41\x64\x64\x69\x6e\x67\x4d\x75\x6c\x74\x69\x70\x6c\x65\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x6f\x62\x6a\x2c\x20\x31\x29\x3b"
+             "\x6c\x6f\x61\x64\x28\x6f\x29\x3b\x20\x6c\x6f\x61\x64\x28\x6f\x29\x3b\x20\x6c\x6f\x61\x64\x28\x6f\x29\x3b\x20\x6c\x6f\x61\x64\x28\x6f\x29\x3b");
 }
 
 
@@ -21477,7 +21477,7 @@ THREADED_TEST(Regress137496) {
   // while there still is a message pending for external reporting.
   TryCatch try_catch;
   try_catch.SetVerbose(true);
-  CompileRun("try { throw new Error(); } finally { gc(); }");
+  CompileRun("\x74\x72\x79\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x3b\x20\x7d\x20\x66\x69\x6e\x61\x6c\x6c\x79\x20\x7b\x20\x67\x63\x28\x29\x3b\x20\x7d");
   CHECK(try_catch.HasCaught());
 }
 
@@ -21487,8 +21487,8 @@ THREADED_TEST(Regress149912) {
   v8::HandleScope scope(context->GetIsolate());
   Handle<FunctionTemplate> templ = FunctionTemplate::New(context->GetIsolate());
   AddInterceptor(templ, EmptyInterceptorGetter, EmptyInterceptorSetter);
-  context->Global()->Set(v8_str("Bug"), templ->GetFunction());
-  CompileRun("Number.prototype.__proto__ = new Bug; var x = 0; x.foo();");
+  context->Global()->Set(v8_str("\x42\x75\x67"), templ->GetFunction());
+  CompileRun("\x4e\x75\x6d\x62\x65\x72\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6e\x65\x77\x20\x42\x75\x67\x3b\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x3b\x20\x78\x2e\x66\x6f\x6f\x28\x29\x3b");
 }
 
 
@@ -21499,17 +21499,17 @@ THREADED_TEST(Regress157124) {
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
   Local<Object> obj = templ->NewInstance();
   obj->GetIdentityHash();
-  obj->DeleteHiddenValue(v8_str("Bug"));
+  obj->DeleteHiddenValue(v8_str("\x42\x75\x67"));
 }
 
 
 THREADED_TEST(Regress2535) {
   LocalContext context;
   v8::HandleScope scope(context->GetIsolate());
-  Local<Value> set_value = CompileRun("new Set();");
+  Local<Value> set_value = CompileRun("\x6e\x65\x77\x20\x53\x65\x74\x28\x29\x3b");
   Local<Object> set_object(Local<Object>::Cast(set_value));
   CHECK_EQ(0, set_object->InternalFieldCount());
-  Local<Value> map_value = CompileRun("new Map();");
+  Local<Value> map_value = CompileRun("\x6e\x65\x77\x20\x4d\x61\x70\x28\x29\x3b");
   Local<Object> map_object(Local<Object>::Cast(map_value));
   CHECK_EQ(0, map_object->InternalFieldCount());
 }
@@ -21520,7 +21520,7 @@ THREADED_TEST(Regress2746) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   Local<Object> obj = Object::New(isolate);
-  Local<String> key = String::NewFromUtf8(context->GetIsolate(), "key");
+  Local<String> key = String::NewFromUtf8(context->GetIsolate(), "\x6b\x65\x79");
   obj->SetHiddenValue(key, v8::Undefined(isolate));
   Local<Value> value = obj->GetHiddenValue(key);
   CHECK(!value.IsEmpty());
@@ -21534,7 +21534,7 @@ THREADED_TEST(Regress260106) {
   v8::HandleScope scope(isolate);
   Local<FunctionTemplate> templ = FunctionTemplate::New(isolate,
                                                         DummyCallHandler);
-  CompileRun("for (var i = 0; i < 128; i++) Object.prototype[i] = 0;");
+  CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x32\x38\x3b\x20\x69\x2b\x2b\x29\x20\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x5b\x69\x5d\x20\x3d\x20\x30\x3b");
   Local<Function> function = templ->GetFunction();
   CHECK(!function.IsEmpty());
   CHECK(function->IsFunction());
@@ -21544,20 +21544,20 @@ THREADED_TEST(Regress260106) {
 THREADED_TEST(JSONParseObject) {
   LocalContext context;
   HandleScope scope(context->GetIsolate());
-  Local<Value> obj = v8::JSON::Parse(v8_str("{\"x\":42}"));
+  Local<Value> obj = v8::JSON::Parse(v8_str("\x7b\x22\x78\x22\x3a\x34\x32\x7d"));
   Handle<Object> global = context->Global();
-  global->Set(v8_str("obj"), obj);
-  ExpectString("JSON.stringify(obj)", "{\"x\":42}");
+  global->Set(v8_str("\x6f\x62\x6a"), obj);
+  ExpectString("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x6f\x62\x6a\x29", "\x7b\x22\x78\x22\x3a\x34\x32\x7d");
 }
 
 
 THREADED_TEST(JSONParseNumber) {
   LocalContext context;
   HandleScope scope(context->GetIsolate());
-  Local<Value> obj = v8::JSON::Parse(v8_str("42"));
+  Local<Value> obj = v8::JSON::Parse(v8_str("\x34\x32"));
   Handle<Object> global = context->Global();
-  global->Set(v8_str("obj"), obj);
-  ExpectString("JSON.stringify(obj)", "42");
+  global->Set(v8_str("\x6f\x62\x6a"), obj);
+  ExpectString("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x6f\x62\x6a\x29", "\x34\x32");
 }
 
 
@@ -21581,7 +21581,7 @@ class ThreadInterruptTest {
   class InterruptThread : public v8::base::Thread {
    public:
     explicit InterruptThread(ThreadInterruptTest* test)
-        : Thread(Options("InterruptThread")), test_(test) {}
+        : Thread(Options("\x49\x6e\x74\x65\x72\x72\x75\x70\x74\x54\x68\x72\x65\x61\x64")), test_(test) {}
 
     virtual void Run() {
       struct sigaction action;
@@ -21629,7 +21629,7 @@ static bool NamedAccessAlwaysBlocked(Local<v8::Object> global,
                                      Local<Value> name,
                                      v8::AccessType type,
                                      Local<Value> data) {
-  i::PrintF("Named access blocked.\n");
+  i::PrintF("\x4e\x61\x6d\x65\x64\x20\x61\x63\x63\x65\x73\x73\x20\x62\x6c\x6f\x63\x6b\x65\x64\x2e\xa");
   return false;
 }
 
@@ -21638,7 +21638,7 @@ static bool IndexAccessAlwaysBlocked(Local<v8::Object> global,
                                      uint32_t key,
                                      v8::AccessType type,
                                      Local<Value> data) {
-  i::PrintF("Indexed access blocked.\n");
+  i::PrintF("\x49\x6e\x64\x65\x78\x65\x64\x20\x61\x63\x63\x65\x73\x73\x20\x62\x6c\x6f\x63\x6b\x65\x64\x2e\xa");
   return false;
 }
 
@@ -21663,8 +21663,8 @@ TEST(JSONStringifyAccessCheck) {
   // Create a context and set an x property on it's global object.
   LocalContext context0(NULL, global_template);
   v8::Handle<v8::Object> global0 = context0->Global();
-  global0->Set(v8_str("x"), v8_num(42));
-  ExpectString("JSON.stringify(this)", "{\"x\":42}");
+  global0->Set(v8_str("\x78"), v8_num(42));
+  ExpectString("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x74\x68\x69\x73\x29", "\x7b\x22\x78\x22\x3a\x34\x32\x7d");
 
   for (int i = 0; i < 2; i++) {
     if (i == 1) {
@@ -21672,26 +21672,26 @@ TEST(JSONStringifyAccessCheck) {
       v8::Handle<v8::FunctionTemplate> toJSON =
           v8::FunctionTemplate::New(isolate, UnreachableCallback);
 
-      global0->Set(v8_str("toJSON"), toJSON->GetFunction());
+      global0->Set(v8_str("\x74\x6f\x4a\x53\x4f\x4e"), toJSON->GetFunction());
     }
     // Create a context with a different security token so that the
     // failed access check callback will be called on each access.
     LocalContext context1(NULL, global_template);
-    context1->Global()->Set(v8_str("other"), global0);
+    context1->Global()->Set(v8_str("\x6f\x74\x68\x65\x72"), global0);
 
-    CHECK(CompileRun("JSON.stringify(other)").IsEmpty());
-    CHECK(CompileRun("JSON.stringify({ 'a' : other, 'b' : ['c'] })").IsEmpty());
-    CHECK(CompileRun("JSON.stringify([other, 'b', 'c'])").IsEmpty());
+    CHECK(CompileRun("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x6f\x74\x68\x65\x72\x29").IsEmpty());
+    CHECK(CompileRun("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x7b\x20\x27\x61\x27\x20\x3a\x20\x6f\x74\x68\x65\x72\x2c\x20\x27\x62\x27\x20\x3a\x20\x5b\x27\x63\x27\x5d\x20\x7d\x29").IsEmpty());
+    CHECK(CompileRun("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x5b\x6f\x74\x68\x65\x72\x2c\x20\x27\x62\x27\x2c\x20\x27\x63\x27\x5d\x29").IsEmpty());
 
     v8::Handle<v8::Array> array = v8::Array::New(isolate, 2);
-    array->Set(0, v8_str("a"));
-    array->Set(1, v8_str("b"));
-    context1->Global()->Set(v8_str("array"), array);
-    ExpectString("JSON.stringify(array)", "[\"a\",\"b\"]");
+    array->Set(0, v8_str("\x61"));
+    array->Set(1, v8_str("\x62"));
+    context1->Global()->Set(v8_str("\x61\x72\x72\x61\x79"), array);
+    ExpectString("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x61\x72\x72\x61\x79\x29", "\x5b\x22\x61\x22\x2c\x22\x62\x22\x5d");
     array->TurnOnAccessCheck();
-    CHECK(CompileRun("JSON.stringify(array)").IsEmpty());
-    CHECK(CompileRun("JSON.stringify([array])").IsEmpty());
-    CHECK(CompileRun("JSON.stringify({'a' : array})").IsEmpty());
+    CHECK(CompileRun("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x61\x72\x72\x61\x79\x29").IsEmpty());
+    CHECK(CompileRun("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x5b\x61\x72\x72\x61\x79\x5d\x29").IsEmpty());
+    CHECK(CompileRun("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x7b\x27\x61\x27\x20\x3a\x20\x61\x72\x72\x61\x79\x7d\x29").IsEmpty());
   }
 }
 
@@ -21705,15 +21705,15 @@ void FailedAccessCheckThrows(Local<v8::Object> target,
                              v8::AccessType type,
                              Local<v8::Value> data) {
   access_check_fail_thrown = true;
-  i::PrintF("Access check failed. Error thrown.\n");
+  i::PrintF("\x41\x63\x63\x65\x73\x73\x20\x63\x68\x65\x63\x6b\x20\x66\x61\x69\x6c\x65\x64\x2e\x20\x45\x72\x72\x6f\x72\x20\x74\x68\x72\x6f\x77\x6e\x2e\xa");
   CcTest::isolate()->ThrowException(
-      v8::Exception::Error(v8_str("cross context")));
+      v8::Exception::Error(v8_str("\x63\x72\x6f\x73\x73\x20\x63\x6f\x6e\x74\x65\x78\x74")));
 }
 
 
 void CatcherCallback(const v8::FunctionCallbackInfo<v8::Value>& args) {
   for (int i = 0; i < args.Length(); i++) {
-    i::PrintF("%s\n", *String::Utf8Value(args[i]));
+    i::PrintF("\x6c\xa2\xa", *String::Utf8Value(args[i]));
   }
   catch_callback_called = true;
 }
@@ -21731,14 +21731,14 @@ void CheckCorrectThrow(const char* script) {
   access_check_fail_thrown = false;
   catch_callback_called = false;
   i::ScopedVector<char> source(1024);
-  i::SNPrintF(source, "try { %s; } catch (e) { catcher(e); }", script);
+  i::SNPrintF(source, "\x74\x72\x79\x20\x7b\x20\x6c\xa2\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x63\x61\x74\x63\x68\x65\x72\x28\x65\x29\x3b\x20\x7d", script);
   CompileRun(source.start());
   CHECK(access_check_fail_thrown);
   CHECK(catch_callback_called);
 
   access_check_fail_thrown = false;
   catch_callback_called = false;
-  CompileRun("try { [1, 2, 3].sort(); } catch (e) { catcher(e) };");
+  CompileRun("\x74\x72\x79\x20\x7b\x20\x5b\x31\x2c\x20\x32\x2c\x20\x33\x5d\x2e\x73\x6f\x72\x74\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x63\x61\x74\x63\x68\x65\x72\x28\x65\x29\x20\x7d\x3b");
   CHECK(!access_check_fail_thrown);
   CHECK(!catch_callback_called);
 }
@@ -21760,48 +21760,48 @@ TEST(AccessCheckThrows) {
 
   // Create a context and set an x property on it's global object.
   LocalContext context0(NULL, global_template);
-  context0->Global()->Set(v8_str("x"), v8_num(42));
+  context0->Global()->Set(v8_str("\x78"), v8_num(42));
   v8::Handle<v8::Object> global0 = context0->Global();
 
   // Create a context with a different security token so that the
   // failed access check callback will be called on each access.
   LocalContext context1(NULL, global_template);
-  context1->Global()->Set(v8_str("other"), global0);
+  context1->Global()->Set(v8_str("\x6f\x74\x68\x65\x72"), global0);
 
   v8::Handle<v8::FunctionTemplate> catcher_fun =
       v8::FunctionTemplate::New(isolate, CatcherCallback);
-  context1->Global()->Set(v8_str("catcher"), catcher_fun->GetFunction());
+  context1->Global()->Set(v8_str("\x63\x61\x74\x63\x68\x65\x72"), catcher_fun->GetFunction());
 
   v8::Handle<v8::FunctionTemplate> has_own_property_fun =
       v8::FunctionTemplate::New(isolate, HasOwnPropertyCallback);
-  context1->Global()->Set(v8_str("has_own_property"),
+  context1->Global()->Set(v8_str("\x68\x61\x73\x5f\x6f\x77\x6e\x5f\x70\x72\x6f\x70\x65\x72\x74\x79"),
                           has_own_property_fun->GetFunction());
 
   { v8::TryCatch try_catch;
     access_check_fail_thrown = false;
-    CompileRun("other.x;");
+    CompileRun("\x6f\x74\x68\x65\x72\x2e\x78\x3b");
     CHECK(access_check_fail_thrown);
     CHECK(try_catch.HasCaught());
   }
 
-  CheckCorrectThrow("other.x");
-  CheckCorrectThrow("other[1]");
-  CheckCorrectThrow("JSON.stringify(other)");
-  CheckCorrectThrow("has_own_property(other, 'x')");
-  CheckCorrectThrow("%GetProperty(other, 'x')");
-  CheckCorrectThrow("%SetProperty(other, 'x', 'foo', 0)");
-  CheckCorrectThrow("%AddNamedProperty(other, 'x', 'foo', 1)");
-  CheckCorrectThrow("%DeleteProperty(other, 'x', 0)");
-  CheckCorrectThrow("%DeleteProperty(other, '1', 0)");
-  CheckCorrectThrow("%HasOwnProperty(other, 'x')");
-  CheckCorrectThrow("%HasProperty(other, 'x')");
-  CheckCorrectThrow("%HasElement(other, 1)");
-  CheckCorrectThrow("%IsPropertyEnumerable(other, 'x')");
-  CheckCorrectThrow("%GetPropertyNames(other)");
+  CheckCorrectThrow("\x6f\x74\x68\x65\x72\x2e\x78");
+  CheckCorrectThrow("\x6f\x74\x68\x65\x72\x5b\x31\x5d");
+  CheckCorrectThrow("\x4a\x53\x4f\x4e\x2e\x73\x74\x72\x69\x6e\x67\x69\x66\x79\x28\x6f\x74\x68\x65\x72\x29");
+  CheckCorrectThrow("\x68\x61\x73\x5f\x6f\x77\x6e\x5f\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x29");
+  CheckCorrectThrow("\x6c\xc7\x85\x74\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x29");
+  CheckCorrectThrow("\x25\x53\x65\x74\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x2c\x20\x27\x66\x6f\x6f\x27\x2c\x20\x30\x29");
+  CheckCorrectThrow("\x6c\xc1\x84\x84\x4e\x61\x6d\x65\x64\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x2c\x20\x27\x66\x6f\x6f\x27\x2c\x20\x31\x29");
+  CheckCorrectThrow("\x25\x44\x65\x6c\x65\x74\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x2c\x20\x30\x29");
+  CheckCorrectThrow("\x25\x44\x65\x6c\x65\x74\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x31\x27\x2c\x20\x30\x29");
+  CheckCorrectThrow("\x25\x48\x61\x73\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x29");
+  CheckCorrectThrow("\x25\x48\x61\x73\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x29");
+  CheckCorrectThrow("\x25\x48\x61\x73\x45\x6c\x65\x6d\x65\x6e\x74\x28\x6f\x74\x68\x65\x72\x2c\x20\x31\x29");
+  CheckCorrectThrow("\x25\x49\x73\x50\x72\x6f\x70\x65\x72\x74\x79\x45\x6e\x75\x6d\x65\x72\x61\x62\x6c\x65\x28\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x29");
+  CheckCorrectThrow("\x6c\xc7\x85\x74\x50\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x6f\x74\x68\x65\x72\x29");
   // PROPERTY_ATTRIBUTES_NONE = 0
-  CheckCorrectThrow("%GetOwnPropertyNames(other, 0)");
-  CheckCorrectThrow("%DefineAccessorPropertyUnchecked("
-                        "other, 'x', null, null, 1)");
+  CheckCorrectThrow("\x6c\xc7\x85\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x6f\x74\x68\x65\x72\x2c\x20\x30\x29");
+  CheckCorrectThrow("\x25\x44\x65\x66\x69\x6e\x65\x41\x63\x63\x65\x73\x73\x6f\x72\x50\x72\x6f\x70\x65\x72\x74\x79\x55\x6e\x63\x68\x65\x63\x6b\x65\x64\x28"
+                        "\x6f\x74\x68\x65\x72\x2c\x20\x27\x78\x27\x2c\x20\x6e\x75\x6c\x6c\x2c\x20\x6e\x75\x6c\x6c\x2c\x20\x31\x29");
 
   // Reset the failed access check callback so it does not influence
   // the other tests.
@@ -21815,13 +21815,13 @@ THREADED_TEST(Regress256330) {
   v8::HandleScope scope(context->GetIsolate());
   Handle<FunctionTemplate> templ = FunctionTemplate::New(context->GetIsolate());
   AddInterceptor(templ, EmptyInterceptorGetter, EmptyInterceptorSetter);
-  context->Global()->Set(v8_str("Bug"), templ->GetFunction());
-  CompileRun("\"use strict\"; var o = new Bug;"
-             "function f(o) { o.x = 10; };"
-             "f(o); f(o); f(o);"
-             "%OptimizeFunctionOnNextCall(f);"
-             "f(o);");
-  ExpectBoolean("%GetOptimizationStatus(f) != 2", true);
+  context->Global()->Set(v8_str("\x42\x75\x67"), templ->GetFunction());
+  CompileRun("\x22\x75\x73\x65\x20\x73\x74\x72\x69\x63\x74\x22\x3b\x20\x76\x61\x72\x20\x6f\x20\x3d\x20\x6e\x65\x77\x20\x42\x75\x67\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x6f\x29\x20\x7b\x20\x6f\x2e\x78\x20\x3d\x20\x31\x30\x3b\x20\x7d\x3b"
+             "\x66\x28\x6f\x29\x3b\x20\x66\x28\x6f\x29\x3b\x20\x66\x28\x6f\x29\x3b"
+             "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
+             "\x66\x28\x6f\x29\x3b");
+  ExpectBoolean("\x6c\xc7\x85\x74\x4f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x53\x74\x61\x74\x75\x73\x28\x66\x29\x20\x21\x3d\x20\x32", true);
 }
 
 
@@ -21831,23 +21831,23 @@ THREADED_TEST(CrankshaftInterceptorSetter) {
   Handle<FunctionTemplate> templ = FunctionTemplate::New(CcTest::isolate());
   AddInterceptor(templ, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Obj"), templ->GetFunction());
-  CompileRun("var obj = new Obj;"
+  env->Global()->Set(v8_str("\x4f\x62\x6a"), templ->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x3b"
              // Initialize fields to avoid transitions later.
-             "obj.age = 0;"
-             "obj.accessor_age = 42;"
-             "function setter(i) { this.accessor_age = i; };"
-             "function getter() { return this.accessor_age; };"
-             "function setAge(i) { obj.age = i; };"
-             "Object.defineProperty(obj, 'age', { get:getter, set:setter });"
-             "setAge(1);"
-             "setAge(2);"
-             "setAge(3);"
-             "%OptimizeFunctionOnNextCall(setAge);"
-             "setAge(4);");
+             "\x6f\x62\x6a\x2e\x61\x67\x65\x20\x3d\x20\x30\x3b"
+             "\x6f\x62\x6a\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x20\x3d\x20\x34\x32\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x74\x65\x72\x28\x69\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x74\x65\x72\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x3b\x20\x7d\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x20\x7b\x20\x6f\x62\x6a\x2e\x61\x67\x65\x20\x3d\x20\x69\x3b\x20\x7d\x3b"
+             "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x2c\x20\x27\x61\x67\x65\x27\x2c\x20\x7b\x20\x67\x65\x74\x3a\x67\x65\x74\x74\x65\x72\x2c\x20\x73\x65\x74\x3a\x73\x65\x74\x74\x65\x72\x20\x7d\x29\x3b"
+             "\x73\x65\x74\x41\x67\x65\x28\x31\x29\x3b"
+             "\x73\x65\x74\x41\x67\x65\x28\x32\x29\x3b"
+             "\x73\x65\x74\x41\x67\x65\x28\x33\x29\x3b"
+             "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x73\x65\x74\x41\x67\x65\x29\x3b"
+             "\x73\x65\x74\x41\x67\x65\x28\x34\x29\x3b");
   // All stores went through the interceptor.
-  ExpectInt32("obj.interceptor_age", 4);
-  ExpectInt32("obj.accessor_age", 42);
+  ExpectInt32("\x6f\x62\x6a\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65", 4);
+  ExpectInt32("\x6f\x62\x6a\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65", 42);
 }
 
 
@@ -21857,20 +21857,20 @@ THREADED_TEST(CrankshaftInterceptorGetter) {
   Handle<FunctionTemplate> templ = FunctionTemplate::New(CcTest::isolate());
   AddInterceptor(templ, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Obj"), templ->GetFunction());
-  CompileRun("var obj = new Obj;"
+  env->Global()->Set(v8_str("\x4f\x62\x6a"), templ->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x3b"
              // Initialize fields to avoid transitions later.
-             "obj.age = 1;"
-             "obj.accessor_age = 42;"
-             "function getter() { return this.accessor_age; };"
-             "function getAge() { return obj.interceptor_age; };"
-             "Object.defineProperty(obj, 'interceptor_age', { get:getter });"
-             "getAge();"
-             "getAge();"
-             "getAge();"
-             "%OptimizeFunctionOnNextCall(getAge);");
+             "\x6f\x62\x6a\x2e\x61\x67\x65\x20\x3d\x20\x31\x3b"
+             "\x6f\x62\x6a\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x20\x3d\x20\x34\x32\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x74\x65\x72\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x61\x63\x63\x65\x73\x73\x6f\x72\x5f\x61\x67\x65\x3b\x20\x7d\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x41\x67\x65\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x62\x6a\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65\x3b\x20\x7d\x3b"
+             "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x2c\x20\x27\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65\x27\x2c\x20\x7b\x20\x67\x65\x74\x3a\x67\x65\x74\x74\x65\x72\x20\x7d\x29\x3b"
+             "\x67\x65\x74\x41\x67\x65\x28\x29\x3b"
+             "\x67\x65\x74\x41\x67\x65\x28\x29\x3b"
+             "\x67\x65\x74\x41\x67\x65\x28\x29\x3b"
+             "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x67\x65\x74\x41\x67\x65\x29\x3b");
   // Access through interceptor.
-  ExpectInt32("getAge()", 1);
+  ExpectInt32("\x67\x65\x74\x41\x67\x65\x28\x29", 1);
 }
 
 
@@ -21880,17 +21880,17 @@ THREADED_TEST(CrankshaftInterceptorFieldRead) {
   Handle<FunctionTemplate> templ = FunctionTemplate::New(CcTest::isolate());
   AddInterceptor(templ, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Obj"), templ->GetFunction());
-  CompileRun("var obj = new Obj;"
-             "obj.__proto__.interceptor_age = 42;"
-             "obj.age = 100;"
-             "function getAge() { return obj.interceptor_age; };");
-  ExpectInt32("getAge();", 100);
-  ExpectInt32("getAge();", 100);
-  ExpectInt32("getAge();", 100);
-  CompileRun("%OptimizeFunctionOnNextCall(getAge);");
+  env->Global()->Set(v8_str("\x4f\x62\x6a"), templ->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x3b"
+             "\x6f\x62\x6a\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65\x20\x3d\x20\x34\x32\x3b"
+             "\x6f\x62\x6a\x2e\x61\x67\x65\x20\x3d\x20\x31\x30\x30\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x41\x67\x65\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x62\x6a\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65\x3b\x20\x7d\x3b");
+  ExpectInt32("\x67\x65\x74\x41\x67\x65\x28\x29\x3b", 100);
+  ExpectInt32("\x67\x65\x74\x41\x67\x65\x28\x29\x3b", 100);
+  ExpectInt32("\x67\x65\x74\x41\x67\x65\x28\x29\x3b", 100);
+  CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x67\x65\x74\x41\x67\x65\x29\x3b");
   // Access through interceptor.
-  ExpectInt32("getAge();", 100);
+  ExpectInt32("\x67\x65\x74\x41\x67\x65\x28\x29\x3b", 100);
 }
 
 
@@ -21900,17 +21900,17 @@ THREADED_TEST(CrankshaftInterceptorFieldWrite) {
   Handle<FunctionTemplate> templ = FunctionTemplate::New(CcTest::isolate());
   AddInterceptor(templ, InterceptorGetter, InterceptorSetter);
   LocalContext env;
-  env->Global()->Set(v8_str("Obj"), templ->GetFunction());
-  CompileRun("var obj = new Obj;"
-             "obj.age = 100000;"
-             "function setAge(i) { obj.age = i };"
-             "setAge(100);"
-             "setAge(101);"
-             "setAge(102);"
-             "%OptimizeFunctionOnNextCall(setAge);"
-             "setAge(103);");
-  ExpectInt32("obj.age", 100000);
-  ExpectInt32("obj.interceptor_age", 103);
+  env->Global()->Set(v8_str("\x4f\x62\x6a"), templ->GetFunction());
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x3b"
+             "\x6f\x62\x6a\x2e\x61\x67\x65\x20\x3d\x20\x31\x30\x30\x30\x30\x30\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x65\x74\x41\x67\x65\x28\x69\x29\x20\x7b\x20\x6f\x62\x6a\x2e\x61\x67\x65\x20\x3d\x20\x69\x20\x7d\x3b"
+             "\x73\x65\x74\x41\x67\x65\x28\x31\x30\x30\x29\x3b"
+             "\x73\x65\x74\x41\x67\x65\x28\x31\x30\x31\x29\x3b"
+             "\x73\x65\x74\x41\x67\x65\x28\x31\x30\x32\x29\x3b"
+             "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x73\x65\x74\x41\x67\x65\x29\x3b"
+             "\x73\x65\x74\x41\x67\x65\x28\x31\x30\x33\x29\x3b");
+  ExpectInt32("\x6f\x62\x6a\x2e\x61\x67\x65", 100000);
+  ExpectInt32("\x6f\x62\x6a\x2e\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x61\x67\x65", 103);
 }
 
 
@@ -21989,7 +21989,7 @@ class RequestInterruptTestBaseWithSimpleInterrupt
   class InterruptThread : public v8::base::Thread {
    public:
     explicit InterruptThread(RequestInterruptTestBase* test)
-        : Thread(Options("RequestInterruptTest")), test_(test) {}
+        : Thread(Options("\x52\x65\x71\x75\x65\x73\x74\x49\x6e\x74\x65\x72\x72\x75\x70\x74\x54\x65\x73\x74")), test_(test) {}
 
     virtual void Run() {
       test_->sem_.Wait();
@@ -22015,9 +22015,9 @@ class RequestInterruptTestWithFunctionCall
   virtual void TestBody() {
     Local<Function> func = Function::New(
         isolate_, ShouldContinueCallback, v8::External::New(isolate_, this));
-    env_->Global()->Set(v8_str("ShouldContinue"), func);
+    env_->Global()->Set(v8_str("\x53\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65"), func);
 
-    CompileRun("while (ShouldContinue()) { }");
+    CompileRun("\x77\x68\x69\x6c\x65\x20\x28\x53\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65\x28\x29\x29\x20\x7b\x20\x7d");
   }
 };
 
@@ -22028,11 +22028,11 @@ class RequestInterruptTestWithMethodCall
   virtual void TestBody() {
     v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate_);
     v8::Local<v8::Template> proto = t->PrototypeTemplate();
-    proto->Set(v8_str("shouldContinue"), Function::New(
+    proto->Set(v8_str("\x73\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65"), Function::New(
         isolate_, ShouldContinueCallback, v8::External::New(isolate_, this)));
-    env_->Global()->Set(v8_str("Klass"), t->GetFunction());
+    env_->Global()->Set(v8_str("\x4b\x6c\x61\x73\x73"), t->GetFunction());
 
-    CompileRun("var obj = new Klass; while (obj.shouldContinue()) { }");
+    CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4b\x6c\x61\x73\x73\x3b\x20\x77\x68\x69\x6c\x65\x20\x28\x6f\x62\x6a\x2e\x73\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65\x28\x29\x29\x20\x7b\x20\x7d");
   }
 };
 
@@ -22043,11 +22043,11 @@ class RequestInterruptTestWithAccessor
   virtual void TestBody() {
     v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate_);
     v8::Local<v8::Template> proto = t->PrototypeTemplate();
-    proto->SetAccessorProperty(v8_str("shouldContinue"), FunctionTemplate::New(
+    proto->SetAccessorProperty(v8_str("\x73\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65"), FunctionTemplate::New(
         isolate_, ShouldContinueCallback, v8::External::New(isolate_, this)));
-    env_->Global()->Set(v8_str("Klass"), t->GetFunction());
+    env_->Global()->Set(v8_str("\x4b\x6c\x61\x73\x73"), t->GetFunction());
 
-    CompileRun("var obj = new Klass; while (obj.shouldContinue) { }");
+    CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4b\x6c\x61\x73\x73\x3b\x20\x77\x68\x69\x6c\x65\x20\x28\x6f\x62\x6a\x2e\x73\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65\x29\x20\x7b\x20\x7d");
   }
 };
 
@@ -22058,13 +22058,13 @@ class RequestInterruptTestWithNativeAccessor
   virtual void TestBody() {
     v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate_);
     t->InstanceTemplate()->SetNativeDataProperty(
-        v8_str("shouldContinue"),
+        v8_str("\x73\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65"),
         &ShouldContinueNativeGetter,
         NULL,
         v8::External::New(isolate_, this));
-    env_->Global()->Set(v8_str("Klass"), t->GetFunction());
+    env_->Global()->Set(v8_str("\x4b\x6c\x61\x73\x73"), t->GetFunction());
 
-    CompileRun("var obj = new Klass; while (obj.shouldContinue) { }");
+    CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4b\x6c\x61\x73\x73\x3b\x20\x77\x68\x69\x6c\x65\x20\x28\x6f\x62\x6a\x2e\x73\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65\x29\x20\x7b\x20\x7d");
   }
 
  private:
@@ -22085,14 +22085,14 @@ class RequestInterruptTestWithMethodCallAndInterceptor
   virtual void TestBody() {
     v8::Local<v8::FunctionTemplate> t = v8::FunctionTemplate::New(isolate_);
     v8::Local<v8::Template> proto = t->PrototypeTemplate();
-    proto->Set(v8_str("shouldContinue"), Function::New(
+    proto->Set(v8_str("\x73\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65"), Function::New(
         isolate_, ShouldContinueCallback, v8::External::New(isolate_, this)));
     v8::Local<v8::ObjectTemplate> instance_template = t->InstanceTemplate();
     instance_template->SetNamedPropertyHandler(EmptyInterceptor);
 
-    env_->Global()->Set(v8_str("Klass"), t->GetFunction());
+    env_->Global()->Set(v8_str("\x4b\x6c\x61\x73\x73"), t->GetFunction());
 
-    CompileRun("var obj = new Klass; while (obj.shouldContinue()) { }");
+    CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x4b\x6c\x61\x73\x73\x3b\x20\x77\x68\x69\x6c\x65\x20\x28\x6f\x62\x6a\x2e\x73\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65\x28\x29\x29\x20\x7b\x20\x7d");
   }
 
  private:
@@ -22107,32 +22107,32 @@ class RequestInterruptTestWithMathAbs
     : public RequestInterruptTestBaseWithSimpleInterrupt {
  public:
   virtual void TestBody() {
-    env_->Global()->Set(v8_str("WakeUpInterruptor"), Function::New(
+    env_->Global()->Set(v8_str("\x57\x61\x6b\x65\x55\x70\x49\x6e\x74\x65\x72\x72\x75\x70\x74\x6f\x72"), Function::New(
         isolate_,
         WakeUpInterruptorCallback,
         v8::External::New(isolate_, this)));
 
-    env_->Global()->Set(v8_str("ShouldContinue"), Function::New(
+    env_->Global()->Set(v8_str("\x53\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65"), Function::New(
         isolate_,
         ShouldContinueCallback,
         v8::External::New(isolate_, this)));
 
     i::FLAG_allow_natives_syntax = true;
-    CompileRun("function loopish(o) {"
-               "  var pre = 10;"
-               "  while (o.abs(1) > 0) {"
-               "    if (o.abs(1) >= 0 && !ShouldContinue()) break;"
-               "    if (pre > 0) {"
-               "      if (--pre === 0) WakeUpInterruptor(o === Math);"
-               "    }"
-               "  }"
-               "}"
-               "var i = 50;"
-               "var obj = {abs: function () { return i-- }, x: null};"
-               "delete obj.x;"
-               "loopish(obj);"
-               "%OptimizeFunctionOnNextCall(loopish);"
-               "loopish(Math);");
+    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x6f\x6f\x70\x69\x73\x68\x28\x6f\x29\x20\x7b"
+               "\x20\x20\x76\x61\x72\x20\x70\x72\x65\x20\x3d\x20\x31\x30\x3b"
+               "\x20\x20\x77\x68\x69\x6c\x65\x20\x28\x6f\x2e\x61\x62\x73\x28\x31\x29\x20\x3e\x20\x30\x29\x20\x7b"
+               "\x20\x20\x20\x20\x69\x66\x20\x28\x6f\x2e\x61\x62\x73\x28\x31\x29\x20\x3e\x3d\x20\x30\x20\x26\x26\x20\x21\x53\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65\x28\x29\x29\x20\x62\x72\x65\x61\x6b\x3b"
+               "\x20\x20\x20\x20\x69\x66\x20\x28\x70\x72\x65\x20\x3e\x20\x30\x29\x20\x7b"
+               "\x20\x20\x20\x20\x20\x20\x69\x66\x20\x28\x2d\x2d\x70\x72\x65\x20\x3d\x3d\x3d\x20\x30\x29\x20\x57\x61\x6b\x65\x55\x70\x49\x6e\x74\x65\x72\x72\x75\x70\x74\x6f\x72\x28\x6f\x20\x3d\x3d\x3d\x20\x4d\x61\x74\x68\x29\x3b"
+               "\x20\x20\x20\x20\x7d"
+               "\x20\x20\x7d"
+               "\x7d"
+               "\x76\x61\x72\x20\x69\x20\x3d\x20\x35\x30\x3b"
+               "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x61\x62\x73\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x69\x2d\x2d\x20\x7d\x2c\x20\x78\x3a\x20\x6e\x75\x6c\x6c\x7d\x3b"
+               "\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x2e\x78\x3b"
+               "\x6c\x6f\x6f\x70\x69\x73\x68\x28\x6f\x62\x6a\x29\x3b"
+               "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x6c\x6f\x6f\x70\x69\x73\x68\x29\x3b"
+               "\x6c\x6f\x6f\x70\x69\x73\x68\x28\x4d\x61\x74\x68\x29\x3b");
 
     i::FLAG_allow_natives_syntax = false;
   }
@@ -22200,16 +22200,16 @@ class ClearInterruptFromAnotherThread
   virtual void TestBody() {
     Local<Function> func = Function::New(
         isolate_, ShouldContinueCallback, v8::External::New(isolate_, this));
-    env_->Global()->Set(v8_str("ShouldContinue"), func);
+    env_->Global()->Set(v8_str("\x53\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65"), func);
 
-    CompileRun("while (ShouldContinue()) { }");
+    CompileRun("\x77\x68\x69\x6c\x65\x20\x28\x53\x68\x6f\x75\x6c\x64\x43\x6f\x6e\x74\x69\x6e\x75\x65\x28\x29\x29\x20\x7b\x20\x7d");
   }
 
  private:
   class InterruptThread : public v8::base::Thread {
    public:
     explicit InterruptThread(ClearInterruptFromAnotherThread* test)
-        : Thread(Options("RequestInterruptTest")), test_(test) {}
+        : Thread(Options("\x52\x65\x71\x75\x65\x73\x74\x49\x6e\x74\x65\x72\x72\x75\x70\x74\x54\x65\x73\x74")), test_(test) {}
 
     virtual void Run() {
       test_->sem_.Wait();
@@ -22257,8 +22257,8 @@ THREADED_TEST(FunctionNew) {
   Local<Object> data = v8::Object::New(isolate);
   function_new_expected_env = data;
   Local<Function> func = Function::New(isolate, FunctionNewCallback, data);
-  env->Global()->Set(v8_str("func"), func);
-  Local<Value> result = CompileRun("func();");
+  env->Global()->Set(v8_str("\x66\x75\x6e\x63"), func);
+  Local<Value> result = CompileRun("\x66\x75\x6e\x63\x28\x29\x3b");
   CHECK_EQ(v8::Integer::New(isolate, 17), result);
   // Verify function not cached
   int serial_number =
@@ -22275,8 +22275,8 @@ THREADED_TEST(FunctionNew) {
   Local<Function> func2 = Function::New(isolate, FunctionNewCallback, data2);
   CHECK(!func2->IsNull());
   CHECK_NE(func, func2);
-  env->Global()->Set(v8_str("func2"), func2);
-  Local<Value> result2 = CompileRun("func2();");
+  env->Global()->Set(v8_str("\x66\x75\x6e\x63\x32"), func2);
+  Local<Value> result2 = CompileRun("\x66\x75\x6e\x63\x32\x28\x29\x3b");
   CHECK_EQ(v8::Integer::New(isolate, 17), result2);
 }
 
@@ -22289,13 +22289,13 @@ TEST(EscapeableHandleScope) {
   for (int i = 0; i < runs; i++) {
     v8::EscapableHandleScope inner_scope(CcTest::isolate());
     Local<String> value;
-    if (i != 0) value = v8_str("escape value");
+    if (i != 0) value = v8_str("\x65\x73\x63\x61\x70\x65\x20\x76\x61\x6c\x75\x65");
     values[i] = inner_scope.Escape(value);
   }
   for (int i = 0; i < runs; i++) {
     Local<String> expected;
     if (i != 0) {
-      CHECK_EQ(v8_str("escape value"), values[i]);
+      CHECK_EQ(v8_str("\x65\x73\x63\x61\x70\x65\x20\x76\x61\x6c\x75\x65"), values[i]);
     } else {
       CHECK(values[i].IsEmpty());
     }
@@ -22314,16 +22314,16 @@ TEST(Regress239669) {
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope scope(isolate);
   Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
-  templ->SetAccessor(v8_str("x"), 0, SetterWhichExpectsThisAndHolderToDiffer);
-  context->Global()->Set(v8_str("P"), templ->NewInstance());
+  templ->SetAccessor(v8_str("\x78"), 0, SetterWhichExpectsThisAndHolderToDiffer);
+  context->Global()->Set(v8_str("\x50"), templ->NewInstance());
   CompileRun(
-      "function C1() {"
-      "  this.x = 23;"
-      "};"
-      "C1.prototype = P;"
-      "for (var i = 0; i < 4; i++ ) {"
-      "  new C1();"
-      "}");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x31\x28\x29\x20\x7b"
+      "\x20\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x32\x33\x3b"
+      "\x7d\x3b"
+      "\x43\x31\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x50\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x34\x3b\x20\x69\x2b\x2b\x20\x29\x20\x7b"
+      "\x20\x20\x6e\x65\x77\x20\x43\x31\x28\x29\x3b"
+      "\x7d");
 }
 
 
@@ -22345,7 +22345,7 @@ class ApiCallOptimizationChecker {
     }
     CHECK(holder == info.Holder());
     count++;
-    info.GetReturnValue().Set(v8_str("returned"));
+    info.GetReturnValue().Set(v8_str("\x72\x65\x74\x75\x72\x6e\x65\x64"));
   }
 
  public:
@@ -22400,7 +22400,7 @@ class ApiCallOptimizationChecker {
     v8::Context::Scope context_scope(context);
     // Install regular object that can pass signature checks.
     Local<Object> function_receiver = signature_template->NewInstance();
-    context->Global()->Set(v8_str("function_receiver"), function_receiver);
+    context->Global()->Set(v8_str("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x72\x65\x63\x65\x69\x76\x65\x72"), function_receiver);
     // Get the holder objects.
     Local<Object> inner_global =
         Local<Object>::Cast(context->Global()->GetPrototype());
@@ -22415,10 +22415,10 @@ class ApiCallOptimizationChecker {
       function_holder = Local<Object>::Cast(function_holder->GetPrototype());
       global_holder = Local<Object>::Cast(global_holder->GetPrototype());
     }
-    global_holder->Set(v8_str("g_f"), function);
-    global_holder->SetAccessorProperty(v8_str("g_acc"), function, function);
-    function_holder->Set(v8_str("f"), function);
-    function_holder->SetAccessorProperty(v8_str("acc"), function, function);
+    global_holder->Set(v8_str("\x67\x5f\x66"), function);
+    global_holder->SetAccessorProperty(v8_str("\x67\x5f\x61\x63\x63"), function, function);
+    function_holder->Set(v8_str("\x66"), function);
+    function_holder->SetAccessorProperty(v8_str("\x61\x63\x63"), function, function);
     // Initialize expected values.
     callee = function;
     count = 0;
@@ -22431,13 +22431,13 @@ class ApiCallOptimizationChecker {
       // to test the case that holder != receiver
       if (signature_type == kNoSignature) {
         receiver = Local<Object>::Cast(CompileRun(
-            "var receiver_subclass = {};\n"
-            "receiver_subclass.__proto__ = function_receiver;\n"
-            "receiver_subclass"));
+            "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x5f\x73\x75\x62\x63\x6c\x61\x73\x73\x20\x3d\x20\x7b\x7d\x3b\xa"
+            "\x72\x65\x63\x65\x69\x76\x65\x72\x5f\x73\x75\x62\x63\x6c\x61\x73\x73\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x72\x65\x63\x65\x69\x76\x65\x72\x3b\xa"
+            "\x72\x65\x63\x65\x69\x76\x65\x72\x5f\x73\x75\x62\x63\x6c\x61\x73\x73"));
       } else {
         receiver = Local<Object>::Cast(CompileRun(
-          "var receiver_subclass = function_receiver;\n"
-          "receiver_subclass"));
+          "\x76\x61\x72\x20\x72\x65\x63\x65\x69\x76\x65\x72\x5f\x73\x75\x62\x63\x6c\x61\x73\x73\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x72\x65\x63\x65\x69\x76\x65\x72\x3b\xa"
+          "\x72\x65\x63\x65\x69\x76\x65\x72\x5f\x73\x75\x62\x63\x6c\x61\x73\x73"));
       }
     }
     // With no signature, the holder is not set.
@@ -22447,47 +22447,47 @@ class ApiCallOptimizationChecker {
     if (global) {
       i::SNPrintF(
           wrap_function,
-          "function wrap_f_%d() { var f = g_f; return f(); }\n"
-          "function wrap_get_%d() { return this.g_acc; }\n"
-          "function wrap_set_%d() { return this.g_acc = 1; }\n",
+          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x77\x72\x61\x70\x5f\x66\x5f\x6c\x84\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x66\x20\x3d\x20\x67\x5f\x66\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x28\x29\x3b\x20\x7d\xa"
+          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x77\x72\x61\x70\x5f\x67\x65\x74\x5f\x6c\x84\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x67\x5f\x61\x63\x63\x3b\x20\x7d\xa"
+          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x77\x72\x61\x70\x5f\x73\x65\x74\x5f\x6c\x84\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x67\x5f\x61\x63\x63\x20\x3d\x20\x31\x3b\x20\x7d\xa",
           key, key, key);
     } else {
       i::SNPrintF(
           wrap_function,
-          "function wrap_f_%d() { return receiver_subclass.f(); }\n"
-          "function wrap_get_%d() { return receiver_subclass.acc; }\n"
-          "function wrap_set_%d() { return receiver_subclass.acc = 1; }\n",
+          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x77\x72\x61\x70\x5f\x66\x5f\x6c\x84\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x72\x65\x63\x65\x69\x76\x65\x72\x5f\x73\x75\x62\x63\x6c\x61\x73\x73\x2e\x66\x28\x29\x3b\x20\x7d\xa"
+          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x77\x72\x61\x70\x5f\x67\x65\x74\x5f\x6c\x84\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x72\x65\x63\x65\x69\x76\x65\x72\x5f\x73\x75\x62\x63\x6c\x61\x73\x73\x2e\x61\x63\x63\x3b\x20\x7d\xa"
+          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x77\x72\x61\x70\x5f\x73\x65\x74\x5f\x6c\x84\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x72\x65\x63\x65\x69\x76\x65\x72\x5f\x73\x75\x62\x63\x6c\x61\x73\x73\x2e\x61\x63\x63\x20\x3d\x20\x31\x3b\x20\x7d\xa",
           key, key, key);
     }
     // build source string
     i::ScopedVector<char> source(1000);
     i::SNPrintF(
         source,
-        "%s\n"  // wrap functions
-        "function wrap_f() { return wrap_f_%d(); }\n"
-        "function wrap_get() { return wrap_get_%d(); }\n"
-        "function wrap_set() { return wrap_set_%d(); }\n"
-        "check = function(returned) {\n"
-        "  if (returned !== 'returned') { throw returned; }\n"
-        "}\n"
-        "\n"
-        "check(wrap_f());\n"
-        "check(wrap_f());\n"
-        "%%OptimizeFunctionOnNextCall(wrap_f_%d);\n"
-        "check(wrap_f());\n"
-        "\n"
-        "check(wrap_get());\n"
-        "check(wrap_get());\n"
-        "%%OptimizeFunctionOnNextCall(wrap_get_%d);\n"
-        "check(wrap_get());\n"
-        "\n"
-        "check = function(returned) {\n"
-        "  if (returned !== 1) { throw returned; }\n"
-        "}\n"
-        "check(wrap_set());\n"
-        "check(wrap_set());\n"
-        "%%OptimizeFunctionOnNextCall(wrap_set_%d);\n"
-        "check(wrap_set());\n",
+        "\x6c\xa2\xa"  // wrap functions
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x77\x72\x61\x70\x5f\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x77\x72\x61\x70\x5f\x66\x5f\x6c\x84\x28\x29\x3b\x20\x7d\xa"
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x77\x72\x61\x70\x5f\x67\x65\x74\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x77\x72\x61\x70\x5f\x67\x65\x74\x5f\x6c\x84\x28\x29\x3b\x20\x7d\xa"
+        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x77\x72\x61\x70\x5f\x73\x65\x74\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x77\x72\x61\x70\x5f\x73\x65\x74\x5f\x6c\x84\x28\x29\x3b\x20\x7d\xa"
+        "\x63\x68\x65\x63\x6b\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x72\x65\x74\x75\x72\x6e\x65\x64\x29\x20\x7b\xa"
+        "\x20\x20\x69\x66\x20\x28\x72\x65\x74\x75\x72\x6e\x65\x64\x20\x21\x3d\x3d\x20\x27\x72\x65\x74\x75\x72\x6e\x65\x64\x27\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x72\x65\x74\x75\x72\x6e\x65\x64\x3b\x20\x7d\xa"
+        "\x7d\xa"
+        "\xa"
+        "\x63\x68\x65\x63\x6b\x28\x77\x72\x61\x70\x5f\x66\x28\x29\x29\x3b\xa"
+        "\x63\x68\x65\x63\x6b\x28\x77\x72\x61\x70\x5f\x66\x28\x29\x29\x3b\xa"
+        "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x77\x72\x61\x70\x5f\x66\x5f\x6c\x84\x29\x3b\xa"
+        "\x63\x68\x65\x63\x6b\x28\x77\x72\x61\x70\x5f\x66\x28\x29\x29\x3b\xa"
+        "\xa"
+        "\x63\x68\x65\x63\x6b\x28\x77\x72\x61\x70\x5f\x67\x65\x74\x28\x29\x29\x3b\xa"
+        "\x63\x68\x65\x63\x6b\x28\x77\x72\x61\x70\x5f\x67\x65\x74\x28\x29\x29\x3b\xa"
+        "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x77\x72\x61\x70\x5f\x67\x65\x74\x5f\x6c\x84\x29\x3b\xa"
+        "\x63\x68\x65\x63\x6b\x28\x77\x72\x61\x70\x5f\x67\x65\x74\x28\x29\x29\x3b\xa"
+        "\xa"
+        "\x63\x68\x65\x63\x6b\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x72\x65\x74\x75\x72\x6e\x65\x64\x29\x20\x7b\xa"
+        "\x20\x20\x69\x66\x20\x28\x72\x65\x74\x75\x72\x6e\x65\x64\x20\x21\x3d\x3d\x20\x31\x29\x20\x7b\x20\x74\x68\x72\x6f\x77\x20\x72\x65\x74\x75\x72\x6e\x65\x64\x3b\x20\x7d\xa"
+        "\x7d\xa"
+        "\x63\x68\x65\x63\x6b\x28\x77\x72\x61\x70\x5f\x73\x65\x74\x28\x29\x29\x3b\xa"
+        "\x63\x68\x65\x63\x6b\x28\x77\x72\x61\x70\x5f\x73\x65\x74\x28\x29\x29\x3b\xa"
+        "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x77\x72\x61\x70\x5f\x73\x65\x74\x5f\x6c\x84\x29\x3b\xa"
+        "\x63\x68\x65\x63\x6b\x28\x77\x72\x61\x70\x5f\x73\x65\x74\x28\x29\x29\x3b\xa",
         wrap_function.start(), key, key, key, key, key, key);
     v8::TryCatch try_catch;
     CompileRun(source.start());
@@ -22523,13 +22523,13 @@ TEST(EventLogging) {
   v8::Isolate* isolate = CcTest::isolate();
   isolate->SetEventLogger(StoringEventLoggerCallback);
   v8::internal::HistogramTimer histogramTimer(
-      "V8.Test", 0, 10000, 50,
+      "\x56\x38\x2e\x54\x65\x73\x74", 0, 10000, 50,
       reinterpret_cast<v8::internal::Isolate*>(isolate));
   histogramTimer.Start();
-  CHECK_EQ("V8.Test", last_event_message);
+  CHECK_EQ("\x56\x38\x2e\x54\x65\x73\x74", last_event_message);
   CHECK_EQ(0, last_event_status);
   histogramTimer.Stop();
-  CHECK_EQ("V8.Test", last_event_message);
+  CHECK_EQ("\x56\x38\x2e\x54\x65\x73\x74", last_event_message);
   CHECK_EQ(1, last_event_status);
 }
 
@@ -22560,71 +22560,71 @@ TEST(Promises) {
 
   // Chaining non-pending promises.
   CompileRun(
-      "var x1 = 0;\n"
-      "var x2 = 0;\n"
-      "function f1(x) { x1 = x; return x+1 };\n"
-      "function f2(x) { x2 = x; return x+1 };\n");
-  Handle<Function> f1 = Handle<Function>::Cast(global->Get(v8_str("f1")));
-  Handle<Function> f2 = Handle<Function>::Cast(global->Get(v8_str("f2")));
+      "\x76\x61\x72\x20\x78\x31\x20\x3d\x20\x30\x3b\xa"
+      "\x76\x61\x72\x20\x78\x32\x20\x3d\x20\x30\x3b\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x31\x28\x78\x29\x20\x7b\x20\x78\x31\x20\x3d\x20\x78\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x2b\x31\x20\x7d\x3b\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x32\x28\x78\x29\x20\x7b\x20\x78\x32\x20\x3d\x20\x78\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x2b\x31\x20\x7d\x3b\xa");
+  Handle<Function> f1 = Handle<Function>::Cast(global->Get(v8_str("\x66\x31")));
+  Handle<Function> f2 = Handle<Function>::Cast(global->Get(v8_str("\x66\x32")));
 
   p->Chain(f1);
-  CHECK_EQ(0, global->Get(v8_str("x1"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x31"))->Int32Value());
   isolate->RunMicrotasks();
-  CHECK_EQ(1, global->Get(v8_str("x1"))->Int32Value());
+  CHECK_EQ(1, global->Get(v8_str("\x78\x31"))->Int32Value());
 
   p->Catch(f2);
   isolate->RunMicrotasks();
-  CHECK_EQ(0, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x32"))->Int32Value());
 
   r->Catch(f2);
-  CHECK_EQ(0, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x32"))->Int32Value());
   isolate->RunMicrotasks();
-  CHECK_EQ(2, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(2, global->Get(v8_str("\x78\x32"))->Int32Value());
 
   r->Chain(f1);
   isolate->RunMicrotasks();
-  CHECK_EQ(1, global->Get(v8_str("x1"))->Int32Value());
+  CHECK_EQ(1, global->Get(v8_str("\x78\x31"))->Int32Value());
 
   // Chaining pending promises.
-  CompileRun("x1 = x2 = 0;");
+  CompileRun("\x78\x31\x20\x3d\x20\x78\x32\x20\x3d\x20\x30\x3b");
   pr = v8::Promise::Resolver::New(isolate);
   rr = v8::Promise::Resolver::New(isolate);
 
   pr->GetPromise()->Chain(f1);
   rr->GetPromise()->Catch(f2);
   isolate->RunMicrotasks();
-  CHECK_EQ(0, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(0, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x32"))->Int32Value());
 
   pr->Resolve(v8::Integer::New(isolate, 1));
   rr->Reject(v8::Integer::New(isolate, 2));
-  CHECK_EQ(0, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(0, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x32"))->Int32Value());
 
   isolate->RunMicrotasks();
-  CHECK_EQ(1, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(2, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(1, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(2, global->Get(v8_str("\x78\x32"))->Int32Value());
 
   // Multi-chaining.
-  CompileRun("x1 = x2 = 0;");
+  CompileRun("\x78\x31\x20\x3d\x20\x78\x32\x20\x3d\x20\x30\x3b");
   pr = v8::Promise::Resolver::New(isolate);
   pr->GetPromise()->Chain(f1)->Chain(f2);
   pr->Resolve(v8::Integer::New(isolate, 3));
-  CHECK_EQ(0, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(0, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x32"))->Int32Value());
   isolate->RunMicrotasks();
-  CHECK_EQ(3, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(4, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(3, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(4, global->Get(v8_str("\x78\x32"))->Int32Value());
 
-  CompileRun("x1 = x2 = 0;");
+  CompileRun("\x78\x31\x20\x3d\x20\x78\x32\x20\x3d\x20\x30\x3b");
   rr = v8::Promise::Resolver::New(isolate);
   rr->GetPromise()->Catch(f1)->Chain(f2);
   rr->Reject(v8::Integer::New(isolate, 3));
-  CHECK_EQ(0, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(0, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x32"))->Int32Value());
   isolate->RunMicrotasks();
-  CHECK_EQ(3, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(4, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(3, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(4, global->Get(v8_str("\x78\x32"))->Int32Value());
 }
 
 
@@ -22648,49 +22648,49 @@ TEST(PromiseThen) {
 
   // Chaining non-pending promises.
   CompileRun(
-      "var x1 = 0;\n"
-      "var x2 = 0;\n"
-      "function f1(x) { x1 = x; return x+1 };\n"
-      "function f2(x) { x2 = x; return x+1 };\n");
-  Handle<Function> f1 = Handle<Function>::Cast(global->Get(v8_str("f1")));
-  Handle<Function> f2 = Handle<Function>::Cast(global->Get(v8_str("f2")));
+      "\x76\x61\x72\x20\x78\x31\x20\x3d\x20\x30\x3b\xa"
+      "\x76\x61\x72\x20\x78\x32\x20\x3d\x20\x30\x3b\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x31\x28\x78\x29\x20\x7b\x20\x78\x31\x20\x3d\x20\x78\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x2b\x31\x20\x7d\x3b\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x32\x28\x78\x29\x20\x7b\x20\x78\x32\x20\x3d\x20\x78\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x2b\x31\x20\x7d\x3b\xa");
+  Handle<Function> f1 = Handle<Function>::Cast(global->Get(v8_str("\x66\x31")));
+  Handle<Function> f2 = Handle<Function>::Cast(global->Get(v8_str("\x66\x32")));
 
   // Chain
   q->Chain(f1);
-  CHECK(global->Get(v8_str("x1"))->IsNumber());
-  CHECK_EQ(0, global->Get(v8_str("x1"))->Int32Value());
+  CHECK(global->Get(v8_str("\x78\x31"))->IsNumber());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x31"))->Int32Value());
   isolate->RunMicrotasks();
-  CHECK(!global->Get(v8_str("x1"))->IsNumber());
-  CHECK_EQ(p, global->Get(v8_str("x1")));
+  CHECK(!global->Get(v8_str("\x78\x31"))->IsNumber());
+  CHECK_EQ(p, global->Get(v8_str("\x78\x31")));
 
   // Then
-  CompileRun("x1 = x2 = 0;");
+  CompileRun("\x78\x31\x20\x3d\x20\x78\x32\x20\x3d\x20\x30\x3b");
   q->Then(f1);
-  CHECK_EQ(0, global->Get(v8_str("x1"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x31"))->Int32Value());
   isolate->RunMicrotasks();
-  CHECK_EQ(1, global->Get(v8_str("x1"))->Int32Value());
+  CHECK_EQ(1, global->Get(v8_str("\x78\x31"))->Int32Value());
 
   // Then
-  CompileRun("x1 = x2 = 0;");
+  CompileRun("\x78\x31\x20\x3d\x20\x78\x32\x20\x3d\x20\x30\x3b");
   pr = v8::Promise::Resolver::New(isolate);
   qr = v8::Promise::Resolver::New(isolate);
 
   qr->Resolve(pr);
   qr->GetPromise()->Then(f1)->Then(f2);
 
-  CHECK_EQ(0, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(0, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x32"))->Int32Value());
   isolate->RunMicrotasks();
-  CHECK_EQ(0, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(0, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x32"))->Int32Value());
 
   pr->Resolve(v8::Integer::New(isolate, 3));
 
-  CHECK_EQ(0, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(0, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(0, global->Get(v8_str("\x78\x32"))->Int32Value());
   isolate->RunMicrotasks();
-  CHECK_EQ(3, global->Get(v8_str("x1"))->Int32Value());
-  CHECK_EQ(4, global->Get(v8_str("x2"))->Int32Value());
+  CHECK_EQ(3, global->Get(v8_str("\x78\x31"))->Int32Value());
+  CHECK_EQ(4, global->Get(v8_str("\x78\x32"))->Int32Value());
 }
 
 
@@ -22700,7 +22700,7 @@ TEST(DisallowJavascriptExecutionScope) {
   v8::HandleScope scope(isolate);
   v8::Isolate::DisallowJavascriptExecutionScope no_js(
       isolate, v8::Isolate::DisallowJavascriptExecutionScope::CRASH_ON_FAILURE);
-  CompileRun("2+2");
+  CompileRun("\x32\x2b\x32");
 }
 
 
@@ -22713,7 +22713,7 @@ TEST(AllowJavascriptExecutionScope) {
   v8::Isolate::DisallowJavascriptExecutionScope throw_js(
       isolate, v8::Isolate::DisallowJavascriptExecutionScope::THROW_ON_FAILURE);
   { v8::Isolate::AllowJavascriptExecutionScope yes_js(isolate);
-    CompileRun("1+1");
+    CompileRun("\x31\x2b\x31");
   }
 }
 
@@ -22725,7 +22725,7 @@ TEST(ThrowOnJavascriptExecution) {
   v8::TryCatch try_catch;
   v8::Isolate::DisallowJavascriptExecutionScope throw_js(
       isolate, v8::Isolate::DisallowJavascriptExecutionScope::THROW_ON_FAILURE);
-  CompileRun("1+1");
+  CompileRun("\x31\x2b\x31");
   CHECK(try_catch.HasCaught());
 }
 
@@ -22737,40 +22737,40 @@ TEST(Regress354123) {
 
   v8::Handle<v8::ObjectTemplate> templ = v8::ObjectTemplate::New(isolate);
   templ->SetAccessCheckCallbacks(NamedAccessCounter, IndexedAccessCounter);
-  current->Global()->Set(v8_str("friend"), templ->NewInstance());
+  current->Global()->Set(v8_str("\x66\x72\x69\x65\x6e\x64"), templ->NewInstance());
 
   // Test access using __proto__ from the prototype chain.
   named_access_count = 0;
-  CompileRun("friend.__proto__ = {};");
+  CompileRun("\x66\x72\x69\x65\x6e\x64\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x7b\x7d\x3b");
   CHECK_EQ(2, named_access_count);
-  CompileRun("friend.__proto__;");
+  CompileRun("\x66\x72\x69\x65\x6e\x64\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x3b");
   CHECK_EQ(4, named_access_count);
 
   // Test access using __proto__ as a hijacked function (A).
   named_access_count = 0;
-  CompileRun("var p = Object.prototype;"
-             "var f = Object.getOwnPropertyDescriptor(p, '__proto__').set;"
-             "f.call(friend, {});");
+  CompileRun("\x76\x61\x72\x20\x70\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x3b"
+             "\x76\x61\x72\x20\x66\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x70\x2c\x20\x27\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x27\x29\x2e\x73\x65\x74\x3b"
+             "\x66\x2e\x63\x61\x6c\x6c\x28\x66\x72\x69\x65\x6e\x64\x2c\x20\x7b\x7d\x29\x3b");
   CHECK_EQ(1, named_access_count);
-  CompileRun("var p = Object.prototype;"
-             "var f = Object.getOwnPropertyDescriptor(p, '__proto__').get;"
-             "f.call(friend);");
+  CompileRun("\x76\x61\x72\x20\x70\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x3b"
+             "\x76\x61\x72\x20\x66\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x28\x70\x2c\x20\x27\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x27\x29\x2e\x67\x65\x74\x3b"
+             "\x66\x2e\x63\x61\x6c\x6c\x28\x66\x72\x69\x65\x6e\x64\x29\x3b");
   CHECK_EQ(2, named_access_count);
 
   // Test access using __proto__ as a hijacked function (B).
   named_access_count = 0;
-  CompileRun("var f = Object.prototype.__lookupSetter__('__proto__');"
-             "f.call(friend, {});");
+  CompileRun("\x76\x61\x72\x20\x66\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x6c\x6f\x6f\x6b\x75\x70\x53\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x27\x29\x3b"
+             "\x66\x2e\x63\x61\x6c\x6c\x28\x66\x72\x69\x65\x6e\x64\x2c\x20\x7b\x7d\x29\x3b");
   CHECK_EQ(1, named_access_count);
-  CompileRun("var f = Object.prototype.__lookupGetter__('__proto__');"
-             "f.call(friend);");
+  CompileRun("\x76\x61\x72\x20\x66\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x5f\x5f\x6c\x6f\x6f\x6b\x75\x70\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x27\x29\x3b"
+             "\x66\x2e\x63\x61\x6c\x6c\x28\x66\x72\x69\x65\x6e\x64\x29\x3b");
   CHECK_EQ(2, named_access_count);
 
   // Test access using Object.setPrototypeOf reflective method.
   named_access_count = 0;
-  CompileRun("Object.setPrototypeOf(friend, {});");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x73\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66\x28\x66\x72\x69\x65\x6e\x64\x2c\x20\x7b\x7d\x29\x3b");
   CHECK_EQ(1, named_access_count);
-  CompileRun("Object.getPrototypeOf(friend);");
+  CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66\x28\x66\x72\x69\x65\x6e\x64\x29\x3b");
   CHECK_EQ(2, named_access_count);
 }
 
@@ -22783,7 +22783,7 @@ TEST(CaptureStackTraceForStackOverflow) {
   V8::SetCaptureStackTraceForUncaughtExceptions(
       true, 10, v8::StackTrace::kDetailed);
   v8::TryCatch try_catch;
-  CompileRun("(function f(x) { f(x+1); })(0)");
+  CompileRun("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x66\x28\x78\x2b\x31\x29\x3b\x20\x7d\x29\x28\x30\x29");
   CHECK(try_catch.HasCaught());
 }
 
@@ -22792,9 +22792,9 @@ TEST(ScriptNameAndLineNumber) {
   LocalContext env;
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
-  const char* url = "http://www.foo.com/foo.js";
+  const char* url = "\x68\x74\x74\x70\x3a\x2f\x2f\x77\x77\x77\x2e\x66\x6f\x6f\x2e\x63\x6f\x6d\x2f\x66\x6f\x6f\x2e\x6a\x73";
   v8::ScriptOrigin origin(v8_str(url), v8::Integer::New(isolate, 13));
-  v8::ScriptCompiler::Source script_source(v8_str("var foo;"), origin);
+  v8::ScriptCompiler::Source script_source(v8_str("\x76\x61\x72\x20\x66\x6f\x6f\x3b"), origin);
   Local<Script> script = v8::ScriptCompiler::Compile(
       isolate, &script_source);
   Local<Value> script_name = script->GetUnboundScript()->GetScriptName();
@@ -22830,62 +22830,62 @@ TEST(ScriptSourceURLAndSourceMappingURL) {
   LocalContext env;
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceURL=bar1.js\n", "bar1.js", NULL);
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceMappingURL=bar2.js\n", NULL, "bar2.js");
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x62\x61\x72\x31\x2e\x6a\x73\xa", "\x62\x61\x72\x31\x2e\x6a\x73", NULL);
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x62\x61\x72\x32\x2e\x6a\x73\xa", NULL, "\x62\x61\x72\x32\x2e\x6a\x73");
 
   // Both sourceURL and sourceMappingURL.
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceURL=bar3.js\n"
-                  "//# sourceMappingURL=bar4.js\n", "bar3.js", "bar4.js");
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x62\x61\x72\x33\x2e\x6a\x73\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x62\x61\x72\x34\x2e\x6a\x73\xa", "\x62\x61\x72\x33\x2e\x6a\x73", "\x62\x61\x72\x34\x2e\x6a\x73");
 
   // Two source URLs; the first one is ignored.
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceURL=ignoreme.js\n"
-                  "//# sourceURL=bar5.js\n", "bar5.js", NULL);
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceMappingURL=ignoreme.js\n"
-                  "//# sourceMappingURL=bar6.js\n", NULL, "bar6.js");
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x69\x67\x6e\x6f\x72\x65\x6d\x65\x2e\x6a\x73\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x62\x61\x72\x35\x2e\x6a\x73\xa", "\x62\x61\x72\x35\x2e\x6a\x73", NULL);
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x69\x67\x6e\x6f\x72\x65\x6d\x65\x2e\x6a\x73\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x62\x61\x72\x36\x2e\x6a\x73\xa", NULL, "\x62\x61\x72\x36\x2e\x6a\x73");
 
   // SourceURL or sourceMappingURL in the middle of the script.
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceURL=bar7.js\n"
-                  "function baz() {}\n", "bar7.js", NULL);
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceMappingURL=bar8.js\n"
-                  "function baz() {}\n", NULL, "bar8.js");
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x62\x61\x72\x37\x2e\x6a\x73\xa"
+                  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x7a\x28\x29\x20\x7b\x7d\xa", "\x62\x61\x72\x37\x2e\x6a\x73", NULL);
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x62\x61\x72\x38\x2e\x6a\x73\xa"
+                  "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x7a\x28\x29\x20\x7b\x7d\xa", NULL, "\x62\x61\x72\x38\x2e\x6a\x73");
 
   // Too much whitespace.
-  SourceURLHelper("function foo() {}\n"
-                  "//#  sourceURL=bar9.js\n"
-                  "//#  sourceMappingURL=bar10.js\n", NULL, NULL);
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceURL =bar11.js\n"
-                  "//# sourceMappingURL =bar12.js\n", NULL, NULL);
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x62\x61\x72\x39\x2e\x6a\x73\xa"
+                  "\x2f\x2f\x23\x20\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x62\x61\x72\x31\x30\x2e\x6a\x73\xa", NULL, NULL);
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x20\x3d\x62\x61\x72\x31\x31\x2e\x6a\x73\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x20\x3d\x62\x61\x72\x31\x32\x2e\x6a\x73\xa", NULL, NULL);
 
   // Disallowed characters in value.
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceURL=bar13 .js   \n"
-                  "//# sourceMappingURL=bar14 .js \n",
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x62\x61\x72\x31\x33\x20\x2e\x6a\x73\x20\x20\x20\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x62\x61\x72\x31\x34\x20\x2e\x6a\x73\x20\xa",
                   NULL, NULL);
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceURL=bar15\t.js   \n"
-                  "//# sourceMappingURL=bar16\t.js \n",
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x62\x61\x72\x31\x35\x9\x2e\x6a\x73\x20\x20\x20\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x62\x61\x72\x31\x36\x9\x2e\x6a\x73\x20\xa",
                   NULL, NULL);
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceURL=bar17'.js   \n"
-                  "//# sourceMappingURL=bar18'.js \n",
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x62\x61\x72\x31\x37\x27\x2e\x6a\x73\x20\x20\x20\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x62\x61\x72\x31\x38\x27\x2e\x6a\x73\x20\xa",
                   NULL, NULL);
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceURL=bar19\".js   \n"
-                  "//# sourceMappingURL=bar20\".js \n",
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x62\x61\x72\x31\x39\x22\x2e\x6a\x73\x20\x20\x20\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x62\x61\x72\x32\x30\x22\x2e\x6a\x73\x20\xa",
                   NULL, NULL);
 
   // Not too much whitespace.
-  SourceURLHelper("function foo() {}\n"
-                  "//# sourceURL=  bar21.js   \n"
-                  "//# sourceMappingURL=  bar22.js \n", "bar21.js", "bar22.js");
+  SourceURLHelper("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x55\x52\x4c\x3d\x20\x20\x62\x61\x72\x32\x31\x2e\x6a\x73\x20\x20\x20\xa"
+                  "\x2f\x2f\x23\x20\x73\x6f\x75\x72\x63\x65\x4d\x61\x70\x70\x69\x6e\x67\x55\x52\x4c\x3d\x20\x20\x62\x61\x72\x32\x32\x2e\x6a\x73\x20\xa", "\x62\x61\x72\x32\x31\x2e\x6a\x73", "\x62\x61\x72\x32\x32\x2e\x6a\x73");
 }
 
 
@@ -22894,22 +22894,22 @@ TEST(GetOwnPropertyDescriptor) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
   CompileRun(
-    "var x = { value : 13};"
-    "Object.defineProperty(x, 'p0', {value : 12});"
-    "Object.defineProperty(x, 'p1', {"
-    "  set : function(value) { this.value = value; },"
-    "  get : function() { return this.value; },"
-    "});");
-  Local<Object> x = Local<Object>::Cast(env->Global()->Get(v8_str("x")));
-  Local<Value> desc = x->GetOwnPropertyDescriptor(v8_str("no_prop"));
+    "\x76\x61\x72\x20\x78\x20\x3d\x20\x7b\x20\x76\x61\x6c\x75\x65\x20\x3a\x20\x31\x33\x7d\x3b"
+    "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x78\x2c\x20\x27\x70\x30\x27\x2c\x20\x7b\x76\x61\x6c\x75\x65\x20\x3a\x20\x31\x32\x7d\x29\x3b"
+    "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x78\x2c\x20\x27\x70\x31\x27\x2c\x20\x7b"
+    "\x20\x20\x73\x65\x74\x20\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x76\x61\x6c\x75\x65\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x76\x61\x6c\x75\x65\x20\x3d\x20\x76\x61\x6c\x75\x65\x3b\x20\x7d\x2c"
+    "\x20\x20\x67\x65\x74\x20\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x76\x61\x6c\x75\x65\x3b\x20\x7d\x2c"
+    "\x7d\x29\x3b");
+  Local<Object> x = Local<Object>::Cast(env->Global()->Get(v8_str("\x78")));
+  Local<Value> desc = x->GetOwnPropertyDescriptor(v8_str("\x6e\x6f\x5f\x70\x72\x6f\x70"));
   CHECK(desc->IsUndefined());
-  desc = x->GetOwnPropertyDescriptor(v8_str("p0"));
-  CHECK_EQ(v8_num(12), Local<Object>::Cast(desc)->Get(v8_str("value")));
-  desc = x->GetOwnPropertyDescriptor(v8_str("p1"));
+  desc = x->GetOwnPropertyDescriptor(v8_str("\x70\x30"));
+  CHECK_EQ(v8_num(12), Local<Object>::Cast(desc)->Get(v8_str("\x76\x61\x6c\x75\x65")));
+  desc = x->GetOwnPropertyDescriptor(v8_str("\x70\x31"));
   Local<Function> set =
-    Local<Function>::Cast(Local<Object>::Cast(desc)->Get(v8_str("set")));
+    Local<Function>::Cast(Local<Object>::Cast(desc)->Get(v8_str("\x73\x65\x74")));
   Local<Function> get =
-    Local<Function>::Cast(Local<Object>::Cast(desc)->Get(v8_str("get")));
+    Local<Function>::Cast(Local<Object>::Cast(desc)->Get(v8_str("\x67\x65\x74")));
   CHECK_EQ(v8_num(13), get->Call(x, 0, NULL));
   Handle<Value> args[] = { v8_num(14) };
   set->Call(x, 1, args);

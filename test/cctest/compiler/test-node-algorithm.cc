@@ -19,12 +19,12 @@ using namespace v8::internal;
 using namespace v8::internal::compiler;
 
 static SimpleOperator dummy_operator(IrOpcode::kParameter, Operator::kNoWrite,
-                                     0, 0, "dummy");
+                                     0, 0, "\x64\x75\x6d\x6d\x79");
 
 class PreNodeVisitor : public NullNodeVisitor {
  public:
   GenericGraphVisit::Control Pre(Node* node) {
-    printf("NODE ID: %d\n", node->id());
+    printf("\x4e\x4f\x44\x45\x20\x49\x44\x3a\x20\x6c\x84\xa", node->id());
     nodes_.push_back(node);
     return GenericGraphVisit::CONTINUE;
   }
@@ -35,7 +35,7 @@ class PreNodeVisitor : public NullNodeVisitor {
 class PostNodeVisitor : public NullNodeVisitor {
  public:
   GenericGraphVisit::Control Post(Node* node) {
-    printf("NODE ID: %d\n", node->id());
+    printf("\x4e\x4f\x44\x45\x20\x49\x44\x3a\x20\x6c\x84\xa", node->id());
     nodes_.push_back(node);
     return GenericGraphVisit::CONTINUE;
   }
@@ -175,7 +175,7 @@ TEST(TestUseNodePreOrderVisitCycle) {
 
 struct ReenterNodeVisitor : NullNodeVisitor {
   GenericGraphVisit::Control Pre(Node* node) {
-    printf("[%d] PRE NODE: %d\n", static_cast<int>(nodes_.size()), node->id());
+    printf("\x5b\x6c\x84\x5d\x20\x50\x52\x45\x20\x4e\x4f\x44\x45\x3a\x20\x6c\x84\xa", static_cast<int>(nodes_.size()), node->id());
     nodes_.push_back(node->id());
     int size = static_cast<int>(nodes_.size());
     switch (node->id()) {
@@ -190,20 +190,20 @@ struct ReenterNodeVisitor : NullNodeVisitor {
   }
 
   GenericGraphVisit::Control Post(Node* node) {
-    printf("[%d] POST NODE: %d\n", static_cast<int>(nodes_.size()), node->id());
+    printf("\x5b\x6c\x84\x5d\x20\x50\x4f\x53\x54\x20\x4e\x4f\x44\x45\x3a\x20\x6c\x84\xa", static_cast<int>(nodes_.size()), node->id());
     nodes_.push_back(-node->id());
     return node->id() == 4 ? GenericGraphVisit::REENTER
                            : GenericGraphVisit::CONTINUE;
   }
 
   void PreEdge(Node* from, int index, Node* to) {
-    printf("[%d] PRE EDGE: %d-%d\n", static_cast<int>(edges_.size()),
+    printf("\x5b\x6c\x84\x5d\x20\x50\x52\x45\x20\x45\x44\x47\x45\x3a\x20\x6c\x84\x2d\x6c\x84\xa", static_cast<int>(edges_.size()),
            from->id(), to->id());
     edges_.push_back(std::make_pair(from->id(), to->id()));
   }
 
   void PostEdge(Node* from, int index, Node* to) {
-    printf("[%d] POST EDGE: %d-%d\n", static_cast<int>(edges_.size()),
+    printf("\x5b\x6c\x84\x5d\x20\x50\x4f\x53\x54\x20\x45\x44\x47\x45\x3a\x20\x6c\x84\x2d\x6c\x84\xa", static_cast<int>(edges_.size()),
            from->id(), to->id());
     edges_.push_back(std::make_pair(-from->id(), -to->id()));
   }

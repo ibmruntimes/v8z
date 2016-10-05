@@ -17,7 +17,7 @@ using namespace v8::internal::compiler;
 
 TEST(PipelineAdd) {
   InitializedHandleScope handles;
-  const char* source = "(function(a,b) { return a + b; })";
+  const char* source = "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x62\x3b\x20\x7d\x29";
   Handle<JSFunction> function = v8::Utils::OpenHandle(
       *v8::Handle<v8::Function>::Cast(CompileRun(source)));
   CompilationInfoWithZone info(function);

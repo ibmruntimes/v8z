@@ -145,7 +145,7 @@ static void InitializeVM() {
 #define START_AFTER_RESET()                                                    \
   __ SetStackPointer(csp);                                                     \
   __ PushCalleeSavedRegisters();                                               \
-  __ Debug("Start test.", __LINE__, TRACE_ENABLE | LOG_ALL);
+  __ Debug("\x53\x74\x61\x72\x74\x20\x74\x65\x73\x74\x2e", __LINE__, TRACE_ENABLE | LOG_ALL);
 
 #define START()                                                                \
   RESET();                                                                     \
@@ -155,7 +155,7 @@ static void InitializeVM() {
   simulator.RunFrom(reinterpret_cast<Instruction*>(buf))
 
 #define END()                                                                  \
-  __ Debug("End test.", __LINE__, TRACE_DISABLE | LOG_ALL);                    \
+  __ Debug("\x45\x6e\x64\x20\x74\x65\x73\x74\x2e", __LINE__, TRACE_DISABLE | LOG_ALL);                    \
   core.Dump(&masm);                                                            \
   __ PopCalleeSavedRegisters();                                                \
   __ Ret();                                                                    \
@@ -9985,8 +9985,8 @@ TEST(printf) {
   SETUP_SIZE(BUF_SIZE * 2);
   START();
 
-  char const * test_plain_string = "Printf with no arguments.\n";
-  char const * test_substring = "'This is a substring.'";
+  char const * test_plain_string = "\x50\x72\x69\x6e\x74\x66\x20\x77\x69\x74\x68\x20\x6e\x6f\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x2e\xa";
+  char const * test_substring = "\x27\x54\x68\x69\x73\x20\x69\x73\x20\x61\x20\x73\x75\x62\x73\x74\x72\x69\x6e\x67\x2e\x27";
   RegisterDump before;
 
   // Initialize x29 to the value of the stack pointer. We will use x29 as a
@@ -10024,27 +10024,27 @@ TEST(printf) {
   __ Mov(x12, 500);
 
   // A single character.
-  __ Mov(w13, 'x');
+  __ Mov(w13, '\x78');
 
   // Check that we don't clobber any registers.
   before.Dump(&masm);
 
   __ Printf(test_plain_string);   // NOLINT(runtime/printf)
-  __ Printf("x0: %" PRId64 ", x1: 0x%08" PRIx64 "\n", x0, x1);
-  __ Printf("w5: %" PRId32 ", x5: %" PRId64"\n", w5, x5);
-  __ Printf("d0: %f\n", d0);
-  __ Printf("Test %%s: %s\n", x2);
-  __ Printf("w3(uint32): %" PRIu32 "\nw4(int32): %" PRId32 "\n"
-            "x5(uint64): %" PRIu64 "\nx6(int64): %" PRId64 "\n",
+  __ Printf("\x78\x30\x3a\x20\x25" PRId64 "\x2c\x20\x78\x31\x3a\x20\x30\x78\x25\x30\x38" PRIx64 "\xa", x0, x1);
+  __ Printf("\x77\x35\x3a\x20\x25" PRId32 "\x2c\x20\x78\x35\x3a\x20\x25" PRId64"\xa", w5, x5);
+  __ Printf("\x64\x30\x3a\x20\x6c\x86\xa", d0);
+  __ Printf("\x54\x65\x73\x74\x20\x25\x6c\xa2\x3a\x20\x6c\xa2\xa", x2);
+  __ Printf("\x77\x33\x28\x75\x69\x6e\x74\x33\x32\x29\x3a\x20\x25" PRIu32 "\xa\x77\x34\x28\x69\x6e\x74\x33\x32\x29\x3a\x20\x25" PRId32 "\xa"
+            "\x78\x35\x28\x75\x69\x6e\x74\x36\x34\x29\x3a\x20\x25" PRIu64 "\xa\x78\x36\x28\x69\x6e\x74\x36\x34\x29\x3a\x20\x25" PRId64 "\xa",
             w3, w4, x5, x6);
-  __ Printf("%%f: %f\n%%g: %g\n%%e: %e\n%%E: %E\n", s1, s2, d3, d4);
-  __ Printf("0x%" PRIx32 ", 0x%" PRIx64 "\n", w28, x28);
-  __ Printf("%g\n", d10);
-  __ Printf("%%%%%s%%%c%%\n", x2, w13);
+  __ Printf("\x25\x6c\x86\x3a\x20\x6c\x86\xa\x25\x6c\x87\x3a\x20\x6c\x87\xa\x25\x6c\x85\x3a\x20\x6c\x85\xa\x25\x6c\xc5\x3a\x20\x6c\xc5\xa", s1, s2, d3, d4);
+  __ Printf("\x30\x78\x25" PRIx32 "\x2c\x20\x30\x78\x25" PRIx64 "\xa", w28, x28);
+  __ Printf("\x6c\x87\xa", d10);
+  __ Printf("\x25\x25\x25\x25\x6c\xa2\x25\x25\x6c\x83\x25\x25\xa", x2, w13);
 
   // Print the stack pointer (csp).
   DCHECK(csp.Is(__ StackPointer()));
-  __ Printf("StackPointer(csp): 0x%016" PRIx64 ", 0x%08" PRIx32 "\n",
+  __ Printf("\x53\x74\x61\x63\x6b\x50\x6f\x69\x6e\x74\x65\x72\x28\x63\x73\x70\x29\x3a\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\x2c\x20\x30\x78\x25\x30\x38" PRIx32 "\xa",
             __ StackPointer(), __ StackPointer().W());
 
   // Test with a different stack pointer.
@@ -10052,18 +10052,18 @@ TEST(printf) {
   __ Mov(x29, old_stack_pointer);
   __ SetStackPointer(x29);
   // Print the stack pointer (not csp).
-  __ Printf("StackPointer(not csp): 0x%016" PRIx64 ", 0x%08" PRIx32 "\n",
+  __ Printf("\x53\x74\x61\x63\x6b\x50\x6f\x69\x6e\x74\x65\x72\x28\x6e\x6f\x74\x20\x63\x73\x70\x29\x3a\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\x2c\x20\x30\x78\x25\x30\x38" PRIx32 "\xa",
             __ StackPointer(), __ StackPointer().W());
   __ Mov(old_stack_pointer, __ StackPointer());
   __ SetStackPointer(old_stack_pointer);
 
   // Test with three arguments.
-  __ Printf("3=%u, 4=%u, 5=%u\n", x10, x11, x12);
+  __ Printf("\x33\x3d\x6c\xa4\x2c\x20\x34\x3d\x6c\xa4\x2c\x20\x35\x3d\x6c\xa4\xa", x10, x11, x12);
 
   // Mixed argument types.
-  __ Printf("w3: %" PRIu32 ", s1: %f, x5: %" PRIu64 ", d3: %f\n",
+  __ Printf("\x77\x33\x3a\x20\x25" PRIu32 "\x2c\x20\x73\x31\x3a\x20\x6c\x86\x2c\x20\x78\x35\x3a\x20\x25" PRIu64 "\x2c\x20\x64\x33\x3a\x20\x6c\x86\xa",
             w3, s1, x5, d3);
-  __ Printf("s1: %f, d3: %f, w3: %" PRId32 ", x5: %" PRId64 "\n",
+  __ Printf("\x73\x31\x3a\x20\x6c\x86\x2c\x20\x64\x33\x3a\x20\x6c\x86\x2c\x20\x77\x33\x3a\x20\x25" PRId32 "\x2c\x20\x78\x35\x3a\x20\x25" PRId64 "\xa",
             s1, d3, w3, x5);
 
   END();
@@ -10084,8 +10084,8 @@ TEST(printf_no_preserve) {
   SETUP();
   START();
 
-  char const * test_plain_string = "Printf with no arguments.\n";
-  char const * test_substring = "'This is a substring.'";
+  char const * test_plain_string = "\x50\x72\x69\x6e\x74\x66\x20\x77\x69\x74\x68\x20\x6e\x6f\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x2e\xa";
+  char const * test_substring = "\x27\x54\x68\x69\x73\x20\x69\x73\x20\x61\x20\x73\x75\x62\x73\x74\x72\x69\x6e\x67\x2e\x27";
 
   __ PrintfNoPreserve(test_plain_string);
   __ Mov(x19, x0);
@@ -10093,17 +10093,17 @@ TEST(printf_no_preserve) {
   // Test simple integer arguments.
   __ Mov(x0, 1234);
   __ Mov(x1, 0x1234);
-  __ PrintfNoPreserve("x0: %" PRId64", x1: 0x%08" PRIx64 "\n", x0, x1);
+  __ PrintfNoPreserve("\x78\x30\x3a\x20\x25" PRId64"\x2c\x20\x78\x31\x3a\x20\x30\x78\x25\x30\x38" PRIx64 "\xa", x0, x1);
   __ Mov(x20, x0);
 
   // Test simple floating-point arguments.
   __ Fmov(d0, 1.234);
-  __ PrintfNoPreserve("d0: %f\n", d0);
+  __ PrintfNoPreserve("\x64\x30\x3a\x20\x6c\x86\xa", d0);
   __ Mov(x21, x0);
 
   // Test pointer (string) arguments.
   __ Mov(x2, reinterpret_cast<uintptr_t>(test_substring));
-  __ PrintfNoPreserve("Test %%s: %s\n", x2);
+  __ PrintfNoPreserve("\x54\x65\x73\x74\x20\x25\x6c\xa2\x3a\x20\x6c\xa2\xa", x2);
   __ Mov(x22, x0);
 
   // Test the maximum number of arguments, and sign extension.
@@ -10111,8 +10111,8 @@ TEST(printf_no_preserve) {
   __ Mov(w4, 0xffffffff);
   __ Mov(x5, 0xffffffffffffffff);
   __ Mov(x6, 0xffffffffffffffff);
-  __ PrintfNoPreserve("w3(uint32): %" PRIu32 "\nw4(int32): %" PRId32 "\n"
-                      "x5(uint64): %" PRIu64 "\nx6(int64): %" PRId64 "\n",
+  __ PrintfNoPreserve("\x77\x33\x28\x75\x69\x6e\x74\x33\x32\x29\x3a\x20\x25" PRIu32 "\xa\x77\x34\x28\x69\x6e\x74\x33\x32\x29\x3a\x20\x25" PRId32 "\xa"
+                      "\x78\x35\x28\x75\x69\x6e\x74\x36\x34\x29\x3a\x20\x25" PRIu64 "\xa\x78\x36\x28\x69\x6e\x74\x36\x34\x29\x3a\x20\x25" PRId64 "\xa",
                       w3, w4, x5, x6);
   __ Mov(x23, x0);
 
@@ -10120,16 +10120,16 @@ TEST(printf_no_preserve) {
   __ Fmov(s2, 2.345);
   __ Fmov(d3, 3.456);
   __ Fmov(d4, 4.567);
-  __ PrintfNoPreserve("%%f: %f\n%%g: %g\n%%e: %e\n%%E: %E\n", s1, s2, d3, d4);
+  __ PrintfNoPreserve("\x25\x6c\x86\x3a\x20\x6c\x86\xa\x25\x6c\x87\x3a\x20\x6c\x87\xa\x25\x6c\x85\x3a\x20\x6c\x85\xa\x25\x6c\xc5\x3a\x20\x6c\xc5\xa", s1, s2, d3, d4);
   __ Mov(x24, x0);
 
   // Test printing callee-saved registers.
   __ Mov(x28, 0x123456789abcdef);
-  __ PrintfNoPreserve("0x%" PRIx32 ", 0x%" PRIx64 "\n", w28, x28);
+  __ PrintfNoPreserve("\x30\x78\x25" PRIx32 "\x2c\x20\x30\x78\x25" PRIx64 "\xa", w28, x28);
   __ Mov(x25, x0);
 
   __ Fmov(d10, 42.0);
-  __ PrintfNoPreserve("%g\n", d10);
+  __ PrintfNoPreserve("\x6c\x87\xa", d10);
   __ Mov(x26, x0);
 
   // Test with a different stack pointer.
@@ -10138,7 +10138,7 @@ TEST(printf_no_preserve) {
   __ SetStackPointer(x29);
   // Print the stack pointer (not csp).
   __ PrintfNoPreserve(
-      "StackPointer(not csp): 0x%016" PRIx64 ", 0x%08" PRIx32 "\n",
+      "\x53\x74\x61\x63\x6b\x50\x6f\x69\x6e\x74\x65\x72\x28\x6e\x6f\x74\x20\x63\x73\x70\x29\x3a\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\x2c\x20\x30\x78\x25\x30\x38" PRIx32 "\xa",
       __ StackPointer(), __ StackPointer().W());
   __ Mov(x27, x0);
   __ Mov(old_stack_pointer, __ StackPointer());
@@ -10148,7 +10148,7 @@ TEST(printf_no_preserve) {
   __ Mov(x3, 3);
   __ Mov(x4, 40);
   __ Mov(x5, 500);
-  __ PrintfNoPreserve("3=%u, 4=%u, 5=%u\n", x3, x4, x5);
+  __ PrintfNoPreserve("\x33\x3d\x6c\xa4\x2c\x20\x34\x3d\x6c\xa4\x2c\x20\x35\x3d\x6c\xa4\xa", x3, x4, x5);
   __ Mov(x28, x0);
 
   // Mixed argument types.
@@ -10156,7 +10156,7 @@ TEST(printf_no_preserve) {
   __ Fmov(s1, 1.234);
   __ Mov(x5, 0xffffffffffffffff);
   __ Fmov(d3, 3.456);
-  __ PrintfNoPreserve("w3: %" PRIu32 ", s1: %f, x5: %" PRIu64 ", d3: %f\n",
+  __ PrintfNoPreserve("\x77\x33\x3a\x20\x25" PRIu32 "\x2c\x20\x73\x31\x3a\x20\x6c\x86\x2c\x20\x78\x35\x3a\x20\x25" PRIu64 "\x2c\x20\x64\x33\x3a\x20\x6c\x86\xa",
                       w3, s1, x5, d3);
   __ Mov(x29, x0);
 

@@ -108,7 +108,7 @@ class DebugLocalContext {
     Handle<JSGlobalProxy> global(Handle<JSGlobalProxy>::cast(
         v8::Utils::OpenHandle(*context_->Global())));
     Handle<v8::internal::String> debug_string =
-        factory->InternalizeOneByteString(STATIC_ASCII_VECTOR("debug"));
+        factory->InternalizeOneByteString(STATIC_ASCII_VECTOR("\x64\x65\x62\x75\x67"));
     v8::internal::Runtime::DefineObjectProperty(global, debug_string,
         handle(debug_context->global_proxy(), isolate), DONT_ENUM).Check();
   }
@@ -181,9 +181,9 @@ static int SetBreakPointFromJS(v8::Isolate* isolate,
                                int line, int position) {
   EmbeddedVector<char, SMALL_STRING_BUFFER_SIZE> buffer;
   SNPrintF(buffer,
-           "debug.Debug.setBreakPoint(%s,%d,%d)",
+           "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x73\x65\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x28\x6c\xa2\x2c\x6c\x84\x2c\x6c\x84\x29",
            function_name, line, position);
-  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\0';
+  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\x0';
   v8::Handle<v8::String> str = v8::String::NewFromUtf8(isolate, buffer.start());
   return v8::Script::Compile(str)->Run()->Int32Value();
 }
@@ -196,15 +196,15 @@ static int SetScriptBreakPointByIdFromJS(v8::Isolate* isolate, int script_id,
   if (column >= 0) {
     // Column specified set script break point on precise location.
     SNPrintF(buffer,
-             "debug.Debug.setScriptBreakPointById(%d,%d,%d)",
+             "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x73\x65\x74\x53\x63\x72\x69\x70\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x42\x79\x49\x64\x28\x6c\x84\x2c\x6c\x84\x2c\x6c\x84\x29",
              script_id, line, column);
   } else {
     // Column not specified set script break point on line.
     SNPrintF(buffer,
-             "debug.Debug.setScriptBreakPointById(%d,%d)",
+             "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x73\x65\x74\x53\x63\x72\x69\x70\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x42\x79\x49\x64\x28\x6c\x84\x2c\x6c\x84\x29",
              script_id, line);
   }
-  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\0';
+  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\x0';
   {
     v8::TryCatch try_catch;
     v8::Handle<v8::String> str =
@@ -225,15 +225,15 @@ static int SetScriptBreakPointByNameFromJS(v8::Isolate* isolate,
   if (column >= 0) {
     // Column specified set script break point on precise location.
     SNPrintF(buffer,
-             "debug.Debug.setScriptBreakPointByName(\"%s\",%d,%d)",
+             "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x73\x65\x74\x53\x63\x72\x69\x70\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x42\x79\x4e\x61\x6d\x65\x28\x22\x6c\xa2\x22\x2c\x6c\x84\x2c\x6c\x84\x29",
              script_name, line, column);
   } else {
     // Column not specified set script break point on line.
     SNPrintF(buffer,
-             "debug.Debug.setScriptBreakPointByName(\"%s\",%d)",
+             "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x73\x65\x74\x53\x63\x72\x69\x70\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x42\x79\x4e\x61\x6d\x65\x28\x22\x6c\xa2\x22\x2c\x6c\x84\x29",
              script_name, line);
   }
-  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\0';
+  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\x0';
   {
     v8::TryCatch try_catch;
     v8::Handle<v8::String> str =
@@ -259,9 +259,9 @@ static void ClearBreakPointFromJS(v8::Isolate* isolate,
                                   int break_point_number) {
   EmbeddedVector<char, SMALL_STRING_BUFFER_SIZE> buffer;
   SNPrintF(buffer,
-           "debug.Debug.clearBreakPoint(%d)",
+           "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x63\x6c\x65\x61\x72\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x28\x6c\x84\x29",
            break_point_number);
-  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\0';
+  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\x0';
   v8::Script::Compile(v8::String::NewFromUtf8(isolate, buffer.start()))->Run();
 }
 
@@ -270,9 +270,9 @@ static void EnableScriptBreakPointFromJS(v8::Isolate* isolate,
                                          int break_point_number) {
   EmbeddedVector<char, SMALL_STRING_BUFFER_SIZE> buffer;
   SNPrintF(buffer,
-           "debug.Debug.enableScriptBreakPoint(%d)",
+           "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x65\x6e\x61\x62\x6c\x65\x53\x63\x72\x69\x70\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x28\x6c\x84\x29",
            break_point_number);
-  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\0';
+  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\x0';
   v8::Script::Compile(v8::String::NewFromUtf8(isolate, buffer.start()))->Run();
 }
 
@@ -281,9 +281,9 @@ static void DisableScriptBreakPointFromJS(v8::Isolate* isolate,
                                           int break_point_number) {
   EmbeddedVector<char, SMALL_STRING_BUFFER_SIZE> buffer;
   SNPrintF(buffer,
-           "debug.Debug.disableScriptBreakPoint(%d)",
+           "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x64\x69\x73\x61\x62\x6c\x65\x53\x63\x72\x69\x70\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x28\x6c\x84\x29",
            break_point_number);
-  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\0';
+  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\x0';
   v8::Script::Compile(v8::String::NewFromUtf8(isolate, buffer.start()))->Run();
 }
 
@@ -293,9 +293,9 @@ static void ChangeScriptBreakPointConditionFromJS(v8::Isolate* isolate,
                                                   const char* condition) {
   EmbeddedVector<char, SMALL_STRING_BUFFER_SIZE> buffer;
   SNPrintF(buffer,
-           "debug.Debug.changeScriptBreakPointCondition(%d, \"%s\")",
+           "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x63\x68\x61\x6e\x67\x65\x53\x63\x72\x69\x70\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x43\x6f\x6e\x64\x69\x74\x69\x6f\x6e\x28\x6c\x84\x2c\x20\x22\x6c\xa2\x22\x29",
            break_point_number, condition);
-  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\0';
+  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\x0';
   v8::Script::Compile(v8::String::NewFromUtf8(isolate, buffer.start()))->Run();
 }
 
@@ -305,9 +305,9 @@ static void ChangeScriptBreakPointIgnoreCountFromJS(v8::Isolate* isolate,
                                                     int ignoreCount) {
   EmbeddedVector<char, SMALL_STRING_BUFFER_SIZE> buffer;
   SNPrintF(buffer,
-           "debug.Debug.changeScriptBreakPointIgnoreCount(%d, %d)",
+           "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x63\x68\x61\x6e\x67\x65\x53\x63\x72\x69\x70\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x49\x67\x6e\x6f\x72\x65\x43\x6f\x75\x6e\x74\x28\x6c\x84\x2c\x20\x6c\x84\x29",
            break_point_number, ignoreCount);
-  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\0';
+  buffer[SMALL_STRING_BUFFER_SIZE - 1] = '\x0';
   v8::Script::Compile(v8::String::NewFromUtf8(isolate, buffer.start()))->Run();
 }
 
@@ -325,21 +325,21 @@ static void ChangeBreakOnExceptionFromJS(v8::Isolate* isolate, bool caught,
                                          bool uncaught) {
   if (caught) {
     v8::Script::Compile(
-        v8::String::NewFromUtf8(isolate, "debug.Debug.setBreakOnException()"))
+        v8::String::NewFromUtf8(isolate, "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x73\x65\x74\x42\x72\x65\x61\x6b\x4f\x6e\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x28\x29"))
         ->Run();
   } else {
     v8::Script::Compile(
-        v8::String::NewFromUtf8(isolate, "debug.Debug.clearBreakOnException()"))
+        v8::String::NewFromUtf8(isolate, "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x63\x6c\x65\x61\x72\x42\x72\x65\x61\x6b\x4f\x6e\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x28\x29"))
         ->Run();
   }
   if (uncaught) {
     v8::Script::Compile(
         v8::String::NewFromUtf8(
-            isolate, "debug.Debug.setBreakOnUncaughtException()"))->Run();
+            isolate, "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x73\x65\x74\x42\x72\x65\x61\x6b\x4f\x6e\x55\x6e\x63\x61\x75\x67\x68\x74\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x28\x29"))->Run();
   } else {
     v8::Script::Compile(
         v8::String::NewFromUtf8(
-            isolate, "debug.Debug.clearBreakOnUncaughtException()"))->Run();
+            isolate, "\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x63\x6c\x65\x61\x72\x42\x72\x65\x61\x6b\x4f\x6e\x55\x6e\x63\x61\x75\x67\x68\x74\x45\x78\x63\x65\x70\x74\x69\x6f\x6e\x28\x29"))->Run();
   }
 }
 
@@ -502,80 +502,80 @@ void CheckDebugBreakFunction(DebugLocalContext* env,
 // Source for the JavaScript function which picks out the function
 // name of a frame.
 const char* frame_function_name_source =
-    "function frame_function_name(exec_state, frame_number) {"
-    "  return exec_state.frame(frame_number).func().name();"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x72\x61\x6d\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6e\x61\x6d\x65\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2c\x20\x66\x72\x61\x6d\x65\x5f\x6e\x75\x6d\x62\x65\x72\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x66\x72\x61\x6d\x65\x5f\x6e\x75\x6d\x62\x65\x72\x29\x2e\x66\x75\x6e\x63\x28\x29\x2e\x6e\x61\x6d\x65\x28\x29\x3b"
+    "\x7d";
 v8::Local<v8::Function> frame_function_name;
 
 
 // Source for the JavaScript function which pick out the name of the
 // first argument of a frame.
 const char* frame_argument_name_source =
-    "function frame_argument_name(exec_state, frame_number) {"
-    "  return exec_state.frame(frame_number).argumentName(0);"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x72\x61\x6d\x65\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x5f\x6e\x61\x6d\x65\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2c\x20\x66\x72\x61\x6d\x65\x5f\x6e\x75\x6d\x62\x65\x72\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x66\x72\x61\x6d\x65\x5f\x6e\x75\x6d\x62\x65\x72\x29\x2e\x61\x72\x67\x75\x6d\x65\x6e\x74\x4e\x61\x6d\x65\x28\x30\x29\x3b"
+    "\x7d";
 v8::Local<v8::Function> frame_argument_name;
 
 
 // Source for the JavaScript function which pick out the value of the
 // first argument of a frame.
 const char* frame_argument_value_source =
-    "function frame_argument_value(exec_state, frame_number) {"
-    "  return exec_state.frame(frame_number).argumentValue(0).value_;"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x72\x61\x6d\x65\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x5f\x76\x61\x6c\x75\x65\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2c\x20\x66\x72\x61\x6d\x65\x5f\x6e\x75\x6d\x62\x65\x72\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x66\x72\x61\x6d\x65\x5f\x6e\x75\x6d\x62\x65\x72\x29\x2e\x61\x72\x67\x75\x6d\x65\x6e\x74\x56\x61\x6c\x75\x65\x28\x30\x29\x2e\x76\x61\x6c\x75\x65\x5f\x3b"
+    "\x7d";
 v8::Local<v8::Function> frame_argument_value;
 
 
 // Source for the JavaScript function which pick out the name of the
 // first argument of a frame.
 const char* frame_local_name_source =
-    "function frame_local_name(exec_state, frame_number) {"
-    "  return exec_state.frame(frame_number).localName(0);"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x72\x61\x6d\x65\x5f\x6c\x6f\x63\x61\x6c\x5f\x6e\x61\x6d\x65\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2c\x20\x66\x72\x61\x6d\x65\x5f\x6e\x75\x6d\x62\x65\x72\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x66\x72\x61\x6d\x65\x5f\x6e\x75\x6d\x62\x65\x72\x29\x2e\x6c\x6f\x63\x61\x6c\x4e\x61\x6d\x65\x28\x30\x29\x3b"
+    "\x7d";
 v8::Local<v8::Function> frame_local_name;
 
 
 // Source for the JavaScript function which pick out the value of the
 // first argument of a frame.
 const char* frame_local_value_source =
-    "function frame_local_value(exec_state, frame_number) {"
-    "  return exec_state.frame(frame_number).localValue(0).value_;"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x72\x61\x6d\x65\x5f\x6c\x6f\x63\x61\x6c\x5f\x76\x61\x6c\x75\x65\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2c\x20\x66\x72\x61\x6d\x65\x5f\x6e\x75\x6d\x62\x65\x72\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x66\x72\x61\x6d\x65\x5f\x6e\x75\x6d\x62\x65\x72\x29\x2e\x6c\x6f\x63\x61\x6c\x56\x61\x6c\x75\x65\x28\x30\x29\x2e\x76\x61\x6c\x75\x65\x5f\x3b"
+    "\x7d";
 v8::Local<v8::Function> frame_local_value;
 
 
 // Source for the JavaScript function which picks out the source line for the
 // top frame.
 const char* frame_source_line_source =
-    "function frame_source_line(exec_state) {"
-    "  return exec_state.frame(0).sourceLine();"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x72\x61\x6d\x65\x5f\x73\x6f\x75\x72\x63\x65\x5f\x6c\x69\x6e\x65\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x30\x29\x2e\x73\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x28\x29\x3b"
+    "\x7d";
 v8::Local<v8::Function> frame_source_line;
 
 
 // Source for the JavaScript function which picks out the source column for the
 // top frame.
 const char* frame_source_column_source =
-    "function frame_source_column(exec_state) {"
-    "  return exec_state.frame(0).sourceColumn();"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x72\x61\x6d\x65\x5f\x73\x6f\x75\x72\x63\x65\x5f\x63\x6f\x6c\x75\x6d\x6e\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x30\x29\x2e\x73\x6f\x75\x72\x63\x65\x43\x6f\x6c\x75\x6d\x6e\x28\x29\x3b"
+    "\x7d";
 v8::Local<v8::Function> frame_source_column;
 
 
 // Source for the JavaScript function which picks out the script name for the
 // top frame.
 const char* frame_script_name_source =
-    "function frame_script_name(exec_state) {"
-    "  return exec_state.frame(0).func().script().name();"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x72\x61\x6d\x65\x5f\x73\x63\x72\x69\x70\x74\x5f\x6e\x61\x6d\x65\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x30\x29\x2e\x66\x75\x6e\x63\x28\x29\x2e\x73\x63\x72\x69\x70\x74\x28\x29\x2e\x6e\x61\x6d\x65\x28\x29\x3b"
+    "\x7d";
 v8::Local<v8::Function> frame_script_name;
 
 
 // Source for the JavaScript function which returns the number of frames.
 static const char* frame_count_source =
-    "function frame_count(exec_state) {"
-    "  return exec_state.frameCount();"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x72\x61\x6d\x65\x5f\x63\x6f\x75\x6e\x74\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x43\x6f\x75\x6e\x74\x28\x29\x3b"
+    "\x7d";
 v8::Handle<v8::Function> frame_count;
 
 
@@ -613,7 +613,7 @@ static void DebugEventBreakPointHitCount(
       v8::Handle<v8::Value> result = frame_function_name->Call(exec_state,
                                                                argc, argv);
       if (result->IsUndefined()) {
-        last_function_hit[0] = '\0';
+        last_function_hit[0] = '\x0';
       } else {
         CHECK(result->IsString());
         v8::Handle<v8::String> function_name(result->ToString());
@@ -648,7 +648,7 @@ static void DebugEventBreakPointHitCount(
       v8::Handle<v8::Value> result = frame_script_name->Call(exec_state,
                                                              argc, argv);
       if (result->IsUndefined()) {
-        last_script_name_hit[0] = '\0';
+        last_script_name_hit[0] = '\x0';
       } else {
         CHECK(result->IsString());
         v8::Handle<v8::String> script_name(result->ToString());
@@ -695,7 +695,7 @@ static void DebugEventCounter(
 
     // Check whether the exception was uncaught.
     v8::Local<v8::String> fun_name =
-        v8::String::NewFromUtf8(CcTest::isolate(), "uncaught");
+        v8::String::NewFromUtf8(CcTest::isolate(), "\x75\x6e\x63\x61\x75\x67\x68\x74");
     v8::Local<v8::Function> fun =
         v8::Local<v8::Function>::Cast(event_data->Get(fun_name));
     v8::Local<v8::Value> result = fun->Call(event_data, 0, NULL);
@@ -735,9 +735,9 @@ struct EvaluateCheck* checks = NULL;
 // Source for The JavaScript function which can do the evaluation when a break
 // point is hit.
 const char* evaluate_check_source =
-    "function evaluate_check(exec_state, expr, expected) {"
-    "  return exec_state.frame(0).evaluate(expr).value() === expected;"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x76\x61\x6c\x75\x61\x74\x65\x5f\x63\x68\x65\x63\x6b\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2c\x20\x65\x78\x70\x72\x2c\x20\x65\x78\x70\x65\x63\x74\x65\x64\x29\x20\x7b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x30\x29\x2e\x65\x76\x61\x6c\x75\x61\x74\x65\x28\x65\x78\x70\x72\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x20\x3d\x3d\x3d\x20\x65\x78\x70\x65\x63\x74\x65\x64\x3b"
+    "\x7d";
 v8::Local<v8::Function> evaluate_check_function;
 
 // The actual debug event described by the longer comment above.
@@ -760,7 +760,7 @@ static void DebugEventEvaluate(
           evaluate_check_function->Call(exec_state, argc, argv);
       if (!result->IsTrue()) {
         v8::String::Utf8Value utf8(checks[i].expected->ToString());
-        V8_Fatal(__FILE__, __LINE__, "%s != %s", checks[i].expr, *utf8);
+        V8_Fatal(__FILE__, __LINE__, "\x6c\xa2\x20\x21\x3d\x20\x6c\xa2", checks[i].expr, *utf8);
       }
     }
   }
@@ -967,18 +967,18 @@ TEST(DebugStub) {
   v8::HandleScope scope(env->GetIsolate());
 
   CheckDebugBreakFunction(&env,
-                          "function f1(){}", "f1",
+                          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x31\x28\x29\x7b\x7d", "\x66\x31",
                           0,
                           v8::internal::RelocInfo::JS_RETURN,
                           NULL);
   CheckDebugBreakFunction(&env,
-                          "function f2(){x=1;}", "f2",
+                          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x32\x28\x29\x7b\x78\x3d\x31\x3b\x7d", "\x66\x32",
                           0,
                           v8::internal::RelocInfo::CODE_TARGET,
                           CcTest::i_isolate()->builtins()->builtin(
                               Builtins::kStoreIC_DebugBreak));
   CheckDebugBreakFunction(&env,
-                          "function f3(){var a=x;}", "f3",
+                          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x33\x28\x29\x7b\x76\x61\x72\x20\x61\x3d\x78\x3b\x7d", "\x66\x33",
                           0,
                           v8::internal::RelocInfo::CODE_TARGET,
                           CcTest::i_isolate()->builtins()->builtin(
@@ -991,16 +991,16 @@ TEST(DebugStub) {
 #if !defined (__arm__) && !defined(__thumb__)
   CheckDebugBreakFunction(
       &env,
-      "function f4(){var index='propertyName'; var a={}; a[index] = 'x';}",
-      "f4",
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x34\x28\x29\x7b\x76\x61\x72\x20\x69\x6e\x64\x65\x78\x3d\x27\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x27\x3b\x20\x76\x61\x72\x20\x61\x3d\x7b\x7d\x3b\x20\x61\x5b\x69\x6e\x64\x65\x78\x5d\x20\x3d\x20\x27\x78\x27\x3b\x7d",
+      "\x66\x34",
       0,
       v8::internal::RelocInfo::CODE_TARGET,
       CcTest::i_isolate()->builtins()->builtin(
           Builtins::kKeyedStoreIC_DebugBreak));
   CheckDebugBreakFunction(
       &env,
-      "function f5(){var index='propertyName'; var a={}; return a[index];}",
-      "f5",
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x35\x28\x29\x7b\x76\x61\x72\x20\x69\x6e\x64\x65\x78\x3d\x27\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x27\x3b\x20\x76\x61\x72\x20\x61\x3d\x7b\x7d\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x5b\x69\x6e\x64\x65\x78\x5d\x3b\x7d",
+      "\x66\x35",
       0,
       v8::internal::RelocInfo::CODE_TARGET,
       CcTest::i_isolate()->builtins()->builtin(
@@ -1009,8 +1009,8 @@ TEST(DebugStub) {
 
   CheckDebugBreakFunction(
       &env,
-      "function f6(a){return a==null;}",
-      "f6",
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x36\x28\x61\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x61\x3d\x3d\x6e\x75\x6c\x6c\x3b\x7d",
+      "\x66\x36",
       0,
       v8::internal::RelocInfo::CODE_TARGET,
       CcTest::i_isolate()->builtins()->builtin(
@@ -1050,9 +1050,9 @@ TEST(DebugInfo) {
   v8::HandleScope scope(env->GetIsolate());
   // Create a couple of functions for the test.
   v8::Local<v8::Function> foo =
-      CompileFunction(&env, "function foo(){}", "foo");
+      CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x7d", "\x66\x6f\x6f");
   v8::Local<v8::Function> bar =
-      CompileFunction(&env, "function bar(){}", "bar");
+      CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x7b\x7d", "\x62\x61\x72");
   // Initially no functions are debugged.
   CHECK_EQ(0, v8::internal::GetDebuggedFunctions()->length());
   CHECK(!HasDebugInfo(foo));
@@ -1088,9 +1088,9 @@ TEST(BreakPointICStore) {
 
   v8::Debug::SetDebugEventListener(DebugEventBreakPointHitCount);
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              "function foo(){bar=0;}"))->Run();
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x62\x61\x72\x3d\x30\x3b\x7d"))->Run();
   v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "foo")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f")));
 
   // Run without breakpoints.
   foo->Call(env->Global(), 0, NULL);
@@ -1119,13 +1119,13 @@ TEST(BreakPointICLoad) {
   DebugLocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::Debug::SetDebugEventListener(DebugEventBreakPointHitCount);
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "bar=1"))
+  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "\x62\x61\x72\x3d\x31"))
       ->Run();
   v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(), "function foo(){var x=bar;}"))
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x76\x61\x72\x20\x78\x3d\x62\x61\x72\x3b\x7d"))
       ->Run();
   v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "foo")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f")));
 
   // Run without breakpoints.
   foo->Call(env->Global(), 0, NULL);
@@ -1155,11 +1155,11 @@ TEST(BreakPointICCall) {
   v8::HandleScope scope(env->GetIsolate());
   v8::Debug::SetDebugEventListener(DebugEventBreakPointHitCount);
   v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(), "function bar(){}"))->Run();
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x7b\x7d"))->Run();
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              "function foo(){bar();}"))->Run();
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x62\x61\x72\x28\x29\x3b\x7d"))->Run();
   v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "foo")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f")));
 
   // Run without breakpoints.
   foo->Call(env->Global(), 0, NULL);
@@ -1189,13 +1189,13 @@ TEST(BreakPointICCallWithGC) {
   v8::HandleScope scope(env->GetIsolate());
   v8::Debug::SetDebugEventListener(DebugEventBreakPointCollectGarbage);
   v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(), "function bar(){return 1;}"))
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x31\x3b\x7d"))
       ->Run();
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              "function foo(){return bar();}"))
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x62\x61\x72\x28\x29\x3b\x7d"))
       ->Run();
   v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "foo")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f")));
 
   // Run without breakpoints.
   CHECK_EQ(1, foo->Call(env->Global(), 0, NULL)->Int32Value());
@@ -1225,13 +1225,13 @@ TEST(BreakPointConstructCallWithGC) {
   v8::HandleScope scope(env->GetIsolate());
   v8::Debug::SetDebugEventListener(DebugEventBreakPointCollectGarbage);
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              "function bar(){ this.x = 1;}"))
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x7b\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x31\x3b\x7d"))
       ->Run();
   v8::Script::Compile(
       v8::String::NewFromUtf8(env->GetIsolate(),
-                              "function foo(){return new bar(1).x;}"))->Run();
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x6e\x65\x77\x20\x62\x61\x72\x28\x31\x29\x2e\x78\x3b\x7d"))->Run();
   v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "foo")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f")));
 
   // Run without breakpoints.
   CHECK_EQ(1, foo->Call(env->Global(), 0, NULL)->Int32Value());
@@ -1264,17 +1264,17 @@ TEST(BreakPointReturn) {
   // a break point.
   frame_source_line = CompileFunction(&env,
                                       frame_source_line_source,
-                                      "frame_source_line");
+                                      "\x66\x72\x61\x6d\x65\x5f\x73\x6f\x75\x72\x63\x65\x5f\x6c\x69\x6e\x65");
   frame_source_column = CompileFunction(&env,
                                         frame_source_column_source,
-                                        "frame_source_column");
+                                        "\x66\x72\x61\x6d\x65\x5f\x73\x6f\x75\x72\x63\x65\x5f\x63\x6f\x6c\x75\x6d\x6e");
 
 
   v8::Debug::SetDebugEventListener(DebugEventBreakPointHitCount);
   v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(), "function foo(){}"))->Run();
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x7d"))->Run();
   v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "foo")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f")));
 
   // Run without breakpoints.
   foo->Call(env->Global(), 0, NULL);
@@ -1323,27 +1323,27 @@ TEST(GCDuringBreakPointProcessing) {
   v8::Local<v8::Function> foo;
 
   // Test IC store break point with garbage collection.
-  foo = CompileFunction(&env, "function foo(){bar=0;}", "foo");
+  foo = CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x62\x61\x72\x3d\x30\x3b\x7d", "\x66\x6f\x6f");
   SetBreakPoint(foo, 0);
   CallWithBreakPoints(env->Global(), foo, 1, 10);
 
   // Test IC load break point with garbage collection.
-  foo = CompileFunction(&env, "bar=1;function foo(){var x=bar;}", "foo");
+  foo = CompileFunction(&env, "\x62\x61\x72\x3d\x31\x3b\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x76\x61\x72\x20\x78\x3d\x62\x61\x72\x3b\x7d", "\x66\x6f\x6f");
   SetBreakPoint(foo, 0);
   CallWithBreakPoints(env->Global(), foo, 1, 10);
 
   // Test IC call break point with garbage collection.
-  foo = CompileFunction(&env, "function bar(){};function foo(){bar();}", "foo");
+  foo = CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x7b\x7d\x3b\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x62\x61\x72\x28\x29\x3b\x7d", "\x66\x6f\x6f");
   SetBreakPoint(foo, 0);
   CallWithBreakPoints(env->Global(), foo, 1, 10);
 
   // Test return break point with garbage collection.
-  foo = CompileFunction(&env, "function foo(){}", "foo");
+  foo = CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x7d", "\x66\x6f\x6f");
   SetBreakPoint(foo, 0);
   CallWithBreakPoints(env->Global(), foo, 1, 25);
 
   // Test debug break slot break point with garbage collection.
-  foo = CompileFunction(&env, "function foo(){var a;}", "foo");
+  foo = CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x76\x61\x72\x20\x61\x3b\x7d", "\x66\x6f\x6f");
   SetBreakPoint(foo, 0);
   CallWithBreakPoints(env->Global(), foo, 1, 25);
 
@@ -1387,42 +1387,42 @@ TEST(BreakPointSurviveGC) {
 
   // Test IC store break point with garbage collection.
   {
-    CompileFunction(&env, "function foo(){}", "foo");
-    foo = CompileFunction(&env, "function foo(){bar=0;}", "foo");
+    CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x7d", "\x66\x6f\x6f");
+    foo = CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x62\x61\x72\x3d\x30\x3b\x7d", "\x66\x6f\x6f");
     SetBreakPoint(foo, 0);
   }
   CallAndGC(env->Global(), foo);
 
   // Test IC load break point with garbage collection.
   {
-    CompileFunction(&env, "function foo(){}", "foo");
-    foo = CompileFunction(&env, "bar=1;function foo(){var x=bar;}", "foo");
+    CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x7d", "\x66\x6f\x6f");
+    foo = CompileFunction(&env, "\x62\x61\x72\x3d\x31\x3b\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x76\x61\x72\x20\x78\x3d\x62\x61\x72\x3b\x7d", "\x66\x6f\x6f");
     SetBreakPoint(foo, 0);
   }
   CallAndGC(env->Global(), foo);
 
   // Test IC call break point with garbage collection.
   {
-    CompileFunction(&env, "function foo(){}", "foo");
+    CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x7d", "\x66\x6f\x6f");
     foo = CompileFunction(&env,
-                          "function bar(){};function foo(){bar();}",
-                          "foo");
+                          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x7b\x7d\x3b\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x62\x61\x72\x28\x29\x3b\x7d",
+                          "\x66\x6f\x6f");
     SetBreakPoint(foo, 0);
   }
   CallAndGC(env->Global(), foo);
 
   // Test return break point with garbage collection.
   {
-    CompileFunction(&env, "function foo(){}", "foo");
-    foo = CompileFunction(&env, "function foo(){}", "foo");
+    CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x7d", "\x66\x6f\x6f");
+    foo = CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x7d", "\x66\x6f\x6f");
     SetBreakPoint(foo, 0);
   }
   CallAndGC(env->Global(), foo);
 
   // Test non IC break point with garbage collection.
   {
-    CompileFunction(&env, "function foo(){}", "foo");
-    foo = CompileFunction(&env, "function foo(){var bar=0;}", "foo");
+    CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x7d", "\x66\x6f\x6f");
+    foo = CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x76\x61\x72\x20\x62\x61\x72\x3d\x30\x3b\x7d", "\x66\x6f\x6f");
     SetBreakPoint(foo, 0);
   }
   CallAndGC(env->Global(), foo);
@@ -1442,29 +1442,29 @@ TEST(BreakPointThroughJavaScript) {
 
   v8::Debug::SetDebugEventListener(DebugEventBreakPointHitCount);
   v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(), "function bar(){}"))->Run();
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x7b\x7d"))->Run();
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              "function foo(){bar();bar();}"))
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x62\x61\x72\x28\x29\x3b\x62\x61\x72\x28\x29\x3b\x7d"))
       ->Run();
   //                                               012345678901234567890
   //                                                         1         2
   // Break points are set at position 3 and 9
   v8::Local<v8::Script> foo =
-      v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "foo()"));
+      v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f\x28\x29"));
 
   // Run without breakpoints.
   foo->Run();
   CHECK_EQ(0, break_point_hit_count);
 
   // Run with one breakpoint
-  int bp1 = SetBreakPointFromJS(env->GetIsolate(), "foo", 0, 3);
+  int bp1 = SetBreakPointFromJS(env->GetIsolate(), "\x66\x6f\x6f", 0, 3);
   foo->Run();
   CHECK_EQ(1, break_point_hit_count);
   foo->Run();
   CHECK_EQ(2, break_point_hit_count);
 
   // Run with two breakpoints
-  int bp2 = SetBreakPointFromJS(env->GetIsolate(), "foo", 0, 9);
+  int bp2 = SetBreakPointFromJS(env->GetIsolate(), "\x66\x6f\x6f", 0, 9);
   foo->Run();
   CHECK_EQ(4, break_point_hit_count);
   foo->Run();
@@ -1503,32 +1503,32 @@ TEST(ScriptBreakPointByNameThroughJavaScript) {
 
   v8::Local<v8::String> script = v8::String::NewFromUtf8(
     env->GetIsolate(),
-    "function f() {\n"
-    "  function h() {\n"
-    "    a = 0;  // line 2\n"
-    "  }\n"
-    "  b = 1;  // line 4\n"
-    "  return h();\n"
-    "}\n"
-    "\n"
-    "function g() {\n"
-    "  function h() {\n"
-    "    a = 0;\n"
-    "  }\n"
-    "  b = 2;  // line 12\n"
-    "  h();\n"
-    "  b = 3;  // line 14\n"
-    "  f();    // line 15\n"
-    "}");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+    "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x29\x20\x7b\xa"
+    "\x20\x20\x20\x20\x61\x20\x3d\x20\x30\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x32\xa"
+    "\x20\x20\x7d\xa"
+    "\x20\x20\x62\x20\x3d\x20\x31\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x34\xa"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x68\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\xa"
+    "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x29\x20\x7b\xa"
+    "\x20\x20\x20\x20\x61\x20\x3d\x20\x30\x3b\xa"
+    "\x20\x20\x7d\xa"
+    "\x20\x20\x62\x20\x3d\x20\x32\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\x32\xa"
+    "\x20\x20\x68\x28\x29\x3b\xa"
+    "\x20\x20\x62\x20\x3d\x20\x33\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\x34\xa"
+    "\x20\x20\x66\x28\x29\x3b\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\x35\xa"
+    "\x7d");
 
   // Compile the script and get the two functions.
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "test"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74"));
   v8::Script::Compile(script, &origin)->Run();
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   v8::Local<v8::Function> g = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "g")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x67")));
 
   // Call f and g without break points.
   break_point_hit_count = 0;
@@ -1538,7 +1538,7 @@ TEST(ScriptBreakPointByNameThroughJavaScript) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Call f and g with break point on line 12.
-  int sbp1 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 12, 0);
+  int sbp1 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 12, 0);
   break_point_hit_count = 0;
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(0, break_point_hit_count);
@@ -1554,7 +1554,7 @@ TEST(ScriptBreakPointByNameThroughJavaScript) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Call f and g with break point on line 2.
-  int sbp2 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 2, 0);
+  int sbp2 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 2, 0);
   break_point_hit_count = 0;
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(1, break_point_hit_count);
@@ -1562,10 +1562,10 @@ TEST(ScriptBreakPointByNameThroughJavaScript) {
   CHECK_EQ(2, break_point_hit_count);
 
   // Call f and g with break point on line 2, 4, 12, 14 and 15.
-  int sbp3 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 4, 0);
-  int sbp4 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 12, 0);
-  int sbp5 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 14, 0);
-  int sbp6 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 15, 0);
+  int sbp3 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 4, 0);
+  int sbp4 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 12, 0);
+  int sbp5 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 14, 0);
+  int sbp6 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 15, 0);
   break_point_hit_count = 0;
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(2, break_point_hit_count);
@@ -1607,33 +1607,33 @@ TEST(ScriptBreakPointByIdThroughJavaScript) {
 
   v8::Local<v8::String> source = v8::String::NewFromUtf8(
     env->GetIsolate(),
-    "function f() {\n"
-    "  function h() {\n"
-    "    a = 0;  // line 2\n"
-    "  }\n"
-    "  b = 1;  // line 4\n"
-    "  return h();\n"
-    "}\n"
-    "\n"
-    "function g() {\n"
-    "  function h() {\n"
-    "    a = 0;\n"
-    "  }\n"
-    "  b = 2;  // line 12\n"
-    "  h();\n"
-    "  b = 3;  // line 14\n"
-    "  f();    // line 15\n"
-    "}");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+    "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x29\x20\x7b\xa"
+    "\x20\x20\x20\x20\x61\x20\x3d\x20\x30\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x32\xa"
+    "\x20\x20\x7d\xa"
+    "\x20\x20\x62\x20\x3d\x20\x31\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x34\xa"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x68\x28\x29\x3b\xa"
+    "\x7d\xa"
+    "\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\xa"
+    "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x29\x20\x7b\xa"
+    "\x20\x20\x20\x20\x61\x20\x3d\x20\x30\x3b\xa"
+    "\x20\x20\x7d\xa"
+    "\x20\x20\x62\x20\x3d\x20\x32\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\x32\xa"
+    "\x20\x20\x68\x28\x29\x3b\xa"
+    "\x20\x20\x62\x20\x3d\x20\x33\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\x34\xa"
+    "\x20\x20\x66\x28\x29\x3b\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\x35\xa"
+    "\x7d");
 
   // Compile the script and get the two functions.
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "test"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74"));
   v8::Local<v8::Script> script = v8::Script::Compile(source, &origin);
   script->Run();
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   v8::Local<v8::Function> g = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "g")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x67")));
 
   // Get the script id knowing that internally it is a 32 integer.
   int script_id = script->GetUnboundScript()->GetId();
@@ -1716,19 +1716,19 @@ TEST(EnableDisableScriptBreakPoint) {
 
   v8::Local<v8::String> script = v8::String::NewFromUtf8(
     env->GetIsolate(),
-    "function f() {\n"
-    "  a = 0;  // line 1\n"
-    "};");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+    "\x20\x20\x61\x20\x3d\x20\x30\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\xa"
+    "\x7d\x3b");
 
   // Compile the script and get function f.
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "test"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74"));
   v8::Script::Compile(script, &origin)->Run();
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   // Set script break point on line 1 (in function f).
-  int sbp = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 1, 0);
+  int sbp = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 1, 0);
 
   // Call f while enabeling and disabling the script break point.
   break_point_hit_count = 0;
@@ -1750,7 +1750,7 @@ TEST(EnableDisableScriptBreakPoint) {
   // Reload the script and get f again checking that the disabeling survives.
   v8::Script::Compile(script, &origin)->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(2, break_point_hit_count);
 
@@ -1774,36 +1774,36 @@ TEST(ConditionalScriptBreakPoint) {
 
   v8::Local<v8::String> script = v8::String::NewFromUtf8(
     env->GetIsolate(),
-    "count = 0;\n"
-    "function f() {\n"
-    "  g(count++);  // line 2\n"
-    "};\n"
-    "function g(x) {\n"
-    "  var a=x;  // line 5\n"
-    "};");
+    "\x63\x6f\x75\x6e\x74\x20\x3d\x20\x30\x3b\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+    "\x20\x20\x67\x28\x63\x6f\x75\x6e\x74\x2b\x2b\x29\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x32\xa"
+    "\x7d\x3b\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x78\x29\x20\x7b\xa"
+    "\x20\x20\x76\x61\x72\x20\x61\x3d\x78\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x35\xa"
+    "\x7d\x3b");
 
   // Compile the script and get function f.
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "test"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74"));
   v8::Script::Compile(script, &origin)->Run();
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   // Set script break point on line 5 (in function g).
-  int sbp1 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 5, 0);
+  int sbp1 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 5, 0);
 
   // Call f with different conditions on the script break point.
   break_point_hit_count = 0;
-  ChangeScriptBreakPointConditionFromJS(env->GetIsolate(), sbp1, "false");
+  ChangeScriptBreakPointConditionFromJS(env->GetIsolate(), sbp1, "\x66\x61\x6c\x73\x65");
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(0, break_point_hit_count);
 
-  ChangeScriptBreakPointConditionFromJS(env->GetIsolate(), sbp1, "true");
+  ChangeScriptBreakPointConditionFromJS(env->GetIsolate(), sbp1, "\x74\x72\x75\x65");
   break_point_hit_count = 0;
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(1, break_point_hit_count);
 
-  ChangeScriptBreakPointConditionFromJS(env->GetIsolate(), sbp1, "x % 2 == 0");
+  ChangeScriptBreakPointConditionFromJS(env->GetIsolate(), sbp1, "\x78\x20\x25\x20\x32\x20\x3d\x3d\x20\x30");
   break_point_hit_count = 0;
   for (int i = 0; i < 10; i++) {
     f->Call(env->Global(), 0, NULL);
@@ -1813,7 +1813,7 @@ TEST(ConditionalScriptBreakPoint) {
   // Reload the script and get f again checking that the condition survives.
   v8::Script::Compile(script, &origin)->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   break_point_hit_count = 0;
   for (int i = 0; i < 10; i++) {
@@ -1837,19 +1837,19 @@ TEST(ScriptBreakPointIgnoreCount) {
 
   v8::Local<v8::String> script = v8::String::NewFromUtf8(
     env->GetIsolate(),
-    "function f() {\n"
-    "  a = 0;  // line 1\n"
-    "};");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+    "\x20\x20\x61\x20\x3d\x20\x30\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\xa"
+    "\x7d\x3b");
 
   // Compile the script and get function f.
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "test"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74"));
   v8::Script::Compile(script, &origin)->Run();
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   // Set script break point on line 1 (in function f).
-  int sbp = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 1, 0);
+  int sbp = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 1, 0);
 
   // Call f with different ignores on the script break point.
   break_point_hit_count = 0;
@@ -1869,7 +1869,7 @@ TEST(ScriptBreakPointIgnoreCount) {
   // Reload the script and get f again checking that the ignore survives.
   v8::Script::Compile(script, &origin)->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   break_point_hit_count = 0;
   for (int i = 0; i < 10; i++) {
@@ -1894,26 +1894,26 @@ TEST(ScriptBreakPointReload) {
   v8::Local<v8::Function> f;
   v8::Local<v8::String> script = v8::String::NewFromUtf8(
     env->GetIsolate(),
-    "function f() {\n"
-    "  function h() {\n"
-    "    a = 0;  // line 2\n"
-    "  }\n"
-    "  b = 1;  // line 4\n"
-    "  return h();\n"
-    "}");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+    "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x29\x20\x7b\xa"
+    "\x20\x20\x20\x20\x61\x20\x3d\x20\x30\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x32\xa"
+    "\x20\x20\x7d\xa"
+    "\x20\x20\x62\x20\x3d\x20\x31\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x34\xa"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x68\x28\x29\x3b\xa"
+    "\x7d");
 
   v8::ScriptOrigin origin_1 =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "1"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x31"));
   v8::ScriptOrigin origin_2 =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "2"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x32"));
 
   // Set a script break point before the script is loaded.
-  SetScriptBreakPointByNameFromJS(env->GetIsolate(), "1", 2, 0);
+  SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x31", 2, 0);
 
   // Compile the script and get the function.
   v8::Script::Compile(script, &origin_1)->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   // Call f and check that the script break point is active.
   break_point_hit_count = 0;
@@ -1924,7 +1924,7 @@ TEST(ScriptBreakPointReload) {
   // function.
   v8::Script::Compile(script, &origin_2)->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   // Call f and check that no break points are set.
   break_point_hit_count = 0;
@@ -1934,7 +1934,7 @@ TEST(ScriptBreakPointReload) {
   // Compile the script again and get the function.
   v8::Script::Compile(script, &origin_1)->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   // Call f and check that the script break point is active.
   break_point_hit_count = 0;
@@ -1958,30 +1958,30 @@ TEST(ScriptBreakPointMultiple) {
   v8::Local<v8::Function> f;
   v8::Local<v8::String> script_f =
       v8::String::NewFromUtf8(env->GetIsolate(),
-                              "function f() {\n"
-                              "  a = 0;  // line 1\n"
-                              "}");
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+                              "\x20\x20\x61\x20\x3d\x20\x30\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\xa"
+                              "\x7d");
 
   v8::Local<v8::Function> g;
   v8::Local<v8::String> script_g =
       v8::String::NewFromUtf8(env->GetIsolate(),
-                              "function g() {\n"
-                              "  b = 0;  // line 1\n"
-                              "}");
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\xa"
+                              "\x20\x20\x62\x20\x3d\x20\x30\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\xa"
+                              "\x7d");
 
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "test"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74"));
 
   // Set a script break point before the scripts are loaded.
-  int sbp = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 1, 0);
+  int sbp = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 1, 0);
 
   // Compile the scripts with same script data and get the functions.
   v8::Script::Compile(script_f, &origin)->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   v8::Script::Compile(script_g, &origin)->Run();
   g = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "g")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x67")));
 
   // Call f and g and check that the script break point is active.
   break_point_hit_count = 0;
@@ -2001,7 +2001,7 @@ TEST(ScriptBreakPointMultiple) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Set script break point with the scripts loaded.
-  sbp = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test", 1, 0);
+  sbp = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74", 1, 0);
 
   // Call f and g and check that the script break point is active.
   break_point_hit_count = 0;
@@ -2027,26 +2027,26 @@ TEST(ScriptBreakPointLineOffset) {
   v8::Local<v8::Function> f;
   v8::Local<v8::String> script = v8::String::NewFromUtf8(
       env->GetIsolate(),
-      "function f() {\n"
-      "  a = 0;  // line 8 as this script has line offset 7\n"
-      "  b = 0;  // line 9 as this script has line offset 7\n"
-      "}");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+      "\x20\x20\x61\x20\x3d\x20\x30\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x38\x20\x61\x73\x20\x74\x68\x69\x73\x20\x73\x63\x72\x69\x70\x74\x20\x68\x61\x73\x20\x6c\x69\x6e\x65\x20\x6f\x66\x66\x73\x65\x74\x20\x37\xa"
+      "\x20\x20\x62\x20\x3d\x20\x30\x3b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x39\x20\x61\x73\x20\x74\x68\x69\x73\x20\x73\x63\x72\x69\x70\x74\x20\x68\x61\x73\x20\x6c\x69\x6e\x65\x20\x6f\x66\x66\x73\x65\x74\x20\x37\xa"
+      "\x7d");
 
   // Create script origin both name and line offset.
   v8::ScriptOrigin origin(
-      v8::String::NewFromUtf8(env->GetIsolate(), "test.html"),
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c"),
       v8::Integer::New(env->GetIsolate(), 7));
 
   // Set two script break points before the script is loaded.
   int sbp1 =
-      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 8, 0);
+      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 8, 0);
   int sbp2 =
-      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 9, 0);
+      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 9, 0);
 
   // Compile the script and get the function.
   v8::Script::Compile(script, &origin)->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   // Call f and check that the script break point is active.
   break_point_hit_count = 0;
@@ -2063,7 +2063,7 @@ TEST(ScriptBreakPointLineOffset) {
   CHECK_EQ(0, break_point_hit_count);
 
   // Set a script break point with the script loaded.
-  sbp1 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 9, 0);
+  sbp1 = SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 9, 0);
 
   // Call f and check that the script break point is active.
   break_point_hit_count = 0;
@@ -2084,7 +2084,7 @@ TEST(ScriptBreakPointLine) {
   // Create a function for checking the function when hitting a break point.
   frame_function_name = CompileFunction(&env,
                                         frame_function_name_source,
-                                        "frame_function_name");
+                                        "\x66\x72\x61\x6d\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6e\x61\x6d\x65");
 
   v8::Debug::SetDebugEventListener(DebugEventBreakPointHitCount);
 
@@ -2092,38 +2092,38 @@ TEST(ScriptBreakPointLine) {
   v8::Local<v8::Function> g;
   v8::Local<v8::String> script =
       v8::String::NewFromUtf8(env->GetIsolate(),
-                              "a = 0                      // line 0\n"
-                              "function f() {\n"
-                              "  a = 1;                   // line 2\n"
-                              "}\n"
-                              " a = 2;                    // line 4\n"
-                              "  /* xx */ function g() {  // line 5\n"
-                              "    function h() {         // line 6\n"
-                              "      a = 3;               // line 7\n"
-                              "    }\n"
-                              "    h();                   // line 9\n"
-                              "    a = 4;                 // line 10\n"
-                              "  }\n"
-                              " a=5;                      // line 12");
+                              "\x61\x20\x3d\x20\x30\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x30\xa"
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+                              "\x20\x20\x61\x20\x3d\x20\x31\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x32\xa"
+                              "\x7d\xa"
+                              "\x20\x61\x20\x3d\x20\x32\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x34\xa"
+                              "\x20\x20\x2f\x2a\x20\x78\x78\x20\x2a\x2f\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x35\xa"
+                              "\x20\x20\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x36\xa"
+                              "\x20\x20\x20\x20\x20\x20\x61\x20\x3d\x20\x33\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x37\xa"
+                              "\x20\x20\x20\x20\x7d\xa"
+                              "\x20\x20\x20\x20\x68\x28\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x39\xa"
+                              "\x20\x20\x20\x20\x61\x20\x3d\x20\x34\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\x30\xa"
+                              "\x20\x20\x7d\xa"
+                              "\x20\x61\x3d\x35\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\x32");
 
   // Set a couple script break point before the script is loaded.
   int sbp1 =
-      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 0, -1);
+      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 0, -1);
   int sbp2 =
-      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 1, -1);
+      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 1, -1);
   int sbp3 =
-      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 5, -1);
+      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 5, -1);
 
   // Compile the script and get the function.
   break_point_hit_count = 0;
   v8::ScriptOrigin origin(
-      v8::String::NewFromUtf8(env->GetIsolate(), "test.html"),
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c"),
       v8::Integer::New(env->GetIsolate(), 0));
   v8::Script::Compile(script, &origin)->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   g = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "g")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x67")));
 
   // Check that a break point was hit when the script was run.
   CHECK_EQ(1, break_point_hit_count);
@@ -2132,22 +2132,22 @@ TEST(ScriptBreakPointLine) {
   // Call f and check that the script break point.
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(2, break_point_hit_count);
-  CHECK_EQ("f", last_function_hit);
+  CHECK_EQ("\x66", last_function_hit);
 
   // Call g and check that the script break point.
   g->Call(env->Global(), 0, NULL);
   CHECK_EQ(3, break_point_hit_count);
-  CHECK_EQ("g", last_function_hit);
+  CHECK_EQ("\x67", last_function_hit);
 
   // Clear the script break point on g and set one on h.
   ClearBreakPointFromJS(env->GetIsolate(), sbp3);
   int sbp4 =
-      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 6, -1);
+      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 6, -1);
 
   // Call g and check that the script break point in h is hit.
   g->Call(env->Global(), 0, NULL);
   CHECK_EQ(4, break_point_hit_count);
-  CHECK_EQ("h", last_function_hit);
+  CHECK_EQ("\x68", last_function_hit);
 
   // Clear break points in f and h. Set a new one in the script between
   // functions f and g and test that there is no break points in f and g any
@@ -2155,7 +2155,7 @@ TEST(ScriptBreakPointLine) {
   ClearBreakPointFromJS(env->GetIsolate(), sbp2);
   ClearBreakPointFromJS(env->GetIsolate(), sbp4);
   int sbp5 =
-      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 4, -1);
+      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 4, -1);
   break_point_hit_count = 0;
   f->Call(env->Global(), 0, NULL);
   g->Call(env->Global(), 0, NULL);
@@ -2169,7 +2169,7 @@ TEST(ScriptBreakPointLine) {
 
   // Set a break point in the code after the last function decleration.
   int sbp6 =
-      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 12, -1);
+      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 12, -1);
 
   // Reload the script which should hit three break points.
   break_point_hit_count = 0;
@@ -2201,21 +2201,21 @@ TEST(ScriptBreakPointLineTopLevel) {
 
   v8::Local<v8::String> script =
       v8::String::NewFromUtf8(env->GetIsolate(),
-                              "function f() {\n"
-                              "  a = 1;                   // line 1\n"
-                              "}\n"
-                              "a = 2;                     // line 3\n");
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+                              "\x20\x20\x61\x20\x3d\x20\x31\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x31\xa"
+                              "\x7d\xa"
+                              "\x61\x20\x3d\x20\x32\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x2f\x2f\x20\x6c\x69\x6e\x65\x20\x33\xa");
   v8::Local<v8::Function> f;
   {
     v8::HandleScope scope(env->GetIsolate());
-    CompileRunWithOrigin(script, "test.html");
+    CompileRunWithOrigin(script, "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c");
   }
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   CcTest::heap()->CollectAllGarbage(Heap::kNoGCFlags);
 
-  SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 3, -1);
+  SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 3, -1);
 
   // Call f and check that there was no break points.
   break_point_hit_count = 0;
@@ -2224,13 +2224,13 @@ TEST(ScriptBreakPointLineTopLevel) {
 
   // Recompile and run script and check that break point was hit.
   break_point_hit_count = 0;
-  CompileRunWithOrigin(script, "test.html");
+  CompileRunWithOrigin(script, "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c");
   CHECK_EQ(1, break_point_hit_count);
 
   // Call f and check that there are still no break points.
   break_point_hit_count = 0;
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   CHECK_EQ(0, break_point_hit_count);
 
   v8::Debug::SetDebugEventListener(NULL);
@@ -2249,22 +2249,22 @@ TEST(ScriptBreakPointTopLevelCrash) {
 
   v8::Local<v8::String> script_source =
       v8::String::NewFromUtf8(env->GetIsolate(),
-                              "function f() {\n"
-                              "  return 0;\n"
-                              "}\n"
-                              "f()");
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+                              "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x30\x3b\xa"
+                              "\x7d\xa"
+                              "\x66\x28\x29");
 
   int sbp1 =
-      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 3, -1);
+      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 3, -1);
   {
     v8::HandleScope scope(env->GetIsolate());
     break_point_hit_count = 0;
-    CompileRunWithOrigin(script_source, "test.html");
+    CompileRunWithOrigin(script_source, "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c");
     CHECK_EQ(1, break_point_hit_count);
   }
 
   int sbp2 =
-      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "test.html", 3, -1);
+      SetScriptBreakPointByNameFromJS(env->GetIsolate(), "\x74\x65\x73\x74\x2e\x68\x74\x6d\x6c", 3, -1);
   ClearBreakPointFromJS(env->GetIsolate(), sbp1);
   ClearBreakPointFromJS(env->GetIsolate(), sbp2);
 
@@ -2280,7 +2280,7 @@ TEST(RemoveBreakPointInBreak) {
   v8::HandleScope scope(env->GetIsolate());
 
   v8::Local<v8::Function> foo =
-      CompileFunction(&env, "function foo(){a=1;}", "foo");
+      CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x61\x3d\x31\x3b\x7d", "\x66\x6f\x6f");
   debug_event_remove_break_point = SetBreakPoint(foo, 0);
 
   // Register the debug event listener pasing the function
@@ -2306,15 +2306,15 @@ TEST(DebuggerStatement) {
   v8::HandleScope scope(env->GetIsolate());
   v8::Debug::SetDebugEventListener(DebugEventBreakPointHitCount);
   v8::Script::Compile(
-      v8::String::NewFromUtf8(env->GetIsolate(), "function bar(){debugger}"))
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x7b\x64\x65\x62\x75\x67\x67\x65\x72\x7d"))
       ->Run();
   v8::Script::Compile(
       v8::String::NewFromUtf8(env->GetIsolate(),
-                              "function foo(){debugger;debugger;}"))->Run();
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x7d"))->Run();
   v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "foo")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f")));
   v8::Local<v8::Function> bar = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "bar")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x62\x61\x72")));
 
   // Run function with debugger statement
   bar->Call(env->Global(), 0, NULL);
@@ -2336,10 +2336,10 @@ TEST(DebuggerStatementBreakpoint) {
     v8::HandleScope scope(env->GetIsolate());
     v8::Debug::SetDebugEventListener(DebugEventBreakPointHitCount);
     v8::Script::Compile(
-        v8::String::NewFromUtf8(env->GetIsolate(), "function foo(){debugger;}"))
+        v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x7d"))
         ->Run();
     v8::Local<v8::Function> foo = v8::Local<v8::Function>::Cast(
-        env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "foo")));
+        env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f")));
 
     // The debugger statement triggers breakpint hit
     foo->Call(env->Global(), 0, NULL);
@@ -2368,25 +2368,25 @@ TEST(DebugEvaluate) {
   // Create a function for checking the evaluation when hitting a break point.
   evaluate_check_function = CompileFunction(&env,
                                             evaluate_check_source,
-                                            "evaluate_check");
+                                            "\x65\x76\x61\x6c\x75\x61\x74\x65\x5f\x63\x68\x65\x63\x6b");
   // Register the debug event listener
   v8::Debug::SetDebugEventListener(DebugEventEvaluate);
 
   // Different expected vaules of x and a when in a break point (u = undefined,
   // d = Hello, world!).
   struct EvaluateCheck checks_uu[] = {
-    {"x", v8::Undefined(isolate)},
-    {"a", v8::Undefined(isolate)},
+    {"\x78", v8::Undefined(isolate)},
+    {"\x61", v8::Undefined(isolate)},
     {NULL, v8::Handle<v8::Value>()}
   };
   struct EvaluateCheck checks_hu[] = {
-    {"x", v8::String::NewFromUtf8(env->GetIsolate(), "Hello, world!")},
-    {"a", v8::Undefined(isolate)},
+    {"\x78", v8::String::NewFromUtf8(env->GetIsolate(), "\x48\x65\x6c\x6c\x6f\x2c\x20\x77\x6f\x72\x6c\x64\x21")},
+    {"\x61", v8::Undefined(isolate)},
     {NULL, v8::Handle<v8::Value>()}
   };
   struct EvaluateCheck checks_hh[] = {
-    {"x", v8::String::NewFromUtf8(env->GetIsolate(), "Hello, world!")},
-    {"a", v8::String::NewFromUtf8(env->GetIsolate(), "Hello, world!")},
+    {"\x78", v8::String::NewFromUtf8(env->GetIsolate(), "\x48\x65\x6c\x6c\x6f\x2c\x20\x77\x6f\x72\x6c\x64\x21")},
+    {"\x61", v8::String::NewFromUtf8(env->GetIsolate(), "\x48\x65\x6c\x6c\x6f\x2c\x20\x77\x6f\x72\x6c\x64\x21")},
     {NULL, v8::Handle<v8::Value>()}
   };
 
@@ -2395,19 +2395,19 @@ TEST(DebugEvaluate) {
   // therefore setting breakpoint at position 15 will break at "y=0" and
   // setting it higher will break after.
   v8::Local<v8::Function> foo = CompileFunction(&env,
-    "function foo(x) {"
-    "  var a;"
-    "  y=0;"  // To ensure break location 1.
-    "  a=x;"
-    "  y=0;"  // To ensure break location 2.
-    "}",
-    "foo");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b"
+    "\x20\x20\x76\x61\x72\x20\x61\x3b"
+    "\x20\x20\x79\x3d\x30\x3b"  // To ensure break location 1.
+    "\x20\x20\x61\x3d\x78\x3b"
+    "\x20\x20\x79\x3d\x30\x3b"  // To ensure break location 2.
+    "\x7d",
+    "\x66\x6f\x6f");
   const int foo_break_position_1 = 15;
   const int foo_break_position_2 = 29;
 
   // Arguments with one parameter "Hello, world!"
   v8::Handle<v8::Value> argv_foo[1] = {
-      v8::String::NewFromUtf8(env->GetIsolate(), "Hello, world!")};
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x48\x65\x6c\x6c\x6f\x2c\x20\x77\x6f\x72\x6c\x64\x21")};
 
   // Call foo with breakpoint set before a=x and undefined as parameter.
   int bp = SetBreakPoint(foo, foo_break_position_1);
@@ -2429,19 +2429,19 @@ TEST(DebugEvaluate) {
   // barbar function therefore setting breakpoint at position 8 will break at
   // "y=0" and setting it higher will break after.
   v8::Local<v8::Function> bar = CompileFunction(&env,
-    "y = 0;"
-    "x = 'Goodbye, world!';"
-    "function bar(x, b) {"
-    "  var a;"
-    "  function barbar() {"
-    "    y=0; /* To ensure break location.*/"
-    "    a=x;"
-    "  };"
-    "  debug.Debug.clearAllBreakPoints();"
-    "  barbar();"
-    "  y=0;a=x;"
-    "}",
-    "bar");
+    "\x79\x20\x3d\x20\x30\x3b"
+    "\x78\x20\x3d\x20\x27\x47\x6f\x6f\x64\x62\x79\x65\x2c\x20\x77\x6f\x72\x6c\x64\x21\x27\x3b"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x78\x2c\x20\x62\x29\x20\x7b"
+    "\x20\x20\x76\x61\x72\x20\x61\x3b"
+    "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x62\x61\x72\x28\x29\x20\x7b"
+    "\x20\x20\x20\x20\x79\x3d\x30\x3b\x20\x2f\x2a\x20\x54\x6f\x20\x65\x6e\x73\x75\x72\x65\x20\x62\x72\x65\x61\x6b\x20\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x2e\x2a\x2f"
+    "\x20\x20\x20\x20\x61\x3d\x78\x3b"
+    "\x20\x20\x7d\x3b"
+    "\x20\x20\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x63\x6c\x65\x61\x72\x41\x6c\x6c\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x73\x28\x29\x3b"
+    "\x20\x20\x62\x61\x72\x62\x61\x72\x28\x29\x3b"
+    "\x20\x20\x79\x3d\x30\x3b\x61\x3d\x78\x3b"
+    "\x7d",
+    "\x62\x61\x72");
   const int barbar_break_position = 8;
 
   // Call bar setting breakpoint before a=x in barbar and undefined as
@@ -2457,7 +2457,7 @@ TEST(DebugEvaluate) {
   // "Hello, world!".
   checks = checks_hu;
   v8::Handle<v8::Value> argv_bar_2[2] = {
-    v8::String::NewFromUtf8(env->GetIsolate(), "Hello, world!"),
+    v8::String::NewFromUtf8(env->GetIsolate(), "\x48\x65\x6c\x6c\x6f\x2c\x20\x77\x6f\x72\x6c\x64\x21"),
     v8::Number::New(env->GetIsolate(), barbar_break_position)
   };
   bar->Call(env->Global(), 2, argv_bar_2);
@@ -2466,7 +2466,7 @@ TEST(DebugEvaluate) {
   // "Hello, world!".
   checks = checks_hh;
   v8::Handle<v8::Value> argv_bar_3[2] = {
-    v8::String::NewFromUtf8(env->GetIsolate(), "Hello, world!"),
+    v8::String::NewFromUtf8(env->GetIsolate(), "\x48\x65\x6c\x6c\x6f\x2c\x20\x77\x6f\x72\x6c\x64\x21"),
     v8::Number::New(env->GetIsolate(), barbar_break_position + 1)
   };
   bar->Call(env->Global(), 2, argv_bar_3);
@@ -2492,14 +2492,14 @@ TEST(ConditionalBreakpointWithCodeGenerationDisallowed) {
   v8::Debug::SetDebugEventListener(CheckDebugEvent);
 
   v8::Local<v8::Function> foo = CompileFunction(&env,
-    "function foo(x) {\n"
-    "  var s = 'String value2';\n"
-    "  return s + x;\n"
-    "}",
-    "foo");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\xa"
+    "\x20\x20\x76\x61\x72\x20\x73\x20\x3d\x20\x27\x53\x74\x72\x69\x6e\x67\x20\x76\x61\x6c\x75\x65\x32\x27\x3b\xa"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x20\x2b\x20\x78\x3b\xa"
+    "\x7d",
+    "\x66\x6f\x6f");
 
   // Set conditional breakpoint with condition 'true'.
-  CompileRun("debug.Debug.setBreakPoint(foo, 2, 0, 'true')");
+  CompileRun("\x64\x65\x62\x75\x67\x2e\x44\x65\x62\x75\x67\x2e\x73\x65\x74\x42\x72\x65\x61\x6b\x50\x6f\x69\x6e\x74\x28\x66\x6f\x6f\x2c\x20\x32\x2c\x20\x30\x2c\x20\x27\x74\x72\x75\x65\x27\x29");
 
   debugEventCount = 0;
   env->AllowCodeGenerationFromStrings(false);
@@ -2539,24 +2539,24 @@ TEST(DebugEvaluateWithCodeGenerationDisallowed) {
   v8::Debug::SetDebugEventListener(CheckDebugEval);
 
   v8::Local<v8::Function> foo = CompileFunction(&env,
-    "var global = 'Global';\n"
-    "function foo(x) {\n"
-    "  var local = 'Local';\n"
-    "  debugger;\n"
-    "  return local + x;\n"
-    "}",
-    "foo");
+    "\x76\x61\x72\x20\x67\x6c\x6f\x62\x61\x6c\x20\x3d\x20\x27\x47\x6c\x6f\x62\x61\x6c\x27\x3b\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\xa"
+    "\x20\x20\x76\x61\x72\x20\x6c\x6f\x63\x61\x6c\x20\x3d\x20\x27\x4c\x6f\x63\x61\x6c\x27\x3b\xa"
+    "\x20\x20\x64\x65\x62\x75\x67\x67\x65\x72\x3b\xa"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6c\x6f\x63\x61\x6c\x20\x2b\x20\x78\x3b\xa"
+    "\x7d",
+    "\x66\x6f\x6f");
   checkGlobalEvalFunction = CompileFunction(&env,
-    "function checkGlobalEval(exec_state) {\n"
-    "  return exec_state.evaluateGlobal('global').value() === 'Global';\n"
-    "}",
-    "checkGlobalEval");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x68\x65\x63\x6b\x47\x6c\x6f\x62\x61\x6c\x45\x76\x61\x6c\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x29\x20\x7b\xa"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x65\x76\x61\x6c\x75\x61\x74\x65\x47\x6c\x6f\x62\x61\x6c\x28\x27\x67\x6c\x6f\x62\x61\x6c\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x20\x3d\x3d\x3d\x20\x27\x47\x6c\x6f\x62\x61\x6c\x27\x3b\xa"
+    "\x7d",
+    "\x63\x68\x65\x63\x6b\x47\x6c\x6f\x62\x61\x6c\x45\x76\x61\x6c");
 
   checkFrameEvalFunction = CompileFunction(&env,
-    "function checkFrameEval(exec_state) {\n"
-    "  return exec_state.frame(0).evaluate('local').value() === 'Local';\n"
-    "}",
-    "checkFrameEval");
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x68\x65\x63\x6b\x46\x72\x61\x6d\x65\x45\x76\x61\x6c\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x29\x20\x7b\xa"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x30\x29\x2e\x65\x76\x61\x6c\x75\x61\x74\x65\x28\x27\x6c\x6f\x63\x61\x6c\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x20\x3d\x3d\x3d\x20\x27\x4c\x6f\x63\x61\x6c\x27\x3b\xa"
+    "\x7d",
+    "\x63\x68\x65\x63\x6b\x46\x72\x61\x6d\x65\x45\x76\x61\x6c");
   debugEventCount = 0;
   env->AllowCodeGenerationFromStrings(false);
   foo->Call(env->Global(), 0, NULL);
@@ -2574,7 +2574,7 @@ TEST(DebugEvaluateWithCodeGenerationDisallowed) {
 // in any thread.  Returns the length of the string.
 int AsciiToUtf16(const char* input_buffer, uint16_t* output_buffer) {
   int i;
-  for (i = 0; input_buffer[i] != '\0'; ++i) {
+  for (i = 0; input_buffer[i] != '\x0'; ++i) {
     // ASCII does not use chars > 127, but be careful anyway.
     output_buffer[i] = static_cast<unsigned char>(input_buffer[i]);
   }
@@ -2597,23 +2597,23 @@ int Utf16ToAscii(const uint16_t* input_buffer, int length,
   for (int i = 0; i < length; ++i) {
     output_buffer[i] = static_cast<char>(input_buffer[i]);
   }
-  output_buffer[length] = '\0';
+  output_buffer[length] = '\x0';
   return length;
 }
 
 
 // We match parts of the message to get evaluate result int value.
 bool GetEvaluateStringResult(char *message, char* buffer, int buffer_size) {
-  if (strstr(message, "\"command\":\"evaluate\"") == NULL) {
+  if (strstr(message, "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22") == NULL) {
     return false;
   }
-  const char* prefix = "\"text\":\"";
+  const char* prefix = "\x22\x74\x65\x78\x74\x22\x3a\x22";
   char* pos1 = strstr(message, prefix);
   if (pos1 == NULL) {
     return false;
   }
   pos1 += strlen(prefix);
-  char* pos2 = strchr(pos1, '"');
+  char* pos2 = strchr(pos1, '\x22');
   if (pos2 == NULL) {
     return false;
   }
@@ -2623,7 +2623,7 @@ bool GetEvaluateStringResult(char *message, char* buffer, int buffer_size) {
     len = buffer_size - 1;
   }
   StrNCpy(buf, pos1, len);
-  buffer[buffer_size - 1] = '\0';
+  buffer[buffer_size - 1] = '\x0';
   return true;
 }
 
@@ -2675,7 +2675,7 @@ TEST(DebugEvaluateWithoutStack) {
   v8::HandleScope scope(env->GetIsolate());
 
   const char* source =
-      "var v1 = 'Pinguin';\n function getAnimal() { return 'Capy' + 'bara'; }";
+      "\x76\x61\x72\x20\x76\x31\x20\x3d\x20\x27\x50\x69\x6e\x67\x75\x69\x6e\x27\x3b\xa\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x41\x6e\x69\x6d\x61\x6c\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x43\x61\x70\x79\x27\x20\x2b\x20\x27\x62\x61\x72\x61\x27\x3b\x20\x7d";
 
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), source))
       ->Run();
@@ -2685,34 +2685,34 @@ TEST(DebugEvaluateWithoutStack) {
   const int kBufferSize = 1000;
   uint16_t buffer[kBufferSize];
 
-  const char* command_111 = "{\"seq\":111,"
-      "\"type\":\"request\","
-      "\"command\":\"evaluate\","
-      "\"arguments\":{"
-      "    \"global\":true,"
-      "    \"expression\":\"v1\",\"disable_break\":true"
-      "}}";
+  const char* command_111 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x31\x31\x2c"
+      "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+      "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+      "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b"
+      "\x20\x20\x20\x20\x22\x67\x6c\x6f\x62\x61\x6c\x22\x3a\x74\x72\x75\x65\x2c"
+      "\x20\x20\x20\x20\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x76\x31\x22\x2c\x22\x64\x69\x73\x61\x62\x6c\x65\x5f\x62\x72\x65\x61\x6b\x22\x3a\x74\x72\x75\x65"
+      "\x7d\x7d";
 
   v8::Isolate* isolate = CcTest::isolate();
   v8::Debug::SendCommand(isolate, buffer, AsciiToUtf16(command_111, buffer));
 
-  const char* command_112 = "{\"seq\":112,"
-      "\"type\":\"request\","
-      "\"command\":\"evaluate\","
-      "\"arguments\":{"
-      "    \"global\":true,"
-      "    \"expression\":\"getAnimal()\",\"disable_break\":true"
-      "}}";
+  const char* command_112 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x31\x32\x2c"
+      "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+      "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+      "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b"
+      "\x20\x20\x20\x20\x22\x67\x6c\x6f\x62\x61\x6c\x22\x3a\x74\x72\x75\x65\x2c"
+      "\x20\x20\x20\x20\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x67\x65\x74\x41\x6e\x69\x6d\x61\x6c\x28\x29\x22\x2c\x22\x64\x69\x73\x61\x62\x6c\x65\x5f\x62\x72\x65\x61\x6b\x22\x3a\x74\x72\x75\x65"
+      "\x7d\x7d";
 
   v8::Debug::SendCommand(isolate, buffer, AsciiToUtf16(command_112, buffer));
 
-  const char* command_113 = "{\"seq\":113,"
-     "\"type\":\"request\","
-     "\"command\":\"evaluate\","
-     "\"arguments\":{"
-     "    \"global\":true,"
-     "    \"expression\":\"239 + 566\",\"disable_break\":true"
-     "}}";
+  const char* command_113 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x31\x33\x2c"
+     "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+     "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+     "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b"
+     "\x20\x20\x20\x20\x22\x67\x6c\x6f\x62\x61\x6c\x22\x3a\x74\x72\x75\x65\x2c"
+     "\x20\x20\x20\x20\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x32\x33\x39\x20\x2b\x20\x35\x36\x36\x22\x2c\x22\x64\x69\x73\x61\x62\x6c\x65\x5f\x62\x72\x65\x61\x6b\x22\x3a\x74\x72\x75\x65"
+     "\x7d\x7d";
 
   v8::Debug::SendCommand(isolate, buffer, AsciiToUtf16(command_113, buffer));
 
@@ -2720,10 +2720,10 @@ TEST(DebugEvaluateWithoutStack) {
 
   CHECK_EQ(3, process_debug_messages_data.counter);
 
-  CHECK_EQ(strcmp("Pinguin", process_debug_messages_data.results[0].buffer), 0);
-  CHECK_EQ(strcmp("Capybara", process_debug_messages_data.results[1].buffer),
+  CHECK_EQ(strcmp("\x50\x69\x6e\x67\x75\x69\x6e", process_debug_messages_data.results[0].buffer), 0);
+  CHECK_EQ(strcmp("\x43\x61\x70\x79\x62\x61\x72\x61", process_debug_messages_data.results[1].buffer),
            0);
-  CHECK_EQ(strcmp("805", process_debug_messages_data.results[2].buffer), 0);
+  CHECK_EQ(strcmp("\x38\x30\x35", process_debug_messages_data.results[2].buffer), 0);
 
   v8::Debug::SetMessageHandler(NULL);
   v8::Debug::SetDebugEventListener(NULL);
@@ -2738,11 +2738,11 @@ TEST(DebugStepLinear) {
 
   // Create a function for testing stepping.
   v8::Local<v8::Function> foo = CompileFunction(&env,
-                                                "function foo(){a=1;b=1;c=1;}",
-                                                "foo");
+                                                "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x61\x3d\x31\x3b\x62\x3d\x31\x3b\x63\x3d\x31\x3b\x7d",
+                                                "\x66\x6f\x6f");
 
   // Run foo to allow it to get optimized.
-  CompileRun("a=0; b=0; c=0; foo();");
+  CompileRun("\x61\x3d\x30\x3b\x20\x62\x3d\x30\x3b\x20\x63\x3d\x30\x3b\x20\x66\x6f\x6f\x28\x29\x3b");
 
   SetBreakPoint(foo, 3);
 
@@ -2786,16 +2786,16 @@ TEST(DebugStepKeyedLoadLoop) {
   // is there to have more than one breakable statement in the loop, TODO(315).
   v8::Local<v8::Function> foo = CompileFunction(
       &env,
-      "function foo(a) {\n"
-      "  var x;\n"
-      "  var len = a.length;\n"
-      "  for (var i = 0; i < len; i++) {\n"
-      "    y = 1;\n"
-      "    x = a[i];\n"
-      "  }\n"
-      "}\n"
-      "y=0\n",
-      "foo");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x61\x29\x20\x7b\xa"
+      "\x20\x20\x76\x61\x72\x20\x78\x3b\xa"
+      "\x20\x20\x76\x61\x72\x20\x6c\x65\x6e\x20\x3d\x20\x61\x2e\x6c\x65\x6e\x67\x74\x68\x3b\xa"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6c\x65\x6e\x3b\x20\x69\x2b\x2b\x29\x20\x7b\xa"
+      "\x20\x20\x20\x20\x79\x20\x3d\x20\x31\x3b\xa"
+      "\x20\x20\x20\x20\x78\x20\x3d\x20\x61\x5b\x69\x5d\x3b\xa"
+      "\x20\x20\x7d\xa"
+      "\x7d\xa"
+      "\x79\x3d\x30\xa",
+      "\x66\x6f\x6f");
 
   // Create array [0,1,2,3,4,5,6,7,8,9]
   v8::Local<v8::Array> a = v8::Array::New(env->GetIsolate(), 10);
@@ -2835,15 +2835,15 @@ TEST(DebugStepKeyedStoreLoop) {
   // is there to have more than one breakable statement in the loop, TODO(315).
   v8::Local<v8::Function> foo = CompileFunction(
       &env,
-      "function foo(a) {\n"
-      "  var len = a.length;\n"
-      "  for (var i = 0; i < len; i++) {\n"
-      "    y = 1;\n"
-      "    a[i] = 42;\n"
-      "  }\n"
-      "}\n"
-      "y=0\n",
-      "foo");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x61\x29\x20\x7b\xa"
+      "\x20\x20\x76\x61\x72\x20\x6c\x65\x6e\x20\x3d\x20\x61\x2e\x6c\x65\x6e\x67\x74\x68\x3b\xa"
+      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6c\x65\x6e\x3b\x20\x69\x2b\x2b\x29\x20\x7b\xa"
+      "\x20\x20\x20\x20\x79\x20\x3d\x20\x31\x3b\xa"
+      "\x20\x20\x20\x20\x61\x5b\x69\x5d\x20\x3d\x20\x34\x32\x3b\xa"
+      "\x20\x20\x7d\xa"
+      "\x7d\xa"
+      "\x79\x3d\x30\xa",
+      "\x66\x6f\x6f");
 
   // Create array [0,1,2,3,4,5,6,7,8,9]
   v8::Local<v8::Array> a = v8::Array::New(env->GetIsolate(), 10);
@@ -2882,21 +2882,21 @@ TEST(DebugStepNamedLoadLoop) {
   // Create a function for testing stepping of named load.
   v8::Local<v8::Function> foo = CompileFunction(
       &env,
-      "function foo() {\n"
-          "  var a = [];\n"
-          "  var s = \"\";\n"
-          "  for (var i = 0; i < 10; i++) {\n"
-          "    var v = new V(i, i + 1);\n"
-          "    v.y;\n"
-          "    a.length;\n"  // Special case: array length.
-          "    s.length;\n"  // Special case: string length.
-          "  }\n"
-          "}\n"
-          "function V(x, y) {\n"
-          "  this.x = x;\n"
-          "  this.y = y;\n"
-          "}\n",
-          "foo");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+          "\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x5b\x5d\x3b\xa"
+          "\x20\x20\x76\x61\x72\x20\x73\x20\x3d\x20\x22\x22\x3b\xa"
+          "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b\xa"
+          "\x20\x20\x20\x20\x76\x61\x72\x20\x76\x20\x3d\x20\x6e\x65\x77\x20\x56\x28\x69\x2c\x20\x69\x20\x2b\x20\x31\x29\x3b\xa"
+          "\x20\x20\x20\x20\x76\x2e\x79\x3b\xa"
+          "\x20\x20\x20\x20\x61\x2e\x6c\x65\x6e\x67\x74\x68\x3b\xa"  // Special case: array length.
+          "\x20\x20\x20\x20\x73\x2e\x6c\x65\x6e\x67\x74\x68\x3b\xa"  // Special case: string length.
+          "\x20\x20\x7d\xa"
+          "\x7d\xa"
+          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x56\x28\x78\x2c\x20\x79\x29\x20\x7b\xa"
+          "\x20\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x78\x3b\xa"
+          "\x20\x20\x74\x68\x69\x73\x2e\x79\x20\x3d\x20\x79\x3b\xa"
+          "\x7d\xa",
+          "\x66\x6f\x6f");
 
   // Call function without any break points to ensure inlining is in place.
   foo->Call(env->Global(), 0, NULL);
@@ -2925,13 +2925,13 @@ static void DoDebugStepNamedStoreLoop(int expected) {
   // Create a function for testing stepping of named store.
   v8::Local<v8::Function> foo = CompileFunction(
       &env,
-      "function foo() {\n"
-          "  var a = {a:1};\n"
-          "  for (var i = 0; i < 10; i++) {\n"
-          "    a.a = 2\n"
-          "  }\n"
-          "}\n",
-          "foo");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+          "\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x7b\x61\x3a\x31\x7d\x3b\xa"
+          "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b\xa"
+          "\x20\x20\x20\x20\x61\x2e\x61\x20\x3d\x20\x32\xa"
+          "\x20\x20\x7d\xa"
+          "\x7d\xa",
+          "\x66\x6f\x6f");
 
   // Call function without any break points to ensure inlining is in place.
   foo->Call(env->Global(), 0, NULL);
@@ -2966,15 +2966,15 @@ TEST(DebugStepLinearMixedICs) {
 
   // Create a function for testing stepping.
   v8::Local<v8::Function> foo = CompileFunction(&env,
-      "function bar() {};"
-      "function foo() {"
-      "  var x;"
-      "  var index='name';"
-      "  var y = {};"
-      "  a=1;b=2;x=a;y[index]=3;x=y[index];bar();}", "foo");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\x7d\x3b"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x78\x3b"
+      "\x20\x20\x76\x61\x72\x20\x69\x6e\x64\x65\x78\x3d\x27\x6e\x61\x6d\x65\x27\x3b"
+      "\x20\x20\x76\x61\x72\x20\x79\x20\x3d\x20\x7b\x7d\x3b"
+      "\x20\x20\x61\x3d\x31\x3b\x62\x3d\x32\x3b\x78\x3d\x61\x3b\x79\x5b\x69\x6e\x64\x65\x78\x5d\x3d\x33\x3b\x78\x3d\x79\x5b\x69\x6e\x64\x65\x78\x5d\x3b\x62\x61\x72\x28\x29\x3b\x7d", "\x66\x6f\x6f");
 
   // Run functions to allow them to get optimized.
-  CompileRun("a=0; b=0; bar(); foo();");
+  CompileRun("\x61\x3d\x30\x3b\x20\x62\x3d\x30\x3b\x20\x62\x61\x72\x28\x29\x3b\x20\x66\x6f\x6f\x28\x29\x3b");
 
   SetBreakPoint(foo, 0);
 
@@ -3012,15 +3012,15 @@ TEST(DebugStepDeclarations) {
 
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
-  const char* src = "function foo() { "
-                    "  var a;"
-                    "  var b = 1;"
-                    "  var c = foo;"
-                    "  var d = Math.floor;"
-                    "  var e = b + d(1.2);"
-                    "}"
-                    "foo()";
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20"
+                    "\x20\x20\x76\x61\x72\x20\x61\x3b"
+                    "\x20\x20\x76\x61\x72\x20\x62\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x76\x61\x72\x20\x63\x20\x3d\x20\x66\x6f\x6f\x3b"
+                    "\x20\x20\x76\x61\x72\x20\x64\x20\x3d\x20\x4d\x61\x74\x68\x2e\x66\x6c\x6f\x6f\x72\x3b"
+                    "\x20\x20\x76\x61\x72\x20\x65\x20\x3d\x20\x62\x20\x2b\x20\x64\x28\x31\x2e\x32\x29\x3b"
+                    "\x7d"
+                    "\x66\x6f\x6f\x28\x29";
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
 
   SetBreakPoint(foo, 0);
 
@@ -3045,15 +3045,15 @@ TEST(DebugStepLocals) {
 
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
-  const char* src = "function foo() { "
-                    "  var a,b;"
-                    "  a = 1;"
-                    "  b = a + 2;"
-                    "  b = 1 + 2 + 3;"
-                    "  a = Math.floor(b);"
-                    "}"
-                    "foo()";
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20"
+                    "\x20\x20\x76\x61\x72\x20\x61\x2c\x62\x3b"
+                    "\x20\x20\x61\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x62\x20\x3d\x20\x61\x20\x2b\x20\x32\x3b"
+                    "\x20\x20\x62\x20\x3d\x20\x31\x20\x2b\x20\x32\x20\x2b\x20\x33\x3b"
+                    "\x20\x20\x61\x20\x3d\x20\x4d\x61\x74\x68\x2e\x66\x6c\x6f\x6f\x72\x28\x62\x29\x3b"
+                    "\x7d"
+                    "\x66\x6f\x6f\x28\x29";
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
 
   SetBreakPoint(foo, 0);
 
@@ -3080,17 +3080,17 @@ TEST(DebugStepIf) {
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
   const int argc = 1;
-  const char* src = "function foo(x) { "
-                    "  a = 1;"
-                    "  if (x) {"
-                    "    b = 1;"
-                    "  } else {"
-                    "    c = 1;"
-                    "    d = 1;"
-                    "  }"
-                    "}"
-                    "a=0; b=0; c=0; d=0; foo()";
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20"
+                    "\x20\x20\x61\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x69\x66\x20\x28\x78\x29\x20\x7b"
+                    "\x20\x20\x20\x20\x62\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x7d\x20\x65\x6c\x73\x65\x20\x7b"
+                    "\x20\x20\x20\x20\x63\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x20\x20\x64\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x7d"
+                    "\x7d"
+                    "\x61\x3d\x30\x3b\x20\x62\x3d\x30\x3b\x20\x63\x3d\x30\x3b\x20\x64\x3d\x30\x3b\x20\x66\x6f\x6f\x28\x29";
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
   SetBreakPoint(foo, 0);
 
   // Stepping through the true part.
@@ -3124,23 +3124,23 @@ TEST(DebugStepSwitch) {
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
   const int argc = 1;
-  const char* src = "function foo(x) { "
-                    "  a = 1;"
-                    "  switch (x) {"
-                    "    case 1:"
-                    "      b = 1;"
-                    "    case 2:"
-                    "      c = 1;"
-                    "      break;"
-                    "    case 3:"
-                    "      d = 1;"
-                    "      e = 1;"
-                    "      f = 1;"
-                    "      break;"
-                    "  }"
-                    "}"
-                    "a=0; b=0; c=0; d=0; e=0; f=0; foo()";
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20"
+                    "\x20\x20\x61\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x73\x77\x69\x74\x63\x68\x20\x28\x78\x29\x20\x7b"
+                    "\x20\x20\x20\x20\x63\x61\x73\x65\x20\x31\x3a"
+                    "\x20\x20\x20\x20\x20\x20\x62\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x20\x20\x63\x61\x73\x65\x20\x32\x3a"
+                    "\x20\x20\x20\x20\x20\x20\x63\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x20\x20\x20\x20\x62\x72\x65\x61\x6b\x3b"
+                    "\x20\x20\x20\x20\x63\x61\x73\x65\x20\x33\x3a"
+                    "\x20\x20\x20\x20\x20\x20\x64\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x20\x20\x20\x20\x65\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x20\x20\x20\x20\x66\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x20\x20\x20\x20\x62\x72\x65\x61\x6b\x3b"
+                    "\x20\x20\x7d"
+                    "\x7d"
+                    "\x61\x3d\x30\x3b\x20\x62\x3d\x30\x3b\x20\x63\x3d\x30\x3b\x20\x64\x3d\x30\x3b\x20\x65\x3d\x30\x3b\x20\x66\x3d\x30\x3b\x20\x66\x6f\x6f\x28\x29";
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
   SetBreakPoint(foo, 0);
 
   // One case with fall-through.
@@ -3181,15 +3181,15 @@ TEST(DebugStepWhile) {
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
   const int argc = 1;
-  const char* src = "function foo(x) { "
-                    "  var a = 0;"
-                    "  while (a < x) {"
-                    "    a++;"
-                    "  }"
-                    "}"
-                    "foo()";
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
-  SetBreakPoint(foo, 8);  // "var a = 0;"
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20"
+                    "\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b"
+                    "\x20\x20\x77\x68\x69\x6c\x65\x20\x28\x61\x20\x3c\x20\x78\x29\x20\x7b"
+                    "\x20\x20\x20\x20\x61\x2b\x2b\x3b"
+                    "\x20\x20\x7d"
+                    "\x7d"
+                    "\x66\x6f\x6f\x28\x29";
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
+  SetBreakPoint(foo, 8);  // "\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b"
 
   // Looping 0 times.  We still should break at the while-condition once.
   step_action = StepIn;
@@ -3229,15 +3229,15 @@ TEST(DebugStepDoWhile) {
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
   const int argc = 1;
-  const char* src = "function foo(x) { "
-                    "  var a = 0;"
-                    "  do {"
-                    "    a++;"
-                    "  } while (a < x)"
-                    "}"
-                    "foo()";
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
-  SetBreakPoint(foo, 8);  // "var a = 0;"
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20"
+                    "\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b"
+                    "\x20\x20\x64\x6f\x20\x7b"
+                    "\x20\x20\x20\x20\x61\x2b\x2b\x3b"
+                    "\x20\x20\x7d\x20\x77\x68\x69\x6c\x65\x20\x28\x61\x20\x3c\x20\x78\x29"
+                    "\x7d"
+                    "\x66\x6f\x6f\x28\x29";
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
+  SetBreakPoint(foo, 8);  // "\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b"
 
   // Looping 10 times.
   step_action = StepIn;
@@ -3270,16 +3270,16 @@ TEST(DebugStepFor) {
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
   const int argc = 1;
-  const char* src = "function foo(x) { "
-                    "  a = 1;"
-                    "  for (i = 0; i < x; i++) {"
-                    "    b = 1;"
-                    "  }"
-                    "}"
-                    "a=0; b=0; i=0; foo()";
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20"
+                    "\x20\x20\x61\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x66\x6f\x72\x20\x28\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x78\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                    "\x20\x20\x20\x20\x62\x20\x3d\x20\x31\x3b"
+                    "\x20\x20\x7d"
+                    "\x7d"
+                    "\x61\x3d\x30\x3b\x20\x62\x3d\x30\x3b\x20\x69\x3d\x30\x3b\x20\x66\x6f\x6f\x28\x29";
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
 
-  SetBreakPoint(foo, 8);  // "a = 1;"
+  SetBreakPoint(foo, 8);  // "\x61\x20\x3d\x20\x31\x3b"
 
   // Looping 10 times.
   step_action = StepIn;
@@ -3312,22 +3312,22 @@ TEST(DebugStepForContinue) {
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
   const int argc = 1;
-  const char* src = "function foo(x) { "
-                    "  var a = 0;"
-                    "  var b = 0;"
-                    "  var c = 0;"
-                    "  for (var i = 0; i < x; i++) {"
-                    "    a++;"
-                    "    if (a % 2 == 0) continue;"
-                    "    b++;"
-                    "    c++;"
-                    "  }"
-                    "  return b;"
-                    "}"
-                    "foo()";
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20"
+                    "\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b"
+                    "\x20\x20\x76\x61\x72\x20\x62\x20\x3d\x20\x30\x3b"
+                    "\x20\x20\x76\x61\x72\x20\x63\x20\x3d\x20\x30\x3b"
+                    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x78\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                    "\x20\x20\x20\x20\x61\x2b\x2b\x3b"
+                    "\x20\x20\x20\x20\x69\x66\x20\x28\x61\x20\x25\x20\x32\x20\x3d\x3d\x20\x30\x29\x20\x63\x6f\x6e\x74\x69\x6e\x75\x65\x3b"
+                    "\x20\x20\x20\x20\x62\x2b\x2b\x3b"
+                    "\x20\x20\x20\x20\x63\x2b\x2b\x3b"
+                    "\x20\x20\x7d"
+                    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x62\x3b"
+                    "\x7d"
+                    "\x66\x6f\x6f\x28\x29";
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
   v8::Handle<v8::Value> result;
-  SetBreakPoint(foo, 8);  // "var a = 0;"
+  SetBreakPoint(foo, 8);  // "\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b"
 
   // Each loop generates 4 or 5 steps depending on whether a is equal.
 
@@ -3364,22 +3364,22 @@ TEST(DebugStepForBreak) {
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
   const int argc = 1;
-  const char* src = "function foo(x) { "
-                    "  var a = 0;"
-                    "  var b = 0;"
-                    "  var c = 0;"
-                    "  for (var i = 0; i < 1000; i++) {"
-                    "    a++;"
-                    "    if (a == x) break;"
-                    "    b++;"
-                    "    c++;"
-                    "  }"
-                    "  return b;"
-                    "}"
-                    "foo()";
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20"
+                    "\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b"
+                    "\x20\x20\x76\x61\x72\x20\x62\x20\x3d\x20\x30\x3b"
+                    "\x20\x20\x76\x61\x72\x20\x63\x20\x3d\x20\x30\x3b"
+                    "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+                    "\x20\x20\x20\x20\x61\x2b\x2b\x3b"
+                    "\x20\x20\x20\x20\x69\x66\x20\x28\x61\x20\x3d\x3d\x20\x78\x29\x20\x62\x72\x65\x61\x6b\x3b"
+                    "\x20\x20\x20\x20\x62\x2b\x2b\x3b"
+                    "\x20\x20\x20\x20\x63\x2b\x2b\x3b"
+                    "\x20\x20\x7d"
+                    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x62\x3b"
+                    "\x7d"
+                    "\x66\x6f\x6f\x28\x29";
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
   v8::Handle<v8::Value> result;
-  SetBreakPoint(foo, 8);  // "var a = 0;"
+  SetBreakPoint(foo, 8);  // "\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b"
 
   // Each loop generates 5 steps except for the last (when break is executed)
   // which only generates 4.
@@ -3416,15 +3416,15 @@ TEST(DebugStepForIn) {
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
   v8::Local<v8::Function> foo;
-  const char* src_1 = "function foo() { "
-                      "  var a = [1, 2];"
-                      "  for (x in a) {"
-                      "    b = 0;"
-                      "  }"
-                      "}"
-                      "foo()";
-  foo = CompileFunction(&env, src_1, "foo");
-  SetBreakPoint(foo, 0);  // "var a = ..."
+  const char* src_1 = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20"
+                      "\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x5b\x31\x2c\x20\x32\x5d\x3b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x78\x20\x69\x6e\x20\x61\x29\x20\x7b"
+                      "\x20\x20\x20\x20\x62\x20\x3d\x20\x30\x3b"
+                      "\x20\x20\x7d"
+                      "\x7d"
+                      "\x66\x6f\x6f\x28\x29";
+  foo = CompileFunction(&env, src_1, "\x66\x6f\x6f");
+  SetBreakPoint(foo, 0);  // "\x76\x61\x72\x20\x61\x20\x3d\x20\x2e\x2e\x2e"
 
   step_action = StepIn;
   break_point_hit_count = 0;
@@ -3433,15 +3433,15 @@ TEST(DebugStepForIn) {
 
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
-  const char* src_2 = "function foo() { "
-                      "  var a = {a:[1, 2, 3]};"
-                      "  for (x in a.a) {"
-                      "    b = 0;"
-                      "  }"
-                      "}"
-                      "foo()";
-  foo = CompileFunction(&env, src_2, "foo");
-  SetBreakPoint(foo, 0);  // "var a = ..."
+  const char* src_2 = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20"
+                      "\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x7b\x61\x3a\x5b\x31\x2c\x20\x32\x2c\x20\x33\x5d\x7d\x3b"
+                      "\x20\x20\x66\x6f\x72\x20\x28\x78\x20\x69\x6e\x20\x61\x2e\x61\x29\x20\x7b"
+                      "\x20\x20\x20\x20\x62\x20\x3d\x20\x30\x3b"
+                      "\x20\x20\x7d"
+                      "\x7d"
+                      "\x66\x6f\x6f\x28\x29";
+  foo = CompileFunction(&env, src_2, "\x66\x6f\x6f");
+  SetBreakPoint(foo, 0);  // "\x76\x61\x72\x20\x61\x20\x3d\x20\x2e\x2e\x2e"
 
   step_action = StepIn;
   break_point_hit_count = 0;
@@ -3463,17 +3463,17 @@ TEST(DebugStepWith) {
 
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
-  const char* src = "function foo(x) { "
-                    "  var a = {};"
-                    "  with (a) {}"
-                    "  with (b) {}"
-                    "}"
-                    "foo()";
-  env->Global()->Set(v8::String::NewFromUtf8(env->GetIsolate(), "b"),
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20"
+                    "\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x7b\x7d\x3b"
+                    "\x20\x20\x77\x69\x74\x68\x20\x28\x61\x29\x20\x7b\x7d"
+                    "\x20\x20\x77\x69\x74\x68\x20\x28\x62\x29\x20\x7b\x7d"
+                    "\x7d"
+                    "\x66\x6f\x6f\x28\x29";
+  env->Global()->Set(v8::String::NewFromUtf8(env->GetIsolate(), "\x62"),
                      v8::Object::New(env->GetIsolate()));
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
   v8::Handle<v8::Value> result;
-  SetBreakPoint(foo, 8);  // "var a = {};"
+  SetBreakPoint(foo, 8);  // "\x76\x61\x72\x20\x61\x20\x3d\x20\x7b\x7d\x3b"
 
   step_action = StepIn;
   break_point_hit_count = 0;
@@ -3496,14 +3496,14 @@ TEST(DebugConditional) {
 
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
-  const char* src = "function foo(x) { "
-                    "  var a;"
-                    "  a = x ? 1 : 2;"
-                    "  return a;"
-                    "}"
-                    "foo()";
-  v8::Local<v8::Function> foo = CompileFunction(&env, src, "foo");
-  SetBreakPoint(foo, 0);  // "var a;"
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20"
+                    "\x20\x20\x76\x61\x72\x20\x61\x3b"
+                    "\x20\x20\x61\x20\x3d\x20\x78\x20\x3f\x20\x31\x20\x3a\x20\x32\x3b"
+                    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x3b"
+                    "\x7d"
+                    "\x66\x6f\x6f\x28\x29";
+  v8::Local<v8::Function> foo = CompileFunction(&env, src, "\x66\x6f\x6f");
+  SetBreakPoint(foo, 0);  // "\x76\x61\x72\x20\x61\x3b"
 
   step_action = StepIn;
   break_point_hit_count = 0;
@@ -3530,24 +3530,24 @@ TEST(StepInOutSimple) {
   // Create a function for checking the function when hitting a break point.
   frame_function_name = CompileFunction(&env,
                                         frame_function_name_source,
-                                        "frame_function_name");
+                                        "\x66\x72\x61\x6d\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6e\x61\x6d\x65");
 
   // Register a debug event listener which steps and counts.
   v8::Debug::SetDebugEventListener(DebugEventStepSequence);
 
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
-  const char* src = "function a() {b();c();}; "
-                    "function b() {c();}; "
-                    "function c() {}; "
-                    "a(); b(); c()";
-  v8::Local<v8::Function> a = CompileFunction(&env, src, "a");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x28\x29\x20\x7b\x62\x28\x29\x3b\x63\x28\x29\x3b\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x28\x29\x20\x7b\x63\x28\x29\x3b\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x28\x29\x20\x7b\x7d\x3b\x20"
+                    "\x61\x28\x29\x3b\x20\x62\x28\x29\x3b\x20\x63\x28\x29";
+  v8::Local<v8::Function> a = CompileFunction(&env, src, "\x61");
   SetBreakPoint(a, 0);
 
   // Step through invocation of a with step in.
   step_action = StepIn;
   break_point_hit_count = 0;
-  expected_step_sequence = "abcbaca";
+  expected_step_sequence = "\x61\x62\x63\x62\x61\x63\x61";
   a->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
@@ -3555,7 +3555,7 @@ TEST(StepInOutSimple) {
   // Step through invocation of a with step next.
   step_action = StepNext;
   break_point_hit_count = 0;
-  expected_step_sequence = "aaa";
+  expected_step_sequence = "\x61\x61\x61";
   a->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
@@ -3563,7 +3563,7 @@ TEST(StepInOutSimple) {
   // Step through invocation of a with step out.
   step_action = StepOut;
   break_point_hit_count = 0;
-  expected_step_sequence = "a";
+  expected_step_sequence = "\x61";
   a->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
@@ -3581,25 +3581,25 @@ TEST(StepInOutTree) {
   // Create a function for checking the function when hitting a break point.
   frame_function_name = CompileFunction(&env,
                                         frame_function_name_source,
-                                        "frame_function_name");
+                                        "\x66\x72\x61\x6d\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6e\x61\x6d\x65");
 
   // Register a debug event listener which steps and counts.
   v8::Debug::SetDebugEventListener(DebugEventStepSequence);
 
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
-  const char* src = "function a() {b(c(d()),d());c(d());d()}; "
-                    "function b(x,y) {c();}; "
-                    "function c(x) {}; "
-                    "function d() {}; "
-                    "a(); b(); c(); d()";
-  v8::Local<v8::Function> a = CompileFunction(&env, src, "a");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x28\x29\x20\x7b\x62\x28\x63\x28\x64\x28\x29\x29\x2c\x64\x28\x29\x29\x3b\x63\x28\x64\x28\x29\x29\x3b\x64\x28\x29\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x28\x78\x2c\x79\x29\x20\x7b\x63\x28\x29\x3b\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x28\x78\x29\x20\x7b\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x64\x28\x29\x20\x7b\x7d\x3b\x20"
+                    "\x61\x28\x29\x3b\x20\x62\x28\x29\x3b\x20\x63\x28\x29\x3b\x20\x64\x28\x29";
+  v8::Local<v8::Function> a = CompileFunction(&env, src, "\x61");
   SetBreakPoint(a, 0);
 
   // Step through invocation of a with step in.
   step_action = StepIn;
   break_point_hit_count = 0;
-  expected_step_sequence = "adacadabcbadacada";
+  expected_step_sequence = "\x61\x64\x61\x63\x61\x64\x61\x62\x63\x62\x61\x64\x61\x63\x61\x64\x61";
   a->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
@@ -3607,7 +3607,7 @@ TEST(StepInOutTree) {
   // Step through invocation of a with step next.
   step_action = StepNext;
   break_point_hit_count = 0;
-  expected_step_sequence = "aaaa";
+  expected_step_sequence = "\x61\x61\x61\x61";
   a->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
@@ -3615,7 +3615,7 @@ TEST(StepInOutTree) {
   // Step through invocation of a with step out.
   step_action = StepOut;
   break_point_hit_count = 0;
-  expected_step_sequence = "a";
+  expected_step_sequence = "\x61";
   a->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
@@ -3633,24 +3633,24 @@ TEST(StepInOutBranch) {
   // Create a function for checking the function when hitting a break point.
   frame_function_name = CompileFunction(&env,
                                         frame_function_name_source,
-                                        "frame_function_name");
+                                        "\x66\x72\x61\x6d\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6e\x61\x6d\x65");
 
   // Register a debug event listener which steps and counts.
   v8::Debug::SetDebugEventListener(DebugEventStepSequence);
 
   // Create a function for testing stepping. Run it to allow it to get
   // optimized.
-  const char* src = "function a() {b(false);c();}; "
-                    "function b(x) {if(x){c();};}; "
-                    "function c() {}; "
-                    "a(); b(); c()";
-  v8::Local<v8::Function> a = CompileFunction(&env, src, "a");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x28\x29\x20\x7b\x62\x28\x66\x61\x6c\x73\x65\x29\x3b\x63\x28\x29\x3b\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x28\x78\x29\x20\x7b\x69\x66\x28\x78\x29\x7b\x63\x28\x29\x3b\x7d\x3b\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x28\x29\x20\x7b\x7d\x3b\x20"
+                    "\x61\x28\x29\x3b\x20\x62\x28\x29\x3b\x20\x63\x28\x29";
+  v8::Local<v8::Function> a = CompileFunction(&env, src, "\x61");
   SetBreakPoint(a, 0);
 
   // Step through invocation of a.
   step_action = StepIn;
   break_point_hit_count = 0;
-  expected_step_sequence = "abbaca";
+  expected_step_sequence = "\x61\x62\x62\x61\x63\x61";
   a->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
@@ -3669,8 +3669,8 @@ TEST(DebugStepNatives) {
   // Create a function for testing stepping.
   v8::Local<v8::Function> foo = CompileFunction(
       &env,
-      "function foo(){debugger;Math.sin(1);}",
-      "foo");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x4d\x61\x74\x68\x2e\x73\x69\x6e\x28\x31\x29\x3b\x7d",
+      "\x66\x6f\x6f");
 
   // Register a debug event listener which steps and counts.
   v8::Debug::SetDebugEventListener(DebugEventStep);
@@ -3707,9 +3707,9 @@ TEST(DebugStepFunctionApply) {
   // Create a function for testing stepping.
   v8::Local<v8::Function> foo = CompileFunction(
       &env,
-      "function bar(x, y, z) { if (x == 1) { a = y; b = z; } }"
-      "function foo(){ debugger; bar.apply(this, [1,2,3]); }",
-      "foo");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x78\x2c\x20\x79\x2c\x20\x7a\x29\x20\x7b\x20\x69\x66\x20\x28\x78\x20\x3d\x3d\x20\x31\x29\x20\x7b\x20\x61\x20\x3d\x20\x79\x3b\x20\x62\x20\x3d\x20\x7a\x3b\x20\x7d\x20\x7d"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x20\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x20\x62\x61\x72\x2e\x61\x70\x70\x6c\x79\x28\x74\x68\x69\x73\x2c\x20\x5b\x31\x2c\x32\x2c\x33\x5d\x29\x3b\x20\x7d",
+      "\x66\x6f\x6f");
 
   // Register a debug event listener which steps and counts.
   v8::Debug::SetDebugEventListener(DebugEventStep);
@@ -3747,15 +3747,15 @@ TEST(DebugStepFunctionCall) {
   // Create a function for testing stepping.
   v8::Local<v8::Function> foo = CompileFunction(
       &env,
-      "function bar(x, y, z) { if (x == 1) { a = y; b = z; } }"
-      "function foo(a){ debugger;"
-      "                 if (a) {"
-      "                   bar.call(this, 1, 2, 3);"
-      "                 } else {"
-      "                   bar.call(this, 0);"
-      "                 }"
-      "}",
-      "foo");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x78\x2c\x20\x79\x2c\x20\x7a\x29\x20\x7b\x20\x69\x66\x20\x28\x78\x20\x3d\x3d\x20\x31\x29\x20\x7b\x20\x61\x20\x3d\x20\x79\x3b\x20\x62\x20\x3d\x20\x7a\x3b\x20\x7d\x20\x7d"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x61\x29\x7b\x20\x64\x65\x62\x75\x67\x67\x65\x72\x3b"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x69\x66\x20\x28\x61\x29\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x62\x61\x72\x2e\x63\x61\x6c\x6c\x28\x74\x68\x69\x73\x2c\x20\x31\x2c\x20\x32\x2c\x20\x33\x29\x3b"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x7d\x20\x65\x6c\x73\x65\x20\x7b"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x62\x61\x72\x2e\x63\x61\x6c\x6c\x28\x74\x68\x69\x73\x2c\x20\x30\x29\x3b"
+      "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x7d"
+      "\x7d",
+      "\x66\x6f\x6f");
 
   // Register a debug event listener which steps and counts.
   v8::Debug::SetDebugEventListener(DebugEventStep);
@@ -3800,8 +3800,8 @@ TEST(PauseInScript) {
   v8::Debug::SetDebugEventListener(DebugEventCounter);
 
   // Create a script that returns a function.
-  const char* src = "(function (evt) {})";
-  const char* script_name = "StepInHandlerTest";
+  const char* src = "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x65\x76\x74\x29\x20\x7b\x7d\x29";
+  const char* script_name = "\x53\x74\x65\x70\x49\x6e\x48\x61\x6e\x64\x6c\x65\x72\x54\x65\x73\x74";
 
   // Set breakpoint in the script.
   SetScriptBreakPointByNameFromJS(env->GetIsolate(), script_name, 0, -1);
@@ -3835,13 +3835,13 @@ TEST(BreakOnException) {
   env.ExposeDebug();
 
   // Create functions for testing break on exception.
-  CompileFunction(&env, "function throws(){throw 1;}", "throws");
+  CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x68\x72\x6f\x77\x73\x28\x29\x7b\x74\x68\x72\x6f\x77\x20\x31\x3b\x7d", "\x74\x68\x72\x6f\x77\x73");
   v8::Local<v8::Function> caught =
       CompileFunction(&env,
-                      "function caught(){try {throws();} catch(e) {};}",
-                      "caught");
+                      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x61\x75\x67\x68\x74\x28\x29\x7b\x74\x72\x79\x20\x7b\x74\x68\x72\x6f\x77\x73\x28\x29\x3b\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x7d\x3b\x7d",
+                      "\x63\x61\x75\x67\x68\x74");
   v8::Local<v8::Function> notCaught =
-      CompileFunction(&env, "function notCaught(){throws();}", "notCaught");
+      CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6e\x6f\x74\x43\x61\x75\x67\x68\x74\x28\x29\x7b\x74\x68\x72\x6f\x77\x73\x28\x29\x3b\x7d", "\x6e\x6f\x74\x43\x61\x75\x67\x68\x74");
 
   v8::V8::AddMessageListener(MessageCallbackCount);
   v8::Debug::SetDebugEventListener(DebugEventCounter);
@@ -3979,7 +3979,7 @@ TEST(BreakOnCompileException) {
   ChangeBreakOnException(false, true);
 
   // Create a function for checking the function when hitting a break point.
-  frame_count = CompileFunction(&env, frame_count_source, "frame_count");
+  frame_count = CompileFunction(&env, frame_count_source, "\x66\x72\x61\x6d\x65\x5f\x63\x6f\x75\x6e\x74");
 
   v8::V8::AddMessageListener(MessageCallbackCount);
   v8::Debug::SetDebugEventListener(DebugEventCounter);
@@ -3994,21 +3994,21 @@ TEST(BreakOnCompileException) {
   CHECK_EQ(-1, last_js_stack_height);
 
   // Throws SyntaxError: Unexpected end of input
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "+++"));
+  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "\x2b\x2b\x2b"));
   CHECK_EQ(1, exception_hit_count);
   CHECK_EQ(1, uncaught_exception_hit_count);
   CHECK_EQ(1, message_callback_count);
   CHECK_EQ(0, last_js_stack_height);  // No JavaScript stack.
 
   // Throws SyntaxError: Unexpected identifier
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "x x"));
+  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "\x78\x20\x78"));
   CHECK_EQ(2, exception_hit_count);
   CHECK_EQ(2, uncaught_exception_hit_count);
   CHECK_EQ(2, message_callback_count);
   CHECK_EQ(0, last_js_stack_height);  // No JavaScript stack.
 
   // Throws SyntaxError: Unexpected end of input
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "eval('+++')"))
+  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "\x65\x76\x61\x6c\x28\x27\x2b\x2b\x2b\x27\x29"))
       ->Run();
   CHECK_EQ(3, exception_hit_count);
   CHECK_EQ(3, uncaught_exception_hit_count);
@@ -4016,7 +4016,7 @@ TEST(BreakOnCompileException) {
   CHECK_EQ(1, last_js_stack_height);
 
   // Throws SyntaxError: Unexpected identifier
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "eval('x x')"))
+  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "\x65\x76\x61\x6c\x28\x27\x78\x20\x78\x27\x29"))
       ->Run();
   CHECK_EQ(4, exception_hit_count);
   CHECK_EQ(4, uncaught_exception_hit_count);
@@ -4035,47 +4035,47 @@ TEST(StepWithException) {
   // Create a function for checking the function when hitting a break point.
   frame_function_name = CompileFunction(&env,
                                         frame_function_name_source,
-                                        "frame_function_name");
+                                        "\x66\x72\x61\x6d\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6e\x61\x6d\x65");
 
   // Register a debug event listener which steps and counts.
   v8::Debug::SetDebugEventListener(DebugEventStepSequence);
 
   // Create functions for testing stepping.
-  const char* src = "function a() { n(); }; "
-                    "function b() { c(); }; "
-                    "function c() { n(); }; "
-                    "function d() { x = 1; try { e(); } catch(x) { x = 2; } }; "
-                    "function e() { n(); }; "
-                    "function f() { x = 1; try { g(); } catch(x) { x = 2; } }; "
-                    "function g() { h(); }; "
-                    "function h() { x = 1; throw 1; }; ";
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x28\x29\x20\x7b\x20\x6e\x28\x29\x3b\x20\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x28\x29\x20\x7b\x20\x63\x28\x29\x3b\x20\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x28\x29\x20\x7b\x20\x6e\x28\x29\x3b\x20\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x64\x28\x29\x20\x7b\x20\x78\x20\x3d\x20\x31\x3b\x20\x74\x72\x79\x20\x7b\x20\x65\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x78\x29\x20\x7b\x20\x78\x20\x3d\x20\x32\x3b\x20\x7d\x20\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x28\x29\x20\x7b\x20\x6e\x28\x29\x3b\x20\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x78\x20\x3d\x20\x31\x3b\x20\x74\x72\x79\x20\x7b\x20\x67\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x78\x29\x20\x7b\x20\x78\x20\x3d\x20\x32\x3b\x20\x7d\x20\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\x20\x68\x28\x29\x3b\x20\x7d\x3b\x20"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x29\x20\x7b\x20\x78\x20\x3d\x20\x31\x3b\x20\x74\x68\x72\x6f\x77\x20\x31\x3b\x20\x7d\x3b\x20";
 
   // Step through invocation of a.
-  v8::Local<v8::Function> a = CompileFunction(&env, src, "a");
+  v8::Local<v8::Function> a = CompileFunction(&env, src, "\x61");
   SetBreakPoint(a, 0);
   step_action = StepIn;
   break_point_hit_count = 0;
-  expected_step_sequence = "aa";
+  expected_step_sequence = "\x61\x61";
   a->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
 
   // Step through invocation of b + c.
-  v8::Local<v8::Function> b = CompileFunction(&env, src, "b");
+  v8::Local<v8::Function> b = CompileFunction(&env, src, "\x62");
   SetBreakPoint(b, 0);
   step_action = StepIn;
   break_point_hit_count = 0;
-  expected_step_sequence = "bcc";
+  expected_step_sequence = "\x62\x63\x63";
   b->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
   // Step through invocation of d + e.
-  v8::Local<v8::Function> d = CompileFunction(&env, src, "d");
+  v8::Local<v8::Function> d = CompileFunction(&env, src, "\x64");
   SetBreakPoint(d, 0);
   ChangeBreakOnException(false, true);
   step_action = StepIn;
   break_point_hit_count = 0;
-  expected_step_sequence = "ddedd";
+  expected_step_sequence = "\x64\x64\x65\x64\x64";
   d->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
@@ -4084,18 +4084,18 @@ TEST(StepWithException) {
   ChangeBreakOnException(true, true);
   step_action = StepIn;
   break_point_hit_count = 0;
-  expected_step_sequence = "ddeedd";
+  expected_step_sequence = "\x64\x64\x65\x65\x64\x64";
   d->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
 
   // Step through invocation of f + g + h.
-  v8::Local<v8::Function> f = CompileFunction(&env, src, "f");
+  v8::Local<v8::Function> f = CompileFunction(&env, src, "\x66");
   SetBreakPoint(f, 0);
   ChangeBreakOnException(false, true);
   step_action = StepIn;
   break_point_hit_count = 0;
-  expected_step_sequence = "ffghhff";
+  expected_step_sequence = "\x66\x66\x67\x68\x68\x66\x66";
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
@@ -4104,7 +4104,7 @@ TEST(StepWithException) {
   ChangeBreakOnException(true, true);
   step_action = StepIn;
   break_point_hit_count = 0;
-  expected_step_sequence = "ffghhhff";
+  expected_step_sequence = "\x66\x66\x67\x68\x68\x68\x66\x66";
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(StrLength(expected_step_sequence),
            break_point_hit_count);
@@ -4128,14 +4128,14 @@ TEST(DebugBreak) {
   v8::Debug::SetDebugEventListener(DebugEventBreak);
 
   // Create a function for testing stepping.
-  const char* src = "function f0() {}"
-                    "function f1(x1) {}"
-                    "function f2(x1,x2) {}"
-                    "function f3(x1,x2,x3) {}";
-  v8::Local<v8::Function> f0 = CompileFunction(&env, src, "f0");
-  v8::Local<v8::Function> f1 = CompileFunction(&env, src, "f1");
-  v8::Local<v8::Function> f2 = CompileFunction(&env, src, "f2");
-  v8::Local<v8::Function> f3 = CompileFunction(&env, src, "f3");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x30\x28\x29\x20\x7b\x7d"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x31\x28\x78\x31\x29\x20\x7b\x7d"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x32\x28\x78\x31\x2c\x78\x32\x29\x20\x7b\x7d"
+                    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x33\x28\x78\x31\x2c\x78\x32\x2c\x78\x33\x29\x20\x7b\x7d";
+  v8::Local<v8::Function> f0 = CompileFunction(&env, src, "\x66\x30");
+  v8::Local<v8::Function> f1 = CompileFunction(&env, src, "\x66\x31");
+  v8::Local<v8::Function> f2 = CompileFunction(&env, src, "\x66\x32");
+  v8::Local<v8::Function> f3 = CompileFunction(&env, src, "\x66\x33");
 
   // Call the function to make sure it is compiled.
   v8::Handle<v8::Value> argv[] = { v8::Number::New(isolate, 1),
@@ -4180,8 +4180,8 @@ TEST(DisableBreak) {
   v8::Debug::SetDebugEventListener(DebugEventCounter);
 
   // Create a function for testing stepping.
-  const char* src = "function f() {g()};function g(){i=0; while(i<10){i++}}";
-  v8::Local<v8::Function> f = CompileFunction(&env, src, "f");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x67\x28\x29\x7d\x3b\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x7b\x69\x3d\x30\x3b\x20\x77\x68\x69\x6c\x65\x28\x69\x3c\x31\x30\x29\x7b\x69\x2b\x2b\x7d\x7d";
+  v8::Local<v8::Function> f = CompileFunction(&env, src, "\x66");
 
   // Set the debug break flag.
   v8::Debug::DebugBreak(env->GetIsolate());
@@ -4208,9 +4208,9 @@ TEST(DisableBreak) {
 }
 
 static const char* kSimpleExtensionSource =
-  "(function Foo() {"
-  "  return 4;"
-  "})() ";
+  "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x6f\x6f\x28\x29\x20\x7b"
+  "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x3b"
+  "\x7d\x29\x28\x29\x20";
 
 // http://crbug.com/28933
 // Test that debug break is disabled when bootstrapper is active.
@@ -4227,9 +4227,9 @@ TEST(NoBreakWhenBootstrapping) {
   {
     // Create a context with an extension to make sure that some JavaScript
     // code is executed during bootstrapping.
-    v8::RegisterExtension(new v8::Extension("simpletest",
+    v8::RegisterExtension(new v8::Extension("\x73\x69\x6d\x70\x6c\x65\x74\x65\x73\x74",
                                             kSimpleExtensionSource));
-    const char* extension_names[] = { "simpletest" };
+    const char* extension_names[] = { "\x73\x69\x6d\x70\x6c\x65\x74\x65\x73\x74" };
     v8::ExtensionConfiguration extensions(1, extension_names);
     v8::HandleScope handle_scope(isolate);
     v8::Context::New(isolate, &extensions);
@@ -4246,11 +4246,11 @@ TEST(NoBreakWhenBootstrapping) {
 static void NamedEnum(const v8::PropertyCallbackInfo<v8::Array>& info) {
   v8::Handle<v8::Array> result = v8::Array::New(info.GetIsolate(), 3);
   result->Set(v8::Integer::New(info.GetIsolate(), 0),
-              v8::String::NewFromUtf8(info.GetIsolate(), "a"));
+              v8::String::NewFromUtf8(info.GetIsolate(), "\x61"));
   result->Set(v8::Integer::New(info.GetIsolate(), 1),
-              v8::String::NewFromUtf8(info.GetIsolate(), "b"));
+              v8::String::NewFromUtf8(info.GetIsolate(), "\x62"));
   result->Set(v8::Integer::New(info.GetIsolate(), 2),
-              v8::String::NewFromUtf8(info.GetIsolate(), "c"));
+              v8::String::NewFromUtf8(info.GetIsolate(), "\x63"));
   info.GetReturnValue().Set(result);
 }
 
@@ -4267,14 +4267,14 @@ static void IndexedEnum(const v8::PropertyCallbackInfo<v8::Array>& info) {
 static void NamedGetter(v8::Local<v8::String> name,
                         const v8::PropertyCallbackInfo<v8::Value>& info) {
   v8::String::Utf8Value n(name);
-  if (strcmp(*n, "a") == 0) {
-    info.GetReturnValue().Set(v8::String::NewFromUtf8(info.GetIsolate(), "AA"));
+  if (strcmp(*n, "\x61") == 0) {
+    info.GetReturnValue().Set(v8::String::NewFromUtf8(info.GetIsolate(), "\x41\x41"));
     return;
-  } else if (strcmp(*n, "b") == 0) {
-    info.GetReturnValue().Set(v8::String::NewFromUtf8(info.GetIsolate(), "BB"));
+  } else if (strcmp(*n, "\x62") == 0) {
+    info.GetReturnValue().Set(v8::String::NewFromUtf8(info.GetIsolate(), "\x42\x42"));
     return;
-  } else if (strcmp(*n, "c") == 0) {
-    info.GetReturnValue().Set(v8::String::NewFromUtf8(info.GetIsolate(), "CC"));
+  } else if (strcmp(*n, "\x63") == 0) {
+    info.GetReturnValue().Set(v8::String::NewFromUtf8(info.GetIsolate(), "\x43\x43"));
     return;
   } else {
     info.GetReturnValue().SetUndefined();
@@ -4301,7 +4301,7 @@ TEST(InterceptorPropertyMirror) {
   v8::Handle<v8::ObjectTemplate> named = v8::ObjectTemplate::New(isolate);
   named->SetNamedPropertyHandler(NamedGetter, NULL, NULL, NULL, NamedEnum);
   env->Global()->Set(
-      v8::String::NewFromUtf8(isolate, "intercepted_named"),
+      v8::String::NewFromUtf8(isolate, "\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x65\x64\x5f\x6e\x61\x6d\x65\x64"),
       named->NewInstance());
 
   // Create object with indexed interceptor.
@@ -4312,7 +4312,7 @@ TEST(InterceptorPropertyMirror) {
                                      NULL,
                                      IndexedEnum);
   env->Global()->Set(
-      v8::String::NewFromUtf8(isolate, "intercepted_indexed"),
+      v8::String::NewFromUtf8(isolate, "\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x65\x64\x5f\x69\x6e\x64\x65\x78\x65\x64"),
       indexed->NewInstance());
 
   // Create object with both named and indexed interceptor.
@@ -4320,108 +4320,108 @@ TEST(InterceptorPropertyMirror) {
   both->SetNamedPropertyHandler(NamedGetter, NULL, NULL, NULL, NamedEnum);
   both->SetIndexedPropertyHandler(IndexedGetter, NULL, NULL, NULL, IndexedEnum);
   env->Global()->Set(
-      v8::String::NewFromUtf8(isolate, "intercepted_both"),
+      v8::String::NewFromUtf8(isolate, "\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x65\x64\x5f\x62\x6f\x74\x68"),
       both->NewInstance());
 
   // Get mirrors for the three objects with interceptor.
   CompileRun(
-      "var named_mirror = debug.MakeMirror(intercepted_named);"
-      "var indexed_mirror = debug.MakeMirror(intercepted_indexed);"
-      "var both_mirror = debug.MakeMirror(intercepted_both)");
+      "\x76\x61\x72\x20\x6e\x61\x6d\x65\x64\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x65\x64\x5f\x6e\x61\x6d\x65\x64\x29\x3b"
+      "\x76\x61\x72\x20\x69\x6e\x64\x65\x78\x65\x64\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x65\x64\x5f\x69\x6e\x64\x65\x78\x65\x64\x29\x3b"
+      "\x76\x61\x72\x20\x62\x6f\x74\x68\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x65\x64\x5f\x62\x6f\x74\x68\x29");
   CHECK(CompileRun(
-       "named_mirror instanceof debug.ObjectMirror")->BooleanValue());
+       "\x6e\x61\x6d\x65\x64\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
   CHECK(CompileRun(
-        "indexed_mirror instanceof debug.ObjectMirror")->BooleanValue());
+        "\x69\x6e\x64\x65\x78\x65\x64\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
   CHECK(CompileRun(
-        "both_mirror instanceof debug.ObjectMirror")->BooleanValue());
+        "\x62\x6f\x74\x68\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
 
   // Get the property names from the interceptors
   CompileRun(
-      "named_names = named_mirror.propertyNames();"
-      "indexed_names = indexed_mirror.propertyNames();"
-      "both_names = both_mirror.propertyNames()");
-  CHECK_EQ(3, CompileRun("named_names.length")->Int32Value());
-  CHECK_EQ(2, CompileRun("indexed_names.length")->Int32Value());
-  CHECK_EQ(5, CompileRun("both_names.length")->Int32Value());
+      "\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x20\x3d\x20\x6e\x61\x6d\x65\x64\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x3b"
+      "\x69\x6e\x64\x65\x78\x65\x64\x5f\x6e\x61\x6d\x65\x73\x20\x3d\x20\x69\x6e\x64\x65\x78\x65\x64\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x3b"
+      "\x62\x6f\x74\x68\x5f\x6e\x61\x6d\x65\x73\x20\x3d\x20\x62\x6f\x74\x68\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29");
+  CHECK_EQ(3, CompileRun("\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
+  CHECK_EQ(2, CompileRun("\x69\x6e\x64\x65\x78\x65\x64\x5f\x6e\x61\x6d\x65\x73\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
+  CHECK_EQ(5, CompileRun("\x62\x6f\x74\x68\x5f\x6e\x61\x6d\x65\x73\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
 
   // Check the expected number of properties.
   const char* source;
-  source = "named_mirror.properties().length";
+  source = "\x6e\x61\x6d\x65\x64\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68";
   CHECK_EQ(3, CompileRun(source)->Int32Value());
 
-  source = "indexed_mirror.properties().length";
+  source = "\x69\x6e\x64\x65\x78\x65\x64\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68";
   CHECK_EQ(2, CompileRun(source)->Int32Value());
 
-  source = "both_mirror.properties().length";
+  source = "\x62\x6f\x74\x68\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68";
   CHECK_EQ(5, CompileRun(source)->Int32Value());
 
   // 1 is PropertyKind.Named;
-  source = "both_mirror.properties(1).length";
+  source = "\x62\x6f\x74\x68\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x31\x29\x2e\x6c\x65\x6e\x67\x74\x68";
   CHECK_EQ(3, CompileRun(source)->Int32Value());
 
   // 2 is PropertyKind.Indexed;
-  source = "both_mirror.properties(2).length";
+  source = "\x62\x6f\x74\x68\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x32\x29\x2e\x6c\x65\x6e\x67\x74\x68";
   CHECK_EQ(2, CompileRun(source)->Int32Value());
 
   // 3 is PropertyKind.Named  | PropertyKind.Indexed;
-  source = "both_mirror.properties(3).length";
+  source = "\x62\x6f\x74\x68\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x33\x29\x2e\x6c\x65\x6e\x67\x74\x68";
   CHECK_EQ(5, CompileRun(source)->Int32Value());
 
   // Get the interceptor properties for the object with only named interceptor.
-  CompileRun("var named_values = named_mirror.properties()");
+  CompileRun("\x76\x61\x72\x20\x6e\x61\x6d\x65\x64\x5f\x76\x61\x6c\x75\x65\x73\x20\x3d\x20\x6e\x61\x6d\x65\x64\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x29");
 
   // Check that the properties are interceptor properties.
   for (int i = 0; i < 3; i++) {
     EmbeddedVector<char, SMALL_STRING_BUFFER_SIZE> buffer;
     SNPrintF(buffer,
-             "named_values[%d] instanceof debug.PropertyMirror", i);
+             "\x6e\x61\x6d\x65\x64\x5f\x76\x61\x6c\x75\x65\x73\x5b\x6c\x84\x5d\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x50\x72\x6f\x70\x65\x72\x74\x79\x4d\x69\x72\x72\x6f\x72", i);
     CHECK(CompileRun(buffer.start())->BooleanValue());
 
-    SNPrintF(buffer, "named_values[%d].propertyType()", i);
+    SNPrintF(buffer, "\x6e\x61\x6d\x65\x64\x5f\x76\x61\x6c\x75\x65\x73\x5b\x6c\x84\x5d\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x54\x79\x70\x65\x28\x29", i);
     CHECK_EQ(v8::internal::INTERCEPTOR,
              CompileRun(buffer.start())->Int32Value());
 
-    SNPrintF(buffer, "named_values[%d].isNative()", i);
+    SNPrintF(buffer, "\x6e\x61\x6d\x65\x64\x5f\x76\x61\x6c\x75\x65\x73\x5b\x6c\x84\x5d\x2e\x69\x73\x4e\x61\x74\x69\x76\x65\x28\x29", i);
     CHECK(CompileRun(buffer.start())->BooleanValue());
   }
 
   // Get the interceptor properties for the object with only indexed
   // interceptor.
-  CompileRun("var indexed_values = indexed_mirror.properties()");
+  CompileRun("\x76\x61\x72\x20\x69\x6e\x64\x65\x78\x65\x64\x5f\x76\x61\x6c\x75\x65\x73\x20\x3d\x20\x69\x6e\x64\x65\x78\x65\x64\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x29");
 
   // Check that the properties are interceptor properties.
   for (int i = 0; i < 2; i++) {
     EmbeddedVector<char, SMALL_STRING_BUFFER_SIZE> buffer;
     SNPrintF(buffer,
-             "indexed_values[%d] instanceof debug.PropertyMirror", i);
+             "\x69\x6e\x64\x65\x78\x65\x64\x5f\x76\x61\x6c\x75\x65\x73\x5b\x6c\x84\x5d\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x50\x72\x6f\x70\x65\x72\x74\x79\x4d\x69\x72\x72\x6f\x72", i);
     CHECK(CompileRun(buffer.start())->BooleanValue());
   }
 
   // Get the interceptor properties for the object with both types of
   // interceptors.
-  CompileRun("var both_values = both_mirror.properties()");
+  CompileRun("\x76\x61\x72\x20\x62\x6f\x74\x68\x5f\x76\x61\x6c\x75\x65\x73\x20\x3d\x20\x62\x6f\x74\x68\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x28\x29");
 
   // Check that the properties are interceptor properties.
   for (int i = 0; i < 5; i++) {
     EmbeddedVector<char, SMALL_STRING_BUFFER_SIZE> buffer;
-    SNPrintF(buffer, "both_values[%d] instanceof debug.PropertyMirror", i);
+    SNPrintF(buffer, "\x62\x6f\x74\x68\x5f\x76\x61\x6c\x75\x65\x73\x5b\x6c\x84\x5d\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x50\x72\x6f\x70\x65\x72\x74\x79\x4d\x69\x72\x72\x6f\x72", i);
     CHECK(CompileRun(buffer.start())->BooleanValue());
   }
 
   // Check the property names.
-  source = "both_values[0].name() == 'a'";
+  source = "\x62\x6f\x74\x68\x5f\x76\x61\x6c\x75\x65\x73\x5b\x30\x5d\x2e\x6e\x61\x6d\x65\x28\x29\x20\x3d\x3d\x20\x27\x61\x27";
   CHECK(CompileRun(source)->BooleanValue());
 
-  source = "both_values[1].name() == 'b'";
+  source = "\x62\x6f\x74\x68\x5f\x76\x61\x6c\x75\x65\x73\x5b\x31\x5d\x2e\x6e\x61\x6d\x65\x28\x29\x20\x3d\x3d\x20\x27\x62\x27";
   CHECK(CompileRun(source)->BooleanValue());
 
-  source = "both_values[2].name() == 'c'";
+  source = "\x62\x6f\x74\x68\x5f\x76\x61\x6c\x75\x65\x73\x5b\x32\x5d\x2e\x6e\x61\x6d\x65\x28\x29\x20\x3d\x3d\x20\x27\x63\x27";
   CHECK(CompileRun(source)->BooleanValue());
 
-  source = "both_values[3].name() == 1";
+  source = "\x62\x6f\x74\x68\x5f\x76\x61\x6c\x75\x65\x73\x5b\x33\x5d\x2e\x6e\x61\x6d\x65\x28\x29\x20\x3d\x3d\x20\x31";
   CHECK(CompileRun(source)->BooleanValue());
 
-  source = "both_values[4].name() == 10";
+  source = "\x62\x6f\x74\x68\x5f\x76\x61\x6c\x75\x65\x73\x5b\x34\x5d\x2e\x6e\x61\x6d\x65\x28\x29\x20\x3d\x3d\x20\x31\x30";
   CHECK(CompileRun(source)->BooleanValue());
 }
 
@@ -4434,73 +4434,73 @@ TEST(HiddenPrototypePropertyMirror) {
   env.ExposeDebug();
 
   v8::Handle<v8::FunctionTemplate> t0 = v8::FunctionTemplate::New(isolate);
-  t0->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "x"),
+  t0->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "\x78"),
                               v8::Number::New(isolate, 0));
   v8::Handle<v8::FunctionTemplate> t1 = v8::FunctionTemplate::New(isolate);
   t1->SetHiddenPrototype(true);
-  t1->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "y"),
+  t1->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "\x79"),
                               v8::Number::New(isolate, 1));
   v8::Handle<v8::FunctionTemplate> t2 = v8::FunctionTemplate::New(isolate);
   t2->SetHiddenPrototype(true);
-  t2->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "z"),
+  t2->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "\x7a"),
                               v8::Number::New(isolate, 2));
   v8::Handle<v8::FunctionTemplate> t3 = v8::FunctionTemplate::New(isolate);
-  t3->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "u"),
+  t3->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "\x75"),
                               v8::Number::New(isolate, 3));
 
   // Create object and set them on the global object.
   v8::Handle<v8::Object> o0 = t0->GetFunction()->NewInstance();
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "o0"), o0);
+  env->Global()->Set(v8::String::NewFromUtf8(isolate, "\x6f\x30"), o0);
   v8::Handle<v8::Object> o1 = t1->GetFunction()->NewInstance();
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "o1"), o1);
+  env->Global()->Set(v8::String::NewFromUtf8(isolate, "\x6f\x31"), o1);
   v8::Handle<v8::Object> o2 = t2->GetFunction()->NewInstance();
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "o2"), o2);
+  env->Global()->Set(v8::String::NewFromUtf8(isolate, "\x6f\x32"), o2);
   v8::Handle<v8::Object> o3 = t3->GetFunction()->NewInstance();
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "o3"), o3);
+  env->Global()->Set(v8::String::NewFromUtf8(isolate, "\x6f\x33"), o3);
 
   // Get mirrors for the four objects.
   CompileRun(
-      "var o0_mirror = debug.MakeMirror(o0);"
-      "var o1_mirror = debug.MakeMirror(o1);"
-      "var o2_mirror = debug.MakeMirror(o2);"
-      "var o3_mirror = debug.MakeMirror(o3)");
-  CHECK(CompileRun("o0_mirror instanceof debug.ObjectMirror")->BooleanValue());
-  CHECK(CompileRun("o1_mirror instanceof debug.ObjectMirror")->BooleanValue());
-  CHECK(CompileRun("o2_mirror instanceof debug.ObjectMirror")->BooleanValue());
-  CHECK(CompileRun("o3_mirror instanceof debug.ObjectMirror")->BooleanValue());
+      "\x76\x61\x72\x20\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x6f\x30\x29\x3b"
+      "\x76\x61\x72\x20\x6f\x31\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x6f\x31\x29\x3b"
+      "\x76\x61\x72\x20\x6f\x32\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x6f\x32\x29\x3b"
+      "\x76\x61\x72\x20\x6f\x33\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x6f\x33\x29");
+  CHECK(CompileRun("\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
+  CHECK(CompileRun("\x6f\x31\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
+  CHECK(CompileRun("\x6f\x32\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
+  CHECK(CompileRun("\x6f\x33\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
 
   // Check that each object has one property.
   CHECK_EQ(1, CompileRun(
-              "o0_mirror.propertyNames().length")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
   CHECK_EQ(1, CompileRun(
-              "o1_mirror.propertyNames().length")->Int32Value());
+              "\x6f\x31\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
   CHECK_EQ(1, CompileRun(
-              "o2_mirror.propertyNames().length")->Int32Value());
+              "\x6f\x32\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
   CHECK_EQ(1, CompileRun(
-              "o3_mirror.propertyNames().length")->Int32Value());
+              "\x6f\x33\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
 
   // Set o1 as prototype for o0. o1 has the hidden prototype flag so all
   // properties on o1 should be seen on o0.
-  o0->Set(v8::String::NewFromUtf8(isolate, "__proto__"), o1);
+  o0->Set(v8::String::NewFromUtf8(isolate, "\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), o1);
   CHECK_EQ(2, CompileRun(
-              "o0_mirror.propertyNames().length")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
   CHECK_EQ(0, CompileRun(
-              "o0_mirror.property('x').value().value()")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x78\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29")->Int32Value());
   CHECK_EQ(1, CompileRun(
-              "o0_mirror.property('y').value().value()")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x79\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29")->Int32Value());
 
   // Set o2 as prototype for o0 (it will end up after o1 as o1 has the hidden
   // prototype flag. o2 also has the hidden prototype flag so all properties
   // on o2 should be seen on o0 as well as properties on o1.
-  o0->Set(v8::String::NewFromUtf8(isolate, "__proto__"), o2);
+  o0->Set(v8::String::NewFromUtf8(isolate, "\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), o2);
   CHECK_EQ(3, CompileRun(
-              "o0_mirror.propertyNames().length")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
   CHECK_EQ(0, CompileRun(
-              "o0_mirror.property('x').value().value()")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x78\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29")->Int32Value());
   CHECK_EQ(1, CompileRun(
-              "o0_mirror.property('y').value().value()")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x79\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29")->Int32Value());
   CHECK_EQ(2, CompileRun(
-              "o0_mirror.property('z').value().value()")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x7a\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29")->Int32Value());
 
   // Set o3 as prototype for o0 (it will end up after o1 and o2 as both o1 and
   // o2 has the hidden prototype flag. o3 does not have the hidden prototype
@@ -4508,21 +4508,21 @@ TEST(HiddenPrototypePropertyMirror) {
   // from o1 and o2 should still be seen on o0.
   // Final prototype chain: o0 -> o1 -> o2 -> o3
   // Hidden prototypes:           ^^    ^^
-  o0->Set(v8::String::NewFromUtf8(isolate, "__proto__"), o3);
+  o0->Set(v8::String::NewFromUtf8(isolate, "\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), o3);
   CHECK_EQ(3, CompileRun(
-              "o0_mirror.propertyNames().length")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
   CHECK_EQ(1, CompileRun(
-              "o3_mirror.propertyNames().length")->Int32Value());
+              "\x6f\x33\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
   CHECK_EQ(0, CompileRun(
-              "o0_mirror.property('x').value().value()")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x78\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29")->Int32Value());
   CHECK_EQ(1, CompileRun(
-              "o0_mirror.property('y').value().value()")->Int32Value());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x79\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29")->Int32Value());
   CHECK_EQ(2, CompileRun(
-              "o0_mirror.property('z').value().value()")->Int32Value());
-  CHECK(CompileRun("o0_mirror.property('u').isUndefined()")->BooleanValue());
+              "\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x7a\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29")->Int32Value());
+  CHECK(CompileRun("\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x75\x27\x29\x2e\x69\x73\x55\x6e\x64\x65\x66\x69\x6e\x65\x64\x28\x29")->BooleanValue());
 
   // The prototype (__proto__) for o0 should be o3 as o1 and o2 are hidden.
-  CHECK(CompileRun("o0_mirror.protoObject() == o3_mirror")->BooleanValue());
+  CHECK(CompileRun("\x6f\x30\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x74\x6f\x4f\x62\x6a\x65\x63\x74\x28\x29\x20\x3d\x3d\x20\x6f\x33\x5f\x6d\x69\x72\x72\x6f\x72")->BooleanValue());
 }
 
 
@@ -4540,36 +4540,36 @@ TEST(NativeGetterPropertyMirror) {
   v8::HandleScope scope(isolate);
   env.ExposeDebug();
 
-  v8::Handle<v8::String> name = v8::String::NewFromUtf8(isolate, "x");
+  v8::Handle<v8::String> name = v8::String::NewFromUtf8(isolate, "\x78");
   // Create object with named accessor.
   v8::Handle<v8::ObjectTemplate> named = v8::ObjectTemplate::New(isolate);
   named->SetAccessor(name, &ProtperyXNativeGetter, NULL,
       v8::Handle<v8::Value>(), v8::DEFAULT, v8::None);
 
   // Create object with named property getter.
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "instance"),
+  env->Global()->Set(v8::String::NewFromUtf8(isolate, "\x69\x6e\x73\x74\x61\x6e\x63\x65"),
                      named->NewInstance());
-  CHECK_EQ(10, CompileRun("instance.x")->Int32Value());
+  CHECK_EQ(10, CompileRun("\x69\x6e\x73\x74\x61\x6e\x63\x65\x2e\x78")->Int32Value());
 
   // Get mirror for the object with property getter.
-  CompileRun("var instance_mirror = debug.MakeMirror(instance);");
+  CompileRun("\x76\x61\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x69\x6e\x73\x74\x61\x6e\x63\x65\x29\x3b");
   CHECK(CompileRun(
-      "instance_mirror instanceof debug.ObjectMirror")->BooleanValue());
+      "\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
 
-  CompileRun("var named_names = instance_mirror.propertyNames();");
-  CHECK_EQ(1, CompileRun("named_names.length")->Int32Value());
-  CHECK(CompileRun("named_names[0] == 'x'")->BooleanValue());
+  CompileRun("\x76\x61\x72\x20\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x20\x3d\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x3b");
+  CHECK_EQ(1, CompileRun("\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
+  CHECK(CompileRun("\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x5b\x30\x5d\x20\x3d\x3d\x20\x27\x78\x27")->BooleanValue());
   CHECK(CompileRun(
-      "instance_mirror.property('x').value().isNumber()")->BooleanValue());
+      "\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x78\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x69\x73\x4e\x75\x6d\x62\x65\x72\x28\x29")->BooleanValue());
   CHECK(CompileRun(
-      "instance_mirror.property('x').value().value() == 10")->BooleanValue());
+      "\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x78\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x20\x3d\x3d\x20\x31\x30")->BooleanValue());
 }
 
 
 static void ProtperyXNativeGetterThrowingError(
     v8::Local<v8::String> property,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  CompileRun("throw new Error('Error message');");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x27\x45\x72\x72\x6f\x72\x20\x6d\x65\x73\x73\x61\x67\x65\x27\x29\x3b");
 }
 
 
@@ -4580,29 +4580,29 @@ TEST(NativeGetterThrowingErrorPropertyMirror) {
   v8::HandleScope scope(isolate);
   env.ExposeDebug();
 
-  v8::Handle<v8::String> name = v8::String::NewFromUtf8(isolate, "x");
+  v8::Handle<v8::String> name = v8::String::NewFromUtf8(isolate, "\x78");
   // Create object with named accessor.
   v8::Handle<v8::ObjectTemplate> named = v8::ObjectTemplate::New(isolate);
   named->SetAccessor(name, &ProtperyXNativeGetterThrowingError, NULL,
       v8::Handle<v8::Value>(), v8::DEFAULT, v8::None);
 
   // Create object with named property getter.
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "instance"),
+  env->Global()->Set(v8::String::NewFromUtf8(isolate, "\x69\x6e\x73\x74\x61\x6e\x63\x65"),
                      named->NewInstance());
 
   // Get mirror for the object with property getter.
-  CompileRun("var instance_mirror = debug.MakeMirror(instance);");
+  CompileRun("\x76\x61\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x69\x6e\x73\x74\x61\x6e\x63\x65\x29\x3b");
   CHECK(CompileRun(
-      "instance_mirror instanceof debug.ObjectMirror")->BooleanValue());
-  CompileRun("named_names = instance_mirror.propertyNames();");
-  CHECK_EQ(1, CompileRun("named_names.length")->Int32Value());
-  CHECK(CompileRun("named_names[0] == 'x'")->BooleanValue());
+      "\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
+  CompileRun("\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x20\x3d\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x3b");
+  CHECK_EQ(1, CompileRun("\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
+  CHECK(CompileRun("\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x5b\x30\x5d\x20\x3d\x3d\x20\x27\x78\x27")->BooleanValue());
   CHECK(CompileRun(
-      "instance_mirror.property('x').value().isError()")->BooleanValue());
+      "\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x78\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x69\x73\x45\x72\x72\x6f\x72\x28\x29")->BooleanValue());
 
   // Check that the message is that passed to the Error constructor.
   CHECK(CompileRun(
-      "instance_mirror.property('x').value().message() == 'Error message'")->
+      "\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x78\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x6d\x65\x73\x73\x61\x67\x65\x28\x29\x20\x3d\x3d\x20\x27\x45\x72\x72\x6f\x72\x20\x6d\x65\x73\x73\x61\x67\x65\x27")->
           BooleanValue());
 }
 
@@ -4618,73 +4618,73 @@ TEST(NoHiddenProperties) {
   env.ExposeDebug();
 
   // Create an object in the global scope.
-  const char* source = "var obj = {a: 1};";
+  const char* source = "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x61\x3a\x20\x31\x7d\x3b";
   v8::Script::Compile(v8::String::NewFromUtf8(isolate, source))
       ->Run();
   v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(isolate, "obj")));
+      env->Global()->Get(v8::String::NewFromUtf8(isolate, "\x6f\x62\x6a")));
   // Set a hidden property on the object.
   obj->SetHiddenValue(
-      v8::String::NewFromUtf8(isolate, "v8::test-debug::a"),
+      v8::String::NewFromUtf8(isolate, "\x76\x38\x3a\x3a\x74\x65\x73\x74\x2d\x64\x65\x62\x75\x67\x3a\x3a\x61"),
       v8::Int32::New(isolate, 11));
 
   // Get mirror for the object with property getter.
-  CompileRun("var obj_mirror = debug.MakeMirror(obj);");
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x6f\x62\x6a\x29\x3b");
   CHECK(CompileRun(
-      "obj_mirror instanceof debug.ObjectMirror")->BooleanValue());
-  CompileRun("var named_names = obj_mirror.propertyNames();");
+      "\x6f\x62\x6a\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
+  CompileRun("\x76\x61\x72\x20\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x20\x3d\x20\x6f\x62\x6a\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x3b");
   // There should be exactly one property. But there is also an unnamed
   // property whose value is hidden properties dictionary. The latter
   // property should not be in the list of reguar properties.
-  CHECK_EQ(1, CompileRun("named_names.length")->Int32Value());
-  CHECK(CompileRun("named_names[0] == 'a'")->BooleanValue());
+  CHECK_EQ(1, CompileRun("\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
+  CHECK(CompileRun("\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x5b\x30\x5d\x20\x3d\x3d\x20\x27\x61\x27")->BooleanValue());
   CHECK(CompileRun(
-      "obj_mirror.property('a').value().value() == 1")->BooleanValue());
+      "\x6f\x62\x6a\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x61\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x20\x3d\x3d\x20\x31")->BooleanValue());
 
   // Object created by t0 will become hidden prototype of object 'obj'.
   v8::Handle<v8::FunctionTemplate> t0 = v8::FunctionTemplate::New(isolate);
-  t0->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "b"),
+  t0->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "\x62"),
                               v8::Number::New(isolate, 2));
   t0->SetHiddenPrototype(true);
   v8::Handle<v8::FunctionTemplate> t1 = v8::FunctionTemplate::New(isolate);
-  t1->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "c"),
+  t1->InstanceTemplate()->Set(v8::String::NewFromUtf8(isolate, "\x63"),
                               v8::Number::New(isolate, 3));
 
   // Create proto objects, add hidden properties to them and set them on
   // the global object.
   v8::Handle<v8::Object> protoObj = t0->GetFunction()->NewInstance();
   protoObj->SetHiddenValue(
-      v8::String::NewFromUtf8(isolate, "v8::test-debug::b"),
+      v8::String::NewFromUtf8(isolate, "\x76\x38\x3a\x3a\x74\x65\x73\x74\x2d\x64\x65\x62\x75\x67\x3a\x3a\x62"),
       v8::Int32::New(isolate, 12));
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "protoObj"),
+  env->Global()->Set(v8::String::NewFromUtf8(isolate, "\x70\x72\x6f\x74\x6f\x4f\x62\x6a"),
                      protoObj);
   v8::Handle<v8::Object> grandProtoObj = t1->GetFunction()->NewInstance();
   grandProtoObj->SetHiddenValue(
-      v8::String::NewFromUtf8(isolate, "v8::test-debug::c"),
+      v8::String::NewFromUtf8(isolate, "\x76\x38\x3a\x3a\x74\x65\x73\x74\x2d\x64\x65\x62\x75\x67\x3a\x3a\x63"),
       v8::Int32::New(isolate, 13));
   env->Global()->Set(
-      v8::String::NewFromUtf8(isolate, "grandProtoObj"),
+      v8::String::NewFromUtf8(isolate, "\x67\x72\x61\x6e\x64\x50\x72\x6f\x74\x6f\x4f\x62\x6a"),
       grandProtoObj);
 
   // Setting prototypes: obj->protoObj->grandProtoObj
-  protoObj->Set(v8::String::NewFromUtf8(isolate, "__proto__"),
+  protoObj->Set(v8::String::NewFromUtf8(isolate, "\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"),
                 grandProtoObj);
-  obj->Set(v8::String::NewFromUtf8(isolate, "__proto__"), protoObj);
+  obj->Set(v8::String::NewFromUtf8(isolate, "\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f"), protoObj);
 
   // Get mirror for the object with property getter.
-  CompileRun("var obj_mirror = debug.MakeMirror(obj);");
+  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x5f\x6d\x69\x72\x72\x6f\x72\x20\x3d\x20\x64\x65\x62\x75\x67\x2e\x4d\x61\x6b\x65\x4d\x69\x72\x72\x6f\x72\x28\x6f\x62\x6a\x29\x3b");
   CHECK(CompileRun(
-      "obj_mirror instanceof debug.ObjectMirror")->BooleanValue());
-  CompileRun("var named_names = obj_mirror.propertyNames();");
+      "\x6f\x62\x6a\x5f\x6d\x69\x72\x72\x6f\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x64\x65\x62\x75\x67\x2e\x4f\x62\x6a\x65\x63\x74\x4d\x69\x72\x72\x6f\x72")->BooleanValue());
+  CompileRun("\x76\x61\x72\x20\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x20\x3d\x20\x6f\x62\x6a\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x4e\x61\x6d\x65\x73\x28\x29\x3b");
   // There should be exactly two properties - one from the object itself and
   // another from its hidden prototype.
-  CHECK_EQ(2, CompileRun("named_names.length")->Int32Value());
-  CHECK(CompileRun("named_names.sort(); named_names[0] == 'a' &&"
-                   "named_names[1] == 'b'")->BooleanValue());
+  CHECK_EQ(2, CompileRun("\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
+  CHECK(CompileRun("\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x2e\x73\x6f\x72\x74\x28\x29\x3b\x20\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x5b\x30\x5d\x20\x3d\x3d\x20\x27\x61\x27\x20\x26\x26"
+                   "\x6e\x61\x6d\x65\x64\x5f\x6e\x61\x6d\x65\x73\x5b\x31\x5d\x20\x3d\x3d\x20\x27\x62\x27")->BooleanValue());
   CHECK(CompileRun(
-      "obj_mirror.property('a').value().value() == 1")->BooleanValue());
+      "\x6f\x62\x6a\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x61\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x20\x3d\x3d\x20\x31")->BooleanValue());
   CHECK(CompileRun(
-      "obj_mirror.property('b').value().value() == 2")->BooleanValue());
+      "\x6f\x62\x6a\x5f\x6d\x69\x72\x72\x6f\x72\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x62\x27\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x20\x3d\x3d\x20\x32")->BooleanValue());
 }
 
 
@@ -4714,7 +4714,7 @@ class ThreadBarrier V8_FINAL {
     if (N == num_blocked_) {
       // Signal and unblock all waiting threads.
       cv_.NotifyAll();
-      printf("BARRIER\n\n");
+      printf("\x42\x41\x52\x52\x49\x45\x52\xa\xa");
       fflush(stdout);
     } else {  // Wait for the semaphore.
       while (num_blocked_ < N) {
@@ -4751,8 +4751,8 @@ class Barriers {
 
 // We match parts of the message to decide if it is a break message.
 bool IsBreakEventMessage(char *message) {
-  const char* type_event = "\"type\":\"event\"";
-  const char* event_break = "\"event\":\"break\"";
+  const char* type_event = "\x22\x74\x79\x70\x65\x22\x3a\x22\x65\x76\x65\x6e\x74\x22";
+  const char* event_break = "\x22\x65\x76\x65\x6e\x74\x22\x3a\x22\x62\x72\x65\x61\x6b\x22";
   // Does the message contain both type:event and event:break?
   return strstr(message, type_event) != NULL &&
          strstr(message, event_break) != NULL;
@@ -4761,8 +4761,8 @@ bool IsBreakEventMessage(char *message) {
 
 // We match parts of the message to decide if it is a exception message.
 bool IsExceptionEventMessage(char *message) {
-  const char* type_event = "\"type\":\"event\"";
-  const char* event_exception = "\"event\":\"exception\"";
+  const char* type_event = "\x22\x74\x79\x70\x65\x22\x3a\x22\x65\x76\x65\x6e\x74\x22";
+  const char* event_exception = "\x22\x65\x76\x65\x6e\x74\x22\x3a\x22\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x22";
   // Does the message contain both type:event and event:exception?
   return strstr(message, type_event) != NULL &&
       strstr(message, event_exception) != NULL;
@@ -4771,8 +4771,8 @@ bool IsExceptionEventMessage(char *message) {
 
 // We match the message wether it is an evaluate response message.
 bool IsEvaluateResponseMessage(char* message) {
-  const char* type_response = "\"type\":\"response\"";
-  const char* command_evaluate = "\"command\":\"evaluate\"";
+  const char* type_response = "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x73\x70\x6f\x6e\x73\x65\x22";
+  const char* command_evaluate = "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22";
   // Does the message contain both type:response and command:evaluate?
   return strstr(message, type_response) != NULL &&
          strstr(message, command_evaluate) != NULL;
@@ -4786,7 +4786,7 @@ static int StringToInt(const char* s) {
 
 // We match parts of the message to get evaluate result int value.
 int GetEvaluateIntResult(char *message) {
-  const char* value = "\"value\":";
+  const char* value = "\x22\x76\x61\x6c\x75\x65\x22\x3a";
   char* pos = strstr(message, value);
   if (pos == NULL) {
     return -1;
@@ -4799,7 +4799,7 @@ int GetEvaluateIntResult(char *message) {
 
 // We match parts of the message to get hit breakpoint id.
 int GetBreakpointIdFromBreakEventMessage(char *message) {
-  const char* breakpoints = "\"breakpoints\":[";
+  const char* breakpoints = "\x22\x62\x72\x65\x61\x6b\x70\x6f\x69\x6e\x74\x73\x22\x3a\x5b";
   char* pos = strstr(message, breakpoints);
   if (pos == NULL) {
     return -1;
@@ -4812,7 +4812,7 @@ int GetBreakpointIdFromBreakEventMessage(char *message) {
 
 // We match parts of the message to get total frames number.
 int GetTotalFramesInt(char *message) {
-  const char* prefix = "\"totalFrames\":";
+  const char* prefix = "\x22\x74\x6f\x74\x61\x6c\x46\x72\x61\x6d\x65\x73\x22\x3a";
   char* pos = strstr(message, prefix);
   if (pos == NULL) {
     return -1;
@@ -4825,7 +4825,7 @@ int GetTotalFramesInt(char *message) {
 
 // We match parts of the message to get source line.
 int GetSourceLineFromBreakEventMessage(char *message) {
-  const char* source_line = "\"sourceLine\":";
+  const char* source_line = "\x22\x73\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x22\x3a";
   char* pos = strstr(message, source_line);
   if (pos == NULL) {
     return -1;
@@ -4848,7 +4848,7 @@ Barriers message_queue_barriers;
 class MessageQueueDebuggerThread : public v8::base::Thread {
  public:
   MessageQueueDebuggerThread()
-      : Thread(Options("MessageQueueDebuggerThread")) {}
+      : Thread(Options("\x4d\x65\x73\x73\x61\x67\x65\x51\x75\x65\x75\x65\x44\x65\x62\x75\x67\x67\x65\x72\x54\x68\x72\x65\x61\x64")) {}
   void Run();
 };
 
@@ -4873,29 +4873,29 @@ void MessageQueueDebuggerThread::Run() {
   uint16_t buffer_1[kBufferSize];
   uint16_t buffer_2[kBufferSize];
   const char* command_1 =
-      "{\"seq\":117,"
-       "\"type\":\"request\","
-       "\"command\":\"evaluate\","
-       "\"arguments\":{\"expression\":\"1+2\"}}";
+      "\x7b\x22\x73\x65\x71\x22\x3a\x31\x31\x37\x2c"
+       "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+       "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+       "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x31\x2b\x32\x22\x7d\x7d";
   const char* command_2 =
-    "{\"seq\":118,"
-     "\"type\":\"request\","
-     "\"command\":\"evaluate\","
-     "\"arguments\":{\"expression\":\"1+a\"}}";
+    "\x7b\x22\x73\x65\x71\x22\x3a\x31\x31\x38\x2c"
+     "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+     "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+     "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x31\x2b\x61\x22\x7d\x7d";
   const char* command_3 =
-    "{\"seq\":119,"
-     "\"type\":\"request\","
-     "\"command\":\"evaluate\","
-     "\"arguments\":{\"expression\":\"c.d * b\"}}";
+    "\x7b\x22\x73\x65\x71\x22\x3a\x31\x31\x39\x2c"
+     "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+     "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+     "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x63\x2e\x64\x20\x2a\x20\x62\x22\x7d\x7d";
   const char* command_continue =
-    "{\"seq\":106,"
-     "\"type\":\"request\","
-     "\"command\":\"continue\"}";
+    "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x36\x2c"
+     "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+     "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x63\x6f\x6e\x74\x69\x6e\x75\x65\x22\x7d";
   const char* command_single_step =
-    "{\"seq\":107,"
-     "\"type\":\"request\","
-     "\"command\":\"continue\","
-     "\"arguments\":{\"stepaction\":\"next\"}}";
+    "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x37\x2c"
+     "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+     "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x63\x6f\x6e\x74\x69\x6e\x75\x65\x22\x2c"
+     "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x73\x74\x65\x70\x61\x63\x74\x69\x6f\x6e\x22\x3a\x22\x6e\x65\x78\x74\x22\x7d\x7d";
 
   /* Interleaved sequence of actions by the two threads:*/
   // Main thread compiles and runs source_1
@@ -4963,9 +4963,9 @@ TEST(MessageQueues) {
   v8::Debug::SetMessageHandler(MessageHandler);
   message_queue_debugger_thread.Start();
 
-  const char* source_1 = "a = 3; b = 4; c = new Object(); c.d = 5;";
-  const char* source_2 = "e = 17;";
-  const char* source_3 = "a = 4; debugger; a = 5; a = 6; a = 7;";
+  const char* source_1 = "\x61\x20\x3d\x20\x33\x3b\x20\x62\x20\x3d\x20\x34\x3b\x20\x63\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b\x20\x63\x2e\x64\x20\x3d\x20\x35\x3b";
+  const char* source_2 = "\x65\x20\x3d\x20\x31\x37\x3b";
+  const char* source_3 = "\x61\x20\x3d\x20\x34\x3b\x20\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x20\x61\x20\x3d\x20\x35\x3b\x20\x61\x20\x3d\x20\x36\x3b\x20\x61\x20\x3d\x20\x37\x3b";
 
   // See MessageQueueDebuggerThread::Run for interleaved sequence of
   // API calls and events in the two threads.
@@ -5055,23 +5055,23 @@ TEST(SendClientDataToHandler) {
   TestClientData::ResetCounters();
   handled_client_data_instances_count = 0;
   v8::Debug::SetMessageHandler(MessageHandlerCountingClientData);
-  const char* source_1 = "a = 3; b = 4; c = new Object(); c.d = 5;";
+  const char* source_1 = "\x61\x20\x3d\x20\x33\x3b\x20\x62\x20\x3d\x20\x34\x3b\x20\x63\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x3b\x20\x63\x2e\x64\x20\x3d\x20\x35\x3b";
   const int kBufferSize = 1000;
   uint16_t buffer[kBufferSize];
   const char* command_1 =
-      "{\"seq\":117,"
-       "\"type\":\"request\","
-       "\"command\":\"evaluate\","
-       "\"arguments\":{\"expression\":\"1+2\"}}";
+      "\x7b\x22\x73\x65\x71\x22\x3a\x31\x31\x37\x2c"
+       "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+       "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+       "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x31\x2b\x32\x22\x7d\x7d";
   const char* command_2 =
-    "{\"seq\":118,"
-     "\"type\":\"request\","
-     "\"command\":\"evaluate\","
-     "\"arguments\":{\"expression\":\"1+a\"}}";
+    "\x7b\x22\x73\x65\x71\x22\x3a\x31\x31\x38\x2c"
+     "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+     "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+     "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x31\x2b\x61\x22\x7d\x7d";
   const char* command_continue =
-    "{\"seq\":106,"
-     "\"type\":\"request\","
-     "\"command\":\"continue\"}";
+    "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x36\x2c"
+     "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+     "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x63\x6f\x6e\x74\x69\x6e\x75\x65\x22\x7d";
 
   v8::Debug::SendCommand(isolate, buffer, AsciiToUtf16(command_1, buffer),
                          new TestClientData());
@@ -5104,13 +5104,13 @@ Barriers threaded_debugging_barriers;
 
 class V8Thread : public v8::base::Thread {
  public:
-  V8Thread() : Thread(Options("V8Thread")) {}
+  V8Thread() : Thread(Options("\x56\x38\x54\x68\x72\x65\x61\x64")) {}
   void Run();
 };
 
 class DebuggerThread : public v8::base::Thread {
  public:
-  DebuggerThread() : Thread(Options("DebuggerThread")) {}
+  DebuggerThread() : Thread(Options("\x44\x65\x62\x75\x67\x67\x65\x72\x54\x68\x72\x65\x61\x64")) {}
   void Run();
 };
 
@@ -5136,23 +5136,23 @@ static void ThreadedMessageHandler(const v8::Debug::Message& message) {
 
 void V8Thread::Run() {
   const char* source =
-      "flag = true;\n"
-      "function bar( new_value ) {\n"
-      "  flag = new_value;\n"
-      "  return \"Return from bar(\" + new_value + \")\";\n"
-      "}\n"
-      "\n"
-      "function foo() {\n"
-      "  var x = 1;\n"
-      "  while ( flag == true ) {\n"
-      "    if ( x == 1 ) {\n"
-      "      ThreadedAtBarrier1();\n"
-      "    }\n"
-      "    x = x + 1;\n"
-      "  }\n"
-      "}\n"
-      "\n"
-      "foo();\n";
+      "\x66\x6c\x61\x67\x20\x3d\x20\x74\x72\x75\x65\x3b\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x20\x6e\x65\x77\x5f\x76\x61\x6c\x75\x65\x20\x29\x20\x7b\xa"
+      "\x20\x20\x66\x6c\x61\x67\x20\x3d\x20\x6e\x65\x77\x5f\x76\x61\x6c\x75\x65\x3b\xa"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x22\x52\x65\x74\x75\x72\x6e\x20\x66\x72\x6f\x6d\x20\x62\x61\x72\x28\x22\x20\x2b\x20\x6e\x65\x77\x5f\x76\x61\x6c\x75\x65\x20\x2b\x20\x22\x29\x22\x3b\xa"
+      "\x7d\xa"
+      "\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\xa"
+      "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x3b\xa"
+      "\x20\x20\x77\x68\x69\x6c\x65\x20\x28\x20\x66\x6c\x61\x67\x20\x3d\x3d\x20\x74\x72\x75\x65\x20\x29\x20\x7b\xa"
+      "\x20\x20\x20\x20\x69\x66\x20\x28\x20\x78\x20\x3d\x3d\x20\x31\x20\x29\x20\x7b\xa"
+      "\x20\x20\x20\x20\x20\x20\x54\x68\x72\x65\x61\x64\x65\x64\x41\x74\x42\x61\x72\x72\x69\x65\x72\x31\x28\x29\x3b\xa"
+      "\x20\x20\x20\x20\x7d\xa"
+      "\x20\x20\x20\x20\x78\x20\x3d\x20\x78\x20\x2b\x20\x31\x3b\xa"
+      "\x20\x20\x7d\xa"
+      "\x7d\xa"
+      "\xa"
+      "\x66\x6f\x6f\x28\x29\x3b\xa";
 
   v8::Isolate* isolate = CcTest::isolate();
   v8::Isolate::Scope isolate_scope(isolate);
@@ -5162,7 +5162,7 @@ void V8Thread::Run() {
   v8::Handle<v8::ObjectTemplate> global_template =
       v8::ObjectTemplate::New(env->GetIsolate());
   global_template->Set(
-      v8::String::NewFromUtf8(env->GetIsolate(), "ThreadedAtBarrier1"),
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x54\x68\x72\x65\x61\x64\x65\x64\x41\x74\x42\x61\x72\x72\x69\x65\x72\x31"),
       v8::FunctionTemplate::New(isolate, ThreadedAtBarrier1));
   v8::Handle<v8::Context> context = v8::Context::New(isolate,
                                                      NULL,
@@ -5177,13 +5177,13 @@ void DebuggerThread::Run() {
   const int kBufSize = 1000;
   uint16_t buffer[kBufSize];
 
-  const char* command_1 = "{\"seq\":102,"
-      "\"type\":\"request\","
-      "\"command\":\"evaluate\","
-      "\"arguments\":{\"expression\":\"bar(false)\"}}";
-  const char* command_2 = "{\"seq\":103,"
-      "\"type\":\"request\","
-      "\"command\":\"continue\"}";
+  const char* command_1 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x32\x2c"
+      "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+      "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+      "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x62\x61\x72\x28\x66\x61\x6c\x73\x65\x29\x22\x7d\x7d";
+  const char* command_2 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x33\x2c"
+      "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+      "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x63\x6f\x6e\x74\x69\x6e\x75\x65\x22\x7d";
 
   v8::Isolate* isolate = CcTest::isolate();
   threaded_debugging_barriers.barrier_1.Wait();
@@ -5216,14 +5216,14 @@ TEST(ThreadedDebugging) {
 
 class BreakpointsV8Thread : public v8::base::Thread {
  public:
-  BreakpointsV8Thread() : Thread(Options("BreakpointsV8Thread")) {}
+  BreakpointsV8Thread() : Thread(Options("\x42\x72\x65\x61\x6b\x70\x6f\x69\x6e\x74\x73\x56\x38\x54\x68\x72\x65\x61\x64")) {}
   void Run();
 };
 
 class BreakpointsDebuggerThread : public v8::base::Thread {
  public:
   explicit BreakpointsDebuggerThread(bool global_evaluate)
-      : Thread(Options("BreakpointsDebuggerThread")),
+      : Thread(Options("\x42\x72\x65\x61\x6b\x70\x6f\x69\x6e\x74\x73\x44\x65\x62\x75\x67\x67\x65\x72\x54\x68\x72\x65\x61\x64")),
         global_evaluate_(global_evaluate) {}
   void Run();
 
@@ -5253,25 +5253,25 @@ static void BreakpointsMessageHandler(const v8::Debug::Message& message) {
 
 
 void BreakpointsV8Thread::Run() {
-  const char* source_1 = "var y_global = 3;\n"
-    "function cat( new_value ) {\n"
-    "  var x = new_value;\n"
-    "  y_global = y_global + 4;\n"
-    "  x = 3 * x + 1;\n"
-    "  y_global = y_global + 5;\n"
-    "  return x;\n"
-    "}\n"
-    "\n"
-    "function dog() {\n"
-    "  var x = 1;\n"
-    "  x = y_global;"
-    "  var z = 3;"
-    "  x += 100;\n"
-    "  return x;\n"
-    "}\n"
-    "\n";
-  const char* source_2 = "cat(17);\n"
-    "cat(19);\n";
+  const char* source_1 = "\x76\x61\x72\x20\x79\x5f\x67\x6c\x6f\x62\x61\x6c\x20\x3d\x20\x33\x3b\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x61\x74\x28\x20\x6e\x65\x77\x5f\x76\x61\x6c\x75\x65\x20\x29\x20\x7b\xa"
+    "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x6e\x65\x77\x5f\x76\x61\x6c\x75\x65\x3b\xa"
+    "\x20\x20\x79\x5f\x67\x6c\x6f\x62\x61\x6c\x20\x3d\x20\x79\x5f\x67\x6c\x6f\x62\x61\x6c\x20\x2b\x20\x34\x3b\xa"
+    "\x20\x20\x78\x20\x3d\x20\x33\x20\x2a\x20\x78\x20\x2b\x20\x31\x3b\xa"
+    "\x20\x20\x79\x5f\x67\x6c\x6f\x62\x61\x6c\x20\x3d\x20\x79\x5f\x67\x6c\x6f\x62\x61\x6c\x20\x2b\x20\x35\x3b\xa"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\xa"
+    "\x7d\xa"
+    "\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x64\x6f\x67\x28\x29\x20\x7b\xa"
+    "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x3b\xa"
+    "\x20\x20\x78\x20\x3d\x20\x79\x5f\x67\x6c\x6f\x62\x61\x6c\x3b"
+    "\x20\x20\x76\x61\x72\x20\x7a\x20\x3d\x20\x33\x3b"
+    "\x20\x20\x78\x20\x2b\x3d\x20\x31\x30\x30\x3b\xa"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\xa"
+    "\x7d\xa"
+    "\xa";
+  const char* source_2 = "\x63\x61\x74\x28\x31\x37\x29\x3b\xa"
+    "\x63\x61\x74\x28\x31\x39\x29\x3b\xa";
 
   v8::Isolate* isolate = CcTest::isolate();
   v8::Isolate::Scope isolate_scope(isolate);
@@ -5290,62 +5290,62 @@ void BreakpointsDebuggerThread::Run() {
   const int kBufSize = 1000;
   uint16_t buffer[kBufSize];
 
-  const char* command_1 = "{\"seq\":101,"
-      "\"type\":\"request\","
-      "\"command\":\"setbreakpoint\","
-      "\"arguments\":{\"type\":\"function\",\"target\":\"cat\",\"line\":3}}";
-  const char* command_2 = "{\"seq\":102,"
-      "\"type\":\"request\","
-      "\"command\":\"setbreakpoint\","
-      "\"arguments\":{\"type\":\"function\",\"target\":\"dog\",\"line\":3}}";
+  const char* command_1 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x31\x2c"
+      "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+      "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x73\x65\x74\x62\x72\x65\x61\x6b\x70\x6f\x69\x6e\x74\x22\x2c"
+      "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x74\x79\x70\x65\x22\x3a\x22\x66\x75\x6e\x63\x74\x69\x6f\x6e\x22\x2c\x22\x74\x61\x72\x67\x65\x74\x22\x3a\x22\x63\x61\x74\x22\x2c\x22\x6c\x69\x6e\x65\x22\x3a\x33\x7d\x7d";
+  const char* command_2 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x32\x2c"
+      "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+      "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x73\x65\x74\x62\x72\x65\x61\x6b\x70\x6f\x69\x6e\x74\x22\x2c"
+      "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x74\x79\x70\x65\x22\x3a\x22\x66\x75\x6e\x63\x74\x69\x6f\x6e\x22\x2c\x22\x74\x61\x72\x67\x65\x74\x22\x3a\x22\x64\x6f\x67\x22\x2c\x22\x6c\x69\x6e\x65\x22\x3a\x33\x7d\x7d";
   const char* command_3;
   if (this->global_evaluate_) {
-    command_3 = "{\"seq\":103,"
-        "\"type\":\"request\","
-        "\"command\":\"evaluate\","
-        "\"arguments\":{\"expression\":\"dog()\",\"disable_break\":false,"
-        "\"global\":true}}";
+    command_3 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x33\x2c"
+        "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+        "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+        "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x64\x6f\x67\x28\x29\x22\x2c\x22\x64\x69\x73\x61\x62\x6c\x65\x5f\x62\x72\x65\x61\x6b\x22\x3a\x66\x61\x6c\x73\x65\x2c"
+        "\x22\x67\x6c\x6f\x62\x61\x6c\x22\x3a\x74\x72\x75\x65\x7d\x7d";
   } else {
-    command_3 = "{\"seq\":103,"
-        "\"type\":\"request\","
-        "\"command\":\"evaluate\","
-        "\"arguments\":{\"expression\":\"dog()\",\"disable_break\":false}}";
+    command_3 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x33\x2c"
+        "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+        "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+        "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x64\x6f\x67\x28\x29\x22\x2c\x22\x64\x69\x73\x61\x62\x6c\x65\x5f\x62\x72\x65\x61\x6b\x22\x3a\x66\x61\x6c\x73\x65\x7d\x7d";
   }
   const char* command_4;
   if (this->global_evaluate_) {
-    command_4 = "{\"seq\":104,"
-        "\"type\":\"request\","
-        "\"command\":\"evaluate\","
-        "\"arguments\":{\"expression\":\"100 + 8\",\"disable_break\":true,"
-        "\"global\":true}}";
+    command_4 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x34\x2c"
+        "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+        "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+        "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x31\x30\x30\x20\x2b\x20\x38\x22\x2c\x22\x64\x69\x73\x61\x62\x6c\x65\x5f\x62\x72\x65\x61\x6b\x22\x3a\x74\x72\x75\x65\x2c"
+        "\x22\x67\x6c\x6f\x62\x61\x6c\x22\x3a\x74\x72\x75\x65\x7d\x7d";
   } else {
-    command_4 = "{\"seq\":104,"
-        "\"type\":\"request\","
-        "\"command\":\"evaluate\","
-        "\"arguments\":{\"expression\":\"x + 1\",\"disable_break\":true}}";
+    command_4 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x34\x2c"
+        "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+        "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+        "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x78\x20\x2b\x20\x31\x22\x2c\x22\x64\x69\x73\x61\x62\x6c\x65\x5f\x62\x72\x65\x61\x6b\x22\x3a\x74\x72\x75\x65\x7d\x7d";
   }
-  const char* command_5 = "{\"seq\":105,"
-      "\"type\":\"request\","
-      "\"command\":\"continue\"}";
-  const char* command_6 = "{\"seq\":106,"
-      "\"type\":\"request\","
-      "\"command\":\"continue\"}";
+  const char* command_5 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x35\x2c"
+      "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+      "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x63\x6f\x6e\x74\x69\x6e\x75\x65\x22\x7d";
+  const char* command_6 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x36\x2c"
+      "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+      "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x63\x6f\x6e\x74\x69\x6e\x75\x65\x22\x7d";
   const char* command_7;
   if (this->global_evaluate_) {
-    command_7 = "{\"seq\":107,"
-        "\"type\":\"request\","
-        "\"command\":\"evaluate\","
-        "\"arguments\":{\"expression\":\"dog()\",\"disable_break\":true,"
-        "\"global\":true}}";
+    command_7 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x37\x2c"
+        "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+        "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+        "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x64\x6f\x67\x28\x29\x22\x2c\x22\x64\x69\x73\x61\x62\x6c\x65\x5f\x62\x72\x65\x61\x6b\x22\x3a\x74\x72\x75\x65\x2c"
+        "\x22\x67\x6c\x6f\x62\x61\x6c\x22\x3a\x74\x72\x75\x65\x7d\x7d";
   } else {
-    command_7 = "{\"seq\":107,"
-        "\"type\":\"request\","
-        "\"command\":\"evaluate\","
-        "\"arguments\":{\"expression\":\"dog()\",\"disable_break\":true}}";
+    command_7 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x37\x2c"
+        "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+        "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+        "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x64\x6f\x67\x28\x29\x22\x2c\x22\x64\x69\x73\x61\x62\x6c\x65\x5f\x62\x72\x65\x61\x6b\x22\x3a\x74\x72\x75\x65\x7d\x7d";
   }
-  const char* command_8 = "{\"seq\":108,"
-      "\"type\":\"request\","
-      "\"command\":\"continue\"}";
+  const char* command_8 = "\x7b\x22\x73\x65\x71\x22\x3a\x31\x30\x38\x2c"
+      "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+      "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x63\x6f\x6e\x74\x69\x6e\x75\x65\x22\x7d";
 
 
   v8::Isolate* isolate = CcTest::isolate();
@@ -5451,10 +5451,10 @@ TEST(SetMessageHandlerOnUninitializedVM) {
 // function called in the context of the debugger. If no data parameter is
 // passed it throws an exception.
 static const char* debugger_call_with_data_source =
-    "function debugger_call_with_data(exec_state, data) {"
-    "  if (data) return data;"
-    "  throw 'No data!'"
-    "}";
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x64\x65\x62\x75\x67\x67\x65\x72\x5f\x63\x61\x6c\x6c\x5f\x77\x69\x74\x68\x5f\x64\x61\x74\x61\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2c\x20\x64\x61\x74\x61\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x64\x61\x74\x61\x29\x20\x72\x65\x74\x75\x72\x6e\x20\x64\x61\x74\x61\x3b"
+    "\x20\x20\x74\x68\x72\x6f\x77\x20\x27\x4e\x6f\x20\x64\x61\x74\x61\x21\x27"
+    "\x7d";
 v8::Handle<v8::Function> debugger_call_with_data;
 
 
@@ -5462,12 +5462,12 @@ v8::Handle<v8::Function> debugger_call_with_data;
 // function called in the context of the debugger. If no data parameter is
 // passed it throws an exception.
 static const char* debugger_call_with_closure_source =
-    "var x = 3;"
-    "(function (exec_state) {"
-    "  if (exec_state.y) return x - 1;"
-    "  exec_state.y = x;"
-    "  return exec_state.y"
-    "})";
+    "\x76\x61\x72\x20\x78\x20\x3d\x20\x33\x3b"
+    "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x29\x20\x7b"
+    "\x20\x20\x69\x66\x20\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x79\x29\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b"
+    "\x20\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x79\x20\x3d\x20\x78\x3b"
+    "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x79"
+    "\x7d\x29";
 v8::Handle<v8::Function> debugger_call_with_closure;
 
 // Function to retrieve the number of JavaScript frames by calling a JavaScript
@@ -5494,7 +5494,7 @@ static void CheckSourceLine(const v8::FunctionCallbackInfo<v8::Value>& args) {
 static void CheckDataParameter(
     const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::Handle<v8::String> data =
-      v8::String::NewFromUtf8(args.GetIsolate(), "Test");
+      v8::String::NewFromUtf8(args.GetIsolate(), "\x54\x65\x73\x74");
   CHECK(v8::Debug::Call(debugger_call_with_data, data)->IsString());
 
   for (int i = 0; i < 3; i++) {
@@ -5522,16 +5522,16 @@ TEST(CallFunctionInDebugger) {
   v8::Handle<v8::ObjectTemplate> global_template =
       v8::ObjectTemplate::New(isolate);
   global_template->Set(
-      v8::String::NewFromUtf8(isolate, "CheckFrameCount"),
+      v8::String::NewFromUtf8(isolate, "\x43\x68\x65\x63\x6b\x46\x72\x61\x6d\x65\x43\x6f\x75\x6e\x74"),
       v8::FunctionTemplate::New(isolate, CheckFrameCount));
   global_template->Set(
-      v8::String::NewFromUtf8(isolate, "CheckSourceLine"),
+      v8::String::NewFromUtf8(isolate, "\x43\x68\x65\x63\x6b\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65"),
       v8::FunctionTemplate::New(isolate, CheckSourceLine));
   global_template->Set(
-      v8::String::NewFromUtf8(isolate, "CheckDataParameter"),
+      v8::String::NewFromUtf8(isolate, "\x43\x68\x65\x63\x6b\x44\x61\x74\x61\x50\x61\x72\x61\x6d\x65\x74\x65\x72"),
       v8::FunctionTemplate::New(isolate, CheckDataParameter));
   global_template->Set(
-      v8::String::NewFromUtf8(isolate, "CheckClosure"),
+      v8::String::NewFromUtf8(isolate, "\x43\x68\x65\x63\x6b\x43\x6c\x6f\x73\x75\x72\x65"),
       v8::FunctionTemplate::New(isolate, CheckClosure));
   v8::Handle<v8::Context> context = v8::Context::New(isolate,
                                                      NULL,
@@ -5542,13 +5542,13 @@ TEST(CallFunctionInDebugger) {
   v8::Script::Compile(
       v8::String::NewFromUtf8(isolate, frame_count_source))->Run();
   frame_count = v8::Local<v8::Function>::Cast(context->Global()->Get(
-      v8::String::NewFromUtf8(isolate, "frame_count")));
+      v8::String::NewFromUtf8(isolate, "\x66\x72\x61\x6d\x65\x5f\x63\x6f\x75\x6e\x74")));
 
   // Compile a function for returning the source line for the top frame.
   v8::Script::Compile(v8::String::NewFromUtf8(isolate,
                                               frame_source_line_source))->Run();
   frame_source_line = v8::Local<v8::Function>::Cast(context->Global()->Get(
-      v8::String::NewFromUtf8(isolate, "frame_source_line")));
+      v8::String::NewFromUtf8(isolate, "\x66\x72\x61\x6d\x65\x5f\x73\x6f\x75\x72\x63\x65\x5f\x6c\x69\x6e\x65")));
 
   // Compile a function returning the data parameter.
   v8::Script::Compile(v8::String::NewFromUtf8(isolate,
@@ -5556,7 +5556,7 @@ TEST(CallFunctionInDebugger) {
       ->Run();
   debugger_call_with_data = v8::Local<v8::Function>::Cast(
       context->Global()->Get(v8::String::NewFromUtf8(
-          isolate, "debugger_call_with_data")));
+          isolate, "\x64\x65\x62\x75\x67\x67\x65\x72\x5f\x63\x61\x6c\x6c\x5f\x77\x69\x74\x68\x5f\x64\x61\x74\x61")));
 
   // Compile a function capturing closure.
   debugger_call_with_closure =
@@ -5571,42 +5571,42 @@ TEST(CallFunctionInDebugger) {
 
   // Test that the number of frames can be retrieved.
   v8::Script::Compile(
-      v8::String::NewFromUtf8(isolate, "CheckFrameCount(1)"))->Run();
+      v8::String::NewFromUtf8(isolate, "\x43\x68\x65\x63\x6b\x46\x72\x61\x6d\x65\x43\x6f\x75\x6e\x74\x28\x31\x29"))->Run();
   v8::Script::Compile(v8::String::NewFromUtf8(isolate,
-                                              "function f() {"
-                                              "  CheckFrameCount(2);"
-                                              "}; f()"))->Run();
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+                                              "\x20\x20\x43\x68\x65\x63\x6b\x46\x72\x61\x6d\x65\x43\x6f\x75\x6e\x74\x28\x32\x29\x3b"
+                                              "\x7d\x3b\x20\x66\x28\x29"))->Run();
 
   // Test that the source line can be retrieved.
   v8::Script::Compile(
-      v8::String::NewFromUtf8(isolate, "CheckSourceLine(0)"))->Run();
+      v8::String::NewFromUtf8(isolate, "\x43\x68\x65\x63\x6b\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x28\x30\x29"))->Run();
   v8::Script::Compile(v8::String::NewFromUtf8(isolate,
-                                              "function f() {\n"
-                                              "  CheckSourceLine(1)\n"
-                                              "  CheckSourceLine(2)\n"
-                                              "  CheckSourceLine(3)\n"
-                                              "}; f()"))->Run();
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+                                              "\x20\x20\x43\x68\x65\x63\x6b\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x28\x31\x29\xa"
+                                              "\x20\x20\x43\x68\x65\x63\x6b\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x28\x32\x29\xa"
+                                              "\x20\x20\x43\x68\x65\x63\x6b\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x28\x33\x29\xa"
+                                              "\x7d\x3b\x20\x66\x28\x29"))->Run();
 
   // Test that a parameter can be passed to a function called in the debugger.
   v8::Script::Compile(v8::String::NewFromUtf8(isolate,
-                                              "CheckDataParameter()"))->Run();
+                                              "\x43\x68\x65\x63\x6b\x44\x61\x74\x61\x50\x61\x72\x61\x6d\x65\x74\x65\x72\x28\x29"))->Run();
 
   // Test that a function with closure can be run in the debugger.
   v8::Script::Compile(
-      v8::String::NewFromUtf8(isolate, "CheckClosure()"))->Run();
+      v8::String::NewFromUtf8(isolate, "\x43\x68\x65\x63\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29"))->Run();
 
   // Test that the source line is correct when there is a line offset.
-  v8::ScriptOrigin origin(v8::String::NewFromUtf8(isolate, "test"),
+  v8::ScriptOrigin origin(v8::String::NewFromUtf8(isolate, "\x74\x65\x73\x74"),
                           v8::Integer::New(isolate, 7));
   v8::Script::Compile(
-      v8::String::NewFromUtf8(isolate, "CheckSourceLine(7)"), &origin)
+      v8::String::NewFromUtf8(isolate, "\x43\x68\x65\x63\x6b\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x28\x37\x29"), &origin)
       ->Run();
   v8::Script::Compile(v8::String::NewFromUtf8(isolate,
-                                              "function f() {\n"
-                                              "  CheckSourceLine(8)\n"
-                                              "  CheckSourceLine(9)\n"
-                                              "  CheckSourceLine(10)\n"
-                                              "}; f()"),
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+                                              "\x20\x20\x43\x68\x65\x63\x6b\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x28\x38\x29\xa"
+                                              "\x20\x20\x43\x68\x65\x63\x6b\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x28\x39\x29\xa"
+                                              "\x20\x20\x43\x68\x65\x63\x6b\x53\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x28\x31\x30\x29\xa"
+                                              "\x7d\x3b\x20\x66\x28\x29"),
                       &origin)->Run();
 }
 
@@ -5639,9 +5639,9 @@ TEST(DebuggerUnload) {
     v8::HandleScope scope(env->GetIsolate());
     // Create a couple of functions for the test.
     v8::Local<v8::Function> foo =
-        CompileFunction(&env, "function foo(){x=1}", "foo");
+        CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x78\x3d\x31\x7d", "\x66\x6f\x6f");
     v8::Local<v8::Function> bar =
-        CompileFunction(&env, "function bar(){y=2}", "bar");
+        CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x7b\x79\x3d\x32\x7d", "\x62\x61\x72");
 
     // Set some break points.
     SetBreakPoint(foo, 0);
@@ -5670,7 +5670,7 @@ TEST(DebuggerUnload) {
 
     // Get the test functions again.
     v8::Local<v8::Function> foo(v8::Local<v8::Function>::Cast(
-        env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "foo"))));
+        env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66\x6f\x6f"))));
 
     foo->Call(env->Global(), 0, NULL);
     CHECK_EQ(0, break_point_hit_count);
@@ -5694,9 +5694,9 @@ static void SendContinueCommand() {
   const int kBufferSize = 1000;
   uint16_t buffer[kBufferSize];
   const char* command_continue =
-    "{\"seq\":0,"
-     "\"type\":\"request\","
-     "\"command\":\"continue\"}";
+    "\x7b\x22\x73\x65\x71\x22\x3a\x30\x2c"
+     "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+     "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x63\x6f\x6e\x74\x69\x6e\x75\x65\x22\x7d";
 
   v8::Debug::SendCommand(
       CcTest::isolate(), buffer, AsciiToUtf16(command_continue, buffer));
@@ -5731,7 +5731,7 @@ TEST(DebuggerClearMessageHandler) {
 
   // Run code to throw a unhandled exception. This should end up in the message
   // handler.
-  CompileRun("throw 1");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x31");
 
   // The message handler should be called.
   CHECK_GT(message_handler_hit_count, 0);
@@ -5742,7 +5742,7 @@ TEST(DebuggerClearMessageHandler) {
 
   // Run code to throw a unhandled exception. This should end up in the message
   // handler.
-  CompileRun("throw 1");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x31");
 
   // The message handler should not be called more.
   CHECK_EQ(0, message_handler_hit_count);
@@ -5774,7 +5774,7 @@ TEST(DebuggerClearMessageHandlerWhileActive) {
 
   // Run code to throw a unhandled exception. This should end up in the message
   // handler.
-  CompileRun("throw 1");
+  CompileRun("\x74\x68\x72\x6f\x77\x20\x31");
 
   // The message handler should be called.
   CHECK_EQ(1, message_handler_hit_count);
@@ -5817,18 +5817,18 @@ TEST(DebugGetLoadedScripts) {
   bool allow_natives_syntax = i::FLAG_allow_natives_syntax;
   i::FLAG_allow_natives_syntax = true;
   CompileRun(
-      "var scripts = %DebugGetLoadedScripts();"
-      "var count = scripts.length;"
-      "for (var i = 0; i < count; ++i) {"
-      "  scripts[i].line_ends;"
-      "}");
+      "\x76\x61\x72\x20\x73\x63\x72\x69\x70\x74\x73\x20\x3d\x20\x25\x44\x65\x62\x75\x67\x47\x65\x74\x4c\x6f\x61\x64\x65\x64\x53\x63\x72\x69\x70\x74\x73\x28\x29\x3b"
+      "\x76\x61\x72\x20\x63\x6f\x75\x6e\x74\x20\x3d\x20\x73\x63\x72\x69\x70\x74\x73\x2e\x6c\x65\x6e\x67\x74\x68\x3b"
+      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x63\x6f\x75\x6e\x74\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
+      "\x20\x20\x73\x63\x72\x69\x70\x74\x73\x5b\x69\x5d\x2e\x6c\x69\x6e\x65\x5f\x65\x6e\x64\x73\x3b"
+      "\x7d");
   // Must not crash while accessing line_ends.
   i::FLAG_allow_natives_syntax = allow_natives_syntax;
 
   // Some scripts are retrieved - at least the number of native scripts.
   CHECK_GT((*env)
                ->Global()
-               ->Get(v8::String::NewFromUtf8(env->GetIsolate(), "count"))
+               ->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x63\x6f\x75\x6e\x74"))
                ->Int32Value(),
            8);
 }
@@ -5844,58 +5844,58 @@ TEST(ScriptNameAndData) {
   // the top frame when hitting a break point.
   frame_script_name = CompileFunction(&env,
                                       frame_script_name_source,
-                                      "frame_script_name");
+                                      "\x66\x72\x61\x6d\x65\x5f\x73\x63\x72\x69\x70\x74\x5f\x6e\x61\x6d\x65");
 
   v8::Debug::SetDebugEventListener(DebugEventBreakPointHitCount);
 
   // Test function source.
   v8::Local<v8::String> script = v8::String::NewFromUtf8(env->GetIsolate(),
-                                                         "function f() {\n"
-                                                         "  debugger;\n"
-                                                         "}\n");
+                                                         "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\xa"
+                                                         "\x20\x20\x64\x65\x62\x75\x67\x67\x65\x72\x3b\xa"
+                                                         "\x7d\xa");
 
   v8::ScriptOrigin origin1 =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "name"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x6e\x61\x6d\x65"));
   v8::Handle<v8::Script> script1 = v8::Script::Compile(script, &origin1);
   script1->Run();
   v8::Local<v8::Function> f;
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
 
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(1, break_point_hit_count);
-  CHECK_EQ("name", last_script_name_hit);
+  CHECK_EQ("\x6e\x61\x6d\x65", last_script_name_hit);
 
   // Compile the same script again without setting data. As the compilation
   // cache is disabled when debugging expect the data to be missing.
   v8::Script::Compile(script, &origin1)->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(2, break_point_hit_count);
-  CHECK_EQ("name", last_script_name_hit);
+  CHECK_EQ("\x6e\x61\x6d\x65", last_script_name_hit);
 
   v8::Local<v8::String> data_obj_source = v8::String::NewFromUtf8(
       env->GetIsolate(),
-      "({ a: 'abc',\n"
-      "  b: 123,\n"
-      "  toString: function() { return this.a + ' ' + this.b; }\n"
-      "})\n");
+      "\x28\x7b\x20\x61\x3a\x20\x27\x61\x62\x63\x27\x2c\xa"
+      "\x20\x20\x62\x3a\x20\x31\x32\x33\x2c\xa"
+      "\x20\x20\x74\x6f\x53\x74\x72\x69\x6e\x67\x3a\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x61\x20\x2b\x20\x27\x20\x27\x20\x2b\x20\x74\x68\x69\x73\x2e\x62\x3b\x20\x7d\xa"
+      "\x7d\x29\xa");
   v8::Script::Compile(data_obj_source)->Run();
   v8::ScriptOrigin origin2 =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "new name"));
+      v8::ScriptOrigin(v8::String::NewFromUtf8(env->GetIsolate(), "\x6e\x65\x77\x20\x6e\x61\x6d\x65"));
   v8::Handle<v8::Script> script2 = v8::Script::Compile(script, &origin2);
   script2->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(3, break_point_hit_count);
-  CHECK_EQ("new name", last_script_name_hit);
+  CHECK_EQ("\x6e\x65\x77\x20\x6e\x61\x6d\x65", last_script_name_hit);
 
   v8::Handle<v8::Script> script3 = v8::Script::Compile(script, &origin2);
   script3->Run();
   f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   f->Call(env->Global(), 0, NULL);
   CHECK_EQ(4, break_point_hit_count);
 }
@@ -5946,22 +5946,22 @@ TEST(ContextData) {
   CHECK(context_2->GetEmbedderData(0)->IsUndefined());
 
   // Set and check different data values.
-  v8::Handle<v8::String> data_1 = v8::String::NewFromUtf8(isolate, "1");
-  v8::Handle<v8::String> data_2 = v8::String::NewFromUtf8(isolate, "2");
+  v8::Handle<v8::String> data_1 = v8::String::NewFromUtf8(isolate, "\x31");
+  v8::Handle<v8::String> data_2 = v8::String::NewFromUtf8(isolate, "\x32");
   context_1->SetEmbedderData(0, data_1);
   context_2->SetEmbedderData(0, data_2);
   CHECK(context_1->GetEmbedderData(0)->StrictEquals(data_1));
   CHECK(context_2->GetEmbedderData(0)->StrictEquals(data_2));
 
   // Simple test function which causes a break.
-  const char* source = "function f() { debugger; }";
+  const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x20\x7d";
 
   // Enter and run function in the first context.
   {
     v8::Context::Scope context_scope(context_1);
     expected_context = context_1;
     expected_context_data = data_1;
-    v8::Local<v8::Function> f = CompileFunction(isolate, source, "f");
+    v8::Local<v8::Function> f = CompileFunction(isolate, source, "\x66");
     f->Call(context_1->Global(), 0, NULL);
   }
 
@@ -5971,7 +5971,7 @@ TEST(ContextData) {
     v8::Context::Scope context_scope(context_2);
     expected_context = context_2;
     expected_context_data = data_2;
-    v8::Local<v8::Function> f = CompileFunction(isolate, source, "f");
+    v8::Local<v8::Function> f = CompileFunction(isolate, source, "\x66");
     f->Call(context_2->Global(), 0, NULL);
   }
 
@@ -6010,12 +6010,12 @@ TEST(DebugBreakInMessageHandler) {
   v8::Debug::SetMessageHandler(DebugBreakMessageHandler);
 
   // Test functions.
-  const char* script = "function f() { debugger; g(); } function g() { }";
+  const char* script = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x20\x67\x28\x29\x3b\x20\x7d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\x20\x7d";
   CompileRun(script);
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   v8::Local<v8::Function> g = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "g")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x67")));
 
   // Call f then g. The debugger statement in f will casue a break which will
   // cause another break.
@@ -6048,7 +6048,7 @@ static void DebugEventDebugBreak(
       v8::Handle<v8::Value> result = frame_function_name->Call(exec_state,
                                                                argc, argv);
       if (result->IsUndefined()) {
-        last_function_hit[0] = '\0';
+        last_function_hit[0] = '\x0';
       } else {
         CHECK(result->IsString());
         v8::Handle<v8::String> function_name(result->ToString());
@@ -6072,18 +6072,18 @@ TEST(RegExpDebugBreak) {
   // Create a function for checking the function when hitting a break point.
   frame_function_name = CompileFunction(&env,
                                         frame_function_name_source,
-                                        "frame_function_name");
+                                        "\x66\x72\x61\x6d\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6e\x61\x6d\x65");
 
   // Test RegExp which matches white spaces and comments at the begining of a
   // source line.
   const char* script =
-    "var sourceLineBeginningSkip = /^(?:[ \\v\\h]*(?:\\/\\*.*?\\*\\/)*)*/;\n"
-    "function f(s) { return s.match(sourceLineBeginningSkip)[0].length; }";
+    "\x76\x61\x72\x20\x73\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x42\x65\x67\x69\x6e\x6e\x69\x6e\x67\x53\x6b\x69\x70\x20\x3d\x20\x2f\x5e\x28\x3f\x3a\x5b\x20\x5c\x76\x5c\x68\x5d\x2a\x28\x3f\x3a\x5c\x2f\x5c\x2a\x2e\x2a\x3f\x5c\x2a\x5c\x2f\x29\x2a\x29\x2a\x2f\x3b\xa"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x73\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x2e\x6d\x61\x74\x63\x68\x28\x73\x6f\x75\x72\x63\x65\x4c\x69\x6e\x65\x42\x65\x67\x69\x6e\x6e\x69\x6e\x67\x53\x6b\x69\x70\x29\x5b\x30\x5d\x2e\x6c\x65\x6e\x67\x74\x68\x3b\x20\x7d";
 
-  v8::Local<v8::Function> f = CompileFunction(env->GetIsolate(), script, "f");
+  v8::Local<v8::Function> f = CompileFunction(env->GetIsolate(), script, "\x66");
   const int argc = 1;
   v8::Handle<v8::Value> argv[argc] = {
-      v8::String::NewFromUtf8(env->GetIsolate(), "  /* xxx */ a=0;")};
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x20\x20\x2f\x2a\x20\x78\x78\x78\x20\x2a\x2f\x20\x61\x3d\x30\x3b")};
   v8::Local<v8::Value> result = f->Call(env->Global(), argc, argv);
   CHECK_EQ(12, result->Int32Value());
 
@@ -6094,7 +6094,7 @@ TEST(RegExpDebugBreak) {
   // Check that there was only one break event. Matching RegExp should not
   // cause Break events.
   CHECK_EQ(1, break_point_hit_count);
-  CHECK_EQ("f", last_function_hit);
+  CHECK_EQ("\x66", last_function_hit);
 }
 #endif  // V8_INTERPRETED_REGEXP
 
@@ -6116,19 +6116,19 @@ static void ExecuteScriptForContextCheck(
 
   // Set and check a data value.
   v8::Handle<v8::String> data_1 =
-      v8::String::NewFromUtf8(CcTest::isolate(), "1");
+      v8::String::NewFromUtf8(CcTest::isolate(), "\x31");
   context_1->SetEmbedderData(0, data_1);
   CHECK(context_1->GetEmbedderData(0)->StrictEquals(data_1));
 
   // Simple test function with eval that causes a break.
-  const char* source = "function f() { eval('debugger;'); }";
+  const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x65\x76\x61\x6c\x28\x27\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x27\x29\x3b\x20\x7d";
 
   // Enter and run function in the context.
   {
     v8::Context::Scope context_scope(context_1);
     expected_context = context_1;
     expected_context_data = data_1;
-    v8::Local<v8::Function> f = CompileFunction(CcTest::isolate(), source, "f");
+    v8::Local<v8::Function> f = CompileFunction(CcTest::isolate(), source, "\x66");
     f->Call(context_1->Global(), 0, NULL);
   }
 
@@ -6176,11 +6176,11 @@ static void DebugEvalContextCheckMessageHandler(
       const int kBufferSize = 1000;
       uint16_t buffer[kBufferSize];
       const char* eval_command =
-          "{\"seq\":0,"
-          "\"type\":\"request\","
-          "\"command\":\"evaluate\","
-          "\"arguments\":{\"expression\":\"debugger;\","
-          "\"global\":true,\"disable_break\":false}}";
+          "\x7b\x22\x73\x65\x71\x22\x3a\x30\x2c"
+          "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+          "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x65\x76\x61\x6c\x75\x61\x74\x65\x22\x2c"
+          "\x22\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x22\x3a\x7b\x22\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x22\x3a\x22\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x22\x2c"
+          "\x22\x67\x6c\x6f\x62\x61\x6c\x22\x3a\x74\x72\x75\x65\x2c\x22\x64\x69\x73\x61\x62\x6c\x65\x5f\x62\x72\x65\x61\x6b\x22\x3a\x66\x61\x6c\x73\x65\x7d\x7d";
 
       // Send evaluate command.
       v8::Debug::SendCommand(
@@ -6239,7 +6239,7 @@ TEST(AfterCompileMessageWhenMessageHandlerIsReset) {
   DebugLocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   after_compile_message_count = 0;
-  const char* script = "var a=1";
+  const char* script = "\x76\x61\x72\x20\x61\x3d\x31";
 
   v8::Debug::SetMessageHandler(AfterCompileMessageHandler);
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), script))
@@ -6294,7 +6294,7 @@ TEST(SyntaxErrorMessageOnSyntaxException) {
   CHECK_EQ(0, compile_error_event_count);
 
   // Throws SyntaxError: Unexpected end of input
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "+++"));
+  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "\x2b\x2b\x2b"));
   CHECK_EQ(1, compile_error_event_count);
 
   v8::Script::Compile(
@@ -6302,14 +6302,14 @@ TEST(SyntaxErrorMessageOnSyntaxException) {
   CHECK_EQ(2, compile_error_event_count);
 
   v8::Script::Compile(
-    v8::String::NewFromUtf8(env->GetIsolate(), "JSON.parse('1234:')"));
+    v8::String::NewFromUtf8(env->GetIsolate(), "\x4a\x53\x4f\x4e\x2e\x70\x61\x72\x73\x65\x28\x27\x31\x32\x33\x34\x3a\x27\x29"));
   CHECK_EQ(2, compile_error_event_count);
 
   v8::Script::Compile(
-    v8::String::NewFromUtf8(env->GetIsolate(), "new RegExp('/\\/\\\\');"));
+    v8::String::NewFromUtf8(env->GetIsolate(), "\x6e\x65\x77\x20\x52\x65\x67\x45\x78\x70\x28\x27\x2f\x5c\x2f\x5c\x5c\x27\x29\x3b"));
   CHECK_EQ(2, compile_error_event_count);
 
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "throw 1;"));
+  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "\x74\x68\x72\x6f\x77\x20\x31\x3b"));
   CHECK_EQ(2, compile_error_event_count);
 }
 
@@ -6319,7 +6319,7 @@ TEST(BreakMessageWhenMessageHandlerIsReset) {
   DebugLocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   after_compile_message_count = 0;
-  const char* script = "function f() {};";
+  const char* script = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x7d\x3b";
 
   v8::Debug::SetMessageHandler(AfterCompileMessageHandler);
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), script))
@@ -6329,7 +6329,7 @@ TEST(BreakMessageWhenMessageHandlerIsReset) {
   v8::Debug::SetMessageHandler(AfterCompileMessageHandler);
   v8::Debug::DebugBreak(env->GetIsolate());
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   f->Call(env->Global(), 0, NULL);
 
   // Setting message handler to NULL should cause debugger unload.
@@ -6359,7 +6359,7 @@ TEST(ExceptionMessageWhenMessageHandlerIsReset) {
   ChangeBreakOnException(false, true);
 
   exception_event_count = 0;
-  const char* script = "function f() {throw new Error()};";
+  const char* script = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x7d\x3b";
 
   v8::Debug::SetMessageHandler(AfterCompileMessageHandler);
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), script))
@@ -6368,7 +6368,7 @@ TEST(ExceptionMessageWhenMessageHandlerIsReset) {
 
   v8::Debug::SetMessageHandler(ExceptionMessageHandler);
   v8::Local<v8::Function> f = v8::Local<v8::Function>::Cast(
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "f")));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x66")));
   f->Call(env->Global(), 0, NULL);
 
   // Setting message handler to NULL should cause debugger unload.
@@ -6385,8 +6385,8 @@ TEST(ProvisionalBreakpointOnLineOutOfRange) {
   DebugLocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   env.ExposeDebug();
-  const char* script = "function f() {};";
-  const char* resource_name = "test_resource";
+  const char* script = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x7d\x3b";
+  const char* resource_name = "\x74\x65\x73\x74\x5f\x72\x65\x73\x6f\x75\x72\x63\x65";
 
   // Set a couple of provisional breakpoint on lines out of the script lines
   // range.
@@ -6454,8 +6454,8 @@ TEST(NoDebugBreakInAfterCompileMessageHandler) {
   v8::Debug::DebugBreak(env->GetIsolate());
 
   // Create a function for testing stepping.
-  const char* src = "function f() { eval('var x = 10;'); } ";
-  v8::Local<v8::Function> f = CompileFunction(&env, src, "f");
+  const char* src = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x65\x76\x61\x6c\x28\x27\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x30\x3b\x27\x29\x3b\x20\x7d\x20";
+  v8::Local<v8::Function> f = CompileFunction(&env, src, "\x66");
 
   // There should be only one break event.
   CHECK_EQ(1, break_point_hit_count);
@@ -6492,9 +6492,9 @@ TEST(ProcessDebugMessages) {
   const int kBufferSize = 1000;
   uint16_t buffer[kBufferSize];
   const char* scripts_command =
-    "{\"seq\":0,"
-     "\"type\":\"request\","
-     "\"command\":\"scripts\"}";
+    "\x7b\x22\x73\x65\x71\x22\x3a\x30\x2c"
+     "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+     "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x73\x63\x72\x69\x70\x74\x73\x22\x7d";
 
   // Send scripts command.
   v8::Debug::SendCommand(
@@ -6525,7 +6525,7 @@ TEST(ProcessDebugMessages) {
 class SendCommandThread : public v8::base::Thread {
  public:
   explicit SendCommandThread(v8::Isolate* isolate)
-      : Thread(Options("SendCommandThread")),
+      : Thread(Options("\x53\x65\x6e\x64\x43\x6f\x6d\x6d\x61\x6e\x64\x54\x68\x72\x65\x61\x64")),
         semaphore_(0),
         isolate_(isolate) {}
 
@@ -6539,9 +6539,9 @@ class SendCommandThread : public v8::base::Thread {
     const int kBufferSize = 1000;
     uint16_t buffer[kBufferSize];
     const char* scripts_command =
-      "{\"seq\":0,"
-       "\"type\":\"request\","
-       "\"command\":\"scripts\"}";
+      "\x7b\x22\x73\x65\x71\x22\x3a\x30\x2c"
+       "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+       "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x73\x63\x72\x69\x70\x74\x73\x22\x7d";
     int length = AsciiToUtf16(scripts_command, buffer);
     // Send scripts command.
 
@@ -6588,9 +6588,9 @@ TEST(ProcessDebugMessagesThreaded) {
 
   v8::Handle<v8::FunctionTemplate> start =
       v8::FunctionTemplate::New(isolate, StartSendingCommands);
-  env->Global()->Set(v8_str("start"), start->GetFunction());
+  env->Global()->Set(v8_str("\x73\x74\x61\x72\x74"), start->GetFunction());
 
-  CompileRun("start(); while (true) { }");
+  CompileRun("\x73\x74\x61\x72\x74\x28\x29\x3b\x20\x77\x68\x69\x6c\x65\x20\x28\x74\x72\x75\x65\x29\x20\x7b\x20\x7d");
 
   CHECK_EQ(100, counting_message_handler_counter);
 
@@ -6606,7 +6606,7 @@ struct BacktraceData {
     v8::String::Value json(message.GetJSON());
     Utf16ToAscii(*json, json.length(), print_buffer, 1000);
 
-    if (strstr(print_buffer, "backtrace") == NULL) {
+    if (strstr(print_buffer, "\x62\x61\x63\x6b\x74\x72\x61\x63\x65") == NULL) {
       return;
     }
     frame_counter = GetTotalFramesInt(print_buffer);
@@ -6627,9 +6627,9 @@ TEST(Backtrace) {
   const int kBufferSize = 1000;
   uint16_t buffer[kBufferSize];
   const char* scripts_command =
-    "{\"seq\":0,"
-     "\"type\":\"request\","
-     "\"command\":\"backtrace\"}";
+    "\x7b\x22\x73\x65\x71\x22\x3a\x30\x2c"
+     "\x22\x74\x79\x70\x65\x22\x3a\x22\x72\x65\x71\x75\x65\x73\x74\x22\x2c"
+     "\x22\x63\x6f\x6d\x6d\x61\x6e\x64\x22\x3a\x22\x62\x61\x63\x6b\x74\x72\x61\x63\x65\x22\x7d";
 
   // Check backtrace from ProcessDebugMessages.
   BacktraceData::frame_counter = -10;
@@ -6642,7 +6642,7 @@ TEST(Backtrace) {
   CHECK_EQ(BacktraceData::frame_counter, 0);
 
   v8::Handle<v8::String> void0 =
-      v8::String::NewFromUtf8(env->GetIsolate(), "void(0)");
+      v8::String::NewFromUtf8(env->GetIsolate(), "\x76\x6f\x69\x64\x28\x30\x29");
   v8::Handle<v8::Script> script = CompileWithOrigin(void0, void0);
 
   // Check backtrace from "void(0)" script.
@@ -6666,13 +6666,13 @@ TEST(GetMirror) {
   v8::Isolate* isolate = env->GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Handle<v8::Value> obj =
-      v8::Debug::GetMirror(v8::String::NewFromUtf8(isolate, "hodja"));
+      v8::Debug::GetMirror(v8::String::NewFromUtf8(isolate, "\x68\x6f\x64\x6a\x61"));
   v8::ScriptCompiler::Source source(v8_str(
-      "function runTest(mirror) {"
-      "  return mirror.isString() && (mirror.length() == 5);"
-      "}"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x72\x75\x6e\x54\x65\x73\x74\x28\x6d\x69\x72\x72\x6f\x72\x29\x20\x7b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6d\x69\x72\x72\x6f\x72\x2e\x69\x73\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x26\x26\x20\x28\x6d\x69\x72\x72\x6f\x72\x2e\x6c\x65\x6e\x67\x74\x68\x28\x29\x20\x3d\x3d\x20\x35\x29\x3b"
+      "\x7d"
       ""
-      "runTest;"));
+      "\x72\x75\x6e\x54\x65\x73\x74\x3b"));
   v8::Handle<v8::Function> run_test = v8::Handle<v8::Function>::Cast(
       v8::ScriptCompiler::CompileUnbound(isolate, &source)
           ->BindToCurrentContext()
@@ -6690,10 +6690,10 @@ TEST(DebugBreakFunctionApply) {
   // Create a function for testing breaking in apply.
   v8::Local<v8::Function> foo = CompileFunction(
       &env,
-      "function baz(x) { }"
-      "function bar(x) { baz(); }"
-      "function foo(){ bar.apply(this, [1]); }",
-      "foo");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x7a\x28\x78\x29\x20\x7b\x20\x7d"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x78\x29\x20\x7b\x20\x62\x61\x7a\x28\x29\x3b\x20\x7d"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x20\x62\x61\x72\x2e\x61\x70\x70\x6c\x79\x28\x74\x68\x69\x73\x2c\x20\x5b\x31\x5d\x29\x3b\x20\x7d",
+      "\x66\x6f\x6f");
 
   // Register a debug event listener which steps and counts.
   v8::Debug::SetDebugEventListener(DebugEventBreakMax);
@@ -6724,7 +6724,7 @@ v8::Handle<v8::Context> debugger_context;
 static void NamedGetterWithCallingContextCheck(
     v8::Local<v8::String> name,
     const v8::PropertyCallbackInfo<v8::Value>& info) {
-  CHECK_EQ(0, strcmp(*v8::String::Utf8Value(name), "a"));
+  CHECK_EQ(0, strcmp(*v8::String::Utf8Value(name), "\x61"));
   v8::Handle<v8::Context> current = info.GetIsolate()->GetCurrentContext();
   CHECK(current == debugee_context);
   CHECK(current != debugger_context);
@@ -6746,10 +6746,10 @@ static void DebugEventGetAtgumentPropertyValue(
     break_point_hit_count++;
     CHECK(debugger_context == CcTest::isolate()->GetCurrentContext());
     v8::Handle<v8::Function> func = v8::Handle<v8::Function>::Cast(CompileRun(
-        "(function(exec_state) {\n"
-        "    return (exec_state.frame(0).argumentValue(0).property('a').\n"
-        "            value().value() == 1);\n"
-        "})"));
+        "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x29\x20\x7b\xa"
+        "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x28\x65\x78\x65\x63\x5f\x73\x74\x61\x74\x65\x2e\x66\x72\x61\x6d\x65\x28\x30\x29\x2e\x61\x72\x67\x75\x6d\x65\x6e\x74\x56\x61\x6c\x75\x65\x28\x30\x29\x2e\x70\x72\x6f\x70\x65\x72\x74\x79\x28\x27\x61\x27\x29\x2e\xa"
+        "\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x76\x61\x6c\x75\x65\x28\x29\x2e\x76\x61\x6c\x75\x65\x28\x29\x20\x3d\x3d\x20\x31\x29\x3b\xa"
+        "\x7d\x29"));
     const int argc = 1;
     v8::Handle<v8::Value> argv[argc] = { exec_state };
     v8::Handle<v8::Value> result = func->Call(exec_state, argc, argv);
@@ -6773,9 +6773,9 @@ TEST(CallingContextIsNotDebugContext) {
 
   // Create object with 'a' property accessor.
   v8::Handle<v8::ObjectTemplate> named = v8::ObjectTemplate::New(isolate);
-  named->SetAccessor(v8::String::NewFromUtf8(isolate, "a"),
+  named->SetAccessor(v8::String::NewFromUtf8(isolate, "\x61"),
                      NamedGetterWithCallingContextCheck);
-  env->Global()->Set(v8::String::NewFromUtf8(isolate, "obj"),
+  env->Global()->Set(v8::String::NewFromUtf8(isolate, "\x6f\x62\x6a"),
                      named->NewInstance());
 
   // Register the debug event listener
@@ -6784,9 +6784,9 @@ TEST(CallingContextIsNotDebugContext) {
   // Create a function that invokes debugger.
   v8::Local<v8::Function> foo = CompileFunction(
       &env,
-      "function bar(x) { debugger; }"
-      "function foo(){ bar(obj); }",
-      "foo");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x78\x29\x20\x7b\x20\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x20\x7d"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x7b\x20\x62\x61\x72\x28\x6f\x62\x6a\x29\x3b\x20\x7d",
+      "\x66\x6f\x6f");
 
   break_point_hit_count = 0;
   foo->Call(env->Global(), 0, NULL);
@@ -6827,7 +6827,7 @@ TEST(DebugEventContext) {
                                     expected_callback_data);
   v8::Context::Scope context_scope(expected_context);
   v8::Script::Compile(
-      v8::String::NewFromUtf8(isolate, "(function(){debugger;})();"))->Run();
+      v8::String::NewFromUtf8(isolate, "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x7d\x29\x28\x29\x3b"))->Run();
   expected_context.Clear();
   v8::Debug::SetDebugEventListener(NULL);
   expected_context_data = v8::Handle<v8::Value>();
@@ -6863,7 +6863,7 @@ TEST(DebugEventBreakData) {
   was_debug_break_called = false;
   v8::Debug::DebugBreakForCommand(isolate, NULL);
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              "(function(x){return x;})(1);"))
+                                              "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x7d\x29\x28\x31\x29\x3b"))
       ->Run();
   CHECK(was_debug_event_called);
   CHECK(!was_debug_break_called);
@@ -6874,7 +6874,7 @@ TEST(DebugEventBreakData) {
   was_debug_break_called = false;
   v8::Debug::DebugBreakForCommand(isolate, data1);
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              "(function(x){return x+1;})(1);"))
+                                              "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x78\x2b\x31\x3b\x7d\x29\x28\x31\x29\x3b"))
       ->Run();
   CHECK(was_debug_event_called);
   CHECK(!was_debug_break_called);
@@ -6884,7 +6884,7 @@ TEST(DebugEventBreakData) {
   was_debug_break_called = false;
   v8::Debug::DebugBreak(isolate);
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              "(function(x){return x+2;})(1);"))
+                                              "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x78\x2b\x32\x3b\x7d\x29\x28\x31\x29\x3b"))
       ->Run();
   CHECK(!was_debug_event_called);
   CHECK(was_debug_break_called);
@@ -6896,7 +6896,7 @@ TEST(DebugEventBreakData) {
   v8::Debug::DebugBreak(isolate);
   v8::Debug::DebugBreakForCommand(isolate, data2);
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(),
-                                              "(function(x){return x+3;})(1);"))
+                                              "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x7b\x72\x65\x74\x75\x72\x6e\x20\x78\x2b\x33\x3b\x7d\x29\x28\x31\x29\x3b"))
       ->Run();
   CHECK(was_debug_event_called);
   CHECK(was_debug_break_called);
@@ -6929,7 +6929,7 @@ static void DebugEventBreakDeoptimize(
         CHECK(result->IsString());
         v8::Handle<v8::String> function_name(result->ToString());
         function_name->WriteUtf8(fn);
-        if (strcmp(fn, "bar") == 0) {
+        if (strcmp(fn, "\x62\x61\x72") == 0) {
           i::Deoptimizer::DeoptimizeAll(CcTest::i_isolate());
           debug_event_break_deoptimize_done = true;
         }
@@ -6951,7 +6951,7 @@ TEST(DeoptimizeDuringDebugBreak) {
   // Create a function for checking the function when hitting a break point.
   frame_function_name = CompileFunction(&env,
                                         frame_function_name_source,
-                                        "frame_function_name");
+                                        "\x66\x72\x61\x6d\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6e\x61\x6d\x65");
 
 
   // Set a debug event listener which will keep interrupting execution until
@@ -6963,11 +6963,11 @@ TEST(DeoptimizeDuringDebugBreak) {
 
   // Compile and run function bar which will optimize it for some flag settings.
   v8::Script::Compile(v8::String::NewFromUtf8(
-                          env->GetIsolate(), "function bar(){}; bar()"))->Run();
+                          env->GetIsolate(), "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x7b\x7d\x3b\x20\x62\x61\x72\x28\x29"))->Run();
 
   // Set debug break and call bar again.
   v8::Debug::DebugBreak(env->GetIsolate());
-  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "bar()"))
+  v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), "\x62\x61\x72\x28\x29"))
       ->Run();
 
   CHECK(debug_event_break_deoptimize_done);
@@ -6993,12 +6993,12 @@ static void DebugEventBreakWithOptimizedStack(
             frame_function_name->Call(exec_state, argc, argv);
         CHECK(result->IsString());
         v8::Handle<v8::String> function_name(result->ToString());
-        CHECK(function_name->Equals(v8::String::NewFromUtf8(isolate, "loop")));
+        CHECK(function_name->Equals(v8::String::NewFromUtf8(isolate, "\x6c\x6f\x6f\x70")));
         // Get the name of the first argument in frame i.
         result = frame_argument_name->Call(exec_state, argc, argv);
         CHECK(result->IsString());
         v8::Handle<v8::String> argument_name(result->ToString());
-        CHECK(argument_name->Equals(v8::String::NewFromUtf8(isolate, "count")));
+        CHECK(argument_name->Equals(v8::String::NewFromUtf8(isolate, "\x63\x6f\x75\x6e\x74")));
         // Get the value of the first argument in frame i. If the
         // funtion is optimized the value will be undefined, otherwise
         // the value will be '1 - i'.
@@ -7011,7 +7011,7 @@ static void DebugEventBreakWithOptimizedStack(
         result = frame_local_name->Call(exec_state, argc, argv);
         CHECK(result->IsString());
         v8::Handle<v8::String> local_name(result->ToString());
-        CHECK(local_name->Equals(v8::String::NewFromUtf8(isolate, "local")));
+        CHECK(local_name->Equals(v8::String::NewFromUtf8(isolate, "\x6c\x6f\x63\x61\x6c")));
         // Get the value of the first local variable. If the function
         // is optimized the value will be undefined, otherwise it will
         // be 42.
@@ -7037,29 +7037,29 @@ TEST(DebugBreakStackInspection) {
   v8::HandleScope scope(env->GetIsolate());
 
   frame_function_name =
-      CompileFunction(&env, frame_function_name_source, "frame_function_name");
+      CompileFunction(&env, frame_function_name_source, "\x66\x72\x61\x6d\x65\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e\x5f\x6e\x61\x6d\x65");
   frame_argument_name =
-      CompileFunction(&env, frame_argument_name_source, "frame_argument_name");
+      CompileFunction(&env, frame_argument_name_source, "\x66\x72\x61\x6d\x65\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x5f\x6e\x61\x6d\x65");
   frame_argument_value = CompileFunction(&env,
                                          frame_argument_value_source,
-                                         "frame_argument_value");
+                                         "\x66\x72\x61\x6d\x65\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x5f\x76\x61\x6c\x75\x65");
   frame_local_name =
-      CompileFunction(&env, frame_local_name_source, "frame_local_name");
+      CompileFunction(&env, frame_local_name_source, "\x66\x72\x61\x6d\x65\x5f\x6c\x6f\x63\x61\x6c\x5f\x6e\x61\x6d\x65");
   frame_local_value =
-      CompileFunction(&env, frame_local_value_source, "frame_local_value");
+      CompileFunction(&env, frame_local_value_source, "\x66\x72\x61\x6d\x65\x5f\x6c\x6f\x63\x61\x6c\x5f\x76\x61\x6c\x75\x65");
 
   v8::Handle<v8::FunctionTemplate> schedule_break_template =
       v8::FunctionTemplate::New(env->GetIsolate(), ScheduleBreak);
   v8::Handle<v8::Function> schedule_break =
       schedule_break_template->GetFunction();
-  env->Global()->Set(v8_str("scheduleBreak"), schedule_break);
+  env->Global()->Set(v8_str("\x73\x63\x68\x65\x64\x75\x6c\x65\x42\x72\x65\x61\x6b"), schedule_break);
 
   const char* src =
-      "function loop(count) {"
-      "  var local = 42;"
-      "  if (count < 1) { scheduleBreak(); loop(count + 1); }"
-      "}"
-      "loop(0);";
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x6f\x6f\x70\x28\x63\x6f\x75\x6e\x74\x29\x20\x7b"
+      "\x20\x20\x76\x61\x72\x20\x6c\x6f\x63\x61\x6c\x20\x3d\x20\x34\x32\x3b"
+      "\x20\x20\x69\x66\x20\x28\x63\x6f\x75\x6e\x74\x20\x3c\x20\x31\x29\x20\x7b\x20\x73\x63\x68\x65\x64\x75\x6c\x65\x42\x72\x65\x61\x6b\x28\x29\x3b\x20\x6c\x6f\x6f\x70\x28\x63\x6f\x75\x6e\x74\x20\x2b\x20\x31\x29\x3b\x20\x7d"
+      "\x7d"
+      "\x6c\x6f\x6f\x70\x28\x30\x29\x3b";
   v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), src))->Run();
 }
 
@@ -7086,7 +7086,7 @@ static void TestDebugBreakInLoop(const char* loop_head,
 
       EmbeddedVector<char, 1024> buffer;
       SNPrintF(buffer,
-               "function f() {%s%s%s}",
+               "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x6c\xa2\x6c\xa2\x6c\xa2\x7d",
                loop_head, loop_bodies[i], loop_tail);
 
       // Function with infinite loop.
@@ -7096,7 +7096,7 @@ static void TestDebugBreakInLoop(const char* loop_head,
       v8::Debug::DebugBreak(CcTest::isolate());
 
       // Call function with infinite loop.
-      CompileRun("f();");
+      CompileRun("\x66\x28\x29\x3b");
       CHECK_EQ(kBreaksPerTest, break_point_hit_count);
 
       CHECK(!v8::V8::IsExecutionTerminating());
@@ -7113,35 +7113,35 @@ TEST(DebugBreakLoop) {
   v8::Debug::SetDebugEventListener(DebugEventBreakMax);
 
   // Create a function for getting the frame count when hitting the break.
-  frame_count = CompileFunction(&env, frame_count_source, "frame_count");
+  frame_count = CompileFunction(&env, frame_count_source, "\x66\x72\x61\x6d\x65\x5f\x63\x6f\x75\x6e\x74");
 
-  CompileRun("var a = 1;");
-  CompileRun("function g() { }");
-  CompileRun("function h() { }");
+  CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x3b");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\x20\x7d");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x29\x20\x7b\x20\x7d");
 
   const char* loop_bodies[] = {
       "",
-      "g()",
-      "if (a == 0) { g() }",
-      "if (a == 1) { g() }",
-      "if (a == 0) { g() } else { h() }",
-      "if (a == 0) { continue }",
-      "if (a == 1) { continue }",
-      "switch (a) { case 1: g(); }",
-      "switch (a) { case 1: continue; }",
-      "switch (a) { case 1: g(); break; default: h() }",
-      "switch (a) { case 1: continue; break; default: h() }",
+      "\x67\x28\x29",
+      "\x69\x66\x20\x28\x61\x20\x3d\x3d\x20\x30\x29\x20\x7b\x20\x67\x28\x29\x20\x7d",
+      "\x69\x66\x20\x28\x61\x20\x3d\x3d\x20\x31\x29\x20\x7b\x20\x67\x28\x29\x20\x7d",
+      "\x69\x66\x20\x28\x61\x20\x3d\x3d\x20\x30\x29\x20\x7b\x20\x67\x28\x29\x20\x7d\x20\x65\x6c\x73\x65\x20\x7b\x20\x68\x28\x29\x20\x7d",
+      "\x69\x66\x20\x28\x61\x20\x3d\x3d\x20\x30\x29\x20\x7b\x20\x63\x6f\x6e\x74\x69\x6e\x75\x65\x20\x7d",
+      "\x69\x66\x20\x28\x61\x20\x3d\x3d\x20\x31\x29\x20\x7b\x20\x63\x6f\x6e\x74\x69\x6e\x75\x65\x20\x7d",
+      "\x73\x77\x69\x74\x63\x68\x20\x28\x61\x29\x20\x7b\x20\x63\x61\x73\x65\x20\x31\x3a\x20\x67\x28\x29\x3b\x20\x7d",
+      "\x73\x77\x69\x74\x63\x68\x20\x28\x61\x29\x20\x7b\x20\x63\x61\x73\x65\x20\x31\x3a\x20\x63\x6f\x6e\x74\x69\x6e\x75\x65\x3b\x20\x7d",
+      "\x73\x77\x69\x74\x63\x68\x20\x28\x61\x29\x20\x7b\x20\x63\x61\x73\x65\x20\x31\x3a\x20\x67\x28\x29\x3b\x20\x62\x72\x65\x61\x6b\x3b\x20\x64\x65\x66\x61\x75\x6c\x74\x3a\x20\x68\x28\x29\x20\x7d",
+      "\x73\x77\x69\x74\x63\x68\x20\x28\x61\x29\x20\x7b\x20\x63\x61\x73\x65\x20\x31\x3a\x20\x63\x6f\x6e\x74\x69\x6e\x75\x65\x3b\x20\x62\x72\x65\x61\x6b\x3b\x20\x64\x65\x66\x61\x75\x6c\x74\x3a\x20\x68\x28\x29\x20\x7d",
       NULL
   };
 
-  TestDebugBreakInLoop("while (true) {", loop_bodies, "}");
-  TestDebugBreakInLoop("while (a == 1) {", loop_bodies, "}");
+  TestDebugBreakInLoop("\x77\x68\x69\x6c\x65\x20\x28\x74\x72\x75\x65\x29\x20\x7b", loop_bodies, "\x7d");
+  TestDebugBreakInLoop("\x77\x68\x69\x6c\x65\x20\x28\x61\x20\x3d\x3d\x20\x31\x29\x20\x7b", loop_bodies, "\x7d");
 
-  TestDebugBreakInLoop("do {", loop_bodies, "} while (true)");
-  TestDebugBreakInLoop("do {", loop_bodies, "} while (a == 1)");
+  TestDebugBreakInLoop("\x64\x6f\x20\x7b", loop_bodies, "\x7d\x20\x77\x68\x69\x6c\x65\x20\x28\x74\x72\x75\x65\x29");
+  TestDebugBreakInLoop("\x64\x6f\x20\x7b", loop_bodies, "\x7d\x20\x77\x68\x69\x6c\x65\x20\x28\x61\x20\x3d\x3d\x20\x31\x29");
 
-  TestDebugBreakInLoop("for (;;) {", loop_bodies, "}");
-  TestDebugBreakInLoop("for (;a == 1;) {", loop_bodies, "}");
+  TestDebugBreakInLoop("\x66\x6f\x72\x20\x28\x3b\x3b\x29\x20\x7b", loop_bodies, "\x7d");
+  TestDebugBreakInLoop("\x66\x6f\x72\x20\x28\x3b\x61\x20\x3d\x3d\x20\x31\x3b\x29\x20\x7b", loop_bodies, "\x7d");
 
   // Get rid of the debug event listener.
   v8::Debug::SetDebugEventListener(NULL);
@@ -7166,7 +7166,7 @@ static void DebugBreakInlineListener(
   int break_id = CcTest::i_isolate()->debug()->break_id();
   char script[128];
   i::Vector<char> script_vector(script, sizeof(script));
-  SNPrintF(script_vector, "%%GetFrameCount(%d)", break_id);
+  SNPrintF(script_vector, "\x25\x6c\xc7\x85\x74\x46\x72\x61\x6d\x65\x43\x6f\x75\x6e\x74\x28\x6c\x84\x29", break_id);
   v8::Local<v8::Value> result = CompileRun(script);
 
   int frame_count = result->Int32Value();
@@ -7175,7 +7175,7 @@ static void DebugBreakInlineListener(
   for (int i = 0; i < frame_count; i++) {
     // The 5. element in the returned array of GetFrameDetails contains the
     // source position of that frame.
-    SNPrintF(script_vector, "%%GetFrameDetails(%d, %d)[5]", break_id, i);
+    SNPrintF(script_vector, "\x25\x6c\xc7\x85\x74\x46\x72\x61\x6d\x65\x44\x65\x74\x61\x69\x6c\x73\x28\x6c\x84\x2c\x20\x6c\x84\x29\x5b\x35\x5d", break_id, i);
     v8::Local<v8::Value> result = CompileRun(script);
     CHECK_EQ(expected_line_number[i],
              i::Script::GetLineNumber(source_script, result->Int32Value()));
@@ -7190,19 +7190,19 @@ TEST(DebugBreakInline) {
   DebugLocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   const char* source =
-      "function debug(b) {             \n"
-      "  if (b) debugger;              \n"
-      "}                               \n"
-      "function f(b) {                 \n"
-      "  debug(b)                      \n"
-      "};                              \n"
-      "function g(b) {                 \n"
-      "  f(b);                         \n"
-      "};                              \n"
-      "g(false);                       \n"
-      "g(false);                       \n"
-      "%OptimizeFunctionOnNextCall(g); \n"
-      "g(true);";
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x64\x65\x62\x75\x67\x28\x62\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x69\x66\x20\x28\x62\x29\x20\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x62\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x64\x65\x62\x75\x67\x28\x62\x29\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x7d\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x62\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x66\x28\x62\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x7d\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x67\x28\x66\x61\x6c\x73\x65\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x67\x28\x66\x61\x6c\x73\x65\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x67\x29\x3b\x20\xa"
+      "\x67\x28\x74\x72\x75\x65\x29\x3b";
   v8::Debug::SetDebugEventListener(DebugBreakInlineListener);
   inline_script =
       v8::Script::Compile(v8::String::NewFromUtf8(env->GetIsolate(), source));
@@ -7242,11 +7242,11 @@ TEST(Regress131642) {
   // We step through the first script.  It exits through an exception.  We run
   // this inside a new frame to record a different FP than the second script
   // would expect.
-  const char* script_1 = "debugger; throw new Error();";
+  const char* script_1 = "\x64\x65\x62\x75\x67\x67\x65\x72\x3b\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x3b";
   RunScriptInANewCFrame(script_1);
 
   // The second script uses forEach.
-  const char* script_2 = "[0].forEach(function() { });";
+  const char* script_2 = "\x5b\x30\x5d\x2e\x66\x6f\x72\x45\x61\x63\x68\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x7d\x29\x3b";
   CompileRun(script_2);
 
   v8::Debug::SetDebugEventListener(NULL);
@@ -7267,11 +7267,11 @@ TEST(DebuggerCreatesContextIffActive) {
   CHECK_EQ(1, CountNativeContexts());
 
   v8::Debug::SetDebugEventListener(NULL);
-  CompileRun("debugger;");
+  CompileRun("\x64\x65\x62\x75\x67\x67\x65\x72\x3b");
   CHECK_EQ(1, CountNativeContexts());
 
   v8::Debug::SetDebugEventListener(NopListener);
-  CompileRun("debugger;");
+  CompileRun("\x64\x65\x62\x75\x67\x67\x65\x72\x3b");
   CHECK_EQ(2, CountNativeContexts());
 
   v8::Debug::SetDebugEventListener(NULL);
@@ -7283,7 +7283,7 @@ TEST(LiveEditEnabled) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::Debug::SetLiveEditEnabled(env->GetIsolate(), true);
-  CompileRun("%LiveEditCompareStrings('', '')");
+  CompileRun("\x6c\xd3\x89\x76\x65\x45\x64\x69\x74\x43\x6f\x6d\x70\x61\x72\x65\x53\x74\x72\x69\x6e\x67\x73\x28\x27\x27\x2c\x20\x27\x27\x29");
 }
 
 
@@ -7292,7 +7292,7 @@ TEST(LiveEditDisabled) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::Debug::SetLiveEditEnabled(env->GetIsolate(), false);
-  CompileRun("%LiveEditCompareStrings('', '')");
+  CompileRun("\x6c\xd3\x89\x76\x65\x45\x64\x69\x74\x43\x6f\x6d\x70\x61\x72\x65\x53\x74\x72\x69\x6e\x67\x73\x28\x27\x27\x2c\x20\x27\x27\x29");
 }
 
 
@@ -7307,24 +7307,24 @@ TEST(PrecompiledFunction) {
   v8::Debug::SetDebugEventListener(DebugBreakInlineListener);
 
   v8::Local<v8::Function> break_here =
-      CompileFunction(&env, "function break_here(){}", "break_here");
+      CompileFunction(&env, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x72\x65\x61\x6b\x5f\x68\x65\x72\x65\x28\x29\x7b\x7d", "\x62\x72\x65\x61\x6b\x5f\x68\x65\x72\x65");
   SetBreakPoint(break_here, 0);
 
   const char* source =
-      "var a = b = c = 1;              \n"
-      "function this_is_lazy() {       \n"
+      "\x76\x61\x72\x20\x61\x20\x3d\x20\x62\x20\x3d\x20\x63\x20\x3d\x20\x31\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x68\x69\x73\x5f\x69\x73\x5f\x6c\x61\x7a\x79\x28\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\xa"
       // This symbol won't appear in the preparse data.
-      "  var a;                        \n"
-      "}                               \n"
-      "function bar() {                \n"
-      "  return \"bar\";               \n"
-      "};                              \n"
-      "a = b = c = 2;                  \n"
-      "bar();                          \n";
+      "\x20\x20\x76\x61\x72\x20\x61\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x22\x62\x61\x72\x22\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x7d\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x61\x20\x3d\x20\x62\x20\x3d\x20\x63\x20\x3d\x20\x32\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa"
+      "\x62\x61\x72\x28\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\xa";
   v8::Local<v8::Value> result = ParserCacheCompileRun(source);
   CHECK(result->IsString());
   v8::String::Utf8Value utf8(result);
-  CHECK_EQ("bar", *utf8);
+  CHECK_EQ("\x62\x61\x72", *utf8);
 
   v8::Debug::SetDebugEventListener(NULL);
   CheckDebuggerUnloaded();
@@ -7350,15 +7350,15 @@ TEST(DebugBreakStackTrace) {
       v8::FunctionTemplate::New(env->GetIsolate(), AddDebugBreak);
   v8::Handle<v8::Function> add_debug_break =
       add_debug_break_template->GetFunction();
-  env->Global()->Set(v8_str("add_debug_break"), add_debug_break);
+  env->Global()->Set(v8_str("\x61\x64\x64\x5f\x64\x65\x62\x75\x67\x5f\x62\x72\x65\x61\x6b"), add_debug_break);
 
-  CompileRun("(function loop() {"
-             "  for (var j = 0; j < 1000; j++) {"
-             "    for (var i = 0; i < 1000; i++) {"
-             "      if (i == 999) add_debug_break();"
-             "    }"
-             "  }"
-             "})()");
+  CompileRun("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x6f\x6f\x70\x28\x29\x20\x7b"
+             "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x6a\x2b\x2b\x29\x20\x7b"
+             "\x20\x20\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
+             "\x20\x20\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3d\x3d\x20\x39\x39\x39\x29\x20\x61\x64\x64\x5f\x64\x65\x62\x75\x67\x5f\x62\x72\x65\x61\x6b\x28\x29\x3b"
+             "\x20\x20\x20\x20\x7d"
+             "\x20\x20\x7d"
+             "\x7d\x29\x28\x29");
 }
 
 
@@ -7380,7 +7380,7 @@ static void DebugBreakTriggerTerminate(
 class TerminationThread : public v8::base::Thread {
  public:
   explicit TerminationThread(v8::Isolate* isolate)
-      : Thread(Options("terminator")), isolate_(isolate) {}
+      : Thread(Options("\x74\x65\x72\x6d\x69\x6e\x61\x74\x6f\x72")), isolate_(isolate) {}
 
   virtual void Run() {
     terminate_requested_semaphore.Wait();
@@ -7402,6 +7402,6 @@ TEST(DebugBreakOffThreadTerminate) {
   terminator.Start();
   v8::TryCatch try_catch;
   v8::Debug::DebugBreak(isolate);
-  CompileRun("while (true);");
+  CompileRun("\x77\x68\x69\x6c\x65\x20\x28\x74\x72\x75\x65\x29\x3b");
   CHECK(try_catch.HasTerminated());
 }

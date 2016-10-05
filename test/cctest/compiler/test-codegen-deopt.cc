@@ -72,13 +72,13 @@ class DeoptCodegenTester {
     InstructionSelector selector(code, &source_positions);
     selector.SelectInstructions();
 
-    os << "----- Instruction sequence before register allocation -----\n"
+    os << "\x2d\x2d\x2d\x2d\x2d\x20\x49\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x20\x73\x65\x71\x75\x65\x6e\x63\x65\x20\x62\x65\x66\x6f\x72\x65\x20\x72\x65\x67\x69\x73\x74\x65\x72\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x2d\x2d\x2d\x2d\x2d\xa"
        << *code;
 
     RegisterAllocator allocator(code);
     CHECK(allocator.Allocate());
 
-    os << "----- Instruction sequence after register allocation -----\n"
+    os << "\x2d\x2d\x2d\x2d\x2d\x20\x49\x6e\x73\x74\x72\x75\x63\x74\x69\x6f\x6e\x20\x73\x65\x71\x75\x65\x6e\x63\x65\x20\x61\x66\x74\x65\x72\x20\x72\x65\x67\x69\x73\x74\x65\x72\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x2d\x2d\x2d\x2d\x2d\xa"
        << *code;
 
     compiler::CodeGenerator generator(code);
@@ -105,7 +105,7 @@ class TrivialDeoptCodegenTester : public DeoptCodegenTester {
  public:
   explicit TrivialDeoptCodegenTester(HandleAndZoneScope* scope)
       : DeoptCodegenTester(scope,
-                           "function foo() { deopt(); return 42; }; foo") {}
+                           "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20\x64\x65\x6f\x70\x74\x28\x29\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b\x20\x7d\x3b\x20\x66\x6f\x6f") {}
 
   void GenerateCode() {
     GenerateCodeFromSchedule(BuildGraphAndSchedule(graph));
@@ -133,7 +133,7 @@ class TrivialDeoptCodegenTester : public DeoptCodegenTester {
     Node* undef_node = m.NewNode(common.HeapConstant(undef_constant));
 
     Handle<JSFunction> deopt_function =
-        NewFunction("function deopt() { %DeoptimizeFunction(foo); }; deopt");
+        NewFunction("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x64\x65\x6f\x70\x74\x28\x29\x20\x7b\x20\x25\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x66\x6f\x6f\x29\x3b\x20\x7d\x3b\x20\x64\x65\x6f\x70\x74");
     PrintableUnique<Object> deopt_fun_constant =
         PrintableUnique<Object>::CreateUninitialized(zone(), deopt_function);
     Node* deopt_fun_node = m.NewNode(common.HeapConstant(deopt_fun_constant));
@@ -241,7 +241,7 @@ class TrivialRuntimeDeoptCodegenTester : public DeoptCodegenTester {
   explicit TrivialRuntimeDeoptCodegenTester(HandleAndZoneScope* scope)
       : DeoptCodegenTester(
             scope,
-            "function foo() { %DeoptimizeFunction(foo); return 42; }; foo") {}
+            "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20\x25\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x66\x6f\x6f\x29\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b\x20\x7d\x3b\x20\x66\x6f\x6f") {}
 
   void GenerateCode() {
     GenerateCodeFromSchedule(BuildGraphAndSchedule(graph));

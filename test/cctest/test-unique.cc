@@ -41,13 +41,13 @@ Isolate* isolate = CcTest::i_isolate();       \
 Factory* factory = isolate->factory();        \
 HandleScope sc(isolate);                      \
 Handle<String> handles[] = {                  \
-  factory->InternalizeUtf8String("A"),        \
-  factory->InternalizeUtf8String("B"),        \
-  factory->InternalizeUtf8String("C"),        \
-  factory->InternalizeUtf8String("D"),        \
-  factory->InternalizeUtf8String("E"),        \
-  factory->InternalizeUtf8String("F"),        \
-  factory->InternalizeUtf8String("G")         \
+  factory->InternalizeUtf8String("\x41"),        \
+  factory->InternalizeUtf8String("\x42"),        \
+  factory->InternalizeUtf8String("\x43"),        \
+  factory->InternalizeUtf8String("\x44"),        \
+  factory->InternalizeUtf8String("\x45"),        \
+  factory->InternalizeUtf8String("\x46"),        \
+  factory->InternalizeUtf8String("\x47")         \
 };                                            \
 DisallowHeapAllocation _disable
 

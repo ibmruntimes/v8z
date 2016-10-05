@@ -164,38 +164,38 @@ class IfBuilderModel {
     CHECK(expression != NULL);
     if (expression->conjunction) {
       DCHECK(!expression->disjunction);
-      v->push_back('&');
+      v->push_back('\x26');
     } else if (expression->disjunction) {
-      v->push_back('|');
+      v->push_back('\x7c');
     }
     if (expression->variable_offset != kUninitializedVariableOffset) {
-      v->push_back('v');
+      v->push_back('\x76');
     }
     Expressions& children = expression->children;
     if (children.empty()) return;
-    v->push_back('(');
+    v->push_back('\x28');
     for (Expressions::iterator i = children.begin(); i != children.end(); ++i) {
       PrintRecursive(v, *i);
     }
-    v->push_back(')');
+    v->push_back('\x29');
   }
 
   static void PrintRecursive(std::vector<char>* v, Node* node) {
     // Termination condition.
     if (node->condition == NULL) {
       CHECK(node->then_node == NULL && node->else_node == NULL);
-      if (node->returns) v->push_back('r');
+      if (node->returns) v->push_back('\x72');
       return;
     }
     CHECK(!node->returns);
-    v->push_back('i');
+    v->push_back('\x69');
     PrintRecursive(v, node->condition);
     if (node->then_node != NULL) {
-      v->push_back('t');
+      v->push_back('\x74');
       PrintRecursive(v, node->then_node);
     }
     if (node->else_node != NULL) {
-      v->push_back('e');
+      v->push_back('\x65');
       PrintRecursive(v, node->else_node);
     }
   }
@@ -279,19 +279,19 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
   static void GenerateExpression(v8::base::RandomNumberGenerator* rng,
                                  std::vector<char>* v, int n_vars) {
     int depth = 1;
-    v->push_back('(');
+    v->push_back('\x28');
     bool need_if = true;
     bool populated = false;
     while (n_vars != 0) {
       if (need_if) {
         // can nest a paren or do a variable
         if (rng->NextBool()) {
-          v->push_back('v');
+          v->push_back('\x76');
           n_vars--;
           need_if = false;
           populated = true;
         } else {
-          v->push_back('(');
+          v->push_back('\x28');
           depth++;
           populated = false;
         }
@@ -303,15 +303,15 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
         }
         switch (rng->NextInt(options)) {
           case 0:
-            v->push_back('&');
+            v->push_back('\x26');
             need_if = true;
             break;
           case 1:
-            v->push_back('|');
+            v->push_back('\x7c');
             need_if = true;
             break;
           case 2:
-            v->push_back(')');
+            v->push_back('\x29');
             depth--;
             break;
         }
@@ -319,7 +319,7 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
     }
     CHECK(!need_if);
     while (depth != 0) {
-      v->push_back(')');
+      v->push_back('\x29');
       depth--;
     }
   }
@@ -342,17 +342,17 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
         }
         switch (rng->NextInt(options)) {
           case 0:
-            v->push_back('i');
+            v->push_back('\x69');
             n_ifs--;
             have_env = false;
             GenerateExpression(rng, v, rng->NextInt(max_exp_length) + 1);
             break;
           case 1:
-            v->push_back('r');
+            v->push_back('\x72');
             have_env = false;
             break;
           case 2:
-            v->push_back('e');
+            v->push_back('\x65');
             else_done = true;
             then_done = false;
             break;
@@ -364,12 +364,12 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
         if (then_done) options--;
         switch (rng->NextInt(options)) {
           case 0:
-            v->push_back('e');
+            v->push_back('\x65');
             else_done = true;
             then_done = false;
             break;
           case 1:
-            v->push_back('t');
+            v->push_back('\x74');
             then_done = true;
             else_done = false;
             break;
@@ -387,25 +387,25 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
         // Do nothing.
         break;
       case 1:
-        v->push_back('t');
+        v->push_back('\x74');
         switch (rng->NextInt(3)) {
           case 0:
-            v->push_back('r');
+            v->push_back('\x72');
             break;
           case 1:
-            v->push_back('e');
+            v->push_back('\x65');
             break;
           case 2:
-            v->push_back('e');
-            v->push_back('r');
+            v->push_back('\x65');
+            v->push_back('\x72');
             break;
           default:
             CHECK(false);
         }
         break;
       case 2:
-        v->push_back('e');
-        if (rng->NextBool()) v->push_back('r');
+        v->push_back('\x65');
+        if (rng->NextBool()) v->push_back('\x72');
         break;
       default:
         CHECK(false);
@@ -420,7 +420,7 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
     int depth = 0;
     for (; it != end; ++it) {
       switch (*it) {
-        case 'v':
+        case '\x76':
           m_.IfNode();
           {
             Node* offset = Int32Constant(offset_ * 4);
@@ -430,24 +430,24 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
             offset_++;
           }
           break;
-        case '&':
+        case '\x26':
           m_.And();
           c_.And();
           var_.Set(Int32Add(var_.Get(), Int32Constant(kConjunctionInc)));
           break;
-        case '|':
+        case '\x7c':
           m_.Or();
           c_.Or();
           var_.Set(Int32Add(var_.Get(), Int32Constant(kDisjunctionInc)));
           break;
-        case '(':
+        case '\x28':
           if (depth != 0) {
             m_.OpenParen();
             c_.OpenParen();
           }
           depth++;
           break;
-        case ')':
+        case '\x29':
           depth--;
           if (depth == 0) return it;
           m_.CloseParen();
@@ -464,30 +464,30 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
   void ParseIfThenElse(const std::string& str) {
     int n_vars = 0;
     for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
-      if (*it == 'v') n_vars++;
+      if (*it == '\x76') n_vars++;
     }
     InitializeConstants(n_vars);
     for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
       switch (*it) {
-        case 'i': {
+        case '\x69': {
           it++;
           CHECK(it != str.end());
-          CHECK_EQ('(', *it);
+          CHECK_EQ('\x28', *it);
           it = ParseExpression(it, str.end());
-          CHECK_EQ(')', *it);
+          CHECK_EQ('\x29', *it);
           break;
         }
-        case 't':
+        case '\x74':
           m_.Then();
           c_.Then();
           var_.Set(Int32Add(var_.Get(), Int32Constant(kThenInc)));
           break;
-        case 'e':
+        case '\x65':
           m_.Else();
           c_.Else();
           var_.Set(Int32Add(var_.Get(), Int32Constant(kElseInc)));
           break;
-        case 'r':
+        case '\x72':
           m_.Return();
           Return(var_.Get());
           break;
@@ -509,7 +509,7 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
 
   void ParseExpression(const std::string& str) {
     CHECK(inputs_.is_empty());
-    std::string wrapped = "i(" + str + ")te";
+    std::string wrapped = "\x69\x28" + str + "\x29\x74\x65";
     ParseIfThenElse(wrapped);
   }
 
@@ -539,10 +539,10 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
     int offset = 0;
     for (std::string::const_iterator it = str.begin(); it != str.end(); ++it) {
       switch (*it) {
-        case 't':
+        case '\x74':
           inputs_[offset++] = 1;
           break;
-        case 'f':
+        case '\x66':
           inputs_[offset++] = 0;
           break;
         default:
@@ -590,20 +590,20 @@ class IfBuilderGenerator : public StructuredMachineAssemblerTester<int32_t> {
 
 TEST(RunExpressionString) {
   IfBuilderGenerator m;
-  m.ParseExpression("((v|v)|v)");
-  m.Run("ttt", kInitalVar + 1 * kIfInc + kThenInc);
-  m.Run("ftt", kInitalVar + 2 * kIfInc + kDisjunctionInc + kThenInc);
-  m.Run("fft", kInitalVar + 3 * kIfInc + 2 * kDisjunctionInc + kThenInc);
-  m.Run("fff", kInitalVar + 3 * kIfInc + 2 * kDisjunctionInc + kElseInc);
+  m.ParseExpression("\x28\x28\x76\x7c\x76\x29\x7c\x76\x29");
+  m.Run("\x74\x74\x74", kInitalVar + 1 * kIfInc + kThenInc);
+  m.Run("\x66\x74\x74", kInitalVar + 2 * kIfInc + kDisjunctionInc + kThenInc);
+  m.Run("\x66\x66\x74", kInitalVar + 3 * kIfInc + 2 * kDisjunctionInc + kThenInc);
+  m.Run("\x66\x66\x66", kInitalVar + 3 * kIfInc + 2 * kDisjunctionInc + kElseInc);
 }
 
 
 TEST(RunExpressionStrings) {
   const char* strings[] = {
-      "v",       "(v)",     "((v))",     "v|v",
-      "(v|v)",   "((v|v))", "v&v",       "(v&v)",
-      "((v&v))", "v&(v)",   "v&(v|v)",   "v&(v|v)&v",
-      "v|(v)",   "v|(v&v)", "v|(v&v)|v", "v|(((v)|(v&v)|(v)|v)&(v))|v",
+      "\x76",       "\x28\x76\x29",     "\x28\x28\x76\x29\x29",     "\x76\x7c\x76",
+      "\x28\x76\x7c\x76\x29",   "\x28\x28\x76\x7c\x76\x29\x29", "\x76\x26\x76",       "\x28\x76\x26\x76\x29",
+      "\x28\x28\x76\x26\x76\x29\x29", "\x76\x26\x28\x76\x29",   "\x76\x26\x28\x76\x7c\x76\x29",   "\x76\x26\x28\x76\x7c\x76\x29\x26\x76",
+      "\x76\x7c\x28\x76\x29",   "\x76\x7c\x28\x76\x26\x76\x29", "\x76\x7c\x28\x76\x26\x76\x29\x7c\x76", "\x76\x7c\x28\x28\x28\x76\x29\x7c\x28\x76\x26\x76\x29\x7c\x28\x76\x29\x7c\x76\x29\x26\x28\x76\x29\x29\x7c\x76",
   };
   v8::base::RandomNumberGenerator rng;
   for (size_t i = 0; i < ARRAY_SIZE(strings); i++) {
@@ -616,8 +616,8 @@ TEST(RunExpressionStrings) {
 
 TEST(RunSimpleIfElseTester) {
   const char* tests[] = {
-      "i(v)",   "i(v)t",   "i(v)te",
-      "i(v)er", "i(v)ter", "i(v)ti(v)trei(v)ei(v)ei(v)ei(v)ei(v)ei(v)ei(v)e"};
+      "\x69\x28\x76\x29",   "\x69\x28\x76\x29\x74",   "\x69\x28\x76\x29\x74\x65",
+      "\x69\x28\x76\x29\x65\x72", "\x69\x28\x76\x29\x74\x65\x72", "\x69\x28\x76\x29\x74\x69\x28\x76\x29\x74\x72\x65\x69\x28\x76\x29\x65\x69\x28\x76\x29\x65\x69\x28\x76\x29\x65\x69\x28\x76\x29\x65\x69\x28\x76\x29\x65\x69\x28\x76\x29\x65\x69\x28\x76\x29\x65"};
   v8::base::RandomNumberGenerator rng;
   for (size_t i = 0; i < ARRAY_SIZE(tests); ++i) {
     IfBuilderGenerator m;

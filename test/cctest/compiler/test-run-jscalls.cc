@@ -10,123 +10,123 @@ using namespace v8::internal;
 using namespace v8::internal::compiler;
 
 TEST(SimpleCall) {
-  FunctionTester T("(function(foo,a) { return foo(a); })");
-  Handle<JSFunction> foo = T.NewFunction("(function(a) { return a; })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x66\x6f\x6f\x2c\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x28\x61\x29\x3b\x20\x7d\x29");
+  Handle<JSFunction> foo = T.NewFunction("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x3b\x20\x7d\x29");
 
   T.CheckCall(T.Val(3), foo, T.Val(3));
   T.CheckCall(T.Val(3.1), foo, T.Val(3.1));
   T.CheckCall(foo, foo, foo);
-  T.CheckCall(T.Val("Abba"), foo, T.Val("Abba"));
+  T.CheckCall(T.Val("\x41\x62\x62\x61"), foo, T.Val("\x41\x62\x62\x61"));
 }
 
 
 TEST(SimpleCall2) {
-  FunctionTester T("(function(foo,a) { return foo(a); })");
-  Handle<JSFunction> foo = T.NewFunction("(function(a) { return a; })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x66\x6f\x6f\x2c\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x28\x61\x29\x3b\x20\x7d\x29");
+  Handle<JSFunction> foo = T.NewFunction("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x3b\x20\x7d\x29");
   T.Compile(foo);
 
   T.CheckCall(T.Val(3), foo, T.Val(3));
   T.CheckCall(T.Val(3.1), foo, T.Val(3.1));
   T.CheckCall(foo, foo, foo);
-  T.CheckCall(T.Val("Abba"), foo, T.Val("Abba"));
+  T.CheckCall(T.Val("\x41\x62\x62\x61"), foo, T.Val("\x41\x62\x62\x61"));
 }
 
 
 TEST(ConstCall) {
-  FunctionTester T("(function(foo,a) { return foo(a,3); })");
-  Handle<JSFunction> foo = T.NewFunction("(function(a,b) { return a + b; })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x66\x6f\x6f\x2c\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x28\x61\x2c\x33\x29\x3b\x20\x7d\x29");
+  Handle<JSFunction> foo = T.NewFunction("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x62\x3b\x20\x7d\x29");
   T.Compile(foo);
 
   T.CheckCall(T.Val(6), foo, T.Val(3));
   T.CheckCall(T.Val(6.1), foo, T.Val(3.1));
-  T.CheckCall(T.Val("function (a,b) { return a + b; }3"), foo, foo);
-  T.CheckCall(T.Val("Abba3"), foo, T.Val("Abba"));
+  T.CheckCall(T.Val("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x62\x3b\x20\x7d\x33"), foo, foo);
+  T.CheckCall(T.Val("\x41\x62\x62\x61\x33"), foo, T.Val("\x41\x62\x62\x61"));
 }
 
 
 TEST(ConstCall2) {
-  FunctionTester T("(function(foo,a) { return foo(a,\"3\"); })");
-  Handle<JSFunction> foo = T.NewFunction("(function(a,b) { return a + b; })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x66\x6f\x6f\x2c\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x28\x61\x2c\x22\x33\x22\x29\x3b\x20\x7d\x29");
+  Handle<JSFunction> foo = T.NewFunction("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x62\x3b\x20\x7d\x29");
   T.Compile(foo);
 
-  T.CheckCall(T.Val("33"), foo, T.Val(3));
-  T.CheckCall(T.Val("3.13"), foo, T.Val(3.1));
-  T.CheckCall(T.Val("function (a,b) { return a + b; }3"), foo, foo);
-  T.CheckCall(T.Val("Abba3"), foo, T.Val("Abba"));
+  T.CheckCall(T.Val("\x33\x33"), foo, T.Val(3));
+  T.CheckCall(T.Val("\x33\x2e\x31\x33"), foo, T.Val(3.1));
+  T.CheckCall(T.Val("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x62\x3b\x20\x7d\x33"), foo, foo);
+  T.CheckCall(T.Val("\x41\x62\x62\x61\x33"), foo, T.Val("\x41\x62\x62\x61"));
 }
 
 
 TEST(PropertyNamedCall) {
-  FunctionTester T("(function(a,b) { return a.foo(b,23); })");
-  CompileRun("function foo(y,z) { return this.x + y + z; }");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x2e\x66\x6f\x6f\x28\x62\x2c\x32\x33\x29\x3b\x20\x7d\x29");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x79\x2c\x7a\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x78\x20\x2b\x20\x79\x20\x2b\x20\x7a\x3b\x20\x7d");
 
-  T.CheckCall(T.Val(32), T.NewObject("({ foo:foo, x:4 })"), T.Val(5));
-  T.CheckCall(T.Val("xy23"), T.NewObject("({ foo:foo, x:'x' })"), T.Val("y"));
-  T.CheckCall(T.nan(), T.NewObject("({ foo:foo, y:0 })"), T.Val(3));
+  T.CheckCall(T.Val(32), T.NewObject("\x28\x7b\x20\x66\x6f\x6f\x3a\x66\x6f\x6f\x2c\x20\x78\x3a\x34\x20\x7d\x29"), T.Val(5));
+  T.CheckCall(T.Val("\x78\x79\x32\x33"), T.NewObject("\x28\x7b\x20\x66\x6f\x6f\x3a\x66\x6f\x6f\x2c\x20\x78\x3a\x27\x78\x27\x20\x7d\x29"), T.Val("\x79"));
+  T.CheckCall(T.nan(), T.NewObject("\x28\x7b\x20\x66\x6f\x6f\x3a\x66\x6f\x6f\x2c\x20\x79\x3a\x30\x20\x7d\x29"), T.Val(3));
 }
 
 
 TEST(PropertyKeyedCall) {
-  FunctionTester T("(function(a,b) { var f = 'foo'; return a[f](b,23); })");
-  CompileRun("function foo(y,z) { return this.x + y + z; }");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x76\x61\x72\x20\x66\x20\x3d\x20\x27\x66\x6f\x6f\x27\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x5b\x66\x5d\x28\x62\x2c\x32\x33\x29\x3b\x20\x7d\x29");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x79\x2c\x7a\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x78\x20\x2b\x20\x79\x20\x2b\x20\x7a\x3b\x20\x7d");
 
-  T.CheckCall(T.Val(32), T.NewObject("({ foo:foo, x:4 })"), T.Val(5));
-  T.CheckCall(T.Val("xy23"), T.NewObject("({ foo:foo, x:'x' })"), T.Val("y"));
-  T.CheckCall(T.nan(), T.NewObject("({ foo:foo, y:0 })"), T.Val(3));
+  T.CheckCall(T.Val(32), T.NewObject("\x28\x7b\x20\x66\x6f\x6f\x3a\x66\x6f\x6f\x2c\x20\x78\x3a\x34\x20\x7d\x29"), T.Val(5));
+  T.CheckCall(T.Val("\x78\x79\x32\x33"), T.NewObject("\x28\x7b\x20\x66\x6f\x6f\x3a\x66\x6f\x6f\x2c\x20\x78\x3a\x27\x78\x27\x20\x7d\x29"), T.Val("\x79"));
+  T.CheckCall(T.nan(), T.NewObject("\x28\x7b\x20\x66\x6f\x6f\x3a\x66\x6f\x6f\x2c\x20\x79\x3a\x30\x20\x7d\x29"), T.Val(3));
 }
 
 
 TEST(GlobalCall) {
-  FunctionTester T("(function(a,b) { return foo(a,b); })");
-  CompileRun("function foo(a,b) { return a + b + this.c; }");
-  CompileRun("var c = 23;");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x28\x61\x2c\x62\x29\x3b\x20\x7d\x29");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x62\x20\x2b\x20\x74\x68\x69\x73\x2e\x63\x3b\x20\x7d");
+  CompileRun("\x76\x61\x72\x20\x63\x20\x3d\x20\x32\x33\x3b");
 
   T.CheckCall(T.Val(32), T.Val(4), T.Val(5));
-  T.CheckCall(T.Val("xy23"), T.Val("x"), T.Val("y"));
+  T.CheckCall(T.Val("\x78\x79\x32\x33"), T.Val("\x78"), T.Val("\x79"));
   T.CheckCall(T.nan(), T.undefined(), T.Val(3));
 }
 
 
 TEST(LookupCall) {
-  FunctionTester T("(function(a,b) { with (a) { return foo(a,b); } })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x77\x69\x74\x68\x20\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x28\x61\x2c\x62\x29\x3b\x20\x7d\x20\x7d\x29");
 
-  CompileRun("function f1(a,b) { return a.val + b; }");
-  T.CheckCall(T.Val(5), T.NewObject("({ foo:f1, val:2 })"), T.Val(3));
-  T.CheckCall(T.Val("xy"), T.NewObject("({ foo:f1, val:'x' })"), T.Val("y"));
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x31\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x2e\x76\x61\x6c\x20\x2b\x20\x62\x3b\x20\x7d");
+  T.CheckCall(T.Val(5), T.NewObject("\x28\x7b\x20\x66\x6f\x6f\x3a\x66\x31\x2c\x20\x76\x61\x6c\x3a\x32\x20\x7d\x29"), T.Val(3));
+  T.CheckCall(T.Val("\x78\x79"), T.NewObject("\x28\x7b\x20\x66\x6f\x6f\x3a\x66\x31\x2c\x20\x76\x61\x6c\x3a\x27\x78\x27\x20\x7d\x29"), T.Val("\x79"));
 
-  CompileRun("function f2(a,b) { return this.val + b; }");
-  T.CheckCall(T.Val(9), T.NewObject("({ foo:f2, val:4 })"), T.Val(5));
-  T.CheckCall(T.Val("xy"), T.NewObject("({ foo:f2, val:'x' })"), T.Val("y"));
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x32\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x76\x61\x6c\x20\x2b\x20\x62\x3b\x20\x7d");
+  T.CheckCall(T.Val(9), T.NewObject("\x28\x7b\x20\x66\x6f\x6f\x3a\x66\x32\x2c\x20\x76\x61\x6c\x3a\x34\x20\x7d\x29"), T.Val(5));
+  T.CheckCall(T.Val("\x78\x79"), T.NewObject("\x28\x7b\x20\x66\x6f\x6f\x3a\x66\x32\x2c\x20\x76\x61\x6c\x3a\x27\x78\x27\x20\x7d\x29"), T.Val("\x79"));
 }
 
 
 TEST(MismatchCallTooFew) {
-  FunctionTester T("(function(a,b) { return foo(a,b); })");
-  CompileRun("function foo(a,b,c) { return a + b + c; }");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x28\x61\x2c\x62\x29\x3b\x20\x7d\x29");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x61\x2c\x62\x2c\x63\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x62\x20\x2b\x20\x63\x3b\x20\x7d");
 
   T.CheckCall(T.nan(), T.Val(23), T.Val(42));
   T.CheckCall(T.nan(), T.Val(4.2), T.Val(2.3));
-  T.CheckCall(T.Val("abundefined"), T.Val("a"), T.Val("b"));
+  T.CheckCall(T.Val("\x61\x62\x75\x6e\x64\x65\x66\x69\x6e\x65\x64"), T.Val("\x61"), T.Val("\x62"));
 }
 
 
 TEST(MismatchCallTooMany) {
-  FunctionTester T("(function(a,b) { return foo(a,b); })");
-  CompileRun("function foo(a) { return a; }");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x28\x61\x2c\x62\x29\x3b\x20\x7d\x29");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x3b\x20\x7d");
 
   T.CheckCall(T.Val(23), T.Val(23), T.Val(42));
   T.CheckCall(T.Val(4.2), T.Val(4.2), T.Val(2.3));
-  T.CheckCall(T.Val("a"), T.Val("a"), T.Val("b"));
+  T.CheckCall(T.Val("\x61"), T.Val("\x61"), T.Val("\x62"));
 }
 
 
 TEST(ConstructorCall) {
-  FunctionTester T("(function(a,b) { return new foo(a,b).value; })");
-  CompileRun("function foo(a,b) { return { value: a + b + this.c }; }");
-  CompileRun("foo.prototype.c = 23;");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6e\x65\x77\x20\x66\x6f\x6f\x28\x61\x2c\x62\x29\x2e\x76\x61\x6c\x75\x65\x3b\x20\x7d\x29");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x7b\x20\x76\x61\x6c\x75\x65\x3a\x20\x61\x20\x2b\x20\x62\x20\x2b\x20\x74\x68\x69\x73\x2e\x63\x20\x7d\x3b\x20\x7d");
+  CompileRun("\x66\x6f\x6f\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x20\x3d\x20\x32\x33\x3b");
 
   T.CheckCall(T.Val(32), T.Val(4), T.Val(5));
-  T.CheckCall(T.Val("xy23"), T.Val("x"), T.Val("y"));
+  T.CheckCall(T.Val("\x78\x79\x32\x33"), T.Val("\x78"), T.Val("\x79"));
   T.CheckCall(T.nan(), T.undefined(), T.Val(3));
 }
 
@@ -134,11 +134,11 @@ TEST(ConstructorCall) {
 // TODO(titzer): factor these out into test-runtime-calls.cc
 TEST(RuntimeCallCPP1) {
   FLAG_allow_natives_syntax = true;
-  FunctionTester T("(function(a) { return %ToBool(a); })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x25\x54\x6f\x42\x6f\x6f\x6c\x28\x61\x29\x3b\x20\x7d\x29");
 
   T.CheckCall(T.true_value(), T.Val(23), T.undefined());
   T.CheckCall(T.true_value(), T.Val(4.2), T.undefined());
-  T.CheckCall(T.true_value(), T.Val("str"), T.undefined());
+  T.CheckCall(T.true_value(), T.Val("\x73\x74\x72"), T.undefined());
   T.CheckCall(T.true_value(), T.true_value(), T.undefined());
   T.CheckCall(T.false_value(), T.false_value(), T.undefined());
   T.CheckCall(T.false_value(), T.undefined(), T.undefined());
@@ -148,7 +148,7 @@ TEST(RuntimeCallCPP1) {
 
 TEST(RuntimeCallCPP2) {
   FLAG_allow_natives_syntax = true;
-  FunctionTester T("(function(a,b) { return %NumberAdd(a, b); })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x25\x4e\x75\x6d\x62\x65\x72\x41\x64\x64\x28\x61\x2c\x20\x62\x29\x3b\x20\x7d\x29");
 
   T.CheckCall(T.Val(65), T.Val(42), T.Val(23));
   T.CheckCall(T.Val(19), T.Val(42), T.Val(-23));
@@ -158,29 +158,29 @@ TEST(RuntimeCallCPP2) {
 
 TEST(RuntimeCallJS) {
   FLAG_allow_natives_syntax = true;
-  FunctionTester T("(function(a) { return %ToString(a); })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x25\x54\x6f\x53\x74\x72\x69\x6e\x67\x28\x61\x29\x3b\x20\x7d\x29");
 
-  T.CheckCall(T.Val("23"), T.Val(23), T.undefined());
-  T.CheckCall(T.Val("4.2"), T.Val(4.2), T.undefined());
-  T.CheckCall(T.Val("str"), T.Val("str"), T.undefined());
-  T.CheckCall(T.Val("true"), T.true_value(), T.undefined());
-  T.CheckCall(T.Val("false"), T.false_value(), T.undefined());
-  T.CheckCall(T.Val("undefined"), T.undefined(), T.undefined());
+  T.CheckCall(T.Val("\x32\x33"), T.Val(23), T.undefined());
+  T.CheckCall(T.Val("\x34\x2e\x32"), T.Val(4.2), T.undefined());
+  T.CheckCall(T.Val("\x73\x74\x72"), T.Val("\x73\x74\x72"), T.undefined());
+  T.CheckCall(T.Val("\x74\x72\x75\x65"), T.true_value(), T.undefined());
+  T.CheckCall(T.Val("\x66\x61\x6c\x73\x65"), T.false_value(), T.undefined());
+  T.CheckCall(T.Val("\x75\x6e\x64\x65\x66\x69\x6e\x65\x64"), T.undefined(), T.undefined());
 }
 
 
 TEST(RuntimeCallInline) {
   FLAG_allow_natives_syntax = true;
-  FunctionTester T("(function(a) { return %_IsObject(a); })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x25\x5f\x49\x73\x4f\x62\x6a\x65\x63\x74\x28\x61\x29\x3b\x20\x7d\x29");
 
   T.CheckCall(T.false_value(), T.Val(23), T.undefined());
   T.CheckCall(T.false_value(), T.Val(4.2), T.undefined());
-  T.CheckCall(T.false_value(), T.Val("str"), T.undefined());
+  T.CheckCall(T.false_value(), T.Val("\x73\x74\x72"), T.undefined());
   T.CheckCall(T.false_value(), T.true_value(), T.undefined());
   T.CheckCall(T.false_value(), T.false_value(), T.undefined());
   T.CheckCall(T.false_value(), T.undefined(), T.undefined());
-  T.CheckCall(T.true_value(), T.NewObject("({})"), T.undefined());
-  T.CheckCall(T.true_value(), T.NewObject("([])"), T.undefined());
+  T.CheckCall(T.true_value(), T.NewObject("\x28\x7b\x7d\x29"), T.undefined());
+  T.CheckCall(T.true_value(), T.NewObject("\x28\x5b\x5d\x29"), T.undefined());
 }
 
 
@@ -188,7 +188,7 @@ TEST(RuntimeCallBooleanize) {
   // TODO(turbofan): %Booleanize will disappear, don't hesitate to remove this
   // test case, two-argument case is covered by the above test already.
   FLAG_allow_natives_syntax = true;
-  FunctionTester T("(function(a,b) { return %Booleanize(a, b); })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x25\x42\x6f\x6f\x6c\x65\x61\x6e\x69\x7a\x65\x28\x61\x2c\x20\x62\x29\x3b\x20\x7d\x29");
 
   T.CheckCall(T.true_value(), T.Val(-1), T.Val(Token::LT));
   T.CheckCall(T.false_value(), T.Val(-1), T.Val(Token::EQ));
@@ -205,23 +205,23 @@ TEST(RuntimeCallBooleanize) {
 
 
 TEST(EvalCall) {
-  FunctionTester T("(function(a,b) { return eval(a); })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x76\x61\x6c\x28\x61\x29\x3b\x20\x7d\x29");
   Handle<JSObject> g(T.function->context()->global_object()->global_proxy());
 
-  T.CheckCall(T.Val(23), T.Val("17 + 6"), T.undefined());
-  T.CheckCall(T.Val("'Y'; a"), T.Val("'Y'; a"), T.Val("b-val"));
-  T.CheckCall(T.Val("b-val"), T.Val("'Y'; b"), T.Val("b-val"));
-  T.CheckCall(g, T.Val("this"), T.undefined());
-  T.CheckCall(g, T.Val("'use strict'; this"), T.undefined());
+  T.CheckCall(T.Val(23), T.Val("\x31\x37\x20\x2b\x20\x36"), T.undefined());
+  T.CheckCall(T.Val("\x27\x59\x27\x3b\x20\x61"), T.Val("\x27\x59\x27\x3b\x20\x61"), T.Val("\x62\x2d\x76\x61\x6c"));
+  T.CheckCall(T.Val("\x62\x2d\x76\x61\x6c"), T.Val("\x27\x59\x27\x3b\x20\x62"), T.Val("\x62\x2d\x76\x61\x6c"));
+  T.CheckCall(g, T.Val("\x74\x68\x69\x73"), T.undefined());
+  T.CheckCall(g, T.Val("\x27\x75\x73\x65\x20\x73\x74\x72\x69\x63\x74\x27\x3b\x20\x74\x68\x69\x73"), T.undefined());
 
-  CompileRun("eval = function(x) { return x; }");
-  T.CheckCall(T.Val("17 + 6"), T.Val("17 + 6"), T.undefined());
+  CompileRun("\x65\x76\x61\x6c\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d");
+  T.CheckCall(T.Val("\x31\x37\x20\x2b\x20\x36"), T.Val("\x31\x37\x20\x2b\x20\x36"), T.undefined());
 
-  CompileRun("eval = function(x) { return this; }");
-  T.CheckCall(g, T.Val("17 + 6"), T.undefined());
+  CompileRun("\x65\x76\x61\x6c\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x3b\x20\x7d");
+  T.CheckCall(g, T.Val("\x31\x37\x20\x2b\x20\x36"), T.undefined());
 
-  CompileRun("eval = function(x) { 'use strict'; return this; }");
-  T.CheckCall(T.undefined(), T.Val("17 + 6"), T.undefined());
+  CompileRun("\x65\x76\x61\x6c\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x27\x75\x73\x65\x20\x73\x74\x72\x69\x63\x74\x27\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x3b\x20\x7d");
+  T.CheckCall(T.undefined(), T.Val("\x31\x37\x20\x2b\x20\x36"), T.undefined());
 }
 
 
@@ -229,7 +229,7 @@ TEST(ReceiverPatching) {
   // TODO(turbofan): Note that this test only checks that the function prologue
   // patches an undefined receiver to the global receiver. If this starts to
   // fail once we fix the calling protocol, just remove this test.
-  FunctionTester T("(function(a) { return this; })");
+  FunctionTester T("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x3b\x20\x7d\x29");
   Handle<JSObject> g(T.function->context()->global_object()->global_proxy());
   T.CheckCall(g, T.undefined());
 }

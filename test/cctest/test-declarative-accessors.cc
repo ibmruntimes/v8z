@@ -117,31 +117,31 @@ static void VerifyRead(v8::Handle<v8::DeclaredAccessorDescriptor> descriptor,
   LocalContext local_context;
   v8::HandleScope scope(local_context->GetIsolate());
   v8::Handle<v8::Context> context = local_context.local();
-  CreateConstructor(context, "Accessible", internal_field, "x", descriptor);
+  CreateConstructor(context, "\x41\x63\x63\x65\x73\x73\x69\x62\x6c\x65", internal_field, "\x78", descriptor);
   // Setup object.
-  CompileRun("var accessible = new Accessible();");
+  CompileRun("\x76\x61\x72\x20\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x20\x3d\x20\x6e\x65\x77\x20\x41\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x28\x29\x3b");
   v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(
-      context->Global()->Get(v8_str("accessible")));
+      context->Global()->Get(v8_str("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65")));
   obj->SetAlignedPointerInInternalField(internal_field, internal_object);
   bool added_accessor;
-  added_accessor = obj->SetDeclaredAccessor(v8_str("y"), descriptor);
+  added_accessor = obj->SetDeclaredAccessor(v8_str("\x79"), descriptor);
   CHECK(added_accessor);
-  added_accessor = obj->SetDeclaredAccessor(v8_str("13"), descriptor);
+  added_accessor = obj->SetDeclaredAccessor(v8_str("\x31\x33"), descriptor);
   CHECK(added_accessor);
   // Test access from template getter.
   v8::Local<v8::Value> value;
-  value = CompileRun("accessible.x;");
+  value = CompileRun("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x2e\x78\x3b");
   CHECK_EQ(expected_value, value);
-  value = CompileRun("accessible['x'];");
+  value = CompileRun("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5b\x27\x78\x27\x5d\x3b");
   CHECK_EQ(expected_value, value);
   // Test access from object getter.
-  value = CompileRun("accessible.y;");
+  value = CompileRun("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x2e\x79\x3b");
   CHECK_EQ(expected_value, value);
-  value = CompileRun("accessible['y'];");
+  value = CompileRun("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5b\x27\x79\x27\x5d\x3b");
   CHECK_EQ(expected_value, value);
-  value = CompileRun("accessible[13];");
+  value = CompileRun("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5b\x31\x33\x5d\x3b");
   CHECK_EQ(expected_value, value);
-  value = CompileRun("accessible['13'];");
+  value = CompileRun("\x61\x63\x63\x65\x73\x73\x69\x62\x6c\x65\x5b\x27\x31\x33\x27\x5d\x3b");
   CHECK_EQ(expected_value, value);
 }
 
@@ -296,7 +296,7 @@ TEST(HandleDereferenceRead) {
       ->NewRawShift(helper.isolate_, index*kPointerSize)
       ->NewHandleDereference(helper.isolate_);
   HandleArray* array = helper.handle_array_.get();
-  v8::Handle<v8::String> expected = v8_str("whatever");
+  v8::Handle<v8::String> expected = v8_str("\x77\x68\x61\x74\x65\x76\x65\x72");
   array->handles_[index].Reset(helper.isolate_, expected);
   VerifyRead(descriptor, internal_field, array, expected);
 }

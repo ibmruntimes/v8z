@@ -642,18 +642,18 @@ TEST(StackAlignmentForSSE2) {
   v8::HandleScope handle_scope(isolate);
   v8::Handle<v8::ObjectTemplate> global_template =
       v8::ObjectTemplate::New(isolate);
-  global_template->Set(v8_str("do_sse2"),
+  global_template->Set(v8_str("\x64\x6f\x5f\x73\x73\x65\x32"),
                        v8::FunctionTemplate::New(isolate, DoSSE2));
 
   LocalContext env(NULL, global_template);
   CompileRun(
-      "function foo(vec) {"
-      "  return do_sse2(vec);"
-      "}");
+      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x76\x65\x63\x29\x20\x7b"
+      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x64\x6f\x5f\x73\x73\x65\x32\x28\x76\x65\x63\x29\x3b"
+      "\x7d");
 
   v8::Local<v8::Object> global_object = env->Global();
   v8::Local<v8::Function> foo =
-      v8::Local<v8::Function>::Cast(global_object->Get(v8_str("foo")));
+      v8::Local<v8::Function>::Cast(global_object->Get(v8_str("\x66\x6f\x6f")));
 
   int32_t vec[ELEMENT_COUNT] = { -1, 1, 1, 1 };
   v8::Local<v8::Array> v8_vec = v8::Array::New(isolate, ELEMENT_COUNT);

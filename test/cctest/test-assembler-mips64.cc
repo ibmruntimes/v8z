@@ -66,7 +66,7 @@ TEST(MIPS0) {
   F2 f = FUNCTION_CAST<F2>(code->entry());
   int64_t res =
       reinterpret_cast<int64_t>(CALL_GENERATED_CODE(f, 0xab0, 0xc, 0, 0, 0));
-  ::printf("f() = %ld\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x93\x84\xa", res);
   CHECK_EQ(0xabcL, res);
 }
 
@@ -103,7 +103,7 @@ TEST(MIPS1) {
   F1 f = FUNCTION_CAST<F1>(code->entry());
   int64_t res =
      reinterpret_cast<int64_t>(CALL_GENERATED_CODE(f, 50, 0, 0, 0, 0));
-  ::printf("f() = %ld\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x93\x84\xa", res);
   CHECK_EQ(1275L, res);
 }
 
@@ -250,7 +250,7 @@ TEST(MIPS2) {
   F2 f = FUNCTION_CAST<F2>(code->entry());
   int64_t res =
       reinterpret_cast<int64_t>(CALL_GENERATED_CODE(f, 0xab0, 0xc, 0, 0, 0));
-  ::printf("f() = %ld\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x93\x84\xa", res);
 
   CHECK_EQ(0x31415926L, res);
 }

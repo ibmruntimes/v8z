@@ -29,7 +29,7 @@ TEST(Create) {
     CHECK(symbols[i]->IsSymbol());
     CHECK(symbols[i]->HasHashCode());
     CHECK_GT(symbols[i]->Hash(), 0);
-    os << Brief(*symbols[i]) << "\n";
+    os << Brief(*symbols[i]) << "\xa";
 #if OBJECT_PRINT
     symbols[i]->Print(os);
 #endif

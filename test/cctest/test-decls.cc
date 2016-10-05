@@ -234,20 +234,20 @@ TEST(Unknown) {
   v8::V8::Initialize();
 
   { DeclarationContext context;
-    context.Check("var x; x",
+    context.Check("\x76\x61\x72\x20\x78\x3b\x20\x78",
                   1,  // access
                   0, 0, EXPECT_RESULT, Undefined(CcTest::isolate()));
   }
 
   { DeclarationContext context;
-    context.Check("var x = 0; x",
+    context.Check("\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x3b\x20\x78",
                   1,  // access
                   1,  // initialization
                   0, EXPECT_RESULT, Number::New(CcTest::isolate(), 0));
   }
 
   { DeclarationContext context;
-    context.Check("function x() { }; x",
+    context.Check("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x78\x28\x29\x20\x7b\x20\x7d\x3b\x20\x78",
                   1,  // access
                   0,
                   0,
@@ -255,13 +255,13 @@ TEST(Unknown) {
   }
 
   { DeclarationContext context;
-    context.Check("const x; x",
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x3b\x20\x78",
                   1,  // access
                   0, 0, EXPECT_RESULT, Undefined(CcTest::isolate()));
   }
 
   { DeclarationContext context;
-    context.Check("const x = 0; x",
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x30\x3b\x20\x78",
                   1,  // access
                   0,
                   0,
@@ -284,20 +284,20 @@ TEST(Absent) {
   HandleScope scope(isolate);
 
   { AbsentPropertyContext context;
-    context.Check("var x; x",
+    context.Check("\x76\x61\x72\x20\x78\x3b\x20\x78",
                   1,  // access
                   0, 0, EXPECT_RESULT, Undefined(isolate));
   }
 
   { AbsentPropertyContext context;
-    context.Check("var x = 0; x",
+    context.Check("\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x3b\x20\x78",
                   1,  // access
                   1,  // initialization
                   0, EXPECT_RESULT, Number::New(isolate, 0));
   }
 
   { AbsentPropertyContext context;
-    context.Check("function x() { }; x",
+    context.Check("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x78\x28\x29\x20\x7b\x20\x7d\x3b\x20\x78",
                   1,  // access
                   0,
                   0,
@@ -305,19 +305,19 @@ TEST(Absent) {
   }
 
   { AbsentPropertyContext context;
-    context.Check("const x; x",
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x3b\x20\x78",
                   1,  // access
                   0, 0, EXPECT_RESULT, Undefined(isolate));
   }
 
   { AbsentPropertyContext context;
-    context.Check("const x = 0; x",
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x30\x3b\x20\x78",
                   1,  // access
                   0, 0, EXPECT_RESULT, Number::New(isolate, 0));
   }
 
   { AbsentPropertyContext context;
-    context.Check("if (false) { var x = 0 }; x",
+    context.Check("\x69\x66\x20\x28\x66\x61\x6c\x73\x65\x29\x20\x7b\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x20\x7d\x3b\x20\x78",
                   1,  // access
                   0, 0, EXPECT_RESULT, Undefined(isolate));
   }
@@ -366,20 +366,20 @@ TEST(Appearing) {
   HandleScope scope(CcTest::isolate());
 
   { AppearingPropertyContext context;
-    context.Check("var x; x",
+    context.Check("\x76\x61\x72\x20\x78\x3b\x20\x78",
                   1,  // access
                   0, 0, EXPECT_RESULT, Undefined(CcTest::isolate()));
   }
 
   { AppearingPropertyContext context;
-    context.Check("var x = 0; x",
+    context.Check("\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x3b\x20\x78",
                   1,  // access
                   1,  // initialization
                   0, EXPECT_RESULT, Number::New(CcTest::isolate(), 0));
   }
 
   { AppearingPropertyContext context;
-    context.Check("function x() { }; x",
+    context.Check("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x78\x28\x29\x20\x7b\x20\x7d\x3b\x20\x78",
                   1,  // access
                   0,
                   0,
@@ -387,13 +387,13 @@ TEST(Appearing) {
   }
 
   { AppearingPropertyContext context;
-    context.Check("const x; x",
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x3b\x20\x78",
                   1,  // access
                   0, 0, EXPECT_RESULT, Undefined(CcTest::isolate()));
   }
 
   { AppearingPropertyContext context;
-    context.Check("const x = 0; x",
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x30\x3b\x20\x78",
                   1,  // access
                   0, 0, EXPECT_RESULT, Number::New(CcTest::isolate(), 0));
   }
@@ -423,12 +423,12 @@ TEST(ExistsInPrototype) {
   // Sanity check to make sure that the holder of the interceptor
   // really is the prototype object.
   { ExistsInPrototypeContext context;
-    context.Check("this.x = 87; this.x", 0, 0, 1, EXPECT_RESULT,
+    context.Check("\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x38\x37\x3b\x20\x74\x68\x69\x73\x2e\x78", 0, 0, 1, EXPECT_RESULT,
                   Number::New(CcTest::isolate(), 87));
   }
 
   { ExistsInPrototypeContext context;
-    context.Check("var x; x",
+    context.Check("\x76\x61\x72\x20\x78\x3b\x20\x78",
                   0,
                   0,
                   0,
@@ -436,7 +436,7 @@ TEST(ExistsInPrototype) {
   }
 
   { ExistsInPrototypeContext context;
-    context.Check("var x = 0; x",
+    context.Check("\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x3b\x20\x78",
                   0,
                   0,
                   0,
@@ -444,7 +444,7 @@ TEST(ExistsInPrototype) {
   }
 
   { ExistsInPrototypeContext context;
-    context.Check("const x; x",
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x3b\x20\x78",
                   0,
                   0,
                   0,
@@ -452,7 +452,7 @@ TEST(ExistsInPrototype) {
   }
 
   { ExistsInPrototypeContext context;
-    context.Check("const x = 0; x",
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x30\x3b\x20\x78",
                   0,
                   0,
                   0,
@@ -481,7 +481,7 @@ TEST(AbsentInPrototype) {
   HandleScope scope(CcTest::isolate());
 
   { AbsentInPrototypeContext context;
-    context.Check("if (false) { var x = 0; }; x",
+    context.Check("\x69\x66\x20\x28\x66\x61\x6c\x73\x65\x29\x20\x7b\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x3b\x20\x7d\x3b\x20\x78",
                   0,
                   0,
                   0,
@@ -527,17 +527,17 @@ TEST(ExistsInHiddenPrototype) {
   HandleScope scope(CcTest::isolate());
 
   { ExistsInHiddenPrototypeContext context;
-    context.Check("var x; x", 0, 0, 0, EXPECT_RESULT,
+    context.Check("\x76\x61\x72\x20\x78\x3b\x20\x78", 0, 0, 0, EXPECT_RESULT,
                   Undefined(CcTest::isolate()));
   }
 
   { ExistsInHiddenPrototypeContext context;
-    context.Check("var x = 0; x", 0, 0, 0, EXPECT_RESULT,
+    context.Check("\x76\x61\x72\x20\x78\x20\x3d\x20\x30\x3b\x20\x78", 0, 0, 0, EXPECT_RESULT,
                   Number::New(CcTest::isolate(), 0));
   }
 
   { ExistsInHiddenPrototypeContext context;
-    context.Check("function x() { }; x",
+    context.Check("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x78\x28\x29\x20\x7b\x20\x7d\x3b\x20\x78",
                   0,
                   0,
                   0,
@@ -546,13 +546,13 @@ TEST(ExistsInHiddenPrototype) {
 
   // TODO(mstarzinger): The semantics of global const is vague.
   { ExistsInHiddenPrototypeContext context;
-    context.Check("const x; x", 0, 0, 0, EXPECT_RESULT,
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x3b\x20\x78", 0, 0, 0, EXPECT_RESULT,
                   Undefined(CcTest::isolate()));
   }
 
   // TODO(mstarzinger): The semantics of global const is vague.
   { ExistsInHiddenPrototypeContext context;
-    context.Check("const x = 0; x", 0, 0, 0, EXPECT_RESULT,
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x30\x3b\x20\x78", 0, 0, 0, EXPECT_RESULT,
                   Number::New(CcTest::isolate(), 0));
   }
 }
@@ -610,35 +610,35 @@ TEST(CrossScriptReferences) {
   HandleScope scope(isolate);
 
   { SimpleContext context;
-    context.Check("var x = 1; x",
+    context.Check("\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x3b\x20\x78",
                   EXPECT_RESULT, Number::New(isolate, 1));
-    context.Check("var x = 2; x",
+    context.Check("\x76\x61\x72\x20\x78\x20\x3d\x20\x32\x3b\x20\x78",
                   EXPECT_RESULT, Number::New(isolate, 2));
-    context.Check("const x = 3; x", EXPECT_EXCEPTION);
-    context.Check("const x = 4; x", EXPECT_EXCEPTION);
-    context.Check("x = 5; x",
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x33\x3b\x20\x78", EXPECT_EXCEPTION);
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x34\x3b\x20\x78", EXPECT_EXCEPTION);
+    context.Check("\x78\x20\x3d\x20\x35\x3b\x20\x78",
                   EXPECT_RESULT, Number::New(isolate, 5));
-    context.Check("var x = 6; x",
+    context.Check("\x76\x61\x72\x20\x78\x20\x3d\x20\x36\x3b\x20\x78",
                   EXPECT_RESULT, Number::New(isolate, 6));
-    context.Check("this.x",
+    context.Check("\x74\x68\x69\x73\x2e\x78",
                   EXPECT_RESULT, Number::New(isolate, 6));
-    context.Check("function x() { return 7 }; x()",
+    context.Check("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x78\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x37\x20\x7d\x3b\x20\x78\x28\x29",
                   EXPECT_RESULT, Number::New(isolate, 7));
   }
 
   { SimpleContext context;
-    context.Check("const x = 1; x",
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x31\x3b\x20\x78",
                   EXPECT_RESULT, Number::New(isolate, 1));
-    context.Check("var x = 2; x",  // assignment ignored
+    context.Check("\x76\x61\x72\x20\x78\x20\x3d\x20\x32\x3b\x20\x78",  // assignment ignored
                   EXPECT_RESULT, Number::New(isolate, 1));
-    context.Check("const x = 3; x", EXPECT_EXCEPTION);
-    context.Check("x = 4; x",  // assignment ignored
+    context.Check("\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x33\x3b\x20\x78", EXPECT_EXCEPTION);
+    context.Check("\x78\x20\x3d\x20\x34\x3b\x20\x78",  // assignment ignored
                   EXPECT_RESULT, Number::New(isolate, 1));
-    context.Check("var x = 5; x",  // assignment ignored
+    context.Check("\x76\x61\x72\x20\x78\x20\x3d\x20\x35\x3b\x20\x78",  // assignment ignored
                   EXPECT_RESULT, Number::New(isolate, 1));
-    context.Check("this.x",
+    context.Check("\x74\x68\x69\x73\x2e\x78",
                   EXPECT_RESULT, Number::New(isolate, 1));
-    context.Check("function x() { return 7 }; x",
+    context.Check("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x78\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x37\x20\x7d\x3b\x20\x78",
                   EXPECT_EXCEPTION);
   }
 }
@@ -653,11 +653,11 @@ TEST(CrossScriptReferencesHarmony) {
   HandleScope scope(isolate);
 
   const char* decs[] = {
-    "var x = 1; x", "x", "this.x",
-    "function x() { return 1 }; x()", "x()", "this.x()",
-    "let x = 1; x", "x", "this.x",
-    "const x = 1; x", "x", "this.x",
-    "module x { export let a = 1 }; x.a", "x.a", "this.x.a",
+    "\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x3b\x20\x78", "\x78", "\x74\x68\x69\x73\x2e\x78",
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x78\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x20\x7d\x3b\x20\x78\x28\x29", "\x78\x28\x29", "\x74\x68\x69\x73\x2e\x78\x28\x29",
+    "\x6c\x65\x74\x20\x78\x20\x3d\x20\x31\x3b\x20\x78", "\x78", "\x74\x68\x69\x73\x2e\x78",
+    "\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x31\x3b\x20\x78", "\x78", "\x74\x68\x69\x73\x2e\x78",
+    "\x6d\x6f\x64\x75\x6c\x65\x20\x78\x20\x7b\x20\x65\x78\x70\x6f\x72\x74\x20\x6c\x65\x74\x20\x61\x20\x3d\x20\x31\x20\x7d\x3b\x20\x78\x2e\x61", "\x78\x2e\x61", "\x74\x68\x69\x73\x2e\x78\x2e\x61",
     NULL
   };
 
@@ -683,19 +683,19 @@ TEST(CrossScriptConflicts) {
   HandleScope scope(CcTest::isolate());
 
   const char* firsts[] = {
-    "var x = 1; x",
-    "function x() { return 1 }; x()",
-    "let x = 1; x",
-    "const x = 1; x",
-    "module x { export let a = 1 }; x.a",
+    "\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x3b\x20\x78",
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x78\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x20\x7d\x3b\x20\x78\x28\x29",
+    "\x6c\x65\x74\x20\x78\x20\x3d\x20\x31\x3b\x20\x78",
+    "\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x31\x3b\x20\x78",
+    "\x6d\x6f\x64\x75\x6c\x65\x20\x78\x20\x7b\x20\x65\x78\x70\x6f\x72\x74\x20\x6c\x65\x74\x20\x61\x20\x3d\x20\x31\x20\x7d\x3b\x20\x78\x2e\x61",
     NULL
   };
   const char* seconds[] = {
-    "var x = 2; x",
-    "function x() { return 2 }; x()",
-    "let x = 2; x",
-    "const x = 2; x",
-    "module x { export let a = 2 }; x.a",
+    "\x76\x61\x72\x20\x78\x20\x3d\x20\x32\x3b\x20\x78",
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x78\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x32\x20\x7d\x3b\x20\x78\x28\x29",
+    "\x6c\x65\x74\x20\x78\x20\x3d\x20\x32\x3b\x20\x78",
+    "\x63\x6f\x6e\x73\x74\x20\x78\x20\x3d\x20\x32\x3b\x20\x78",
+    "\x6d\x6f\x64\x75\x6c\x65\x20\x78\x20\x7b\x20\x65\x78\x70\x6f\x72\x74\x20\x6c\x65\x74\x20\x61\x20\x3d\x20\x32\x20\x7d\x3b\x20\x78\x2e\x61",
     NULL
   };
 

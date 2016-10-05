@@ -53,7 +53,7 @@ void Fail(const v8::FunctionCallbackInfo<v8::Value>& args) {
 void Loop(const v8::FunctionCallbackInfo<v8::Value>& args) {
   CHECK(!v8::V8::IsExecutionTerminating(args.GetIsolate()));
   v8::Handle<v8::String> source = v8::String::NewFromUtf8(
-      args.GetIsolate(), "try { doloop(); fail(); } catch(e) { fail(); }");
+      args.GetIsolate(), "\x74\x72\x79\x20\x7b\x20\x64\x6f\x6c\x6f\x6f\x70\x28\x29\x3b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d");
   v8::Handle<v8::Value> result = v8::Script::Compile(source)->Run();
   CHECK(result.IsEmpty());
   CHECK(v8::V8::IsExecutionTerminating(args.GetIsolate()));
@@ -64,19 +64,19 @@ void DoLoop(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::TryCatch try_catch;
   CHECK(!v8::V8::IsExecutionTerminating(args.GetIsolate()));
   v8::Script::Compile(v8::String::NewFromUtf8(args.GetIsolate(),
-                                              "function f() {"
-                                              "  var term = true;"
-                                              "  try {"
-                                              "    while(true) {"
-                                              "      if (term) terminate();"
-                                              "      term = false;"
-                                              "    }"
-                                              "    fail();"
-                                              "  } catch(e) {"
-                                              "    fail();"
-                                              "  }"
-                                              "}"
-                                              "f()"))->Run();
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+                                              "\x20\x20\x76\x61\x72\x20\x74\x65\x72\x6d\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                                              "\x20\x20\x74\x72\x79\x20\x7b"
+                                              "\x20\x20\x20\x20\x77\x68\x69\x6c\x65\x28\x74\x72\x75\x65\x29\x20\x7b"
+                                              "\x20\x20\x20\x20\x20\x20\x69\x66\x20\x28\x74\x65\x72\x6d\x29\x20\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x28\x29\x3b"
+                                              "\x20\x20\x20\x20\x20\x20\x74\x65\x72\x6d\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
+                                              "\x20\x20\x20\x20\x7d"
+                                              "\x20\x20\x20\x20\x66\x61\x69\x6c\x28\x29\x3b"
+                                              "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+                                              "\x20\x20\x20\x20\x66\x61\x69\x6c\x28\x29\x3b"
+                                              "\x20\x20\x7d"
+                                              "\x7d"
+                                              "\x66\x28\x29"))->Run();
   CHECK(try_catch.HasCaught());
   CHECK(try_catch.Exception()->IsNull());
   CHECK(try_catch.Message().IsEmpty());
@@ -89,11 +89,11 @@ void DoLoopNoCall(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::TryCatch try_catch;
   CHECK(!v8::V8::IsExecutionTerminating(args.GetIsolate()));
   v8::Script::Compile(v8::String::NewFromUtf8(args.GetIsolate(),
-                                              "var term = true;"
-                                              "while(true) {"
-                                              "  if (term) terminate();"
-                                              "  term = false;"
-                                              "}"))->Run();
+                                              "\x76\x61\x72\x20\x74\x65\x72\x6d\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                                              "\x77\x68\x69\x6c\x65\x28\x74\x72\x75\x65\x29\x20\x7b"
+                                              "\x20\x20\x69\x66\x20\x28\x74\x65\x72\x6d\x29\x20\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x28\x29\x3b"
+                                              "\x20\x20\x74\x65\x72\x6d\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
+                                              "\x7d"))->Run();
   CHECK(try_catch.HasCaught());
   CHECK(try_catch.Exception()->IsNull());
   CHECK(try_catch.Message().IsEmpty());
@@ -107,13 +107,13 @@ v8::Handle<v8::ObjectTemplate> CreateGlobalTemplate(
     v8::FunctionCallback terminate,
     v8::FunctionCallback doloop) {
   v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
-  global->Set(v8::String::NewFromUtf8(isolate, "terminate"),
+  global->Set(v8::String::NewFromUtf8(isolate, "\x74\x65\x72\x6d\x69\x6e\x61\x74\x65"),
               v8::FunctionTemplate::New(isolate, terminate));
-  global->Set(v8::String::NewFromUtf8(isolate, "fail"),
+  global->Set(v8::String::NewFromUtf8(isolate, "\x66\x61\x69\x6c"),
               v8::FunctionTemplate::New(isolate, Fail));
-  global->Set(v8::String::NewFromUtf8(isolate, "loop"),
+  global->Set(v8::String::NewFromUtf8(isolate, "\x6c\x6f\x6f\x70"),
               v8::FunctionTemplate::New(isolate, Loop));
-  global->Set(v8::String::NewFromUtf8(isolate, "doloop"),
+  global->Set(v8::String::NewFromUtf8(isolate, "\x64\x6f\x6c\x6f\x6f\x70"),
               v8::FunctionTemplate::New(isolate, doloop));
   return global;
 }
@@ -131,7 +131,7 @@ TEST(TerminateOnlyV8ThreadFromThreadItself) {
   CHECK(!v8::V8::IsExecutionTerminating(CcTest::isolate()));
   // Run a loop that will be infinite if thread termination does not work.
   v8::Handle<v8::String> source = v8::String::NewFromUtf8(
-      CcTest::isolate(), "try { loop(); fail(); } catch(e) { fail(); }");
+      CcTest::isolate(), "\x74\x72\x79\x20\x7b\x20\x6c\x6f\x6f\x70\x28\x29\x3b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d");
   v8::Script::Compile(source)->Run();
   // Test that we can run the code again after thread termination.
   CHECK(!v8::V8::IsExecutionTerminating(CcTest::isolate()));
@@ -151,7 +151,7 @@ TEST(TerminateOnlyV8ThreadFromThreadItselfNoLoop) {
   CHECK(!v8::V8::IsExecutionTerminating(CcTest::isolate()));
   // Run a loop that will be infinite if thread termination does not work.
   v8::Handle<v8::String> source = v8::String::NewFromUtf8(
-      CcTest::isolate(), "try { loop(); fail(); } catch(e) { fail(); }");
+      CcTest::isolate(), "\x74\x72\x79\x20\x7b\x20\x6c\x6f\x6f\x70\x28\x29\x3b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d");
   v8::Script::Compile(source)->Run();
   CHECK(!v8::V8::IsExecutionTerminating(CcTest::isolate()));
   // Test that we can run the code again after thread termination.
@@ -162,7 +162,7 @@ TEST(TerminateOnlyV8ThreadFromThreadItselfNoLoop) {
 class TerminatorThread : public v8::base::Thread {
  public:
   explicit TerminatorThread(i::Isolate* isolate)
-      : Thread(Options("TerminatorThread")),
+      : Thread(Options("\x54\x65\x72\x6d\x69\x6e\x61\x74\x6f\x72\x54\x68\x72\x65\x61\x64")),
         isolate_(reinterpret_cast<v8::Isolate*>(isolate)) {}
   void Run() {
     semaphore->Wait();
@@ -191,7 +191,7 @@ TEST(TerminateOnlyV8ThreadFromOtherThread) {
   CHECK(!v8::V8::IsExecutionTerminating(CcTest::isolate()));
   // Run a loop that will be infinite if thread termination does not work.
   v8::Handle<v8::String> source = v8::String::NewFromUtf8(
-      CcTest::isolate(), "try { loop(); fail(); } catch(e) { fail(); }");
+      CcTest::isolate(), "\x74\x72\x79\x20\x7b\x20\x6c\x6f\x6f\x70\x28\x29\x3b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d");
   v8::Script::Compile(source)->Run();
 
   thread.Join();
@@ -210,7 +210,7 @@ void TerminateOrReturnObject(const v8::FunctionCallbackInfo<v8::Value>& args) {
     return;
   }
   v8::Local<v8::Object> result = v8::Object::New(args.GetIsolate());
-  result->Set(v8::String::NewFromUtf8(args.GetIsolate(), "x"),
+  result->Set(v8::String::NewFromUtf8(args.GetIsolate(), "\x78"),
               v8::Integer::New(args.GetIsolate(), 42));
   args.GetReturnValue().Set(result);
 }
@@ -221,17 +221,17 @@ void LoopGetProperty(const v8::FunctionCallbackInfo<v8::Value>& args) {
   CHECK(!v8::V8::IsExecutionTerminating(args.GetIsolate()));
   v8::Script::Compile(
       v8::String::NewFromUtf8(args.GetIsolate(),
-                              "function f() {"
-                              "  try {"
-                              "    while(true) {"
-                              "      terminate_or_return_object().x;"
-                              "    }"
-                              "    fail();"
-                              "  } catch(e) {"
-                              "    fail();"
-                              "  }"
-                              "}"
-                              "f()"))->Run();
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+                              "\x20\x20\x74\x72\x79\x20\x7b"
+                              "\x20\x20\x20\x20\x77\x68\x69\x6c\x65\x28\x74\x72\x75\x65\x29\x20\x7b"
+                              "\x20\x20\x20\x20\x20\x20\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x5f\x6f\x72\x5f\x72\x65\x74\x75\x72\x6e\x5f\x6f\x62\x6a\x65\x63\x74\x28\x29\x2e\x78\x3b"
+                              "\x20\x20\x20\x20\x7d"
+                              "\x20\x20\x20\x20\x66\x61\x69\x6c\x28\x29\x3b"
+                              "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+                              "\x20\x20\x20\x20\x66\x61\x69\x6c\x28\x29\x3b"
+                              "\x20\x20\x7d"
+                              "\x7d"
+                              "\x66\x28\x29"))->Run();
   CHECK(try_catch.HasCaught());
   CHECK(try_catch.Exception()->IsNull());
   CHECK(try_catch.Message().IsEmpty());
@@ -247,11 +247,11 @@ TEST(TerminateLoadICException) {
   v8::HandleScope scope(isolate);
   v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
   global->Set(
-      v8::String::NewFromUtf8(isolate, "terminate_or_return_object"),
+      v8::String::NewFromUtf8(isolate, "\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x5f\x6f\x72\x5f\x72\x65\x74\x75\x72\x6e\x5f\x6f\x62\x6a\x65\x63\x74"),
       v8::FunctionTemplate::New(isolate, TerminateOrReturnObject));
-  global->Set(v8::String::NewFromUtf8(isolate, "fail"),
+  global->Set(v8::String::NewFromUtf8(isolate, "\x66\x61\x69\x6c"),
               v8::FunctionTemplate::New(isolate, Fail));
-  global->Set(v8::String::NewFromUtf8(isolate, "loop"),
+  global->Set(v8::String::NewFromUtf8(isolate, "\x6c\x6f\x6f\x70"),
               v8::FunctionTemplate::New(isolate, LoopGetProperty));
 
   v8::Handle<v8::Context> context =
@@ -260,7 +260,7 @@ TEST(TerminateLoadICException) {
   CHECK(!v8::V8::IsExecutionTerminating(isolate));
   // Run a loop that will be infinite if thread termination does not work.
   v8::Handle<v8::String> source = v8::String::NewFromUtf8(
-      isolate, "try { loop(); fail(); } catch(e) { fail(); }");
+      isolate, "\x74\x72\x79\x20\x7b\x20\x6c\x6f\x6f\x70\x28\x29\x3b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d");
   call_count = 0;
   v8::Script::Compile(source)->Run();
   // Test that we can run the code again after thread termination.
@@ -274,26 +274,26 @@ void ReenterAfterTermination(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::TryCatch try_catch;
   CHECK(!v8::V8::IsExecutionTerminating(args.GetIsolate()));
   v8::Script::Compile(v8::String::NewFromUtf8(args.GetIsolate(),
-                                              "function f() {"
-                                              "  var term = true;"
-                                              "  try {"
-                                              "    while(true) {"
-                                              "      if (term) terminate();"
-                                              "      term = false;"
-                                              "    }"
-                                              "    fail();"
-                                              "  } catch(e) {"
-                                              "    fail();"
-                                              "  }"
-                                              "}"
-                                              "f()"))->Run();
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
+                                              "\x20\x20\x76\x61\x72\x20\x74\x65\x72\x6d\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                                              "\x20\x20\x74\x72\x79\x20\x7b"
+                                              "\x20\x20\x20\x20\x77\x68\x69\x6c\x65\x28\x74\x72\x75\x65\x29\x20\x7b"
+                                              "\x20\x20\x20\x20\x20\x20\x69\x66\x20\x28\x74\x65\x72\x6d\x29\x20\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x28\x29\x3b"
+                                              "\x20\x20\x20\x20\x20\x20\x74\x65\x72\x6d\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
+                                              "\x20\x20\x20\x20\x7d"
+                                              "\x20\x20\x20\x20\x66\x61\x69\x6c\x28\x29\x3b"
+                                              "\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b"
+                                              "\x20\x20\x20\x20\x66\x61\x69\x6c\x28\x29\x3b"
+                                              "\x20\x20\x7d"
+                                              "\x7d"
+                                              "\x66\x28\x29"))->Run();
   CHECK(try_catch.HasCaught());
   CHECK(try_catch.Exception()->IsNull());
   CHECK(try_catch.Message().IsEmpty());
   CHECK(!try_catch.CanContinue());
   CHECK(v8::V8::IsExecutionTerminating(args.GetIsolate()));
   v8::Script::Compile(v8::String::NewFromUtf8(args.GetIsolate(),
-                                              "function f() { fail(); } f()"))
+                                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d\x20\x66\x28\x29"))
       ->Run();
 }
 
@@ -310,14 +310,14 @@ TEST(TerminateAndReenterFromThreadItself) {
   v8::Context::Scope context_scope(context);
   CHECK(!v8::V8::IsExecutionTerminating());
   v8::Handle<v8::String> source = v8::String::NewFromUtf8(
-      isolate, "try { loop(); fail(); } catch(e) { fail(); }");
+      isolate, "\x74\x72\x79\x20\x7b\x20\x6c\x6f\x6f\x70\x28\x29\x3b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d");
   v8::Script::Compile(source)->Run();
   CHECK(!v8::V8::IsExecutionTerminating(isolate));
   // Check we can run JS again after termination.
   CHECK(v8::Script::Compile(
       v8::String::NewFromUtf8(isolate,
-                              "function f() { return true; }"
-                              "f()"))
+                              "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x72\x75\x65\x3b\x20\x7d"
+                              "\x66\x28\x29"))
             ->Run()
             ->IsTrue());
 }
@@ -327,12 +327,12 @@ void DoLoopCancelTerminate(const v8::FunctionCallbackInfo<v8::Value>& args) {
   v8::TryCatch try_catch;
   CHECK(!v8::V8::IsExecutionTerminating());
   v8::Script::Compile(v8::String::NewFromUtf8(args.GetIsolate(),
-                                              "var term = true;"
-                                              "while(true) {"
-                                              "  if (term) terminate();"
-                                              "  term = false;"
-                                              "}"
-                                              "fail();"))->Run();
+                                              "\x76\x61\x72\x20\x74\x65\x72\x6d\x20\x3d\x20\x74\x72\x75\x65\x3b"
+                                              "\x77\x68\x69\x6c\x65\x28\x74\x72\x75\x65\x29\x20\x7b"
+                                              "\x20\x20\x69\x66\x20\x28\x74\x65\x72\x6d\x29\x20\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x28\x29\x3b"
+                                              "\x20\x20\x74\x65\x72\x6d\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
+                                              "\x7d"
+                                              "\x66\x61\x69\x6c\x28\x29\x3b"))->Run();
   CHECK(try_catch.HasCaught());
   CHECK(try_catch.Exception()->IsNull());
   CHECK(try_catch.Message().IsEmpty());
@@ -355,9 +355,9 @@ TEST(TerminateCancelTerminateFromThreadItself) {
   v8::Context::Scope context_scope(context);
   CHECK(!v8::V8::IsExecutionTerminating(CcTest::isolate()));
   v8::Handle<v8::String> source = v8::String::NewFromUtf8(
-      isolate, "try { doloop(); } catch(e) { fail(); } 'completed';");
+      isolate, "\x74\x72\x79\x20\x7b\x20\x64\x6f\x6c\x6f\x6f\x70\x28\x29\x3b\x20\x7d\x20\x63\x61\x74\x63\x68\x28\x65\x29\x20\x7b\x20\x66\x61\x69\x6c\x28\x29\x3b\x20\x7d\x20\x27\x63\x6f\x6d\x70\x6c\x65\x74\x65\x64\x27\x3b");
   // Check that execution completed with correct return value.
-  CHECK(v8::Script::Compile(source)->Run()->Equals(v8_str("completed")));
+  CHECK(v8::Script::Compile(source)->Run()->Equals(v8_str("\x63\x6f\x6d\x70\x6c\x65\x74\x65\x64")));
 }
 
 
@@ -372,7 +372,7 @@ void MicrotaskLoopForever(const v8::FunctionCallbackInfo<v8::Value>& info) {
   // Enqueue another should-not-run task to ensure we clean out the queue
   // when we terminate.
   isolate->EnqueueMicrotask(v8::Function::New(isolate, MicrotaskShouldNotRun));
-  CompileRun("terminate(); while (true) { }");
+  CompileRun("\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x28\x29\x3b\x20\x77\x68\x69\x6c\x65\x20\x28\x74\x72\x75\x65\x29\x20\x7b\x20\x7d");
   CHECK(v8::V8::IsExecutionTerminating());
 }
 
@@ -424,7 +424,7 @@ TEST(PostponeTerminateException) {
 
   v8::TryCatch try_catch;
   static const char* terminate_and_loop =
-      "terminate(); for (var i = 0; i < 10000; i++);";
+      "\x74\x65\x72\x6d\x69\x6e\x61\x74\x65\x28\x29\x3b\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x3b";
 
   { // Postpone terminate execution interrupts.
     i::PostponeInterruptsScope p1(CcTest::i_isolate(),
@@ -455,7 +455,7 @@ TEST(PostponeTerminateException) {
   }
 
   // Now the previously requested terminate execution interrupt should trigger.
-  CompileRun("for (var i = 0; i < 10000; i++);");
+  CompileRun("\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x30\x3b\x20\x69\x2b\x2b\x29\x3b");
   CHECK(try_catch.HasTerminated());
   CHECK_EQ(2, callback_counter);
 }

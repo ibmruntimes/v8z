@@ -69,7 +69,7 @@ static Handle<JSFunction> Compile(const char* source) {
 
 
 static double Inc(Isolate* isolate, int x) {
-  const char* source = "result = %d + 1;";
+  const char* source = "\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x6c\x84\x20\x2b\x20\x31\x3b";
   EmbeddedVector<char, 512> buffer;
   SNPrintF(buffer, source, x);
 
@@ -78,7 +78,7 @@ static double Inc(Isolate* isolate, int x) {
 
   Handle<JSObject> global(isolate->context()->global_object());
   Execution::Call(isolate, fun, global, 0, NULL).Check();
-  return GetGlobalProperty("result")->Number();
+  return GetGlobalProperty("\x72\x65\x73\x75\x6c\x74")->Number();
 }
 
 
@@ -90,14 +90,14 @@ TEST(Inc) {
 
 
 static double Add(Isolate* isolate, int x, int y) {
-  Handle<JSFunction> fun = Compile("result = x + y;");
+  Handle<JSFunction> fun = Compile("\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x78\x20\x2b\x20\x79\x3b");
   if (fun.is_null()) return -1;
 
-  SetGlobalProperty("x", Smi::FromInt(x));
-  SetGlobalProperty("y", Smi::FromInt(y));
+  SetGlobalProperty("\x78", Smi::FromInt(x));
+  SetGlobalProperty("\x79", Smi::FromInt(y));
   Handle<JSObject> global(isolate->context()->global_object());
   Execution::Call(isolate, fun, global, 0, NULL).Check();
-  return GetGlobalProperty("result")->Number();
+  return GetGlobalProperty("\x72\x65\x73\x75\x6c\x74")->Number();
 }
 
 
@@ -109,13 +109,13 @@ TEST(Add) {
 
 
 static double Abs(Isolate* isolate, int x) {
-  Handle<JSFunction> fun = Compile("if (x < 0) result = -x; else result = x;");
+  Handle<JSFunction> fun = Compile("\x69\x66\x20\x28\x78\x20\x3c\x20\x30\x29\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x2d\x78\x3b\x20\x65\x6c\x73\x65\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x78\x3b");
   if (fun.is_null()) return -1;
 
-  SetGlobalProperty("x", Smi::FromInt(x));
+  SetGlobalProperty("\x78", Smi::FromInt(x));
   Handle<JSObject> global(isolate->context()->global_object());
   Execution::Call(isolate, fun, global, 0, NULL).Check();
-  return GetGlobalProperty("result")->Number();
+  return GetGlobalProperty("\x72\x65\x73\x75\x6c\x74")->Number();
 }
 
 
@@ -128,13 +128,13 @@ TEST(Abs) {
 
 static double Sum(Isolate* isolate, int n) {
   Handle<JSFunction> fun =
-      Compile("s = 0; while (n > 0) { s += n; n -= 1; }; result = s;");
+      Compile("\x73\x20\x3d\x20\x30\x3b\x20\x77\x68\x69\x6c\x65\x20\x28\x6e\x20\x3e\x20\x30\x29\x20\x7b\x20\x73\x20\x2b\x3d\x20\x6e\x3b\x20\x6e\x20\x2d\x3d\x20\x31\x3b\x20\x7d\x3b\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x73\x3b");
   if (fun.is_null()) return -1;
 
-  SetGlobalProperty("n", Smi::FromInt(n));
+  SetGlobalProperty("\x6e", Smi::FromInt(n));
   Handle<JSObject> global(isolate->context()->global_object());
   Execution::Call(isolate, fun, global, 0, NULL).Check();
-  return GetGlobalProperty("result")->Number();
+  return GetGlobalProperty("\x72\x65\x73\x75\x6c\x74")->Number();
 }
 
 
@@ -149,7 +149,7 @@ TEST(Print) {
   v8::HandleScope scope(CcTest::isolate());
   v8::Local<v8::Context> context = CcTest::NewContext(PRINT_EXTENSION);
   v8::Context::Scope context_scope(context);
-  const char* source = "for (n = 0; n < 100; ++n) print(n, 1, 2);";
+  const char* source = "\x66\x6f\x72\x20\x28\x6e\x20\x3d\x20\x30\x3b\x20\x6e\x20\x3c\x20\x31\x30\x30\x3b\x20\x2b\x2b\x6e\x29\x20\x70\x72\x69\x6e\x74\x28\x6e\x2c\x20\x31\x2c\x20\x32\x29\x3b";
   Handle<JSFunction> fun = Compile(source);
   if (fun.is_null()) return;
   Handle<JSObject> global(CcTest::i_isolate()->context()->global_object());
@@ -163,30 +163,30 @@ TEST(Stuff) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
   const char* source =
-    "r = 0;\n"
-    "a = new Object;\n"
-    "if (a == a) r+=1;\n"  // 1
-    "if (a != new Object()) r+=2;\n"  // 2
-    "a.x = 42;\n"
-    "if (a.x == 42) r+=4;\n"  // 4
-    "function foo() { var x = 87; return x; }\n"
-    "if (foo() == 87) r+=8;\n"  // 8
-    "function bar() { var x; x = 99; return x; }\n"
-    "if (bar() == 99) r+=16;\n"  // 16
-    "function baz() { var x = 1, y, z = 2; y = 3; return x + y + z; }\n"
-    "if (baz() == 6) r+=32;\n"  // 32
-    "function Cons0() { this.x = 42; this.y = 87; }\n"
-    "if (new Cons0().x == 42) r+=64;\n"  // 64
-    "if (new Cons0().y == 87) r+=128;\n"  // 128
-    "function Cons2(x, y) { this.sum = x + y; }\n"
-    "if (new Cons2(3,4).sum == 7) r+=256;";  // 256
+    "\x72\x20\x3d\x20\x30\x3b\xa"
+    "\x61\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x3b\xa"
+    "\x69\x66\x20\x28\x61\x20\x3d\x3d\x20\x61\x29\x20\x72\x2b\x3d\x31\x3b\xa"  // 1
+    "\x69\x66\x20\x28\x61\x20\x21\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x28\x29\x29\x20\x72\x2b\x3d\x32\x3b\xa"  // 2
+    "\x61\x2e\x78\x20\x3d\x20\x34\x32\x3b\xa"
+    "\x69\x66\x20\x28\x61\x2e\x78\x20\x3d\x3d\x20\x34\x32\x29\x20\x72\x2b\x3d\x34\x3b\xa"  // 4
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x38\x37\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d\xa"
+    "\x69\x66\x20\x28\x66\x6f\x6f\x28\x29\x20\x3d\x3d\x20\x38\x37\x29\x20\x72\x2b\x3d\x38\x3b\xa"  // 8
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x78\x3b\x20\x78\x20\x3d\x20\x39\x39\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d\xa"
+    "\x69\x66\x20\x28\x62\x61\x72\x28\x29\x20\x3d\x3d\x20\x39\x39\x29\x20\x72\x2b\x3d\x31\x36\x3b\xa"  // 16
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x7a\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x2c\x20\x79\x2c\x20\x7a\x20\x3d\x20\x32\x3b\x20\x79\x20\x3d\x20\x33\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x79\x20\x2b\x20\x7a\x3b\x20\x7d\xa"
+    "\x69\x66\x20\x28\x62\x61\x7a\x28\x29\x20\x3d\x3d\x20\x36\x29\x20\x72\x2b\x3d\x33\x32\x3b\xa"  // 32
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x6f\x6e\x73\x30\x28\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x34\x32\x3b\x20\x74\x68\x69\x73\x2e\x79\x20\x3d\x20\x38\x37\x3b\x20\x7d\xa"
+    "\x69\x66\x20\x28\x6e\x65\x77\x20\x43\x6f\x6e\x73\x30\x28\x29\x2e\x78\x20\x3d\x3d\x20\x34\x32\x29\x20\x72\x2b\x3d\x36\x34\x3b\xa"  // 64
+    "\x69\x66\x20\x28\x6e\x65\x77\x20\x43\x6f\x6e\x73\x30\x28\x29\x2e\x79\x20\x3d\x3d\x20\x38\x37\x29\x20\x72\x2b\x3d\x31\x32\x38\x3b\xa"  // 128
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x6f\x6e\x73\x32\x28\x78\x2c\x20\x79\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x73\x75\x6d\x20\x3d\x20\x78\x20\x2b\x20\x79\x3b\x20\x7d\xa"
+    "\x69\x66\x20\x28\x6e\x65\x77\x20\x43\x6f\x6e\x73\x32\x28\x33\x2c\x34\x29\x2e\x73\x75\x6d\x20\x3d\x3d\x20\x37\x29\x20\x72\x2b\x3d\x32\x35\x36\x3b";  // 256
 
   Handle<JSFunction> fun = Compile(source);
   CHECK(!fun.is_null());
   Handle<JSObject> global(CcTest::i_isolate()->context()->global_object());
   Execution::Call(
       CcTest::i_isolate(), fun, global, 0, NULL).Check();
-  CHECK_EQ(511.0, GetGlobalProperty("r")->Number());
+  CHECK_EQ(511.0, GetGlobalProperty("\x72")->Number());
 }
 
 
@@ -194,7 +194,7 @@ TEST(UncaughtThrow) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
 
-  const char* source = "throw 42;";
+  const char* source = "\x74\x68\x72\x6f\x77\x20\x34\x32\x3b";
   Handle<JSFunction> fun = Compile(source);
   CHECK(!fun.is_null());
   Isolate* isolate = fun->GetIsolate();
@@ -217,7 +217,7 @@ TEST(C2JSFrames) {
     CcTest::NewContext(PRINT_EXTENSION | GC_EXTENSION);
   v8::Context::Scope context_scope(context);
 
-  const char* source = "function foo(a) { gc(), print(a); }";
+  const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x61\x29\x20\x7b\x20\x67\x63\x28\x29\x2c\x20\x70\x72\x69\x6e\x74\x28\x61\x29\x3b\x20\x7d";
 
   Handle<JSFunction> fun0 = Compile(source);
   CHECK(!fun0.is_null());
@@ -228,13 +228,13 @@ TEST(C2JSFrames) {
   Execution::Call(isolate, fun0, global, 0, NULL).Check();
 
   Handle<String> foo_string = isolate->factory()->InternalizeOneByteString(
-      STATIC_ASCII_VECTOR("foo"));
+      STATIC_ASCII_VECTOR("\x66\x6f\x6f"));
   Handle<Object> fun1 = Object::GetProperty(
       isolate->global_object(), foo_string).ToHandleChecked();
   CHECK(fun1->IsJSFunction());
 
   Handle<Object> argv[] = { isolate->factory()->InternalizeOneByteString(
-      STATIC_ASCII_VECTOR("hello")) };
+      STATIC_ASCII_VECTOR("\x68\x65\x6c\x6c\x6f")) };
   Execution::Call(isolate,
                   Handle<JSFunction>::cast(fun1),
                   global,
@@ -263,24 +263,24 @@ TEST(GetScriptLineNumber) {
   LocalContext context;
   v8::HandleScope scope(CcTest::isolate());
   v8::ScriptOrigin origin =
-      v8::ScriptOrigin(v8::String::NewFromUtf8(CcTest::isolate(), "test"));
-  const char function_f[] = "function f() {}";
+      v8::ScriptOrigin(v8::String::NewFromUtf8(CcTest::isolate(), "\x74\x65\x73\x74"));
+  const char function_f[] = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x7d";
   const int max_rows = 1000;
   const int buffer_size = max_rows + sizeof(function_f);
   ScopedVector<char> buffer(buffer_size);
-  memset(buffer.start(), '\n', buffer_size - 1);
-  buffer[buffer_size - 1] = '\0';
+  memset(buffer.start(), '\xa', buffer_size - 1);
+  buffer[buffer_size - 1] = '\x0';
 
   for (int i = 0; i < max_rows; ++i) {
     if (i > 0)
-      buffer[i - 1] = '\n';
+      buffer[i - 1] = '\xa';
     MemCopy(&buffer[i], function_f, sizeof(function_f) - 1);
     v8::Handle<v8::String> script_body =
         v8::String::NewFromUtf8(CcTest::isolate(), buffer.start());
     v8::Script::Compile(script_body, &origin)->Run();
     v8::Local<v8::Function> f =
         v8::Local<v8::Function>::Cast(context->Global()->Get(
-            v8::String::NewFromUtf8(CcTest::isolate(), "f")));
+            v8::String::NewFromUtf8(CcTest::isolate(), "\x66")));
     CHECK_EQ(i, f->GetScriptLineNumber());
   }
 }
@@ -294,14 +294,14 @@ TEST(FeedbackVectorPreservedAcrossRecompiles) {
   v8::HandleScope scope(CcTest::isolate());
 
   // Make sure function f has a call that uses a type feedback slot.
-  CompileRun("function fun() {};"
-             "fun1 = fun;"
-             "function f(a) { a(); } f(fun1);");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x75\x6e\x28\x29\x20\x7b\x7d\x3b"
+             "\x66\x75\x6e\x31\x20\x3d\x20\x66\x75\x6e\x3b"
+             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x61\x29\x20\x7b\x20\x61\x28\x29\x3b\x20\x7d\x20\x66\x28\x66\x75\x6e\x31\x29\x3b");
 
   Handle<JSFunction> f =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Function>::Cast(
-              CcTest::global()->Get(v8_str("f"))));
+              CcTest::global()->Get(v8_str("\x66"))));
 
   // We shouldn't have deoptimization support. We want to recompile and
   // verify that our feedback vector preserves information.
@@ -313,7 +313,7 @@ TEST(FeedbackVectorPreservedAcrossRecompiles) {
   CHECK_EQ(expected_count, feedback_vector->length());
   CHECK(feedback_vector->get(expected_count - 1)->IsJSFunction());
 
-  CompileRun("%OptimizeFunctionOnNextCall(f); f(fun1);");
+  CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b\x20\x66\x28\x66\x75\x6e\x31\x29\x3b");
 
   // Verify that the feedback is still "gathered" despite a recompilation
   // of the full code.
@@ -329,29 +329,29 @@ TEST(FeedbackVectorUnaffectedByScopeChanges) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
 
-  CompileRun("function builder() {"
-             "  call_target = function() { return 3; };"
-             "  return (function() {"
-             "    eval('');"
-             "    return function() {"
-             "      'use strict';"
-             "      call_target();"
-             "    }"
-             "  })();"
-             "}"
-             "morphing_call = builder();");
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x75\x69\x6c\x64\x65\x72\x28\x29\x20\x7b"
+             "\x20\x20\x63\x61\x6c\x6c\x5f\x74\x61\x72\x67\x65\x74\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x33\x3b\x20\x7d\x3b"
+             "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+             "\x20\x20\x20\x20\x65\x76\x61\x6c\x28\x27\x27\x29\x3b"
+             "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
+             "\x20\x20\x20\x20\x20\x20\x27\x75\x73\x65\x20\x73\x74\x72\x69\x63\x74\x27\x3b"
+             "\x20\x20\x20\x20\x20\x20\x63\x61\x6c\x6c\x5f\x74\x61\x72\x67\x65\x74\x28\x29\x3b"
+             "\x20\x20\x20\x20\x7d"
+             "\x20\x20\x7d\x29\x28\x29\x3b"
+             "\x7d"
+             "\x6d\x6f\x72\x70\x68\x69\x6e\x67\x5f\x63\x61\x6c\x6c\x20\x3d\x20\x62\x75\x69\x6c\x64\x65\x72\x28\x29\x3b");
 
   Handle<JSFunction> f =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Function>::Cast(
-              CcTest::global()->Get(v8_str("morphing_call"))));
+              CcTest::global()->Get(v8_str("\x6d\x6f\x72\x70\x68\x69\x6e\x67\x5f\x63\x61\x6c\x6c"))));
 
   int expected_count = FLAG_vector_ics ? 2 : 1;
   CHECK_EQ(expected_count, f->shared()->feedback_vector()->length());
   // And yet it's not compiled.
   CHECK(!f->shared()->is_compiled());
 
-  CompileRun("morphing_call();");
+  CompileRun("\x6d\x6f\x72\x70\x68\x69\x6e\x67\x5f\x63\x61\x6c\x6c\x28\x29\x3b");
 
   // The vector should have the same size despite the new scoping.
   CHECK_EQ(expected_count, f->shared()->feedback_vector()->length());
@@ -371,21 +371,21 @@ TEST(OptimizedCodeSharing) {
   v8::HandleScope scope(CcTest::isolate());
   for (int i = 0; i < 10; i++) {
     LocalContext env;
-    env->Global()->Set(v8::String::NewFromUtf8(CcTest::isolate(), "x"),
+    env->Global()->Set(v8::String::NewFromUtf8(CcTest::isolate(), "\x78"),
                        v8::Integer::New(CcTest::isolate(), i));
-    CompileRun("function MakeClosure() {"
-               "  return function() { return x; };"
-               "}"
-               "var closure0 = MakeClosure();"
-               "%DebugPrint(closure0());"
-               "%OptimizeFunctionOnNextCall(closure0);"
-               "%DebugPrint(closure0());"
-               "var closure1 = MakeClosure();"
-               "var closure2 = MakeClosure();");
+    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x4d\x61\x6b\x65\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x20\x7b"
+               "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d\x3b"
+               "\x7d"
+               "\x76\x61\x72\x20\x63\x6c\x6f\x73\x75\x72\x65\x30\x20\x3d\x20\x4d\x61\x6b\x65\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x3b"
+               "\x25\x44\x65\x62\x75\x67\x50\x72\x69\x6e\x74\x28\x63\x6c\x6f\x73\x75\x72\x65\x30\x28\x29\x29\x3b"
+               "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x63\x6c\x6f\x73\x75\x72\x65\x30\x29\x3b"
+               "\x25\x44\x65\x62\x75\x67\x50\x72\x69\x6e\x74\x28\x63\x6c\x6f\x73\x75\x72\x65\x30\x28\x29\x29\x3b"
+               "\x76\x61\x72\x20\x63\x6c\x6f\x73\x75\x72\x65\x31\x20\x3d\x20\x4d\x61\x6b\x65\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x3b"
+               "\x76\x61\x72\x20\x63\x6c\x6f\x73\x75\x72\x65\x32\x20\x3d\x20\x4d\x61\x6b\x65\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x3b");
     Handle<JSFunction> fun1 = v8::Utils::OpenHandle(
-        *v8::Local<v8::Function>::Cast(env->Global()->Get(v8_str("closure1"))));
+        *v8::Local<v8::Function>::Cast(env->Global()->Get(v8_str("\x63\x6c\x6f\x73\x75\x72\x65\x31"))));
     Handle<JSFunction> fun2 = v8::Utils::OpenHandle(
-        *v8::Local<v8::Function>::Cast(env->Global()->Get(v8_str("closure2"))));
+        *v8::Local<v8::Function>::Cast(env->Global()->Get(v8_str("\x63\x6c\x6f\x73\x75\x72\x65\x32"))));
     CHECK(fun1->IsOptimized()
           || !CcTest::i_isolate()->use_crankshaft() || !fun1->IsOptimizable());
     CHECK(fun2->IsOptimized()
@@ -419,7 +419,7 @@ static void CheckCodeForUnsafeLiteral(Handle<JSFunction> f) {
     v8::internal::EmbeddedVector<char, 128> decode_buffer;
     v8::internal::EmbeddedVector<char, 128> smi_hex_buffer;
     Smi* smi = Smi::FromInt(12345678);
-    SNPrintF(smi_hex_buffer, "0x%" V8PRIxPTR, reinterpret_cast<intptr_t>(smi));
+    SNPrintF(smi_hex_buffer, "\x30\x78\x25" V8PRIxPTR, reinterpret_cast<intptr_t>(smi));
     while (pc < end) {
       int num_const = d.ConstantPoolSizeAt(pc);
       if (num_const >= 0) {
@@ -437,13 +437,13 @@ TEST(SplitConstantsInFullCompiler) {
   LocalContext context;
   v8::HandleScope scope(CcTest::isolate());
 
-  CompileRun("function f() { a = 12345678 }; f();");
-  CheckCodeForUnsafeLiteral(GetJSFunction(context->Global(), "f"));
-  CompileRun("function f(x) { a = 12345678 + x}; f(1);");
-  CheckCodeForUnsafeLiteral(GetJSFunction(context->Global(), "f"));
-  CompileRun("function f(x) { var arguments = 1; x += 12345678}; f(1);");
-  CheckCodeForUnsafeLiteral(GetJSFunction(context->Global(), "f"));
-  CompileRun("function f(x) { var arguments = 1; x = 12345678}; f(1);");
-  CheckCodeForUnsafeLiteral(GetJSFunction(context->Global(), "f"));
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x35\x36\x37\x38\x20\x7d\x3b\x20\x66\x28\x29\x3b");
+  CheckCodeForUnsafeLiteral(GetJSFunction(context->Global(), "\x66"));
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x35\x36\x37\x38\x20\x2b\x20\x78\x7d\x3b\x20\x66\x28\x31\x29\x3b");
+  CheckCodeForUnsafeLiteral(GetJSFunction(context->Global(), "\x66"));
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x76\x61\x72\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x3d\x20\x31\x3b\x20\x78\x20\x2b\x3d\x20\x31\x32\x33\x34\x35\x36\x37\x38\x7d\x3b\x20\x66\x28\x31\x29\x3b");
+  CheckCodeForUnsafeLiteral(GetJSFunction(context->Global(), "\x66"));
+  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x76\x61\x72\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x3d\x20\x31\x3b\x20\x78\x20\x3d\x20\x31\x32\x33\x34\x35\x36\x37\x38\x7d\x3b\x20\x66\x28\x31\x29\x3b");
+  CheckCodeForUnsafeLiteral(GetJSFunction(context->Global(), "\x66"));
 }
 #endif

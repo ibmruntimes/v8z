@@ -530,7 +530,7 @@ TEST(SmiCheck) {
 
   __ incq(rax);
   __ xorq(rcx, Immediate(kSmiTagMask));
-  cond = masm->CheckNonNegativeSmi(rcx);  // "zero" non-smi.
+  cond = masm->CheckNonNegativeSmi(rcx);  // "\x7a\x65\x72\x6f" non-smi.
   __ j(cond, &exit);
 
   __ incq(rax);
@@ -547,7 +547,7 @@ TEST(SmiCheck) {
 
   __ incq(rax);
   __ xorq(rcx, Immediate(kSmiTagMask));
-  cond = masm->CheckNonNegativeSmi(rcx);  // "Negative" non-smi.
+  cond = masm->CheckNonNegativeSmi(rcx);  // "\x4e\x65\x67\x61\x74\x69\x76\x65" non-smi.
   __ j(cond, &exit);
 
   __ incq(rax);
@@ -558,7 +558,7 @@ TEST(SmiCheck) {
 
   __ incq(rax);
   __ xorq(rcx, Immediate(kSmiTagMask));
-  cond = masm->CheckNonNegativeSmi(rcx);  // "Positive" non-smi.
+  cond = masm->CheckNonNegativeSmi(rcx);  // "\x50\x6f\x73\x69\x74\x69\x76\x65" non-smi.
   __ j(cond, &exit);
 
   // CheckIsMinSmi

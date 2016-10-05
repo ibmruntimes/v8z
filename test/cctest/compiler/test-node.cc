@@ -15,7 +15,7 @@ using namespace v8::internal;
 using namespace v8::internal::compiler;
 
 static SimpleOperator dummy_operator(IrOpcode::kParameter, Operator::kNoWrite,
-                                     0, 0, "dummy");
+                                     0, 0, "\x64\x75\x6d\x6d\x79");
 
 TEST(NodeAllocation) {
   GraphTester graph;
@@ -278,11 +278,11 @@ TEST(Uses) {
   Node* n0 = graph.NewNode(&dummy_operator);
   Node* n1 = graph.NewNode(&dummy_operator, n0);
   CHECK_EQ(1, n0->UseCount());
-  printf("A: %d vs %d\n", n0->UseAt(0)->id(), n1->id());
+  printf("\x41\x3a\x20\x6c\x84\x20\x76\x73\x20\x6c\x84\xa", n0->UseAt(0)->id(), n1->id());
   CHECK(n0->UseAt(0) == n1);
   Node* n2 = graph.NewNode(&dummy_operator, n0);
   CHECK_EQ(2, n0->UseCount());
-  printf("B: %d vs %d\n", n0->UseAt(1)->id(), n2->id());
+  printf("\x42\x3a\x20\x6c\x84\x20\x76\x73\x20\x6c\x84\xa", n0->UseAt(1)->id(), n2->id());
   CHECK(n0->UseAt(1) == n2);
   Node* n3 = graph.NewNode(&dummy_operator, n0);
   CHECK_EQ(3, n0->UseCount());

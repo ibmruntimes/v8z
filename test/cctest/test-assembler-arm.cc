@@ -66,7 +66,7 @@ TEST(0) {
 #endif
   F2 f = FUNCTION_CAST<F2>(code->entry());
   int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 3, 4, 0, 0, 0));
-  ::printf("f() = %d\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
   CHECK_EQ(7, res);
 }
 
@@ -102,7 +102,7 @@ TEST(1) {
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
   int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 100, 0, 0, 0, 0));
-  ::printf("f() = %d\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
   CHECK_EQ(5050, res);
 }
 
@@ -129,9 +129,9 @@ TEST(2) {
   __ mov(pc, Operand(lr));
 
   // some relocated stuff here, not executed
-  __ RecordComment("dead code, just testing relocations");
+  __ RecordComment("\x64\x65\x61\x64\x20\x63\x6f\x64\x65\x2c\x20\x6a\x75\x73\x74\x20\x74\x65\x73\x74\x69\x6e\x67\x20\x72\x65\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x73");
   __ mov(r0, Operand(isolate->factory()->true_value()));
-  __ RecordComment("dead code, just testing immediate operands");
+  __ RecordComment("\x64\x65\x61\x64\x20\x63\x6f\x64\x65\x2c\x20\x6a\x75\x73\x74\x20\x74\x65\x73\x74\x69\x6e\x67\x20\x69\x6d\x6d\x65\x64\x69\x61\x74\x65\x20\x6f\x70\x65\x72\x61\x6e\x64\x73");
   __ mov(r0, Operand(-1));
   __ mov(r0, Operand(0xFF000000));
   __ mov(r0, Operand(0xF0F0F0F0));
@@ -147,7 +147,7 @@ TEST(2) {
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
   int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 10, 0, 0, 0, 0));
-  ::printf("f() = %d\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
   CHECK_EQ(3628800, res);
 }
 
@@ -197,7 +197,7 @@ TEST(3) {
   t.c = 10;
   t.s = 1000;
   int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, &t, 0, 0, 0, 0));
-  ::printf("f() = %d\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
   CHECK_EQ(101010, res);
   CHECK_EQ(100000/2, t.i);
   CHECK_EQ(10*4, t.c);
@@ -380,7 +380,7 @@ TEST(5) {
     F1 f = FUNCTION_CAST<F1>(code->entry());
     int res = reinterpret_cast<int>(
                 CALL_GENERATED_CODE(f, 0xAAAAAAAA, 0, 0, 0, 0));
-    ::printf("f() = %d\n", res);
+    ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
     CHECK_EQ(-7, res);
   }
 }
@@ -414,7 +414,7 @@ TEST(6) {
     F1 f = FUNCTION_CAST<F1>(code->entry());
     int res = reinterpret_cast<int>(
                 CALL_GENERATED_CODE(f, 0xFFFF, 0, 0, 0, 0));
-    ::printf("f() = %d\n", res);
+    ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
     CHECK_EQ(382, res);
   }
 }
@@ -488,7 +488,7 @@ static void TestRoundingMode(VCVTTypes types,
     F1 f = FUNCTION_CAST<F1>(code->entry());
     int res = reinterpret_cast<int>(
                 CALL_GENERATED_CODE(f, 0, 0, 0, 0, 0));
-    ::printf("res = %d\n", res);
+    ::printf("\x72\x65\x73\x20\x3d\x20\x6c\x84\xa", res);
     CHECK_EQ(expected, res);
   }
 }
@@ -1557,7 +1557,7 @@ TEST(code_relative_offset) {
       desc, Code::ComputeFlags(Code::STUB), code_object);
   F1 f = FUNCTION_CAST<F1>(code->entry());
   int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 21, 0, 0, 0, 0));
-  ::printf("f() = %d\n", res);
+  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
   CHECK_EQ(42, res);
 }
 

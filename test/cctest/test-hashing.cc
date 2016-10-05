@@ -324,17 +324,17 @@ TEST(StringHash) {
 
   for (uint8_t a = 0; a < String::kMaxOneByteCharCode; a++) {
     // Numbers are hashed differently.
-    if (a >= '0' && a <= '9') continue;
+    if (a >= '\x30' && a <= '\x39') continue;
     for (uint8_t b = 0; b < String::kMaxOneByteCharCode; b++) {
-      if (b >= '0' && b <= '9') continue;
+      if (b >= '\x30' && b <= '\x39') continue;
       check_twochars(a, b);
     }
   }
-  check(i::Vector<const char>("*",       1));
-  check(i::Vector<const char>(".zZ",     3));
-  check(i::Vector<const char>("muc",     3));
-  check(i::Vector<const char>("(>'_')>", 7));
-  check(i::Vector<const char>("-=[ vee eight ftw ]=-", 21));
+  check(i::Vector<const char>("\x2a",       1));
+  check(i::Vector<const char>("\x2e\x7a\x5a",     3));
+  check(i::Vector<const char>("\x6d\x75\x63",     3));
+  check(i::Vector<const char>("\x28\x3e\x27\x5f\x27\x29\x3e", 7));
+  check(i::Vector<const char>("\x2d\x3d\x5b\x20\x76\x65\x65\x20\x65\x69\x67\x68\x74\x20\x66\x74\x77\x20\x5d\x3d\x2d", 21));
 }
 
 

@@ -66,7 +66,7 @@ class TestRetainedObjectInfo : public v8::RetainedObjectInfo {
 
   virtual intptr_t GetHash() { return 0; }
 
-  virtual const char* GetLabel() { return "whatever"; }
+  virtual const char* GetLabel() { return "\x77\x68\x61\x74\x65\x76\x65\x72"; }
 
  private:
   bool has_been_disposed_;

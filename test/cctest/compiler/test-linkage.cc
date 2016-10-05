@@ -24,7 +24,7 @@ using namespace v8::internal;
 using namespace v8::internal::compiler;
 
 static SimpleOperator dummy_operator(IrOpcode::kParameter, Operator::kNoWrite,
-                                     0, 0, "dummy");
+                                     0, 0, "\x64\x75\x6d\x6d\x79");
 
 // So we can get a real JS function.
 static Handle<JSFunction> Compile(const char* source) {
@@ -43,7 +43,7 @@ static Handle<JSFunction> Compile(const char* source) {
 
 TEST(TestLinkageCreate) {
   InitializedHandleScope handles;
-  Handle<JSFunction> function = Compile("a + b");
+  Handle<JSFunction> function = Compile("\x61\x20\x2b\x20\x62");
   CompilationInfoWithZone info(function);
   Linkage linkage(&info);
 }
@@ -52,8 +52,8 @@ TEST(TestLinkageCreate) {
 TEST(TestLinkageJSFunctionIncoming) {
   InitializedHandleScope handles;
 
-  const char* sources[] = {"(function() { })", "(function(a) { })",
-                           "(function(a,b) { })", "(function(a,b,c) { })"};
+  const char* sources[] = {"\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x7d\x29", "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x29\x20\x7b\x20\x7d\x29",
+                           "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x29\x20\x7b\x20\x7d\x29", "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x62\x2c\x63\x29\x20\x7b\x20\x7d\x29"};
 
   for (int i = 0; i < 3; i++) {
     i::HandleScope handles(CcTest::i_isolate());
@@ -85,7 +85,7 @@ TEST(TestLinkageCodeStubIncoming) {
 
 TEST(TestLinkageJSCall) {
   HandleAndZoneScope handles;
-  Handle<JSFunction> function = Compile("a + c");
+  Handle<JSFunction> function = Compile("\x61\x20\x2b\x20\x63");
   CompilationInfoWithZone info(function);
   Linkage linkage(&info);
 
