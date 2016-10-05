@@ -592,7 +592,7 @@
   'unicode-test': [SKIP],
   'unicodelctest': [SKIP],
   'unicodelctest-no-optimization': [SKIP],
-  'regress/regress-2032' [SKIP],
+  'regress/regress-2032': [SKIP],
 }], # 'system == "OS/390"'
 
 ['arch == ppc or arch == ppc64', {
