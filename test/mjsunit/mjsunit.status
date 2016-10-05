@@ -586,14 +586,15 @@
   'debug-liveedit-double-call': [SKIP],
 }],  # 'arch == s390 or arch == s390x'
 
-['system == "OS/390"', {
+['system == zos', {
   # scp issue on unicode characters
   'string-case': [SKIP],
   'unicode-test': [SKIP],
   'unicodelctest': [SKIP],
   'unicodelctest-no-optimization': [SKIP],
   'regress/regress-2032': [SKIP],
-}], # 'system == "OS/390"'
+  'regexp-capture-3': [SKIP],
+}], # 'system == zos'
 
 ['arch == ppc or arch == ppc64', {
 
