@@ -10,6 +10,7 @@
 #include "src/base/logging.h"
 #include "src/base/platform/platform.h"
 #include "src/utils.h"
+#include <unistd.h>
 
 namespace v8 {
 namespace internal {
@@ -92,6 +93,138 @@ void PrintF(FILE* out, const char* format, ...) {
   va_end(arguments);
 }
 
+#pragma convert("IBM-1047")
+inline int GetFirstFlagFrom(const char* format_e, int start = 0) {
+  int flag_pos = start;
+  do {
+    for (; format_e[flag_pos] != '\0' && format_e[flag_pos] != '%'; flag_pos++); // find the first flag
+    if (format_e[flag_pos] != '\0' && format_e[flag_pos + 1] == '%') {
+      flag_pos += 2;
+      continue;
+    } else {
+      break;
+    }
+  } while (true);
+  return flag_pos;
+}
+
+int VSNPrintFASCII(char* out, int length, const char* format_a, va_list args) {
+  int bytes_written = 0, bytes_remain = length;
+  size_t format_len = strlen(format_a);
+  char buffer_e[format_len + 1];
+  char * format_e = buffer_e;
+  memcpy(format_e, format_a, format_len + 1);
+  __a2e_s(format_e);
+  int first_flag = GetFirstFlagFrom(format_e);
+  if (first_flag > 0) {
+    int size = v8::base::OS::SNPrintF(out, length, "%.*s", first_flag, format_e);
+    CHECK(size >= 0);
+    bytes_written += size;
+    bytes_remain = length - bytes_written;
+  }
+  format_e += first_flag;
+  if (format_e[0] == '\0') return bytes_written;
+
+  do {
+    int next_flag = GetFirstFlagFrom(format_e, 1);
+    char tmp = format_e[next_flag];
+    int ret = 0;
+    format_e[next_flag] = '\0';
+    char flag = format_e[1];
+    if (flag == 's') {
+      // convert arg
+      char * str = va_arg(args, char *);
+      size_t str_len = strlen(str);
+      char str_e[str_len + 1];
+      memcpy(str_e, str, str_len + 1);
+      __a2e_s(str_e);
+      ret = v8::base::OS::SNPrintF(out + bytes_written, bytes_remain, format_e, str_e);
+    } else if (flag == 'c') {
+      ret = v8::base::OS::SNPrintF(out + bytes_written, bytes_remain, format_e, Ascii2Ebcdic(va_arg(args, char)));
+    } else {
+      ret = v8::base::OS::SNPrintF(out + bytes_written, bytes_remain, format_e, args);
+    }
+    CHECK(ret >= 0);
+    bytes_written += ret;
+    bytes_remain = length - bytes_written;
+    format_e[next_flag] = tmp;
+    format_e += next_flag;
+    bytes_remain = length = bytes_written;
+  } while (format_e[0] != '\0' || bytes_remain <= 0);
+
+  return bytes_written;
+}
+
+int SNPrintFASCII(char * out, int length, const char* format_a, ...) {
+  va_list args;
+  va_start(args, format_a);
+  int ret = VSNPrintFASCII(out, length, format_a, args);
+  va_end(args);
+  return ret;
+}
+
+int SNPrintFASCII(Vector<char> str, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  int result = VSNPrintFASCII(str, format, args);
+  va_end(args);
+  return result;
+}
+
+
+int VSNPrintFASCII(Vector<char> str, const char* format, va_list args) {
+  return VSNPrintFASCII(str.start(), str.length(), format, args);
+}
+void VFPrintASCII(FILE* out, const char* format_a, va_list args) {
+  size_t format_len = strlen(format_a);
+  char buffer_e[format_len + 1];
+  char * format_e = buffer_e;
+  memcpy(format_e, format_a, format_len + 1);
+  __a2e_s(format_e);
+  int first_flag = GetFirstFlagFrom(format_e);
+  if (first_flag > 0)
+    v8::base::OS::FPrint(out, "%.*s", first_flag, format_e);
+  format_e += first_flag;
+  if (format_e[0] == '\0') return;
+
+  do {
+    int next_flag = GetFirstFlagFrom(format_e, 1);
+    char tmp = format_e[next_flag];
+    format_e[next_flag] = '\0';
+    char flag = format_e[1];
+    if (flag == 's') {
+      // convert arg
+      char * str = va_arg(args, char *);
+      size_t str_len = strlen(str);
+      char str_e[str_len + 1];
+      memcpy(str_e, str, str_len + 1);
+      __a2e_s(str_e);
+      v8::base::OS::FPrint(out, format_e, str_e);
+    } else if (flag == 'c') {
+      v8::base::OS::FPrint(out, format_e, Ascii2Ebcdic(va_arg(args, char)));
+    } else {
+      v8::base::OS::VFPrint(out, format_e, args);
+    }
+    format_e[next_flag] = tmp;
+    format_e += next_flag;
+  } while (format_e[0] != '\0');
+}
+
+void FPrintASCII(FILE* out, const char* format_a, ...) {
+  va_list args;
+  va_start(args, format_a);
+  VFPrintASCII(out, format_a, args);
+  va_end(args);
+}
+
+void PrintASCII(const char* format_a, ...) {
+  va_list args;
+  va_start(args, format_a);
+  VFPrintASCII(stdout, format_a, args);
+  va_end(args);
+}
+
+#pragma convert(pop)
 
 void PrintPID(const char* format, ...) {
   base::OS::Print("\x5b\x6c\x84\x5d\x20", base::OS::GetCurrentProcessId());
