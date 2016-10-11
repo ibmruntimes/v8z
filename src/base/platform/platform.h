@@ -261,6 +261,12 @@ class OS {
                        const char* format,
                        va_list args);
 
+  static int SNPrintFASCII(char* str, int length, const char* format, ...);
+  static int VSNPrintFASCII(char* str,
+                       int length,
+                       const char* format,
+                       va_list args);
+
   static char* StrChr(char* str, int c);
   static void StrNCpy(char* dest, int length, const char* src, size_t n);
 
