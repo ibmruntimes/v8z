@@ -149,7 +149,7 @@ int VSNPrintFASCII(char* out, int length, const char* format_a, va_list args) {
     bytes_remain = length - bytes_written;
     format_e[next_flag] = tmp;
     format_e += next_flag;
-    bytes_remain = length = bytes_written;
+    bytes_remain = length - bytes_written;
   } while (format_e[0] != '\0' || bytes_remain <= 0);
 
   return bytes_written;
