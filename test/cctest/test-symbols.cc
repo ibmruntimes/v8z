@@ -1,3 +1,4 @@
+#pragma convert("ISO8859-1")
 // Copyright 2013 the V8 project authors. All rights reserved.
 
 // Check that we can traverse very deep stacks of ConsStrings using

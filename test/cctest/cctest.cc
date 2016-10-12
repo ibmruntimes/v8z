@@ -1,3 +1,4 @@
+#pragma convert("ISO8859-1")
 // Copyright 2008 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,6 +34,7 @@
 #include "test/cctest/print-extension.h"
 #include "test/cctest/profiler-extension.h"
 #include "test/cctest/trace-extension.h"
+#include <unistd.h>
 
 enum InitializationState {kUnset, kUnintialized, kInitialized};
 static InitializationState initialization_state_  = kUnset;
@@ -158,6 +160,7 @@ int main(int argc, char* argv[]) {
   bool print_run_count = true;
   for (int i = 1; i < argc; i++) {
     char* arg = argv[i];
+    __e2a_s(arg);
     if (strcmp(arg, "--list") == 0) {
       // TODO(svenpanne) Serializer::enabled() and Serializer::code_address_map_
       // are fundamentally broken, so we can't unconditionally initialize and

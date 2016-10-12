@@ -1,3 +1,4 @@
+#pragma convert("ISO8859-1")
 // Copyright 2008 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -31,6 +32,10 @@
 #include "src/v8.h"
 
 #include "src/isolate-inl.h"
+
+#define printf v8::internal::PrintASCII
+#define fprintf v8::internal::FPrintASCII
+#define SNPrintF SNPrintFASCII
 
 #ifndef TEST
 #define TEST(Name)                                                             \
