@@ -197,11 +197,11 @@ TEST(LoadAddress) {
   CHECK_EQ(check_size, 4);
   __ jr(a4);
   __ nop();
-  __ stop("\x69\x6e\x76\x61\x6c\x69\x64");
-  __ stop("\x69\x6e\x76\x61\x6c\x69\x64");
-  __ stop("\x69\x6e\x76\x61\x6c\x69\x64");
-  __ stop("\x69\x6e\x76\x61\x6c\x69\x64");
-  __ stop("\x69\x6e\x76\x61\x6c\x69\x64");
+  __ stop("invalid");
+  __ stop("invalid");
+  __ stop("invalid");
+  __ stop("invalid");
+  __ stop("invalid");
 
 
   CodeDesc desc;

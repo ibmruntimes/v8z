@@ -88,7 +88,7 @@ static void ExpectUndefined(Local<Value> result) {
 TEST(simple_value) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
-  Local<Value> result = CompileRun("\x30\x78\x32\x37\x31\x38\x32\x38\x3b");
+  Local<Value> result = CompileRun("0x271828;");
   ExpectInt32(0x271828, result);
 }
 
@@ -96,7 +96,7 @@ TEST(simple_value) {
 TEST(global_variable) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
-  Local<Value> result = CompileRun("\x76\x61\x72\x20\x6d\x79\x5f\x67\x6c\x6f\x62\x61\x6c\x5f\x76\x61\x72\x20\x3d\x20\x30\x78\x31\x32\x33\x3b\x20\x6d\x79\x5f\x67\x6c\x6f\x62\x61\x6c\x5f\x76\x61\x72\x3b");
+  Local<Value> result = CompileRun("var my_global_var = 0x123; my_global_var;");
   ExpectInt32(0x123, result);
 }
 
@@ -105,8 +105,8 @@ TEST(simple_function_call) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   Local<Value> result = CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x30\x78\x33\x31\x34\x3b\x20\x7d"
-      "\x66\x6f\x6f\x28\x29\x3b");
+      "function foo() { return 0x314; }"
+      "foo();");
   ExpectInt32(0x314, result);
 }
 
@@ -115,12 +115,12 @@ TEST(binary_op) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   Local<Value> result = CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b"
-      "\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x78\x31\x32\x30\x30\x3b"
-      "\x20\x20\x76\x61\x72\x20\x62\x20\x3d\x20\x30\x78\x30\x30\x33\x35\x3b"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x32\x20\x2a\x20\x28\x61\x20\x2b\x20\x62\x20\x2d\x20\x31\x29\x3b"
-      "\x7d"
-      "\x66\x6f\x6f\x28\x29\x3b");
+      "function foo() {"
+      "  var a = 0x1200;"
+      "  var b = 0x0035;"
+      "  return 2 * (a + b - 1);"
+      "}"
+      "foo();");
   ExpectInt32(0x2468, result);
 }
 
@@ -131,10 +131,10 @@ static void if_comparison_testcontext_helper(
     int          expect) {
   char buffer[256];
   snprintf(buffer, sizeof(buffer),
-           "\x76\x61\x72\x20\x6c\x68\x73\x20\x3d\x20\x6c\xa2\x3b"
-           "\x76\x61\x72\x20\x72\x68\x73\x20\x3d\x20\x6c\xa2\x3b"
-           "\x69\x66\x20\x28\x20\x6c\x68\x73\x20\x6c\xa2\x20\x72\x68\x73\x20\x29\x20\x7b\x20\x31\x3b\x20\x7d"
-           "\x65\x6c\x73\x65\x20\x7b\x20\x30\x3b\x20\x7d",
+           "var lhs = %s;"
+           "var rhs = %s;"
+           "if ( lhs %s rhs ) { 1; }"
+           "else { 0; }",
            lhs, rhs, op);
   Local<Value> result = CompileRun(buffer);
   ExpectInt32(expect, result);
@@ -147,11 +147,11 @@ static void if_comparison_effectcontext_helper(
     int          expect) {
   char buffer[256];
   snprintf(buffer, sizeof(buffer),
-           "\x76\x61\x72\x20\x6c\x68\x73\x20\x3d\x20\x6c\xa2\x3b"
-           "\x76\x61\x72\x20\x72\x68\x73\x20\x3d\x20\x6c\xa2\x3b"
-           "\x76\x61\x72\x20\x74\x65\x73\x74\x20\x3d\x20\x6c\x68\x73\x20\x6c\xa2\x20\x72\x68\x73\x3b"
-           "\x69\x66\x20\x28\x20\x74\x65\x73\x74\x20\x29\x20\x7b\x20\x31\x3b\x20\x7d"
-           "\x65\x6c\x73\x65\x20\x7b\x20\x30\x3b\x20\x7d",
+           "var lhs = %s;"
+           "var rhs = %s;"
+           "var test = lhs %s rhs;"
+           "if ( test ) { 1; }"
+           "else { 0; }",
            lhs, rhs, op);
   Local<Value> result = CompileRun(buffer);
   ExpectInt32(expect, result);
@@ -164,13 +164,13 @@ static void if_comparison_helper(
     int          expect_when_gt) {
   // TODO(all): Non-SMI tests.
 
-  if_comparison_testcontext_helper(op, "\x31", "\x33", expect_when_lt);
-  if_comparison_testcontext_helper(op, "\x35", "\x35", expect_when_eq);
-  if_comparison_testcontext_helper(op, "\x39", "\x37", expect_when_gt);
+  if_comparison_testcontext_helper(op, "1", "3", expect_when_lt);
+  if_comparison_testcontext_helper(op, "5", "5", expect_when_eq);
+  if_comparison_testcontext_helper(op, "9", "7", expect_when_gt);
 
-  if_comparison_effectcontext_helper(op, "\x31", "\x33", expect_when_lt);
-  if_comparison_effectcontext_helper(op, "\x35", "\x35", expect_when_eq);
-  if_comparison_effectcontext_helper(op, "\x39", "\x37", expect_when_gt);
+  if_comparison_effectcontext_helper(op, "1", "3", expect_when_lt);
+  if_comparison_effectcontext_helper(op, "5", "5", expect_when_eq);
+  if_comparison_effectcontext_helper(op, "9", "7", expect_when_gt);
 }
 
 
@@ -178,14 +178,14 @@ TEST(if_comparison) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
 
-  if_comparison_helper("\x3c",   1, 0, 0);
-  if_comparison_helper("\x3c\x3d",  1, 1, 0);
-  if_comparison_helper("\x3d\x3d",  0, 1, 0);
-  if_comparison_helper("\x3d\x3d\x3d", 0, 1, 0);
-  if_comparison_helper("\x3e\x3d",  0, 1, 1);
-  if_comparison_helper("\x3e",   0, 0, 1);
-  if_comparison_helper("\x21\x3d",  1, 0, 1);
-  if_comparison_helper("\x21\x3d\x3d", 1, 0, 1);
+  if_comparison_helper("<",   1, 0, 0);
+  if_comparison_helper("<=",  1, 1, 0);
+  if_comparison_helper("==",  0, 1, 0);
+  if_comparison_helper("===", 0, 1, 0);
+  if_comparison_helper(">=",  0, 1, 1);
+  if_comparison_helper(">",   0, 0, 1);
+  if_comparison_helper("!=",  1, 0, 1);
+  if_comparison_helper("!==", 1, 0, 1);
 }
 
 
@@ -194,19 +194,19 @@ TEST(unary_plus) {
   v8::HandleScope scope(env->GetIsolate());
   Local<Value> result;
   // SMI
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x3b\x20\x2b\x61");
+  result = CompileRun("var a = 1234; +a");
   ExpectInt32(1234, result);
   // Number
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x2e\x35\x3b\x20\x2b\x61");
+  result = CompileRun("var a = 1234.5; +a");
   ExpectNumber(1234.5, result);
   // String (SMI)
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x27\x31\x32\x33\x34\x27\x3b\x20\x2b\x61");
+  result = CompileRun("var a = '1234'; +a");
   ExpectInt32(1234, result);
   // String (Number)
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x27\x31\x32\x33\x34\x2e\x35\x27\x3b\x20\x2b\x61");
+  result = CompileRun("var a = '1234.5'; +a");
   ExpectNumber(1234.5, result);
   // Check side effects.
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x3b\x20\x2b\x28\x61\x20\x3d\x20\x34\x33\x32\x31\x29\x3b\x20\x61");
+  result = CompileRun("var a = 1234; +(a = 4321); a");
   ExpectInt32(4321, result);
 }
 
@@ -215,15 +215,15 @@ TEST(unary_minus) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   Local<Value> result;
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x3b\x20\x2d\x61");
+  result = CompileRun("var a = 1234; -a");
   ExpectInt32(-1234, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x2e\x35\x3b\x20\x2d\x61");
+  result = CompileRun("var a = 1234.5; -a");
   ExpectNumber(-1234.5, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x3b\x20\x2d\x28\x61\x20\x3d\x20\x34\x33\x32\x31\x29\x3b\x20\x61");
+  result = CompileRun("var a = 1234; -(a = 4321); a");
   ExpectInt32(4321, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x27\x31\x32\x33\x34\x27\x3b\x20\x2d\x61");
+  result = CompileRun("var a = '1234'; -a");
   ExpectInt32(-1234, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x27\x31\x32\x33\x34\x2e\x35\x27\x3b\x20\x2d\x61");
+  result = CompileRun("var a = '1234.5'; -a");
   ExpectNumber(-1234.5, result);
 }
 
@@ -232,11 +232,11 @@ TEST(unary_void) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   Local<Value> result;
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x3b\x20\x76\x6f\x69\x64\x20\x28\x61\x29\x3b");
+  result = CompileRun("var a = 1234; void (a);");
   ExpectUndefined(result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b\x20\x76\x6f\x69\x64\x20\x28\x61\x20\x3d\x20\x34\x32\x29\x3b\x20\x61");
+  result = CompileRun("var a = 0; void (a = 42); a");
   ExpectInt32(42, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b\x20\x76\x6f\x69\x64\x20\x28\x61\x20\x3d\x20\x34\x32\x29\x3b");
+  result = CompileRun("var a = 0; void (a = 42);");
   ExpectUndefined(result);
 }
 
@@ -245,22 +245,22 @@ TEST(unary_not) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   Local<Value> result;
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x3b\x20\x21\x61");
+  result = CompileRun("var a = 1234; !a");
   ExpectBoolean(false, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b\x20\x21\x61");
+  result = CompileRun("var a = 0; !a");
   ExpectBoolean(true, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b\x20\x21\x28\x61\x20\x3d\x20\x31\x32\x33\x34\x29\x3b\x20\x61");
+  result = CompileRun("var a = 0; !(a = 1234); a");
   ExpectInt32(1234, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x27\x31\x32\x33\x34\x27\x3b\x20\x21\x61");
+  result = CompileRun("var a = '1234'; !a");
   ExpectBoolean(false, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x27\x27\x3b\x20\x21\x61");
+  result = CompileRun("var a = ''; !a");
   ExpectBoolean(true, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x32\x33\x34\x3b\x20\x21\x21\x61");
+  result = CompileRun("var a = 1234; !!a");
   ExpectBoolean(true, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b\x20\x21\x21\x61");
+  result = CompileRun("var a = 0; !!a");
   ExpectBoolean(false, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x30\x3b\x20\x69\x66\x20\x28\x20\x21\x61\x20\x29\x20\x7b\x20\x31\x3b\x20\x7d\x20\x65\x6c\x73\x65\x20\x7b\x20\x30\x3b\x20\x7d");
+  result = CompileRun("var a = 0; if ( !a ) { 1; } else { 0; }");
   ExpectInt32(1, result);
-  result = CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x3b\x20\x69\x66\x20\x28\x20\x21\x61\x20\x29\x20\x7b\x20\x31\x3b\x20\x7d\x20\x65\x6c\x73\x65\x20\x7b\x20\x30\x3b\x20\x7d");
+  result = CompileRun("var a = 1; if ( !a ) { 1; } else { 0; }");
   ExpectInt32(0, result);
 }

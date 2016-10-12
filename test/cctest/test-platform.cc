@@ -39,55 +39,55 @@ using namespace ::v8::internal;
 #define GET_STACK_POINTER() \
   static int sp_addr = 0; \
   do { \
-    ASM("\x6d\x6f\x76\x20\x25\x25\x72\x73\x70\x2c\x20\x25\x30" : "\x3d\x67" (sp_addr)); \
+    ASM("mov %%rsp, %0" : "=g" (sp_addr)); \
   } while (0)
 #elif defined(_M_IX86) || defined(__i386__)
 #define GET_STACK_POINTER() \
   static int sp_addr = 0; \
   do { \
-    ASM("\x6d\x6f\x76\x20\x25\x6c\x85\xa2\x97\x2c\x20\x25\x30" : "\x3d\x67" (sp_addr)); \
+    ASM("mov %%esp, %0" : "=g" (sp_addr)); \
   } while (0)
 #elif defined(__ARMEL__)
 #define GET_STACK_POINTER() \
   static int sp_addr = 0; \
   do { \
-    ASM("\x73\x74\x72\x20\x25\x6c\xa2\x97\x2c\x20\x25\x30" : "\x3d\x67" (sp_addr)); \
+    ASM("str %%sp, %0" : "=g" (sp_addr)); \
   } while (0)
 #elif defined(__AARCH64EL__)
 #define GET_STACK_POINTER() \
   static int sp_addr = 0; \
   do { \
-    ASM("\x6d\x6f\x76\x20\x78\x31\x36\x2c\x20\x73\x70\x3b\x20\x73\x74\x72\x20\x78\x31\x36\x2c\x20\x25\x30" : "\x3d\x67" (sp_addr)); \
+    ASM("mov x16, sp; str x16, %0" : "=g" (sp_addr)); \
   } while (0)
 #elif defined(__MIPSEB__) || defined(__MIPSEL__)
 #define GET_STACK_POINTER() \
   static int sp_addr = 0; \
   do { \
-    ASM("\x73\x77\x20\x24\x73\x70\x2c\x20\x25\x30" : "\x3d\x67" (sp_addr)); \
+    ASM("sw $sp, %0" : "=g" (sp_addr)); \
   } while (0)
 #elif defined(__s390x__) || defined(_ARCH_S390X)
 #define GET_STACK_POINTER() \
   static intptr_t sp_addr = 0; \
   do { \
-    ASM("\x73\x74\x67\x20\x31\x35\x2c\x20\x25\x30" : "\x3d\x67" (sp_addr)); \
+    ASM("stg 15, %0" : "=g" (sp_addr)); \
   } while (0)
 #elif defined(__s390__) || defined(_ARCH_S390)
 #define GET_STACK_POINTER() \
   static intptr_t sp_addr = 0; \
   do { \
-    ASM("\x73\x74\x20\x31\x35\x2c\x20\x25\x30" : "\x3d\x67" (sp_addr)); \
+    ASM("st 15, %0" : "=g" (sp_addr)); \
   } while (0)
 #elif defined(__PPC64__) || defined(_ARCH_PPC64)
 #define GET_STACK_POINTER() \
   static intptr_t sp_addr = 0; \
   do { \
-    ASM("\x73\x74\x64\x20\x31\x2c\x20\x25\x30" : "\x3d\x67" (sp_addr)); \
+    ASM("std 1, %0" : "=g" (sp_addr)); \
   } while (0)
 #elif defined(__PPC__) || defined(_ARCH_PPC)
 #define GET_STACK_POINTER() \
   static intptr_t sp_addr = 0; \
   do { \
-    ASM("\x73\x74\x77\x20\x31\x2c\x20\x25\x30" : "\x3d\x67" (sp_addr)); \
+    ASM("stw 1, %0" : "=g" (sp_addr)); \
   } while (0)
 #else
 #error Host architecture was not detected as supported by v8
@@ -104,18 +104,18 @@ TEST(StackAlignment) {
   v8::HandleScope handle_scope(isolate);
   v8::Handle<v8::ObjectTemplate> global_template =
       v8::ObjectTemplate::New(isolate);
-  global_template->Set(v8_str("\x67\x65\x74\x5f\x73\x74\x61\x63\x6b\x5f\x70\x6f\x69\x6e\x74\x65\x72"),
+  global_template->Set(v8_str("get_stack_pointer"),
                        v8::FunctionTemplate::New(isolate, GetStackPointer));
 
   LocalContext env(NULL, global_template);
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x67\x65\x74\x5f\x73\x74\x61\x63\x6b\x5f\x70\x6f\x69\x6e\x74\x65\x72\x28\x29\x3b"
-      "\x7d");
+      "function foo() {"
+      "  return get_stack_pointer();"
+      "}");
 
   v8::Local<v8::Object> global_object = env->Global();
   v8::Local<v8::Function> foo =
-      v8::Local<v8::Function>::Cast(global_object->Get(v8_str("\x66\x6f\x6f")));
+      v8::Local<v8::Function>::Cast(global_object->Get(v8_str("foo")));
 
   v8::Local<v8::Value> result = foo->Call(global_object, 0, NULL);
   CHECK_EQ(0, result->Int32Value() % v8::base::OS::ActivationFrameAlignment());

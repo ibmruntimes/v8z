@@ -111,10 +111,10 @@ class ScopedLoggerInitializer {
 
 
 static const char* StrNStr(const char* s1, const char* s2, int n) {
-  if (s1[n] == '\x0') return strstr(s1, s2);
+  if (s1[n] == '\0') return strstr(s1, s2);
   i::ScopedVector<char> str(n + 1);
   i::StrNCpy(str, s1, static_cast<size_t>(n));
-  str[n] = '\x0';
+  str[n] = '\0';
   char* found = strstr(str.start(), s2);
   return found != NULL ? s1 + (found - str.start()) : NULL;
 }
@@ -182,7 +182,7 @@ class LoopingJsThread : public LoopingThread {
         v8::Context::Scope context_scope(context);
         SignalRunning();
         CompileRun(
-            "\x76\x61\x72\x20\x6a\x3b\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x3d\x30\x3b\x20\x69\x3c\x31\x30\x30\x30\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b\x20\x6a\x20\x3d\x20\x4d\x61\x74\x68\x2e\x73\x69\x6e\x28\x69\x29\x3b\x20\x7d");
+            "var j; for (var i=0; i<10000; ++i) { j = Math.sin(i); }");
       }
       context.Dispose();
       i::OS::Sleep(1);
@@ -305,12 +305,12 @@ TEST(Issue23768) {
   v8::Handle<v8::Context> env = v8::Context::New(CcTest::isolate());
   env->Enter();
 
-  SimpleExternalString source_ext_str("\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x78\x74\x28\x29\x20\x7b\x7d\x29\x28\x29\x3b");
+  SimpleExternalString source_ext_str("(function ext() {})();");
   v8::Local<v8::String> source =
       v8::String::NewExternal(CcTest::isolate(), &source_ext_str);
   // Script needs to have a name in order to trigger InitLineEnds execution.
   v8::Handle<v8::String> origin =
-      v8::String::NewFromUtf8(CcTest::isolate(), "\x69\x73\x73\x75\x65\x2d\x32\x33\x37\x36\x38\x2d\x74\x65\x73\x74");
+      v8::String::NewFromUtf8(CcTest::isolate(), "issue-23768-test");
   v8::Handle<v8::Script> evil_script = CompileWithOrigin(source, origin);
   CHECK(!evil_script.IsEmpty());
   CHECK(!evil_script->Run().IsEmpty());
@@ -337,19 +337,19 @@ TEST(LogCallbacks) {
   v8::Local<v8::FunctionTemplate> obj =
       v8::Local<v8::FunctionTemplate>::New(isolate,
                                            v8::FunctionTemplate::New(isolate));
-  obj->SetClassName(v8_str("\x4f\x62\x6a"));
+  obj->SetClassName(v8_str("Obj"));
   v8::Handle<v8::ObjectTemplate> proto = obj->PrototypeTemplate();
   v8::Local<v8::Signature> signature =
       v8::Signature::New(isolate, obj);
-  proto->Set(v8_str("\x6d\x65\x74\x68\x6f\x64\x31"),
+  proto->Set(v8_str("method1"),
              v8::FunctionTemplate::New(isolate,
                                        ObjMethod1,
                                        v8::Handle<v8::Value>(),
                                        signature),
              static_cast<v8::PropertyAttribute>(v8::DontDelete));
 
-  initialize_logger.env()->Global()->Set(v8_str("\x4f\x62\x6a"), obj->GetFunction());
-  CompileRun("\x4f\x62\x6a\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x6d\x65\x74\x68\x6f\x64\x31\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67\x28\x29\x3b");
+  initialize_logger.env()->Global()->Set(v8_str("Obj"), obj->GetFunction());
+  CompileRun("Obj.prototype.method1.toString();");
 
   logger->LogCompiledFunctions();
 
@@ -360,7 +360,7 @@ TEST(LogCallbacks) {
 
   i::EmbeddedVector<char, 100> ref_data;
   i::SNPrintF(ref_data,
-              "\x63\x6f\x64\x65\x2d\x63\x72\x65\x61\x74\x69\x6f\x6e\x2c\x43\x61\x6c\x6c\x62\x61\x63\x6b\x2c\x2d\x32\x2c\x30\x78\x25" V8PRIxPTR "\x2c\x31\x2c\x22\x6d\x65\x74\x68\x6f\x64\x31\x22",
+              "code-creation,Callback,-2,0x%" V8PRIxPTR ",1,\"method1\"",
               reinterpret_cast<intptr_t>(ObjMethod1));
 
   CHECK_NE(NULL, StrNStr(log.start(), ref_data.start(), log.length()));
@@ -390,10 +390,10 @@ TEST(LogAccessorCallbacks) {
   v8::Local<v8::FunctionTemplate> obj =
       v8::Local<v8::FunctionTemplate>::New(isolate,
                                            v8::FunctionTemplate::New(isolate));
-  obj->SetClassName(v8_str("\x4f\x62\x6a"));
+  obj->SetClassName(v8_str("Obj"));
   v8::Handle<v8::ObjectTemplate> inst = obj->InstanceTemplate();
-  inst->SetAccessor(v8_str("\x70\x72\x6f\x70\x31"), Prop1Getter, Prop1Setter);
-  inst->SetAccessor(v8_str("\x70\x72\x6f\x70\x32"), Prop2Getter);
+  inst->SetAccessor(v8_str("prop1"), Prop1Getter, Prop1Setter);
+  inst->SetAccessor(v8_str("prop2"), Prop2Getter);
 
   logger->LogAccessorCallbacks();
 
@@ -404,21 +404,21 @@ TEST(LogAccessorCallbacks) {
 
   EmbeddedVector<char, 100> prop1_getter_record;
   i::SNPrintF(prop1_getter_record,
-              "\x63\x6f\x64\x65\x2d\x63\x72\x65\x61\x74\x69\x6f\x6e\x2c\x43\x61\x6c\x6c\x62\x61\x63\x6b\x2c\x2d\x32\x2c\x30\x78\x25" V8PRIxPTR "\x2c\x31\x2c\x22\x67\x65\x74\x20\x70\x72\x6f\x70\x31\x22",
+              "code-creation,Callback,-2,0x%" V8PRIxPTR ",1,\"get prop1\"",
               reinterpret_cast<intptr_t>(Prop1Getter));
   CHECK_NE(NULL,
            StrNStr(log.start(), prop1_getter_record.start(), log.length()));
 
   EmbeddedVector<char, 100> prop1_setter_record;
   i::SNPrintF(prop1_setter_record,
-              "\x63\x6f\x64\x65\x2d\x63\x72\x65\x61\x74\x69\x6f\x6e\x2c\x43\x61\x6c\x6c\x62\x61\x63\x6b\x2c\x2d\x32\x2c\x30\x78\x25" V8PRIxPTR "\x2c\x31\x2c\x22\x73\x65\x74\x20\x70\x72\x6f\x70\x31\x22",
+              "code-creation,Callback,-2,0x%" V8PRIxPTR ",1,\"set prop1\"",
               reinterpret_cast<intptr_t>(Prop1Setter));
   CHECK_NE(NULL,
            StrNStr(log.start(), prop1_setter_record.start(), log.length()));
 
   EmbeddedVector<char, 100> prop2_getter_record;
   i::SNPrintF(prop2_getter_record,
-              "\x63\x6f\x64\x65\x2d\x63\x72\x65\x61\x74\x69\x6f\x6e\x2c\x43\x61\x6c\x6c\x62\x61\x63\x6b\x2c\x2d\x32\x2c\x30\x78\x25" V8PRIxPTR "\x2c\x31\x2c\x22\x67\x65\x74\x20\x70\x72\x6f\x70\x32\x22",
+              "code-creation,Callback,-2,0x%" V8PRIxPTR ",1,\"get prop2\"",
               reinterpret_cast<intptr_t>(Prop2Getter));
   CHECK_NE(NULL,
            StrNStr(log.start(), prop2_getter_record.start(), log.length()));
@@ -444,17 +444,17 @@ TEST(EquivalenceOfLoggingAndTraversal) {
 
   // Compile and run a function that creates other functions.
   CompileRun(
-      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x6f\x62\x6a\x29\x20\x7b\xa"
-      "\x20\x20\x6f\x62\x6a\x2e\x74\x65\x73\x74\x20\x3d\xa"
-      "\x20\x20\x20\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x28\x6a\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6a\x3b\x20\x7d\x20\x7d\x29\x28\x31\x30\x30\x29\x3b\xa"
-      "\x7d\x29\x28\x74\x68\x69\x73\x29\x3b");
+      "(function f(obj) {\n"
+      "  obj.test =\n"
+      "    (function a(j) { return function b() { return j; } })(100);\n"
+      "})(this);");
   logger->StopProfiler();
   CcTest::heap()->CollectAllGarbage(i::Heap::kMakeHeapIterableMask);
-  logger->StringEvent("\x74\x65\x73\x74\x2d\x6c\x6f\x67\x67\x69\x6e\x67\x2d\x64\x6f\x6e\x65", "");
+  logger->StringEvent("test-logging-done", "");
 
   // Iterate heap to find compiled functions, will write to log.
   logger->LogCompiledFunctions();
-  logger->StringEvent("\x74\x65\x73\x74\x2d\x74\x72\x61\x76\x65\x72\x73\x61\x6c\x2d\x64\x6f\x6e\x65", "");
+  logger->StringEvent("test-traversal-done", "");
 
   bool exists = false;
   i::Vector<const char> log(
@@ -462,7 +462,7 @@ TEST(EquivalenceOfLoggingAndTraversal) {
   CHECK(exists);
   v8::Handle<v8::String> log_str = v8::String::NewFromUtf8(
       CcTest::isolate(), log.start(), v8::String::kNormalString, log.length());
-  initialize_logger.env()->Global()->Set(v8_str("\x5f\x6c\x6f\x67"), log_str);
+  initialize_logger.env()->Global()->Set(v8_str("_log"), log_str);
 
   i::Vector<const unsigned char> source = TestSources::GetScriptsSource();
   v8::Handle<v8::String> source_str = v8::String::NewFromUtf8(
@@ -472,13 +472,13 @@ TEST(EquivalenceOfLoggingAndTraversal) {
   v8::Handle<v8::Script> script = CompileWithOrigin(source_str, "");
   if (script.IsEmpty()) {
     v8::String::Utf8Value exception(try_catch.Exception());
-    printf("\x63\x6f\x6d\x70\x69\x6c\x65\x3a\x20\x6c\xa2\xa", *exception);
+    printf("compile: %s\n", *exception);
     CHECK(false);
   }
   v8::Handle<v8::Value> result = script->Run();
   if (result.IsEmpty()) {
     v8::String::Utf8Value exception(try_catch.Exception());
-    printf("\x72\x75\x6e\x3a\x20\x6c\xa2\xa", *exception);
+    printf("run: %s\n", *exception);
     CHECK(false);
   }
   // The result either be a "true" literal or problem description.
@@ -487,7 +487,7 @@ TEST(EquivalenceOfLoggingAndTraversal) {
     i::ScopedVector<char> data(s->Utf8Length() + 1);
     CHECK_NE(NULL, data.start());
     s->WriteUtf8(data.start());
-    printf("\x6c\xa2\xa", data.start());
+    printf("%s\n", data.start());
     // Make sure that our output is written prior crash due to CHECK failure.
     fflush(stdout);
     CHECK(false);

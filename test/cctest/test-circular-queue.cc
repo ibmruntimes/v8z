@@ -107,7 +107,7 @@ class ProducerThread: public v8::base::Thread {
  public:
   ProducerThread(TestSampleQueue* scq, int records_per_chunk, Record value,
                  v8::base::Semaphore* finished)
-      : Thread(Options("\x70\x72\x6f\x64\x75\x63\x65\x72")),
+      : Thread(Options("producer")),
         scq_(scq),
         records_per_chunk_(records_per_chunk),
         value_(value),

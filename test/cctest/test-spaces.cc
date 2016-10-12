@@ -444,7 +444,7 @@ TEST(SizeOfFirstPageIsLargeEnough) {
 
   // Executing the empty script gets by with one page per space.
   HandleScope scope(isolate);
-  CompileRun("\x2f\x2a\x65\x6d\x70\x74\x79\x2a\x2f");
+  CompileRun("/*empty*/");
   for (int i = FIRST_PAGED_SPACE; i <= LAST_PAGED_SPACE; i++) {
     // Debug code can be very large, so skip CODE_SPACE if we are generating it.
     if (i == CODE_SPACE && i::FLAG_debug_code) continue;

@@ -59,7 +59,7 @@ TEST(ReduceJSLoadContext) {
   Handle<Context> subcontext2 = t.factory()->NewNativeContext();
   subcontext2->set_previous(*subcontext1);
   subcontext1->set_previous(*native);
-  Handle<Object> expected = t.factory()->InternalizeUtf8String("\x67\x62\x6f\x79\x21");
+  Handle<Object> expected = t.factory()->InternalizeUtf8String("gboy!");
   const int slot = Context::GLOBAL_OBJECT_INDEX;
   native->set(slot, *expected);
 
@@ -132,7 +132,7 @@ TEST(ReduceJSStoreContext) {
   Handle<Context> subcontext2 = t.factory()->NewNativeContext();
   subcontext2->set_previous(*subcontext1);
   subcontext1->set_previous(*native);
-  Handle<Object> expected = t.factory()->InternalizeUtf8String("\x67\x62\x6f\x79\x21");
+  Handle<Object> expected = t.factory()->InternalizeUtf8String("gboy!");
   const int slot = Context::GLOBAL_OBJECT_INDEX;
   native->set(slot, *expected);
 
@@ -199,7 +199,7 @@ TEST(SpecializeToContext) {
 
   // Make a context and initialize it a bit for this test.
   Handle<Context> native = t.factory()->NewNativeContext();
-  Handle<Object> expected = t.factory()->InternalizeUtf8String("\x67\x62\x6f\x79\x21");
+  Handle<Object> expected = t.factory()->InternalizeUtf8String("gboy!");
   const int slot = Context::GLOBAL_OBJECT_INDEX;
   native->set(slot, *expected);
   t.info()->SetContext(native);
@@ -254,8 +254,8 @@ TEST(SpecializeToContext) {
 
 TEST(SpecializeJSFunction_ToConstant1) {
   FunctionTester T(
-      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x3b\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x63\x28\x61\x29"
-      "\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x78\x3b\x20\x7d\x20\x72\x65\x74\x75\x72\x6e\x20\x69\x6e\x63\x3b\x20\x7d\x29\x28\x29");
+      "(function() { var x = 1; function inc(a)"
+      " { return a + x; } return inc; })()");
 
   T.CheckCall(1.0, 0.0, 0.0);
   T.CheckCall(2.0, 1.0, 0.0);
@@ -265,8 +265,8 @@ TEST(SpecializeJSFunction_ToConstant1) {
 
 TEST(SpecializeJSFunction_ToConstant2) {
   FunctionTester T(
-      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x2e\x35\x3b\x20\x76\x61\x72\x20\x79\x20\x3d\x20\x32\x2e\x32\x35\x3b\x20\x76\x61\x72\x20\x7a\x20\x3d\x20\x33\x2e\x37\x35\x3b"
-      "\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2d\x20\x78\x20\x2b\x20\x79\x20\x2d\x20\x7a\x3b\x20\x7d\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x3b\x20\x7d\x29\x28\x29");
+      "(function() { var x = 1.5; var y = 2.25; var z = 3.75;"
+      " function f(a) { return a - x + y - z; } return f; })()");
 
   T.CheckCall(-3.0, 0.0, 0.0);
   T.CheckCall(-2.0, 1.0, 0.0);
@@ -276,9 +276,9 @@ TEST(SpecializeJSFunction_ToConstant2) {
 
 TEST(SpecializeJSFunction_ToConstant3) {
   FunctionTester T(
-      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x2d\x31\x31\x2e\x35\x3b\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x63\x28\x29"
-      "\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x78\x3b\x20\x7d\x29\x3b\x20\x7d"
-      "\x20\x72\x65\x74\x75\x72\x6e\x20\x69\x6e\x63\x28\x29\x3b\x20\x7d\x29\x28\x29");
+      "(function() { var x = -11.5; function inc()"
+      " { return (function(a) { return a + x; }); }"
+      " return inc(); })()");
 
   T.CheckCall(-11.5, 0.0, 0.0);
   T.CheckCall(-10.5, 1.0, 0.0);
@@ -289,8 +289,8 @@ TEST(SpecializeJSFunction_ToConstant3) {
 TEST(SpecializeJSFunction_ToConstant_uninit) {
   {
     FunctionTester T(
-        "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x69\x66\x20\x28\x66\x61\x6c\x73\x65\x29\x20\x7b\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x3b\x20\x7d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x63\x28\x61\x29"
-        "\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x3b\x20\x7d\x20\x72\x65\x74\x75\x72\x6e\x20\x69\x6e\x63\x3b\x20\x7d\x29\x28\x29");  // x is undefined!
+        "(function() { if (false) { var x = 1; } function inc(a)"
+        " { return x; } return inc; })()");  // x is undefined!
 
     CHECK(T.Call(T.Val(0.0), T.Val(0.0)).ToHandleChecked()->IsUndefined());
     CHECK(T.Call(T.Val(2.0), T.Val(0.0)).ToHandleChecked()->IsUndefined());
@@ -299,8 +299,8 @@ TEST(SpecializeJSFunction_ToConstant_uninit) {
 
   {
     FunctionTester T(
-        "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x69\x66\x20\x28\x66\x61\x6c\x73\x65\x29\x20\x7b\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x31\x3b\x20\x7d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x6e\x63\x28\x61\x29"
-        "\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x78\x3b\x20\x7d\x20\x72\x65\x74\x75\x72\x6e\x20\x69\x6e\x63\x3b\x20\x7d\x29\x28\x29");  // x is undefined!
+        "(function() { if (false) { var x = 1; } function inc(a)"
+        " { return a + x; } return inc; })()");  // x is undefined!
 
     CHECK(T.Call(T.Val(0.0), T.Val(0.0)).ToHandleChecked()->IsNaN());
     CHECK(T.Call(T.Val(2.0), T.Val(0.0)).ToHandleChecked()->IsNaN());

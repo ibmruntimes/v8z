@@ -102,7 +102,7 @@ ElementAccess ForBackingStoreElement(MachineType rep) {
 static Handle<JSObject> TestObject() {
   static int index = 0;
   char buffer[50];
-  v8::base::OS::SNPrintF(buffer, 50, "\x28\x7b\x27\x61\x5f\x6c\x84\x27\x3a\x31\x7d\x29", index++);
+  v8::base::OS::SNPrintF(buffer, 50, "({'a_%d':1})", index++);
   return Handle<JSObject>::cast(v8::Utils::OpenHandle(*CompileRun(buffer)));
 }
 

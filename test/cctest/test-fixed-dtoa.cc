@@ -46,397 +46,397 @@ TEST(FastFixedVariousDoubles) {
   int point;
 
   CHECK(FastFixedDtoa(1.0, 1, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(1.0, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(1.0, 0, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0xFFFFFFFF, 5, buffer, &length, &point));
-  CHECK_EQ("\x34\x32\x39\x34\x39\x36\x37\x32\x39\x35", buffer.start());
+  CHECK_EQ("4294967295", buffer.start());
   CHECK_EQ(10, point);
 
   CHECK(FastFixedDtoa(4294967296.0, 5, buffer, &length, &point));
-  CHECK_EQ("\x34\x32\x39\x34\x39\x36\x37\x32\x39\x36", buffer.start());
+  CHECK_EQ("4294967296", buffer.start());
   CHECK_EQ(10, point);
 
   CHECK(FastFixedDtoa(1e21, 5, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   // CHECK_EQ(22, point);
   CHECK_EQ(22, point);
 
   CHECK(FastFixedDtoa(999999999999999868928.00, 2, buffer, &length, &point));
-  CHECK_EQ("\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x38\x36\x38\x39\x32\x38", buffer.start());
+  CHECK_EQ("999999999999999868928", buffer.start());
   CHECK_EQ(21, point);
 
   CHECK(FastFixedDtoa(6.9999999999999989514240000e+21, 5, buffer,
                       &length, &point));
-  CHECK_EQ("\x36\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x39\x38\x39\x35\x31\x34\x32\x34", buffer.start());
+  CHECK_EQ("6999999999999998951424", buffer.start());
   CHECK_EQ(22, point);
 
   CHECK(FastFixedDtoa(1.5, 5, buffer, &length, &point));
-  CHECK_EQ("\x31\x35", buffer.start());
+  CHECK_EQ("15", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(1.55, 5, buffer, &length, &point));
-  CHECK_EQ("\x31\x35\x35", buffer.start());
+  CHECK_EQ("155", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(1.55, 1, buffer, &length, &point));
-  CHECK_EQ("\x31\x36", buffer.start());
+  CHECK_EQ("16", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(1.00000001, 15, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x30\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("100000001", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.1, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(0, point);
 
   CHECK(FastFixedDtoa(0.01, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-1, point);
 
   CHECK(FastFixedDtoa(0.001, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-2, point);
 
   CHECK(FastFixedDtoa(0.0001, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-3, point);
 
   CHECK(FastFixedDtoa(0.00001, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-4, point);
 
   CHECK(FastFixedDtoa(0.000001, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-5, point);
 
   CHECK(FastFixedDtoa(0.0000001, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-6, point);
 
   CHECK(FastFixedDtoa(0.00000001, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-7, point);
 
   CHECK(FastFixedDtoa(0.000000001, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-8, point);
 
   CHECK(FastFixedDtoa(0.0000000001, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-9, point);
 
   CHECK(FastFixedDtoa(0.00000000001, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-10, point);
 
   CHECK(FastFixedDtoa(0.000000000001, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-11, point);
 
   CHECK(FastFixedDtoa(0.0000000000001, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-12, point);
 
   CHECK(FastFixedDtoa(0.00000000000001, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-13, point);
 
   CHECK(FastFixedDtoa(0.000000000000001, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-14, point);
 
   CHECK(FastFixedDtoa(0.0000000000000001, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-15, point);
 
   CHECK(FastFixedDtoa(0.00000000000000001, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-16, point);
 
   CHECK(FastFixedDtoa(0.000000000000000001, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-17, point);
 
   CHECK(FastFixedDtoa(0.0000000000000000001, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-18, point);
 
   CHECK(FastFixedDtoa(0.00000000000000000001, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-19, point);
 
   CHECK(FastFixedDtoa(0.10000000004, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(0, point);
 
   CHECK(FastFixedDtoa(0.01000000004, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-1, point);
 
   CHECK(FastFixedDtoa(0.00100000004, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-2, point);
 
   CHECK(FastFixedDtoa(0.00010000004, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-3, point);
 
   CHECK(FastFixedDtoa(0.00001000004, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-4, point);
 
   CHECK(FastFixedDtoa(0.00000100004, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-5, point);
 
   CHECK(FastFixedDtoa(0.00000010004, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-6, point);
 
   CHECK(FastFixedDtoa(0.00000001004, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-7, point);
 
   CHECK(FastFixedDtoa(0.00000000104, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-8, point);
 
   CHECK(FastFixedDtoa(0.0000000001000004, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-9, point);
 
   CHECK(FastFixedDtoa(0.0000000000100004, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-10, point);
 
   CHECK(FastFixedDtoa(0.0000000000010004, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-11, point);
 
   CHECK(FastFixedDtoa(0.0000000000001004, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-12, point);
 
   CHECK(FastFixedDtoa(0.0000000000000104, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-13, point);
 
   CHECK(FastFixedDtoa(0.000000000000001000004, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-14, point);
 
   CHECK(FastFixedDtoa(0.000000000000000100004, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-15, point);
 
   CHECK(FastFixedDtoa(0.000000000000000010004, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-16, point);
 
   CHECK(FastFixedDtoa(0.000000000000000001004, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-17, point);
 
   CHECK(FastFixedDtoa(0.000000000000000000104, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-18, point);
 
   CHECK(FastFixedDtoa(0.000000000000000000014, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-19, point);
 
   CHECK(FastFixedDtoa(0.10000000006, 10, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x30\x30\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("1000000001", buffer.start());
   CHECK_EQ(0, point);
 
   CHECK(FastFixedDtoa(0.01000000006, 10, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x30\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("100000001", buffer.start());
   CHECK_EQ(-1, point);
 
   CHECK(FastFixedDtoa(0.00100000006, 10, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("10000001", buffer.start());
   CHECK_EQ(-2, point);
 
   CHECK(FastFixedDtoa(0.00010000006, 10, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("1000001", buffer.start());
   CHECK_EQ(-3, point);
 
   CHECK(FastFixedDtoa(0.00001000006, 10, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("100001", buffer.start());
   CHECK_EQ(-4, point);
 
   CHECK(FastFixedDtoa(0.00000100006, 10, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("10001", buffer.start());
   CHECK_EQ(-5, point);
 
   CHECK(FastFixedDtoa(0.00000010006, 10, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x31", buffer.start());
+  CHECK_EQ("1001", buffer.start());
   CHECK_EQ(-6, point);
 
   CHECK(FastFixedDtoa(0.00000001006, 10, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x31", buffer.start());
+  CHECK_EQ("101", buffer.start());
   CHECK_EQ(-7, point);
 
   CHECK(FastFixedDtoa(0.00000000106, 10, buffer, &length, &point));
-  CHECK_EQ("\x31\x31", buffer.start());
+  CHECK_EQ("11", buffer.start());
   CHECK_EQ(-8, point);
 
   CHECK(FastFixedDtoa(0.0000000001000006, 15, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("100001", buffer.start());
   CHECK_EQ(-9, point);
 
   CHECK(FastFixedDtoa(0.0000000000100006, 15, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("10001", buffer.start());
   CHECK_EQ(-10, point);
 
   CHECK(FastFixedDtoa(0.0000000000010006, 15, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x31", buffer.start());
+  CHECK_EQ("1001", buffer.start());
   CHECK_EQ(-11, point);
 
   CHECK(FastFixedDtoa(0.0000000000001006, 15, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x31", buffer.start());
+  CHECK_EQ("101", buffer.start());
   CHECK_EQ(-12, point);
 
   CHECK(FastFixedDtoa(0.0000000000000106, 15, buffer, &length, &point));
-  CHECK_EQ("\x31\x31", buffer.start());
+  CHECK_EQ("11", buffer.start());
   CHECK_EQ(-13, point);
 
   CHECK(FastFixedDtoa(0.000000000000001000006, 20, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("100001", buffer.start());
   CHECK_EQ(-14, point);
 
   CHECK(FastFixedDtoa(0.000000000000000100006, 20, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x31", buffer.start());
+  CHECK_EQ("10001", buffer.start());
   CHECK_EQ(-15, point);
 
   CHECK(FastFixedDtoa(0.000000000000000010006, 20, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x31", buffer.start());
+  CHECK_EQ("1001", buffer.start());
   CHECK_EQ(-16, point);
 
   CHECK(FastFixedDtoa(0.000000000000000001006, 20, buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x31", buffer.start());
+  CHECK_EQ("101", buffer.start());
   CHECK_EQ(-17, point);
 
   CHECK(FastFixedDtoa(0.000000000000000000106, 20, buffer, &length, &point));
-  CHECK_EQ("\x31\x31", buffer.start());
+  CHECK_EQ("11", buffer.start());
   CHECK_EQ(-18, point);
 
   CHECK(FastFixedDtoa(0.000000000000000000016, 20, buffer, &length, &point));
-  CHECK_EQ("\x32", buffer.start());
+  CHECK_EQ("2", buffer.start());
   CHECK_EQ(-19, point);
 
   CHECK(FastFixedDtoa(0.6, 0, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.96, 1, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.996, 2, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.9996, 3, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.99996, 4, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.999996, 5, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.9999996, 6, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.99999996, 7, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.999999996, 8, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.9999999996, 9, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.99999999996, 10, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.999999999996, 11, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.9999999999996, 12, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.99999999999996, 13, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.999999999999996, 14, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.9999999999999996, 15, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(0.00999999999999996, 16, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-1, point);
 
   CHECK(FastFixedDtoa(0.000999999999999996, 17, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-2, point);
 
   CHECK(FastFixedDtoa(0.0000999999999999996, 18, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-3, point);
 
   CHECK(FastFixedDtoa(0.00000999999999999996, 19, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-4, point);
 
   CHECK(FastFixedDtoa(0.000000999999999999996, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-5, point);
 
   CHECK(FastFixedDtoa(323423.234234, 10, buffer, &length, &point));
-  CHECK_EQ("\x33\x32\x33\x34\x32\x33\x32\x33\x34\x32\x33\x34", buffer.start());
+  CHECK_EQ("323423234234", buffer.start());
   CHECK_EQ(6, point);
 
   CHECK(FastFixedDtoa(12345678.901234, 4, buffer, &length, &point));
-  CHECK_EQ("\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32", buffer.start());
+  CHECK_EQ("123456789012", buffer.start());
   CHECK_EQ(8, point);
 
   CHECK(FastFixedDtoa(98765.432109, 5, buffer, &length, &point));
-  CHECK_EQ("\x39\x38\x37\x36\x35\x34\x33\x32\x31\x31", buffer.start());
+  CHECK_EQ("9876543211", buffer.start());
   CHECK_EQ(5, point);
 
   CHECK(FastFixedDtoa(42, 20, buffer, &length, &point));
-  CHECK_EQ("\x34\x32", buffer.start());
+  CHECK_EQ("42", buffer.start());
   CHECK_EQ(2, point);
 
   CHECK(FastFixedDtoa(0.5, 0, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(1, point);
 
   CHECK(FastFixedDtoa(1e-23, 10, buffer, &length, &point));
@@ -464,17 +464,17 @@ TEST(FastFixedVariousDoubles) {
   CHECK_EQ(-20, point);
 
   CHECK(FastFixedDtoa(6e-21, 20, buffer, &length, &point));
-  CHECK_EQ("\x31", buffer.start());
+  CHECK_EQ("1", buffer.start());
   CHECK_EQ(-19, point);
 
   CHECK(FastFixedDtoa(9.1193616301674545152000000e+19, 0,
                       buffer, &length, &point));
-  CHECK_EQ("\x39\x31\x31\x39\x33\x36\x31\x36\x33\x30\x31\x36\x37\x34\x35\x34\x35\x31\x35\x32", buffer.start());
+  CHECK_EQ("91193616301674545152", buffer.start());
   CHECK_EQ(20, point);
 
   CHECK(FastFixedDtoa(4.8184662102767651659096515e-04, 19,
                       buffer, &length, &point));
-  CHECK_EQ("\x34\x38\x31\x38\x34\x36\x36\x32\x31\x30\x32\x37\x36\x37\x36\x35", buffer.start());
+  CHECK_EQ("4818466210276765", buffer.start());
   CHECK_EQ(-3, point);
 
   CHECK(FastFixedDtoa(1.9023164229540652612705182e-23, 8,
@@ -484,7 +484,7 @@ TEST(FastFixedVariousDoubles) {
 
   CHECK(FastFixedDtoa(1000000000000000128.0, 0,
                       buffer, &length, &point));
-  CHECK_EQ("\x31\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x31\x32\x38", buffer.start());
+  CHECK_EQ("1000000000000000128", buffer.start());
   CHECK_EQ(19, point);
 }
 

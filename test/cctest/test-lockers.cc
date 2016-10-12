@@ -59,7 +59,7 @@ using ::v8::V8;
 class KangarooThread : public v8::base::Thread {
  public:
   KangarooThread(v8::Isolate* isolate, v8::Handle<v8::Context> context)
-      : Thread(Options("\x4b\x61\x6e\x67\x61\x72\x6f\x6f\x54\x68\x72\x65\x61\x64")),
+      : Thread(Options("KangarooThread")),
         isolate_(isolate),
         context_(isolate, context) {}
 
@@ -72,7 +72,7 @@ class KangarooThread : public v8::base::Thread {
       v8::Local<v8::Context> context =
           v8::Local<v8::Context>::New(isolate_, context_);
       v8::Context::Scope context_scope(context);
-      Local<Value> v = CompileRun("\x67\x65\x74\x56\x61\x6c\x75\x65\x28\x29");
+      Local<Value> v = CompileRun("getValue()");
       CHECK(v->IsNumber());
       CHECK_EQ(30, static_cast<int>(v->NumberValue()));
     }
@@ -83,7 +83,7 @@ class KangarooThread : public v8::base::Thread {
       v8::Local<v8::Context> context =
           v8::Local<v8::Context>::New(isolate_, context_);
       v8::Context::Scope context_scope(context);
-      Local<Value> v = CompileRun("\x67\x65\x74\x56\x61\x6c\x75\x65\x28\x29");
+      Local<Value> v = CompileRun("getValue()");
       CHECK(v->IsNumber());
       CHECK_EQ(30, static_cast<int>(v->NumberValue()));
     }
@@ -107,7 +107,7 @@ TEST(KangarooIsolates) {
     v8::Local<v8::Context> context = v8::Context::New(isolate);
     v8::Context::Scope context_scope(context);
     CHECK_EQ(isolate, v8::internal::Isolate::Current());
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x56\x61\x6c\x75\x65\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x33\x30\x3b\x20\x7d");
+    CompileRun("function getValue() { return 30; }");
     thread1.Reset(new KangarooThread(isolate, context));
   }
   thread1->Start();
@@ -116,11 +116,11 @@ TEST(KangarooIsolates) {
 
 
 static void CalcFibAndCheck() {
-  Local<Value> v = CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x69\x62\x28\x6e\x29\x20\x7b"
-                              "\x20\x20\x69\x66\x20\x28\x6e\x20\x3c\x3d\x20\x32\x29\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x3b"
-                              "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x69\x62\x28\x6e\x2d\x31\x29\x20\x2b\x20\x66\x69\x62\x28\x6e\x2d\x32\x29\x3b"
-                              "\x7d"
-                              "\x66\x69\x62\x28\x31\x30\x29");
+  Local<Value> v = CompileRun("function fib(n) {"
+                              "  if (n <= 2) return 1;"
+                              "  return fib(n-1) + fib(n-2);"
+                              "}"
+                              "fib(10)");
   CHECK(v->IsNumber());
   CHECK_EQ(55, static_cast<int>(v->NumberValue()));
 }
@@ -174,7 +174,7 @@ class JoinableThread {
 class IsolateLockingThreadWithLocalContext : public JoinableThread {
  public:
   explicit IsolateLockingThreadWithLocalContext(v8::Isolate* isolate)
-    : JoinableThread("\x49\x73\x6f\x6c\x61\x74\x65\x4c\x6f\x63\x6b\x69\x6e\x67\x54\x68\x72\x65\x61\x64"),
+    : JoinableThread("IsolateLockingThread"),
       isolate_(isolate) {
   }
 
@@ -222,7 +222,7 @@ TEST(IsolateLockingStress) {
 
 class IsolateNonlockingThread : public JoinableThread {
  public:
-  IsolateNonlockingThread() : JoinableThread("\x49\x73\x6f\x6c\x61\x74\x65\x4e\x6f\x6e\x6c\x6f\x63\x6b\x69\x6e\x67\x54\x68\x72\x65\x61\x64") {}
+  IsolateNonlockingThread() : JoinableThread("IsolateNonlockingThread") {}
 
   virtual void Run() {
     v8::Isolate* isolate = v8::Isolate::New();
@@ -262,7 +262,7 @@ TEST(MultithreadedParallelIsolates) {
 class IsolateNestedLockingThread : public JoinableThread {
  public:
   explicit IsolateNestedLockingThread(v8::Isolate* isolate)
-    : JoinableThread("\x49\x73\x6f\x6c\x61\x74\x65\x4e\x65\x73\x74\x65\x64\x4c\x6f\x63\x6b\x69\x6e\x67"), isolate_(isolate) {
+    : JoinableThread("IsolateNestedLocking"), isolate_(isolate) {
   }
   virtual void Run() {
     v8::Locker lock(isolate_);
@@ -304,7 +304,7 @@ class SeparateIsolatesLocksNonexclusiveThread : public JoinableThread {
  public:
   SeparateIsolatesLocksNonexclusiveThread(v8::Isolate* isolate1,
                                           v8::Isolate* isolate2)
-    : JoinableThread("\x53\x65\x70\x61\x72\x61\x74\x65\x49\x73\x6f\x6c\x61\x74\x65\x73\x4c\x6f\x63\x6b\x73\x4e\x6f\x6e\x65\x78\x63\x6c\x75\x73\x69\x76\x65\x54\x68\x72\x65\x61\x64"),
+    : JoinableThread("SeparateIsolatesLocksNonexclusiveThread"),
       isolate1_(isolate1), isolate2_(isolate2) {
   }
 
@@ -348,7 +348,7 @@ class LockIsolateAndCalculateFibSharedContextThread : public JoinableThread {
  public:
   explicit LockIsolateAndCalculateFibSharedContextThread(
       v8::Isolate* isolate, v8::Handle<v8::Context> context)
-    : JoinableThread("\x4c\x6f\x63\x6b\x49\x73\x6f\x6c\x61\x74\x65\x41\x6e\x64\x43\x61\x6c\x63\x75\x6c\x61\x74\x65\x46\x69\x62\x54\x68\x72\x65\x61\x64"),
+    : JoinableThread("LockIsolateAndCalculateFibThread"),
       isolate_(isolate),
       context_(isolate, context) {
   }
@@ -370,7 +370,7 @@ class LockIsolateAndCalculateFibSharedContextThread : public JoinableThread {
 class LockerUnlockerThread : public JoinableThread {
  public:
   explicit LockerUnlockerThread(v8::Isolate* isolate)
-    : JoinableThread("\x4c\x6f\x63\x6b\x65\x72\x55\x6e\x6c\x6f\x63\x6b\x65\x72\x54\x68\x72\x65\x61\x64"),
+    : JoinableThread("LockerUnlockerThread"),
       isolate_(isolate) {
   }
 
@@ -421,7 +421,7 @@ TEST(LockerUnlocker) {
 class LockTwiceAndUnlockThread : public JoinableThread {
  public:
   explicit LockTwiceAndUnlockThread(v8::Isolate* isolate)
-    : JoinableThread("\x4c\x6f\x63\x6b\x54\x77\x69\x63\x65\x41\x6e\x64\x55\x6e\x6c\x6f\x63\x6b\x54\x68\x72\x65\x61\x64"),
+    : JoinableThread("LockTwiceAndUnlockThread"),
       isolate_(isolate) {
   }
 
@@ -476,7 +476,7 @@ class LockAndUnlockDifferentIsolatesThread : public JoinableThread {
  public:
   LockAndUnlockDifferentIsolatesThread(v8::Isolate* isolate1,
                                        v8::Isolate* isolate2)
-    : JoinableThread("\x4c\x6f\x63\x6b\x41\x6e\x64\x55\x6e\x6c\x6f\x63\x6b\x44\x69\x66\x66\x65\x72\x65\x6e\x74\x49\x73\x6f\x6c\x61\x74\x65\x73\x54\x68\x72\x65\x61\x64"),
+    : JoinableThread("LockAndUnlockDifferentIsolatesThread"),
       isolate1_(isolate1),
       isolate2_(isolate2) {
   }
@@ -538,7 +538,7 @@ TEST(LockAndUnlockDifferentIsolates) {
 class LockUnlockLockThread : public JoinableThread {
  public:
   LockUnlockLockThread(v8::Isolate* isolate, v8::Handle<v8::Context> context)
-    : JoinableThread("\x4c\x6f\x63\x6b\x55\x6e\x6c\x6f\x63\x6b\x4c\x6f\x63\x6b\x54\x68\x72\x65\x61\x64"),
+    : JoinableThread("LockUnlockLockThread"),
       isolate_(isolate),
       context_(isolate, context) {
   }
@@ -605,7 +605,7 @@ TEST(LockUnlockLockMultithreaded) {
 class LockUnlockLockDefaultIsolateThread : public JoinableThread {
  public:
   explicit LockUnlockLockDefaultIsolateThread(v8::Handle<v8::Context> context)
-      : JoinableThread("\x4c\x6f\x63\x6b\x55\x6e\x6c\x6f\x63\x6b\x4c\x6f\x63\x6b\x44\x65\x66\x61\x75\x6c\x74\x49\x73\x6f\x6c\x61\x74\x65\x54\x68\x72\x65\x61\x64"),
+      : JoinableThread("LockUnlockLockDefaultIsolateThread"),
         context_(CcTest::isolate(), context) {}
 
   virtual void Run() {
@@ -668,7 +668,7 @@ TEST(Regress1433) {
       v8::HandleScope handle_scope(isolate);
       v8::Handle<Context> context = v8::Context::New(isolate);
       v8::Context::Scope context_scope(context);
-      v8::Handle<String> source = v8::String::NewFromUtf8(isolate, "\x31\x2b\x31");
+      v8::Handle<String> source = v8::String::NewFromUtf8(isolate, "1+1");
       v8::Handle<Script> script = v8::Script::Compile(source);
       v8::Handle<Value> result = script->Run();
       v8::String::Utf8Value utf8(result);
@@ -679,14 +679,14 @@ TEST(Regress1433) {
 
 
 static const char* kSimpleExtensionSource =
-  "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x6f\x6f\x28\x29\x20\x7b"
-  "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x3b"
-  "\x7d\x29\x28\x29\x20";
+  "(function Foo() {"
+  "  return 4;"
+  "})() ";
 
 class IsolateGenesisThread : public JoinableThread {
  public:
   IsolateGenesisThread(int count, const char* extension_names[])
-    : JoinableThread("\x49\x73\x6f\x6c\x61\x74\x65\x47\x65\x6e\x65\x73\x69\x73\x54\x68\x72\x65\x61\x64"),
+    : JoinableThread("IsolateGenesisThread"),
       count_(count),
       extension_names_(extension_names)
   {}
@@ -721,25 +721,25 @@ TEST(ExtensionsRegistration) {
 #else
   const int kNThreads = 40;
 #endif
-  v8::RegisterExtension(new v8::Extension("\x74\x65\x73\x74\x30",
+  v8::RegisterExtension(new v8::Extension("test0",
                                           kSimpleExtensionSource));
-  v8::RegisterExtension(new v8::Extension("\x74\x65\x73\x74\x31",
+  v8::RegisterExtension(new v8::Extension("test1",
                                           kSimpleExtensionSource));
-  v8::RegisterExtension(new v8::Extension("\x74\x65\x73\x74\x32",
+  v8::RegisterExtension(new v8::Extension("test2",
                                           kSimpleExtensionSource));
-  v8::RegisterExtension(new v8::Extension("\x74\x65\x73\x74\x33",
+  v8::RegisterExtension(new v8::Extension("test3",
                                           kSimpleExtensionSource));
-  v8::RegisterExtension(new v8::Extension("\x74\x65\x73\x74\x34",
+  v8::RegisterExtension(new v8::Extension("test4",
                                           kSimpleExtensionSource));
-  v8::RegisterExtension(new v8::Extension("\x74\x65\x73\x74\x35",
+  v8::RegisterExtension(new v8::Extension("test5",
                                           kSimpleExtensionSource));
-  v8::RegisterExtension(new v8::Extension("\x74\x65\x73\x74\x36",
+  v8::RegisterExtension(new v8::Extension("test6",
                                           kSimpleExtensionSource));
-  v8::RegisterExtension(new v8::Extension("\x74\x65\x73\x74\x37",
+  v8::RegisterExtension(new v8::Extension("test7",
                                           kSimpleExtensionSource));
-  const char* extension_names[] = { "\x74\x65\x73\x74\x30", "\x74\x65\x73\x74\x31",
-                                    "\x74\x65\x73\x74\x32", "\x74\x65\x73\x74\x33", "\x74\x65\x73\x74\x34",
-                                    "\x74\x65\x73\x74\x35", "\x74\x65\x73\x74\x36", "\x74\x65\x73\x74\x37" };
+  const char* extension_names[] = { "test0", "test1",
+                                    "test2", "test3", "test4",
+                                    "test5", "test6", "test7" };
   i::List<JoinableThread*> threads(kNThreads);
   for (int i = 0; i < kNThreads; i++) {
     threads.Add(new IsolateGenesisThread(8, extension_names));

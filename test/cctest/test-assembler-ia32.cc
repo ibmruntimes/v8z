@@ -69,7 +69,7 @@ TEST(AssemblerIa320) {
 #endif
   F2 f = FUNCTION_CAST<F2>(code->entry());
   int res = f(3, 4);
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(7, res);
 }
 
@@ -106,7 +106,7 @@ TEST(AssemblerIa321) {
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
   int res = f(100);
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(5050, res);
 }
 
@@ -147,7 +147,7 @@ TEST(AssemblerIa322) {
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
   int res = f(10);
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(3628800, res);
 }
 
@@ -177,7 +177,7 @@ TEST(AssemblerIa323) {
                      code->instruction_start() + code->instruction_size());
   F3 f = FUNCTION_CAST<F3>(code->entry());
   int res = f(static_cast<float>(-3.1415));
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(-3, res);
 }
 
@@ -207,7 +207,7 @@ TEST(AssemblerIa324) {
                      code->instruction_start() + code->instruction_size());
   F4 f = FUNCTION_CAST<F4>(code->entry());
   int res = f(2.718281828);
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(2, res);
 }
 
@@ -262,7 +262,7 @@ TEST(AssemblerIa326) {
   Handle<Code> code = isolate->factory()->NewCode(
       desc, Code::ComputeFlags(Code::STUB), Handle<Code>());
 #ifdef DEBUG
-  ::printf("\xa\x2d\x2d\x2d\xa");
+  ::printf("\n---\n");
   // don't print the code - our disassembler can't handle SSE instructions
   // instead print bytes
   Disassembler::Dump(stdout,
@@ -271,7 +271,7 @@ TEST(AssemblerIa326) {
 #endif
   F5 f = FUNCTION_CAST<F5>(code->entry());
   double res = f(2.2, 1.1);
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x86\xa", res);
+  ::printf("f() = %f\n", res);
   CHECK(2.29 < res && res < 2.31);
 }
 
@@ -304,7 +304,7 @@ TEST(AssemblerIa328) {
   F6 f = FUNCTION_CAST<F6>(code->entry());
   double res = f(12);
 
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x86\xa", res);
+  ::printf("f() = %f\n", res);
   CHECK(11.99 < res && res < 12.001);
 }
 
@@ -498,18 +498,18 @@ TEST(StackAlignmentForSSE2) {
   v8::HandleScope handle_scope(isolate);
   v8::Handle<v8::ObjectTemplate> global_template =
       v8::ObjectTemplate::New(isolate);
-  global_template->Set(v8_str("\x64\x6f\x5f\x73\x73\x65\x32"),
+  global_template->Set(v8_str("do_sse2"),
                        v8::FunctionTemplate::New(isolate, DoSSE2));
 
   LocalContext env(NULL, global_template);
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x76\x65\x63\x29\x20\x7b"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x64\x6f\x5f\x73\x73\x65\x32\x28\x76\x65\x63\x29\x3b"
-      "\x7d");
+      "function foo(vec) {"
+      "  return do_sse2(vec);"
+      "}");
 
   v8::Local<v8::Object> global_object = env->Global();
   v8::Local<v8::Function> foo =
-      v8::Local<v8::Function>::Cast(global_object->Get(v8_str("\x66\x6f\x6f")));
+      v8::Local<v8::Function>::Cast(global_object->Get(v8_str("foo")));
 
   int32_t vec[ELEMENT_COUNT] = { -1, 1, 1, 1 };
   v8::Local<v8::Array> v8_vec = v8::Array::New(isolate, ELEMENT_COUNT);

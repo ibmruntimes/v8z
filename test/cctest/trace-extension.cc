@@ -34,22 +34,22 @@ namespace v8 {
 namespace internal {
 
 const char* TraceExtension::kSource =
-    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x72\x61\x63\x65\x28\x29\x3b"
-    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6a\x73\x5f\x74\x72\x61\x63\x65\x28\x29\x3b"
-    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6a\x73\x5f\x65\x6e\x74\x72\x79\x5f\x73\x70\x28\x29\x3b"
-    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6a\x73\x5f\x65\x6e\x74\x72\x79\x5f\x73\x70\x5f\x6c\x65\x76\x65\x6c\x32\x28\x29\x3b";
+    "native function trace();"
+    "native function js_trace();"
+    "native function js_entry_sp();"
+    "native function js_entry_sp_level2();";
 
 
 v8::Handle<v8::FunctionTemplate> TraceExtension::GetNativeFunctionTemplate(
     v8::Isolate* isolate, v8::Handle<v8::String> name) {
-  if (name->Equals(v8::String::NewFromUtf8(isolate, "\x74\x72\x61\x63\x65"))) {
+  if (name->Equals(v8::String::NewFromUtf8(isolate, "trace"))) {
     return v8::FunctionTemplate::New(isolate, TraceExtension::Trace);
-  } else if (name->Equals(v8::String::NewFromUtf8(isolate, "\x6a\x73\x5f\x74\x72\x61\x63\x65"))) {
+  } else if (name->Equals(v8::String::NewFromUtf8(isolate, "js_trace"))) {
     return v8::FunctionTemplate::New(isolate, TraceExtension::JSTrace);
-  } else if (name->Equals(v8::String::NewFromUtf8(isolate, "\x6a\x73\x5f\x65\x6e\x74\x72\x79\x5f\x73\x70"))) {
+  } else if (name->Equals(v8::String::NewFromUtf8(isolate, "js_entry_sp"))) {
     return v8::FunctionTemplate::New(isolate, TraceExtension::JSEntrySP);
   } else if (name->Equals(v8::String::NewFromUtf8(isolate,
-                                                  "\x6a\x73\x5f\x65\x6e\x74\x72\x79\x5f\x73\x70\x5f\x6c\x65\x76\x65\x6c\x32"))) {
+                                                  "js_entry_sp_level2"))) {
     return v8::FunctionTemplate::New(isolate, TraceExtension::JSEntrySPLevel2);
   } else {
     CHECK(false);
@@ -70,7 +70,7 @@ Address TraceExtension::GetFP(const v8::FunctionCallbackInfo<v8::Value>& args) {
 #else
 #error Host architecture is neither 32-bit nor 64-bit.
 #endif
-  printf("\x54\x72\x61\x63\x65\x3a\x20\x6c\x97\xa", fp);
+  printf("Trace: %p\n", fp);
   return fp;
 }
 
@@ -134,7 +134,7 @@ void TraceExtension::JSEntrySPLevel2(
   v8::HandleScope scope(args.GetIsolate());
   const Address js_entry_sp = GetJsEntrySp();
   CHECK_NE(0, js_entry_sp);
-  CompileRun("\x6a\x73\x5f\x65\x6e\x74\x72\x79\x5f\x73\x70\x28\x29\x3b");
+  CompileRun("js_entry_sp();");
   CHECK_EQ(js_entry_sp, GetJsEntrySp());
 }
 

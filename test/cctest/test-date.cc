@@ -177,7 +177,7 @@ TEST(DateCacheVersion) {
   v8::Handle<v8::Context> context = v8::Context::New(isolate);
   v8::Context::Scope context_scope(context);
   v8::Handle<v8::Array> date_cache_version =
-      v8::Handle<v8::Array>::Cast(CompileRun("\x25\x44\x61\x74\x65\x43\x61\x63\x68\x65\x56\x65\x72\x73\x69\x6f\x6e\x28\x29"));
+      v8::Handle<v8::Array>::Cast(CompileRun("%DateCacheVersion()"));
 
   CHECK_EQ(1, static_cast<int32_t>(date_cache_version->Length()));
   CHECK(date_cache_version->Get(0)->IsNumber());

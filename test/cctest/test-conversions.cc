@@ -37,135 +37,135 @@ using namespace v8::internal;
 
 TEST(Hex) {
   UnicodeCache uc;
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x78\x30", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x58\x30", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(1.0, StringToDouble(&uc, "\x30\x78\x31", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(16.0, StringToDouble(&uc, "\x30\x78\x31\x30", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(255.0, StringToDouble(&uc, "\x30\x78\x66\x66",
+  CHECK_EQ(0.0, StringToDouble(&uc, "0x0", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0X0", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(1.0, StringToDouble(&uc, "0x1", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(16.0, StringToDouble(&uc, "0x10", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(255.0, StringToDouble(&uc, "0xff",
                                  ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(175.0, StringToDouble(&uc, "\x30\x78\x41\x46",
+  CHECK_EQ(175.0, StringToDouble(&uc, "0xAF",
                                  ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
 
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x78\x30", ALLOW_HEX));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x58\x30", ALLOW_HEX));
-  CHECK_EQ(1.0, StringToDouble(&uc, "\x30\x78\x31", ALLOW_HEX));
-  CHECK_EQ(16.0, StringToDouble(&uc, "\x30\x78\x31\x30", ALLOW_HEX));
-  CHECK_EQ(255.0, StringToDouble(&uc, "\x30\x78\x66\x66", ALLOW_HEX));
-  CHECK_EQ(175.0, StringToDouble(&uc, "\x30\x78\x41\x46", ALLOW_HEX));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0x0", ALLOW_HEX));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0X0", ALLOW_HEX));
+  CHECK_EQ(1.0, StringToDouble(&uc, "0x1", ALLOW_HEX));
+  CHECK_EQ(16.0, StringToDouble(&uc, "0x10", ALLOW_HEX));
+  CHECK_EQ(255.0, StringToDouble(&uc, "0xff", ALLOW_HEX));
+  CHECK_EQ(175.0, StringToDouble(&uc, "0xAF", ALLOW_HEX));
 }
 
 
 TEST(Octal) {
   UnicodeCache uc;
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x6f\x30", ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x4f\x30", ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(1.0, StringToDouble(&uc, "\x30\x6f\x31", ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(7.0, StringToDouble(&uc, "\x30\x6f\x37", ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(8.0, StringToDouble(&uc, "\x30\x6f\x31\x30",
+  CHECK_EQ(0.0, StringToDouble(&uc, "0o0", ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0O0", ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(1.0, StringToDouble(&uc, "0o1", ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(7.0, StringToDouble(&uc, "0o7", ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(8.0, StringToDouble(&uc, "0o10",
                                ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(63.0, StringToDouble(&uc, "\x30\x6f\x37\x37",
+  CHECK_EQ(63.0, StringToDouble(&uc, "0o77",
                                 ALLOW_OCTAL | ALLOW_IMPLICIT_OCTAL));
 
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x6f\x30", ALLOW_OCTAL));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x4f\x30", ALLOW_OCTAL));
-  CHECK_EQ(1.0, StringToDouble(&uc, "\x30\x6f\x31", ALLOW_OCTAL));
-  CHECK_EQ(7.0, StringToDouble(&uc, "\x30\x6f\x37", ALLOW_OCTAL));
-  CHECK_EQ(8.0, StringToDouble(&uc, "\x30\x6f\x31\x30", ALLOW_OCTAL));
-  CHECK_EQ(63.0, StringToDouble(&uc, "\x30\x6f\x37\x37", ALLOW_OCTAL));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0o0", ALLOW_OCTAL));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0O0", ALLOW_OCTAL));
+  CHECK_EQ(1.0, StringToDouble(&uc, "0o1", ALLOW_OCTAL));
+  CHECK_EQ(7.0, StringToDouble(&uc, "0o7", ALLOW_OCTAL));
+  CHECK_EQ(8.0, StringToDouble(&uc, "0o10", ALLOW_OCTAL));
+  CHECK_EQ(63.0, StringToDouble(&uc, "0o77", ALLOW_OCTAL));
 }
 
 
 TEST(ImplicitOctal) {
   UnicodeCache uc;
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x30", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(1.0, StringToDouble(&uc, "\x30\x31", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(7.0, StringToDouble(&uc, "\x30\x37", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(8.0, StringToDouble(&uc, "\x30\x31\x30", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(63.0, StringToDouble(&uc, "\x30\x37\x37", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(0.0, StringToDouble(&uc, "00", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(1.0, StringToDouble(&uc, "01", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(7.0, StringToDouble(&uc, "07", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(8.0, StringToDouble(&uc, "010", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(63.0, StringToDouble(&uc, "077", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
 
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30", ALLOW_HEX));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x30", ALLOW_HEX));
-  CHECK_EQ(1.0, StringToDouble(&uc, "\x30\x31", ALLOW_HEX));
-  CHECK_EQ(7.0, StringToDouble(&uc, "\x30\x37", ALLOW_HEX));
-  CHECK_EQ(10.0, StringToDouble(&uc, "\x30\x31\x30", ALLOW_HEX));
-  CHECK_EQ(77.0, StringToDouble(&uc, "\x30\x37\x37", ALLOW_HEX));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0", ALLOW_HEX));
+  CHECK_EQ(0.0, StringToDouble(&uc, "00", ALLOW_HEX));
+  CHECK_EQ(1.0, StringToDouble(&uc, "01", ALLOW_HEX));
+  CHECK_EQ(7.0, StringToDouble(&uc, "07", ALLOW_HEX));
+  CHECK_EQ(10.0, StringToDouble(&uc, "010", ALLOW_HEX));
+  CHECK_EQ(77.0, StringToDouble(&uc, "077", ALLOW_HEX));
 
   const double x = 010000000000;  // Power of 2, no rounding errors.
-  CHECK_EQ(x * x * x * x * x, StringToDouble(&uc, "\x30\x31" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
-      "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30", ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(x * x * x * x * x, StringToDouble(&uc, "01" "0000000000" "0000000000"
+      "0000000000" "0000000000" "0000000000", ALLOW_IMPLICIT_OCTAL));
 }
 
 
 TEST(Binary) {
   UnicodeCache uc;
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x62\x30",
+  CHECK_EQ(0.0, StringToDouble(&uc, "0b0",
                                ALLOW_BINARY | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x42\x30",
+  CHECK_EQ(0.0, StringToDouble(&uc, "0B0",
                                ALLOW_BINARY | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(1.0, StringToDouble(&uc, "\x30\x62\x31",
+  CHECK_EQ(1.0, StringToDouble(&uc, "0b1",
                                ALLOW_BINARY | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(2.0, StringToDouble(&uc, "\x30\x62\x31\x30",
+  CHECK_EQ(2.0, StringToDouble(&uc, "0b10",
                                ALLOW_BINARY | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(3.0, StringToDouble(&uc, "\x30\x62\x31\x31",
+  CHECK_EQ(3.0, StringToDouble(&uc, "0b11",
                                ALLOW_BINARY | ALLOW_IMPLICIT_OCTAL));
 
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x62\x30", ALLOW_BINARY));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x42\x30", ALLOW_BINARY));
-  CHECK_EQ(1.0, StringToDouble(&uc, "\x30\x62\x31", ALLOW_BINARY));
-  CHECK_EQ(2.0, StringToDouble(&uc, "\x30\x62\x31\x30", ALLOW_BINARY));
-  CHECK_EQ(3.0, StringToDouble(&uc, "\x30\x62\x31\x31", ALLOW_BINARY));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0b0", ALLOW_BINARY));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0B0", ALLOW_BINARY));
+  CHECK_EQ(1.0, StringToDouble(&uc, "0b1", ALLOW_BINARY));
+  CHECK_EQ(2.0, StringToDouble(&uc, "0b10", ALLOW_BINARY));
+  CHECK_EQ(3.0, StringToDouble(&uc, "0b11", ALLOW_BINARY));
 }
 
 
 TEST(MalformedOctal) {
   UnicodeCache uc;
-  CHECK_EQ(8.0, StringToDouble(&uc, "\x30\x38", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(81.0, StringToDouble(&uc, "\x30\x38\x31", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(78.0, StringToDouble(&uc, "\x30\x37\x38", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(8.0, StringToDouble(&uc, "08", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(81.0, StringToDouble(&uc, "081", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(78.0, StringToDouble(&uc, "078", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
 
-  CHECK(isnan(StringToDouble(&uc, "\x30\x37\x2e\x37",
+  CHECK(isnan(StringToDouble(&uc, "07.7",
                                   ALLOW_HEX | ALLOW_IMPLICIT_OCTAL)));
-  CHECK(isnan(StringToDouble(&uc, "\x30\x37\x2e\x38",
+  CHECK(isnan(StringToDouble(&uc, "07.8",
                                   ALLOW_HEX | ALLOW_IMPLICIT_OCTAL)));
-  CHECK(isnan(StringToDouble(&uc, "\x30\x37\x65\x38",
+  CHECK(isnan(StringToDouble(&uc, "07e8",
                                   ALLOW_HEX | ALLOW_IMPLICIT_OCTAL)));
-  CHECK(isnan(StringToDouble(&uc, "\x30\x37\x65\x37",
+  CHECK(isnan(StringToDouble(&uc, "07e7",
                                   ALLOW_HEX | ALLOW_IMPLICIT_OCTAL)));
 
-  CHECK_EQ(8.7, StringToDouble(&uc, "\x30\x38\x2e\x37", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(8e7, StringToDouble(&uc, "\x30\x38\x65\x37", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(8.7, StringToDouble(&uc, "08.7", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(8e7, StringToDouble(&uc, "08e7", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
 
-  CHECK_EQ(0.001, StringToDouble(&uc, "\x30\x2e\x30\x30\x31",
+  CHECK_EQ(0.001, StringToDouble(&uc, "0.001",
                                  ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(0.713, StringToDouble(&uc, "\x30\x2e\x37\x31\x33",
+  CHECK_EQ(0.713, StringToDouble(&uc, "0.713",
                                  ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
 
-  CHECK_EQ(8.0, StringToDouble(&uc, "\x30\x38", ALLOW_HEX));
-  CHECK_EQ(81.0, StringToDouble(&uc, "\x30\x38\x31", ALLOW_HEX));
-  CHECK_EQ(78.0, StringToDouble(&uc, "\x30\x37\x38", ALLOW_HEX));
+  CHECK_EQ(8.0, StringToDouble(&uc, "08", ALLOW_HEX));
+  CHECK_EQ(81.0, StringToDouble(&uc, "081", ALLOW_HEX));
+  CHECK_EQ(78.0, StringToDouble(&uc, "078", ALLOW_HEX));
 
-  CHECK_EQ(7.7, StringToDouble(&uc, "\x30\x37\x2e\x37", ALLOW_HEX));
-  CHECK_EQ(7.8, StringToDouble(&uc, "\x30\x37\x2e\x38", ALLOW_HEX));
-  CHECK_EQ(7e8, StringToDouble(&uc, "\x30\x37\x65\x38", ALLOW_HEX));
-  CHECK_EQ(7e7, StringToDouble(&uc, "\x30\x37\x65\x37", ALLOW_HEX));
+  CHECK_EQ(7.7, StringToDouble(&uc, "07.7", ALLOW_HEX));
+  CHECK_EQ(7.8, StringToDouble(&uc, "07.8", ALLOW_HEX));
+  CHECK_EQ(7e8, StringToDouble(&uc, "07e8", ALLOW_HEX));
+  CHECK_EQ(7e7, StringToDouble(&uc, "07e7", ALLOW_HEX));
 
-  CHECK_EQ(8.7, StringToDouble(&uc, "\x30\x38\x2e\x37", ALLOW_HEX));
-  CHECK_EQ(8e7, StringToDouble(&uc, "\x30\x38\x65\x37", ALLOW_HEX));
+  CHECK_EQ(8.7, StringToDouble(&uc, "08.7", ALLOW_HEX));
+  CHECK_EQ(8e7, StringToDouble(&uc, "08e7", ALLOW_HEX));
 
-  CHECK_EQ(0.001, StringToDouble(&uc, "\x30\x2e\x30\x30\x31", ALLOW_HEX));
-  CHECK_EQ(0.713, StringToDouble(&uc, "\x30\x2e\x37\x31\x33", ALLOW_HEX));
+  CHECK_EQ(0.001, StringToDouble(&uc, "0.001", ALLOW_HEX));
+  CHECK_EQ(0.713, StringToDouble(&uc, "0.713", ALLOW_HEX));
 }
 
 
 TEST(TrailingJunk) {
   UnicodeCache uc;
-  CHECK_EQ(8.0, StringToDouble(&uc, "\x38\x71", ALLOW_TRAILING_JUNK));
-  CHECK_EQ(63.0, StringToDouble(&uc, "\x30\x37\x37\x71\x71\x71",
+  CHECK_EQ(8.0, StringToDouble(&uc, "8q", ALLOW_TRAILING_JUNK));
+  CHECK_EQ(63.0, StringToDouble(&uc, "077qqq",
                                 ALLOW_IMPLICIT_OCTAL | ALLOW_TRAILING_JUNK));
-  CHECK_EQ(10.0, StringToDouble(&uc, "\x31\x30\x65",
+  CHECK_EQ(10.0, StringToDouble(&uc, "10e",
                                 ALLOW_IMPLICIT_OCTAL | ALLOW_TRAILING_JUNK));
-  CHECK_EQ(10.0, StringToDouble(&uc, "\x31\x30\x65\x2d",
+  CHECK_EQ(10.0, StringToDouble(&uc, "10e-",
                                 ALLOW_IMPLICIT_OCTAL | ALLOW_TRAILING_JUNK));
 }
 
@@ -173,89 +173,89 @@ TEST(TrailingJunk) {
 TEST(NonStrDecimalLiteral) {
   UnicodeCache uc;
   CHECK(isnan(
-      StringToDouble(&uc, "\x20", NO_FLAGS, v8::base::OS::nan_value())));
+      StringToDouble(&uc, " ", NO_FLAGS, v8::base::OS::nan_value())));
   CHECK(
       isnan(StringToDouble(&uc, "", NO_FLAGS, v8::base::OS::nan_value())));
   CHECK(isnan(
-      StringToDouble(&uc, "\x20", NO_FLAGS, v8::base::OS::nan_value())));
+      StringToDouble(&uc, " ", NO_FLAGS, v8::base::OS::nan_value())));
   CHECK_EQ(0.0, StringToDouble(&uc, "", NO_FLAGS));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x20", NO_FLAGS));
+  CHECK_EQ(0.0, StringToDouble(&uc, " ", NO_FLAGS));
 }
 
 
 TEST(IntegerStrLiteral) {
   UnicodeCache uc;
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x2e\x30", NO_FLAGS));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30", NO_FLAGS));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x30", NO_FLAGS));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x30\x30", NO_FLAGS));
-  CHECK_EQ(1.0, StringToDouble(&uc, "\x31", NO_FLAGS));
-  CHECK_EQ(-1.0, StringToDouble(&uc, "\x2d\x31", NO_FLAGS));
-  CHECK_EQ(-1.0, StringToDouble(&uc, "\x20\x20\x2d\x31\x20\x20", NO_FLAGS));
-  CHECK_EQ(1.0, StringToDouble(&uc, "\x20\x20\x2b\x31\x20\x20", NO_FLAGS));
-  CHECK(isnan(StringToDouble(&uc, "\x20\x20\x2d\x20\x20\x31\x20\x20", NO_FLAGS)));
-  CHECK(isnan(StringToDouble(&uc, "\x20\x20\x2b\x20\x20\x31\x20\x20", NO_FLAGS)));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0.0", NO_FLAGS));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0", NO_FLAGS));
+  CHECK_EQ(0.0, StringToDouble(&uc, "00", NO_FLAGS));
+  CHECK_EQ(0.0, StringToDouble(&uc, "000", NO_FLAGS));
+  CHECK_EQ(1.0, StringToDouble(&uc, "1", NO_FLAGS));
+  CHECK_EQ(-1.0, StringToDouble(&uc, "-1", NO_FLAGS));
+  CHECK_EQ(-1.0, StringToDouble(&uc, "  -1  ", NO_FLAGS));
+  CHECK_EQ(1.0, StringToDouble(&uc, "  +1  ", NO_FLAGS));
+  CHECK(isnan(StringToDouble(&uc, "  -  1  ", NO_FLAGS)));
+  CHECK(isnan(StringToDouble(&uc, "  +  1  ", NO_FLAGS)));
 
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x65\x30", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x65\x31", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x65\x2d\x31", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x65\x2d\x31\x30\x30\x30\x30\x30",
+  CHECK_EQ(0.0, StringToDouble(&uc, "0e0", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0e1", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0e-1", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0e-100000",
                                ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x65\x2b\x31\x30\x30\x30\x30\x30",
+  CHECK_EQ(0.0, StringToDouble(&uc, "0e+100000",
                                ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
-  CHECK_EQ(0.0, StringToDouble(&uc, "\x30\x2e", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
+  CHECK_EQ(0.0, StringToDouble(&uc, "0.", ALLOW_HEX | ALLOW_IMPLICIT_OCTAL));
 }
 
 
 TEST(LongNumberStr) {
   UnicodeCache uc;
-  CHECK_EQ(1e10, StringToDouble(&uc, "\x31" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30", NO_FLAGS));
-  CHECK_EQ(1e20, StringToDouble(&uc, "\x31" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30", NO_FLAGS));
+  CHECK_EQ(1e10, StringToDouble(&uc, "1" "0000000000", NO_FLAGS));
+  CHECK_EQ(1e20, StringToDouble(&uc, "1" "0000000000" "0000000000", NO_FLAGS));
 
-  CHECK_EQ(1e60, StringToDouble(&uc, "\x31" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
-      "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30", NO_FLAGS));
+  CHECK_EQ(1e60, StringToDouble(&uc, "1" "0000000000" "0000000000" "0000000000"
+      "0000000000" "0000000000" "0000000000", NO_FLAGS));
 
-  CHECK_EQ(1e-2, StringToDouble(&uc, "\x2e" "\x30" "\x31", NO_FLAGS));
-  CHECK_EQ(1e-11, StringToDouble(&uc, "\x2e" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x31", NO_FLAGS));
-  CHECK_EQ(1e-21, StringToDouble(&uc, "\x2e" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x31",
+  CHECK_EQ(1e-2, StringToDouble(&uc, "." "0" "1", NO_FLAGS));
+  CHECK_EQ(1e-11, StringToDouble(&uc, "." "0000000000" "1", NO_FLAGS));
+  CHECK_EQ(1e-21, StringToDouble(&uc, "." "0000000000" "0000000000" "1",
                                  NO_FLAGS));
 
-  CHECK_EQ(1e-61, StringToDouble(&uc, "\x2e" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
-      "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30" "\x31", NO_FLAGS));
+  CHECK_EQ(1e-61, StringToDouble(&uc, "." "0000000000" "0000000000" "0000000000"
+      "0000000000" "0000000000" "0000000000" "1", NO_FLAGS));
 
 
   // x = 24414062505131248.0 and y = 24414062505131252.0 are representable in
   // double. Check chat z = (x + y) / 2 is rounded to x...
   CHECK_EQ(24414062505131248.0,
-           StringToDouble(&uc, "\x32\x34\x34\x31\x34\x30\x36\x32\x35\x30\x35\x31\x33\x31\x32\x35\x30\x2e\x30", NO_FLAGS));
+           StringToDouble(&uc, "24414062505131250.0", NO_FLAGS));
 
   // ... and z = (x + y) / 2 + delta is rounded to y.
   CHECK_EQ(24414062505131252.0,
-           StringToDouble(&uc, "\x32\x34\x34\x31\x34\x30\x36\x32\x35\x30\x35\x31\x33\x31\x32\x35\x30\x2e\x30\x30\x30\x30\x30\x30\x30\x30\x31", NO_FLAGS));
+           StringToDouble(&uc, "24414062505131250.000000001", NO_FLAGS));
 }
 
 
 TEST(MaximumSignificantDigits) {
   UnicodeCache uc;
   char num[] =
-      "\x34\x2e\x34\x35\x30\x31\x34\x37\x37\x31\x37\x30\x31\x34\x34\x30\x32\x30\x32\x35\x30\x38\x31\x39\x39\x36\x36\x37\x32\x37\x39\x34\x39\x39\x31\x38\x36\x33\x35\x38\x35\x32\x34\x32\x36\x35\x38\x35\x39\x32\x36\x30\x35\x31\x31\x33\x35\x31\x36\x39\x35\x30\x39"
-      "\x31\x32\x32\x38\x37\x32\x36\x32\x32\x33\x31\x32\x34\x39\x33\x31\x32\x36\x34\x30\x36\x39\x35\x33\x30\x35\x34\x31\x32\x37\x31\x31\x38\x39\x34\x32\x34\x33\x31\x37\x38\x33\x38\x30\x31\x33\x37\x30\x30\x38\x30\x38\x33\x30\x35\x32\x33\x31\x35\x34\x35\x37\x38"
-      "\x32\x35\x31\x35\x34\x35\x33\x30\x33\x32\x33\x38\x32\x37\x37\x32\x36\x39\x35\x39\x32\x33\x36\x38\x34\x35\x37\x34\x33\x30\x34\x34\x30\x39\x39\x33\x36\x31\x39\x37\x30\x38\x39\x31\x31\x38\x37\x34\x37\x31\x35\x30\x38\x31\x35\x30\x35\x30\x39\x34\x31\x38\x30"
-      "\x36\x30\x34\x38\x30\x33\x37\x35\x31\x31\x37\x33\x37\x38\x33\x32\x30\x34\x31\x31\x38\x35\x31\x39\x33\x35\x33\x33\x38\x37\x39\x36\x34\x31\x36\x31\x31\x35\x32\x30\x35\x31\x34\x38\x37\x34\x31\x33\x30\x38\x33\x31\x36\x33\x32\x37\x32\x35\x32\x30\x31\x32\x34"
-      "\x36\x30\x36\x30\x32\x33\x31\x30\x35\x38\x36\x39\x30\x35\x33\x36\x32\x30\x36\x33\x31\x31\x37\x35\x32\x36\x35\x36\x32\x31\x37\x36\x35\x32\x31\x34\x36\x34\x36\x36\x34\x33\x31\x38\x31\x34\x32\x30\x35\x30\x35\x31\x36\x34\x30\x34\x33\x36\x33\x32\x32\x32\x32"
-      "\x36\x36\x38\x30\x30\x36\x34\x37\x34\x33\x32\x36\x30\x35\x36\x30\x31\x31\x37\x31\x33\x35\x32\x38\x32\x39\x31\x35\x37\x39\x36\x34\x32\x32\x32\x37\x34\x35\x35\x34\x38\x39\x36\x38\x32\x31\x33\x33\x34\x37\x32\x38\x37\x33\x38\x33\x31\x37\x35\x34\x38\x34\x30"
-      "\x33\x34\x31\x33\x39\x37\x38\x30\x39\x38\x34\x36\x39\x33\x34\x31\x35\x31\x30\x35\x35\x36\x31\x39\x35\x32\x39\x33\x38\x32\x31\x39\x31\x39\x38\x31\x34\x37\x33\x30\x30\x33\x32\x33\x34\x31\x30\x35\x33\x36\x36\x31\x37\x30\x38\x37\x39\x32\x32\x33\x31\x35\x31"
-      "\x30\x38\x37\x33\x33\x35\x34\x31\x33\x31\x38\x38\x30\x34\x39\x31\x31\x30\x35\x35\x35\x33\x33\x39\x30\x32\x37\x38\x38\x34\x38\x35\x36\x37\x38\x31\x32\x31\x39\x30\x31\x37\x37\x35\x34\x35\x30\x30\x36\x32\x39\x38\x30\x36\x32\x32\x34\x35\x37\x31\x30\x32\x39"
-      "\x35\x38\x31\x36\x33\x37\x31\x31\x37\x34\x35\x39\x34\x35\x36\x38\x37\x37\x33\x33\x30\x31\x31\x30\x33\x32\x34\x32\x31\x31\x36\x38\x39\x31\x37\x37\x36\x35\x36\x37\x31\x33\x37\x30\x35\x34\x39\x37\x33\x38\x37\x31\x30\x38\x32\x30\x37\x38\x32\x32\x34\x37\x37"
-      "\x35\x38\x34\x32\x35\x30\x39\x36\x37\x30\x36\x31\x38\x39\x31\x36\x38\x37\x30\x36\x32\x37\x38\x32\x31\x36\x33\x33\x33\x35\x32\x39\x39\x33\x37\x36\x31\x33\x38\x30\x37\x35\x31\x31\x34\x32\x30\x30\x38\x38\x36\x32\x34\x39\x39\x37\x39\x35\x30\x35\x32\x37\x39"
-      "\x31\x30\x31\x38\x37\x30\x39\x36\x36\x33\x34\x36\x33\x39\x34\x34\x30\x31\x35\x36\x34\x34\x39\x30\x37\x32\x39\x37\x33\x31\x35\x36\x35\x39\x33\x35\x32\x34\x34\x31\x32\x33\x31\x37\x31\x35\x33\x39\x38\x31\x30\x32\x32\x31\x32\x31\x33\x32\x32\x31\x32\x30\x31"
-      "\x38\x34\x37\x30\x30\x33\x35\x38\x30\x37\x36\x31\x36\x32\x36\x30\x31\x36\x33\x35\x36\x38\x36\x34\x35\x38\x31\x31\x33\x35\x38\x34\x38\x36\x38\x33\x31\x35\x32\x31\x35\x36\x33\x36\x38\x36\x39\x31\x39\x37\x36\x32\x34\x30\x33\x37\x30\x34\x32\x32\x36\x30\x31"
-      "\x36\x39\x39\x38\x32\x39\x31\x30\x31\x35\x36\x32\x35\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x65\x2d\x33\x30\x38";
+      "4.4501477170144020250819966727949918635852426585926051135169509"
+      "122872622312493126406953054127118942431783801370080830523154578"
+      "251545303238277269592368457430440993619708911874715081505094180"
+      "604803751173783204118519353387964161152051487413083163272520124"
+      "606023105869053620631175265621765214646643181420505164043632222"
+      "668006474326056011713528291579642227455489682133472873831754840"
+      "341397809846934151055619529382191981473003234105366170879223151"
+      "087335413188049110555339027884856781219017754500629806224571029"
+      "581637117459456877330110324211689177656713705497387108207822477"
+      "584250967061891687062782163335299376138075114200886249979505279"
+      "101870966346394401564490729731565935244123171539810221213221201"
+      "847003580761626016356864581135848683152156368691976240370422601"
+      "6998291015625000000000000000000000000000000000e-308";
 
   CHECK_EQ(4.4501477170144017780491e-308, StringToDouble(&uc, num, NO_FLAGS));
 
   // Changes the result of strtod (at least in glibc implementation).
-  num[sizeof(num) - 8] = '\x31';
+  num[sizeof(num) - 8] = '1';
 
   CHECK_EQ(4.4501477170144022721148e-308, StringToDouble(&uc, num, NO_FLAGS));
 }
@@ -265,24 +265,24 @@ TEST(MinimumExponent) {
   UnicodeCache uc;
   // Same test but with different point-position.
   char num[] =
-  "\x34\x34\x35\x30\x31\x34\x37\x37\x31\x37\x30\x31\x34\x34\x30\x32\x30\x32\x35\x30\x38\x31\x39\x39\x36\x36\x37\x32\x37\x39\x34\x39\x39\x31\x38\x36\x33\x35\x38\x35\x32\x34\x32\x36\x35\x38\x35\x39\x32\x36\x30\x35\x31\x31\x33\x35\x31\x36\x39\x35\x30\x39\x31"
-  "\x32\x32\x38\x37\x32\x36\x32\x32\x33\x31\x32\x34\x39\x33\x31\x32\x36\x34\x30\x36\x39\x35\x33\x30\x35\x34\x31\x32\x37\x31\x31\x38\x39\x34\x32\x34\x33\x31\x37\x38\x33\x38\x30\x31\x33\x37\x30\x30\x38\x30\x38\x33\x30\x35\x32\x33\x31\x35\x34\x35\x37\x38\x32"
-  "\x35\x31\x35\x34\x35\x33\x30\x33\x32\x33\x38\x32\x37\x37\x32\x36\x39\x35\x39\x32\x33\x36\x38\x34\x35\x37\x34\x33\x30\x34\x34\x30\x39\x39\x33\x36\x31\x39\x37\x30\x38\x39\x31\x31\x38\x37\x34\x37\x31\x35\x30\x38\x31\x35\x30\x35\x30\x39\x34\x31\x38\x30\x36"
-  "\x30\x34\x38\x30\x33\x37\x35\x31\x31\x37\x33\x37\x38\x33\x32\x30\x34\x31\x31\x38\x35\x31\x39\x33\x35\x33\x33\x38\x37\x39\x36\x34\x31\x36\x31\x31\x35\x32\x30\x35\x31\x34\x38\x37\x34\x31\x33\x30\x38\x33\x31\x36\x33\x32\x37\x32\x35\x32\x30\x31\x32\x34\x36"
-  "\x30\x36\x30\x32\x33\x31\x30\x35\x38\x36\x39\x30\x35\x33\x36\x32\x30\x36\x33\x31\x31\x37\x35\x32\x36\x35\x36\x32\x31\x37\x36\x35\x32\x31\x34\x36\x34\x36\x36\x34\x33\x31\x38\x31\x34\x32\x30\x35\x30\x35\x31\x36\x34\x30\x34\x33\x36\x33\x32\x32\x32\x32\x36"
-  "\x36\x38\x30\x30\x36\x34\x37\x34\x33\x32\x36\x30\x35\x36\x30\x31\x31\x37\x31\x33\x35\x32\x38\x32\x39\x31\x35\x37\x39\x36\x34\x32\x32\x32\x37\x34\x35\x35\x34\x38\x39\x36\x38\x32\x31\x33\x33\x34\x37\x32\x38\x37\x33\x38\x33\x31\x37\x35\x34\x38\x34\x30\x33"
-  "\x34\x31\x33\x39\x37\x38\x30\x39\x38\x34\x36\x39\x33\x34\x31\x35\x31\x30\x35\x35\x36\x31\x39\x35\x32\x39\x33\x38\x32\x31\x39\x31\x39\x38\x31\x34\x37\x33\x30\x30\x33\x32\x33\x34\x31\x30\x35\x33\x36\x36\x31\x37\x30\x38\x37\x39\x32\x32\x33\x31\x35\x31\x30"
-  "\x38\x37\x33\x33\x35\x34\x31\x33\x31\x38\x38\x30\x34\x39\x31\x31\x30\x35\x35\x35\x33\x33\x39\x30\x32\x37\x38\x38\x34\x38\x35\x36\x37\x38\x31\x32\x31\x39\x30\x31\x37\x37\x35\x34\x35\x30\x30\x36\x32\x39\x38\x30\x36\x32\x32\x34\x35\x37\x31\x30\x32\x39\x35"
-  "\x38\x31\x36\x33\x37\x31\x31\x37\x34\x35\x39\x34\x35\x36\x38\x37\x37\x33\x33\x30\x31\x31\x30\x33\x32\x34\x32\x31\x31\x36\x38\x39\x31\x37\x37\x36\x35\x36\x37\x31\x33\x37\x30\x35\x34\x39\x37\x33\x38\x37\x31\x30\x38\x32\x30\x37\x38\x32\x32\x34\x37\x37\x35"
-  "\x38\x34\x32\x35\x30\x39\x36\x37\x30\x36\x31\x38\x39\x31\x36\x38\x37\x30\x36\x32\x37\x38\x32\x31\x36\x33\x33\x33\x35\x32\x39\x39\x33\x37\x36\x31\x33\x38\x30\x37\x35\x31\x31\x34\x32\x30\x30\x38\x38\x36\x32\x34\x39\x39\x37\x39\x35\x30\x35\x32\x37\x39\x31"
-  "\x30\x31\x38\x37\x30\x39\x36\x36\x33\x34\x36\x33\x39\x34\x34\x30\x31\x35\x36\x34\x34\x39\x30\x37\x32\x39\x37\x33\x31\x35\x36\x35\x39\x33\x35\x32\x34\x34\x31\x32\x33\x31\x37\x31\x35\x33\x39\x38\x31\x30\x32\x32\x31\x32\x31\x33\x32\x32\x31\x32\x30\x31\x38"
-  "\x34\x37\x30\x30\x33\x35\x38\x30\x37\x36\x31\x36\x32\x36\x30\x31\x36\x33\x35\x36\x38\x36\x34\x35\x38\x31\x31\x33\x35\x38\x34\x38\x36\x38\x33\x31\x35\x32\x31\x35\x36\x33\x36\x38\x36\x39\x31\x39\x37\x36\x32\x34\x30\x33\x37\x30\x34\x32\x32\x36\x30\x31\x36"
-  "\x39\x39\x38\x32\x39\x31\x30\x31\x35\x36\x32\x35\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x65\x2d\x31\x31\x30\x38";
+  "445014771701440202508199667279499186358524265859260511351695091"
+  "228726223124931264069530541271189424317838013700808305231545782"
+  "515453032382772695923684574304409936197089118747150815050941806"
+  "048037511737832041185193533879641611520514874130831632725201246"
+  "060231058690536206311752656217652146466431814205051640436322226"
+  "680064743260560117135282915796422274554896821334728738317548403"
+  "413978098469341510556195293821919814730032341053661708792231510"
+  "873354131880491105553390278848567812190177545006298062245710295"
+  "816371174594568773301103242116891776567137054973871082078224775"
+  "842509670618916870627821633352993761380751142008862499795052791"
+  "018709663463944015644907297315659352441231715398102212132212018"
+  "470035807616260163568645811358486831521563686919762403704226016"
+  "998291015625000000000000000000000000000000000e-1108";
 
   CHECK_EQ(4.4501477170144017780491e-308, StringToDouble(&uc, num, NO_FLAGS));
 
   // Changes the result of strtod (at least in glibc implementation).
-  num[sizeof(num) - 8] = '\x31';
+  num[sizeof(num) - 8] = '1';
 
   CHECK_EQ(4.4501477170144022721148e-308, StringToDouble(&uc, num, NO_FLAGS));
 }
@@ -290,7 +290,7 @@ TEST(MinimumExponent) {
 
 TEST(MaximumExponent) {
   UnicodeCache uc;
-  char num[] = "\x30\x2e\x31\x36\x65\x33\x30\x39";
+  char num[] = "0.16e309";
 
   CHECK_EQ(1.59999999999999997765e+308, StringToDouble(&uc, num, NO_FLAGS));
 }
@@ -298,12 +298,12 @@ TEST(MaximumExponent) {
 
 TEST(ExponentNumberStr) {
   UnicodeCache uc;
-  CHECK_EQ(1e1, StringToDouble(&uc, "\x31\x65\x31", NO_FLAGS));
-  CHECK_EQ(1e1, StringToDouble(&uc, "\x31\x65\x2b\x31", NO_FLAGS));
-  CHECK_EQ(1e-1, StringToDouble(&uc, "\x31\x65\x2d\x31", NO_FLAGS));
-  CHECK_EQ(1e100, StringToDouble(&uc, "\x31\x65\x2b\x31\x30\x30", NO_FLAGS));
-  CHECK_EQ(1e-100, StringToDouble(&uc, "\x31\x65\x2d\x31\x30\x30", NO_FLAGS));
-  CHECK_EQ(1e-106, StringToDouble(&uc, "\x2e\x30\x30\x30\x30\x30\x31\x65\x2d\x31\x30\x30", NO_FLAGS));
+  CHECK_EQ(1e1, StringToDouble(&uc, "1e1", NO_FLAGS));
+  CHECK_EQ(1e1, StringToDouble(&uc, "1e+1", NO_FLAGS));
+  CHECK_EQ(1e-1, StringToDouble(&uc, "1e-1", NO_FLAGS));
+  CHECK_EQ(1e100, StringToDouble(&uc, "1e+100", NO_FLAGS));
+  CHECK_EQ(1e-100, StringToDouble(&uc, "1e-100", NO_FLAGS));
+  CHECK_EQ(1e-106, StringToDouble(&uc, ".000001e-100", NO_FLAGS));
 }
 
 

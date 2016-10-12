@@ -65,7 +65,7 @@ TEST(MIPS0) {
       desc, Code::ComputeFlags(Code::STUB), Handle<Code>());
   F2 f = FUNCTION_CAST<F2>(code->entry());
   int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 0xab0, 0xc, 0, 0, 0));
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(0xabc, res);
 }
 
@@ -101,7 +101,7 @@ TEST(MIPS1) {
       desc, Code::ComputeFlags(Code::STUB), Handle<Code>());
   F1 f = FUNCTION_CAST<F1>(code->entry());
   int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 50, 0, 0, 0, 0));
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(1275, res);
 }
 
@@ -239,7 +239,7 @@ TEST(MIPS2) {
       desc, Code::ComputeFlags(Code::STUB), Handle<Code>());
   F2 f = FUNCTION_CAST<F2>(code->entry());
   int res = reinterpret_cast<int>(CALL_GENERATED_CODE(f, 0xab0, 0xc, 0, 0, 0));
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(0x31415926, res);
 }
 

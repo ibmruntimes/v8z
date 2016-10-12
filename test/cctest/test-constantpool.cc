@@ -20,10 +20,10 @@ static ConstantPoolArray::LayoutSection kExtended =
     ConstantPoolArray::EXTENDED_SECTION;
 
 Code* DummyCode(LocalContext* context) {
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b\x7d\x3b");
+  CompileRun("function foo() {};");
   i::Handle<i::JSFunction> fun = v8::Utils::OpenHandle(
       *v8::Local<v8::Function>::Cast(
-          (*context)->Global()->Get(v8_str("\x66\x6f\x6f"))));
+          (*context)->Global()->Get(v8_str("foo"))));
   return fun->code();
 }
 

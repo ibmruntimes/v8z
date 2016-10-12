@@ -21,15 +21,15 @@ const uint8_t OPCODE_C0 = 30;
 const uint8_t OPCODE_C1 = 31;
 const uint8_t OPCODE_C2 = 32;
 
-static SimpleOperator OPA0(OPCODE_A0, Operator::kNoWrite, 0, 0, "\x6f\x70\x61\x30");
-static SimpleOperator OPA1(OPCODE_A1, Operator::kNoWrite, 1, 0, "\x6f\x70\x61\x31");
-static SimpleOperator OPA2(OPCODE_A2, Operator::kNoWrite, 2, 0, "\x6f\x70\x61\x32");
-static SimpleOperator OPB0(OPCODE_B0, Operator::kNoWrite, 0, 0, "\x6f\x70\x61\x30");
-static SimpleOperator OPB1(OPCODE_B1, Operator::kNoWrite, 1, 0, "\x6f\x70\x61\x31");
-static SimpleOperator OPB2(OPCODE_B2, Operator::kNoWrite, 2, 0, "\x6f\x70\x61\x32");
-static SimpleOperator OPC0(OPCODE_C0, Operator::kNoWrite, 0, 0, "\x6f\x70\x63\x30");
-static SimpleOperator OPC1(OPCODE_C1, Operator::kNoWrite, 1, 0, "\x6f\x70\x63\x31");
-static SimpleOperator OPC2(OPCODE_C2, Operator::kNoWrite, 2, 0, "\x6f\x70\x63\x32");
+static SimpleOperator OPA0(OPCODE_A0, Operator::kNoWrite, 0, 0, "opa0");
+static SimpleOperator OPA1(OPCODE_A1, Operator::kNoWrite, 1, 0, "opa1");
+static SimpleOperator OPA2(OPCODE_A2, Operator::kNoWrite, 2, 0, "opa2");
+static SimpleOperator OPB0(OPCODE_B0, Operator::kNoWrite, 0, 0, "opa0");
+static SimpleOperator OPB1(OPCODE_B1, Operator::kNoWrite, 1, 0, "opa1");
+static SimpleOperator OPB2(OPCODE_B2, Operator::kNoWrite, 2, 0, "opa2");
+static SimpleOperator OPC0(OPCODE_C0, Operator::kNoWrite, 0, 0, "opc0");
+static SimpleOperator OPC1(OPCODE_C1, Operator::kNoWrite, 1, 0, "opc1");
+static SimpleOperator OPC2(OPCODE_C2, Operator::kNoWrite, 2, 0, "opc2");
 
 
 // Replaces all "A" operators with "B" operators without creating new nodes.

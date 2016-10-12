@@ -36,15 +36,15 @@ namespace internal {
 
 v8::CpuProfile* ProfilerExtension::last_profile = NULL;
 const char* ProfilerExtension::kSource =
-    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x74\x61\x72\x74\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67\x28\x29\x3b"
-    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x74\x6f\x70\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67\x28\x29\x3b";
+    "native function startProfiling();"
+    "native function stopProfiling();";
 
 v8::Handle<v8::FunctionTemplate> ProfilerExtension::GetNativeFunctionTemplate(
     v8::Isolate* isolate, v8::Handle<v8::String> name) {
-  if (name->Equals(v8::String::NewFromUtf8(isolate, "\x73\x74\x61\x72\x74\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67"))) {
+  if (name->Equals(v8::String::NewFromUtf8(isolate, "startProfiling"))) {
     return v8::FunctionTemplate::New(isolate,
                                      ProfilerExtension::StartProfiling);
-  } else if (name->Equals(v8::String::NewFromUtf8(isolate, "\x73\x74\x6f\x70\x50\x72\x6f\x66\x69\x6c\x69\x6e\x67"))) {
+  } else if (name->Equals(v8::String::NewFromUtf8(isolate, "stopProfiling"))) {
     return v8::FunctionTemplate::New(isolate,
                                      ProfilerExtension::StopProfiling);
   } else {

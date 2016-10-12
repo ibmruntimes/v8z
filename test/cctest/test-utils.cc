@@ -79,13 +79,13 @@ TEST(Utils1) {
 TEST(SNPrintF) {
   // Make sure that strings that are truncated because of too small
   // buffers are zero-terminated anyway.
-  const char* s = "\x74\x68\x65\x20\x71\x75\x69\x63\x6b\x20\x6c\x61\x7a\x79\x20\x2e\x2e\x2e\x2e\x20\x6f\x68\x20\x66\x6f\x72\x67\x65\x74\x20\x69\x74\x21";
+  const char* s = "the quick lazy .... oh forget it!";
   int length = StrLength(s);
   for (int i = 1; i < length * 2; i++) {
     static const char kMarker = static_cast<char>(42);
     Vector<char> buffer = Vector<char>::New(i + 1);
     buffer[i] = kMarker;
-    int n = SNPrintF(Vector<char>(buffer.start(), i), "\x6c\xa2", s);
+    int n = SNPrintF(Vector<char>(buffer.start(), i), "%s", s);
     CHECK(n <= i);
     CHECK(n == length || n == -1);
     CHECK_EQ(0, strncmp(buffer.start(), s, i - 1));
@@ -115,11 +115,11 @@ void TestMemMove(byte* area1,
   MemMove(area1 + dest_offset, area1 + src_offset, length);
   memmove(area2 + dest_offset, area2 + src_offset, length);
   if (memcmp(area1, area2, kAreaSize) != 0) {
-    printf("\x4d\x65\x6d\x4d\x6f\x76\x65\x28\x29\x3a\x20\x73\x72\x63\x5f\x6f\x66\x66\x73\x65\x74\x3a\x20\x6c\x84\x2c\x20\x64\x65\x73\x74\x5f\x6f\x66\x66\x73\x65\x74\x3a\x20\x6c\x84\x2c\x20\x6c\x65\x6e\x67\x74\x68\x3a\x20\x6c\x84\xa",
+    printf("MemMove(): src_offset: %d, dest_offset: %d, length: %d\n",
            src_offset, dest_offset, length);
     for (int i = 0; i < kAreaSize; i++) {
       if (area1[i] == area2[i]) continue;
-      printf("\x64\x69\x66\x66\x20\x61\x74\x20\x6f\x66\x66\x73\x65\x74\x20\x6c\x84\x20\x28\x6c\x97\x29\x3a\x20\x69\x73\x20\x6c\x84\x2c\x20\x73\x68\x6f\x75\x6c\x64\x20\x62\x65\x20\x6c\x84\xa", i,
+      printf("diff at offset %d (%p): is %d, should be %d\n", i,
              reinterpret_cast<void*>(area1 + i), area1[i], area2[i]);
     }
     CHECK(false);
@@ -213,11 +213,11 @@ TEST(SequenceCollector) {
 TEST(SequenceCollectorRegression) {
   SequenceCollector<char> collector(16);
   collector.StartSequence();
-  collector.Add('\x30');
+  collector.Add('0');
   collector.AddBlock(
-      i::Vector<const char>("\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32", 32));
+      i::Vector<const char>("12345678901234567890123456789012", 32));
   i::Vector<char> seq = collector.EndSequence();
-  CHECK_EQ(0, strncmp("\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x30\x31\x32\x33",
+  CHECK_EQ(0, strncmp("0123456789012345678901234567890123",
                       seq.start(), seq.length()));
 }
 

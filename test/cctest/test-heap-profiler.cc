@@ -55,9 +55,9 @@ class NamedEntriesDetector {
   }
 
   void CheckEntry(i::HeapEntry* entry) {
-    if (strcmp(entry->name(), "\x41\x32") == 0) has_A2 = true;
-    if (strcmp(entry->name(), "\x42\x32") == 0) has_B2 = true;
-    if (strcmp(entry->name(), "\x43\x32") == 0) has_C2 = true;
+    if (strcmp(entry->name(), "A2") == 0) has_A2 = true;
+    if (strcmp(entry->name(), "B2") == 0) has_B2 = true;
+    if (strcmp(entry->name(), "C2") == 0) has_C2 = true;
   }
 
   static bool AddressesMatch(void* key1, void* key2) {
@@ -102,7 +102,7 @@ static const v8::HeapGraphNode* GetGlobalObject(
   // The 0th-child is (GC Roots), 1st is the user root.
   const v8::HeapGraphNode* global_obj =
       snapshot->GetRoot()->GetChild(1)->GetToNode();
-  CHECK_EQ(0, strncmp("\x4f\x62\x6a\x65\x63\x74", const_cast<i::HeapEntry*>(
+  CHECK_EQ(0, strncmp("Object", const_cast<i::HeapEntry*>(
       reinterpret_cast<const i::HeapEntry*>(global_obj))->name(), 6));
   return global_obj;
 }
@@ -163,7 +163,7 @@ static bool ValidateSnapshot(const v8::HeapSnapshot* snapshot, int depth = 3) {
         static_cast<uint32_t>(reinterpret_cast<uintptr_t>(&entries[i])),
         false);
     if (!entry && entries[i].id() != 1) {
-        entries[i].Print("\x65\x6e\x74\x72\x79\x20\x77\x69\x74\x68\x20\x6e\x6f\x20\x72\x65\x74\x61\x69\x6e\x65\x72", "", depth, 0);
+        entries[i].Print("entry with no retainer", "", depth, 0);
         ++unretained_entries_count;
     }
   }
@@ -177,26 +177,26 @@ TEST(HeapSnapshot) {
   v8::HeapProfiler* heap_profiler = env2->GetIsolate()->GetHeapProfiler();
 
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x41\x32\x28\x29\x20\x7b\x7d\xa"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x42\x32\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x79\x70\x65\x6f\x66\x20\x78\x3b\x20\x7d\x3b\x20\x7d\xa"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x32\x28\x78\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x78\x31\x20\x3d\x20\x78\x3b\x20\x74\x68\x69\x73\x2e\x78\x32\x20\x3d\x20\x78\x3b\x20\x74\x68\x69\x73\x5b\x31\x5d\x20\x3d\x20\x78\x3b\x20\x7d\xa"
-      "\x76\x61\x72\x20\x61\x32\x20\x3d\x20\x6e\x65\x77\x20\x41\x32\x28\x29\x3b\xa"
-      "\x76\x61\x72\x20\x62\x32\x5f\x31\x20\x3d\x20\x6e\x65\x77\x20\x42\x32\x28\x61\x32\x29\x2c\x20\x62\x32\x5f\x32\x20\x3d\x20\x6e\x65\x77\x20\x42\x32\x28\x61\x32\x29\x3b\xa"
-      "\x76\x61\x72\x20\x63\x32\x20\x3d\x20\x6e\x65\x77\x20\x43\x32\x28\x61\x32\x29\x3b");
+      "function A2() {}\n"
+      "function B2(x) { return function() { return typeof x; }; }\n"
+      "function C2(x) { this.x1 = x; this.x2 = x; this[1] = x; }\n"
+      "var a2 = new A2();\n"
+      "var b2_1 = new B2(a2), b2_2 = new B2(a2);\n"
+      "var c2 = new C2(a2);");
   const v8::HeapSnapshot* snapshot_env2 =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x65\x6e\x76\x32"));
+      heap_profiler->TakeHeapSnapshot(v8_str("env2"));
   CHECK(ValidateSnapshot(snapshot_env2));
   const v8::HeapGraphNode* global_env2 = GetGlobalObject(snapshot_env2);
 
   // Verify, that JS global object of env2 has '..2' properties.
   const v8::HeapGraphNode* a2_node =
-      GetProperty(global_env2, v8::HeapGraphEdge::kProperty, "\x61\x32");
+      GetProperty(global_env2, v8::HeapGraphEdge::kProperty, "a2");
   CHECK_NE(NULL, a2_node);
   CHECK_NE(
-      NULL, GetProperty(global_env2, v8::HeapGraphEdge::kProperty, "\x62\x32\x5f\x31"));
+      NULL, GetProperty(global_env2, v8::HeapGraphEdge::kProperty, "b2_1"));
   CHECK_NE(
-      NULL, GetProperty(global_env2, v8::HeapGraphEdge::kProperty, "\x62\x32\x5f\x32"));
-  CHECK_NE(NULL, GetProperty(global_env2, v8::HeapGraphEdge::kProperty, "\x63\x32"));
+      NULL, GetProperty(global_env2, v8::HeapGraphEdge::kProperty, "b2_2"));
+  CHECK_NE(NULL, GetProperty(global_env2, v8::HeapGraphEdge::kProperty, "c2"));
 
   NamedEntriesDetector det;
   det.CheckAllReachables(const_cast<i::HeapEntry*>(
@@ -215,22 +215,22 @@ TEST(HeapSnapshotObjectSizes) {
   //   -a-> X1 --a
   // x -b-> X2 <-|
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x58\x28\x61\x2c\x20\x62\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x61\x20\x3d\x20\x61\x3b\x20\x74\x68\x69\x73\x2e\x62\x20\x3d\x20\x62\x3b\x20\x7d\xa"
-      "\x78\x20\x3d\x20\x6e\x65\x77\x20\x58\x28\x6e\x65\x77\x20\x58\x28\x29\x2c\x20\x6e\x65\x77\x20\x58\x28\x29\x29\x3b\xa"
-      "\x64\x75\x6d\x6d\x79\x20\x3d\x20\x6e\x65\x77\x20\x58\x28\x29\x3b\xa"
-      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x78\x2e\x61\x2e\x61\x20\x3d\x20\x78\x2e\x62\x3b\x20\x7d\x29\x28\x29\x3b");
+      "function X(a, b) { this.a = a; this.b = b; }\n"
+      "x = new X(new X(), new X());\n"
+      "dummy = new X();\n"
+      "(function() { x.a.a = x.b; })();");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x69\x7a\x65\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("sizes"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* x =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x78");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "x");
   CHECK_NE(NULL, x);
   const v8::HeapGraphNode* x1 =
-      GetProperty(x, v8::HeapGraphEdge::kProperty, "\x61");
+      GetProperty(x, v8::HeapGraphEdge::kProperty, "a");
   CHECK_NE(NULL, x1);
   const v8::HeapGraphNode* x2 =
-      GetProperty(x, v8::HeapGraphEdge::kProperty, "\x62");
+      GetProperty(x, v8::HeapGraphEdge::kProperty, "b");
   CHECK_NE(NULL, x2);
 
   // Test sizes.
@@ -245,36 +245,36 @@ TEST(BoundFunctionInSnapshot) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6d\x79\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x61\x2c\x20\x62\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x61\x20\x3d\x20\x61\x3b\x20\x74\x68\x69\x73\x2e\x62\x20\x3d\x20\x62\x3b\x20\x7d\xa"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x41\x41\x41\x41\x41\x28\x29\x20\x7b\x7d\xa"
-      "\x62\x6f\x75\x6e\x64\x46\x75\x6e\x63\x74\x69\x6f\x6e\x20\x3d\x20\x6d\x79\x46\x75\x6e\x63\x74\x69\x6f\x6e\x2e\x62\x69\x6e\x64\x28\x6e\x65\x77\x20\x41\x41\x41\x41\x41\x28\x29\x2c\x20\x32\x30\x2c\x20\x6e\x65\x77\x20\x4e\x75\x6d\x62\x65\x72\x28\x31\x32\x29\x29\x3b\x20\xa");
+      "function myFunction(a, b) { this.a = a; this.b = b; }\n"
+      "function AAAAA() {}\n"
+      "boundFunction = myFunction.bind(new AAAAA(), 20, new Number(12)); \n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x69\x7a\x65\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("sizes"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* f =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x62\x6f\x75\x6e\x64\x46\x75\x6e\x63\x74\x69\x6f\x6e");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "boundFunction");
   CHECK(f);
-  CHECK_EQ(v8::String::NewFromUtf8(env->GetIsolate(), "\x6e\x61\x74\x69\x76\x65\x5f\x62\x69\x6e\x64"),
+  CHECK_EQ(v8::String::NewFromUtf8(env->GetIsolate(), "native_bind"),
            f->GetName());
   const v8::HeapGraphNode* bindings =
-      GetProperty(f, v8::HeapGraphEdge::kInternal, "\x62\x69\x6e\x64\x69\x6e\x67\x73");
+      GetProperty(f, v8::HeapGraphEdge::kInternal, "bindings");
   CHECK_NE(NULL, bindings);
   CHECK_EQ(v8::HeapGraphNode::kArray, bindings->GetType());
   CHECK_EQ(4, bindings->GetChildrenCount());
 
   const v8::HeapGraphNode* bound_this = GetProperty(
-      f, v8::HeapGraphEdge::kShortcut, "\x62\x6f\x75\x6e\x64\x5f\x74\x68\x69\x73");
+      f, v8::HeapGraphEdge::kShortcut, "bound_this");
   CHECK(bound_this);
   CHECK_EQ(v8::HeapGraphNode::kObject, bound_this->GetType());
 
   const v8::HeapGraphNode* bound_function = GetProperty(
-      f, v8::HeapGraphEdge::kShortcut, "\x62\x6f\x75\x6e\x64\x5f\x66\x75\x6e\x63\x74\x69\x6f\x6e");
+      f, v8::HeapGraphEdge::kShortcut, "bound_function");
   CHECK(bound_function);
   CHECK_EQ(v8::HeapGraphNode::kClosure, bound_function->GetType());
 
   const v8::HeapGraphNode* bound_argument = GetProperty(
-      f, v8::HeapGraphEdge::kShortcut, "\x62\x6f\x75\x6e\x64\x5f\x61\x72\x67\x75\x6d\x65\x6e\x74\x5f\x31");
+      f, v8::HeapGraphEdge::kShortcut, "bound_argument_1");
   CHECK(bound_argument);
   CHECK_EQ(v8::HeapGraphNode::kObject, bound_argument->GetType());
 }
@@ -286,10 +286,10 @@ TEST(HeapSnapshotEntryChildren) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x41\x28\x29\x20\x7b\x20\x7d\xa"
-      "\x61\x20\x3d\x20\x6e\x65\x77\x20\x41\x3b");
+      "function A() { }\n"
+      "a = new A;");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x63\x68\x69\x6c\x64\x72\x65\x6e"));
+      heap_profiler->TakeHeapSnapshot(v8_str("children"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   for (int i = 0, count = global->GetChildrenCount(); i < count; ++i) {
@@ -297,7 +297,7 @@ TEST(HeapSnapshotEntryChildren) {
     CHECK_EQ(global, prop->GetFromNode());
   }
   const v8::HeapGraphNode* a =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x61");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "a");
   CHECK_NE(NULL, a);
   for (int i = 0, count = a->GetChildrenCount(); i < count; ++i) {
     const v8::HeapGraphEdge* prop = a->GetChild(i);
@@ -312,25 +312,25 @@ TEST(HeapSnapshotCodeObjects) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x61\x7a\x79\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2d\x20\x31\x3b\x20\x7d\xa"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x6f\x6d\x70\x69\x6c\x65\x64\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\xa"
-      "\x76\x61\x72\x20\x61\x6e\x6f\x6e\x79\x6d\x6f\x75\x73\x20\x3d\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x30\x3b\x20\x7d\x20\x7d\x29\x28\x29\x3b\xa"
-      "\x63\x6f\x6d\x70\x69\x6c\x65\x64\x28\x31\x29");
+      "function lazy(x) { return x - 1; }\n"
+      "function compiled(x) { return x + 1; }\n"
+      "var anonymous = (function() { return function() { return 0; } })();\n"
+      "compiled(1)");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x63\x6f\x64\x65"));
+      heap_profiler->TakeHeapSnapshot(v8_str("code"));
   CHECK(ValidateSnapshot(snapshot));
 
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* compiled =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x63\x6f\x6d\x70\x69\x6c\x65\x64");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "compiled");
   CHECK_NE(NULL, compiled);
   CHECK_EQ(v8::HeapGraphNode::kClosure, compiled->GetType());
   const v8::HeapGraphNode* lazy =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x6c\x61\x7a\x79");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "lazy");
   CHECK_NE(NULL, lazy);
   CHECK_EQ(v8::HeapGraphNode::kClosure, lazy->GetType());
   const v8::HeapGraphNode* anonymous =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x61\x6e\x6f\x6e\x79\x6d\x6f\x75\x73");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "anonymous");
   CHECK_NE(NULL, anonymous);
   CHECK_EQ(v8::HeapGraphNode::kClosure, anonymous->GetType());
   v8::String::Utf8Value anonymous_name(anonymous->GetName());
@@ -338,19 +338,19 @@ TEST(HeapSnapshotCodeObjects) {
 
   // Find references to code.
   const v8::HeapGraphNode* compiled_code =
-      GetProperty(compiled, v8::HeapGraphEdge::kInternal, "\x73\x68\x61\x72\x65\x64");
+      GetProperty(compiled, v8::HeapGraphEdge::kInternal, "shared");
   CHECK_NE(NULL, compiled_code);
   const v8::HeapGraphNode* lazy_code =
-      GetProperty(lazy, v8::HeapGraphEdge::kInternal, "\x73\x68\x61\x72\x65\x64");
+      GetProperty(lazy, v8::HeapGraphEdge::kInternal, "shared");
   CHECK_NE(NULL, lazy_code);
 
   // Check that there's no strong next_code_link. There might be a weak one
   // but might be not, so we can't check that fact.
   const v8::HeapGraphNode* code =
-      GetProperty(compiled_code, v8::HeapGraphEdge::kInternal, "\x63\x6f\x64\x65");
+      GetProperty(compiled_code, v8::HeapGraphEdge::kInternal, "code");
   CHECK_NE(NULL, code);
   const v8::HeapGraphNode* next_code_link =
-      GetProperty(code, v8::HeapGraphEdge::kInternal, "\x63\x6f\x64\x65");
+      GetProperty(code, v8::HeapGraphEdge::kInternal, "code");
   CHECK_EQ(NULL, next_code_link);
 
   // Verify that non-compiled code doesn't contain references to "x"
@@ -361,7 +361,7 @@ TEST(HeapSnapshotCodeObjects) {
     const v8::HeapGraphEdge* prop = compiled_code->GetChild(i);
     const v8::HeapGraphNode* node = prop->GetToNode();
     if (node->GetType() == v8::HeapGraphNode::kArray) {
-      if (HasString(node, "\x78")) {
+      if (HasString(node, "x")) {
         compiled_references_x = true;
         break;
       }
@@ -371,7 +371,7 @@ TEST(HeapSnapshotCodeObjects) {
     const v8::HeapGraphEdge* prop = lazy_code->GetChild(i);
     const v8::HeapGraphNode* node = prop->GetToNode();
     if (node->GetType() == v8::HeapGraphNode::kArray) {
-      if (HasString(node, "\x78")) {
+      if (HasString(node, "x")) {
         lazy_references_x = true;
         break;
       }
@@ -387,15 +387,15 @@ TEST(HeapSnapshotHeapNumbers) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
   CompileRun(
-      "\x61\x20\x3d\x20\x31\x3b\x20\x20\x20\x20\x2f\x2f\x20\x61\x20\x69\x73\x20\x53\x6d\x69\xa"
-      "\x62\x20\x3d\x20\x32\x2e\x35\x3b\x20\x20\x2f\x2f\x20\x62\x20\x69\x73\x20\x48\x65\x61\x70\x4e\x75\x6d\x62\x65\x72");
+      "a = 1;    // a is Smi\n"
+      "b = 2.5;  // b is HeapNumber");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x6e\x75\x6d\x62\x65\x72\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("numbers"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
-  CHECK_EQ(NULL, GetProperty(global, v8::HeapGraphEdge::kProperty, "\x61"));
+  CHECK_EQ(NULL, GetProperty(global, v8::HeapGraphEdge::kProperty, "a"));
   const v8::HeapGraphNode* b =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x62");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "b");
   CHECK_NE(NULL, b);
   CHECK_EQ(v8::HeapGraphNode::kHeapNumber, b->GetType());
 }
@@ -406,24 +406,24 @@ TEST(HeapSnapshotSlicedString) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
   CompileRun(
-      "\x70\x61\x72\x65\x6e\x74\x5f\x73\x74\x72\x69\x6e\x67\x20\x3d\x20\x22\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e"
-      "\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e"
-      "\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e"
-      "\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x31\x32\x33\x34\x35\x36\x37\x38\x39\x2e\x22\x3b"
-      "\x63\x68\x69\x6c\x64\x5f\x73\x74\x72\x69\x6e\x67\x20\x3d\x20\x70\x61\x72\x65\x6e\x74\x5f\x73\x74\x72\x69\x6e\x67\x2e\x73\x6c\x69\x63\x65\x28\x31\x30\x30\x29\x3b");
+      "parent_string = \"123456789.123456789.123456789.123456789.123456789."
+      "123456789.123456789.123456789.123456789.123456789."
+      "123456789.123456789.123456789.123456789.123456789."
+      "123456789.123456789.123456789.123456789.123456789.\";"
+      "child_string = parent_string.slice(100);");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x74\x72\x69\x6e\x67\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("strings"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* parent_string =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x70\x61\x72\x65\x6e\x74\x5f\x73\x74\x72\x69\x6e\x67");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "parent_string");
   CHECK_NE(NULL, parent_string);
   const v8::HeapGraphNode* child_string =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x63\x68\x69\x6c\x64\x5f\x73\x74\x72\x69\x6e\x67");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "child_string");
   CHECK_NE(NULL, child_string);
   CHECK_EQ(v8::HeapGraphNode::kSlicedString, child_string->GetType());
   const v8::HeapGraphNode* parent =
-      GetProperty(child_string, v8::HeapGraphEdge::kInternal, "\x70\x61\x72\x65\x6e\x74");
+      GetProperty(child_string, v8::HeapGraphEdge::kInternal, "parent");
   CHECK_EQ(parent_string, parent);
   heap_profiler->DeleteAllHeapSnapshots();
 }
@@ -441,8 +441,8 @@ TEST(HeapSnapshotConsString) {
   CHECK_EQ(1, global->InternalFieldCount());
 
   i::Factory* factory = CcTest::i_isolate()->factory();
-  i::Handle<i::String> first = factory->NewStringFromStaticAscii("\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39");
-  i::Handle<i::String> second = factory->NewStringFromStaticAscii("\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39");
+  i::Handle<i::String> first = factory->NewStringFromStaticAscii("0123456789");
+  i::Handle<i::String> second = factory->NewStringFromStaticAscii("0123456789");
   i::Handle<i::String> cons_string =
       factory->NewConsString(first, second).ToHandleChecked();
 
@@ -450,21 +450,21 @@ TEST(HeapSnapshotConsString) {
 
   v8::HeapProfiler* heap_profiler = isolate->GetHeapProfiler();
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x63\x6f\x6e\x73\x5f\x73\x74\x72\x69\x6e\x67\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("cons_strings"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global_node = GetGlobalObject(snapshot);
 
   const v8::HeapGraphNode* string_node =
-      GetProperty(global_node, v8::HeapGraphEdge::kInternal, "\x30");
+      GetProperty(global_node, v8::HeapGraphEdge::kInternal, "0");
   CHECK_NE(NULL, string_node);
   CHECK_EQ(v8::HeapGraphNode::kConsString, string_node->GetType());
 
   const v8::HeapGraphNode* first_node =
-      GetProperty(string_node, v8::HeapGraphEdge::kInternal, "\x66\x69\x72\x73\x74");
+      GetProperty(string_node, v8::HeapGraphEdge::kInternal, "first");
   CHECK_EQ(v8::HeapGraphNode::kString, first_node->GetType());
 
   const v8::HeapGraphNode* second_node =
-      GetProperty(string_node, v8::HeapGraphEdge::kInternal, "\x73\x65\x63\x6f\x6e\x64");
+      GetProperty(string_node, v8::HeapGraphEdge::kInternal, "second");
   CHECK_EQ(v8::HeapGraphNode::kString, second_node->GetType());
 
   heap_profiler->DeleteAllHeapSnapshots();
@@ -476,20 +476,20 @@ TEST(HeapSnapshotSymbol) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
-  CompileRun("\x61\x20\x3d\x20\x53\x79\x6d\x62\x6f\x6c\x28\x27\x6d\x79\x53\x79\x6d\x62\x6f\x6c\x27\x29\x3b\xa");
+  CompileRun("a = Symbol('mySymbol');\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x53\x79\x6d\x62\x6f\x6c"));
+      heap_profiler->TakeHeapSnapshot(v8_str("Symbol"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* a =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x61");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "a");
   CHECK_NE(NULL, a);
   CHECK_EQ(a->GetType(), v8::HeapGraphNode::kSymbol);
-  CHECK_EQ(v8_str("\x73\x79\x6d\x62\x6f\x6c"), a->GetName());
+  CHECK_EQ(v8_str("symbol"), a->GetName());
   const v8::HeapGraphNode* name =
-      GetProperty(a, v8::HeapGraphEdge::kInternal, "\x6e\x61\x6d\x65");
+      GetProperty(a, v8::HeapGraphEdge::kInternal, "name");
   CHECK_NE(NULL, name);
-  CHECK_EQ(v8_str("\x6d\x79\x53\x79\x6d\x62\x6f\x6c"), name->GetName());
+  CHECK_EQ(v8_str("mySymbol"), name->GetName());
 }
 
 
@@ -499,31 +499,31 @@ TEST(HeapSnapshotWeakCollection) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   CompileRun(
-      "\x6b\x20\x3d\x20\x7b\x7d\x3b\x20\x76\x20\x3d\x20\x7b\x7d\x3b\x20\x73\x20\x3d\x20\x27\x73\x74\x72\x27\x3b\xa"
-      "\x77\x73\x20\x3d\x20\x6e\x65\x77\x20\x57\x65\x61\x6b\x53\x65\x74\x28\x29\x3b\x20\x77\x73\x2e\x61\x64\x64\x28\x6b\x29\x3b\x20\x77\x73\x2e\x61\x64\x64\x28\x76\x29\x3b\x20\x77\x73\x5b\x73\x5d\x20\x3d\x20\x73\x3b\xa"
-      "\x77\x6d\x20\x3d\x20\x6e\x65\x77\x20\x57\x65\x61\x6b\x4d\x61\x70\x28\x29\x3b\x20\x77\x6d\x2e\x73\x65\x74\x28\x6b\x2c\x20\x76\x29\x3b\x20\x77\x6d\x5b\x73\x5d\x20\x3d\x20\x73\x3b\xa");
+      "k = {}; v = {}; s = 'str';\n"
+      "ws = new WeakSet(); ws.add(k); ws.add(v); ws[s] = s;\n"
+      "wm = new WeakMap(); wm.set(k, v); wm[s] = s;\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x57\x65\x61\x6b\x43\x6f\x6c\x6c\x65\x63\x74\x69\x6f\x6e\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("WeakCollections"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* k =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x6b");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "k");
   CHECK_NE(NULL, k);
   const v8::HeapGraphNode* v =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x76");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "v");
   CHECK_NE(NULL, v);
   const v8::HeapGraphNode* s =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x73");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "s");
   CHECK_NE(NULL, s);
 
   const v8::HeapGraphNode* ws =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x77\x73");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "ws");
   CHECK_NE(NULL, ws);
   CHECK_EQ(v8::HeapGraphNode::kObject, ws->GetType());
-  CHECK_EQ(v8_str("\x57\x65\x61\x6b\x53\x65\x74"), ws->GetName());
+  CHECK_EQ(v8_str("WeakSet"), ws->GetName());
 
   const v8::HeapGraphNode* ws_table =
-      GetProperty(ws, v8::HeapGraphEdge::kInternal, "\x74\x61\x62\x6c\x65");
+      GetProperty(ws, v8::HeapGraphEdge::kInternal, "table");
   CHECK_EQ(v8::HeapGraphNode::kArray, ws_table->GetType());
   CHECK_GT(ws_table->GetChildrenCount(), 0);
   int weak_entries = 0;
@@ -536,18 +536,18 @@ TEST(HeapSnapshotWeakCollection) {
   }
   CHECK_EQ(1, weak_entries);
   const v8::HeapGraphNode* ws_s =
-      GetProperty(ws, v8::HeapGraphEdge::kProperty, "\x73\x74\x72");
+      GetProperty(ws, v8::HeapGraphEdge::kProperty, "str");
   CHECK_NE(NULL, ws_s);
   CHECK_EQ(static_cast<int>(s->GetId()), static_cast<int>(ws_s->GetId()));
 
   const v8::HeapGraphNode* wm =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x77\x6d");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "wm");
   CHECK_NE(NULL, wm);
   CHECK_EQ(v8::HeapGraphNode::kObject, wm->GetType());
-  CHECK_EQ(v8_str("\x57\x65\x61\x6b\x4d\x61\x70"), wm->GetName());
+  CHECK_EQ(v8_str("WeakMap"), wm->GetName());
 
   const v8::HeapGraphNode* wm_table =
-      GetProperty(wm, v8::HeapGraphEdge::kInternal, "\x74\x61\x62\x6c\x65");
+      GetProperty(wm, v8::HeapGraphEdge::kInternal, "table");
   CHECK_EQ(v8::HeapGraphNode::kArray, wm_table->GetType());
   CHECK_GT(wm_table->GetChildrenCount(), 0);
   weak_entries = 0;
@@ -561,7 +561,7 @@ TEST(HeapSnapshotWeakCollection) {
   }
   CHECK_EQ(2, weak_entries);
   const v8::HeapGraphNode* wm_s =
-      GetProperty(wm, v8::HeapGraphEdge::kProperty, "\x73\x74\x72");
+      GetProperty(wm, v8::HeapGraphEdge::kProperty, "str");
   CHECK_NE(NULL, wm_s);
   CHECK_EQ(static_cast<int>(s->GetId()), static_cast<int>(wm_s->GetId()));
 }
@@ -573,31 +573,31 @@ TEST(HeapSnapshotCollection) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   CompileRun(
-      "\x6b\x20\x3d\x20\x7b\x7d\x3b\x20\x76\x20\x3d\x20\x7b\x7d\x3b\x20\x73\x20\x3d\x20\x27\x73\x74\x72\x27\x3b\xa"
-      "\x73\x65\x74\x20\x3d\x20\x6e\x65\x77\x20\x53\x65\x74\x28\x29\x3b\x20\x73\x65\x74\x2e\x61\x64\x64\x28\x6b\x29\x3b\x20\x73\x65\x74\x2e\x61\x64\x64\x28\x76\x29\x3b\x20\x73\x65\x74\x5b\x73\x5d\x20\x3d\x20\x73\x3b\xa"
-      "\x6d\x61\x70\x20\x3d\x20\x6e\x65\x77\x20\x4d\x61\x70\x28\x29\x3b\x20\x6d\x61\x70\x2e\x73\x65\x74\x28\x6b\x2c\x20\x76\x29\x3b\x20\x6d\x61\x70\x5b\x73\x5d\x20\x3d\x20\x73\x3b\xa");
+      "k = {}; v = {}; s = 'str';\n"
+      "set = new Set(); set.add(k); set.add(v); set[s] = s;\n"
+      "map = new Map(); map.set(k, v); map[s] = s;\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x43\x6f\x6c\x6c\x65\x63\x74\x69\x6f\x6e\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("Collections"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* k =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x6b");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "k");
   CHECK_NE(NULL, k);
   const v8::HeapGraphNode* v =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x76");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "v");
   CHECK_NE(NULL, v);
   const v8::HeapGraphNode* s =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x73");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "s");
   CHECK_NE(NULL, s);
 
   const v8::HeapGraphNode* set =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x73\x65\x74");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "set");
   CHECK_NE(NULL, set);
   CHECK_EQ(v8::HeapGraphNode::kObject, set->GetType());
-  CHECK_EQ(v8_str("\x53\x65\x74"), set->GetName());
+  CHECK_EQ(v8_str("Set"), set->GetName());
 
   const v8::HeapGraphNode* set_table =
-      GetProperty(set, v8::HeapGraphEdge::kInternal, "\x74\x61\x62\x6c\x65");
+      GetProperty(set, v8::HeapGraphEdge::kInternal, "table");
   CHECK_EQ(v8::HeapGraphNode::kArray, set_table->GetType());
   CHECK_GT(set_table->GetChildrenCount(), 0);
   int entries = 0;
@@ -610,18 +610,18 @@ TEST(HeapSnapshotCollection) {
   }
   CHECK_EQ(2, entries);
   const v8::HeapGraphNode* set_s =
-      GetProperty(set, v8::HeapGraphEdge::kProperty, "\x73\x74\x72");
+      GetProperty(set, v8::HeapGraphEdge::kProperty, "str");
   CHECK_NE(NULL, set_s);
   CHECK_EQ(static_cast<int>(s->GetId()), static_cast<int>(set_s->GetId()));
 
   const v8::HeapGraphNode* map =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x6d\x61\x70");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "map");
   CHECK_NE(NULL, map);
   CHECK_EQ(v8::HeapGraphNode::kObject, map->GetType());
-  CHECK_EQ(v8_str("\x4d\x61\x70"), map->GetName());
+  CHECK_EQ(v8_str("Map"), map->GetName());
 
   const v8::HeapGraphNode* map_table =
-      GetProperty(map, v8::HeapGraphEdge::kInternal, "\x74\x61\x62\x6c\x65");
+      GetProperty(map, v8::HeapGraphEdge::kInternal, "table");
   CHECK_EQ(v8::HeapGraphNode::kArray, map_table->GetType());
   CHECK_GT(map_table->GetChildrenCount(), 0);
   entries = 0;
@@ -634,7 +634,7 @@ TEST(HeapSnapshotCollection) {
   }
   CHECK_EQ(2, entries);
   const v8::HeapGraphNode* map_s =
-      GetProperty(map, v8::HeapGraphEdge::kProperty, "\x73\x74\x72");
+      GetProperty(map, v8::HeapGraphEdge::kProperty, "str");
   CHECK_NE(NULL, map_s);
   CHECK_EQ(static_cast<int>(s->GetId()), static_cast<int>(map_s->GetId()));
 }
@@ -655,13 +655,13 @@ TEST(HeapSnapshotInternalReferences) {
   global->SetInternalField(1, obj);
   v8::HeapProfiler* heap_profiler = isolate->GetHeapProfiler();
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x69\x6e\x74\x65\x72\x6e\x61\x6c\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("internals"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global_node = GetGlobalObject(snapshot);
   // The first reference will not present, because it's a Smi.
-  CHECK_EQ(NULL, GetProperty(global_node, v8::HeapGraphEdge::kInternal, "\x30"));
+  CHECK_EQ(NULL, GetProperty(global_node, v8::HeapGraphEdge::kInternal, "0"));
   // The second reference is to an object.
-  CHECK_NE(NULL, GetProperty(global_node, v8::HeapGraphEdge::kInternal, "\x31"));
+  CHECK_NE(NULL, GetProperty(global_node, v8::HeapGraphEdge::kInternal, "1"));
 }
 
 
@@ -679,27 +679,27 @@ TEST(HeapSnapshotAddressReuse) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x41\x28\x29\x20\x7b\x7d\xa"
-      "\x76\x61\x72\x20\x61\x20\x3d\x20\x5b\x5d\x3b\xa"
-      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x30\x3b\x20\x2b\x2b\x69\x29\xa"
-      "\x20\x20\x61\x5b\x69\x5d\x20\x3d\x20\x6e\x65\x77\x20\x41\x28\x29\x3b\xa");
+      "function A() {}\n"
+      "var a = [];\n"
+      "for (var i = 0; i < 10000; ++i)\n"
+      "  a[i] = new A();\n");
   const v8::HeapSnapshot* snapshot1 =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74\x31"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot1"));
   CHECK(ValidateSnapshot(snapshot1));
   v8::SnapshotObjectId maxId1 = snapshot1->GetMaxSnapshotJSObjectId();
 
   CompileRun(
-      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x30\x30\x3b\x20\x2b\x2b\x69\x29\xa"
-      "\x20\x20\x61\x5b\x69\x5d\x20\x3d\x20\x6e\x65\x77\x20\x41\x28\x29\x3b\xa");
+      "for (var i = 0; i < 10000; ++i)\n"
+      "  a[i] = new A();\n");
   CcTest::heap()->CollectAllGarbage(i::Heap::kNoGCFlags);
 
   const v8::HeapSnapshot* snapshot2 =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74\x32"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot2"));
   CHECK(ValidateSnapshot(snapshot2));
   const v8::HeapGraphNode* global2 = GetGlobalObject(snapshot2);
 
   const v8::HeapGraphNode* array_node =
-      GetProperty(global2, v8::HeapGraphEdge::kProperty, "\x61");
+      GetProperty(global2, v8::HeapGraphEdge::kProperty, "a");
   CHECK_NE(NULL, array_node);
   int wrong_count = 0;
   for (int i = 0, count = array_node->GetChildrenCount(); i < count; ++i) {
@@ -720,25 +720,25 @@ TEST(HeapEntryIdsAndArrayShift) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x41\x6e\x4f\x62\x6a\x65\x63\x74\x28\x29\x20\x7b\xa"
-      "\x20\x20\x20\x20\x74\x68\x69\x73\x2e\x66\x69\x72\x73\x74\x20\x3d\x20\x27\x66\x69\x72\x73\x74\x27\x3b\xa"
-      "\x20\x20\x20\x20\x74\x68\x69\x73\x2e\x73\x65\x63\x6f\x6e\x64\x20\x3d\x20\x27\x73\x65\x63\x6f\x6e\x64\x27\x3b\xa"
-      "\x7d\xa"
-      "\x76\x61\x72\x20\x61\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x29\x3b\xa"
-      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\xa"
-      "\x20\x20\x61\x2e\x70\x75\x73\x68\x28\x6e\x65\x77\x20\x41\x6e\x4f\x62\x6a\x65\x63\x74\x28\x29\x29\x3b\xa");
+      "function AnObject() {\n"
+      "    this.first = 'first';\n"
+      "    this.second = 'second';\n"
+      "}\n"
+      "var a = new Array();\n"
+      "for (var i = 0; i < 10; ++i)\n"
+      "  a.push(new AnObject());\n");
   const v8::HeapSnapshot* snapshot1 =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x31"));
+      heap_profiler->TakeHeapSnapshot(v8_str("s1"));
   CHECK(ValidateSnapshot(snapshot1));
 
   CompileRun(
-      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x3b\x20\x2b\x2b\x69\x29\xa"
-      "\x20\x20\x61\x2e\x73\x68\x69\x66\x74\x28\x29\x3b\xa");
+      "for (var i = 0; i < 1; ++i)\n"
+      "  a.shift();\n");
 
   CcTest::heap()->CollectAllGarbage(i::Heap::kNoGCFlags);
 
   const v8::HeapSnapshot* snapshot2 =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x32"));
+      heap_profiler->TakeHeapSnapshot(v8_str("s2"));
   CHECK(ValidateSnapshot(snapshot2));
 
   const v8::HeapGraphNode* global1 = GetGlobalObject(snapshot1);
@@ -747,16 +747,16 @@ TEST(HeapEntryIdsAndArrayShift) {
   CHECK_EQ_SNAPSHOT_OBJECT_ID(global1->GetId(), global2->GetId());
 
   const v8::HeapGraphNode* a1 =
-      GetProperty(global1, v8::HeapGraphEdge::kProperty, "\x61");
+      GetProperty(global1, v8::HeapGraphEdge::kProperty, "a");
   CHECK_NE(NULL, a1);
   const v8::HeapGraphNode* k1 =
-      GetProperty(a1, v8::HeapGraphEdge::kInternal, "\x65\x6c\x65\x6d\x65\x6e\x74\x73");
+      GetProperty(a1, v8::HeapGraphEdge::kInternal, "elements");
   CHECK_NE(NULL, k1);
   const v8::HeapGraphNode* a2 =
-      GetProperty(global2, v8::HeapGraphEdge::kProperty, "\x61");
+      GetProperty(global2, v8::HeapGraphEdge::kProperty, "a");
   CHECK_NE(NULL, a2);
   const v8::HeapGraphNode* k2 =
-      GetProperty(a2, v8::HeapGraphEdge::kInternal, "\x65\x6c\x65\x6d\x65\x6e\x74\x73");
+      GetProperty(a2, v8::HeapGraphEdge::kInternal, "elements");
   CHECK_NE(NULL, k2);
 
   CHECK_EQ_SNAPSHOT_OBJECT_ID(a1->GetId(), a2->GetId());
@@ -770,12 +770,12 @@ TEST(HeapEntryIdsAndGC) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x41\x28\x29\x20\x7b\x7d\xa"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x42\x28\x78\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x78\x3b\x20\x7d\xa"
-      "\x76\x61\x72\x20\x61\x20\x3d\x20\x6e\x65\x77\x20\x41\x28\x29\x3b\xa"
-      "\x76\x61\x72\x20\x62\x20\x3d\x20\x6e\x65\x77\x20\x42\x28\x61\x29\x3b");
-  v8::Local<v8::String> s1_str = v8_str("\x73\x31");
-  v8::Local<v8::String> s2_str = v8_str("\x73\x32");
+      "function A() {}\n"
+      "function B(x) { this.x = x; }\n"
+      "var a = new A();\n"
+      "var b = new B(a);");
+  v8::Local<v8::String> s1_str = v8_str("s1");
+  v8::Local<v8::String> s2_str = v8_str("s2");
   const v8::HeapSnapshot* snapshot1 =
       heap_profiler->TakeHeapSnapshot(s1_str);
   CHECK(ValidateSnapshot(snapshot1));
@@ -795,34 +795,34 @@ TEST(HeapEntryIdsAndGC) {
   CHECK_NE_SNAPSHOT_OBJECT_ID(0, global1->GetId());
   CHECK_EQ_SNAPSHOT_OBJECT_ID(global1->GetId(), global2->GetId());
   const v8::HeapGraphNode* A1 =
-      GetProperty(global1, v8::HeapGraphEdge::kProperty, "\x41");
+      GetProperty(global1, v8::HeapGraphEdge::kProperty, "A");
   CHECK_NE(NULL, A1);
   const v8::HeapGraphNode* A2 =
-      GetProperty(global2, v8::HeapGraphEdge::kProperty, "\x41");
+      GetProperty(global2, v8::HeapGraphEdge::kProperty, "A");
   CHECK_NE(NULL, A2);
   CHECK_NE_SNAPSHOT_OBJECT_ID(0, A1->GetId());
   CHECK_EQ_SNAPSHOT_OBJECT_ID(A1->GetId(), A2->GetId());
   const v8::HeapGraphNode* B1 =
-      GetProperty(global1, v8::HeapGraphEdge::kProperty, "\x42");
+      GetProperty(global1, v8::HeapGraphEdge::kProperty, "B");
   CHECK_NE(NULL, B1);
   const v8::HeapGraphNode* B2 =
-      GetProperty(global2, v8::HeapGraphEdge::kProperty, "\x42");
+      GetProperty(global2, v8::HeapGraphEdge::kProperty, "B");
   CHECK_NE(NULL, B2);
   CHECK_NE_SNAPSHOT_OBJECT_ID(0, B1->GetId());
   CHECK_EQ_SNAPSHOT_OBJECT_ID(B1->GetId(), B2->GetId());
   const v8::HeapGraphNode* a1 =
-      GetProperty(global1, v8::HeapGraphEdge::kProperty, "\x61");
+      GetProperty(global1, v8::HeapGraphEdge::kProperty, "a");
   CHECK_NE(NULL, a1);
   const v8::HeapGraphNode* a2 =
-      GetProperty(global2, v8::HeapGraphEdge::kProperty, "\x61");
+      GetProperty(global2, v8::HeapGraphEdge::kProperty, "a");
   CHECK_NE(NULL, a2);
   CHECK_NE_SNAPSHOT_OBJECT_ID(0, a1->GetId());
   CHECK_EQ_SNAPSHOT_OBJECT_ID(a1->GetId(), a2->GetId());
   const v8::HeapGraphNode* b1 =
-      GetProperty(global1, v8::HeapGraphEdge::kProperty, "\x62");
+      GetProperty(global1, v8::HeapGraphEdge::kProperty, "b");
   CHECK_NE(NULL, b1);
   const v8::HeapGraphNode* b2 =
-      GetProperty(global2, v8::HeapGraphEdge::kProperty, "\x62");
+      GetProperty(global2, v8::HeapGraphEdge::kProperty, "b");
   CHECK_NE(NULL, b2);
   CHECK_NE_SNAPSHOT_OBJECT_ID(0, b1->GetId());
   CHECK_EQ_SNAPSHOT_OBJECT_ID(b1->GetId(), b2->GetId());
@@ -834,7 +834,7 @@ TEST(HeapSnapshotRootPreservedAfterSorting) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("s"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* root1 = snapshot->GetRoot();
   const_cast<i::HeapSnapshot*>(reinterpret_cast<const i::HeapSnapshot*>(
@@ -857,7 +857,7 @@ class TestJSONStream : public v8::OutputStream {
     if (abort_countdown_ > 0) --abort_countdown_;
     if (abort_countdown_ == 0) return kAbort;
     CHECK_GT(chars_written, 0);
-    i::Vector<char> chunk = buffer_.AddBlock(chars_written, '\x0');
+    i::Vector<char> chunk = buffer_.AddBlock(chars_written, '\0');
     i::MemCopy(chunk.start(), buffer, chars_written);
     return kContinue;
   }
@@ -895,14 +895,14 @@ TEST(HeapSnapshotJSONSerialization) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
 #define STRING_LITERAL_FOR_TEST \
-  "\x22\x53\x74\x72\x69\x6e\x67\x20\x5c\x6e\x5c\x72\x5c\x75\x30\x30\x30\x38\x5c\x75\x30\x30\x38\x31\x5c\x75\x30\x31\x30\x31\x5c\x75\x30\x38\x30\x31\x5c\x75\x38\x30\x30\x31\x22"
+  "\"String \\n\\r\\u0008\\u0081\\u0101\\u0801\\u8001\""
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x41\x28\x73\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x73\x20\x3d\x20\x73\x3b\x20\x7d\xa"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x42\x28\x78\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x78\x3b\x20\x7d\xa"
-      "\x76\x61\x72\x20\x61\x20\x3d\x20\x6e\x65\x77\x20\x41\x28" STRING_LITERAL_FOR_TEST "\x29\x3b\xa"
-      "\x76\x61\x72\x20\x62\x20\x3d\x20\x6e\x65\x77\x20\x42\x28\x61\x29\x3b");
+      "function A(s) { this.s = s; }\n"
+      "function B(x) { this.x = x; }\n"
+      "var a = new A(" STRING_LITERAL_FOR_TEST ");\n"
+      "var b = new B(a);");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x6a\x73\x6f\x6e"));
+      heap_profiler->TakeHeapSnapshot(v8_str("json"));
   CHECK(ValidateSnapshot(snapshot));
 
   TestJSONStream stream;
@@ -916,77 +916,77 @@ TEST(HeapSnapshotJSONSerialization) {
   AsciiResource* json_res = new AsciiResource(json);
   v8::Local<v8::String> json_string =
       v8::String::NewExternal(env->GetIsolate(), json_res);
-  env->Global()->Set(v8_str("\x6a\x73\x6f\x6e\x5f\x73\x6e\x61\x70\x73\x68\x6f\x74"), json_string);
+  env->Global()->Set(v8_str("json_snapshot"), json_string);
   v8::Local<v8::Value> snapshot_parse_result = CompileRun(
-      "\x76\x61\x72\x20\x70\x61\x72\x73\x65\x64\x20\x3d\x20\x4a\x53\x4f\x4e\x2e\x70\x61\x72\x73\x65\x28\x6a\x73\x6f\x6e\x5f\x73\x6e\x61\x70\x73\x68\x6f\x74\x29\x3b\x20\x74\x72\x75\x65\x3b");
+      "var parsed = JSON.parse(json_snapshot); true;");
   CHECK(!snapshot_parse_result.IsEmpty());
 
   // Verify that snapshot object has required fields.
   v8::Local<v8::Object> parsed_snapshot =
-      env->Global()->Get(v8_str("\x70\x61\x72\x73\x65\x64"))->ToObject();
-  CHECK(parsed_snapshot->Has(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74")));
-  CHECK(parsed_snapshot->Has(v8_str("\x6e\x6f\x64\x65\x73")));
-  CHECK(parsed_snapshot->Has(v8_str("\x65\x64\x67\x65\x73")));
-  CHECK(parsed_snapshot->Has(v8_str("\x73\x74\x72\x69\x6e\x67\x73")));
+      env->Global()->Get(v8_str("parsed"))->ToObject();
+  CHECK(parsed_snapshot->Has(v8_str("snapshot")));
+  CHECK(parsed_snapshot->Has(v8_str("nodes")));
+  CHECK(parsed_snapshot->Has(v8_str("edges")));
+  CHECK(parsed_snapshot->Has(v8_str("strings")));
 
   // Get node and edge "member" offsets.
   v8::Local<v8::Value> meta_analysis_result = CompileRun(
-      "\x76\x61\x72\x20\x6d\x65\x74\x61\x20\x3d\x20\x70\x61\x72\x73\x65\x64\x2e\x73\x6e\x61\x70\x73\x68\x6f\x74\x2e\x6d\x65\x74\x61\x3b\xa"
-      "\x76\x61\x72\x20\x65\x64\x67\x65\x5f\x63\x6f\x75\x6e\x74\x5f\x6f\x66\x66\x73\x65\x74\x20\x3d\x20\x6d\x65\x74\x61\x2e\x6e\x6f\x64\x65\x5f\x66\x69\x65\x6c\x64\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x65\x64\x67\x65\x5f\x63\x6f\x75\x6e\x74\x27\x29\x3b\xa"
-      "\x76\x61\x72\x20\x6e\x6f\x64\x65\x5f\x66\x69\x65\x6c\x64\x73\x5f\x63\x6f\x75\x6e\x74\x20\x3d\x20\x6d\x65\x74\x61\x2e\x6e\x6f\x64\x65\x5f\x66\x69\x65\x6c\x64\x73\x2e\x6c\x65\x6e\x67\x74\x68\x3b\xa"
-      "\x76\x61\x72\x20\x65\x64\x67\x65\x5f\x66\x69\x65\x6c\x64\x73\x5f\x63\x6f\x75\x6e\x74\x20\x3d\x20\x6d\x65\x74\x61\x2e\x65\x64\x67\x65\x5f\x66\x69\x65\x6c\x64\x73\x2e\x6c\x65\x6e\x67\x74\x68\x3b\xa"
-      "\x76\x61\x72\x20\x65\x64\x67\x65\x5f\x74\x79\x70\x65\x5f\x6f\x66\x66\x73\x65\x74\x20\x3d\x20\x6d\x65\x74\x61\x2e\x65\x64\x67\x65\x5f\x66\x69\x65\x6c\x64\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x74\x79\x70\x65\x27\x29\x3b\xa"
-      "\x76\x61\x72\x20\x65\x64\x67\x65\x5f\x6e\x61\x6d\x65\x5f\x6f\x66\x66\x73\x65\x74\x20\x3d\x20\x6d\x65\x74\x61\x2e\x65\x64\x67\x65\x5f\x66\x69\x65\x6c\x64\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x6e\x61\x6d\x65\x5f\x6f\x72\x5f\x69\x6e\x64\x65\x78\x27\x29\x3b\xa"
-      "\x76\x61\x72\x20\x65\x64\x67\x65\x5f\x74\x6f\x5f\x6e\x6f\x64\x65\x5f\x6f\x66\x66\x73\x65\x74\x20\x3d\x20\x6d\x65\x74\x61\x2e\x65\x64\x67\x65\x5f\x66\x69\x65\x6c\x64\x73\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x74\x6f\x5f\x6e\x6f\x64\x65\x27\x29\x3b\xa"
-      "\x76\x61\x72\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x74\x79\x70\x65\x20\x3d"
-      "\x20\x20\x20\x20\x6d\x65\x74\x61\x2e\x65\x64\x67\x65\x5f\x74\x79\x70\x65\x73\x5b\x65\x64\x67\x65\x5f\x74\x79\x70\x65\x5f\x6f\x66\x66\x73\x65\x74\x5d\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x70\x72\x6f\x70\x65\x72\x74\x79\x27\x29\x3b\xa"
-      "\x76\x61\x72\x20\x73\x68\x6f\x72\x74\x63\x75\x74\x5f\x74\x79\x70\x65\x20\x3d"
-      "\x20\x20\x20\x20\x6d\x65\x74\x61\x2e\x65\x64\x67\x65\x5f\x74\x79\x70\x65\x73\x5b\x65\x64\x67\x65\x5f\x74\x79\x70\x65\x5f\x6f\x66\x66\x73\x65\x74\x5d\x2e\x69\x6e\x64\x65\x78\x4f\x66\x28\x27\x73\x68\x6f\x72\x74\x63\x75\x74\x27\x29\x3b\xa"
-      "\x76\x61\x72\x20\x6e\x6f\x64\x65\x5f\x63\x6f\x75\x6e\x74\x20\x3d\x20\x70\x61\x72\x73\x65\x64\x2e\x6e\x6f\x64\x65\x73\x2e\x6c\x65\x6e\x67\x74\x68\x20\x2f\x20\x6e\x6f\x64\x65\x5f\x66\x69\x65\x6c\x64\x73\x5f\x63\x6f\x75\x6e\x74\x3b\xa"
-      "\x76\x61\x72\x20\x66\x69\x72\x73\x74\x5f\x65\x64\x67\x65\x5f\x69\x6e\x64\x65\x78\x65\x73\x20\x3d\x20\x70\x61\x72\x73\x65\x64\x2e\x66\x69\x72\x73\x74\x5f\x65\x64\x67\x65\x5f\x69\x6e\x64\x65\x78\x65\x73\x20\x3d\x20\x5b\x5d\x3b\xa"
-      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x2c\x20\x66\x69\x72\x73\x74\x5f\x65\x64\x67\x65\x5f\x69\x6e\x64\x65\x78\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x6f\x64\x65\x5f\x63\x6f\x75\x6e\x74\x3b\x20\x2b\x2b\x69\x29\x20\x7b\xa"
-      "\x20\x20\x66\x69\x72\x73\x74\x5f\x65\x64\x67\x65\x5f\x69\x6e\x64\x65\x78\x65\x73\x5b\x69\x5d\x20\x3d\x20\x66\x69\x72\x73\x74\x5f\x65\x64\x67\x65\x5f\x69\x6e\x64\x65\x78\x3b\xa"
-      "\x20\x20\x66\x69\x72\x73\x74\x5f\x65\x64\x67\x65\x5f\x69\x6e\x64\x65\x78\x20\x2b\x3d\x20\x65\x64\x67\x65\x5f\x66\x69\x65\x6c\x64\x73\x5f\x63\x6f\x75\x6e\x74\x20\x2a\xa"
-      "\x20\x20\x20\x20\x20\x20\x70\x61\x72\x73\x65\x64\x2e\x6e\x6f\x64\x65\x73\x5b\x69\x20\x2a\x20\x6e\x6f\x64\x65\x5f\x66\x69\x65\x6c\x64\x73\x5f\x63\x6f\x75\x6e\x74\x20\x2b\x20\x65\x64\x67\x65\x5f\x63\x6f\x75\x6e\x74\x5f\x6f\x66\x66\x73\x65\x74\x5d\x3b\xa"
-      "\x7d\xa"
-      "\x66\x69\x72\x73\x74\x5f\x65\x64\x67\x65\x5f\x69\x6e\x64\x65\x78\x65\x73\x5b\x6e\x6f\x64\x65\x5f\x63\x6f\x75\x6e\x74\x5d\x20\x3d\x20\x66\x69\x72\x73\x74\x5f\x65\x64\x67\x65\x5f\x69\x6e\x64\x65\x78\x3b\xa");
+      "var meta = parsed.snapshot.meta;\n"
+      "var edge_count_offset = meta.node_fields.indexOf('edge_count');\n"
+      "var node_fields_count = meta.node_fields.length;\n"
+      "var edge_fields_count = meta.edge_fields.length;\n"
+      "var edge_type_offset = meta.edge_fields.indexOf('type');\n"
+      "var edge_name_offset = meta.edge_fields.indexOf('name_or_index');\n"
+      "var edge_to_node_offset = meta.edge_fields.indexOf('to_node');\n"
+      "var property_type ="
+      "    meta.edge_types[edge_type_offset].indexOf('property');\n"
+      "var shortcut_type ="
+      "    meta.edge_types[edge_type_offset].indexOf('shortcut');\n"
+      "var node_count = parsed.nodes.length / node_fields_count;\n"
+      "var first_edge_indexes = parsed.first_edge_indexes = [];\n"
+      "for (var i = 0, first_edge_index = 0; i < node_count; ++i) {\n"
+      "  first_edge_indexes[i] = first_edge_index;\n"
+      "  first_edge_index += edge_fields_count *\n"
+      "      parsed.nodes[i * node_fields_count + edge_count_offset];\n"
+      "}\n"
+      "first_edge_indexes[node_count] = first_edge_index;\n");
   CHECK(!meta_analysis_result.IsEmpty());
 
   // A helper function for processing encoded nodes.
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x47\x65\x74\x43\x68\x69\x6c\x64\x50\x6f\x73\x42\x79\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x70\x6f\x73\x2c\x20\x70\x72\x6f\x70\x5f\x6e\x61\x6d\x65\x2c\x20\x70\x72\x6f\x70\x5f\x74\x79\x70\x65\x29\x20\x7b\xa"
-      "\x20\x20\x76\x61\x72\x20\x6e\x6f\x64\x65\x73\x20\x3d\x20\x70\x61\x72\x73\x65\x64\x2e\x6e\x6f\x64\x65\x73\x3b\xa"
-      "\x20\x20\x76\x61\x72\x20\x65\x64\x67\x65\x73\x20\x3d\x20\x70\x61\x72\x73\x65\x64\x2e\x65\x64\x67\x65\x73\x3b\xa"
-      "\x20\x20\x76\x61\x72\x20\x73\x74\x72\x69\x6e\x67\x73\x20\x3d\x20\x70\x61\x72\x73\x65\x64\x2e\x73\x74\x72\x69\x6e\x67\x73\x3b\xa"
-      "\x20\x20\x76\x61\x72\x20\x6e\x6f\x64\x65\x5f\x6f\x72\x64\x69\x6e\x61\x6c\x20\x3d\x20\x70\x6f\x73\x20\x2f\x20\x6e\x6f\x64\x65\x5f\x66\x69\x65\x6c\x64\x73\x5f\x63\x6f\x75\x6e\x74\x3b\xa"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x70\x61\x72\x73\x65\x64\x2e\x66\x69\x72\x73\x74\x5f\x65\x64\x67\x65\x5f\x69\x6e\x64\x65\x78\x65\x73\x5b\x6e\x6f\x64\x65\x5f\x6f\x72\x64\x69\x6e\x61\x6c\x5d\x2c\xa"
-      "\x20\x20\x20\x20\x20\x20\x63\x6f\x75\x6e\x74\x20\x3d\x20\x70\x61\x72\x73\x65\x64\x2e\x66\x69\x72\x73\x74\x5f\x65\x64\x67\x65\x5f\x69\x6e\x64\x65\x78\x65\x73\x5b\x6e\x6f\x64\x65\x5f\x6f\x72\x64\x69\x6e\x61\x6c\x20\x2b\x20\x31\x5d\x3b\xa"
-      "\x20\x20\x20\x20\x20\x20\x69\x20\x3c\x20\x63\x6f\x75\x6e\x74\x3b\x20\x69\x20\x2b\x3d\x20\x65\x64\x67\x65\x5f\x66\x69\x65\x6c\x64\x73\x5f\x63\x6f\x75\x6e\x74\x29\x20\x7b\xa"
-      "\x20\x20\x20\x20\x69\x66\x20\x28\x65\x64\x67\x65\x73\x5b\x69\x20\x2b\x20\x65\x64\x67\x65\x5f\x74\x79\x70\x65\x5f\x6f\x66\x66\x73\x65\x74\x5d\x20\x3d\x3d\x3d\x20\x70\x72\x6f\x70\x5f\x74\x79\x70\x65\xa"
-      "\x20\x20\x20\x20\x20\x20\x20\x20\x26\x26\x20\x73\x74\x72\x69\x6e\x67\x73\x5b\x65\x64\x67\x65\x73\x5b\x69\x20\x2b\x20\x65\x64\x67\x65\x5f\x6e\x61\x6d\x65\x5f\x6f\x66\x66\x73\x65\x74\x5d\x5d\x20\x3d\x3d\x3d\x20\x70\x72\x6f\x70\x5f\x6e\x61\x6d\x65\x29\xa"
-      "\x20\x20\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x64\x67\x65\x73\x5b\x69\x20\x2b\x20\x65\x64\x67\x65\x5f\x74\x6f\x5f\x6e\x6f\x64\x65\x5f\x6f\x66\x66\x73\x65\x74\x5d\x3b\xa"
-      "\x20\x20\x7d\xa"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6e\x75\x6c\x6c\x3b\xa"
-      "\x7d\xa");
+      "function GetChildPosByProperty(pos, prop_name, prop_type) {\n"
+      "  var nodes = parsed.nodes;\n"
+      "  var edges = parsed.edges;\n"
+      "  var strings = parsed.strings;\n"
+      "  var node_ordinal = pos / node_fields_count;\n"
+      "  for (var i = parsed.first_edge_indexes[node_ordinal],\n"
+      "      count = parsed.first_edge_indexes[node_ordinal + 1];\n"
+      "      i < count; i += edge_fields_count) {\n"
+      "    if (edges[i + edge_type_offset] === prop_type\n"
+      "        && strings[edges[i + edge_name_offset]] === prop_name)\n"
+      "      return edges[i + edge_to_node_offset];\n"
+      "  }\n"
+      "  return null;\n"
+      "}\n");
   // Get the string index using the path: <root> -> <global>.b.x.s
   v8::Local<v8::Value> string_obj_pos_val = CompileRun(
-      "\x47\x65\x74\x43\x68\x69\x6c\x64\x50\x6f\x73\x42\x79\x50\x72\x6f\x70\x65\x72\x74\x79\x28\xa"
-      "\x20\x20\x47\x65\x74\x43\x68\x69\x6c\x64\x50\x6f\x73\x42\x79\x50\x72\x6f\x70\x65\x72\x74\x79\x28\xa"
-      "\x20\x20\x20\x20\x47\x65\x74\x43\x68\x69\x6c\x64\x50\x6f\x73\x42\x79\x50\x72\x6f\x70\x65\x72\x74\x79\x28"
-      "\x20\x20\x20\x20\x20\x20\x70\x61\x72\x73\x65\x64\x2e\x65\x64\x67\x65\x73\x5b\x65\x64\x67\x65\x5f\x66\x69\x65\x6c\x64\x73\x5f\x63\x6f\x75\x6e\x74\x20\x2b\x20\x65\x64\x67\x65\x5f\x74\x6f\x5f\x6e\x6f\x64\x65\x5f\x6f\x66\x66\x73\x65\x74\x5d\x2c"
-      "\x20\x20\x20\x20\x20\x20\x22\x62\x22\x2c\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x74\x79\x70\x65\x29\x2c\xa"
-      "\x20\x20\x20\x20\x22\x78\x22\x2c\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x74\x79\x70\x65\x29\x2c"
-      "\x20\x20\x22\x73\x22\x2c\x20\x70\x72\x6f\x70\x65\x72\x74\x79\x5f\x74\x79\x70\x65\x29");
+      "GetChildPosByProperty(\n"
+      "  GetChildPosByProperty(\n"
+      "    GetChildPosByProperty("
+      "      parsed.edges[edge_fields_count + edge_to_node_offset],"
+      "      \"b\", property_type),\n"
+      "    \"x\", property_type),"
+      "  \"s\", property_type)");
   CHECK(!string_obj_pos_val.IsEmpty());
   int string_obj_pos =
       static_cast<int>(string_obj_pos_val->ToNumber()->Value());
   v8::Local<v8::Object> nodes_array =
-      parsed_snapshot->Get(v8_str("\x6e\x6f\x64\x65\x73"))->ToObject();
+      parsed_snapshot->Get(v8_str("nodes"))->ToObject();
   int string_index = static_cast<int>(
       nodes_array->Get(string_obj_pos + 1)->ToNumber()->Value());
   CHECK_GT(string_index, 0);
   v8::Local<v8::Object> strings_array =
-      parsed_snapshot->Get(v8_str("\x73\x74\x72\x69\x6e\x67\x73"))->ToObject();
+      parsed_snapshot->Get(v8_str("strings"))->ToObject();
   v8::Local<v8::String> string = strings_array->Get(string_index)->ToString();
   v8::Local<v8::String> ref_string =
       CompileRun(STRING_LITERAL_FOR_TEST)->ToString();
@@ -1001,7 +1001,7 @@ TEST(HeapSnapshotJSONSerializationAborting) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x61\x62\x6f\x72\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("abort"));
   CHECK(ValidateSnapshot(snapshot));
   TestJSONStream stream(5);
   snapshot->Serialize(&stream, v8::HeapSnapshot::kJSON);
@@ -1110,7 +1110,7 @@ TEST(HeapSnapshotObjectsStats) {
   {
     v8::SnapshotObjectId additional_string_id;
     v8::HandleScope inner_scope_1(env->GetIsolate());
-    v8_str("\x73\x74\x72\x69\x6e\x67\x31");
+    v8_str("string1");
     {
       // Single chunk of data with one new entry expected in update.
       TestStatsStream stats_update = GetHeapStatsUpdate(heap_profiler,
@@ -1130,13 +1130,13 @@ TEST(HeapSnapshotObjectsStats) {
 
     {
       v8::HandleScope inner_scope_2(env->GetIsolate());
-      v8_str("\x73\x74\x72\x69\x6e\x67\x32");
+      v8_str("string2");
 
       uint32_t entries_size;
       {
         v8::HandleScope inner_scope_3(env->GetIsolate());
-        v8_str("\x73\x74\x72\x69\x6e\x67\x33");
-        v8_str("\x73\x74\x72\x69\x6e\x67\x34");
+        v8_str("string3");
+        v8_str("string4");
 
         {
           // Single chunk of data with three new entries expected in update.
@@ -1284,7 +1284,7 @@ TEST(HeapSnapshotGetNodeById) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x69\x64"));
+      heap_profiler->TakeHeapSnapshot(v8_str("id"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* root = snapshot->GetRoot();
   CheckChildrenIds(snapshot, root, 0, 3);
@@ -1297,17 +1297,17 @@ TEST(HeapSnapshotGetSnapshotObjectId) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
-  CompileRun("\x67\x6c\x6f\x62\x61\x6c\x4f\x62\x6a\x65\x63\x74\x20\x3d\x20\x7b\x7d\x3b\xa");
+  CompileRun("globalObject = {};\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x67\x65\x74\x5f\x73\x6e\x61\x70\x73\x68\x6f\x74\x5f\x6f\x62\x6a\x65\x63\x74\x5f\x69\x64"));
+      heap_profiler->TakeHeapSnapshot(v8_str("get_snapshot_object_id"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* global_object =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x67\x6c\x6f\x62\x61\x6c\x4f\x62\x6a\x65\x63\x74");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "globalObject");
   CHECK(global_object);
 
   v8::Local<v8::Value> globalObjectHandle = env->Global()->Get(
-      v8::String::NewFromUtf8(env->GetIsolate(), "\x67\x6c\x6f\x62\x61\x6c\x4f\x62\x6a\x65\x63\x74"));
+      v8::String::NewFromUtf8(env->GetIsolate(), "globalObject"));
   CHECK(!globalObjectHandle.IsEmpty());
   CHECK(globalObjectHandle->IsObject());
 
@@ -1322,9 +1322,9 @@ TEST(HeapSnapshotUnknownSnapshotObjectId) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
-  CompileRun("\x67\x6c\x6f\x62\x61\x6c\x4f\x62\x6a\x65\x63\x74\x20\x3d\x20\x7b\x7d\x3b\xa");
+  CompileRun("globalObject = {};\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x75\x6e\x6b\x6e\x6f\x77\x6e\x5f\x6f\x62\x6a\x65\x63\x74\x5f\x69\x64"));
+      heap_profiler->TakeHeapSnapshot(v8_str("unknown_object_id"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* node =
       snapshot->GetNodeById(v8::HeapProfiler::kUnknownObjectId);
@@ -1362,7 +1362,7 @@ TEST(TakeHeapSnapshotAborting) {
   const int snapshots_count = heap_profiler->GetSnapshotCount();
   TestActivityControl aborting_control(1);
   const v8::HeapSnapshot* no_snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x61\x62\x6f\x72\x74"),
+      heap_profiler->TakeHeapSnapshot(v8_str("abort"),
                                      &aborting_control);
   CHECK_EQ(NULL, no_snapshot);
   CHECK_EQ(snapshots_count, heap_profiler->GetSnapshotCount());
@@ -1370,7 +1370,7 @@ TEST(TakeHeapSnapshotAborting) {
 
   TestActivityControl control(-1);  // Don't abort.
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x66\x75\x6c\x6c"),
+      heap_profiler->TakeHeapSnapshot(v8_str("full"),
                                      &control);
   CHECK(ValidateSnapshot(snapshot));
 
@@ -1418,16 +1418,16 @@ class TestRetainedObjectInfo : public v8::RetainedObjectInfo {
     if (class_id == 1) {
       if (wrapper->IsString()) {
         v8::String::Utf8Value utf8(wrapper);
-        if (strcmp(*utf8, "\x41\x41\x41") == 0)
-          return new TestRetainedObjectInfo(1, "\x61\x61\x61\x2d\x67\x72\x6f\x75\x70", "\x61\x61\x61", 100);
-        else if (strcmp(*utf8, "\x42\x42\x42") == 0)
-          return new TestRetainedObjectInfo(1, "\x61\x61\x61\x2d\x67\x72\x6f\x75\x70", "\x61\x61\x61", 100);
+        if (strcmp(*utf8, "AAA") == 0)
+          return new TestRetainedObjectInfo(1, "aaa-group", "aaa", 100);
+        else if (strcmp(*utf8, "BBB") == 0)
+          return new TestRetainedObjectInfo(1, "aaa-group", "aaa", 100);
       }
     } else if (class_id == 2) {
       if (wrapper->IsString()) {
         v8::String::Utf8Value utf8(wrapper);
-        if (strcmp(*utf8, "\x43\x43\x43") == 0)
-          return new TestRetainedObjectInfo(2, "\x63\x63\x63\x2d\x67\x72\x6f\x75\x70", "\x63\x63\x63");
+        if (strcmp(*utf8, "CCC") == 0)
+          return new TestRetainedObjectInfo(2, "ccc-group", "ccc");
       }
     }
     CHECK(false);
@@ -1475,15 +1475,15 @@ TEST(HeapSnapshotRetainedObjectInfo) {
       1, TestRetainedObjectInfo::WrapperInfoCallback);
   heap_profiler->SetWrapperClassInfoProvider(
       2, TestRetainedObjectInfo::WrapperInfoCallback);
-  v8::Persistent<v8::String> p_AAA(isolate, v8_str("\x41\x41\x41"));
+  v8::Persistent<v8::String> p_AAA(isolate, v8_str("AAA"));
   p_AAA.SetWrapperClassId(1);
-  v8::Persistent<v8::String> p_BBB(isolate, v8_str("\x42\x42\x42"));
+  v8::Persistent<v8::String> p_BBB(isolate, v8_str("BBB"));
   p_BBB.SetWrapperClassId(1);
-  v8::Persistent<v8::String> p_CCC(isolate, v8_str("\x43\x43\x43"));
+  v8::Persistent<v8::String> p_CCC(isolate, v8_str("CCC"));
   p_CCC.SetWrapperClassId(2);
   CHECK_EQ(0, TestRetainedObjectInfo::instances.length());
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x72\x65\x74\x61\x69\x6e\x65\x64"));
+      heap_profiler->TakeHeapSnapshot(v8_str("retained"));
   CHECK(ValidateSnapshot(snapshot));
 
   CHECK_EQ(3, TestRetainedObjectInfo::instances.length());
@@ -1493,34 +1493,34 @@ TEST(HeapSnapshotRetainedObjectInfo) {
   }
 
   const v8::HeapGraphNode* native_group_aaa = GetNode(
-      snapshot->GetRoot(), v8::HeapGraphNode::kSynthetic, "\x61\x61\x61\x2d\x67\x72\x6f\x75\x70");
+      snapshot->GetRoot(), v8::HeapGraphNode::kSynthetic, "aaa-group");
   CHECK_NE(NULL, native_group_aaa);
   CHECK_EQ(1, native_group_aaa->GetChildrenCount());
   const v8::HeapGraphNode* aaa = GetNode(
-      native_group_aaa, v8::HeapGraphNode::kNative, "\x61\x61\x61\x20\x2f\x20\x31\x30\x30\x20\x65\x6e\x74\x72\x69\x65\x73");
+      native_group_aaa, v8::HeapGraphNode::kNative, "aaa / 100 entries");
   CHECK_NE(NULL, aaa);
   CHECK_EQ(2, aaa->GetChildrenCount());
 
   const v8::HeapGraphNode* native_group_ccc = GetNode(
-      snapshot->GetRoot(), v8::HeapGraphNode::kSynthetic, "\x63\x63\x63\x2d\x67\x72\x6f\x75\x70");
+      snapshot->GetRoot(), v8::HeapGraphNode::kSynthetic, "ccc-group");
   const v8::HeapGraphNode* ccc = GetNode(
-      native_group_ccc, v8::HeapGraphNode::kNative, "\x63\x63\x63");
+      native_group_ccc, v8::HeapGraphNode::kNative, "ccc");
   CHECK_NE(NULL, ccc);
 
   const v8::HeapGraphNode* n_AAA = GetNode(
-      aaa, v8::HeapGraphNode::kString, "\x41\x41\x41");
+      aaa, v8::HeapGraphNode::kString, "AAA");
   CHECK_NE(NULL, n_AAA);
   const v8::HeapGraphNode* n_BBB = GetNode(
-      aaa, v8::HeapGraphNode::kString, "\x42\x42\x42");
+      aaa, v8::HeapGraphNode::kString, "BBB");
   CHECK_NE(NULL, n_BBB);
   CHECK_EQ(1, ccc->GetChildrenCount());
   const v8::HeapGraphNode* n_CCC = GetNode(
-      ccc, v8::HeapGraphNode::kString, "\x43\x43\x43");
+      ccc, v8::HeapGraphNode::kString, "CCC");
   CHECK_NE(NULL, n_CCC);
 
-  CHECK_EQ(aaa, GetProperty(n_AAA, v8::HeapGraphEdge::kInternal, "\x6e\x61\x74\x69\x76\x65"));
-  CHECK_EQ(aaa, GetProperty(n_BBB, v8::HeapGraphEdge::kInternal, "\x6e\x61\x74\x69\x76\x65"));
-  CHECK_EQ(ccc, GetProperty(n_CCC, v8::HeapGraphEdge::kInternal, "\x6e\x61\x74\x69\x76\x65"));
+  CHECK_EQ(aaa, GetProperty(n_AAA, v8::HeapGraphEdge::kInternal, "native"));
+  CHECK_EQ(aaa, GetProperty(n_BBB, v8::HeapGraphEdge::kInternal, "native"));
+  CHECK_EQ(ccc, GetProperty(n_CCC, v8::HeapGraphEdge::kInternal, "native"));
 }
 
 
@@ -1534,7 +1534,7 @@ class GraphWithImplicitRefs {
     for (int i = 0; i < kObjectsCount; i++) {
       objects_[i].Reset(isolate_, v8::Object::New(isolate_));
     }
-    (*env)->Global()->Set(v8_str("\x72\x6f\x6f\x74\x5f\x6f\x62\x6a\x65\x63\x74"),
+    (*env)->Global()->Set(v8_str("root_object"),
                           v8::Local<v8::Value>::New(isolate_, objects_[0]));
   }
   ~GraphWithImplicitRefs() {
@@ -1576,23 +1576,23 @@ TEST(HeapSnapshotImplicitReferences) {
   v8::V8::AddGCPrologueCallback(&GraphWithImplicitRefs::gcPrologue);
 
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x69\x6d\x70\x6c\x69\x63\x69\x74\x5f\x72\x65\x66\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("implicit_refs"));
   CHECK(ValidateSnapshot(snapshot));
 
   const v8::HeapGraphNode* global_object = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* obj0 = GetProperty(
-      global_object, v8::HeapGraphEdge::kProperty, "\x72\x6f\x6f\x74\x5f\x6f\x62\x6a\x65\x63\x74");
+      global_object, v8::HeapGraphEdge::kProperty, "root_object");
   CHECK(obj0);
   CHECK_EQ(v8::HeapGraphNode::kObject, obj0->GetType());
   const v8::HeapGraphNode* obj1 = GetProperty(
-      obj0, v8::HeapGraphEdge::kInternal, "\x6e\x61\x74\x69\x76\x65");
+      obj0, v8::HeapGraphEdge::kInternal, "native");
   CHECK(obj1);
   int implicit_targets_count = 0;
   for (int i = 0, count = obj1->GetChildrenCount(); i < count; ++i) {
     const v8::HeapGraphEdge* prop = obj1->GetChild(i);
     v8::String::Utf8Value prop_name(prop->GetName());
     if (prop->GetType() == v8::HeapGraphEdge::kInternal &&
-        strcmp("\x6e\x61\x74\x69\x76\x65", *prop_name) == 0) {
+        strcmp("native", *prop_name) == 0) {
       ++implicit_targets_count;
     }
   }
@@ -1609,12 +1609,12 @@ TEST(DeleteAllHeapSnapshots) {
   CHECK_EQ(0, heap_profiler->GetSnapshotCount());
   heap_profiler->DeleteAllHeapSnapshots();
   CHECK_EQ(0, heap_profiler->GetSnapshotCount());
-  CHECK_NE(NULL, heap_profiler->TakeHeapSnapshot(v8_str("\x31")));
+  CHECK_NE(NULL, heap_profiler->TakeHeapSnapshot(v8_str("1")));
   CHECK_EQ(1, heap_profiler->GetSnapshotCount());
   heap_profiler->DeleteAllHeapSnapshots();
   CHECK_EQ(0, heap_profiler->GetSnapshotCount());
-  CHECK_NE(NULL, heap_profiler->TakeHeapSnapshot(v8_str("\x31")));
-  CHECK_NE(NULL, heap_profiler->TakeHeapSnapshot(v8_str("\x32")));
+  CHECK_NE(NULL, heap_profiler->TakeHeapSnapshot(v8_str("1")));
+  CHECK_NE(NULL, heap_profiler->TakeHeapSnapshot(v8_str("2")));
   CHECK_EQ(2, heap_profiler->GetSnapshotCount());
   heap_profiler->DeleteAllHeapSnapshots();
   CHECK_EQ(0, heap_profiler->GetSnapshotCount());
@@ -1641,7 +1641,7 @@ TEST(DeleteHeapSnapshot) {
 
   CHECK_EQ(0, heap_profiler->GetSnapshotCount());
   const v8::HeapSnapshot* s1 =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x31"));
+      heap_profiler->TakeHeapSnapshot(v8_str("1"));
 
   CHECK_NE(NULL, s1);
   CHECK_EQ(1, heap_profiler->GetSnapshotCount());
@@ -1652,14 +1652,14 @@ TEST(DeleteHeapSnapshot) {
   CHECK_EQ(NULL, FindHeapSnapshot(heap_profiler, uid1));
 
   const v8::HeapSnapshot* s2 =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x32"));
+      heap_profiler->TakeHeapSnapshot(v8_str("2"));
   CHECK_NE(NULL, s2);
   CHECK_EQ(1, heap_profiler->GetSnapshotCount());
   unsigned uid2 = s2->GetUid();
   CHECK_NE(static_cast<int>(uid1), static_cast<int>(uid2));
   CHECK_EQ(s2, FindHeapSnapshot(heap_profiler, uid2));
   const v8::HeapSnapshot* s3 =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x33"));
+      heap_profiler->TakeHeapSnapshot(v8_str("3"));
   CHECK_NE(NULL, s3);
   CHECK_EQ(2, heap_profiler->GetSnapshotCount());
   unsigned uid3 = s3->GetUid();
@@ -1678,7 +1678,7 @@ TEST(DeleteHeapSnapshot) {
 class NameResolver : public v8::HeapProfiler::ObjectNameResolver {
  public:
   virtual const char* GetName(v8::Handle<v8::Object> object) {
-    return "\x47\x6c\x6f\x62\x61\x6c\x20\x6f\x62\x6a\x65\x63\x74\x20\x6e\x61\x6d\x65";
+    return "Global object name";
   }
 };
 
@@ -1688,17 +1688,17 @@ TEST(GlobalObjectName) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
-  CompileRun("\x64\x6f\x63\x75\x6d\x65\x6e\x74\x20\x3d\x20\x7b\x20\x55\x52\x4c\x3a\x22\x61\x62\x63\x64\x65\x66\x67\x68\x22\x20\x7d\x3b");
+  CompileRun("document = { URL:\"abcdefgh\" };");
 
   NameResolver name_resolver;
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x64\x6f\x63\x75\x6d\x65\x6e\x74"),
+      heap_profiler->TakeHeapSnapshot(v8_str("document"),
       NULL,
       &name_resolver);
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   CHECK_NE(NULL, global);
-  CHECK_EQ("\x4f\x62\x6a\x65\x63\x74\x20\x2f\x20\x47\x6c\x6f\x62\x61\x6c\x20\x6f\x62\x6a\x65\x63\x74\x20\x6e\x61\x6d\x65" ,
+  CHECK_EQ("Object / Global object name" ,
            const_cast<i::HeapEntry*>(
                reinterpret_cast<const i::HeapEntry*>(global))->name());
 }
@@ -1708,22 +1708,22 @@ TEST(GlobalObjectFields) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
-  CompileRun("\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b");
+  CompileRun("obj = {};");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* builtins =
-      GetProperty(global, v8::HeapGraphEdge::kInternal, "\x62\x75\x69\x6c\x74\x69\x6e\x73");
+      GetProperty(global, v8::HeapGraphEdge::kInternal, "builtins");
   CHECK_NE(NULL, builtins);
   const v8::HeapGraphNode* native_context =
-      GetProperty(global, v8::HeapGraphEdge::kInternal, "\x6e\x61\x74\x69\x76\x65\x5f\x63\x6f\x6e\x74\x65\x78\x74");
+      GetProperty(global, v8::HeapGraphEdge::kInternal, "native_context");
   CHECK_NE(NULL, native_context);
   const v8::HeapGraphNode* global_context =
-      GetProperty(global, v8::HeapGraphEdge::kInternal, "\x67\x6c\x6f\x62\x61\x6c\x5f\x63\x6f\x6e\x74\x65\x78\x74");
+      GetProperty(global, v8::HeapGraphEdge::kInternal, "global_context");
   CHECK_NE(NULL, global_context);
   const v8::HeapGraphNode* global_proxy =
-      GetProperty(global, v8::HeapGraphEdge::kInternal, "\x67\x6c\x6f\x62\x61\x6c\x5f\x70\x72\x6f\x78\x79");
+      GetProperty(global, v8::HeapGraphEdge::kInternal, "global_proxy");
   CHECK_NE(NULL, global_proxy);
 }
 
@@ -1733,9 +1733,9 @@ TEST(NoHandleLeaks) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
-  CompileRun("\x64\x6f\x63\x75\x6d\x65\x6e\x74\x20\x3d\x20\x7b\x20\x55\x52\x4c\x3a\x22\x61\x62\x63\x64\x65\x66\x67\x68\x22\x20\x7d\x3b");
+  CompileRun("document = { URL:\"abcdefgh\" };");
 
-  v8::Handle<v8::String> name(v8_str("\x6c\x65\x61\x6b\x7a"));
+  v8::Handle<v8::String> name(v8_str("leakz"));
   i::Isolate* isolate = CcTest::i_isolate();
   int count_before = i::HandleScope::NumberOfHandles(isolate);
   heap_profiler->TakeHeapSnapshot(name);
@@ -1749,7 +1749,7 @@ TEST(NodesIteration) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x69\x74\x65\x72\x61\x74\x69\x6f\x6e"));
+      heap_profiler->TakeHeapSnapshot(v8_str("iteration"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   CHECK_NE(NULL, global);
@@ -1769,9 +1769,9 @@ TEST(GetHeapValueForNode) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
-  CompileRun("\x61\x20\x3d\x20\x7b\x20\x73\x5f\x70\x72\x6f\x70\x3a\x20\x27\x76\x61\x6c\x75\x65\x27\x2c\x20\x6e\x5f\x70\x72\x6f\x70\x3a\x20\x27\x76\x61\x6c\x75\x65\x32\x27\x20\x7d\x3b");
+  CompileRun("a = { s_prop: \'value\', n_prop: \'value2\' };");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x76\x61\x6c\x75\x65"));
+      heap_profiler->TakeHeapSnapshot(v8_str("value"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   CHECK(heap_profiler->FindObjectById(global->GetId())->IsObject());
@@ -1779,19 +1779,19 @@ TEST(GetHeapValueForNode) {
       env->Global()->GetPrototype().As<v8::Object>();
   CHECK(js_global == heap_profiler->FindObjectById(global->GetId()));
   const v8::HeapGraphNode* obj = GetProperty(
-      global, v8::HeapGraphEdge::kProperty, "\x61");
+      global, v8::HeapGraphEdge::kProperty, "a");
   CHECK(heap_profiler->FindObjectById(obj->GetId())->IsObject());
-  v8::Local<v8::Object> js_obj = js_global->Get(v8_str("\x61")).As<v8::Object>();
+  v8::Local<v8::Object> js_obj = js_global->Get(v8_str("a")).As<v8::Object>();
   CHECK(js_obj == heap_profiler->FindObjectById(obj->GetId()));
   const v8::HeapGraphNode* s_prop =
-      GetProperty(obj, v8::HeapGraphEdge::kProperty, "\x73\x5f\x70\x72\x6f\x70");
+      GetProperty(obj, v8::HeapGraphEdge::kProperty, "s_prop");
   v8::Local<v8::String> js_s_prop =
-      js_obj->Get(v8_str("\x73\x5f\x70\x72\x6f\x70")).As<v8::String>();
+      js_obj->Get(v8_str("s_prop")).As<v8::String>();
   CHECK(js_s_prop == heap_profiler->FindObjectById(s_prop->GetId()));
   const v8::HeapGraphNode* n_prop =
-      GetProperty(obj, v8::HeapGraphEdge::kProperty, "\x6e\x5f\x70\x72\x6f\x70");
+      GetProperty(obj, v8::HeapGraphEdge::kProperty, "n_prop");
   v8::Local<v8::String> js_n_prop =
-      js_obj->Get(v8_str("\x6e\x5f\x70\x72\x6f\x70")).As<v8::String>();
+      js_obj->Get(v8_str("n_prop")).As<v8::String>();
   CHECK(js_n_prop == heap_profiler->FindObjectById(n_prop->GetId()));
 }
 
@@ -1804,22 +1804,22 @@ TEST(GetHeapValueForDeletedObject) {
   // It is impossible to delete a global property, so we are about to delete a
   // property of the "a" object. Also, the "p" object can't be an empty one
   // because the empty object is static and isn't actually deleted.
-  CompileRun("\x61\x20\x3d\x20\x7b\x20\x70\x3a\x20\x7b\x20\x72\x3a\x20\x7b\x7d\x20\x7d\x20\x7d\x3b");
+  CompileRun("a = { p: { r: {} } };");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* obj = GetProperty(
-      global, v8::HeapGraphEdge::kProperty, "\x61");
+      global, v8::HeapGraphEdge::kProperty, "a");
   const v8::HeapGraphNode* prop = GetProperty(
-      obj, v8::HeapGraphEdge::kProperty, "\x70");
+      obj, v8::HeapGraphEdge::kProperty, "p");
   {
     // Perform the check inside a nested local scope to avoid creating a
     // reference to the object we are deleting.
     v8::HandleScope scope(env->GetIsolate());
     CHECK(heap_profiler->FindObjectById(prop->GetId())->IsObject());
   }
-  CompileRun("\x64\x65\x6c\x65\x74\x65\x20\x61\x2e\x70\x3b");
+  CompileRun("delete a.p;");
   CHECK(heap_profiler->FindObjectById(prop->GetId()).IsEmpty());
 }
 
@@ -1828,7 +1828,7 @@ static int StringCmp(const char* ref, i::String* act) {
   i::SmartArrayPointer<char> s_act = act->ToCString();
   int result = strcmp(ref, s_act.get());
   if (result != 0)
-    fprintf(stderr, "\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x22\x6c\xa2\x22\x2c\x20\x41\x63\x74\x75\x61\x6c\x3a\x20\x22\x6c\xa2\x22\xa", ref, s_act.get());
+    fprintf(stderr, "Expected: \"%s\", Actual: \"%s\"\n", ref, s_act.get());
   return result;
 }
 
@@ -1838,45 +1838,45 @@ TEST(GetConstructorName) {
   v8::HandleScope scope(env->GetIsolate());
 
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x31\x28\x29\x20\x7b\x7d\x3b\xa"
-      "\x76\x61\x72\x20\x6f\x62\x6a\x31\x20\x3d\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x31\x28\x29\x3b\xa"
-      "\x76\x61\x72\x20\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x32\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x7d\x3b\xa"
-      "\x76\x61\x72\x20\x6f\x62\x6a\x32\x20\x3d\x20\x6e\x65\x77\x20\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x32\x28\x29\x3b\xa"
-      "\x76\x61\x72\x20\x6f\x62\x6a\x33\x20\x3d\x20\x7b\x7d\x3b\xa"
-      "\x6f\x62\x6a\x33\x2e\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x33\x28\x29\x20\x7b\x7d\x3b\xa"
-      "\x76\x61\x72\x20\x6f\x62\x6a\x34\x20\x3d\x20\x7b\x7d\x3b\xa"
-      "\x2f\x2f\x20\x53\x6c\x6f\x77\x20\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73\xa"
-      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x3d\x30\x3b\x20\x69\x3c\x32\x30\x30\x30\x3b\x20\x2b\x2b\x69\x29\x20\x6f\x62\x6a\x34\x5b\x22\x70\x22\x20\x2b\x20\x69\x5d\x20\x3d\x20\x69\x3b\xa"
-      "\x6f\x62\x6a\x34\x2e\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x34\x28\x29\x20\x7b\x7d\x3b\xa"
-      "\x76\x61\x72\x20\x6f\x62\x6a\x35\x20\x3d\x20\x7b\x7d\x3b\xa"
-      "\x76\x61\x72\x20\x6f\x62\x6a\x36\x20\x3d\x20\x7b\x7d\x3b\xa"
-      "\x6f\x62\x6a\x36\x2e\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x20\x3d\x20\x36\x3b");
+      "function Constructor1() {};\n"
+      "var obj1 = new Constructor1();\n"
+      "var Constructor2 = function() {};\n"
+      "var obj2 = new Constructor2();\n"
+      "var obj3 = {};\n"
+      "obj3.constructor = function Constructor3() {};\n"
+      "var obj4 = {};\n"
+      "// Slow properties\n"
+      "for (var i=0; i<2000; ++i) obj4[\"p\" + i] = i;\n"
+      "obj4.constructor = function Constructor4() {};\n"
+      "var obj5 = {};\n"
+      "var obj6 = {};\n"
+      "obj6.constructor = 6;");
   v8::Local<v8::Object> js_global =
       env->Global()->GetPrototype().As<v8::Object>();
-  v8::Local<v8::Object> obj1 = js_global->Get(v8_str("\x6f\x62\x6a\x31")).As<v8::Object>();
+  v8::Local<v8::Object> obj1 = js_global->Get(v8_str("obj1")).As<v8::Object>();
   i::Handle<i::JSObject> js_obj1 = v8::Utils::OpenHandle(*obj1);
   CHECK_EQ(0, StringCmp(
-      "\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x31", i::V8HeapExplorer::GetConstructorName(*js_obj1)));
-  v8::Local<v8::Object> obj2 = js_global->Get(v8_str("\x6f\x62\x6a\x32")).As<v8::Object>();
+      "Constructor1", i::V8HeapExplorer::GetConstructorName(*js_obj1)));
+  v8::Local<v8::Object> obj2 = js_global->Get(v8_str("obj2")).As<v8::Object>();
   i::Handle<i::JSObject> js_obj2 = v8::Utils::OpenHandle(*obj2);
   CHECK_EQ(0, StringCmp(
-      "\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x32", i::V8HeapExplorer::GetConstructorName(*js_obj2)));
-  v8::Local<v8::Object> obj3 = js_global->Get(v8_str("\x6f\x62\x6a\x33")).As<v8::Object>();
+      "Constructor2", i::V8HeapExplorer::GetConstructorName(*js_obj2)));
+  v8::Local<v8::Object> obj3 = js_global->Get(v8_str("obj3")).As<v8::Object>();
   i::Handle<i::JSObject> js_obj3 = v8::Utils::OpenHandle(*obj3);
   CHECK_EQ(0, StringCmp(
-      "\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x33", i::V8HeapExplorer::GetConstructorName(*js_obj3)));
-  v8::Local<v8::Object> obj4 = js_global->Get(v8_str("\x6f\x62\x6a\x34")).As<v8::Object>();
+      "Constructor3", i::V8HeapExplorer::GetConstructorName(*js_obj3)));
+  v8::Local<v8::Object> obj4 = js_global->Get(v8_str("obj4")).As<v8::Object>();
   i::Handle<i::JSObject> js_obj4 = v8::Utils::OpenHandle(*obj4);
   CHECK_EQ(0, StringCmp(
-      "\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x34", i::V8HeapExplorer::GetConstructorName(*js_obj4)));
-  v8::Local<v8::Object> obj5 = js_global->Get(v8_str("\x6f\x62\x6a\x35")).As<v8::Object>();
+      "Constructor4", i::V8HeapExplorer::GetConstructorName(*js_obj4)));
+  v8::Local<v8::Object> obj5 = js_global->Get(v8_str("obj5")).As<v8::Object>();
   i::Handle<i::JSObject> js_obj5 = v8::Utils::OpenHandle(*obj5);
   CHECK_EQ(0, StringCmp(
-      "\x4f\x62\x6a\x65\x63\x74", i::V8HeapExplorer::GetConstructorName(*js_obj5)));
-  v8::Local<v8::Object> obj6 = js_global->Get(v8_str("\x6f\x62\x6a\x36")).As<v8::Object>();
+      "Object", i::V8HeapExplorer::GetConstructorName(*js_obj5)));
+  v8::Local<v8::Object> obj6 = js_global->Get(v8_str("obj6")).As<v8::Object>();
   i::Handle<i::JSObject> js_obj6 = v8::Utils::OpenHandle(*obj6);
   CHECK_EQ(0, StringCmp(
-      "\x4f\x62\x6a\x65\x63\x74", i::V8HeapExplorer::GetConstructorName(*js_obj6)));
+      "Object", i::V8HeapExplorer::GetConstructorName(*js_obj6)));
 }
 
 
@@ -1885,30 +1885,30 @@ TEST(FastCaseAccessors) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
-  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x31\x20\x3d\x20\x7b\x7d\x3b\xa"
-             "\x6f\x62\x6a\x31\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x70\x72\x6f\x70\x57\x69\x74\x68\x47\x65\x74\x74\x65\x72\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x59\x28\x29\x20\x7b\xa"
-             "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b\xa"
-             "\x7d\x29\x3b\xa"
-             "\x6f\x62\x6a\x31\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x53\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x70\x72\x6f\x70\x57\x69\x74\x68\x53\x65\x74\x74\x65\x72\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x5a\x28\x76\x61\x6c\x75\x65\x29\x20\x7b\xa"
-             "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x76\x61\x6c\x75\x65\x5f\x20\x3d\x20\x76\x61\x6c\x75\x65\x3b\xa"
-             "\x7d\x29\x3b\xa");
+  CompileRun("var obj1 = {};\n"
+             "obj1.__defineGetter__('propWithGetter', function Y() {\n"
+             "  return 42;\n"
+             "});\n"
+             "obj1.__defineSetter__('propWithSetter', function Z(value) {\n"
+             "  return this.value_ = value;\n"
+             "});\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x66\x61\x73\x74\x43\x61\x73\x65\x41\x63\x63\x65\x73\x73\x6f\x72\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("fastCaseAccessors"));
   CHECK(ValidateSnapshot(snapshot));
 
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   CHECK_NE(NULL, global);
   const v8::HeapGraphNode* obj1 =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x6f\x62\x6a\x31");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "obj1");
   CHECK_NE(NULL, obj1);
   const v8::HeapGraphNode* func;
-  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "\x67\x65\x74\x20\x70\x72\x6f\x70\x57\x69\x74\x68\x47\x65\x74\x74\x65\x72");
+  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "get propWithGetter");
   CHECK_NE(NULL, func);
-  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "\x73\x65\x74\x20\x70\x72\x6f\x70\x57\x69\x74\x68\x47\x65\x74\x74\x65\x72");
+  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "set propWithGetter");
   CHECK_EQ(NULL, func);
-  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "\x73\x65\x74\x20\x70\x72\x6f\x70\x57\x69\x74\x68\x53\x65\x74\x74\x65\x72");
+  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "set propWithSetter");
   CHECK_NE(NULL, func);
-  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "\x67\x65\x74\x20\x70\x72\x6f\x70\x57\x69\x74\x68\x53\x65\x74\x74\x65\x72");
+  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "get propWithSetter");
   CHECK_EQ(NULL, func);
 }
 
@@ -1918,31 +1918,31 @@ TEST(SlowCaseAccessors) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
-  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x31\x20\x3d\x20\x7b\x7d\x3b\xa"
-             "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x2b\x2b\x69\x29\x20\x6f\x62\x6a\x31\x5b\x27\x7a\x27\x20\x2b\x20\x69\x5d\x20\x3d\x20\x7b\x7d\x3b"
-             "\x6f\x62\x6a\x31\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x47\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x70\x72\x6f\x70\x57\x69\x74\x68\x47\x65\x74\x74\x65\x72\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x59\x28\x29\x20\x7b\xa"
-             "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b\xa"
-             "\x7d\x29\x3b\xa"
-             "\x6f\x62\x6a\x31\x2e\x5f\x5f\x64\x65\x66\x69\x6e\x65\x53\x65\x74\x74\x65\x72\x5f\x5f\x28\x27\x70\x72\x6f\x70\x57\x69\x74\x68\x53\x65\x74\x74\x65\x72\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x5a\x28\x76\x61\x6c\x75\x65\x29\x20\x7b\xa"
-             "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x69\x73\x2e\x76\x61\x6c\x75\x65\x5f\x20\x3d\x20\x76\x61\x6c\x75\x65\x3b\xa"
-             "\x7d\x29\x3b\xa");
+  CompileRun("var obj1 = {};\n"
+             "for (var i = 0; i < 100; ++i) obj1['z' + i] = {};"
+             "obj1.__defineGetter__('propWithGetter', function Y() {\n"
+             "  return 42;\n"
+             "});\n"
+             "obj1.__defineSetter__('propWithSetter', function Z(value) {\n"
+             "  return this.value_ = value;\n"
+             "});\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6c\x6f\x77\x43\x61\x73\x65\x41\x63\x63\x65\x73\x73\x6f\x72\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("slowCaseAccessors"));
   CHECK(ValidateSnapshot(snapshot));
 
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   CHECK_NE(NULL, global);
   const v8::HeapGraphNode* obj1 =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x6f\x62\x6a\x31");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "obj1");
   CHECK_NE(NULL, obj1);
   const v8::HeapGraphNode* func;
-  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "\x67\x65\x74\x20\x70\x72\x6f\x70\x57\x69\x74\x68\x47\x65\x74\x74\x65\x72");
+  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "get propWithGetter");
   CHECK_NE(NULL, func);
-  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "\x73\x65\x74\x20\x70\x72\x6f\x70\x57\x69\x74\x68\x47\x65\x74\x74\x65\x72");
+  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "set propWithGetter");
   CHECK_EQ(NULL, func);
-  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "\x73\x65\x74\x20\x70\x72\x6f\x70\x57\x69\x74\x68\x53\x65\x74\x74\x65\x72");
+  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "set propWithSetter");
   CHECK_NE(NULL, func);
-  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "\x67\x65\x74\x20\x70\x72\x6f\x70\x57\x69\x74\x68\x53\x65\x74\x74\x65\x72");
+  func = GetProperty(obj1, v8::HeapGraphEdge::kProperty, "get propWithSetter");
   CHECK_EQ(NULL, func);
 }
 
@@ -1953,32 +1953,32 @@ TEST(HiddenPropertiesFastCase) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x43\x28\x78\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x61\x20\x3d\x20\x74\x68\x69\x73\x3b\x20\x74\x68\x69\x73\x2e\x62\x20\x3d\x20\x78\x3b\x20\x7d\xa"
-      "\x63\x20\x3d\x20\x6e\x65\x77\x20\x43\x28\x32\x30\x31\x32\x29\x3b\xa");
+      "function C(x) { this.a = this; this.b = x; }\n"
+      "c = new C(2012);\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x48\x69\x64\x64\x65\x6e\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x46\x61\x73\x74\x43\x61\x73\x65\x31"));
+      heap_profiler->TakeHeapSnapshot(v8_str("HiddenPropertiesFastCase1"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* c =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x63");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "c");
   CHECK_NE(NULL, c);
   const v8::HeapGraphNode* hidden_props =
-      GetProperty(c, v8::HeapGraphEdge::kInternal, "\x68\x69\x64\x64\x65\x6e\x5f\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73");
+      GetProperty(c, v8::HeapGraphEdge::kInternal, "hidden_properties");
   CHECK_EQ(NULL, hidden_props);
 
   v8::Handle<v8::Value> cHandle =
-      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "\x63"));
+      env->Global()->Get(v8::String::NewFromUtf8(env->GetIsolate(), "c"));
   CHECK(!cHandle.IsEmpty() && cHandle->IsObject());
-  cHandle->ToObject()->SetHiddenValue(v8_str("\x6b\x65\x79"), v8_str("\x76\x61\x6c"));
+  cHandle->ToObject()->SetHiddenValue(v8_str("key"), v8_str("val"));
 
   snapshot = heap_profiler->TakeHeapSnapshot(
-      v8_str("\x48\x69\x64\x64\x65\x6e\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73\x46\x61\x73\x74\x43\x61\x73\x65\x32"));
+      v8_str("HiddenPropertiesFastCase2"));
   CHECK(ValidateSnapshot(snapshot));
   global = GetGlobalObject(snapshot);
-  c = GetProperty(global, v8::HeapGraphEdge::kProperty, "\x63");
+  c = GetProperty(global, v8::HeapGraphEdge::kProperty, "c");
   CHECK_NE(NULL, c);
   hidden_props = GetProperty(c, v8::HeapGraphEdge::kInternal,
-      "\x68\x69\x64\x64\x65\x6e\x5f\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73");
+      "hidden_properties");
   CHECK_NE(NULL, hidden_props);
 }
 
@@ -1996,13 +1996,13 @@ bool HasWeakGlobalHandle() {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HeapProfiler* heap_profiler = isolate->GetHeapProfiler();
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x77\x65\x61\x6b\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("weaks"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* gc_roots = GetNode(
-      snapshot->GetRoot(), v8::HeapGraphNode::kSynthetic, "\x28\x47\x43\x20\x72\x6f\x6f\x74\x73\x29");
+      snapshot->GetRoot(), v8::HeapGraphNode::kSynthetic, "(GC roots)");
   CHECK_NE(NULL, gc_roots);
   const v8::HeapGraphNode* global_handles = GetNode(
-      gc_roots, v8::HeapGraphNode::kSynthetic, "\x28\x47\x6c\x6f\x62\x61\x6c\x20\x68\x61\x6e\x64\x6c\x65\x73\x29");
+      gc_roots, v8::HeapGraphNode::kSynthetic, "(Global handles)");
   CHECK_NE(NULL, global_handles);
   return HasWeakEdge(global_handles);
 }
@@ -2035,17 +2035,17 @@ TEST(SfiAndJsFunctionWeakRefs) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   CompileRun(
-      "\x66\x75\x6e\x20\x3d\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x20\x7d\x29\x28\x31\x29\x3b");
+      "fun = (function (x) { return function () { return x + 1; } })(1);");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x66\x75\x6e"));
+      heap_profiler->TakeHeapSnapshot(v8_str("fun"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   CHECK_NE(NULL, global);
   const v8::HeapGraphNode* fun =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x66\x75\x6e");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "fun");
   CHECK(!HasWeakEdge(fun));
   const v8::HeapGraphNode* shared =
-      GetProperty(fun, v8::HeapGraphEdge::kInternal, "\x73\x68\x61\x72\x65\x64");
+      GetProperty(fun, v8::HeapGraphEdge::kInternal, "shared");
   CHECK(!HasWeakEdge(shared));
 }
 
@@ -2056,9 +2056,9 @@ TEST(NoDebugObjectInSnapshot) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
   CHECK(CcTest::i_isolate()->debug()->Load());
-  CompileRun("\x66\x6f\x6f\x20\x3d\x20\x7b\x7d\x3b");
+  CompileRun("foo = {};");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* root = snapshot->GetRoot();
   int globals_count = 0;
@@ -2068,7 +2068,7 @@ TEST(NoDebugObjectInSnapshot) {
       ++globals_count;
       const v8::HeapGraphNode* global = edge->GetToNode();
       const v8::HeapGraphNode* foo =
-          GetProperty(global, v8::HeapGraphEdge::kProperty, "\x66\x6f\x6f");
+          GetProperty(global, v8::HeapGraphEdge::kProperty, "foo");
       CHECK_NE(NULL, foo);
     }
   }
@@ -2081,15 +2081,15 @@ TEST(AllStrongGcRootsHaveNames) {
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
 
-  CompileRun("\x66\x6f\x6f\x20\x3d\x20\x7b\x7d\x3b");
+  CompileRun("foo = {};");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* gc_roots = GetNode(
-      snapshot->GetRoot(), v8::HeapGraphNode::kSynthetic, "\x28\x47\x43\x20\x72\x6f\x6f\x74\x73\x29");
+      snapshot->GetRoot(), v8::HeapGraphNode::kSynthetic, "(GC roots)");
   CHECK_NE(NULL, gc_roots);
   const v8::HeapGraphNode* strong_roots = GetNode(
-      gc_roots, v8::HeapGraphNode::kSynthetic, "\x28\x53\x74\x72\x6f\x6e\x67\x20\x72\x6f\x6f\x74\x73\x29");
+      gc_roots, v8::HeapGraphNode::kSynthetic, "(Strong roots)");
   CHECK_NE(NULL, strong_roots);
   for (int i = 0; i < strong_roots->GetChildrenCount(); ++i) {
     const v8::HeapGraphEdge* edge = strong_roots->GetChild(i);
@@ -2104,19 +2104,19 @@ TEST(NoRefsToNonEssentialEntries) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
-  CompileRun("\x67\x6c\x6f\x62\x61\x6c\x5f\x6f\x62\x6a\x65\x63\x74\x20\x3d\x20\x7b\x7d\x3b\xa");
+  CompileRun("global_object = {};\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* global_object =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x67\x6c\x6f\x62\x61\x6c\x5f\x6f\x62\x6a\x65\x63\x74");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "global_object");
   CHECK_NE(NULL, global_object);
   const v8::HeapGraphNode* properties =
-      GetProperty(global_object, v8::HeapGraphEdge::kInternal, "\x70\x72\x6f\x70\x65\x72\x74\x69\x65\x73");
+      GetProperty(global_object, v8::HeapGraphEdge::kInternal, "properties");
   CHECK_EQ(NULL, properties);
   const v8::HeapGraphNode* elements =
-      GetProperty(global_object, v8::HeapGraphEdge::kInternal, "\x65\x6c\x65\x6d\x65\x6e\x74\x73");
+      GetProperty(global_object, v8::HeapGraphEdge::kInternal, "elements");
   CHECK_EQ(NULL, elements);
 }
 
@@ -2125,23 +2125,23 @@ TEST(MapHasDescriptorsAndTransitions) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
-  CompileRun("\x6f\x62\x6a\x20\x3d\x20\x7b\x20\x61\x3a\x20\x31\x30\x20\x7d\x3b\xa");
+  CompileRun("obj = { a: 10 };\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* global_object =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x6f\x62\x6a");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "obj");
   CHECK_NE(NULL, global_object);
 
   const v8::HeapGraphNode* map =
-      GetProperty(global_object, v8::HeapGraphEdge::kInternal, "\x6d\x61\x70");
+      GetProperty(global_object, v8::HeapGraphEdge::kInternal, "map");
   CHECK_NE(NULL, map);
   const v8::HeapGraphNode* own_descriptors = GetProperty(
-      map, v8::HeapGraphEdge::kInternal, "\x64\x65\x73\x63\x72\x69\x70\x74\x6f\x72\x73");
+      map, v8::HeapGraphEdge::kInternal, "descriptors");
   CHECK_NE(NULL, own_descriptors);
   const v8::HeapGraphNode* own_transitions = GetProperty(
-      map, v8::HeapGraphEdge::kInternal, "\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x73");
+      map, v8::HeapGraphEdge::kInternal, "transitions");
   CHECK_EQ(NULL, own_transitions);
 }
 
@@ -2152,30 +2152,30 @@ TEST(ManyLocalsInSharedContext) {
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
   int num_objects = 6000;
   CompileRun(
-      "\x76\x61\x72\x20\x6e\x20\x3d\x20\x36\x30\x30\x30\x3b"
-      "\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x5b\x5d\x3b"
-      "\x72\x65\x73\x75\x6c\x74\x2e\x70\x75\x73\x68\x28\x27\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x75\x74\x65\x72\x28\x29\x20\x7b\x27\x29\x3b"
-      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x76\x61\x72\x20\x66\x20\x3d\x20\x27\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x5f\x27\x20\x2b\x20\x69\x20\x2b\x20\x27\x28\x29\x20\x7b\x20\x27\x3b"
-      "\x20\x20\x20\x20\x69\x66\x20\x28\x69\x20\x3e\x20\x30\x29"
-      "\x20\x20\x20\x20\x20\x20\x20\x20\x66\x20\x2b\x3d\x20\x27\x66\x5f\x27\x20\x2b\x20\x28\x69\x20\x2d\x20\x31\x29\x20\x2b\x20\x27\x28\x29\x3b\x27\x3b"
-      "\x20\x20\x20\x20\x66\x20\x2b\x3d\x20\x27\x20\x7d\x27\x3b"
-      "\x20\x20\x20\x20\x72\x65\x73\x75\x6c\x74\x2e\x70\x75\x73\x68\x28\x66\x29\x3b"
-      "\x7d"
-      "\x72\x65\x73\x75\x6c\x74\x2e\x70\x75\x73\x68\x28\x27\x72\x65\x74\x75\x72\x6e\x20\x66\x5f\x27\x20\x2b\x20\x28\x6e\x20\x2d\x20\x31\x29\x20\x2b\x20\x27\x3b\x27\x29\x3b"
-      "\x72\x65\x73\x75\x6c\x74\x2e\x70\x75\x73\x68\x28\x27\x7d\x29\x28\x29\x27\x29\x3b"
-      "\x76\x61\x72\x20\x6f\x6b\x20\x3d\x20\x65\x76\x61\x6c\x28\x72\x65\x73\x75\x6c\x74\x2e\x6a\x6f\x69\x6e\x28\x27\x5c\x6e\x27\x29\x29\x3b");
+      "var n = 6000;"
+      "var result = [];"
+      "result.push('(function outer() {');"
+      "for (var i = 0; i < n; i++) {"
+      "    var f = 'function f_' + i + '() { ';"
+      "    if (i > 0)"
+      "        f += 'f_' + (i - 1) + '();';"
+      "    f += ' }';"
+      "    result.push(f);"
+      "}"
+      "result.push('return f_' + (n - 1) + ';');"
+      "result.push('})()');"
+      "var ok = eval(result.join('\\n'));");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
 
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   CHECK_NE(NULL, global);
   const v8::HeapGraphNode* ok_object =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x6f\x6b");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "ok");
   CHECK_NE(NULL, ok_object);
   const v8::HeapGraphNode* context_object =
-      GetProperty(ok_object, v8::HeapGraphEdge::kInternal, "\x63\x6f\x6e\x74\x65\x78\x74");
+      GetProperty(ok_object, v8::HeapGraphEdge::kInternal, "context");
   CHECK_NE(NULL, context_object);
   // Check the objects are not duplicated in the context.
   CHECK_EQ(v8::internal::Context::MIN_CONTEXT_SLOTS + num_objects - 1,
@@ -2184,7 +2184,7 @@ TEST(ManyLocalsInSharedContext) {
   // ... well check just every 15th because otherwise it's too slow in debug.
   for (int i = 0; i < num_objects - 1; i += 15) {
     i::EmbeddedVector<char, 100> var_name;
-    i::SNPrintF(var_name, "\x66\x5f\x6c\x84", i);
+    i::SNPrintF(var_name, "f_%d", i);
     const v8::HeapGraphNode* f_object = GetProperty(
         context_object, v8::HeapGraphEdge::kContextVariable, var_name.start());
     CHECK_NE(NULL, f_object);
@@ -2198,19 +2198,19 @@ TEST(AllocationSitesAreVisible) {
   v8::HandleScope scope(isolate);
   v8::HeapProfiler* heap_profiler = isolate->GetHeapProfiler();
   CompileRun(
-      "\x66\x75\x6e\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x29\x20\x7b\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x5b\x33\x2c\x20\x32\x2c\x20\x31\x5d\x3b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x3b\x20\x7d\xa"
-      "\x66\x75\x6e\x28\x29\x3b");
+      "fun = function () { var a = [3, 2, 1]; return a; }\n"
+      "fun();");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
 
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   CHECK_NE(NULL, global);
   const v8::HeapGraphNode* fun_code =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x66\x75\x6e");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "fun");
   CHECK_NE(NULL, fun_code);
   const v8::HeapGraphNode* literals =
-      GetProperty(fun_code, v8::HeapGraphEdge::kInternal, "\x6c\x69\x74\x65\x72\x61\x6c\x73");
+      GetProperty(fun_code, v8::HeapGraphEdge::kInternal, "literals");
   CHECK_NE(NULL, literals);
   CHECK_EQ(v8::HeapGraphNode::kArray, literals->GetType());
   CHECK_EQ(2, literals->GetChildrenCount());
@@ -2220,15 +2220,15 @@ TEST(AllocationSitesAreVisible) {
   const v8::HeapGraphEdge* prop = literals->GetChild(1);
   const v8::HeapGraphNode* allocation_site = prop->GetToNode();
   v8::String::Utf8Value name(allocation_site->GetName());
-  CHECK_EQ("\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x53\x69\x74\x65", *name);
+  CHECK_EQ("system / AllocationSite", *name);
   const v8::HeapGraphNode* transition_info =
       GetProperty(allocation_site, v8::HeapGraphEdge::kInternal,
-                  "\x74\x72\x61\x6e\x73\x69\x74\x69\x6f\x6e\x5f\x69\x6e\x66\x6f");
+                  "transition_info");
   CHECK_NE(NULL, transition_info);
 
   const v8::HeapGraphNode* elements =
       GetProperty(transition_info, v8::HeapGraphEdge::kInternal,
-                  "\x65\x6c\x65\x6d\x65\x6e\x74\x73");
+                  "elements");
   CHECK_NE(NULL, elements);
   CHECK_EQ(v8::HeapGraphNode::kArray, elements->GetType());
   CHECK_EQ(v8::internal::FixedArray::SizeFor(3),
@@ -2253,16 +2253,16 @@ TEST(JSFunctionHasCodeLink) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x2c\x20\x79\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x79\x3b\x20\x7d\xa");
+  CompileRun("function foo(x, y) { return x + y; }\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* foo_func =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x66\x6f\x6f");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "foo");
   CHECK_NE(NULL, foo_func);
   const v8::HeapGraphNode* code =
-      GetProperty(foo_func, v8::HeapGraphEdge::kInternal, "\x63\x6f\x64\x65");
+      GetProperty(foo_func, v8::HeapGraphEdge::kInternal, "code");
   CHECK_NE(NULL, code);
 }
 
@@ -2279,7 +2279,7 @@ static const v8::HeapGraphNode* GetNodeByPath(const v8::HeapSnapshot* snapshot,
       v8::String::Utf8Value edge_name(edge->GetName());
       v8::String::Utf8Value node_name(to_node->GetName());
       i::EmbeddedVector<char, 100> name;
-      i::SNPrintF(name, "\x6c\xa2\x3a\x3a\x6c\xa2", *edge_name, *node_name);
+      i::SNPrintF(name, "%s::%s", *edge_name, *node_name);
       if (strstr(name.start(), path[current_depth])) {
         node = to_node;
         break;
@@ -2295,81 +2295,81 @@ TEST(CheckCodeNames) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
-  CompileRun("\x76\x61\x72\x20\x61\x20\x3d\x20\x31\x2e\x31\x3b");
+  CompileRun("var a = 1.1;");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x43\x68\x65\x63\x6b\x43\x6f\x64\x65\x4e\x61\x6d\x65\x73"));
+      heap_profiler->TakeHeapSnapshot(v8_str("CheckCodeNames"));
   CHECK(ValidateSnapshot(snapshot));
 
   const char* stub_path[] = {
-    "\x3a\x3a\x28\x47\x43\x20\x72\x6f\x6f\x74\x73\x29",
-    "\x3a\x3a\x28\x53\x74\x72\x6f\x6e\x67\x20\x72\x6f\x6f\x74\x73\x29",
-    "\x63\x6f\x64\x65\x5f\x73\x74\x75\x62\x73\x3a\x3a",
-    "\x3a\x3a\x28\x41\x72\x72\x61\x79\x53\x69\x6e\x67\x6c\x65\x41\x72\x67\x75\x6d\x65\x6e\x74\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x53\x74\x75\x62\x20\x63\x6f\x64\x65\x29"
+    "::(GC roots)",
+    "::(Strong roots)",
+    "code_stubs::",
+    "::(ArraySingleArgumentConstructorStub code)"
   };
   const v8::HeapGraphNode* node = GetNodeByPath(snapshot,
       stub_path, ARRAY_SIZE(stub_path));
   CHECK_NE(NULL, node);
 
   const char* builtin_path1[] = {
-    "\x3a\x3a\x28\x47\x43\x20\x72\x6f\x6f\x74\x73\x29",
-    "\x3a\x3a\x28\x42\x75\x69\x6c\x74\x69\x6e\x73\x29",
-    "\x3a\x3a\x28\x4b\x65\x79\x65\x64\x4c\x6f\x61\x64\x49\x43\x5f\x47\x65\x6e\x65\x72\x69\x63\x20\x62\x75\x69\x6c\x74\x69\x6e\x29"
+    "::(GC roots)",
+    "::(Builtins)",
+    "::(KeyedLoadIC_Generic builtin)"
   };
   node = GetNodeByPath(snapshot, builtin_path1, ARRAY_SIZE(builtin_path1));
   CHECK_NE(NULL, node);
 
   const char* builtin_path2[] = {
-    "\x3a\x3a\x28\x47\x43\x20\x72\x6f\x6f\x74\x73\x29",
-    "\x3a\x3a\x28\x42\x75\x69\x6c\x74\x69\x6e\x73\x29",
-    "\x3a\x3a\x28\x43\x6f\x6d\x70\x69\x6c\x65\x55\x6e\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x62\x75\x69\x6c\x74\x69\x6e\x29"
+    "::(GC roots)",
+    "::(Builtins)",
+    "::(CompileUnoptimized builtin)"
   };
   node = GetNodeByPath(snapshot, builtin_path2, ARRAY_SIZE(builtin_path2));
   CHECK_NE(NULL, node);
   v8::String::Utf8Value node_name(node->GetName());
-  CHECK_EQ("\x28\x43\x6f\x6d\x70\x69\x6c\x65\x55\x6e\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x62\x75\x69\x6c\x74\x69\x6e\x29", *node_name);
+  CHECK_EQ("(CompileUnoptimized builtin)", *node_name);
 }
 
 
 static const char* record_trace_tree_source =
-"\x76\x61\x72\x20\x74\x6f\x70\x46\x75\x6e\x63\x74\x69\x6f\x6e\x73\x20\x3d\x20\x5b\x5d\x3b\xa"
-"\x76\x61\x72\x20\x67\x6c\x6f\x62\x61\x6c\x20\x3d\x20\x74\x68\x69\x73\x3b\xa"
-"\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x6e\x65\x72\x61\x74\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x73\x28\x77\x69\x64\x74\x68\x2c\x20\x64\x65\x70\x74\x68\x29\x20\x7b\xa"
-"\x20\x20\x76\x61\x72\x20\x73\x63\x72\x69\x70\x74\x20\x3d\x20\x5b\x5d\x3b\xa"
-"\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x77\x69\x64\x74\x68\x3b\x20\x69\x2b\x2b\x29\x20\x7b\xa"
-"\x20\x20\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x6a\x20\x3d\x20\x30\x3b\x20\x6a\x20\x3c\x20\x64\x65\x70\x74\x68\x3b\x20\x6a\x2b\x2b\x29\x20\x7b\xa"
-"\x20\x20\x20\x20\x20\x20\x73\x63\x72\x69\x70\x74\x2e\x70\x75\x73\x68\x28\x27\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x5f\x27\x20\x2b\x20\x69\x20\x2b\x20\x27\x5f\x27\x20\x2b\x20\x6a\x20\x2b\x20\x27\x28\x78\x29\x20\x7b\x5c\x6e\x27\x29\x3b\xa"
-"\x20\x20\x20\x20\x20\x20\x73\x63\x72\x69\x70\x74\x2e\x70\x75\x73\x68\x28\x27\x20\x20\x74\x72\x79\x20\x7b\x5c\x6e\x27\x29\x3b\xa"
-"\x20\x20\x20\x20\x20\x20\x69\x66\x20\x28\x6a\x20\x3c\x20\x64\x65\x70\x74\x68\x2d\x32\x29\x20\x7b\xa"
-"\x20\x20\x20\x20\x20\x20\x20\x20\x73\x63\x72\x69\x70\x74\x2e\x70\x75\x73\x68\x28\x27\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x5f\x27\x20\x2b\x20\x69\x20\x2b\x20\x27\x5f\x27\x20\x2b\x20\x28\x6a\x2b\x31\x29\x20\x2b\x20\x27\x28\x78\x2b\x31\x29\x3b\x5c\x6e\x27\x29\x3b\xa"
-"\x20\x20\x20\x20\x20\x20\x7d\x20\x65\x6c\x73\x65\x20\x69\x66\x20\x28\x6a\x20\x3d\x3d\x20\x64\x65\x70\x74\x68\x20\x2d\x20\x32\x29\x20\x7b\xa"
-"\x20\x20\x20\x20\x20\x20\x20\x20\x73\x63\x72\x69\x70\x74\x2e\x70\x75\x73\x68\x28\x27\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6e\x65\x77\x20\x66\x5f\x27\x20\x2b\x20\x69\x20\x2b\x20\x27\x5f\x27\x20\x2b\x20\x28\x64\x65\x70\x74\x68\x20\x2d\x20\x31\x29\x20\x2b\x20\x27\x28\x29\x3b\x5c\x6e\x27\x29\x3b\xa"
-"\x20\x20\x20\x20\x20\x20\x7d\x20\x65\x6c\x73\x65\x20\x69\x66\x20\x28\x6a\x20\x3d\x3d\x20\x64\x65\x70\x74\x68\x20\x2d\x20\x31\x29\x20\x7b\xa"
-"\x20\x20\x20\x20\x20\x20\x20\x20\x73\x63\x72\x69\x70\x74\x2e\x70\x75\x73\x68\x28\x27\x20\x20\x20\x20\x74\x68\x69\x73\x2e\x74\x73\x20\x3d\x20\x44\x61\x74\x65\x2e\x6e\x6f\x77\x28\x29\x3b\x5c\x6e\x27\x29\x3b\xa"
-"\x20\x20\x20\x20\x20\x20\x7d\xa"
-"\x20\x20\x20\x20\x20\x20\x73\x63\x72\x69\x70\x74\x2e\x70\x75\x73\x68\x28\x27\x20\x20\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x7d\x5c\x6e\x27\x29\x3b\xa"
-"\x20\x20\x20\x20\x20\x20\x73\x63\x72\x69\x70\x74\x2e\x70\x75\x73\x68\x28\x27\x7d\x5c\x6e\x27\x29\x3b\xa"
-"\x20\x20\x20\x20\x20\x20\xa"
-"\x20\x20\x20\x20\x7d\xa"
-"\x20\x20\x7d\xa"
-"\x20\x20\x76\x61\x72\x20\x73\x63\x72\x69\x70\x74\x20\x3d\x20\x73\x63\x72\x69\x70\x74\x2e\x6a\x6f\x69\x6e\x28\x27\x27\x29\x3b\xa"
-"\x20\x20\x2f\x2f\x20\x74\x68\x72\x6f\x77\x20\x73\x63\x72\x69\x70\x74\x3b\xa"
-"\x20\x20\x67\x6c\x6f\x62\x61\x6c\x2e\x65\x76\x61\x6c\x28\x73\x63\x72\x69\x70\x74\x29\x3b\xa"
-"\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x77\x69\x64\x74\x68\x3b\x20\x69\x2b\x2b\x29\x20\x7b\xa"
-"\x20\x20\x20\x20\x74\x6f\x70\x46\x75\x6e\x63\x74\x69\x6f\x6e\x73\x2e\x70\x75\x73\x68\x28\x74\x68\x69\x73\x5b\x27\x66\x5f\x27\x20\x2b\x20\x69\x20\x2b\x20\x27\x5f\x30\x27\x5d\x29\x3b\xa"
-"\x20\x20\x7d\xa"
-"\x7d\xa"
-"\xa"
-"\x76\x61\x72\x20\x77\x69\x64\x74\x68\x20\x3d\x20\x33\x3b\xa"
-"\x76\x61\x72\x20\x64\x65\x70\x74\x68\x20\x3d\x20\x33\x3b\xa"
-"\x67\x65\x6e\x65\x72\x61\x74\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x73\x28\x77\x69\x64\x74\x68\x2c\x20\x64\x65\x70\x74\x68\x29\x3b\xa"
-"\x76\x61\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x73\x20\x3d\x20\x5b\x5d\x3b\xa"
-"\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x74\x61\x72\x74\x28\x29\x20\x7b\xa"
-"\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x77\x69\x64\x74\x68\x3b\x20\x69\x2b\x2b\x29\x20\x7b\xa"
-"\x20\x20\x20\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x73\x2e\x70\x75\x73\x68\x28\x74\x6f\x70\x46\x75\x6e\x63\x74\x69\x6f\x6e\x73\x5b\x69\x5d\x28\x30\x29\x29\x3b\xa"
-"\x20\x20\x7d\xa"
-"\x7d\xa"
-"\xa"
-"\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x73\x74\x61\x72\x74\x28\x29\x3b\xa";
+"var topFunctions = [];\n"
+"var global = this;\n"
+"function generateFunctions(width, depth) {\n"
+"  var script = [];\n"
+"  for (var i = 0; i < width; i++) {\n"
+"    for (var j = 0; j < depth; j++) {\n"
+"      script.push('function f_' + i + '_' + j + '(x) {\\n');\n"
+"      script.push('  try {\\n');\n"
+"      if (j < depth-2) {\n"
+"        script.push('    return f_' + i + '_' + (j+1) + '(x+1);\\n');\n"
+"      } else if (j == depth - 2) {\n"
+"        script.push('    return new f_' + i + '_' + (depth - 1) + '();\\n');\n"
+"      } else if (j == depth - 1) {\n"
+"        script.push('    this.ts = Date.now();\\n');\n"
+"      }\n"
+"      script.push('  } catch (e) {}\\n');\n"
+"      script.push('}\\n');\n"
+"      \n"
+"    }\n"
+"  }\n"
+"  var script = script.join('');\n"
+"  // throw script;\n"
+"  global.eval(script);\n"
+"  for (var i = 0; i < width; i++) {\n"
+"    topFunctions.push(this['f_' + i + '_0']);\n"
+"  }\n"
+"}\n"
+"\n"
+"var width = 3;\n"
+"var depth = 3;\n"
+"generateFunctions(width, depth);\n"
+"var instances = [];\n"
+"function start() {\n"
+"  for (var i = 0; i < width; i++) {\n"
+"    instances.push(topFunctions[i](0));\n"
+"  }\n"
+"}\n"
+"\n"
+"for (var i = 0; i < 100; i++) start();\n";
 
 
 static AllocationTraceNode* FindNode(
@@ -2400,11 +2400,11 @@ TEST(ArrayGrowLeftTrim) {
   heap_profiler->StartTrackingHeapObjects(true);
 
   CompileRun(
-    "\x76\x61\x72\x20\x61\x20\x3d\x20\x5b\x5d\x3b\xa"
-    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x35\x3b\x20\x2b\x2b\x69\x29\xa"
-    "\x20\x20\x20\x20\x61\x5b\x69\x5d\x20\x3d\x20\x69\x3b\xa"
-    "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x33\x3b\x20\x2b\x2b\x69\x29\xa"
-    "\x20\x20\x20\x20\x61\x2e\x73\x68\x69\x66\x74\x28\x29\x3b\xa");
+    "var a = [];\n"
+    "for (var i = 0; i < 5; ++i)\n"
+    "    a[i] = i;\n"
+    "for (var i = 0; i < 3; ++i)\n"
+    "    a.shift();\n");
 
   const char* names[] = {""};
   AllocationTracker* tracker =
@@ -2441,7 +2441,7 @@ TEST(TrackHeapAllocations) {
   // Print for better diagnostics in case of failure.
   tracker->trace_tree()->Print(tracker);
 
-  const char* names[] = {"", "\x73\x74\x61\x72\x74", "\x66\x5f\x30\x5f\x30", "\x66\x5f\x30\x5f\x31", "\x66\x5f\x30\x5f\x32"};
+  const char* names[] = {"", "start", "f_0_0", "f_0_1", "f_0_2"};
   AllocationTraceNode* node =
       FindNode(tracker, Vector<const char*>(names, ARRAY_SIZE(names)));
   CHECK_NE(NULL, node);
@@ -2452,22 +2452,22 @@ TEST(TrackHeapAllocations) {
 
 
 static const char* inline_heap_allocation_source =
-"\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x5f\x30\x28\x78\x29\x20\x7b\xa"
-"\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x5f\x31\x28\x78\x2b\x31\x29\x3b\xa"
-"\x7d\xa"
-"\x25\x4e\x65\x76\x65\x72\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x66\x5f\x30\x29\x3b\xa"
-"\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x5f\x31\x28\x78\x29\x20\x7b\xa"
-"\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6e\x65\x77\x20\x66\x5f\x32\x28\x78\x2b\x31\x29\x3b\xa"
-"\x7d\xa"
-"\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x5f\x32\x28\x78\x29\x20\x7b\xa"
-"\x20\x20\x74\x68\x69\x73\x2e\x66\x6f\x6f\x20\x3d\x20\x78\x3b\xa"
-"\x7d\xa"
-"\x76\x61\x72\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x73\x20\x3d\x20\x5b\x5d\x3b\xa"
-"\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x74\x61\x72\x74\x28\x29\x20\x7b\xa"
-"\x20\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x73\x2e\x70\x75\x73\x68\x28\x66\x5f\x30\x28\x30\x29\x29\x3b\xa"
-"\x7d\xa"
-"\xa"
-"\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x73\x74\x61\x72\x74\x28\x29\x3b\xa";
+"function f_0(x) {\n"
+"  return f_1(x+1);\n"
+"}\n"
+"%NeverOptimizeFunction(f_0);\n"
+"function f_1(x) {\n"
+"  return new f_2(x+1);\n"
+"}\n"
+"function f_2(x) {\n"
+"  this.foo = x;\n"
+"}\n"
+"var instances = [];\n"
+"function start() {\n"
+"  instances.push(f_0(0));\n"
+"}\n"
+"\n"
+"for (var i = 0; i < 100; i++) start();\n";
 
 
 TEST(TrackBumpPointerAllocations) {
@@ -2476,7 +2476,7 @@ TEST(TrackBumpPointerAllocations) {
   LocalContext env;
 
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
-  const char* names[] = {"", "\x73\x74\x61\x72\x74", "\x66\x5f\x30", "\x66\x5f\x31"};
+  const char* names[] = {"", "start", "f_0", "f_1"};
   // First check that normally all allocations are recorded.
   {
     heap_profiler->StartTrackingHeapObjects(true);
@@ -2533,7 +2533,7 @@ TEST(TrackV8ApiAllocation) {
   LocalContext env;
 
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
-  const char* names[] = { "\x28\x56\x38\x20\x41\x50\x49\x29" };
+  const char* names[] = { "(V8 API)" };
   heap_profiler->StartTrackingHeapObjects(true);
 
   v8::Handle<v8::Object> o1 = v8::Object::New(env->GetIsolate());
@@ -2560,22 +2560,22 @@ TEST(ArrayBufferAndArrayBufferView) {
   LocalContext env;
   v8::HandleScope scope(env->GetIsolate());
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
-  CompileRun("\x61\x72\x72\x31\x20\x3d\x20\x6e\x65\x77\x20\x55\x69\x6e\x74\x33\x32\x41\x72\x72\x61\x79\x28\x31\x30\x30\x29\x3b\xa");
+  CompileRun("arr1 = new Uint32Array(100);\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* arr1_obj =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x61\x72\x72\x31");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "arr1");
   CHECK_NE(NULL, arr1_obj);
   const v8::HeapGraphNode* arr1_buffer =
-      GetProperty(arr1_obj, v8::HeapGraphEdge::kInternal, "\x62\x75\x66\x66\x65\x72");
+      GetProperty(arr1_obj, v8::HeapGraphEdge::kInternal, "buffer");
   CHECK_NE(NULL, arr1_buffer);
   const v8::HeapGraphNode* first_view =
-      GetProperty(arr1_buffer, v8::HeapGraphEdge::kWeak, "\x77\x65\x61\x6b\x5f\x66\x69\x72\x73\x74\x5f\x76\x69\x65\x77");
+      GetProperty(arr1_buffer, v8::HeapGraphEdge::kWeak, "weak_first_view");
   CHECK_NE(NULL, first_view);
   const v8::HeapGraphNode* backing_store =
-      GetProperty(arr1_buffer, v8::HeapGraphEdge::kInternal, "\x62\x61\x63\x6b\x69\x6e\x67\x5f\x73\x74\x6f\x72\x65");
+      GetProperty(arr1_buffer, v8::HeapGraphEdge::kInternal, "backing_store");
   CHECK_NE(NULL, backing_store);
   CHECK_EQ(400, static_cast<int>(backing_store->GetShallowSize()));
 }
@@ -2614,27 +2614,27 @@ TEST(ArrayBufferSharedBackingStore) {
   v8::Local<v8::ArrayBuffer> ab2 =
       v8::ArrayBuffer::New(isolate, data, ab_contents.ByteLength());
   CHECK(ab2->IsExternal());
-  env->Global()->Set(v8_str("\x61\x62\x31"), ab);
-  env->Global()->Set(v8_str("\x61\x62\x32"), ab2);
+  env->Global()->Set(v8_str("ab1"), ab);
+  env->Global()->Set(v8_str("ab2"), ab2);
 
-  v8::Handle<v8::Value> result = CompileRun("\x61\x62\x32\x2e\x62\x79\x74\x65\x4c\x65\x6e\x67\x74\x68");
+  v8::Handle<v8::Value> result = CompileRun("ab2.byteLength");
   CHECK_EQ(1024, result->Int32Value());
 
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* ab1_node =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x61\x62\x31");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "ab1");
   CHECK_NE(NULL, ab1_node);
   const v8::HeapGraphNode* ab1_data =
-      GetProperty(ab1_node, v8::HeapGraphEdge::kInternal, "\x62\x61\x63\x6b\x69\x6e\x67\x5f\x73\x74\x6f\x72\x65");
+      GetProperty(ab1_node, v8::HeapGraphEdge::kInternal, "backing_store");
   CHECK_NE(NULL, ab1_data);
   const v8::HeapGraphNode* ab2_node =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x61\x62\x32");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "ab2");
   CHECK_NE(NULL, ab2_node);
   const v8::HeapGraphNode* ab2_data =
-      GetProperty(ab2_node, v8::HeapGraphEdge::kInternal, "\x62\x61\x63\x6b\x69\x6e\x67\x5f\x73\x74\x6f\x72\x65");
+      GetProperty(ab2_node, v8::HeapGraphEdge::kInternal, "backing_store");
   CHECK_NE(NULL, ab2_data);
   CHECK_EQ(ab1_data, ab2_data);
   CHECK_EQ(2, GetRetainersCount(snapshot, ab1_data));
@@ -2650,22 +2650,22 @@ TEST(BoxObject) {
   v8::Handle<v8::Object> global = global_proxy->GetPrototype().As<v8::Object>();
 
   i::Factory* factory = CcTest::i_isolate()->factory();
-  i::Handle<i::String> string = factory->NewStringFromStaticAscii("\x73\x74\x72\x69\x6e\x67");
+  i::Handle<i::String> string = factory->NewStringFromStaticAscii("string");
   i::Handle<i::Object> box = factory->NewBox(string);
   global->Set(0, v8::ToApiHandle<v8::Object>(box));
 
   v8::HeapProfiler* heap_profiler = isolate->GetHeapProfiler();
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global_node = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* box_node =
-      GetProperty(global_node, v8::HeapGraphEdge::kElement, "\x30");
+      GetProperty(global_node, v8::HeapGraphEdge::kElement, "0");
   CHECK_NE(NULL, box_node);
   v8::String::Utf8Value box_node_name(box_node->GetName());
-  CHECK_EQ("\x73\x79\x73\x74\x65\x6d\x20\x2f\x20\x42\x6f\x78", *box_node_name);
+  CHECK_EQ("system / Box", *box_node_name);
   const v8::HeapGraphNode* box_value =
-      GetProperty(box_node, v8::HeapGraphEdge::kInternal, "\x76\x61\x6c\x75\x65");
+      GetProperty(box_node, v8::HeapGraphEdge::kInternal, "value");
   CHECK_NE(NULL, box_value);
 }
 
@@ -2677,24 +2677,24 @@ TEST(WeakContainers) {
   if (!CcTest::i_isolate()->use_crankshaft()) return;
   v8::HeapProfiler* heap_profiler = env->GetIsolate()->GetHeapProfiler();
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x61\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x2e\x78\x3b\x20\x7d\xa"
-      "\x6f\x62\x6a\x20\x3d\x20\x7b\x78\x20\x3a\x20\x31\x32\x33\x7d\x3b\xa"
-      "\x66\x6f\x6f\x28\x6f\x62\x6a\x29\x3b\xa"
-      "\x66\x6f\x6f\x28\x6f\x62\x6a\x29\x3b\xa"
-      "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x6f\x6f\x29\x3b\xa"
-      "\x66\x6f\x6f\x28\x6f\x62\x6a\x29\x3b\xa");
+      "function foo(a) { return a.x; }\n"
+      "obj = {x : 123};\n"
+      "foo(obj);\n"
+      "foo(obj);\n"
+      "%OptimizeFunctionOnNextCall(foo);\n"
+      "foo(obj);\n");
   const v8::HeapSnapshot* snapshot =
-      heap_profiler->TakeHeapSnapshot(v8_str("\x73\x6e\x61\x70\x73\x68\x6f\x74"));
+      heap_profiler->TakeHeapSnapshot(v8_str("snapshot"));
   CHECK(ValidateSnapshot(snapshot));
   const v8::HeapGraphNode* global = GetGlobalObject(snapshot);
   const v8::HeapGraphNode* obj =
-      GetProperty(global, v8::HeapGraphEdge::kProperty, "\x6f\x62\x6a");
+      GetProperty(global, v8::HeapGraphEdge::kProperty, "obj");
   CHECK_NE(NULL, obj);
   const v8::HeapGraphNode* map =
-      GetProperty(obj, v8::HeapGraphEdge::kInternal, "\x6d\x61\x70");
+      GetProperty(obj, v8::HeapGraphEdge::kInternal, "map");
   CHECK_NE(NULL, map);
   const v8::HeapGraphNode* dependent_code =
-      GetProperty(map, v8::HeapGraphEdge::kInternal, "\x64\x65\x70\x65\x6e\x64\x65\x6e\x74\x5f\x63\x6f\x64\x65");
+      GetProperty(map, v8::HeapGraphEdge::kInternal, "dependent_code");
   if (!dependent_code) return;
   int count = dependent_code->GetChildrenCount();
   CHECK_NE(0, count);

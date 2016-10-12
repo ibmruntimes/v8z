@@ -1692,7 +1692,7 @@ TEST(BuildScheduleTrivialLazyDeoptCall) {
   JSOperatorBuilder js_builder(scope.main_zone());
 
   InitializedHandleScope handles;
-  Handle<JSFunction> function = Compile("\x6d\x28\x29");
+  Handle<JSFunction> function = Compile("m()");
   CompilationInfoWithZone info(function);
   Linkage linkage(&info);
 

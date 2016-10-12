@@ -186,7 +186,7 @@ TEST(HeapObjects) {
   CHECK(factory->nan_value()->IsNumber());
   CHECK(isnan(factory->nan_value()->Number()));
 
-  Handle<String> s = factory->NewStringFromStaticAscii("\x66\x69\x73\x6b\x20\x68\x65\x73\x74\x20");
+  Handle<String> s = factory->NewStringFromStaticAscii("fisk hest ");
   CHECK(s->IsString());
   CHECK_EQ(10, s->length());
 
@@ -197,18 +197,18 @@ TEST(HeapObjects) {
   CHECK(maybe.value);
 
   // Check ToString for oddballs
-  CheckOddball(isolate, heap->true_value(), "\x74\x72\x75\x65");
-  CheckOddball(isolate, heap->false_value(), "\x66\x61\x6c\x73\x65");
-  CheckOddball(isolate, heap->null_value(), "\x6e\x75\x6c\x6c");
-  CheckOddball(isolate, heap->undefined_value(), "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64");
+  CheckOddball(isolate, heap->true_value(), "true");
+  CheckOddball(isolate, heap->false_value(), "false");
+  CheckOddball(isolate, heap->null_value(), "null");
+  CheckOddball(isolate, heap->undefined_value(), "undefined");
 
   // Check ToString for Smis
-  CheckSmi(isolate, 0, "\x30");
-  CheckSmi(isolate, 42, "\x34\x32");
-  CheckSmi(isolate, -42, "\x2d\x34\x32");
+  CheckSmi(isolate, 0, "0");
+  CheckSmi(isolate, 42, "42");
+  CheckSmi(isolate, -42, "-42");
 
   // Check ToString for Numbers
-  CheckNumber(isolate, 1.1, "\x31\x2e\x31");
+  CheckNumber(isolate, 1.1, "1.1");
 
   CheckFindCodeObject(isolate);
 }
@@ -235,10 +235,10 @@ TEST(GarbageCollection) {
   heap->CollectGarbage(NEW_SPACE);
 
   Handle<GlobalObject> global(CcTest::i_isolate()->context()->global_object());
-  Handle<String> name = factory->InternalizeUtf8String("\x74\x68\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e");
-  Handle<String> prop_name = factory->InternalizeUtf8String("\x74\x68\x65\x53\x6c\x6f\x74");
-  Handle<String> prop_namex = factory->InternalizeUtf8String("\x74\x68\x65\x53\x6c\x6f\x74\x78");
-  Handle<String> obj_name = factory->InternalizeUtf8String("\x74\x68\x65\x4f\x62\x6a\x65\x63\x74");
+  Handle<String> name = factory->InternalizeUtf8String("theFunction");
+  Handle<String> prop_name = factory->InternalizeUtf8String("theSlot");
+  Handle<String> prop_namex = factory->InternalizeUtf8String("theSlotx");
+  Handle<String> obj_name = factory->InternalizeUtf8String("theObject");
   Handle<Smi> twenty_three(Smi::FromInt(23), isolate);
   Handle<Smi> twenty_four(Smi::FromInt(24), isolate);
 
@@ -307,11 +307,11 @@ TEST(String) {
   CcTest::InitializeVM();
   Isolate* isolate = reinterpret_cast<Isolate*>(CcTest::isolate());
 
-  VerifyStringAllocation(isolate, "\x61");
-  VerifyStringAllocation(isolate, "\x61\x62");
-  VerifyStringAllocation(isolate, "\x61\x62\x63");
-  VerifyStringAllocation(isolate, "\x61\x62\x63\x64");
-  VerifyStringAllocation(isolate, "\x66\x69\x73\x6b\x65\x72\x64\x72\x65\x6e\x67\x65\x6e\x20\x65\x72\x20\x70\x61\x61\x20\x68\x61\x76\x65\x74");
+  VerifyStringAllocation(isolate, "a");
+  VerifyStringAllocation(isolate, "ab");
+  VerifyStringAllocation(isolate, "abc");
+  VerifyStringAllocation(isolate, "abcd");
+  VerifyStringAllocation(isolate, "fiskerdrengen er paa havet");
 }
 
 
@@ -321,7 +321,7 @@ TEST(LocalHandles) {
   Factory* factory = isolate->factory();
 
   v8::HandleScope scope(CcTest::isolate());
-  const char* name = "\x4b\x61\x73\x70\x65\x72\x20\x74\x68\x65\x20\x73\x70\x75\x6e\x6b\x79";
+  const char* name = "Kasper the spunky";
   Handle<String> string = factory->NewStringFromAsciiChecked(name);
   CHECK_EQ(StrLength(name), string->length());
 }
@@ -342,7 +342,7 @@ TEST(GlobalHandles) {
   {
     HandleScope scope(isolate);
 
-    Handle<Object> i = factory->NewStringFromStaticAscii("\x66\x69\x73\x6b");
+    Handle<Object> i = factory->NewStringFromStaticAscii("fisk");
     Handle<Object> u = factory->NewNumber(1.12344);
 
     h1 = global_handles->Create(*i);
@@ -397,7 +397,7 @@ TEST(WeakGlobalHandlesScavenge) {
   {
     HandleScope scope(isolate);
 
-    Handle<Object> i = factory->NewStringFromStaticAscii("\x66\x69\x73\x6b");
+    Handle<Object> i = factory->NewStringFromStaticAscii("fisk");
     Handle<Object> u = factory->NewNumber(1.12344);
 
     h1 = global_handles->Create(*i);
@@ -439,7 +439,7 @@ TEST(WeakGlobalHandlesMark) {
   {
     HandleScope scope(isolate);
 
-    Handle<Object> i = factory->NewStringFromStaticAscii("\x66\x69\x73\x6b");
+    Handle<Object> i = factory->NewStringFromStaticAscii("fisk");
     Handle<Object> u = factory->NewNumber(1.12344);
 
     h1 = global_handles->Create(*i);
@@ -485,7 +485,7 @@ TEST(DeleteWeakGlobalHandle) {
   {
     HandleScope scope(isolate);
 
-    Handle<Object> i = factory->NewStringFromStaticAscii("\x66\x69\x73\x6b");
+    Handle<Object> i = factory->NewStringFromStaticAscii("fisk");
     h = global_handles->Create(*i);
   }
 
@@ -507,65 +507,65 @@ TEST(DeleteWeakGlobalHandle) {
 
 
 static const char* not_so_random_string_table[] = {
-  "\x61\x62\x73\x74\x72\x61\x63\x74",
-  "\x62\x6f\x6f\x6c\x65\x61\x6e",
-  "\x62\x72\x65\x61\x6b",
-  "\x62\x79\x74\x65",
-  "\x63\x61\x73\x65",
-  "\x63\x61\x74\x63\x68",
-  "\x63\x68\x61\x72",
-  "\x63\x6c\x61\x73\x73",
-  "\x63\x6f\x6e\x73\x74",
-  "\x63\x6f\x6e\x74\x69\x6e\x75\x65",
-  "\x64\x65\x62\x75\x67\x67\x65\x72",
-  "\x64\x65\x66\x61\x75\x6c\x74",
-  "\x64\x65\x6c\x65\x74\x65",
-  "\x64\x6f",
-  "\x64\x6f\x75\x62\x6c\x65",
-  "\x65\x6c\x73\x65",
-  "\x65\x6e\x75\x6d",
-  "\x65\x78\x70\x6f\x72\x74",
-  "\x65\x78\x74\x65\x6e\x64\x73",
-  "\x66\x61\x6c\x73\x65",
-  "\x66\x69\x6e\x61\x6c",
-  "\x66\x69\x6e\x61\x6c\x6c\x79",
-  "\x66\x6c\x6f\x61\x74",
-  "\x66\x6f\x72",
-  "\x66\x75\x6e\x63\x74\x69\x6f\x6e",
-  "\x67\x6f\x74\x6f",
-  "\x69\x66",
-  "\x69\x6d\x70\x6c\x65\x6d\x65\x6e\x74\x73",
-  "\x69\x6d\x70\x6f\x72\x74",
-  "\x69\x6e",
-  "\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66",
-  "\x69\x6e\x74",
-  "\x69\x6e\x74\x65\x72\x66\x61\x63\x65",
-  "\x6c\x6f\x6e\x67",
-  "\x6e\x61\x74\x69\x76\x65",
-  "\x6e\x65\x77",
-  "\x6e\x75\x6c\x6c",
-  "\x70\x61\x63\x6b\x61\x67\x65",
-  "\x70\x72\x69\x76\x61\x74\x65",
-  "\x70\x72\x6f\x74\x65\x63\x74\x65\x64",
-  "\x70\x75\x62\x6c\x69\x63",
-  "\x72\x65\x74\x75\x72\x6e",
-  "\x73\x68\x6f\x72\x74",
-  "\x73\x74\x61\x74\x69\x63",
-  "\x73\x75\x70\x65\x72",
-  "\x73\x77\x69\x74\x63\x68",
-  "\x73\x79\x6e\x63\x68\x72\x6f\x6e\x69\x7a\x65\x64",
-  "\x74\x68\x69\x73",
-  "\x74\x68\x72\x6f\x77",
-  "\x74\x68\x72\x6f\x77\x73",
-  "\x74\x72\x61\x6e\x73\x69\x65\x6e\x74",
-  "\x74\x72\x75\x65",
-  "\x74\x72\x79",
-  "\x74\x79\x70\x65\x6f\x66",
-  "\x76\x61\x72",
-  "\x76\x6f\x69\x64",
-  "\x76\x6f\x6c\x61\x74\x69\x6c\x65",
-  "\x77\x68\x69\x6c\x65",
-  "\x77\x69\x74\x68",
+  "abstract",
+  "boolean",
+  "break",
+  "byte",
+  "case",
+  "catch",
+  "char",
+  "class",
+  "const",
+  "continue",
+  "debugger",
+  "default",
+  "delete",
+  "do",
+  "double",
+  "else",
+  "enum",
+  "export",
+  "extends",
+  "false",
+  "final",
+  "finally",
+  "float",
+  "for",
+  "function",
+  "goto",
+  "if",
+  "implements",
+  "import",
+  "in",
+  "instanceof",
+  "int",
+  "interface",
+  "long",
+  "native",
+  "new",
+  "null",
+  "package",
+  "private",
+  "protected",
+  "public",
+  "return",
+  "short",
+  "static",
+  "super",
+  "switch",
+  "synchronized",
+  "this",
+  "throw",
+  "throws",
+  "transient",
+  "true",
+  "try",
+  "typeof",
+  "var",
+  "void",
+  "volatile",
+  "while",
+  "with",
   0
 };
 
@@ -604,13 +604,13 @@ TEST(FunctionAllocation) {
   Factory* factory = isolate->factory();
 
   v8::HandleScope sc(CcTest::isolate());
-  Handle<String> name = factory->InternalizeUtf8String("\x74\x68\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e");
+  Handle<String> name = factory->InternalizeUtf8String("theFunction");
   Handle<JSFunction> function = factory->NewFunction(name);
 
   Handle<Smi> twenty_three(Smi::FromInt(23), isolate);
   Handle<Smi> twenty_four(Smi::FromInt(24), isolate);
 
-  Handle<String> prop_name = factory->InternalizeUtf8String("\x74\x68\x65\x53\x6c\x6f\x74");
+  Handle<String> prop_name = factory->InternalizeUtf8String("theSlot");
   Handle<JSObject> obj = factory->NewJSObject(function);
   JSReceiver::SetProperty(obj, prop_name, twenty_three, SLOPPY).Check();
   CHECK_EQ(Smi::FromInt(23),
@@ -633,8 +633,8 @@ TEST(ObjectProperties) {
       CcTest::i_isolate()->global_object(), object_string).ToHandleChecked();
   Handle<JSFunction> constructor = Handle<JSFunction>::cast(object);
   Handle<JSObject> obj = factory->NewJSObject(constructor);
-  Handle<String> first = factory->InternalizeUtf8String("\x66\x69\x72\x73\x74");
-  Handle<String> second = factory->InternalizeUtf8String("\x73\x65\x63\x6f\x6e\x64");
+  Handle<String> first = factory->InternalizeUtf8String("first");
+  Handle<String> second = factory->InternalizeUtf8String("second");
 
   Handle<Smi> one(Smi::FromInt(1), isolate);
   Handle<Smi> two(Smi::FromInt(2), isolate);
@@ -703,7 +703,7 @@ TEST(ObjectProperties) {
   CHECK(!maybe.value);
 
   // check string and internalized string match
-  const char* string1 = "\x66\x69\x73\x6b";
+  const char* string1 = "fisk";
   Handle<String> s1 = factory->NewStringFromAsciiChecked(string1);
   JSReceiver::SetProperty(obj, s1, one, SLOPPY).Check();
   Handle<String> s1_string = factory->InternalizeUtf8String(string1);
@@ -712,7 +712,7 @@ TEST(ObjectProperties) {
   CHECK(maybe.value);
 
   // check internalized string and string match
-  const char* string2 = "\x66\x75\x67\x6c";
+  const char* string2 = "fugl";
   Handle<String> s2_string = factory->InternalizeUtf8String(string2);
   JSReceiver::SetProperty(obj, s2_string, one, SLOPPY).Check();
   Handle<String> s2 = factory->NewStringFromAsciiChecked(string2);
@@ -728,10 +728,10 @@ TEST(JSObjectMaps) {
   Factory* factory = isolate->factory();
 
   v8::HandleScope sc(CcTest::isolate());
-  Handle<String> name = factory->InternalizeUtf8String("\x74\x68\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e");
+  Handle<String> name = factory->InternalizeUtf8String("theFunction");
   Handle<JSFunction> function = factory->NewFunction(name);
 
-  Handle<String> prop_name = factory->InternalizeUtf8String("\x74\x68\x65\x53\x6c\x6f\x74");
+  Handle<String> prop_name = factory->InternalizeUtf8String("theSlot");
   Handle<JSObject> obj = factory->NewJSObject(function);
   Handle<Map> initial_map(function->initial_map());
 
@@ -752,7 +752,7 @@ TEST(JSArray) {
   Factory* factory = isolate->factory();
 
   v8::HandleScope sc(CcTest::isolate());
-  Handle<String> name = factory->InternalizeUtf8String("\x41\x72\x72\x61\x79");
+  Handle<String> name = factory->InternalizeUtf8String("Array");
   Handle<Object> fun_obj = Object::GetProperty(
       CcTest::i_isolate()->global_object(), name).ToHandleChecked();
   Handle<JSFunction> function = Handle<JSFunction>::cast(fun_obj);
@@ -809,8 +809,8 @@ TEST(JSObjectCopy) {
       CcTest::i_isolate()->global_object(), object_string).ToHandleChecked();
   Handle<JSFunction> constructor = Handle<JSFunction>::cast(object);
   Handle<JSObject> obj = factory->NewJSObject(constructor);
-  Handle<String> first = factory->InternalizeUtf8String("\x66\x69\x72\x73\x74");
-  Handle<String> second = factory->InternalizeUtf8String("\x73\x65\x63\x6f\x6e\x64");
+  Handle<String> first = factory->InternalizeUtf8String("first");
+  Handle<String> second = factory->InternalizeUtf8String("second");
 
   Handle<Smi> one(Smi::FromInt(1), isolate);
   Handle<Smi> two(Smi::FromInt(2), isolate);
@@ -876,7 +876,7 @@ TEST(StringAllocation) {
     non_ascii[3 * length] = 0;
     ascii[length] = 0;
     for (int i = 0; i < length; i++) {
-      ascii[i] = '\x61';
+      ascii[i] = 'a';
       non_ascii[3 * i] = chars[0];
       non_ascii[3 * i + 1] = chars[1];
       non_ascii[3 * i + 2] = chars[2];
@@ -936,15 +936,15 @@ TEST(Iteration) {
 
   // Allocate a small string to OLD_DATA_SPACE and NEW_SPACE
   objs[next_objs_index++] =
-      factory->NewStringFromStaticAscii("\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a");
+      factory->NewStringFromStaticAscii("abcdefghij");
   objs[next_objs_index++] =
-      factory->NewStringFromStaticAscii("\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a", TENURED);
+      factory->NewStringFromStaticAscii("abcdefghij", TENURED);
 
   // Allocate a large string (for large object space).
   int large_size = Page::kMaxRegularHeapObjectSize + 1;
   char* str = new char[large_size];
-  for (int i = 0; i < large_size - 1; ++i) str[i] = '\x61';
-  str[large_size - 1] = '\x0';
+  for (int i = 0; i < large_size - 1; ++i) str[i] = 'a';
+  str[large_size - 1] = '\0';
   objs[next_objs_index++] = factory->NewStringFromAsciiChecked(str, TENURED);
   delete[] str;
 
@@ -1062,13 +1062,13 @@ TEST(TestCodeFlushing) {
   Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
   v8::HandleScope scope(CcTest::isolate());
-  const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b"
-                       "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x32\x3b"
-                       "\x20\x20\x76\x61\x72\x20\x79\x20\x3d\x20\x34\x32\x3b"
-                       "\x20\x20\x76\x61\x72\x20\x7a\x20\x3d\x20\x78\x20\x2b\x20\x79\x3b"
-                       "\x7d\x3b"
-                       "\x66\x6f\x6f\x28\x29";
-  Handle<String> foo_name = factory->InternalizeUtf8String("\x66\x6f\x6f");
+  const char* source = "function foo() {"
+                       "  var x = 42;"
+                       "  var y = 42;"
+                       "  var z = x + y;"
+                       "};"
+                       "foo()";
+  Handle<String> foo_name = factory->InternalizeUtf8String("foo");
 
   // This compile will add the code to the compilation cache.
   { v8::HandleScope scope(CcTest::isolate());
@@ -1097,7 +1097,7 @@ TEST(TestCodeFlushing) {
   CHECK(!function->shared()->is_compiled() || function->IsOptimized());
   CHECK(!function->is_compiled() || function->IsOptimized());
   // Call foo to get it recompiled.
-  CompileRun("\x66\x6f\x6f\x28\x29");
+  CompileRun("foo()");
   CHECK(function->shared()->is_compiled());
   CHECK(function->is_compiled());
 }
@@ -1112,13 +1112,13 @@ TEST(TestCodeFlushingPreAged) {
   Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
   v8::HandleScope scope(CcTest::isolate());
-  const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b"
-                       "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x32\x3b"
-                       "\x20\x20\x76\x61\x72\x20\x79\x20\x3d\x20\x34\x32\x3b"
-                       "\x20\x20\x76\x61\x72\x20\x7a\x20\x3d\x20\x78\x20\x2b\x20\x79\x3b"
-                       "\x7d\x3b"
-                       "\x66\x6f\x6f\x28\x29";
-  Handle<String> foo_name = factory->InternalizeUtf8String("\x66\x6f\x6f");
+  const char* source = "function foo() {"
+                       "  var x = 42;"
+                       "  var y = 42;"
+                       "  var z = x + y;"
+                       "};"
+                       "foo()";
+  Handle<String> foo_name = factory->InternalizeUtf8String("foo");
 
   // Compile foo, but don't run it.
   { v8::HandleScope scope(CcTest::isolate());
@@ -1143,8 +1143,8 @@ TEST(TestCodeFlushingPreAged) {
 
   // Execute the function again twice, and ensure it is reset to the young age.
   { v8::HandleScope scope(CcTest::isolate());
-    CompileRun("\x66\x6f\x6f\x28\x29\x3b"
-               "\x66\x6f\x6f\x28\x29\x3b");
+    CompileRun("foo();"
+               "foo();");
   }
 
   // The code will survive at least two GC now that it is young again.
@@ -1162,7 +1162,7 @@ TEST(TestCodeFlushingPreAged) {
   CHECK(!function->shared()->is_compiled() || function->IsOptimized());
   CHECK(!function->is_compiled() || function->IsOptimized());
   // Call foo to get it recompiled.
-  CompileRun("\x66\x6f\x6f\x28\x29");
+  CompileRun("foo()");
   CHECK(function->shared()->is_compiled());
   CHECK(function->is_compiled());
 }
@@ -1177,13 +1177,13 @@ TEST(TestCodeFlushingIncremental) {
   Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
   v8::HandleScope scope(CcTest::isolate());
-  const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b"
-                       "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x32\x3b"
-                       "\x20\x20\x76\x61\x72\x20\x79\x20\x3d\x20\x34\x32\x3b"
-                       "\x20\x20\x76\x61\x72\x20\x7a\x20\x3d\x20\x78\x20\x2b\x20\x79\x3b"
-                       "\x7d\x3b"
-                       "\x66\x6f\x6f\x28\x29";
-  Handle<String> foo_name = factory->InternalizeUtf8String("\x66\x6f\x6f");
+  const char* source = "function foo() {"
+                       "  var x = 42;"
+                       "  var y = 42;"
+                       "  var z = x + y;"
+                       "};"
+                       "foo()";
+  Handle<String> foo_name = factory->InternalizeUtf8String("foo");
 
   // This compile will add the code to the compilation cache.
   { v8::HandleScope scope(CcTest::isolate());
@@ -1213,7 +1213,7 @@ TEST(TestCodeFlushingIncremental) {
 
   // This compile will compile the function again.
   { v8::HandleScope scope(CcTest::isolate());
-    CompileRun("\x66\x6f\x6f\x28\x29\x3b");
+    CompileRun("foo();");
   }
 
   // Simulate several GCs that use incremental marking but make sure
@@ -1227,7 +1227,7 @@ TEST(TestCodeFlushingIncremental) {
   // Force optimization while incremental marking is active and while
   // the function is enqueued as a candidate.
   { v8::HandleScope scope(CcTest::isolate());
-    CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x6f\x6f\x29\x3b\x20\x66\x6f\x6f\x28\x29\x3b");
+    CompileRun("%OptimizeFunctionOnNextCall(foo); foo();");
   }
 
   // Simulate one final GC to make sure the candidate queue is sane.
@@ -1246,18 +1246,18 @@ TEST(TestCodeFlushingIncrementalScavenge) {
   Isolate* isolate = CcTest::i_isolate();
   Factory* factory = isolate->factory();
   v8::HandleScope scope(CcTest::isolate());
-  const char* source = "\x76\x61\x72\x20\x66\x6f\x6f\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
-                       "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x32\x3b"
-                       "\x20\x20\x76\x61\x72\x20\x79\x20\x3d\x20\x34\x32\x3b"
-                       "\x20\x20\x76\x61\x72\x20\x7a\x20\x3d\x20\x78\x20\x2b\x20\x79\x3b"
-                       "\x7d\x3b"
-                       "\x66\x6f\x6f\x28\x29\x3b"
-                       "\x76\x61\x72\x20\x62\x61\x72\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
-                       "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x32\x33\x3b"
-                       "\x7d\x3b"
-                       "\x62\x61\x72\x28\x29\x3b";
-  Handle<String> foo_name = factory->InternalizeUtf8String("\x66\x6f\x6f");
-  Handle<String> bar_name = factory->InternalizeUtf8String("\x62\x61\x72");
+  const char* source = "var foo = function() {"
+                       "  var x = 42;"
+                       "  var y = 42;"
+                       "  var z = x + y;"
+                       "};"
+                       "foo();"
+                       "var bar = function() {"
+                       "  var x = 23;"
+                       "};"
+                       "bar();";
+  Handle<String> foo_name = factory->InternalizeUtf8String("foo");
+  Handle<String> bar_name = factory->InternalizeUtf8String("bar");
 
   // Perfrom one initial GC to enable code flushing.
   CcTest::heap()->CollectAllGarbage(Heap::kAbortIncrementalMarkingMask);
@@ -1281,7 +1281,7 @@ TEST(TestCodeFlushingIncrementalScavenge) {
 
   // Clear references to functions so that one of them can die.
   { v8::HandleScope scope(CcTest::isolate());
-    CompileRun("\x66\x6f\x6f\x20\x3d\x20\x30\x3b\x20\x62\x61\x72\x20\x3d\x20\x30\x3b");
+    CompileRun("foo = 0; bar = 0;");
   }
 
   // Bump the code age so that flushing is triggered while the function
@@ -1297,7 +1297,7 @@ TEST(TestCodeFlushingIncrementalScavenge) {
   // perform a scavenge while incremental marking is still running.
   SimulateIncrementalMarking(CcTest::heap());
   *function2.location() = NULL;
-  CcTest::heap()->CollectGarbage(NEW_SPACE, "\x74\x65\x73\x74\x20\x73\x63\x61\x76\x65\x6e\x67\x65\x20\x77\x68\x69\x6c\x65\x20\x6d\x61\x72\x6b\x69\x6e\x67");
+  CcTest::heap()->CollectGarbage(NEW_SPACE, "test scavenge while marking");
 
   // Simulate one final GC to make sure the candidate queue is sane.
   CcTest::heap()->CollectAllGarbage(Heap::kNoGCFlags);
@@ -1316,13 +1316,13 @@ TEST(TestCodeFlushingIncrementalAbort) {
   Factory* factory = isolate->factory();
   Heap* heap = isolate->heap();
   v8::HandleScope scope(CcTest::isolate());
-  const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b"
-                       "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x34\x32\x3b"
-                       "\x20\x20\x76\x61\x72\x20\x79\x20\x3d\x20\x34\x32\x3b"
-                       "\x20\x20\x76\x61\x72\x20\x7a\x20\x3d\x20\x78\x20\x2b\x20\x79\x3b"
-                       "\x7d\x3b"
-                       "\x66\x6f\x6f\x28\x29";
-  Handle<String> foo_name = factory->InternalizeUtf8String("\x66\x6f\x6f");
+  const char* source = "function foo() {"
+                       "  var x = 42;"
+                       "  var y = 42;"
+                       "  var z = x + y;"
+                       "};"
+                       "foo()";
+  Handle<String> foo_name = factory->InternalizeUtf8String("foo");
 
   // This compile will add the code to the compilation cache.
   { v8::HandleScope scope(CcTest::isolate());
@@ -1361,7 +1361,7 @@ TEST(TestCodeFlushingIncrementalAbort) {
 
   // Force optimization now that code flushing is disabled.
   { v8::HandleScope scope(CcTest::isolate());
-    CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x6f\x6f\x29\x3b\x20\x66\x6f\x6f\x28\x29\x3b");
+    CompileRun("%OptimizeFunctionOnNextCall(foo); foo();");
   }
 
   // Simulate one final GC to make sure the candidate queue is sane.
@@ -1431,26 +1431,26 @@ TEST(TestInternalWeakLists) {
     // Create a handle scope so no function objects get stuch in the outer
     // handle scope
     HandleScope scope(isolate);
-    const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x31\x28\x29\x20\x7b\x20\x7d\x3b"
-                         "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x32\x28\x29\x20\x7b\x20\x7d\x3b"
-                         "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x33\x28\x29\x20\x7b\x20\x7d\x3b"
-                         "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x34\x28\x29\x20\x7b\x20\x7d\x3b"
-                         "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x35\x28\x29\x20\x7b\x20\x7d\x3b";
+    const char* source = "function f1() { };"
+                         "function f2() { };"
+                         "function f3() { };"
+                         "function f4() { };"
+                         "function f5() { };";
     CompileRun(source);
     CHECK_EQ(0, CountOptimizedUserFunctions(ctx[i]));
-    CompileRun("\x66\x31\x28\x29");
+    CompileRun("f1()");
     CHECK_EQ(opt ? 1 : 0, CountOptimizedUserFunctions(ctx[i]));
-    CompileRun("\x66\x32\x28\x29");
+    CompileRun("f2()");
     CHECK_EQ(opt ? 2 : 0, CountOptimizedUserFunctions(ctx[i]));
-    CompileRun("\x66\x33\x28\x29");
+    CompileRun("f3()");
     CHECK_EQ(opt ? 3 : 0, CountOptimizedUserFunctions(ctx[i]));
-    CompileRun("\x66\x34\x28\x29");
+    CompileRun("f4()");
     CHECK_EQ(opt ? 4 : 0, CountOptimizedUserFunctions(ctx[i]));
-    CompileRun("\x66\x35\x28\x29");
+    CompileRun("f5()");
     CHECK_EQ(opt ? 5 : 0, CountOptimizedUserFunctions(ctx[i]));
 
     // Remove function f1, and
-    CompileRun("\x66\x31\x3d\x6e\x75\x6c\x6c");
+    CompileRun("f1=null");
 
     // Scavenge treats these references as strong.
     for (int j = 0; j < 10; j++) {
@@ -1464,14 +1464,14 @@ TEST(TestInternalWeakLists) {
     CHECK_EQ(opt ? 4 : 0, CountOptimizedUserFunctions(ctx[i]));
 
     // Get rid of f3 and f5 in the same way.
-    CompileRun("\x66\x33\x3d\x6e\x75\x6c\x6c");
+    CompileRun("f3=null");
     for (int j = 0; j < 10; j++) {
       CcTest::heap()->CollectGarbage(NEW_SPACE);
       CHECK_EQ(opt ? 4 : 0, CountOptimizedUserFunctions(ctx[i]));
     }
     CcTest::heap()->CollectAllGarbage(Heap::kNoGCFlags);
     CHECK_EQ(opt ? 3 : 0, CountOptimizedUserFunctions(ctx[i]));
-    CompileRun("\x66\x35\x3d\x6e\x75\x6c\x6c");
+    CompileRun("f5=null");
     for (int j = 0; j < 10; j++) {
       CcTest::heap()->CollectGarbage(NEW_SPACE);
       CHECK_EQ(opt ? 3 : 0, CountOptimizedUserFunctions(ctx[i]));
@@ -1571,26 +1571,26 @@ TEST(TestInternalWeakListsTraverseWithGC) {
   // Compile a number of functions the length of the weak list of optimized
   // functions both with and without GCs while iterating the list.
   ctx[0]->Enter();
-  const char* source = "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x31\x28\x29\x20\x7b\x20\x7d\x3b"
-                       "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x32\x28\x29\x20\x7b\x20\x7d\x3b"
-                       "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x33\x28\x29\x20\x7b\x20\x7d\x3b"
-                       "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x34\x28\x29\x20\x7b\x20\x7d\x3b"
-                       "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x35\x28\x29\x20\x7b\x20\x7d\x3b";
+  const char* source = "function f1() { };"
+                       "function f2() { };"
+                       "function f3() { };"
+                       "function f4() { };"
+                       "function f5() { };";
   CompileRun(source);
   CHECK_EQ(0, CountOptimizedUserFunctions(ctx[0]));
-  CompileRun("\x66\x31\x28\x29");
+  CompileRun("f1()");
   CHECK_EQ(opt ? 1 : 0, CountOptimizedUserFunctions(ctx[0]));
   CHECK_EQ(opt ? 1 : 0, CountOptimizedUserFunctionsWithGC(ctx[0], 1));
-  CompileRun("\x66\x32\x28\x29");
+  CompileRun("f2()");
   CHECK_EQ(opt ? 2 : 0, CountOptimizedUserFunctions(ctx[0]));
   CHECK_EQ(opt ? 2 : 0, CountOptimizedUserFunctionsWithGC(ctx[0], 1));
-  CompileRun("\x66\x33\x28\x29");
+  CompileRun("f3()");
   CHECK_EQ(opt ? 3 : 0, CountOptimizedUserFunctions(ctx[0]));
   CHECK_EQ(opt ? 3 : 0, CountOptimizedUserFunctionsWithGC(ctx[0], 1));
-  CompileRun("\x66\x34\x28\x29");
+  CompileRun("f4()");
   CHECK_EQ(opt ? 4 : 0, CountOptimizedUserFunctions(ctx[0]));
   CHECK_EQ(opt ? 4 : 0, CountOptimizedUserFunctionsWithGC(ctx[0], 2));
-  CompileRun("\x66\x35\x28\x29");
+  CompileRun("f5()");
   CHECK_EQ(opt ? 5 : 0, CountOptimizedUserFunctions(ctx[0]));
   CHECK_EQ(opt ? 5 : 0, CountOptimizedUserFunctionsWithGC(ctx[0], 4));
 
@@ -1661,16 +1661,16 @@ TEST(TestSizeOfObjectsVsHeapIteratorPrecision) {
   // on the heap.
   if (size_of_objects_1 > size_of_objects_2) {
     intptr_t delta = size_of_objects_1 - size_of_objects_2;
-    PrintF("\x48\x65\x61\x70\x3a\x3a\x53\x69\x7a\x65\x4f\x66\x4f\x62\x6a\x65\x63\x74\x73\x3a\x20\x25" V8_PTR_PREFIX "\x64\x2c\x20"
-           "\x49\x74\x65\x72\x61\x74\x6f\x72\x3a\x20\x25" V8_PTR_PREFIX "\x64\x2c\x20"
-           "\x64\x65\x6c\x74\x61\x3a\x20\x25" V8_PTR_PREFIX "\x64\xa",
+    PrintF("Heap::SizeOfObjects: %" V8_PTR_PREFIX "d, "
+           "Iterator: %" V8_PTR_PREFIX "d, "
+           "delta: %" V8_PTR_PREFIX "d\n",
            size_of_objects_1, size_of_objects_2, delta);
     CHECK_GT(size_of_objects_1 / 20, delta);
   } else {
     intptr_t delta = size_of_objects_2 - size_of_objects_1;
-    PrintF("\x48\x65\x61\x70\x3a\x3a\x53\x69\x7a\x65\x4f\x66\x4f\x62\x6a\x65\x63\x74\x73\x3a\x20\x25" V8_PTR_PREFIX "\x64\x2c\x20"
-           "\x49\x74\x65\x72\x61\x74\x6f\x72\x3a\x20\x25" V8_PTR_PREFIX "\x64\x2c\x20"
-           "\x64\x65\x6c\x74\x61\x3a\x20\x25" V8_PTR_PREFIX "\x64\xa",
+    PrintF("Heap::SizeOfObjects: %" V8_PTR_PREFIX "d, "
+           "Iterator: %" V8_PTR_PREFIX "d, "
+           "delta: %" V8_PTR_PREFIX "d\n",
            size_of_objects_1, size_of_objects_2, delta);
     CHECK_GT(size_of_objects_2 / 20, delta);
   }
@@ -1799,19 +1799,19 @@ TEST(LeakNativeContextViaMap) {
 
   {
     v8::HandleScope inner_scope(isolate);
-    CompileRun("\x76\x61\x72\x20\x76\x20\x3d\x20\x7b\x78\x3a\x20\x34\x32\x7d");
+    CompileRun("var v = {x: 42}");
     v8::Local<v8::Context> ctx1 = v8::Local<v8::Context>::New(isolate, ctx1p);
     v8::Local<v8::Context> ctx2 = v8::Local<v8::Context>::New(isolate, ctx2p);
-    v8::Local<v8::Value> v = ctx1->Global()->Get(v8_str("\x76"));
+    v8::Local<v8::Value> v = ctx1->Global()->Get(v8_str("v"));
     ctx2->Enter();
-    ctx2->Global()->Set(v8_str("\x6f"), v);
+    ctx2->Global()->Set(v8_str("o"), v);
     v8::Local<v8::Value> res = CompileRun(
-        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x2e\x78\x3b\x20\x7d"
-        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x66\x28\x29\x3b"
-        "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-        "\x66\x28\x29\x3b");
+        "function f() { return o.x; }"
+        "for (var i = 0; i < 10; ++i) f();"
+        "%OptimizeFunctionOnNextCall(f);"
+        "f();");
     CHECK_EQ(42, res->Int32Value());
-    ctx2->Global()->Set(v8_str("\x6f"), v8::Int32::New(isolate, 0));
+    ctx2->Global()->Set(v8_str("o"), v8::Int32::New(isolate, 0));
     ctx2->Exit();
     v8::Local<v8::Context>::New(isolate, ctx1)->Exit();
     ctx1p.Reset();
@@ -1845,19 +1845,19 @@ TEST(LeakNativeContextViaFunction) {
 
   {
     v8::HandleScope inner_scope(isolate);
-    CompileRun("\x76\x61\x72\x20\x76\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x34\x32\x3b\x20\x7d");
+    CompileRun("var v = function() { return 42; }");
     v8::Local<v8::Context> ctx1 = v8::Local<v8::Context>::New(isolate, ctx1p);
     v8::Local<v8::Context> ctx2 = v8::Local<v8::Context>::New(isolate, ctx2p);
-    v8::Local<v8::Value> v = ctx1->Global()->Get(v8_str("\x76"));
+    v8::Local<v8::Value> v = ctx1->Global()->Get(v8_str("v"));
     ctx2->Enter();
-    ctx2->Global()->Set(v8_str("\x6f"), v);
+    ctx2->Global()->Set(v8_str("o"), v);
     v8::Local<v8::Value> res = CompileRun(
-        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x28\x29\x3b\x20\x7d"
-        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x66\x28\x6f\x29\x3b"
-        "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-        "\x66\x28\x6f\x29\x3b");
+        "function f(x) { return x(); }"
+        "for (var i = 0; i < 10; ++i) f(o);"
+        "%OptimizeFunctionOnNextCall(f);"
+        "f(o);");
     CHECK_EQ(42, res->Int32Value());
-    ctx2->Global()->Set(v8_str("\x6f"), v8::Int32::New(isolate, 0));
+    ctx2->Global()->Set(v8_str("o"), v8::Int32::New(isolate, 0));
     ctx2->Exit();
     ctx1->Exit();
     ctx1p.Reset();
@@ -1889,19 +1889,19 @@ TEST(LeakNativeContextViaMapKeyed) {
 
   {
     v8::HandleScope inner_scope(isolate);
-    CompileRun("\x76\x61\x72\x20\x76\x20\x3d\x20\x5b\x34\x32\x2c\x20\x34\x33\x5d");
+    CompileRun("var v = [42, 43]");
     v8::Local<v8::Context> ctx1 = v8::Local<v8::Context>::New(isolate, ctx1p);
     v8::Local<v8::Context> ctx2 = v8::Local<v8::Context>::New(isolate, ctx2p);
-    v8::Local<v8::Value> v = ctx1->Global()->Get(v8_str("\x76"));
+    v8::Local<v8::Value> v = ctx1->Global()->Get(v8_str("v"));
     ctx2->Enter();
-    ctx2->Global()->Set(v8_str("\x6f"), v);
+    ctx2->Global()->Set(v8_str("o"), v);
     v8::Local<v8::Value> res = CompileRun(
-        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x5b\x30\x5d\x3b\x20\x7d"
-        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x66\x28\x29\x3b"
-        "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-        "\x66\x28\x29\x3b");
+        "function f() { return o[0]; }"
+        "for (var i = 0; i < 10; ++i) f();"
+        "%OptimizeFunctionOnNextCall(f);"
+        "f();");
     CHECK_EQ(42, res->Int32Value());
-    ctx2->Global()->Set(v8_str("\x6f"), v8::Int32::New(isolate, 0));
+    ctx2->Global()->Set(v8_str("o"), v8::Int32::New(isolate, 0));
     ctx2->Exit();
     ctx1->Exit();
     ctx1p.Reset();
@@ -1933,23 +1933,23 @@ TEST(LeakNativeContextViaMapProto) {
 
   {
     v8::HandleScope inner_scope(isolate);
-    CompileRun("\x76\x61\x72\x20\x76\x20\x3d\x20\x7b\x20\x79\x3a\x20\x34\x32\x7d");
+    CompileRun("var v = { y: 42}");
     v8::Local<v8::Context> ctx1 = v8::Local<v8::Context>::New(isolate, ctx1p);
     v8::Local<v8::Context> ctx2 = v8::Local<v8::Context>::New(isolate, ctx2p);
-    v8::Local<v8::Value> v = ctx1->Global()->Get(v8_str("\x76"));
+    v8::Local<v8::Value> v = ctx1->Global()->Get(v8_str("v"));
     ctx2->Enter();
-    ctx2->Global()->Set(v8_str("\x6f"), v);
+    ctx2->Global()->Set(v8_str("o"), v);
     v8::Local<v8::Value> res = CompileRun(
-        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-        "\x20\x20\x76\x61\x72\x20\x70\x20\x3d\x20\x7b\x78\x3a\x20\x34\x32\x7d\x3b"
-        "\x20\x20\x70\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x6f\x3b"
-        "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x70\x2e\x78\x3b"
-        "\x7d"
-        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x2b\x2b\x69\x29\x20\x66\x28\x29\x3b"
-        "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-        "\x66\x28\x29\x3b");
+        "function f() {"
+        "  var p = {x: 42};"
+        "  p.__proto__ = o;"
+        "  return p.x;"
+        "}"
+        "for (var i = 0; i < 10; ++i) f();"
+        "%OptimizeFunctionOnNextCall(f);"
+        "f();");
     CHECK_EQ(42, res->Int32Value());
-    ctx2->Global()->Set(v8_str("\x6f"), v8::Int32::New(isolate, 0));
+    ctx2->Global()->Set(v8_str("o"), v8::Int32::New(isolate, 0));
     ctx2->Exit();
     ctx1->Exit();
     ctx1p.Reset();
@@ -1977,13 +1977,13 @@ TEST(InstanceOfStubWriteBarrier) {
   {
     v8::HandleScope scope(CcTest::isolate());
     CompileRun(
-        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x20\x28\x29\x20\x7b\x20\x7d"
-        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6d\x6b\x62\x61\x72\x20\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6e\x65\x77\x20\x28\x6e\x65\x77\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x22\x22\x29\x29\x20\x28\x29\x3b\x20\x7d"
-        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x20\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x28\x78\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x6f\x66\x20\x66\x6f\x6f\x29\x3b\x20\x7d"
-        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x20\x28\x29\x20\x7b\x20\x66\x28\x6d\x6b\x62\x61\x72\x28\x29\x29\x3b\x20\x7d"
-        "\x66\x28\x6e\x65\x77\x20\x66\x6f\x6f\x28\x29\x29\x3b\x20\x66\x28\x6e\x65\x77\x20\x66\x6f\x6f\x28\x29\x29\x3b"
-        "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-        "\x66\x28\x6e\x65\x77\x20\x66\x6f\x6f\x28\x29\x29\x3b\x20\x67\x28\x29\x3b");
+        "function foo () { }"
+        "function mkbar () { return new (new Function(\"\")) (); }"
+        "function f (x) { return (x instanceof foo); }"
+        "function g () { f(mkbar()); }"
+        "f(new foo()); f(new foo());"
+        "%OptimizeFunctionOnNextCall(f);"
+        "f(new foo()); g();");
   }
 
   IncrementalMarking* marking = CcTest::heap()->incremental_marking();
@@ -1993,7 +1993,7 @@ TEST(InstanceOfStubWriteBarrier) {
   Handle<JSFunction> f =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Function>::Cast(
-              CcTest::global()->Get(v8_str("\x66"))));
+              CcTest::global()->Get(v8_str("f"))));
 
   CHECK(f->IsOptimized());
 
@@ -2010,7 +2010,7 @@ TEST(InstanceOfStubWriteBarrier) {
     v8::HandleScope scope(CcTest::isolate());
     v8::Handle<v8::Object> global = CcTest::global();
     v8::Handle<v8::Function> g =
-        v8::Handle<v8::Function>::Cast(global->Get(v8_str("\x67")));
+        v8::Handle<v8::Function>::Cast(global->Get(v8_str("g")));
     g->Call(global, 0, NULL);
   }
 
@@ -2026,21 +2026,21 @@ TEST(PrototypeTransitionClearing) {
   Factory* factory = isolate->factory();
   v8::HandleScope scope(CcTest::isolate());
 
-  CompileRun("\x76\x61\x72\x20\x62\x61\x73\x65\x20\x3d\x20\x7b\x7d\x3b");
+  CompileRun("var base = {};");
   Handle<JSObject> baseObject =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Object>::Cast(
-              CcTest::global()->Get(v8_str("\x62\x61\x73\x65"))));
+              CcTest::global()->Get(v8_str("base"))));
   int initialTransitions = baseObject->map()->NumberOfProtoTransitions();
 
   CompileRun(
-      "\x76\x61\x72\x20\x6c\x69\x76\x65\x20\x3d\x20\x5b\x5d\x3b"
-      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x76\x61\x72\x20\x6f\x62\x6a\x65\x63\x74\x20\x3d\x20\x7b\x7d\x3b"
-      "\x20\x20\x76\x61\x72\x20\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x3d\x20\x7b\x7d\x3b"
-      "\x20\x20\x6f\x62\x6a\x65\x63\x74\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x3b"
-      "\x20\x20\x69\x66\x20\x28\x69\x20\x3e\x3d\x20\x33\x29\x20\x6c\x69\x76\x65\x2e\x70\x75\x73\x68\x28\x6f\x62\x6a\x65\x63\x74\x2c\x20\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x29\x3b"
-      "\x7d");
+      "var live = [];"
+      "for (var i = 0; i < 10; i++) {"
+      "  var object = {};"
+      "  var prototype = {};"
+      "  object.__proto__ = prototype;"
+      "  if (i >= 3) live.push(object, prototype);"
+      "}");
 
   // Verify that only dead prototype transitions are cleared.
   CHECK_EQ(initialTransitions + 10,
@@ -2093,19 +2093,19 @@ TEST(ResetSharedFunctionInfoCountersDuringIncrementalMarking) {
   {
     v8::HandleScope scope(CcTest::isolate());
     CompileRun(
-        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x20\x28\x29\x20\x7b"
-        "\x20\x20\x76\x61\x72\x20\x73\x20\x3d\x20\x30\x3b"
-        "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x20\x73\x20\x2b\x3d\x20\x69\x3b"
-        "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x3b"
-        "\x7d"
-        "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-        "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-        "\x66\x28\x29\x3b");
+        "function f () {"
+        "  var s = 0;"
+        "  for (var i = 0; i < 100; i++)  s += i;"
+        "  return s;"
+        "}"
+        "f(); f();"
+        "%OptimizeFunctionOnNextCall(f);"
+        "f();");
   }
   Handle<JSFunction> f =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Function>::Cast(
-              CcTest::global()->Get(v8_str("\x66"))));
+              CcTest::global()->Get(v8_str("f"))));
   CHECK(f->IsOptimized());
 
   IncrementalMarking* marking = CcTest::heap()->incremental_marking();
@@ -2127,7 +2127,7 @@ TEST(ResetSharedFunctionInfoCountersDuringIncrementalMarking) {
     // JS code running to trigger the interrupt, so we explicitly finalize
     // here.
     CcTest::heap()->CollectAllGarbage(Heap::kNoGCFlags,
-                            "\x54\x65\x73\x74\x20\x66\x69\x6e\x61\x6c\x69\x7a\x69\x6e\x67\x20\x69\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x20\x6d\x61\x72\x6b\x2d\x73\x77\x65\x65\x70");
+                            "Test finalizing incremental mark-sweep");
   }
 
   CHECK_EQ(CcTest::heap()->global_ic_age(), f->shared()->ic_age());
@@ -2150,19 +2150,19 @@ TEST(ResetSharedFunctionInfoCountersDuringMarkSweep) {
   {
     v8::HandleScope scope(CcTest::isolate());
     CompileRun(
-        "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x20\x28\x29\x20\x7b"
-        "\x20\x20\x76\x61\x72\x20\x73\x20\x3d\x20\x30\x3b"
-        "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x69\x2b\x2b\x29\x20\x20\x73\x20\x2b\x3d\x20\x69\x3b"
-        "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x73\x3b"
-        "\x7d"
-        "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-        "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-        "\x66\x28\x29\x3b");
+        "function f () {"
+        "  var s = 0;"
+        "  for (var i = 0; i < 100; i++)  s += i;"
+        "  return s;"
+        "}"
+        "f(); f();"
+        "%OptimizeFunctionOnNextCall(f);"
+        "f();");
   }
   Handle<JSFunction> f =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Function>::Cast(
-              CcTest::global()->Get(v8_str("\x66"))));
+              CcTest::global()->Get(v8_str("f"))));
   CHECK(f->IsOptimized());
 
   CcTest::heap()->incremental_marking()->Abort();
@@ -2190,17 +2190,17 @@ TEST(OptimizedAllocationAlwaysInNewSpace) {
   SimulateFullSpace(CcTest::heap()->new_space());
   AlwaysAllocateScope always_allocate(CcTest::i_isolate());
   v8::Local<v8::Value> res = CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x28\x78\x29\x20\x7b"
-      "\x20\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x78\x3b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x33\x32\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x74\x68\x69\x73\x5b\x27\x78\x27\x20\x2b\x20\x69\x5d\x20\x3d\x20\x78\x3b"
-      "\x20\x20\x7d"
-      "\x7d"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6e\x65\x77\x20\x63\x28\x78\x29\x3b\x20\x7d\x3b"
-      "\x66\x28\x31\x29\x3b\x20\x66\x28\x32\x29\x3b\x20\x66\x28\x33\x29\x3b"
-      "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x34\x29\x3b");
-  CHECK_EQ(4, res->ToObject()->GetRealNamedProperty(v8_str("\x78"))->Int32Value());
+      "function c(x) {"
+      "  this.x = x;"
+      "  for (var i = 0; i < 32; i++) {"
+      "    this['x' + i] = x;"
+      "  }"
+      "}"
+      "function f(x) { return new c(x); };"
+      "f(1); f(2); f(3);"
+      "%OptimizeFunctionOnNextCall(f);"
+      "f(4);");
+  CHECK_EQ(4, res->ToObject()->GetRealNamedProperty(v8_str("x"))->Int32Value());
 
   Handle<JSObject> o =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(res));
@@ -2225,26 +2225,26 @@ TEST(OptimizedPretenuringAllocationFolding) {
   i::ScopedVector<char> source(1024);
   i::SNPrintF(
       source,
-      "\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6c\x84\x3b"
-      "\x76\x61\x72\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x5b\x5b\x7b\x7d\x5d\x2c\x20\x5b\x31\x2e\x31\x5d\x5d\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x2d\x31\x5d"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x67\x63\x28\x29\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b",
+      "var number_elements = %d;"
+      "var elements = new Array();"
+      "function f() {"
+      "  for (var i = 0; i < number_elements; i++) {"
+      "    elements[i] = [[{}], [1.1]];"
+      "  }"
+      "  return elements[number_elements-1]"
+      "};"
+      "f(); gc();"
+      "f(); f();"
+      "%%OptimizeFunctionOnNextCall(f);"
+      "f();",
       AllocationSite::kPretenureMinimumCreated);
 
   v8::Local<v8::Value> res = CompileRun(source.start());
 
-  v8::Local<v8::Value> int_array = v8::Object::Cast(*res)->Get(v8_str("\x30"));
+  v8::Local<v8::Value> int_array = v8::Object::Cast(*res)->Get(v8_str("0"));
   Handle<JSObject> int_array_handle =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(int_array));
-  v8::Local<v8::Value> double_array = v8::Object::Cast(*res)->Get(v8_str("\x31"));
+  v8::Local<v8::Value> double_array = v8::Object::Cast(*res)->Get(v8_str("1"));
   Handle<JSObject> double_array_handle =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(double_array));
 
@@ -2274,18 +2274,18 @@ TEST(OptimizedPretenuringObjectArrayLiterals) {
   i::ScopedVector<char> source(1024);
   i::SNPrintF(
       source,
-      "\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6c\x84\x3b"
-      "\x76\x61\x72\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x5b\x7b\x7d\x2c\x20\x7b\x7d\x2c\x20\x7b\x7d\x5d\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x2d\x20\x31\x5d\x3b"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x67\x63\x28\x29\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b",
+      "var number_elements = %d;"
+      "var elements = new Array(number_elements);"
+      "function f() {"
+      "  for (var i = 0; i < number_elements; i++) {"
+      "    elements[i] = [{}, {}, {}];"
+      "  }"
+      "  return elements[number_elements - 1];"
+      "};"
+      "f(); gc();"
+      "f(); f();"
+      "%%OptimizeFunctionOnNextCall(f);"
+      "f();",
       AllocationSite::kPretenureMinimumCreated);
 
   v8::Local<v8::Value> res = CompileRun(source.start());
@@ -2315,18 +2315,18 @@ TEST(OptimizedPretenuringMixedInObjectProperties) {
   i::ScopedVector<char> source(1024);
   i::SNPrintF(
       source,
-      "\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6c\x84\x3b"
-      "\x76\x61\x72\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x7b\x61\x3a\x20\x7b\x63\x3a\x20\x32\x2e\x32\x2c\x20\x64\x3a\x20\x7b\x7d\x7d\x2c\x20\x62\x3a\x20\x31\x2e\x31\x7d\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x2d\x20\x31\x5d\x3b"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x67\x63\x28\x29\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b",
+      "var number_elements = %d;"
+      "var elements = new Array(number_elements);"
+      "function f() {"
+      "  for (var i = 0; i < number_elements; i++) {"
+      "    elements[i] = {a: {c: 2.2, d: {}}, b: 1.1};"
+      "  }"
+      "  return elements[number_elements - 1];"
+      "};"
+      "f(); gc();"
+      "f(); f();"
+      "%%OptimizeFunctionOnNextCall(f);"
+      "f();",
       AllocationSite::kPretenureMinimumCreated);
 
   v8::Local<v8::Value> res = CompileRun(source.start());
@@ -2365,18 +2365,18 @@ TEST(OptimizedPretenuringDoubleArrayProperties) {
   i::ScopedVector<char> source(1024);
   i::SNPrintF(
       source,
-      "\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6c\x84\x3b"
-      "\x76\x61\x72\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x7b\x61\x3a\x20\x31\x2e\x31\x2c\x20\x62\x3a\x20\x32\x2e\x32\x7d\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x20\x2d\x20\x31\x5d\x3b"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x67\x63\x28\x29\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b",
+      "var number_elements = %d;"
+      "var elements = new Array(number_elements);"
+      "function f() {"
+      "  for (var i = 0; i < number_elements; i++) {"
+      "    elements[i] = {a: 1.1, b: 2.2};"
+      "  }"
+      "  return elements[i - 1];"
+      "};"
+      "f(); gc();"
+      "f(); f();"
+      "%%OptimizeFunctionOnNextCall(f);"
+      "f();",
       AllocationSite::kPretenureMinimumCreated);
 
   v8::Local<v8::Value> res = CompileRun(source.start());
@@ -2405,18 +2405,18 @@ TEST(OptimizedPretenuringdoubleArrayLiterals) {
   i::ScopedVector<char> source(1024);
   i::SNPrintF(
       source,
-      "\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6c\x84\x3b"
-      "\x76\x61\x72\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x5b\x31\x2e\x31\x2c\x20\x32\x2e\x32\x2c\x20\x33\x2e\x33\x5d\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x2d\x20\x31\x5d\x3b"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x67\x63\x28\x29\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b",
+      "var number_elements = %d;"
+      "var elements = new Array(number_elements);"
+      "function f() {"
+      "  for (var i = 0; i < number_elements; i++) {"
+      "    elements[i] = [1.1, 2.2, 3.3];"
+      "  }"
+      "  return elements[number_elements - 1];"
+      "};"
+      "f(); gc();"
+      "f(); f();"
+      "%%OptimizeFunctionOnNextCall(f);"
+      "f();",
       AllocationSite::kPretenureMinimumCreated);
 
   v8::Local<v8::Value> res = CompileRun(source.start());
@@ -2445,25 +2445,25 @@ TEST(OptimizedPretenuringNestedMixedArrayLiterals) {
   i::ScopedVector<char> source(1024);
   i::SNPrintF(
       source,
-      "\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x31\x30\x30\x3b"
-      "\x76\x61\x72\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x5b\x5b\x7b\x7d\x2c\x20\x7b\x7d\x2c\x20\x7b\x7d\x5d\x2c\x20\x5b\x31\x2e\x31\x2c\x20\x32\x2e\x32\x2c\x20\x33\x2e\x33\x5d\x5d\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x2d\x20\x31\x5d\x3b"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x67\x63\x28\x29\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b");
+      "var number_elements = 100;"
+      "var elements = new Array(number_elements);"
+      "function f() {"
+      "  for (var i = 0; i < number_elements; i++) {"
+      "    elements[i] = [[{}, {}, {}], [1.1, 2.2, 3.3]];"
+      "  }"
+      "  return elements[number_elements - 1];"
+      "};"
+      "f(); gc();"
+      "f(); f();"
+      "%%OptimizeFunctionOnNextCall(f);"
+      "f();");
 
   v8::Local<v8::Value> res = CompileRun(source.start());
 
-  v8::Local<v8::Value> int_array = v8::Object::Cast(*res)->Get(v8_str("\x30"));
+  v8::Local<v8::Value> int_array = v8::Object::Cast(*res)->Get(v8_str("0"));
   Handle<JSObject> int_array_handle =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(int_array));
-  v8::Local<v8::Value> double_array = v8::Object::Cast(*res)->Get(v8_str("\x31"));
+  v8::Local<v8::Value> double_array = v8::Object::Cast(*res)->Get(v8_str("1"));
   Handle<JSObject> double_array_handle =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(double_array));
 
@@ -2493,26 +2493,26 @@ TEST(OptimizedPretenuringNestedObjectLiterals) {
   i::ScopedVector<char> source(1024);
   i::SNPrintF(
       source,
-      "\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6c\x84\x3b"
-      "\x76\x61\x72\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x5b\x5b\x7b\x7d\x2c\x20\x7b\x7d\x2c\x20\x7b\x7d\x5d\x2c\x5b\x7b\x7d\x2c\x20\x7b\x7d\x2c\x20\x7b\x7d\x5d\x5d\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x2d\x20\x31\x5d\x3b"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x67\x63\x28\x29\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b",
+      "var number_elements = %d;"
+      "var elements = new Array(number_elements);"
+      "function f() {"
+      "  for (var i = 0; i < number_elements; i++) {"
+      "    elements[i] = [[{}, {}, {}],[{}, {}, {}]];"
+      "  }"
+      "  return elements[number_elements - 1];"
+      "};"
+      "f(); gc();"
+      "f(); f();"
+      "%%OptimizeFunctionOnNextCall(f);"
+      "f();",
       AllocationSite::kPretenureMinimumCreated);
 
   v8::Local<v8::Value> res = CompileRun(source.start());
 
-  v8::Local<v8::Value> int_array_1 = v8::Object::Cast(*res)->Get(v8_str("\x30"));
+  v8::Local<v8::Value> int_array_1 = v8::Object::Cast(*res)->Get(v8_str("0"));
   Handle<JSObject> int_array_handle_1 =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(int_array_1));
-  v8::Local<v8::Value> int_array_2 = v8::Object::Cast(*res)->Get(v8_str("\x31"));
+  v8::Local<v8::Value> int_array_2 = v8::Object::Cast(*res)->Get(v8_str("1"));
   Handle<JSObject> int_array_handle_2 =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(int_array_2));
 
@@ -2542,28 +2542,28 @@ TEST(OptimizedPretenuringNestedDoubleLiterals) {
   i::ScopedVector<char> source(1024);
   i::SNPrintF(
       source,
-      "\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6c\x84\x3b"
-      "\x76\x61\x72\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x5b\x5b\x31\x2e\x31\x2c\x20\x31\x2e\x32\x2c\x20\x31\x2e\x33\x5d\x2c\x5b\x32\x2e\x31\x2c\x20\x32\x2e\x32\x2c\x20\x32\x2e\x33\x5d\x5d\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x2d\x20\x31\x5d\x3b"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x67\x63\x28\x29\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b",
+      "var number_elements = %d;"
+      "var elements = new Array(number_elements);"
+      "function f() {"
+      "  for (var i = 0; i < number_elements; i++) {"
+      "    elements[i] = [[1.1, 1.2, 1.3],[2.1, 2.2, 2.3]];"
+      "  }"
+      "  return elements[number_elements - 1];"
+      "};"
+      "f(); gc();"
+      "f(); f();"
+      "%%OptimizeFunctionOnNextCall(f);"
+      "f();",
       AllocationSite::kPretenureMinimumCreated);
 
   v8::Local<v8::Value> res = CompileRun(source.start());
 
   v8::Local<v8::Value> double_array_1 =
-      v8::Object::Cast(*res)->Get(v8_str("\x30"));
+      v8::Object::Cast(*res)->Get(v8_str("0"));
   Handle<JSObject> double_array_handle_1 =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(double_array_1));
   v8::Local<v8::Value> double_array_2 =
-      v8::Object::Cast(*res)->Get(v8_str("\x31"));
+      v8::Object::Cast(*res)->Get(v8_str("1"));
   Handle<JSObject> double_array_handle_2 =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(double_array_2));
 
@@ -2602,22 +2602,22 @@ TEST(OptimizedPretenuringConstructorCalls) {
   // mementos during that time.
   i::SNPrintF(
       source,
-      "\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6c\x84\x3b"
-      "\x76\x61\x72\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x29\x20\x7b"
-      "\x20\x20\x74\x68\x69\x73\x2e\x61\x20\x3d\x20\x33\x3b"
-      "\x20\x20\x74\x68\x69\x73\x2e\x62\x20\x3d\x20\x7b\x7d\x3b"
-      "\x7d"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x6e\x65\x77\x20\x66\x6f\x6f\x28\x29\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x2d\x20\x31\x5d\x3b"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x67\x63\x28\x29\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b",
+      "var number_elements = %d;"
+      "var elements = new Array(number_elements);"
+      "function foo() {"
+      "  this.a = 3;"
+      "  this.b = {};"
+      "}"
+      "function f() {"
+      "  for (var i = 0; i < number_elements; i++) {"
+      "    elements[i] = new foo();"
+      "  }"
+      "  return elements[number_elements - 1];"
+      "};"
+      "f(); gc();"
+      "f(); f();"
+      "%%OptimizeFunctionOnNextCall(f);"
+      "f();",
       AllocationSite::kPretenureMinimumCreated +
       JSFunction::kGenerousAllocationCount);
 
@@ -2653,19 +2653,19 @@ TEST(OptimizedPretenuringCallNew) {
   // mementos during that time.
   i::SNPrintF(
       source,
-      "\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6c\x84\x3b"
-      "\x76\x61\x72\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x61\x20\x3d\x20\x30\x3b\x20\x7d"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-      "\x20\x20\x20\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x69\x5d\x20\x3d\x20\x6e\x65\x77\x20\x67\x28\x29\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x65\x6c\x65\x6d\x65\x6e\x74\x73\x5b\x6e\x75\x6d\x62\x65\x72\x5f\x65\x6c\x65\x6d\x65\x6e\x74\x73\x20\x2d\x20\x31\x5d\x3b"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x67\x63\x28\x29\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b",
+      "var number_elements = %d;"
+      "var elements = new Array(number_elements);"
+      "function g() { this.a = 0; }"
+      "function f() {"
+      "  for (var i = 0; i < number_elements; i++) {"
+      "    elements[i] = new g();"
+      "  }"
+      "  return elements[number_elements - 1];"
+      "};"
+      "f(); gc();"
+      "f(); f();"
+      "%%OptimizeFunctionOnNextCall(f);"
+      "f();",
       AllocationSite::kPretenureMinimumCreated +
       JSFunction::kGenerousAllocationCount);
 
@@ -2686,16 +2686,16 @@ TEST(OptimizedAllocationArrayLiterals) {
   v8::HandleScope scope(CcTest::isolate());
 
   v8::Local<v8::Value> res = CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b"
-      "\x20\x20\x76\x61\x72\x20\x6e\x75\x6d\x62\x65\x72\x73\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x31\x2c\x20\x32\x2c\x20\x33\x29\x3b"
-      "\x20\x20\x6e\x75\x6d\x62\x65\x72\x73\x5b\x30\x5d\x20\x3d\x20\x33\x2e\x31\x34\x3b"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6e\x75\x6d\x62\x65\x72\x73\x3b"
-      "\x7d\x3b"
-      "\x66\x28\x29\x3b\x20\x66\x28\x29\x3b\x20\x66\x28\x29\x3b"
-      "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-      "\x66\x28\x29\x3b");
+      "function f() {"
+      "  var numbers = new Array(1, 2, 3);"
+      "  numbers[0] = 3.14;"
+      "  return numbers;"
+      "};"
+      "f(); f(); f();"
+      "%OptimizeFunctionOnNextCall(f);"
+      "f();");
   CHECK_EQ(static_cast<int>(3.14),
-           v8::Object::Cast(*res)->Get(v8_str("\x30"))->Int32Value());
+           v8::Object::Cast(*res)->Get(v8_str("0"))->Int32Value());
 
   Handle<JSObject> o =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(res));
@@ -2719,25 +2719,25 @@ TEST(Regress1465) {
   v8::HandleScope scope(CcTest::isolate());
   static const int transitions_count = 256;
 
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x28\x29\x20\x7b\x7d");
+  CompileRun("function F() {}");
   {
     AlwaysAllocateScope always_allocate(CcTest::i_isolate());
     for (int i = 0; i < transitions_count; i++) {
       EmbeddedVector<char, 64> buffer;
-      SNPrintF(buffer, "\x76\x61\x72\x20\x6f\x20\x3d\x20\x6e\x65\x77\x20\x46\x3b\x20\x6f\x2e\x70\x72\x6f\x70\x6c\x84\x20\x3d\x20\x6c\x84\x3b", i, i);
+      SNPrintF(buffer, "var o = new F; o.prop%d = %d;", i, i);
       CompileRun(buffer.start());
     }
-    CompileRun("\x76\x61\x72\x20\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x46\x3b");
+    CompileRun("var root = new F;");
   }
 
   Handle<JSObject> root =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Object>::Cast(
-              CcTest::global()->Get(v8_str("\x72\x6f\x6f\x74"))));
+              CcTest::global()->Get(v8_str("root"))));
 
   // Count number of live transitions before marking.
   int transitions_before = CountMapTransitions(root->map());
-  CompileRun("\x25\x44\x65\x62\x75\x67\x50\x72\x69\x6e\x74\x28\x72\x6f\x6f\x74\x29\x3b");
+  CompileRun("%DebugPrint(root);");
   CHECK_EQ(transitions_count, transitions_before);
 
   SimulateIncrementalMarking(CcTest::heap());
@@ -2746,7 +2746,7 @@ TEST(Regress1465) {
   // Count number of live transitions after marking.  Note that one transition
   // is left, because 'o' still holds an instance of one transition target.
   int transitions_after = CountMapTransitions(root->map());
-  CompileRun("\x25\x44\x65\x62\x75\x67\x50\x72\x69\x6e\x74\x28\x72\x6f\x6f\x74\x29\x3b");
+  CompileRun("%DebugPrint(root);");
   CHECK_EQ(1, transitions_after);
 }
 
@@ -2756,7 +2756,7 @@ static void AddTransitions(int transitions_count) {
   AlwaysAllocateScope always_allocate(CcTest::i_isolate());
   for (int i = 0; i < transitions_count; i++) {
     EmbeddedVector<char, 64> buffer;
-    SNPrintF(buffer, "\x76\x61\x72\x20\x6f\x20\x3d\x20\x6e\x65\x77\x20\x46\x3b\x20\x6f\x2e\x70\x72\x6f\x70\x6c\x84\x20\x3d\x20\x6c\x84\x3b", i, i);
+    SNPrintF(buffer, "var o = new F; o.prop%d = %d;", i, i);
     CompileRun(buffer.start());
   }
 }
@@ -2788,20 +2788,20 @@ TEST(TransitionArrayShrinksDuringAllocToZero) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
   static const int transitions_count = 10;
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x28\x29\x20\x7b\x20\x7d");
+  CompileRun("function F() { }");
   AddTransitions(transitions_count);
-  CompileRun("\x76\x61\x72\x20\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x46\x3b");
-  Handle<JSObject> root = GetByName("\x72\x6f\x6f\x74");
+  CompileRun("var root = new F;");
+  Handle<JSObject> root = GetByName("root");
 
   // Count number of live transitions before marking.
   int transitions_before = CountMapTransitions(root->map());
   CHECK_EQ(transitions_count, transitions_before);
 
   // Get rid of o
-  CompileRun("\x6f\x20\x3d\x20\x6e\x65\x77\x20\x46\x3b"
-             "\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x46");
-  root = GetByName("\x72\x6f\x6f\x74");
-  AddPropertyTo(2, root, "\x66\x75\x6e\x6e\x79");
+  CompileRun("o = new F;"
+             "root = new F");
+  root = GetByName("root");
+  AddPropertyTo(2, root, "funny");
 
   // Count number of live transitions after marking.  Note that one transition
   // is left, because 'o' still holds an instance of one transition target.
@@ -2817,17 +2817,17 @@ TEST(TransitionArrayShrinksDuringAllocToOne) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
   static const int transitions_count = 10;
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x28\x29\x20\x7b\x7d");
+  CompileRun("function F() {}");
   AddTransitions(transitions_count);
-  CompileRun("\x76\x61\x72\x20\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x46\x3b");
-  Handle<JSObject> root = GetByName("\x72\x6f\x6f\x74");
+  CompileRun("var root = new F;");
+  Handle<JSObject> root = GetByName("root");
 
   // Count number of live transitions before marking.
   int transitions_before = CountMapTransitions(root->map());
   CHECK_EQ(transitions_count, transitions_before);
 
-  root = GetByName("\x72\x6f\x6f\x74");
-  AddPropertyTo(2, root, "\x66\x75\x6e\x6e\x79");
+  root = GetByName("root");
+  AddPropertyTo(2, root, "funny");
 
   // Count number of live transitions after marking.  Note that one transition
   // is left, because 'o' still holds an instance of one transition target.
@@ -2843,17 +2843,17 @@ TEST(TransitionArrayShrinksDuringAllocToOnePropertyFound) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
   static const int transitions_count = 10;
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x28\x29\x20\x7b\x7d");
+  CompileRun("function F() {}");
   AddTransitions(transitions_count);
-  CompileRun("\x76\x61\x72\x20\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x46\x3b");
-  Handle<JSObject> root = GetByName("\x72\x6f\x6f\x74");
+  CompileRun("var root = new F;");
+  Handle<JSObject> root = GetByName("root");
 
   // Count number of live transitions before marking.
   int transitions_before = CountMapTransitions(root->map());
   CHECK_EQ(transitions_count, transitions_before);
 
-  root = GetByName("\x72\x6f\x6f\x74");
-  AddPropertyTo(0, root, "\x70\x72\x6f\x70\x39");
+  root = GetByName("root");
+  AddPropertyTo(0, root, "prop9");
 
   // Count number of live transitions after marking.  Note that one transition
   // is left, because 'o' still holds an instance of one transition target.
@@ -2869,20 +2869,20 @@ TEST(TransitionArraySimpleToFull) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
   static const int transitions_count = 1;
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x46\x28\x29\x20\x7b\x7d");
+  CompileRun("function F() {}");
   AddTransitions(transitions_count);
-  CompileRun("\x76\x61\x72\x20\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x46\x3b");
-  Handle<JSObject> root = GetByName("\x72\x6f\x6f\x74");
+  CompileRun("var root = new F;");
+  Handle<JSObject> root = GetByName("root");
 
   // Count number of live transitions before marking.
   int transitions_before = CountMapTransitions(root->map());
   CHECK_EQ(transitions_count, transitions_before);
 
-  CompileRun("\x6f\x20\x3d\x20\x6e\x65\x77\x20\x46\x3b"
-             "\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x46");
-  root = GetByName("\x72\x6f\x6f\x74");
+  CompileRun("o = new F;"
+             "root = new F");
+  root = GetByName("root");
   DCHECK(root->map()->transitions()->IsSimpleTransition());
-  AddPropertyTo(2, root, "\x68\x61\x70\x70\x79");
+  AddPropertyTo(2, root, "happy");
 
   // Count number of live transitions after marking.  Note that one transition
   // is left, because 'o' still holds an instance of one transition target.
@@ -2901,20 +2901,20 @@ TEST(Regress2143a) {
 
   // Prepare a map transition from the root object together with a yet
   // untransitioned root object.
-  CompileRun("\x76\x61\x72\x20\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x3b"
-             "\x72\x6f\x6f\x74\x2e\x66\x6f\x6f\x20\x3d\x20\x30\x3b"
-             "\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x3b");
+  CompileRun("var root = new Object;"
+             "root.foo = 0;"
+             "root = new Object;");
 
   SimulateIncrementalMarking(CcTest::heap());
 
   // Compile a StoreIC that performs the prepared map transition. This
   // will restart incremental marking and should make sure the root is
   // marked grey again.
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x6f\x29\x20\x7b"
-             "\x20\x20\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x30\x3b"
-             "\x7d"
-             "\x66\x28\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x29\x3b"
-             "\x66\x28\x72\x6f\x6f\x74\x29\x3b");
+  CompileRun("function f(o) {"
+             "  o.foo = 0;"
+             "}"
+             "f(new Object);"
+             "f(root);");
 
   // This bug only triggers with aggressive IC clearing.
   CcTest::heap()->AgeInlineCaches();
@@ -2925,7 +2925,7 @@ TEST(Regress2143a) {
   Handle<JSObject> root =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Object>::Cast(
-              CcTest::global()->Get(v8_str("\x72\x6f\x6f\x74"))));
+              CcTest::global()->Get(v8_str("root"))));
 
   // The root object should be in a sane state.
   CHECK(root->IsJSObject());
@@ -2942,23 +2942,23 @@ TEST(Regress2143b) {
 
   // Prepare a map transition from the root object together with a yet
   // untransitioned root object.
-  CompileRun("\x76\x61\x72\x20\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x3b"
-             "\x72\x6f\x6f\x74\x2e\x66\x6f\x6f\x20\x3d\x20\x30\x3b"
-             "\x72\x6f\x6f\x74\x20\x3d\x20\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x3b");
+  CompileRun("var root = new Object;"
+             "root.foo = 0;"
+             "root = new Object;");
 
   SimulateIncrementalMarking(CcTest::heap());
 
   // Compile an optimized LStoreNamedField that performs the prepared
   // map transition. This will restart incremental marking and should
   // make sure the root is marked grey again.
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x6f\x29\x20\x7b"
-             "\x20\x20\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x30\x3b"
-             "\x7d"
-             "\x66\x28\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x29\x3b"
-             "\x66\x28\x6e\x65\x77\x20\x4f\x62\x6a\x65\x63\x74\x29\x3b"
-             "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b"
-             "\x66\x28\x72\x6f\x6f\x74\x29\x3b"
-             "\x25\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x66\x29\x3b");
+  CompileRun("function f(o) {"
+             "  o.foo = 0;"
+             "}"
+             "f(new Object);"
+             "f(new Object);"
+             "%OptimizeFunctionOnNextCall(f);"
+             "f(root);"
+             "%DeoptimizeFunction(f);");
 
   // This bug only triggers with aggressive IC clearing.
   CcTest::heap()->AgeInlineCaches();
@@ -2969,7 +2969,7 @@ TEST(Regress2143b) {
   Handle<JSObject> root =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Object>::Cast(
-              CcTest::global()->Get(v8_str("\x72\x6f\x6f\x74"))));
+              CcTest::global()->Get(v8_str("root"))));
 
   // The root object should be in a sane state.
   CHECK(root->IsJSObject());
@@ -3003,14 +3003,14 @@ TEST(ReleaseOverReservedPages) {
   // Triggering one GC will cause a lot of garbage to be discovered but
   // even spread across all allocated pages.
   heap->CollectAllGarbage(Heap::kAbortIncrementalMarkingMask,
-                          "\x74\x72\x69\x67\x67\x65\x72\x65\x64\x20\x66\x6f\x72\x20\x70\x72\x65\x70\x61\x72\x61\x74\x69\x6f\x6e");
+                          "triggered for preparation");
   CHECK_GE(number_of_test_pages + 1, old_pointer_space->CountTotalPages());
 
   // Triggering subsequent GCs should cause at least half of the pages
   // to be released to the OS after at most two cycles.
-  heap->CollectAllGarbage(Heap::kNoGCFlags, "\x74\x72\x69\x67\x67\x65\x72\x65\x64\x20\x62\x79\x20\x74\x65\x73\x74\x20\x31");
+  heap->CollectAllGarbage(Heap::kNoGCFlags, "triggered by test 1");
   CHECK_GE(number_of_test_pages + 1, old_pointer_space->CountTotalPages());
-  heap->CollectAllGarbage(Heap::kNoGCFlags, "\x74\x72\x69\x67\x67\x65\x72\x65\x64\x20\x62\x79\x20\x74\x65\x73\x74\x20\x32");
+  heap->CollectAllGarbage(Heap::kNoGCFlags, "triggered by test 2");
   CHECK_GE(number_of_test_pages + 1, old_pointer_space->CountTotalPages() * 2);
 
   // Triggering a last-resort GC should cause all pages to be released to the
@@ -3020,7 +3020,7 @@ TEST(ReleaseOverReservedPages) {
   // first page should be small in order to reduce memory used when the VM
   // boots, but if the 20 small arrays don't fit on the first page then that's
   // an indication that it is too small.
-  heap->CollectAllAvailableGarbage("\x74\x72\x69\x67\x67\x65\x72\x65\x64\x20\x72\x65\x61\x6c\x6c\x79\x20\x68\x61\x72\x64");
+  heap->CollectAllAvailableGarbage("triggered really hard");
   CHECK_EQ(1, old_pointer_space->CountTotalPages());
 }
 
@@ -3036,7 +3036,7 @@ TEST(Regress2237) {
   {
     // Generate a parent that lives in new-space.
     v8::HandleScope inner_scope(CcTest::isolate());
-    const char* c = "\x54\x68\x69\x73\x20\x74\x65\x78\x74\x20\x69\x73\x20\x6c\x6f\x6e\x67\x20\x65\x6e\x6f\x75\x67\x68\x20\x74\x6f\x20\x74\x72\x69\x67\x67\x65\x72\x20\x73\x6c\x69\x63\x65\x64\x20\x73\x74\x72\x69\x6e\x67\x73\x2e";
+    const char* c = "This text is long enough to trigger sliced strings.";
     Handle<String> s = factory->NewStringFromAsciiChecked(c);
     CHECK(s->IsSeqOneByteString());
     CHECK(CcTest::heap()->InNewSpace(*s));
@@ -3061,13 +3061,13 @@ TEST(Regress2237) {
 TEST(PrintSharedFunctionInfo) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
-  const char* source = "\x66\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x39\x38\x37\x36\x35\x34\x33\x32\x31\x3b\x20\x7d\xa"
-                       "\x67\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3b\x20\x7d\xa";
+  const char* source = "f = function() { return 987654321; }\n"
+                       "g = function() { return 123456789; }\n";
   CompileRun(source);
   Handle<JSFunction> g =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Function>::Cast(
-              CcTest::global()->Get(v8_str("\x67"))));
+              CcTest::global()->Get(v8_str("g"))));
 
   OFStream os(stdout);
   g->shared()->Print(os);
@@ -3080,7 +3080,7 @@ TEST(Regress2211) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
 
-  v8::Handle<v8::String> value = v8_str("\x76\x61\x6c\x20\x73\x74\x72\x69\x6e\x67");
+  v8::Handle<v8::String> value = v8_str("val string");
   Smi* hash = Smi::FromInt(321);
   Factory* factory = CcTest::i_isolate()->factory();
 
@@ -3092,14 +3092,14 @@ TEST(Regress2211) {
 
     // In the first iteration, set hidden value first and identity hash second.
     // In the second iteration, reverse the order.
-    if (i == 0) obj->SetHiddenValue(v8_str("\x6b\x65\x79\x20\x73\x74\x72\x69\x6e\x67"), value);
+    if (i == 0) obj->SetHiddenValue(v8_str("key string"), value);
     JSObject::SetIdentityHash(internal_obj, handle(hash, CcTest::i_isolate()));
-    if (i == 1) obj->SetHiddenValue(v8_str("\x6b\x65\x79\x20\x73\x74\x72\x69\x6e\x67"), value);
+    if (i == 1) obj->SetHiddenValue(v8_str("key string"), value);
 
     // Check values.
     CHECK_EQ(hash,
              internal_obj->GetHiddenProperty(factory->identity_hash_string()));
-    CHECK(value->Equals(obj->GetHiddenValue(v8_str("\x6b\x65\x79\x20\x73\x74\x72\x69\x6e\x67"))));
+    CHECK(value->Equals(obj->GetHiddenValue(v8_str("key string"))));
 
     // Check size.
     FieldIndex index = FieldIndex::ForDescriptor(internal_obj->map(), 0);
@@ -3119,26 +3119,26 @@ TEST(IncrementalMarkingClearsTypeFeedbackInfo) {
 
   {
     LocalContext env;
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x75\x6e\x28\x29\x20\x7b\x7d\x3b");
-    fun1 = env->Global()->Get(v8_str("\x66\x75\x6e"));
+    CompileRun("function fun() {};");
+    fun1 = env->Global()->Get(v8_str("fun"));
   }
 
   {
     LocalContext env;
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x75\x6e\x28\x29\x20\x7b\x7d\x3b");
-    fun2 = env->Global()->Get(v8_str("\x66\x75\x6e"));
+    CompileRun("function fun() {};");
+    fun2 = env->Global()->Get(v8_str("fun"));
   }
 
   // Prepare function f that contains type feedback for closures
   // originating from two different native contexts.
-  CcTest::global()->Set(v8_str("\x66\x75\x6e\x31"), fun1);
-  CcTest::global()->Set(v8_str("\x66\x75\x6e\x32"), fun2);
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x61\x2c\x20\x62\x29\x20\x7b\x20\x61\x28\x29\x3b\x20\x62\x28\x29\x3b\x20\x7d\x20\x66\x28\x66\x75\x6e\x31\x2c\x20\x66\x75\x6e\x32\x29\x3b");
+  CcTest::global()->Set(v8_str("fun1"), fun1);
+  CcTest::global()->Set(v8_str("fun2"), fun2);
+  CompileRun("function f(a, b) { a(); b(); } f(fun1, fun2);");
 
   Handle<JSFunction> f =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Function>::Cast(
-              CcTest::global()->Get(v8_str("\x66"))));
+              CcTest::global()->Get(v8_str("f"))));
 
   Handle<FixedArray> feedback_vector(f->shared()->feedback_vector());
 
@@ -3183,12 +3183,12 @@ TEST(IncrementalMarkingPreservesMonomorphicIC) {
 
   // Prepare function f that contains a monomorphic IC for object
   // originating from the same native context.
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x75\x6e\x28\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x31\x3b\x20\x7d\x3b\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x66\x75\x6e\x28\x29\x3b"
-             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x6f\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x2e\x78\x3b\x20\x7d\x20\x66\x28\x6f\x62\x6a\x29\x3b\x20\x66\x28\x6f\x62\x6a\x29\x3b");
+  CompileRun("function fun() { this.x = 1; }; var obj = new fun();"
+             "function f(o) { return o.x; } f(obj); f(obj);");
   Handle<JSFunction> f =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Function>::Cast(
-              CcTest::global()->Get(v8_str("\x66"))));
+              CcTest::global()->Get(v8_str("f"))));
 
   Code* ic_before = FindFirstIC(f->shared()->code(), Code::LOAD_IC);
   CHECK(ic_before->ic_state() == MONOMORPHIC);
@@ -3209,18 +3209,18 @@ TEST(IncrementalMarkingClearsMonomorphicIC) {
 
   {
     LocalContext env;
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x75\x6e\x28\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x31\x3b\x20\x7d\x3b\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x66\x75\x6e\x28\x29\x3b");
-    obj1 = env->Global()->Get(v8_str("\x6f\x62\x6a"));
+    CompileRun("function fun() { this.x = 1; }; var obj = new fun();");
+    obj1 = env->Global()->Get(v8_str("obj"));
   }
 
   // Prepare function f that contains a monomorphic IC for object
   // originating from a different native context.
-  CcTest::global()->Set(v8_str("\x6f\x62\x6a\x31"), obj1);
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x6f\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x2e\x78\x3b\x20\x7d\x20\x66\x28\x6f\x62\x6a\x31\x29\x3b\x20\x66\x28\x6f\x62\x6a\x31\x29\x3b");
+  CcTest::global()->Set(v8_str("obj1"), obj1);
+  CompileRun("function f(o) { return o.x; } f(obj1); f(obj1);");
   Handle<JSFunction> f =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Function>::Cast(
-              CcTest::global()->Get(v8_str("\x66"))));
+              CcTest::global()->Get(v8_str("f"))));
 
   Code* ic_before = FindFirstIC(f->shared()->code(), Code::LOAD_IC);
   CHECK(ic_before->ic_state() == MONOMORPHIC);
@@ -3243,25 +3243,25 @@ TEST(IncrementalMarkingClearsPolymorphicIC) {
 
   {
     LocalContext env;
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x75\x6e\x28\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x31\x3b\x20\x7d\x3b\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x66\x75\x6e\x28\x29\x3b");
-    obj1 = env->Global()->Get(v8_str("\x6f\x62\x6a"));
+    CompileRun("function fun() { this.x = 1; }; var obj = new fun();");
+    obj1 = env->Global()->Get(v8_str("obj"));
   }
 
   {
     LocalContext env;
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x75\x6e\x28\x29\x20\x7b\x20\x74\x68\x69\x73\x2e\x78\x20\x3d\x20\x32\x3b\x20\x7d\x3b\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x6e\x65\x77\x20\x66\x75\x6e\x28\x29\x3b");
-    obj2 = env->Global()->Get(v8_str("\x6f\x62\x6a"));
+    CompileRun("function fun() { this.x = 2; }; var obj = new fun();");
+    obj2 = env->Global()->Get(v8_str("obj"));
   }
 
   // Prepare function f that contains a polymorphic IC for objects
   // originating from two different native contexts.
-  CcTest::global()->Set(v8_str("\x6f\x62\x6a\x31"), obj1);
-  CcTest::global()->Set(v8_str("\x6f\x62\x6a\x32"), obj2);
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x6f\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x2e\x78\x3b\x20\x7d\x20\x66\x28\x6f\x62\x6a\x31\x29\x3b\x20\x66\x28\x6f\x62\x6a\x31\x29\x3b\x20\x66\x28\x6f\x62\x6a\x32\x29\x3b");
+  CcTest::global()->Set(v8_str("obj1"), obj1);
+  CcTest::global()->Set(v8_str("obj2"), obj2);
+  CompileRun("function f(o) { return o.x; } f(obj1); f(obj1); f(obj2);");
   Handle<JSFunction> f =
       v8::Utils::OpenHandle(
           *v8::Handle<v8::Function>::Cast(
-              CcTest::global()->Get(v8_str("\x66"))));
+              CcTest::global()->Get(v8_str("f"))));
 
   Code* ic_before = FindFirstIC(f->shared()->code(), Code::LOAD_IC);
   CHECK(ic_before->ic_state() == POLYMORPHIC);
@@ -3334,34 +3334,34 @@ TEST(ReleaseStackTraceData) {
   FLAG_use_ic = false;  // ICs retain objects.
   FLAG_concurrent_recompilation = false;
   CcTest::InitializeVM();
-  static const char* source1 = "\x76\x61\x72\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x6e\x75\x6c\x6c\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+  static const char* source1 = "var error = null;            "
   /* Normal Error */           "try {                        "
-                               "\x20\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20"
-                               "\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
-                               "\x20\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x65\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
-                               "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
-  static const char* source2 = "\x76\x61\x72\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x6e\x75\x6c\x6c\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+                               "  throw new Error();         "
+                               "} catch (e) {                "
+                               "  error = e;                 "
+                               "}                            ";
+  static const char* source2 = "var error = null;            "
   /* Stack overflow */         "try {                        "
-                               "\x20\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x66\x28\x29\x3b\x20\x7d\x29\x28\x29\x3b\x20"
-                               "\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
-                               "\x20\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x65\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
-                               "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
-  static const char* source3 = "\x76\x61\x72\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x6e\x75\x6c\x6c\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+                               "  (function f() { f(); })(); "
+                               "} catch (e) {                "
+                               "  error = e;                 "
+                               "}                            ";
+  static const char* source3 = "var error = null;            "
   /* Normal Error */           "try {                        "
-  /* as prototype */           "\x20\x20\x74\x68\x72\x6f\x77\x20\x6e\x65\x77\x20\x45\x72\x72\x6f\x72\x28\x29\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20"
-                               "\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
-                               "\x20\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x7b\x7d\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
-                               "\x20\x20\x65\x72\x72\x6f\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x65\x3b\x20\x20\x20\x20\x20\x20\x20"
-                               "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
-  static const char* source4 = "\x76\x61\x72\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x6e\x75\x6c\x6c\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
+  /* as prototype */           "  throw new Error();         "
+                               "} catch (e) {                "
+                               "  error = {};                "
+                               "  error.__proto__ = e;       "
+                               "}                            ";
+  static const char* source4 = "var error = null;            "
   /* Stack overflow */         "try {                        "
-  /* as prototype   */         "\x20\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x66\x28\x29\x3b\x20\x7d\x29\x28\x29\x3b\x20"
-                               "\x7d\x20\x63\x61\x74\x63\x68\x20\x28\x65\x29\x20\x7b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
-                               "\x20\x20\x65\x72\x72\x6f\x72\x20\x3d\x20\x7b\x7d\x3b\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20"
-                               "\x20\x20\x65\x72\x72\x6f\x72\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x65\x3b\x20\x20\x20\x20\x20\x20\x20"
-                               "\x7d\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20";
-  static const char* getter = "\x65\x72\x72\x6f\x72\x2e\x73\x74\x61\x63\x6b";
-  static const char* setter = "\x65\x72\x72\x6f\x72\x2e\x73\x74\x61\x63\x6b\x20\x3d\x20\x30";
+  /* as prototype   */         "  (function f() { f(); })(); "
+                               "} catch (e) {                "
+                               "  error = {};                "
+                               "  error.__proto__ = e;       "
+                               "}                            ";
+  static const char* getter = "error.stack";
+  static const char* setter = "error.stack = 0";
 
   ReleaseStackTraceDataTest(source1, setter);
   ReleaseStackTraceDataTest(source2, setter);
@@ -3394,29 +3394,29 @@ TEST(Regress159140) {
   Handle<Code> code;
   {
     HandleScope inner_scope(isolate);
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x68\x28\x78\x29\x20\x7b\x7d"
-               "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6d\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x20\x7b"
-               "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
-               "\x7d"
-               "\x76\x61\x72\x20\x66\x20\x3d\x20\x6d\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x3b"
-               "\x76\x61\x72\x20\x67\x20\x3d\x20\x6d\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x3b"
-               "\x66\x28\x31\x29\x3b\x20\x66\x28\x32\x29\x3b"
-               "\x67\x28\x31\x29\x3b\x20\x67\x28\x32\x29\x3b"
-               "\x68\x28\x31\x29\x3b\x20\x68\x28\x32\x29\x3b"
-               "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b\x20\x66\x28\x33\x29\x3b"
-               "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x68\x29\x3b\x20\x68\x28\x33\x29\x3b");
+    CompileRun("function h(x) {}"
+               "function mkClosure() {"
+               "  return function(x) { return x + 1; };"
+               "}"
+               "var f = mkClosure();"
+               "var g = mkClosure();"
+               "f(1); f(2);"
+               "g(1); g(2);"
+               "h(1); h(2);"
+               "%OptimizeFunctionOnNextCall(f); f(3);"
+               "%OptimizeFunctionOnNextCall(h); h(3);");
 
     Handle<JSFunction> f =
         v8::Utils::OpenHandle(
             *v8::Handle<v8::Function>::Cast(
-                CcTest::global()->Get(v8_str("\x66"))));
+                CcTest::global()->Get(v8_str("f"))));
     CHECK(f->is_compiled());
-    CompileRun("\x66\x20\x3d\x20\x6e\x75\x6c\x6c\x3b");
+    CompileRun("f = null;");
 
     Handle<JSFunction> g =
         v8::Utils::OpenHandle(
             *v8::Handle<v8::Function>::Cast(
-                CcTest::global()->Get(v8_str("\x67"))));
+                CcTest::global()->Get(v8_str("g"))));
     CHECK(g->is_compiled());
     const int kAgingThreshold = 6;
     for (int i = 0; i < kAgingThreshold; i++) {
@@ -3430,11 +3430,11 @@ TEST(Regress159140) {
   // code flushing candidates. Then optimize one function. Finally
   // finish the GC to complete code flushing.
   SimulateIncrementalMarking(heap);
-  CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x67\x29\x3b\x20\x67\x28\x33\x29\x3b");
+  CompileRun("%OptimizeFunctionOnNextCall(g); g(3);");
   heap->CollectAllGarbage(Heap::kNoGCFlags);
 
   // Unoptimized code is missing and the deoptimizer will go ballistic.
-  CompileRun("\x67\x28\x27\x62\x6f\x7a\x6f\x27\x29\x3b");
+  CompileRun("g('bozo');");
 }
 
 
@@ -3454,24 +3454,24 @@ TEST(Regress165495) {
   // but make sure the optimized code is unreachable.
   {
     HandleScope inner_scope(isolate);
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6d\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x20\x7b"
-               "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
-               "\x7d"
-               "\x76\x61\x72\x20\x66\x20\x3d\x20\x6d\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x3b"
-               "\x66\x28\x31\x29\x3b\x20\x66\x28\x32\x29\x3b"
-               "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b\x20\x66\x28\x33\x29\x3b");
+    CompileRun("function mkClosure() {"
+               "  return function(x) { return x + 1; };"
+               "}"
+               "var f = mkClosure();"
+               "f(1); f(2);"
+               "%OptimizeFunctionOnNextCall(f); f(3);");
 
     Handle<JSFunction> f =
         v8::Utils::OpenHandle(
             *v8::Handle<v8::Function>::Cast(
-                CcTest::global()->Get(v8_str("\x66"))));
+                CcTest::global()->Get(v8_str("f"))));
     CHECK(f->is_compiled());
     const int kAgingThreshold = 6;
     for (int i = 0; i < kAgingThreshold; i++) {
       f->shared()->code()->MakeOlder(static_cast<MarkingParity>(i % 2));
     }
 
-    CompileRun("\x66\x20\x3d\x20\x6e\x75\x6c\x6c\x3b");
+    CompileRun("f = null;");
   }
 
   // Simulate incremental marking so that unoptimized code is flushed
@@ -3481,7 +3481,7 @@ TEST(Regress165495) {
 
   // Make a new closure that will get code installed from the code map.
   // Unoptimized code is missing and the deoptimizer will go ballistic.
-  CompileRun("\x76\x61\x72\x20\x67\x20\x3d\x20\x6d\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x3b\x20\x67\x28\x27\x62\x6f\x7a\x6f\x27\x29\x3b");
+  CompileRun("var g = mkClosure(); g('bozo');");
 }
 
 
@@ -3503,16 +3503,16 @@ TEST(Regress169209) {
   Handle<SharedFunctionInfo> shared1;
   {
     HandleScope inner_scope(isolate);
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x27\x66\x6f\x6f\x62\x61\x72\x27\x3b\x20\x7d"
-               "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x28\x78\x29\x20\x7b\x20\x69\x66\x20\x28\x78\x29\x20\x66\x28\x29\x3b\x20\x7d"
-               "\x66\x28\x29\x3b"
-               "\x67\x28\x66\x61\x6c\x73\x65\x29\x3b"
-               "\x67\x28\x66\x61\x6c\x73\x65\x29\x3b");
+    CompileRun("function f() { return 'foobar'; }"
+               "function g(x) { if (x) f(); }"
+               "f();"
+               "g(false);"
+               "g(false);");
 
     Handle<JSFunction> f =
         v8::Utils::OpenHandle(
             *v8::Handle<v8::Function>::Cast(
-                CcTest::global()->Get(v8_str("\x66"))));
+                CcTest::global()->Get(v8_str("f"))));
     CHECK(f->is_compiled());
     const int kAgingThreshold = 6;
     for (int i = 0; i < kAgingThreshold; i++) {
@@ -3527,13 +3527,13 @@ TEST(Regress169209) {
   Handle<SharedFunctionInfo> shared2;
   {
     HandleScope inner_scope(isolate);
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6c\x75\x73\x68\x4d\x65\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x30\x3b\x20\x7d"
-               "\x66\x6c\x75\x73\x68\x4d\x65\x28\x31\x29\x3b");
+    CompileRun("function flushMe() { return 0; }"
+               "flushMe(1);");
 
     Handle<JSFunction> f =
         v8::Utils::OpenHandle(
             *v8::Handle<v8::Function>::Cast(
-                CcTest::global()->Get(v8_str("\x66\x6c\x75\x73\x68\x4d\x65"))));
+                CcTest::global()->Get(v8_str("flushMe"))));
     CHECK(f->is_compiled());
     const int kAgingThreshold = 6;
     for (int i = 0; i < kAgingThreshold; i++) {
@@ -3549,10 +3549,10 @@ TEST(Regress169209) {
 
   // Optimize function and make sure the unoptimized code is replaced.
 #ifdef DEBUG
-  FLAG_stop_at = "\x66";
+  FLAG_stop_at = "f";
 #endif
-  CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x67\x29\x3b"
-             "\x67\x28\x66\x61\x6c\x73\x65\x29\x3b");
+  CompileRun("%OptimizeFunctionOnNextCall(g);"
+             "g(false);");
 
   // Finish garbage collection cycle.
   heap->CollectAllGarbage(Heap::kNoGCFlags);
@@ -3588,23 +3588,23 @@ TEST(Regress169928) {
   if (FLAG_gc_global || FLAG_stress_compaction) return;
 
   // Prepare the environment
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x61\x73\x74\x6c\x69\x74\x65\x72\x61\x6c\x63\x61\x73\x65\x28\x6c\x69\x74\x65\x72\x61\x6c\x2c\x20\x76\x61\x6c\x75\x65\x29\x20\x7b"
-             "\x20\x20\x20\x20\x6c\x69\x74\x65\x72\x61\x6c\x5b\x30\x5d\x20\x3d\x20\x76\x61\x6c\x75\x65\x3b"
-             "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6c\x69\x74\x65\x72\x61\x6c\x3b"
-             "\x7d"
-             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x67\x65\x74\x5f\x73\x74\x61\x6e\x64\x61\x72\x64\x5f\x6c\x69\x74\x65\x72\x61\x6c\x28\x29\x20\x7b"
-             "\x20\x20\x20\x20\x76\x61\x72\x20\x6c\x69\x74\x65\x72\x61\x6c\x20\x3d\x20\x5b\x31\x2c\x20\x32\x2c\x20\x33\x5d\x3b"
-             "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6c\x69\x74\x65\x72\x61\x6c\x3b"
-             "\x7d"
-             "\x6f\x62\x6a\x20\x3d\x20\x66\x61\x73\x74\x6c\x69\x74\x65\x72\x61\x6c\x63\x61\x73\x65\x28\x67\x65\x74\x5f\x73\x74\x61\x6e\x64\x61\x72\x64\x5f\x6c\x69\x74\x65\x72\x61\x6c\x28\x29\x2c\x20\x31\x29\x3b"
-             "\x6f\x62\x6a\x20\x3d\x20\x66\x61\x73\x74\x6c\x69\x74\x65\x72\x61\x6c\x63\x61\x73\x65\x28\x67\x65\x74\x5f\x73\x74\x61\x6e\x64\x61\x72\x64\x5f\x6c\x69\x74\x65\x72\x61\x6c\x28\x29\x2c\x20\x31\x2e\x35\x29\x3b"
-             "\x6f\x62\x6a\x20\x3d\x20\x66\x61\x73\x74\x6c\x69\x74\x65\x72\x61\x6c\x63\x61\x73\x65\x28\x67\x65\x74\x5f\x73\x74\x61\x6e\x64\x61\x72\x64\x5f\x6c\x69\x74\x65\x72\x61\x6c\x28\x29\x2c\x20\x32\x29\x3b");
+  CompileRun("function fastliteralcase(literal, value) {"
+             "    literal[0] = value;"
+             "    return literal;"
+             "}"
+             "function get_standard_literal() {"
+             "    var literal = [1, 2, 3];"
+             "    return literal;"
+             "}"
+             "obj = fastliteralcase(get_standard_literal(), 1);"
+             "obj = fastliteralcase(get_standard_literal(), 1.5);"
+             "obj = fastliteralcase(get_standard_literal(), 2);");
 
   // prepare the heap
   v8::Local<v8::String> mote_code_string =
-      v8_str("\x66\x61\x73\x74\x6c\x69\x74\x65\x72\x61\x6c\x63\x61\x73\x65\x28\x6d\x6f\x74\x65\x2c\x20\x32\x2e\x35\x29\x3b");
+      v8_str("fastliteralcase(mote, 2.5);");
 
-  v8::Local<v8::String> array_name = v8_str("\x6d\x6f\x74\x65");
+  v8::Local<v8::String> array_name = v8_str("mote");
   CcTest::global()->Set(array_name, v8::Int32::New(CcTest::isolate(), 0));
 
   // First make sure we flip spaces
@@ -3668,16 +3668,16 @@ TEST(Regress168801) {
   Handle<JSFunction> function;
   {
     HandleScope inner_scope(isolate);
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6d\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x20\x7b"
-               "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
-               "\x7d"
-               "\x76\x61\x72\x20\x66\x20\x3d\x20\x6d\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x3b"
-               "\x66\x28\x31\x29\x3b\x20\x66\x28\x32\x29\x3b");
+    CompileRun("function mkClosure() {"
+               "  return function(x) { return x + 1; };"
+               "}"
+               "var f = mkClosure();"
+               "f(1); f(2);");
 
     Handle<JSFunction> f =
         v8::Utils::OpenHandle(
             *v8::Handle<v8::Function>::Cast(
-                CcTest::global()->Get(v8_str("\x66"))));
+                CcTest::global()->Get(v8_str("f"))));
     CHECK(f->is_compiled());
     const int kAgingThreshold = 6;
     for (int i = 0; i < kAgingThreshold; i++) {
@@ -3695,7 +3695,7 @@ TEST(Regress168801) {
   // Now optimize the function so that it is taken off the candidate list.
   {
     HandleScope inner_scope(isolate);
-    CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x66\x29\x3b\x20\x66\x28\x33\x29\x3b");
+    CompileRun("%OptimizeFunctionOnNextCall(f); f(3);");
   }
 
   // This cycle will bust the heap and subsequent cycles will go ballistic.
@@ -3725,16 +3725,16 @@ TEST(Regress173458) {
   Handle<JSFunction> function;
   {
     HandleScope inner_scope(isolate);
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6d\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x20\x7b"
-               "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x78\x20\x2b\x20\x31\x3b\x20\x7d\x3b"
-               "\x7d"
-               "\x76\x61\x72\x20\x66\x20\x3d\x20\x6d\x6b\x43\x6c\x6f\x73\x75\x72\x65\x28\x29\x3b"
-               "\x66\x28\x31\x29\x3b\x20\x66\x28\x32\x29\x3b");
+    CompileRun("function mkClosure() {"
+               "  return function(x) { return x + 1; };"
+               "}"
+               "var f = mkClosure();"
+               "f(1); f(2);");
 
     Handle<JSFunction> f =
         v8::Utils::OpenHandle(
             *v8::Handle<v8::Function>::Cast(
-                CcTest::global()->Get(v8_str("\x66"))));
+                CcTest::global()->Get(v8_str("f"))));
     CHECK(f->is_compiled());
     const int kAgingThreshold = 6;
     for (int i = 0; i < kAgingThreshold; i++) {
@@ -3788,11 +3788,11 @@ TEST(DeferredHandles) {
 TEST(IncrementalMarkingStepMakesBigProgressWithLargeObjects) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x6e\x29\x20\x7b"
-             "\x20\x20\x20\x20\x76\x61\x72\x20\x61\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x6e\x29\x3b"
-             "\x20\x20\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x6e\x3b\x20\x69\x20\x2b\x3d\x20\x31\x30\x30\x29\x20\x61\x5b\x69\x5d\x20\x3d\x20\x69\x3b"
-             "\x7d\x3b"
-             "\x66\x28\x31\x30\x20\x2a\x20\x31\x30\x32\x34\x20\x2a\x20\x31\x30\x32\x34\x29\x3b");
+  CompileRun("function f(n) {"
+             "    var a = new Array(n);"
+             "    for (var i = 0; i < n; i += 100) a[i] = i;"
+             "};"
+             "f(10 * 1024 * 1024);");
   IncrementalMarking* marking = CcTest::heap()->incremental_marking();
   if (marking->IsStopped()) marking->Start();
   // This big step should be sufficient to mark the whole array.
@@ -3805,28 +3805,28 @@ TEST(DisableInlineAllocation) {
   i::FLAG_allow_natives_syntax = true;
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
-  CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x74\x65\x73\x74\x28\x29\x20\x7b"
-             "\x20\x20\x76\x61\x72\x20\x78\x20\x3d\x20\x5b\x5d\x3b"
-             "\x20\x20\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x3b\x20\x69\x2b\x2b\x29\x20\x7b"
-             "\x20\x20\x20\x20\x78\x5b\x69\x5d\x20\x3d\x20\x5b\x20\x7b\x7d\x2c\x20\x5b\x31\x2c\x32\x2c\x33\x5d\x2c\x20\x5b\x31\x2c\x78\x2c\x33\x5d\x20\x5d\x3b"
-             "\x20\x20\x7d"
-             "\x7d"
-             "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x72\x75\x6e\x28\x29\x20\x7b"
-             "\x20\x20\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x74\x65\x73\x74\x29\x3b"
-             "\x20\x20\x74\x65\x73\x74\x28\x29\x3b"
-             "\x20\x20\x25\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x28\x74\x65\x73\x74\x29\x3b"
-             "\x7d");
+  CompileRun("function test() {"
+             "  var x = [];"
+             "  for (var i = 0; i < 10; i++) {"
+             "    x[i] = [ {}, [1,2,3], [1,x,3] ];"
+             "  }"
+             "}"
+             "function run() {"
+             "  %OptimizeFunctionOnNextCall(test);"
+             "  test();"
+             "  %DeoptimizeFunction(test);"
+             "}");
 
   // Warm-up with inline allocation enabled.
-  CompileRun("\x74\x65\x73\x74\x28\x29\x3b\x20\x74\x65\x73\x74\x28\x29\x3b\x20\x72\x75\x6e\x28\x29\x3b");
+  CompileRun("test(); test(); run();");
 
   // Run test with inline allocation disabled.
   CcTest::heap()->DisableInlineAllocation();
-  CompileRun("\x72\x75\x6e\x28\x29");
+  CompileRun("run()");
 
   // Run test with inline allocation re-enabled.
   CcTest::heap()->EnableInlineAllocation();
-  CompileRun("\x72\x75\x6e\x28\x29");
+  CompileRun("run()");
 }
 
 
@@ -3858,10 +3858,10 @@ TEST(EnsureAllocationSiteDependentCodesProcessed) {
     v8::HandleScope scope(context->GetIsolate());
 
     int count = AllocationSitesCount(heap);
-    CompileRun("\x76\x61\x72\x20\x62\x61\x72\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x28\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x29\x29\x3b\x20\x7d\x3b"
-               "\x76\x61\x72\x20\x61\x20\x3d\x20\x62\x61\x72\x28\x29\x3b"
-               "\x62\x61\x72\x28\x29\x3b"
-               "\x62\x61\x72\x28\x29\x3b");
+    CompileRun("var bar = function() { return (new Array()); };"
+               "var a = bar();"
+               "bar();"
+               "bar();");
 
     // One allocation site should have been created.
     int new_count = AllocationSitesCount(heap);
@@ -3870,7 +3870,7 @@ TEST(EnsureAllocationSiteDependentCodesProcessed) {
         global_handles->Create(
             AllocationSite::cast(heap->allocation_sites_list())));
 
-    CompileRun("\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x62\x61\x72\x29\x3b\x20\x62\x61\x72\x28\x29\x3b");
+    CompileRun("%OptimizeFunctionOnNextCall(bar); bar();");
 
     DependentCode::GroupStartIndexes starts(site->dependent_code());
     CHECK_GE(starts.number_of_entries(), 1);
@@ -3880,7 +3880,7 @@ TEST(EnsureAllocationSiteDependentCodesProcessed) {
     Handle<JSFunction> bar_handle =
         v8::Utils::OpenHandle(
             *v8::Handle<v8::Function>::Cast(
-                CcTest::global()->Get(v8_str("\x62\x61\x72"))));
+                CcTest::global()->Get(v8_str("bar"))));
     CHECK_EQ(bar_handle->code(), function_bar);
   }
 
@@ -3913,22 +3913,22 @@ TEST(CellsInOptimizedCodeAreWeak) {
     LocalContext context;
     HandleScope scope(heap->isolate());
 
-    CompileRun("\x62\x61\x72\x20\x3d\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
-               "\x20\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b"
-               "\x20\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x28\x31\x29\x3b"
-               "\x20\x20\x7d\x3b"
-               "\x20\x20\x76\x61\x72\x20\x66\x6f\x6f\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x78\x29\x20\x7b\x20\x77\x69\x74\x68\x20\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x20\x2b\x20\x78\x3b\x20\x7d\x20\x7d\x3b"
-               "\x20\x20\x62\x61\x72\x28\x66\x6f\x6f\x29\x3b"
-               "\x20\x20\x62\x61\x72\x28\x66\x6f\x6f\x29\x3b"
-               "\x20\x20\x62\x61\x72\x28\x66\x6f\x6f\x29\x3b"
-               "\x20\x20\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x62\x61\x72\x29\x3b"
-               "\x20\x20\x62\x61\x72\x28\x66\x6f\x6f\x29\x3b"
-               "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x62\x61\x72\x3b\x7d\x29\x28\x29\x3b");
+    CompileRun("bar = (function() {"
+               "  function bar() {"
+               "    return foo(1);"
+               "  };"
+               "  var foo = function(x) { with (x) { return 1 + x; } };"
+               "  bar(foo);"
+               "  bar(foo);"
+               "  bar(foo);"
+               "  %OptimizeFunctionOnNextCall(bar);"
+               "  bar(foo);"
+               "  return bar;})();");
 
     Handle<JSFunction> bar =
         v8::Utils::OpenHandle(
             *v8::Handle<v8::Function>::Cast(
-                CcTest::global()->Get(v8_str("\x62\x61\x72"))));
+                CcTest::global()->Get(v8_str("bar"))));
     code = scope.CloseAndEscape(Handle<Code>(bar->code()));
   }
 
@@ -3956,20 +3956,20 @@ TEST(ObjectsInOptimizedCodeAreWeak) {
     LocalContext context;
     HandleScope scope(heap->isolate());
 
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x28\x29\x20\x7b"
-               "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x28\x31\x29\x3b"
-               "\x7d\x3b"
-               "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x28\x78\x29\x20\x7b\x20\x77\x69\x74\x68\x20\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x20\x2b\x20\x78\x3b\x20\x7d\x20\x7d\x3b"
-               "\x62\x61\x72\x28\x29\x3b"
-               "\x62\x61\x72\x28\x29\x3b"
-               "\x62\x61\x72\x28\x29\x3b"
-               "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x62\x61\x72\x29\x3b"
-               "\x62\x61\x72\x28\x29\x3b");
+    CompileRun("function bar() {"
+               "  return foo(1);"
+               "};"
+               "function foo(x) { with (x) { return 1 + x; } };"
+               "bar();"
+               "bar();"
+               "bar();"
+               "%OptimizeFunctionOnNextCall(bar);"
+               "bar();");
 
     Handle<JSFunction> bar =
         v8::Utils::OpenHandle(
             *v8::Handle<v8::Function>::Cast(
-                CcTest::global()->Get(v8_str("\x62\x61\x72"))));
+                CcTest::global()->Get(v8_str("bar"))));
     code = scope.CloseAndEscape(Handle<Code>(bar->code()));
   }
 
@@ -4001,15 +4001,15 @@ TEST(NoWeakHashTableLeakWithIncrementalMarking) {
       HandleScope scope(heap->isolate());
       EmbeddedVector<char, 256> source;
       SNPrintF(source,
-               "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x62\x61\x72\x6c\x84\x28\x29\x20\x7b"
-               "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x66\x6f\x6f\x6c\x84\x28\x31\x29\x3b"
-               "\x7d\x3b"
-               "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x6f\x6f\x6c\x84\x28\x78\x29\x20\x7b\x20\x77\x69\x74\x68\x20\x28\x78\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x20\x2b\x20\x78\x3b\x20\x7d\x20\x7d\x3b"
-               "\x62\x61\x72\x6c\x84\x28\x29\x3b"
-               "\x62\x61\x72\x6c\x84\x28\x29\x3b"
-               "\x62\x61\x72\x6c\x84\x28\x29\x3b"
-               "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x62\x61\x72\x6c\x84\x29\x3b"
-               "\x62\x61\x72\x6c\x84\x28\x29\x3b", i, i, i, i, i, i, i, i);
+               "function bar%d() {"
+               "  return foo%d(1);"
+               "};"
+               "function foo%d(x) { with (x) { return 1 + x; } };"
+               "bar%d();"
+               "bar%d();"
+               "bar%d();"
+               "%%OptimizeFunctionOnNextCall(bar%d);"
+               "bar%d();", i, i, i, i, i, i, i, i);
       CompileRun(source.start());
     }
     heap->CollectAllGarbage(i::Heap::kNoGCFlags);
@@ -4026,10 +4026,10 @@ TEST(NoWeakHashTableLeakWithIncrementalMarking) {
 static Handle<JSFunction> OptimizeDummyFunction(const char* name) {
   EmbeddedVector<char, 256> source;
   SNPrintF(source,
-          "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\xa2\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x30\x3b\x20\x7d"
-          "\x6c\xa2\x28\x29\x3b\x20\x6c\xa2\x28\x29\x3b"
-          "\x25\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x6c\xa2\x29\x3b"
-          "\x6c\xa2\x28\x29\x3b", name, name, name, name, name);
+          "function %s() { return 0; }"
+          "%s(); %s();"
+          "%%OptimizeFunctionOnNextCall(%s);"
+          "%s();", name, name, name, name, name);
   CompileRun(source.start());
   Handle<JSFunction> fun =
       v8::Utils::OpenHandle(
@@ -4062,13 +4062,13 @@ TEST(NextCodeLinkIsWeak) {
   int code_chain_length_before, code_chain_length_after;
   {
     HandleScope scope(heap->isolate());
-    Handle<JSFunction> mortal = OptimizeDummyFunction("\x6d\x6f\x72\x74\x61\x6c");
-    Handle<JSFunction> immortal = OptimizeDummyFunction("\x69\x6d\x6d\x6f\x72\x74\x61\x6c");
+    Handle<JSFunction> mortal = OptimizeDummyFunction("mortal");
+    Handle<JSFunction> immortal = OptimizeDummyFunction("immortal");
     CHECK_EQ(immortal->code()->next_code_link(), mortal->code());
     code_chain_length_before = GetCodeChainLength(immortal->code());
     // Keep the immortal code and let the mortal code die.
     code = scope.CloseAndEscape(Handle<Code>(immortal->code()));
-    CompileRun("\x6d\x6f\x72\x74\x61\x6c\x20\x3d\x20\x6e\x75\x6c\x6c\x3b\x20\x69\x6d\x6d\x6f\x72\x74\x61\x6c\x20\x3d\x20\x6e\x75\x6c\x6c\x3b");
+    CompileRun("mortal = null; immortal = null;");
   }
   heap->CollectAllAvailableGarbage();
   // Now mortal code should be dead.
@@ -4122,7 +4122,7 @@ TEST(NextCodeLinkIsWeak2) {
 static bool weak_ic_cleared = false;
 
 static void ClearWeakIC(const v8::WeakCallbackData<v8::Object, void>& data) {
-  printf("\x63\x6c\x65\x61\x72\x20\x77\x65\x61\x6b\x20\x69\x73\x20\x63\x61\x6c\x6c\x65\x64\xa");
+  printf("clear weak is called\n");
   weak_ic_cleared = true;
   v8::Persistent<v8::Value>* p =
       reinterpret_cast<v8::Persistent<v8::Value>*>(data.GetParameter());
@@ -4153,77 +4153,77 @@ void CheckWeakness(const char* source) {
 // Each of the following "weak IC" tests creates an IC that embeds a map with
 // the prototype pointing to _proto_ and checks that the _proto_ dies on GC.
 TEST(WeakMapInMonomorphicLoadIC) {
-  CheckWeakness("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6c\x6f\x61\x64\x49\x43\x28\x6f\x62\x6a\x29\x20\x7b"
-                "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x62\x6a\x2e\x6e\x61\x6d\x65\x3b"
-                "\x7d"
-                "\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
-                "\x20\x20\x20\x76\x61\x72\x20\x70\x72\x6f\x74\x6f\x20\x3d\x20\x7b\x27\x6e\x61\x6d\x65\x27\x20\x3a\x20\x27\x77\x65\x61\x6b\x27\x7d\x3b"
-                "\x20\x20\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x63\x72\x65\x61\x74\x65\x28\x70\x72\x6f\x74\x6f\x29\x3b"
-                "\x20\x20\x20\x6c\x6f\x61\x64\x49\x43\x28\x6f\x62\x6a\x29\x3b"
-                "\x20\x20\x20\x6c\x6f\x61\x64\x49\x43\x28\x6f\x62\x6a\x29\x3b"
-                "\x20\x20\x20\x6c\x6f\x61\x64\x49\x43\x28\x6f\x62\x6a\x29\x3b"
-                "\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x70\x72\x6f\x74\x6f\x3b"
-                "\x20\x7d\x29\x28\x29\x3b");
+  CheckWeakness("function loadIC(obj) {"
+                "  return obj.name;"
+                "}"
+                " (function() {"
+                "   var proto = {'name' : 'weak'};"
+                "   var obj = Object.create(proto);"
+                "   loadIC(obj);"
+                "   loadIC(obj);"
+                "   loadIC(obj);"
+                "   return proto;"
+                " })();");
 }
 
 
 TEST(WeakMapInMonomorphicKeyedLoadIC) {
-  CheckWeakness("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6b\x65\x79\x65\x64\x4c\x6f\x61\x64\x49\x43\x28\x6f\x62\x6a\x2c\x20\x66\x69\x65\x6c\x64\x29\x20\x7b"
-                "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x62\x6a\x5b\x66\x69\x65\x6c\x64\x5d\x3b"
-                "\x7d"
-                "\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
-                "\x20\x20\x20\x76\x61\x72\x20\x70\x72\x6f\x74\x6f\x20\x3d\x20\x7b\x27\x6e\x61\x6d\x65\x27\x20\x3a\x20\x27\x77\x65\x61\x6b\x27\x7d\x3b"
-                "\x20\x20\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x63\x72\x65\x61\x74\x65\x28\x70\x72\x6f\x74\x6f\x29\x3b"
-                "\x20\x20\x20\x6b\x65\x79\x65\x64\x4c\x6f\x61\x64\x49\x43\x28\x6f\x62\x6a\x2c\x20\x27\x6e\x61\x6d\x65\x27\x29\x3b"
-                "\x20\x20\x20\x6b\x65\x79\x65\x64\x4c\x6f\x61\x64\x49\x43\x28\x6f\x62\x6a\x2c\x20\x27\x6e\x61\x6d\x65\x27\x29\x3b"
-                "\x20\x20\x20\x6b\x65\x79\x65\x64\x4c\x6f\x61\x64\x49\x43\x28\x6f\x62\x6a\x2c\x20\x27\x6e\x61\x6d\x65\x27\x29\x3b"
-                "\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x70\x72\x6f\x74\x6f\x3b"
-                "\x20\x7d\x29\x28\x29\x3b");
+  CheckWeakness("function keyedLoadIC(obj, field) {"
+                "  return obj[field];"
+                "}"
+                " (function() {"
+                "   var proto = {'name' : 'weak'};"
+                "   var obj = Object.create(proto);"
+                "   keyedLoadIC(obj, 'name');"
+                "   keyedLoadIC(obj, 'name');"
+                "   keyedLoadIC(obj, 'name');"
+                "   return proto;"
+                " })();");
 }
 
 
 TEST(WeakMapInMonomorphicStoreIC) {
-  CheckWeakness("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x73\x74\x6f\x72\x65\x49\x43\x28\x6f\x62\x6a\x2c\x20\x76\x61\x6c\x75\x65\x29\x20\x7b"
-                "\x20\x20\x6f\x62\x6a\x2e\x6e\x61\x6d\x65\x20\x3d\x20\x76\x61\x6c\x75\x65\x3b"
-                "\x7d"
-                "\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
-                "\x20\x20\x20\x76\x61\x72\x20\x70\x72\x6f\x74\x6f\x20\x3d\x20\x7b\x27\x6e\x61\x6d\x65\x27\x20\x3a\x20\x27\x77\x65\x61\x6b\x27\x7d\x3b"
-                "\x20\x20\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x63\x72\x65\x61\x74\x65\x28\x70\x72\x6f\x74\x6f\x29\x3b"
-                "\x20\x20\x20\x73\x74\x6f\x72\x65\x49\x43\x28\x6f\x62\x6a\x2c\x20\x27\x78\x27\x29\x3b"
-                "\x20\x20\x20\x73\x74\x6f\x72\x65\x49\x43\x28\x6f\x62\x6a\x2c\x20\x27\x78\x27\x29\x3b"
-                "\x20\x20\x20\x73\x74\x6f\x72\x65\x49\x43\x28\x6f\x62\x6a\x2c\x20\x27\x78\x27\x29\x3b"
-                "\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x70\x72\x6f\x74\x6f\x3b"
-                "\x20\x7d\x29\x28\x29\x3b");
+  CheckWeakness("function storeIC(obj, value) {"
+                "  obj.name = value;"
+                "}"
+                " (function() {"
+                "   var proto = {'name' : 'weak'};"
+                "   var obj = Object.create(proto);"
+                "   storeIC(obj, 'x');"
+                "   storeIC(obj, 'x');"
+                "   storeIC(obj, 'x');"
+                "   return proto;"
+                " })();");
 }
 
 
 TEST(WeakMapInMonomorphicKeyedStoreIC) {
-  CheckWeakness("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6b\x65\x79\x65\x64\x53\x74\x6f\x72\x65\x49\x43\x28\x6f\x62\x6a\x2c\x20\x66\x69\x65\x6c\x64\x2c\x20\x76\x61\x6c\x75\x65\x29\x20\x7b"
-                "\x20\x20\x6f\x62\x6a\x5b\x66\x69\x65\x6c\x64\x5d\x20\x3d\x20\x76\x61\x6c\x75\x65\x3b"
-                "\x7d"
-                "\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
-                "\x20\x20\x20\x76\x61\x72\x20\x70\x72\x6f\x74\x6f\x20\x3d\x20\x7b\x27\x6e\x61\x6d\x65\x27\x20\x3a\x20\x27\x77\x65\x61\x6b\x27\x7d\x3b"
-                "\x20\x20\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x63\x72\x65\x61\x74\x65\x28\x70\x72\x6f\x74\x6f\x29\x3b"
-                "\x20\x20\x20\x6b\x65\x79\x65\x64\x53\x74\x6f\x72\x65\x49\x43\x28\x6f\x62\x6a\x2c\x20\x27\x78\x27\x29\x3b"
-                "\x20\x20\x20\x6b\x65\x79\x65\x64\x53\x74\x6f\x72\x65\x49\x43\x28\x6f\x62\x6a\x2c\x20\x27\x78\x27\x29\x3b"
-                "\x20\x20\x20\x6b\x65\x79\x65\x64\x53\x74\x6f\x72\x65\x49\x43\x28\x6f\x62\x6a\x2c\x20\x27\x78\x27\x29\x3b"
-                "\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x70\x72\x6f\x74\x6f\x3b"
-                "\x20\x7d\x29\x28\x29\x3b");
+  CheckWeakness("function keyedStoreIC(obj, field, value) {"
+                "  obj[field] = value;"
+                "}"
+                " (function() {"
+                "   var proto = {'name' : 'weak'};"
+                "   var obj = Object.create(proto);"
+                "   keyedStoreIC(obj, 'x');"
+                "   keyedStoreIC(obj, 'x');"
+                "   keyedStoreIC(obj, 'x');"
+                "   return proto;"
+                " })();");
 }
 
 
 TEST(WeakMapInMonomorphicCompareNilIC) {
-  CheckWeakness("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x6f\x6d\x70\x61\x72\x65\x4e\x69\x6c\x49\x43\x28\x6f\x62\x6a\x29\x20\x7b"
-                "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x62\x6a\x20\x3d\x3d\x20\x6e\x75\x6c\x6c\x3b"
-                "\x7d"
-                "\x20\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b"
-                "\x20\x20\x20\x76\x61\x72\x20\x70\x72\x6f\x74\x6f\x20\x3d\x20\x7b\x27\x6e\x61\x6d\x65\x27\x20\x3a\x20\x27\x77\x65\x61\x6b\x27\x7d\x3b"
-                "\x20\x20\x20\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x63\x72\x65\x61\x74\x65\x28\x70\x72\x6f\x74\x6f\x29\x3b"
-                "\x20\x20\x20\x63\x6f\x6d\x70\x61\x72\x65\x4e\x69\x6c\x49\x43\x28\x6f\x62\x6a\x29\x3b"
-                "\x20\x20\x20\x63\x6f\x6d\x70\x61\x72\x65\x4e\x69\x6c\x49\x43\x28\x6f\x62\x6a\x29\x3b"
-                "\x20\x20\x20\x63\x6f\x6d\x70\x61\x72\x65\x4e\x69\x6c\x49\x43\x28\x6f\x62\x6a\x29\x3b"
-                "\x20\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x70\x72\x6f\x74\x6f\x3b"
-                "\x20\x7d\x29\x28\x29\x3b");
+  CheckWeakness("function compareNilIC(obj) {"
+                "  return obj == null;"
+                "}"
+                " (function() {"
+                "   var proto = {'name' : 'weak'};"
+                "   var obj = Object.create(proto);"
+                "   compareNilIC(obj);"
+                "   compareNilIC(obj);"
+                "   compareNilIC(obj);"
+                "   return proto;"
+                " })();");
 }
 
 
@@ -4240,28 +4240,28 @@ TEST(AddInstructionChangesNewSpacePromotion) {
   Heap* heap = isolate->heap();
 
   CompileRun(
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x61\x64\x64\x28\x61\x2c\x20\x62\x29\x20\x7b"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x61\x20\x2b\x20\x62\x3b"
-      "\x7d"
-      "\x61\x64\x64\x28\x31\x2c\x20\x32\x29\x3b"
-      "\x61\x64\x64\x28\x22\x61\x22\x2c\x20\x22\x62\x22\x29\x3b"
-      "\x76\x61\x72\x20\x6f\x6c\x64\x53\x70\x61\x63\x65\x4f\x62\x6a\x65\x63\x74\x3b"
-      "\x67\x63\x28\x29\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x72\x61\x73\x68\x28\x78\x29\x20\x7b"
-      "\x20\x20\x76\x61\x72\x20\x6f\x62\x6a\x65\x63\x74\x20\x3d\x20\x7b\x61\x3a\x20\x6e\x75\x6c\x6c\x2c\x20\x62\x3a\x20\x6e\x75\x6c\x6c\x7d\x3b"
-      "\x20\x20\x76\x61\x72\x20\x72\x65\x73\x75\x6c\x74\x20\x3d\x20\x61\x64\x64\x28\x31\x2e\x35\x2c\x20\x78\x20\x7c\x20\x30\x29\x3b"
-      "\x20\x20\x6f\x62\x6a\x65\x63\x74\x2e\x61\x20\x3d\x20\x72\x65\x73\x75\x6c\x74\x3b"
-      "\x20\x20\x6f\x6c\x64\x53\x70\x61\x63\x65\x4f\x62\x6a\x65\x63\x74\x20\x3d\x20\x6f\x62\x6a\x65\x63\x74\x3b"
-      "\x20\x20\x72\x65\x74\x75\x72\x6e\x20\x6f\x62\x6a\x65\x63\x74\x3b"
-      "\x7d"
-      "\x63\x72\x61\x73\x68\x28\x31\x29\x3b"
-      "\x63\x72\x61\x73\x68\x28\x31\x29\x3b"
-      "\x25\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4f\x6e\x4e\x65\x78\x74\x43\x61\x6c\x6c\x28\x63\x72\x61\x73\x68\x29\x3b"
-      "\x63\x72\x61\x73\x68\x28\x31\x29\x3b");
+      "function add(a, b) {"
+      "  return a + b;"
+      "}"
+      "add(1, 2);"
+      "add(\"a\", \"b\");"
+      "var oldSpaceObject;"
+      "gc();"
+      "function crash(x) {"
+      "  var object = {a: null, b: null};"
+      "  var result = add(1.5, x | 0);"
+      "  object.a = result;"
+      "  oldSpaceObject = object;"
+      "  return object;"
+      "}"
+      "crash(1);"
+      "crash(1);"
+      "%OptimizeFunctionOnNextCall(crash);"
+      "crash(1);");
 
   v8::Handle<v8::Object> global = CcTest::global();
     v8::Handle<v8::Function> g =
-        v8::Handle<v8::Function>::Cast(global->Get(v8_str("\x63\x72\x61\x73\x68")));
+        v8::Handle<v8::Function>::Cast(global->Get(v8_str("crash")));
   v8::Handle<v8::Value> args1[] = { v8_num(1) };
   heap->DisableInlineAllocation();
   heap->set_allocation_timeout(1);
@@ -4272,7 +4272,7 @@ TEST(AddInstructionChangesNewSpacePromotion) {
 
 void OnFatalErrorExpectOOM(const char* location, const char* message) {
   // Exit with 0 if the location matches our expectation.
-  exit(strcmp(location, "\x43\x41\x4c\x4c\x5f\x41\x4e\x44\x5f\x52\x45\x54\x52\x59\x5f\x4c\x41\x53\x54"));
+  exit(strcmp(location, "CALL_AND_RETRY_LAST"));
 }
 
 
@@ -4283,10 +4283,10 @@ TEST(CEntryStubOOM) {
   v8::V8::SetFatalErrorHandler(OnFatalErrorExpectOOM);
 
   v8::Handle<v8::Value> result = CompileRun(
-      "\x25\x53\x65\x74\x46\x6c\x61\x67\x73\x28\x27\x2d\x2d\x67\x63\x2d\x69\x6e\x74\x65\x72\x76\x61\x6c\x3d\x31\x27\x29\x3b"
-      "\x76\x61\x72\x20\x61\x20\x3d\x20\x5b\x5d\x3b"
-      "\x61\x2e\x5f\x5f\x70\x72\x6f\x74\x6f\x5f\x5f\x20\x3d\x20\x5b\x5d\x3b"
-      "\x61\x2e\x75\x6e\x73\x68\x69\x66\x74\x28\x31\x29");
+      "%SetFlags('--gc-interval=1');"
+      "var a = [];"
+      "a.__proto__ = [];"
+      "a.unshift(1)");
 
   CHECK(result->IsNumber());
 }
@@ -4307,18 +4307,18 @@ TEST(Regress357137) {
   v8::Isolate* isolate = CcTest::isolate();
   v8::HandleScope hscope(isolate);
   v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
-  global->Set(v8::String::NewFromUtf8(isolate, "\x69\x6e\x74\x65\x72\x72\x75\x70\x74"),
+  global->Set(v8::String::NewFromUtf8(isolate, "interrupt"),
               v8::FunctionTemplate::New(isolate, RequestInterrupt));
   v8::Local<v8::Context> context = v8::Context::New(isolate, NULL, global);
   DCHECK(!context.IsEmpty());
   v8::Context::Scope cscope(context);
 
   v8::Local<v8::Value> result = CompileRun(
-      "\x76\x61\x72\x20\x6c\x6f\x63\x61\x6c\x73\x20\x3d\x20\x27\x27\x3b"
-      "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x35\x31\x32\x3b\x20\x69\x2b\x2b\x29\x20\x6c\x6f\x63\x61\x6c\x73\x20\x2b\x3d\x20\x27\x76\x61\x72\x20\x76\x27\x20\x2b\x20\x69\x20\x2b\x20\x27\x3d\x20\x34\x32\x3b\x27\x3b"
-      "\x65\x76\x61\x6c\x28\x27\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x66\x28\x29\x20\x7b\x27\x20\x2b\x20\x6c\x6f\x63\x61\x6c\x73\x20\x2b\x20\x27\x72\x65\x74\x75\x72\x6e\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x76\x30\x3b\x20\x7d\x3b\x20\x7d\x27\x29\x3b"
-      "\x69\x6e\x74\x65\x72\x72\x75\x70\x74\x28\x29\x3b"  // This triggers a fake stack overflow in f.
-      "\x66\x28\x29\x28\x29");
+      "var locals = '';"
+      "for (var i = 0; i < 512; i++) locals += 'var v' + i + '= 42;';"
+      "eval('function f() {' + locals + 'return function() { return v0; }; }');"
+      "interrupt();"  // This triggers a fake stack overflow in f.
+      "f()()");
   CHECK_EQ(42.0, result->ToNumber()->Value());
 }
 
@@ -4331,13 +4331,13 @@ TEST(ArrayShiftSweeping) {
   Heap* heap = isolate->heap();
 
   v8::Local<v8::Value> result = CompileRun(
-      "\x76\x61\x72\x20\x61\x72\x72\x61\x79\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x34\x30\x30\x30\x30\x29\x3b"
-      "\x76\x61\x72\x20\x74\x6d\x70\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x28\x31\x30\x30\x30\x30\x30\x29\x3b"
-      "\x61\x72\x72\x61\x79\x5b\x30\x5d\x20\x3d\x20\x31\x30\x3b"
-      "\x67\x63\x28\x29\x3b"
-      "\x67\x63\x28\x29\x3b"
-      "\x61\x72\x72\x61\x79\x2e\x73\x68\x69\x66\x74\x28\x29\x3b"
-      "\x61\x72\x72\x61\x79\x3b");
+      "var array = new Array(40000);"
+      "var tmp = new Array(100000);"
+      "array[0] = 10;"
+      "gc();"
+      "gc();"
+      "array.shift();"
+      "array;");
 
   Handle<JSObject> o =
       v8::Utils::OpenHandle(*v8::Handle<v8::Object>::Cast(result));
@@ -4434,7 +4434,7 @@ TEST(Regress388880) {
 
   Handle<Map> map1 = Map::Create(isolate->object_function(), 1);
   Handle<Map> map2 =
-      Map::CopyWithField(map1, factory->NewStringFromStaticAscii("\x66\x6f\x6f"),
+      Map::CopyWithField(map1, factory->NewStringFromStaticAscii("foo"),
                          HeapType::Any(isolate), NONE, Representation::Tagged(),
                          OMIT_TRANSITION).ToHandleChecked();
 
@@ -4481,7 +4481,7 @@ TEST(PathTracer) {
   CcTest::InitializeVM();
   v8::HandleScope scope(CcTest::isolate());
 
-  v8::Local<v8::Value> result = CompileRun("\x27\x61\x62\x63\x27");
+  v8::Local<v8::Value> result = CompileRun("'abc'");
   Handle<Object> o = v8::Utils::OpenHandle(*result);
   CcTest::i_isolate()->heap()->TracePathToObject(*o);
 }

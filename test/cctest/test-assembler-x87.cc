@@ -69,7 +69,7 @@ TEST(AssemblerIa320) {
 #endif
   F2 f = FUNCTION_CAST<F2>(code->entry());
   int res = f(3, 4);
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(7, res);
 }
 
@@ -106,7 +106,7 @@ TEST(AssemblerIa321) {
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
   int res = f(100);
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(5050, res);
 }
 
@@ -147,7 +147,7 @@ TEST(AssemblerIa322) {
 #endif
   F1 f = FUNCTION_CAST<F1>(code->entry());
   int res = f(10);
-  ::printf("\x66\x28\x29\x20\x3d\x20\x6c\x84\xa", res);
+  ::printf("f() = %d\n", res);
   CHECK_EQ(3628800, res);
 }
 

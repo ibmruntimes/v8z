@@ -136,7 +136,7 @@ TEST(MarkCompactCollector) {
   Handle<GlobalObject> global(isolate->context()->global_object());
 
   // call mark-compact when heap is empty
-  heap->CollectGarbage(OLD_POINTER_SPACE, "\x74\x72\x69\x67\x67\x65\x72\x20\x31");
+  heap->CollectGarbage(OLD_POINTER_SPACE, "trigger 1");
 
   // keep allocating garbage in new space until it fails
   const int ARRAY_SIZE = 100;
@@ -144,29 +144,29 @@ TEST(MarkCompactCollector) {
   do {
     allocation = heap->AllocateFixedArray(ARRAY_SIZE);
   } while (!allocation.IsRetry());
-  heap->CollectGarbage(NEW_SPACE, "\x74\x72\x69\x67\x67\x65\x72\x20\x32");
+  heap->CollectGarbage(NEW_SPACE, "trigger 2");
   heap->AllocateFixedArray(ARRAY_SIZE).ToObjectChecked();
 
   // keep allocating maps until it fails
   do {
     allocation = heap->AllocateMap(JS_OBJECT_TYPE, JSObject::kHeaderSize);
   } while (!allocation.IsRetry());
-  heap->CollectGarbage(MAP_SPACE, "\x74\x72\x69\x67\x67\x65\x72\x20\x33");
+  heap->CollectGarbage(MAP_SPACE, "trigger 3");
   heap->AllocateMap(JS_OBJECT_TYPE, JSObject::kHeaderSize).ToObjectChecked();
 
   { HandleScope scope(isolate);
     // allocate a garbage
-    Handle<String> func_name = factory->InternalizeUtf8String("\x74\x68\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e");
+    Handle<String> func_name = factory->InternalizeUtf8String("theFunction");
     Handle<JSFunction> function = factory->NewFunction(func_name);
     JSReceiver::SetProperty(global, func_name, function, SLOPPY).Check();
 
     factory->NewJSObject(function);
   }
 
-  heap->CollectGarbage(OLD_POINTER_SPACE, "\x74\x72\x69\x67\x67\x65\x72\x20\x34");
+  heap->CollectGarbage(OLD_POINTER_SPACE, "trigger 4");
 
   { HandleScope scope(isolate);
-    Handle<String> func_name = factory->InternalizeUtf8String("\x74\x68\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e");
+    Handle<String> func_name = factory->InternalizeUtf8String("theFunction");
     v8::Maybe<bool> maybe = JSReceiver::HasOwnProperty(global, func_name);
     CHECK(maybe.has_value);
     CHECK(maybe.value);
@@ -176,24 +176,24 @@ TEST(MarkCompactCollector) {
     Handle<JSFunction> function = Handle<JSFunction>::cast(func_value);
     Handle<JSObject> obj = factory->NewJSObject(function);
 
-    Handle<String> obj_name = factory->InternalizeUtf8String("\x74\x68\x65\x4f\x62\x6a\x65\x63\x74");
+    Handle<String> obj_name = factory->InternalizeUtf8String("theObject");
     JSReceiver::SetProperty(global, obj_name, obj, SLOPPY).Check();
-    Handle<String> prop_name = factory->InternalizeUtf8String("\x74\x68\x65\x53\x6c\x6f\x74");
+    Handle<String> prop_name = factory->InternalizeUtf8String("theSlot");
     Handle<Smi> twenty_three(Smi::FromInt(23), isolate);
     JSReceiver::SetProperty(obj, prop_name, twenty_three, SLOPPY).Check();
   }
 
-  heap->CollectGarbage(OLD_POINTER_SPACE, "\x74\x72\x69\x67\x67\x65\x72\x20\x35");
+  heap->CollectGarbage(OLD_POINTER_SPACE, "trigger 5");
 
   { HandleScope scope(isolate);
-    Handle<String> obj_name = factory->InternalizeUtf8String("\x74\x68\x65\x4f\x62\x6a\x65\x63\x74");
+    Handle<String> obj_name = factory->InternalizeUtf8String("theObject");
     v8::Maybe<bool> maybe = JSReceiver::HasOwnProperty(global, obj_name);
     CHECK(maybe.has_value);
     CHECK(maybe.value);
     Handle<Object> object =
         Object::GetProperty(global, obj_name).ToHandleChecked();
     CHECK(object->IsJSObject());
-    Handle<String> prop_name = factory->InternalizeUtf8String("\x74\x68\x65\x53\x6c\x6f\x74");
+    Handle<String> prop_name = factory->InternalizeUtf8String("theSlot");
     CHECK_EQ(*Object::GetProperty(object, prop_name).ToHandleChecked(),
              Smi::FromInt(23));
   }
@@ -376,7 +376,7 @@ class TestRetainedObjectInfo : public v8::RetainedObjectInfo {
 
   virtual intptr_t GetHash() { return 0; }
 
-  virtual const char* GetLabel() { return "\x77\x68\x61\x74\x65\x76\x65\x72"; }
+  virtual const char* GetLabel() { return "whatever"; }
 
  private:
   bool has_been_disposed_;
@@ -431,7 +431,7 @@ static uintptr_t ReadLong(char* buffer, intptr_t* position, int base) {
 static intptr_t MemoryInUse() {
   intptr_t memory_use = 0;
 
-  int fd = open("\x2f\x70\x72\x6f\x63\x2f\x73\x65\x6c\x66\x2f\x6d\x61\x70\x73", O_RDONLY);
+  int fd = open("/proc/self/maps", O_RDONLY);
   if (fd < 0) return -1;
 
   const int kBufSize = 10000;
@@ -441,35 +441,35 @@ static intptr_t MemoryInUse() {
   CHECK_LT(length, kBufSize);  // Make the buffer bigger.
   CHECK_GT(length, 0);  // We have to find some data in the file.
   while (line_start < length) {
-    if (buffer[line_start] == '\xa') {
+    if (buffer[line_start] == '\n') {
       line_start++;
       continue;
     }
     intptr_t position = line_start;
     uintptr_t start = ReadLong(buffer, &position, 16);
-    CHECK_EQ(buffer[position++], '\x2d');
+    CHECK_EQ(buffer[position++], '-');
     uintptr_t end = ReadLong(buffer, &position, 16);
-    CHECK_EQ(buffer[position++], '\x20');
-    CHECK(buffer[position] == '\x2d' || buffer[position] == '\x72');
-    bool read_permission = (buffer[position++] == '\x72');
-    CHECK(buffer[position] == '\x2d' || buffer[position] == '\x77');
-    bool write_permission = (buffer[position++] == '\x77');
-    CHECK(buffer[position] == '\x2d' || buffer[position] == '\x78');
-    bool execute_permission = (buffer[position++] == '\x78');
-    CHECK(buffer[position] == '\x2d' || buffer[position] == '\x70');
-    bool private_mapping = (buffer[position++] == '\x70');
-    CHECK_EQ(buffer[position++], '\x20');
+    CHECK_EQ(buffer[position++], ' ');
+    CHECK(buffer[position] == '-' || buffer[position] == 'r');
+    bool read_permission = (buffer[position++] == 'r');
+    CHECK(buffer[position] == '-' || buffer[position] == 'w');
+    bool write_permission = (buffer[position++] == 'w');
+    CHECK(buffer[position] == '-' || buffer[position] == 'x');
+    bool execute_permission = (buffer[position++] == 'x');
+    CHECK(buffer[position] == '-' || buffer[position] == 'p');
+    bool private_mapping = (buffer[position++] == 'p');
+    CHECK_EQ(buffer[position++], ' ');
     uintptr_t offset = ReadLong(buffer, &position, 16);
     USE(offset);
-    CHECK_EQ(buffer[position++], '\x20');
+    CHECK_EQ(buffer[position++], ' ');
     uintptr_t major = ReadLong(buffer, &position, 16);
     USE(major);
-    CHECK_EQ(buffer[position++], '\x3a');
+    CHECK_EQ(buffer[position++], ':');
     uintptr_t minor = ReadLong(buffer, &position, 16);
     USE(minor);
-    CHECK_EQ(buffer[position++], '\x20');
+    CHECK_EQ(buffer[position++], ' ');
     uintptr_t inode = ReadLong(buffer, &position, 10);
-    while (position < length && buffer[position] != '\xa') position++;
+    while (position < length && buffer[position] != '\n') position++;
     if ((read_permission || write_permission || execute_permission) &&
         private_mapping && inode == 0) {
       memory_use += (end - start);

@@ -135,15 +135,15 @@ TEST(WeakArrayBuffersFromScript) {
 
       {
         v8::HandleScope s1(context->GetIsolate());
-        CompileRun("\x76\x61\x72\x20\x61\x62\x31\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x28\x32\x35\x36\x29\x3b"
-                   "\x76\x61\x72\x20\x61\x62\x32\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x28\x32\x35\x36\x29\x3b"
-                   "\x76\x61\x72\x20\x61\x62\x33\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x28\x32\x35\x36\x29\x3b");
+        CompileRun("var ab1 = new ArrayBuffer(256);"
+                   "var ab2 = new ArrayBuffer(256);"
+                   "var ab3 = new ArrayBuffer(256);");
         v8::Handle<v8::ArrayBuffer> ab1 =
-            v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("\x61\x62\x31"));
+            v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("ab1"));
         v8::Handle<v8::ArrayBuffer> ab2 =
-            v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("\x61\x62\x32"));
+            v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("ab2"));
         v8::Handle<v8::ArrayBuffer> ab3 =
-            v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("\x61\x62\x33"));
+            v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("ab3"));
 
         CHECK_EQ(3, CountArrayBuffersInWeakList(isolate->heap()) - start);
         CHECK(HasArrayBufferInWeakList(isolate->heap(),
@@ -155,7 +155,7 @@ TEST(WeakArrayBuffersFromScript) {
       }
 
       i::ScopedVector<char> source(1024);
-      i::SNPrintF(source, "\x61\x62\x6c\x84\x20\x3d\x20\x6e\x75\x6c\x6c\x3b", i);
+      i::SNPrintF(source, "ab%d = null;", i);
       CompileRun(source.start());
       isolate->heap()->CollectAllGarbage(Heap::kAbortIncrementalMarkingMask);
 
@@ -165,7 +165,7 @@ TEST(WeakArrayBuffersFromScript) {
         v8::HandleScope s2(context->GetIsolate());
         for (int j = 1; j <= 3; j++) {
           if (j == i) continue;
-          i::SNPrintF(source, "\x61\x62\x6c\x84", j);
+          i::SNPrintF(source, "ab%d", j);
           v8::Handle<v8::ArrayBuffer> ab =
               v8::Handle<v8::ArrayBuffer>::Cast(CompileRun(source.start()));
           CHECK(HasArrayBufferInWeakList(isolate->heap(),
@@ -173,7 +173,7 @@ TEST(WeakArrayBuffersFromScript) {
           }
       }
 
-      CompileRun("\x61\x62\x31\x20\x3d\x20\x6e\x75\x6c\x6c\x3b\x20\x61\x62\x32\x20\x3d\x20\x6e\x75\x6c\x6c\x3b\x20\x61\x62\x33\x20\x3d\x20\x6e\x75\x6c\x6c\x3b");
+      CompileRun("ab1 = null; ab2 = null; ab3 = null;");
     }
 
     isolate->heap()->CollectAllGarbage(Heap::kAbortIncrementalMarkingMask);
@@ -271,7 +271,7 @@ static void TestTypedArrayFromScript(const char* constructor) {
   Isolate* isolate = GetIsolateFrom(&context);
   v8::HandleScope scope(context->GetIsolate());
   int start = CountArrayBuffersInWeakList(isolate->heap());
-  CompileRun("\x76\x61\x72\x20\x61\x62\x20\x3d\x20\x6e\x65\x77\x20\x41\x72\x72\x61\x79\x42\x75\x66\x66\x65\x72\x28\x32\x30\x34\x38\x29\x3b");
+  CompileRun("var ab = new ArrayBuffer(2048);");
   for (int i = 1; i <= 3; i++) {
     // Create 3 typed arrays, make i-th of them garbage,
     // validate correct state of typed array weak list.
@@ -283,20 +283,20 @@ static void TestTypedArrayFromScript(const char* constructor) {
     {
       v8::HandleScope s1(context->GetIsolate());
       i::SNPrintF(source,
-              "\x76\x61\x72\x20\x74\x61\x31\x20\x3d\x20\x6e\x65\x77\x20\x6c\xa2\x28\x61\x62\x29\x3b"
-              "\x76\x61\x72\x20\x74\x61\x32\x20\x3d\x20\x6e\x65\x77\x20\x6c\xa2\x28\x61\x62\x29\x3b"
-              "\x76\x61\x72\x20\x74\x61\x33\x20\x3d\x20\x6e\x65\x77\x20\x6c\xa2\x28\x61\x62\x29",
+              "var ta1 = new %s(ab);"
+              "var ta2 = new %s(ab);"
+              "var ta3 = new %s(ab)",
               constructor, constructor, constructor);
 
       CompileRun(source.start());
       v8::Handle<v8::ArrayBuffer> ab =
-          v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("\x61\x62"));
+          v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("ab"));
       v8::Handle<TypedArray> ta1 =
-          v8::Handle<TypedArray>::Cast(CompileRun("\x74\x61\x31"));
+          v8::Handle<TypedArray>::Cast(CompileRun("ta1"));
       v8::Handle<TypedArray> ta2 =
-          v8::Handle<TypedArray>::Cast(CompileRun("\x74\x61\x32"));
+          v8::Handle<TypedArray>::Cast(CompileRun("ta2"));
       v8::Handle<TypedArray> ta3 =
-          v8::Handle<TypedArray>::Cast(CompileRun("\x74\x61\x33"));
+          v8::Handle<TypedArray>::Cast(CompileRun("ta3"));
       CHECK_EQ(1, CountArrayBuffersInWeakList(isolate->heap()) - start);
       Handle<JSArrayBuffer> iab = v8::Utils::OpenHandle(*ab);
       CHECK_EQ(3, CountViews(*iab));
@@ -305,7 +305,7 @@ static void TestTypedArrayFromScript(const char* constructor) {
       CHECK(HasViewInWeakList(*iab, *v8::Utils::OpenHandle(*ta3)));
     }
 
-    i::SNPrintF(source, "\x74\x61\x6c\x84\x20\x3d\x20\x6e\x75\x6c\x6c\x3b", i);
+    i::SNPrintF(source, "ta%d = null;", i);
     CompileRun(source.start());
     isolate->heap()->CollectAllGarbage(Heap::kAbortIncrementalMarkingMask);
 
@@ -314,19 +314,19 @@ static void TestTypedArrayFromScript(const char* constructor) {
     {
       v8::HandleScope s2(context->GetIsolate());
       v8::Handle<v8::ArrayBuffer> ab =
-          v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("\x61\x62"));
+          v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("ab"));
       Handle<JSArrayBuffer> iab = v8::Utils::OpenHandle(*ab);
       CHECK_EQ(2, CountViews(*iab));
       for (int j = 1; j <= 3; j++) {
         if (j == i) continue;
-        i::SNPrintF(source, "\x74\x61\x6c\x84", j);
+        i::SNPrintF(source, "ta%d", j);
         v8::Handle<TypedArray> ta =
             v8::Handle<TypedArray>::Cast(CompileRun(source.start()));
         CHECK(HasViewInWeakList(*iab, *v8::Utils::OpenHandle(*ta)));
       }
     }
 
-    CompileRun("\x74\x61\x31\x20\x3d\x20\x6e\x75\x6c\x6c\x3b\x20\x74\x61\x32\x20\x3d\x20\x6e\x75\x6c\x6c\x3b\x20\x74\x61\x33\x20\x3d\x20\x6e\x75\x6c\x6c\x3b");
+    CompileRun("ta1 = null; ta2 = null; ta3 = null;");
     isolate->heap()->CollectAllGarbage(Heap::kAbortIncrementalMarkingMask);
 
     CHECK_EQ(1, CountArrayBuffersInWeakList(isolate->heap()) - start);
@@ -334,7 +334,7 @@ static void TestTypedArrayFromScript(const char* constructor) {
     {
       v8::HandleScope s3(context->GetIsolate());
       v8::Handle<v8::ArrayBuffer> ab =
-          v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("\x61\x62"));
+          v8::Handle<v8::ArrayBuffer>::Cast(CompileRun("ab"));
       Handle<JSArrayBuffer> iab = v8::Utils::OpenHandle(*ab);
       CHECK_EQ(0, CountViews(*iab));
     }
@@ -343,50 +343,50 @@ static void TestTypedArrayFromScript(const char* constructor) {
 
 
 TEST(Uint8ArrayFromScript) {
-  TestTypedArrayFromScript<v8::Uint8Array>("\x55\x69\x6e\x74\x38\x41\x72\x72\x61\x79");
+  TestTypedArrayFromScript<v8::Uint8Array>("Uint8Array");
 }
 
 
 TEST(Int8ArrayFromScript) {
-  TestTypedArrayFromScript<v8::Int8Array>("\x49\x6e\x74\x38\x41\x72\x72\x61\x79");
+  TestTypedArrayFromScript<v8::Int8Array>("Int8Array");
 }
 
 
 TEST(Uint16ArrayFromScript) {
-  TestTypedArrayFromScript<v8::Uint16Array>("\x55\x69\x6e\x74\x31\x36\x41\x72\x72\x61\x79");
+  TestTypedArrayFromScript<v8::Uint16Array>("Uint16Array");
 }
 
 
 TEST(Int16ArrayFromScript) {
-  TestTypedArrayFromScript<v8::Int16Array>("\x49\x6e\x74\x31\x36\x41\x72\x72\x61\x79");
+  TestTypedArrayFromScript<v8::Int16Array>("Int16Array");
 }
 
 
 TEST(Uint32ArrayFromScript) {
-  TestTypedArrayFromScript<v8::Uint32Array>("\x55\x69\x6e\x74\x33\x32\x41\x72\x72\x61\x79");
+  TestTypedArrayFromScript<v8::Uint32Array>("Uint32Array");
 }
 
 
 TEST(Int32ArrayFromScript) {
-  TestTypedArrayFromScript<v8::Int32Array>("\x49\x6e\x74\x33\x32\x41\x72\x72\x61\x79");
+  TestTypedArrayFromScript<v8::Int32Array>("Int32Array");
 }
 
 
 TEST(Float32ArrayFromScript) {
-  TestTypedArrayFromScript<v8::Float32Array>("\x46\x6c\x6f\x61\x74\x33\x32\x41\x72\x72\x61\x79");
+  TestTypedArrayFromScript<v8::Float32Array>("Float32Array");
 }
 
 
 TEST(Float64ArrayFromScript) {
-  TestTypedArrayFromScript<v8::Float64Array>("\x46\x6c\x6f\x61\x74\x36\x34\x41\x72\x72\x61\x79");
+  TestTypedArrayFromScript<v8::Float64Array>("Float64Array");
 }
 
 
 TEST(Uint8ClampedArrayFromScript) {
-  TestTypedArrayFromScript<v8::Uint8ClampedArray>("\x55\x69\x6e\x74\x38\x43\x6c\x61\x6d\x70\x65\x64\x41\x72\x72\x61\x79");
+  TestTypedArrayFromScript<v8::Uint8ClampedArray>("Uint8ClampedArray");
 }
 
 
 TEST(DataViewFromScript) {
-  TestTypedArrayFromScript<v8::DataView>("\x44\x61\x74\x61\x56\x69\x65\x77");
+  TestTypedArrayFromScript<v8::DataView>("DataView");
 }

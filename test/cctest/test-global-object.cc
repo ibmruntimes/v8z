@@ -35,10 +35,10 @@ using namespace v8;
 // as declared globals.
 TEST(StrictUndeclaredGlobalVariable) {
   HandleScope scope(CcTest::isolate());
-  v8::Local<v8::String> var_name = v8_str("\x78");
+  v8::Local<v8::String> var_name = v8_str("x");
   LocalContext context;
   v8::TryCatch try_catch;
-  v8::Local<v8::Script> script = v8_compile("\x22\x75\x73\x65\x20\x73\x74\x72\x69\x63\x74\x22\x3b\x20\x78\x20\x3d\x20\x34\x32\x3b");
+  v8::Local<v8::Script> script = v8_compile("\"use strict\"; x = 42;");
   v8::Handle<v8::Object> proto = v8::Object::New(CcTest::isolate());
   v8::Handle<v8::Object> global =
       context->Global()->GetPrototype().As<v8::Object>();
@@ -47,5 +47,5 @@ TEST(StrictUndeclaredGlobalVariable) {
   script->Run();
   CHECK(try_catch.HasCaught());
   v8::String::Utf8Value exception(try_catch.Exception());
-  CHECK_EQ("\x52\x65\x66\x65\x72\x65\x6e\x63\x65\x45\x72\x72\x6f\x72\x3a\x20\x78\x20\x69\x73\x20\x6e\x6f\x74\x20\x64\x65\x66\x69\x6e\x65\x64", *exception);
+  CHECK_EQ("ReferenceError: x is not defined", *exception);
 }

@@ -37,52 +37,52 @@ TEST(PerIsolateState) {
   HandleScope scope(CcTest::isolate());
   LocalContext context1(CcTest::isolate());
 
-  Local<Value> foo = v8_str("\x66\x6f\x6f");
+  Local<Value> foo = v8_str("foo");
   context1->SetSecurityToken(foo);
 
   CompileRun(
-      "\x76\x61\x72\x20\x63\x6f\x75\x6e\x74\x20\x3d\x20\x30\x3b"
-      "\x76\x61\x72\x20\x63\x61\x6c\x6c\x73\x20\x3d\x20\x30\x3b"
-      "\x76\x61\x72\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x72\x65\x63\x6f\x72\x64\x73\x29\x20\x7b\x20\x63\x6f\x75\x6e\x74\x20\x3d\x20\x72\x65\x63\x6f\x72\x64\x73\x2e\x6c\x65\x6e\x67\x74\x68\x3b\x20\x63\x61\x6c\x6c\x73\x2b\x2b\x20\x7d\x3b"
-      "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x29\x3b");
-  Handle<Value> observer = CompileRun("\x6f\x62\x73\x65\x72\x76\x65\x72");
-  Handle<Value> obj = CompileRun("\x6f\x62\x6a");
+      "var count = 0;"
+      "var calls = 0;"
+      "var observer = function(records) { count = records.length; calls++ };"
+      "var obj = {};"
+      "Object.observe(obj, observer);");
+  Handle<Value> observer = CompileRun("observer");
+  Handle<Value> obj = CompileRun("obj");
   Handle<Value> notify_fun1 = CompileRun(
-      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x72\x27\x3b\x20\x7d\x29");
+      "(function() { obj.foo = 'bar'; })");
   Handle<Value> notify_fun2;
   {
     LocalContext context2(CcTest::isolate());
     context2->SetSecurityToken(foo);
-    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"),
+    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "obj"),
                             obj);
     notify_fun2 = CompileRun(
-        "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x7a\x27\x3b\x20\x7d\x29");
+        "(function() { obj.foo = 'baz'; })");
   }
   Handle<Value> notify_fun3;
   {
     LocalContext context3(CcTest::isolate());
     context3->SetSecurityToken(foo);
-    context3->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"),
+    context3->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "obj"),
                             obj);
     notify_fun3 = CompileRun(
-        "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x74\x27\x3b\x20\x7d\x29");
+        "(function() { obj.foo = 'bat'; })");
   }
   {
     LocalContext context4(CcTest::isolate());
     context4->SetSecurityToken(foo);
     context4->Global()->Set(
-        String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x73\x65\x72\x76\x65\x72"), observer);
-    context4->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x66\x75\x6e\x31"),
+        String::NewFromUtf8(CcTest::isolate(), "observer"), observer);
+    context4->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "fun1"),
                             notify_fun1);
-    context4->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x66\x75\x6e\x32"),
+    context4->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "fun2"),
                             notify_fun2);
-    context4->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x66\x75\x6e\x33"),
+    context4->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "fun3"),
                             notify_fun3);
-    CompileRun("\x66\x75\x6e\x31\x28\x29\x3b\x20\x66\x75\x6e\x32\x28\x29\x3b\x20\x66\x75\x6e\x33\x28\x29\x3b\x20\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x6c\x69\x76\x65\x72\x43\x68\x61\x6e\x67\x65\x52\x65\x63\x6f\x72\x64\x73\x28\x6f\x62\x73\x65\x72\x76\x65\x72\x29");
+    CompileRun("fun1(); fun2(); fun3(); Object.deliverChangeRecords(observer)");
   }
-  CHECK_EQ(1, CompileRun("\x63\x61\x6c\x6c\x73")->Int32Value());
-  CHECK_EQ(3, CompileRun("\x63\x6f\x75\x6e\x74")->Int32Value());
+  CHECK_EQ(1, CompileRun("calls")->Int32Value());
+  CHECK_EQ(3, CompileRun("count")->Int32Value());
 }
 
 
@@ -90,12 +90,12 @@ TEST(EndOfMicrotaskDelivery) {
   HandleScope scope(CcTest::isolate());
   LocalContext context(CcTest::isolate());
   CompileRun(
-      "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
-      "\x76\x61\x72\x20\x63\x6f\x75\x6e\x74\x20\x3d\x20\x30\x3b"
-      "\x76\x61\x72\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x72\x65\x63\x6f\x72\x64\x73\x29\x20\x7b\x20\x63\x6f\x75\x6e\x74\x20\x3d\x20\x72\x65\x63\x6f\x72\x64\x73\x2e\x6c\x65\x6e\x67\x74\x68\x20\x7d\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x29\x3b"
-      "\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x72\x27\x3b");
-  CHECK_EQ(1, CompileRun("\x63\x6f\x75\x6e\x74")->Int32Value());
+      "var obj = {};"
+      "var count = 0;"
+      "var observer = function(records) { count = records.length };"
+      "Object.observe(obj, observer);"
+      "obj.foo = 'bar';");
+  CHECK_EQ(1, CompileRun("count")->Int32Value());
 }
 
 
@@ -103,30 +103,30 @@ TEST(DeliveryOrdering) {
   HandleScope scope(CcTest::isolate());
   LocalContext context(CcTest::isolate());
   CompileRun(
-      "\x76\x61\x72\x20\x6f\x62\x6a\x31\x20\x3d\x20\x7b\x7d\x3b"
-      "\x76\x61\x72\x20\x6f\x62\x6a\x32\x20\x3d\x20\x7b\x7d\x3b"
-      "\x76\x61\x72\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x20\x3d\x20\x5b\x5d\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x32\x28\x29\x20\x7b\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x70\x75\x73\x68\x28\x32\x29\x3b\x20\x7d\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x31\x28\x29\x20\x7b\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x70\x75\x73\x68\x28\x31\x29\x3b\x20\x7d\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x33\x28\x29\x20\x7b\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x70\x75\x73\x68\x28\x33\x29\x3b\x20\x7d\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x31\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x31\x29\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x31\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x32\x29\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x31\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x33\x29\x3b"
-      "\x6f\x62\x6a\x31\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x72\x27\x3b");
-  CHECK_EQ(3, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
-  CHECK_EQ(1, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x30\x5d")->Int32Value());
-  CHECK_EQ(2, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x31\x5d")->Int32Value());
-  CHECK_EQ(3, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x32\x5d")->Int32Value());
+      "var obj1 = {};"
+      "var obj2 = {};"
+      "var ordering = [];"
+      "function observer2() { ordering.push(2); };"
+      "function observer1() { ordering.push(1); };"
+      "function observer3() { ordering.push(3); };"
+      "Object.observe(obj1, observer1);"
+      "Object.observe(obj1, observer2);"
+      "Object.observe(obj1, observer3);"
+      "obj1.foo = 'bar';");
+  CHECK_EQ(3, CompileRun("ordering.length")->Int32Value());
+  CHECK_EQ(1, CompileRun("ordering[0]")->Int32Value());
+  CHECK_EQ(2, CompileRun("ordering[1]")->Int32Value());
+  CHECK_EQ(3, CompileRun("ordering[2]")->Int32Value());
   CompileRun(
-      "\x6f\x72\x64\x65\x72\x69\x6e\x67\x20\x3d\x20\x5b\x5d\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x32\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x33\x29\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x32\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x32\x29\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x32\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x31\x29\x3b"
-      "\x6f\x62\x6a\x32\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x7a\x27");
-  CHECK_EQ(3, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
-  CHECK_EQ(1, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x30\x5d")->Int32Value());
-  CHECK_EQ(2, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x31\x5d")->Int32Value());
-  CHECK_EQ(3, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x32\x5d")->Int32Value());
+      "ordering = [];"
+      "Object.observe(obj2, observer3);"
+      "Object.observe(obj2, observer2);"
+      "Object.observe(obj2, observer1);"
+      "obj2.foo = 'baz'");
+  CHECK_EQ(3, CompileRun("ordering.length")->Int32Value());
+  CHECK_EQ(1, CompileRun("ordering[0]")->Int32Value());
+  CHECK_EQ(2, CompileRun("ordering[1]")->Int32Value());
+  CHECK_EQ(3, CompileRun("ordering[2]")->Int32Value());
 }
 
 
@@ -134,30 +134,30 @@ TEST(DeliveryOrderingReentrant) {
   HandleScope scope(CcTest::isolate());
   LocalContext context(CcTest::isolate());
   CompileRun(
-      "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
-      "\x76\x61\x72\x20\x72\x65\x65\x6e\x74\x65\x72\x65\x64\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
-      "\x76\x61\x72\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x20\x3d\x20\x5b\x5d\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x31\x28\x29\x20\x7b\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x70\x75\x73\x68\x28\x31\x29\x3b\x20\x7d\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x32\x28\x29\x20\x7b"
-      "\x20\x20\x69\x66\x20\x28\x21\x72\x65\x65\x6e\x74\x65\x72\x65\x64\x29\x20\x7b"
-      "\x20\x20\x20\x20\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x7a\x27\x3b"
-      "\x20\x20\x20\x20\x72\x65\x65\x6e\x74\x65\x72\x65\x64\x20\x3d\x20\x74\x72\x75\x65\x3b"
-      "\x20\x20\x7d"
-      "\x20\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x70\x75\x73\x68\x28\x32\x29\x3b"
-      "\x7d\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x33\x28\x29\x20\x7b\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x70\x75\x73\x68\x28\x33\x29\x3b\x20\x7d\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x31\x29\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x32\x29\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x33\x29\x3b"
-      "\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x72\x27\x3b");
-  CHECK_EQ(5, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
-  CHECK_EQ(1, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x30\x5d")->Int32Value());
-  CHECK_EQ(2, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x31\x5d")->Int32Value());
-  CHECK_EQ(3, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x32\x5d")->Int32Value());
+      "var obj = {};"
+      "var reentered = false;"
+      "var ordering = [];"
+      "function observer1() { ordering.push(1); };"
+      "function observer2() {"
+      "  if (!reentered) {"
+      "    obj.foo = 'baz';"
+      "    reentered = true;"
+      "  }"
+      "  ordering.push(2);"
+      "};"
+      "function observer3() { ordering.push(3); };"
+      "Object.observe(obj, observer1);"
+      "Object.observe(obj, observer2);"
+      "Object.observe(obj, observer3);"
+      "obj.foo = 'bar';");
+  CHECK_EQ(5, CompileRun("ordering.length")->Int32Value());
+  CHECK_EQ(1, CompileRun("ordering[0]")->Int32Value());
+  CHECK_EQ(2, CompileRun("ordering[1]")->Int32Value());
+  CHECK_EQ(3, CompileRun("ordering[2]")->Int32Value());
   // Note that we re-deliver to observers 1 and 2, while observer3
   // already received the second record during the first round.
-  CHECK_EQ(1, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x33\x5d")->Int32Value());
-  CHECK_EQ(2, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x31\x5d")->Int32Value());
+  CHECK_EQ(1, CompileRun("ordering[3]")->Int32Value());
+  CHECK_EQ(2, CompileRun("ordering[1]")->Int32Value());
 }
 
 
@@ -165,23 +165,23 @@ TEST(DeliveryOrderingDeliverChangeRecords) {
   HandleScope scope(CcTest::isolate());
   LocalContext context(CcTest::isolate());
   CompileRun(
-      "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
-      "\x76\x61\x72\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x20\x3d\x20\x5b\x5d\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x31\x28\x29\x20\x7b\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x70\x75\x73\x68\x28\x31\x29\x3b\x20\x69\x66\x20\x28\x21\x6f\x62\x6a\x2e\x62\x29\x20\x6f\x62\x6a\x2e\x62\x20\x3d\x20\x74\x72\x75\x65\x20\x7d\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x32\x28\x29\x20\x7b\x20\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x70\x75\x73\x68\x28\x32\x29\x3b\x20\x7d\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x31\x29\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x32\x29\x3b"
-      "\x6f\x62\x6a\x2e\x61\x20\x3d\x20\x31\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x6c\x69\x76\x65\x72\x43\x68\x61\x6e\x67\x65\x52\x65\x63\x6f\x72\x64\x73\x28\x6f\x62\x73\x65\x72\x76\x65\x72\x32\x29\x3b");
-  CHECK_EQ(4, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
+      "var obj = {};"
+      "var ordering = [];"
+      "function observer1() { ordering.push(1); if (!obj.b) obj.b = true };"
+      "function observer2() { ordering.push(2); };"
+      "Object.observe(obj, observer1);"
+      "Object.observe(obj, observer2);"
+      "obj.a = 1;"
+      "Object.deliverChangeRecords(observer2);");
+  CHECK_EQ(4, CompileRun("ordering.length")->Int32Value());
   // First, observer2 is called due to deliverChangeRecords
-  CHECK_EQ(2, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x30\x5d")->Int32Value());
+  CHECK_EQ(2, CompileRun("ordering[0]")->Int32Value());
   // Then, observer1 is called when the stack unwinds
-  CHECK_EQ(1, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x31\x5d")->Int32Value());
+  CHECK_EQ(1, CompileRun("ordering[1]")->Int32Value());
   // observer1's mutation causes both 1 and 2 to be reactivated,
   // with 1 having priority.
-  CHECK_EQ(1, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x32\x5d")->Int32Value());
-  CHECK_EQ(2, CompileRun("\x6f\x72\x64\x65\x72\x69\x6e\x67\x5b\x33\x5d")->Int32Value());
+  CHECK_EQ(1, CompileRun("ordering[2]")->Int32Value());
+  CHECK_EQ(2, CompileRun("ordering[3]")->Int32Value());
 }
 
 
@@ -189,30 +189,30 @@ TEST(ObjectHashTableGrowth) {
   HandleScope scope(CcTest::isolate());
   // Initializing this context sets up initial hash tables.
   LocalContext context(CcTest::isolate());
-  Handle<Value> obj = CompileRun("\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b");
+  Handle<Value> obj = CompileRun("obj = {};");
   Handle<Value> observer = CompileRun(
-      "\x76\x61\x72\x20\x72\x61\x6e\x20\x3d\x20\x66\x61\x6c\x73\x65\x3b"
-      "\x28\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x20\x7b\x20\x72\x61\x6e\x20\x3d\x20\x74\x72\x75\x65\x20\x7d\x29");
+      "var ran = false;"
+      "(function() { ran = true })");
   {
     // As does initializing this context.
     LocalContext context2(CcTest::isolate());
-    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"),
+    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "obj"),
                             obj);
     context2->Global()->Set(
-        String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x73\x65\x72\x76\x65\x72"), observer);
+        String::NewFromUtf8(CcTest::isolate(), "observer"), observer);
     CompileRun(
-        "\x76\x61\x72\x20\x6f\x62\x6a\x41\x72\x72\x20\x3d\x20\x5b\x5d\x3b"
+        "var objArr = [];"
         // 100 objects should be enough to make the hash table grow
         // (and thus relocate).
-        "\x66\x6f\x72\x20\x28\x76\x61\x72\x20\x69\x20\x3d\x20\x30\x3b\x20\x69\x20\x3c\x20\x31\x30\x30\x3b\x20\x2b\x2b\x69\x29\x20\x7b"
-        "\x20\x20\x6f\x62\x6a\x41\x72\x72\x2e\x70\x75\x73\x68\x28\x7b\x7d\x29\x3b"
-        "\x20\x20\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x41\x72\x72\x5b\x6f\x62\x6a\x41\x72\x72\x2e\x6c\x65\x6e\x67\x74\x68\x2d\x31\x5d\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x7d\x29\x3b"
-        "\x7d"
-        "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x29\x3b");
+        "for (var i = 0; i < 100; ++i) {"
+        "  objArr.push({});"
+        "  Object.observe(objArr[objArr.length-1], function(){});"
+        "}"
+        "Object.observe(obj, observer);");
   }
   // obj is now marked "is_observed", but our map has moved.
-  CompileRun("\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x72\x27");
-  CHECK(CompileRun("\x72\x61\x6e")->BooleanValue());
+  CompileRun("obj.foo = 'bar'");
+  CHECK(CompileRun("ran")->BooleanValue());
 }
 
 
@@ -237,15 +237,15 @@ static void ExpectRecords(v8::Isolate* isolate,
     CHECK(record->IsObject());
     Handle<Object> recordObj = record.As<Object>();
     CHECK(expectations[i].object->StrictEquals(
-        recordObj->Get(String::NewFromUtf8(isolate, "\x6f\x62\x6a\x65\x63\x74"))));
+        recordObj->Get(String::NewFromUtf8(isolate, "object"))));
     CHECK(String::NewFromUtf8(isolate, expectations[i].type)->Equals(
-        recordObj->Get(String::NewFromUtf8(isolate, "\x74\x79\x70\x65"))));
-    if (strcmp("\x73\x70\x6c\x69\x63\x65", expectations[i].type) != 0) {
+        recordObj->Get(String::NewFromUtf8(isolate, "type"))));
+    if (strcmp("splice", expectations[i].type) != 0) {
       CHECK(String::NewFromUtf8(isolate, expectations[i].name)->Equals(
-          recordObj->Get(String::NewFromUtf8(isolate, "\x6e\x61\x6d\x65"))));
+          recordObj->Get(String::NewFromUtf8(isolate, "name"))));
       if (!expectations[i].old_value.IsEmpty()) {
         CHECK(expectations[i].old_value->Equals(
-            recordObj->Get(String::NewFromUtf8(isolate, "\x6f\x6c\x64\x56\x61\x6c\x75\x65"))));
+            recordObj->Get(String::NewFromUtf8(isolate, "oldValue"))));
       }
     }
   }
@@ -260,16 +260,16 @@ TEST(APITestBasicMutation) {
   HandleScope scope(v8_isolate);
   LocalContext context(v8_isolate);
   Handle<Object> obj = Handle<Object>::Cast(CompileRun(
-      "\x76\x61\x72\x20\x72\x65\x63\x6f\x72\x64\x73\x20\x3d\x20\x5b\x5d\x3b"
-      "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x28\x72\x29\x20\x7b\x20\x5b\x5d\x2e\x70\x75\x73\x68\x2e\x61\x70\x70\x6c\x79\x28\x72\x65\x63\x6f\x72\x64\x73\x2c\x20\x72\x29\x3b\x20\x7d\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x29\x3b"
-      "\x6f\x62\x6a"));
-  obj->Set(String::NewFromUtf8(v8_isolate, "\x66\x6f\x6f"),
+      "var records = [];"
+      "var obj = {};"
+      "function observer(r) { [].push.apply(records, r); };"
+      "Object.observe(obj, observer);"
+      "obj"));
+  obj->Set(String::NewFromUtf8(v8_isolate, "foo"),
            Number::New(v8_isolate, 7));
   obj->Set(1, Number::New(v8_isolate, 2));
   // ForceSet should work just as well as Set
-  obj->ForceSet(String::NewFromUtf8(v8_isolate, "\x66\x6f\x6f"),
+  obj->ForceSet(String::NewFromUtf8(v8_isolate, "foo"),
                 Number::New(v8_isolate, 3));
   obj->ForceSet(Number::New(v8_isolate, 1), Number::New(v8_isolate, 4));
   // Setting an indexed element via the property setting method
@@ -277,28 +277,28 @@ TEST(APITestBasicMutation) {
   // Setting with a non-String, non-uint32 key
   obj->ForceSet(Number::New(v8_isolate, 1.1), Number::New(v8_isolate, 6),
                 DontDelete);
-  obj->Delete(String::NewFromUtf8(v8_isolate, "\x66\x6f\x6f"));
+  obj->Delete(String::NewFromUtf8(v8_isolate, "foo"));
   obj->Delete(1);
   obj->ForceDelete(Number::New(v8_isolate, 1.1));
 
   // Force delivery
   // TODO(adamk): Should the above set methods trigger delivery themselves?
-  CompileRun("\x76\x6f\x69\x64\x20\x30");
-  CHECK_EQ(9, CompileRun("\x72\x65\x63\x6f\x72\x64\x73\x2e\x6c\x65\x6e\x67\x74\x68")->Int32Value());
+  CompileRun("void 0");
+  CHECK_EQ(9, CompileRun("records.length")->Int32Value());
   const RecordExpectation expected_records[] = {
-    { obj, "\x61\x64\x64", "\x66\x6f\x6f", Handle<Value>() },
-    { obj, "\x61\x64\x64", "\x31", Handle<Value>() },
+    { obj, "add", "foo", Handle<Value>() },
+    { obj, "add", "1", Handle<Value>() },
     // Note: use 7 not 1 below, as the latter triggers a nifty VS10 compiler bug
     // where instead of 1.0, a garbage value would be passed into Number::New.
-    { obj, "\x75\x70\x64\x61\x74\x65", "\x66\x6f\x6f", Number::New(v8_isolate, 7) },
-    { obj, "\x75\x70\x64\x61\x74\x65", "\x31", Number::New(v8_isolate, 2) },
-    { obj, "\x75\x70\x64\x61\x74\x65", "\x31", Number::New(v8_isolate, 4) },
-    { obj, "\x61\x64\x64", "\x31\x2e\x31", Handle<Value>() },
-    { obj, "\x64\x65\x6c\x65\x74\x65", "\x66\x6f\x6f", Number::New(v8_isolate, 3) },
-    { obj, "\x64\x65\x6c\x65\x74\x65", "\x31", Number::New(v8_isolate, 5) },
-    { obj, "\x64\x65\x6c\x65\x74\x65", "\x31\x2e\x31", Number::New(v8_isolate, 6) }
+    { obj, "update", "foo", Number::New(v8_isolate, 7) },
+    { obj, "update", "1", Number::New(v8_isolate, 2) },
+    { obj, "update", "1", Number::New(v8_isolate, 4) },
+    { obj, "add", "1.1", Handle<Value>() },
+    { obj, "delete", "foo", Number::New(v8_isolate, 3) },
+    { obj, "delete", "1", Number::New(v8_isolate, 5) },
+    { obj, "delete", "1.1", Number::New(v8_isolate, 6) }
   };
-  EXPECT_RECORDS(CompileRun("\x72\x65\x63\x6f\x72\x64\x73"), expected_records);
+  EXPECT_RECORDS(CompileRun("records"), expected_records);
 }
 
 
@@ -309,42 +309,42 @@ TEST(HiddenPrototypeObservation) {
   Handle<FunctionTemplate> tmpl = FunctionTemplate::New(v8_isolate);
   tmpl->SetHiddenPrototype(true);
   tmpl->InstanceTemplate()->Set(
-      String::NewFromUtf8(v8_isolate, "\x66\x6f\x6f"), Number::New(v8_isolate, 75));
+      String::NewFromUtf8(v8_isolate, "foo"), Number::New(v8_isolate, 75));
   Handle<Object> proto = tmpl->GetFunction()->NewInstance();
   Handle<Object> obj = Object::New(v8_isolate);
   obj->SetPrototype(proto);
-  context->Global()->Set(String::NewFromUtf8(v8_isolate, "\x6f\x62\x6a"), obj);
-  context->Global()->Set(String::NewFromUtf8(v8_isolate, "\x70\x72\x6f\x74\x6f"),
+  context->Global()->Set(String::NewFromUtf8(v8_isolate, "obj"), obj);
+  context->Global()->Set(String::NewFromUtf8(v8_isolate, "proto"),
                          proto);
   CompileRun(
-      "\x76\x61\x72\x20\x72\x65\x63\x6f\x72\x64\x73\x3b"
-      "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x28\x72\x29\x20\x7b\x20\x72\x65\x63\x6f\x72\x64\x73\x20\x3d\x20\x72\x3b\x20\x7d\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x29\x3b"
-      "\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x34\x31\x3b"  // triggers a notification
-      "\x70\x72\x6f\x74\x6f\x2e\x66\x6f\x6f\x20\x3d\x20\x34\x32\x3b");  // does not trigger a notification
+      "var records;"
+      "function observer(r) { records = r; };"
+      "Object.observe(obj, observer);"
+      "obj.foo = 41;"  // triggers a notification
+      "proto.foo = 42;");  // does not trigger a notification
   const RecordExpectation expected_records[] = {
-    { obj, "\x75\x70\x64\x61\x74\x65", "\x66\x6f\x6f", Number::New(v8_isolate, 75) }
+    { obj, "update", "foo", Number::New(v8_isolate, 75) }
   };
-  EXPECT_RECORDS(CompileRun("\x72\x65\x63\x6f\x72\x64\x73"), expected_records);
+  EXPECT_RECORDS(CompileRun("records"), expected_records);
   obj->SetPrototype(Null(v8_isolate));
-  CompileRun("\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x34\x33");
+  CompileRun("obj.foo = 43");
   const RecordExpectation expected_records2[] = {
-    { obj, "\x61\x64\x64", "\x66\x6f\x6f", Handle<Value>() }
+    { obj, "add", "foo", Handle<Value>() }
   };
-  EXPECT_RECORDS(CompileRun("\x72\x65\x63\x6f\x72\x64\x73"), expected_records2);
+  EXPECT_RECORDS(CompileRun("records"), expected_records2);
   obj->SetPrototype(proto);
   CompileRun(
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x70\x72\x6f\x74\x6f\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x29\x3b"
-      "\x70\x72\x6f\x74\x6f\x2e\x62\x61\x72\x20\x3d\x20\x31\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x75\x6e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x29\x3b"
-      "\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x34\x34\x3b");
+      "Object.observe(proto, observer);"
+      "proto.bar = 1;"
+      "Object.unobserve(obj, observer);"
+      "obj.foo = 44;");
   const RecordExpectation expected_records3[] = {
-    { proto, "\x61\x64\x64", "\x62\x61\x72", Handle<Value>() }
+    { proto, "add", "bar", Handle<Value>() }
     // TODO(adamk): The below record should be emitted since proto is observed
     // and has been modified. Not clear if this happens in practice.
     // { proto, "update", "foo", Number::New(43) }
   };
-  EXPECT_RECORDS(CompileRun("\x72\x65\x63\x6f\x72\x64\x73"), expected_records3);
+  EXPECT_RECORDS(CompileRun("records"), expected_records3);
 }
 
 
@@ -357,22 +357,22 @@ TEST(ObservationWeakMap) {
   HandleScope scope(CcTest::isolate());
   LocalContext context(CcTest::isolate());
   CompileRun(
-      "\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x7d\x29\x3b"
-      "\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4e\x6f\x74\x69\x66\x69\x65\x72\x28\x6f\x62\x6a\x29\x3b"
-      "\x6f\x62\x6a\x20\x3d\x20\x6e\x75\x6c\x6c\x3b");
+      "var obj = {};"
+      "Object.observe(obj, function(){});"
+      "Object.getNotifier(obj);"
+      "obj = null;");
   i::Isolate* i_isolate = CcTest::i_isolate();
   i::Handle<i::JSObject> observation_state =
       i_isolate->factory()->observation_state();
   i::Handle<i::JSWeakMap> callbackInfoMap =
       i::Handle<i::JSWeakMap>::cast(i::Object::GetProperty(
-          i_isolate, observation_state, "\x63\x61\x6c\x6c\x62\x61\x63\x6b\x49\x6e\x66\x6f\x4d\x61\x70").ToHandleChecked());
+          i_isolate, observation_state, "callbackInfoMap").ToHandleChecked());
   i::Handle<i::JSWeakMap> objectInfoMap =
       i::Handle<i::JSWeakMap>::cast(i::Object::GetProperty(
-          i_isolate, observation_state, "\x6f\x62\x6a\x65\x63\x74\x49\x6e\x66\x6f\x4d\x61\x70").ToHandleChecked());
+          i_isolate, observation_state, "objectInfoMap").ToHandleChecked());
   i::Handle<i::JSWeakMap> notifierObjectInfoMap =
       i::Handle<i::JSWeakMap>::cast(i::Object::GetProperty(
-          i_isolate, observation_state, "\x6e\x6f\x74\x69\x66\x69\x65\x72\x4f\x62\x6a\x65\x63\x74\x49\x6e\x66\x6f\x4d\x61\x70")
+          i_isolate, observation_state, "notifierObjectInfoMap")
               .ToHandleChecked());
   CHECK_EQ(1, NumberOfElements(callbackInfoMap));
   CHECK_EQ(1, NumberOfElements(objectInfoMap));
@@ -388,34 +388,34 @@ static int TestObserveSecurity(Handle<Context> observer_context,
                                Handle<Context> object_context,
                                Handle<Context> mutation_context) {
   Context::Scope observer_scope(observer_context);
-  CompileRun("\x76\x61\x72\x20\x72\x65\x63\x6f\x72\x64\x73\x20\x3d\x20\x6e\x75\x6c\x6c\x3b"
-             "\x76\x61\x72\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x72\x29\x20\x7b\x20\x72\x65\x63\x6f\x72\x64\x73\x20\x3d\x20\x72\x20\x7d\x3b");
-  Handle<Value> observer = CompileRun("\x6f\x62\x73\x65\x72\x76\x65\x72");
+  CompileRun("var records = null;"
+             "var observer = function(r) { records = r };");
+  Handle<Value> observer = CompileRun("observer");
   {
     Context::Scope object_scope(object_context);
     object_context->Global()->Set(
-        String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x73\x65\x72\x76\x65\x72"), observer);
-    CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
-               "\x6f\x62\x6a\x2e\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20\x30\x3b"
-               "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x2c"
-                   "\x5b\x27\x61\x64\x64\x27\x2c\x20\x27\x75\x70\x64\x61\x74\x65\x27\x2c\x20\x27\x64\x65\x6c\x65\x74\x65\x27\x2c\x27\x72\x65\x63\x6f\x6e\x66\x69\x67\x75\x72\x65\x27\x2c\x27\x73\x70\x6c\x69\x63\x65\x27\x5d"
-               "\x29\x3b");
-    Handle<Value> obj = CompileRun("\x6f\x62\x6a");
+        String::NewFromUtf8(CcTest::isolate(), "observer"), observer);
+    CompileRun("var obj = {};"
+               "obj.length = 0;"
+               "Object.observe(obj, observer,"
+                   "['add', 'update', 'delete','reconfigure','splice']"
+               ");");
+    Handle<Value> obj = CompileRun("obj");
     {
       Context::Scope mutation_scope(mutation_context);
       mutation_context->Global()->Set(
-          String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"), obj);
-      CompileRun("\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x72\x27\x3b"
-                 "\x6f\x62\x6a\x2e\x66\x6f\x6f\x20\x3d\x20\x27\x62\x61\x7a\x27\x3b"
-                 "\x64\x65\x6c\x65\x74\x65\x20\x6f\x62\x6a\x2e\x66\x6f\x6f\x3b"
-                 "\x4f\x62\x6a\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79\x28\x6f\x62\x6a\x2c\x20\x27\x62\x61\x72\x27\x2c\x20\x7b\x76\x61\x6c\x75\x65\x3a\x20\x27\x62\x6f\x74\x27\x7d\x29\x3b"
-                 "\x41\x72\x72\x61\x79\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x70\x75\x73\x68\x2e\x63\x61\x6c\x6c\x28\x6f\x62\x6a\x2c\x20\x31\x2c\x20\x32\x2c\x20\x33\x29\x3b"
-                 "\x41\x72\x72\x61\x79\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x70\x6c\x69\x63\x65\x2e\x63\x61\x6c\x6c\x28\x6f\x62\x6a\x2c\x20\x31\x2c\x20\x32\x2c\x20\x32\x2c\x20\x34\x29\x3b"
-                 "\x41\x72\x72\x61\x79\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x70\x6f\x70\x2e\x63\x61\x6c\x6c\x28\x6f\x62\x6a\x29\x3b"
-                 "\x41\x72\x72\x61\x79\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x68\x69\x66\x74\x2e\x63\x61\x6c\x6c\x28\x6f\x62\x6a\x29\x3b");
+          String::NewFromUtf8(CcTest::isolate(), "obj"), obj);
+      CompileRun("obj.foo = 'bar';"
+                 "obj.foo = 'baz';"
+                 "delete obj.foo;"
+                 "Object.defineProperty(obj, 'bar', {value: 'bot'});"
+                 "Array.prototype.push.call(obj, 1, 2, 3);"
+                 "Array.prototype.splice.call(obj, 1, 2, 2, 4);"
+                 "Array.prototype.pop.call(obj);"
+                 "Array.prototype.shift.call(obj);");
     }
   }
-  return CompileRun("\x72\x65\x63\x6f\x72\x64\x73\x20\x3f\x20\x72\x65\x63\x6f\x72\x64\x73\x2e\x6c\x65\x6e\x67\x74\x68\x20\x3a\x20\x30")->Int32Value();
+  return CompileRun("records ? records.length : 0")->Int32Value();
 }
 
 
@@ -435,7 +435,7 @@ TEST(ObserverSecurityA1A2A3) {
   v8::Local<Context> contextA2 = Context::New(isolate);
   v8::Local<Context> contextA3 = Context::New(isolate);
 
-  Local<Value> foo = v8_str("\x66\x6f\x6f");
+  Local<Value> foo = v8_str("foo");
   contextA1->SetSecurityToken(foo);
   contextA2->SetSecurityToken(foo);
   contextA3->SetSecurityToken(foo);
@@ -461,7 +461,7 @@ TEST(ObserverSecurityA1A2B) {
   v8::Local<Context> contextA2 = Context::New(isolate);
   v8::Local<Context> contextB = Context::New(isolate);
 
-  Local<Value> foo = v8_str("\x66\x6f\x6f");
+  Local<Value> foo = v8_str("foo");
   contextA1->SetSecurityToken(foo);
   contextA2->SetSecurityToken(foo);
 
@@ -485,7 +485,7 @@ TEST(ObserverSecurityA1BA2) {
   v8::Local<Context> contextA2 = Context::New(isolate);
   v8::Local<Context> contextB = Context::New(isolate);
 
-  Local<Value> foo = v8_str("\x66\x6f\x6f");
+  Local<Value> foo = v8_str("foo");
   contextA1->SetSecurityToken(foo);
   contextA2->SetSecurityToken(foo);
 
@@ -509,7 +509,7 @@ TEST(ObserverSecurityBA1A2) {
   v8::Local<Context> contextA2 = Context::New(isolate);
   v8::Local<Context> contextB = Context::New(isolate);
 
-  Local<Value> foo = v8_str("\x66\x6f\x6f");
+  Local<Value> foo = v8_str("foo");
   contextA1->SetSecurityToken(foo);
   contextA2->SetSecurityToken(foo);
 
@@ -524,27 +524,27 @@ TEST(ObserverSecurityNotify) {
   v8::Local<Context> contextB = Context::New(isolate);
 
   Context::Scope scopeA(contextA);
-  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
-             "\x76\x61\x72\x20\x72\x65\x63\x6f\x72\x64\x73\x41\x20\x3d\x20\x6e\x75\x6c\x6c\x3b"
-             "\x76\x61\x72\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x41\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x72\x29\x20\x7b\x20\x72\x65\x63\x6f\x72\x64\x73\x41\x20\x3d\x20\x72\x20\x7d\x3b"
-             "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x41\x29\x3b");
-  Handle<Value> obj = CompileRun("\x6f\x62\x6a");
+  CompileRun("var obj = {};"
+             "var recordsA = null;"
+             "var observerA = function(r) { recordsA = r };"
+             "Object.observe(obj, observerA);");
+  Handle<Value> obj = CompileRun("obj");
 
   {
     Context::Scope scopeB(contextB);
-    contextB->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"), obj);
-    CompileRun("\x76\x61\x72\x20\x72\x65\x63\x6f\x72\x64\x73\x42\x20\x3d\x20\x6e\x75\x6c\x6c\x3b"
-               "\x76\x61\x72\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x42\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x72\x29\x20\x7b\x20\x72\x65\x63\x6f\x72\x64\x73\x42\x20\x3d\x20\x72\x20\x7d\x3b"
-               "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x42\x29\x3b");
+    contextB->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "obj"), obj);
+    CompileRun("var recordsB = null;"
+               "var observerB = function(r) { recordsB = r };"
+               "Object.observe(obj, observerB);");
   }
 
-  CompileRun("\x76\x61\x72\x20\x6e\x6f\x74\x69\x66\x69\x65\x72\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4e\x6f\x74\x69\x66\x69\x65\x72\x28\x6f\x62\x6a\x29\x3b"
-             "\x6e\x6f\x74\x69\x66\x69\x65\x72\x2e\x6e\x6f\x74\x69\x66\x79\x28\x7b\x20\x74\x79\x70\x65\x3a\x20\x27\x75\x70\x64\x61\x74\x65\x27\x20\x7d\x29\x3b");
-  CHECK_EQ(1, CompileRun("\x72\x65\x63\x6f\x72\x64\x73\x41\x20\x3f\x20\x72\x65\x63\x6f\x72\x64\x73\x41\x2e\x6c\x65\x6e\x67\x74\x68\x20\x3a\x20\x30")->Int32Value());
+  CompileRun("var notifier = Object.getNotifier(obj);"
+             "notifier.notify({ type: 'update' });");
+  CHECK_EQ(1, CompileRun("recordsA ? recordsA.length : 0")->Int32Value());
 
   {
     Context::Scope scopeB(contextB);
-    CHECK_EQ(0, CompileRun("\x72\x65\x63\x6f\x72\x64\x73\x42\x20\x3f\x20\x72\x65\x63\x6f\x72\x64\x73\x42\x2e\x6c\x65\x6e\x67\x74\x68\x20\x3a\x20\x30")->Int32Value());
+    CHECK_EQ(0, CompileRun("recordsB ? recordsB.length : 0")->Int32Value());
   }
 }
 
@@ -552,65 +552,65 @@ TEST(ObserverSecurityNotify) {
 TEST(HiddenPropertiesLeakage) {
   HandleScope scope(CcTest::isolate());
   LocalContext context(CcTest::isolate());
-  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b"
-             "\x76\x61\x72\x20\x72\x65\x63\x6f\x72\x64\x73\x20\x3d\x20\x6e\x75\x6c\x6c\x3b"
-             "\x76\x61\x72\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x20\x3d\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x72\x29\x20\x7b\x20\x72\x65\x63\x6f\x72\x64\x73\x20\x3d\x20\x72\x20\x7d\x3b"
-             "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x29\x3b");
+  CompileRun("var obj = {};"
+             "var records = null;"
+             "var observer = function(r) { records = r };"
+             "Object.observe(obj, observer);");
   Handle<Value> obj =
-      context->Global()->Get(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"));
+      context->Global()->Get(String::NewFromUtf8(CcTest::isolate(), "obj"));
   Handle<Object>::Cast(obj)
-      ->SetHiddenValue(String::NewFromUtf8(CcTest::isolate(), "\x66\x6f\x6f"),
+      ->SetHiddenValue(String::NewFromUtf8(CcTest::isolate(), "foo"),
                        Null(CcTest::isolate()));
   CompileRun("");  // trigger delivery
-  CHECK(CompileRun("\x72\x65\x63\x6f\x72\x64\x73")->IsNull());
+  CHECK(CompileRun("records")->IsNull());
 }
 
 
 TEST(GetNotifierFromOtherContext) {
   HandleScope scope(CcTest::isolate());
   LocalContext context(CcTest::isolate());
-  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b");
-  Handle<Value> instance = CompileRun("\x6f\x62\x6a");
+  CompileRun("var obj = {};");
+  Handle<Value> instance = CompileRun("obj");
   {
     LocalContext context2(CcTest::isolate());
-    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"),
+    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "obj"),
                             instance);
-    CHECK(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4e\x6f\x74\x69\x66\x69\x65\x72\x28\x6f\x62\x6a\x29")->IsNull());
+    CHECK(CompileRun("Object.getNotifier(obj)")->IsNull());
   }
 }
 
 
 TEST(GetNotifierFromOtherOrigin) {
   HandleScope scope(CcTest::isolate());
-  Handle<Value> foo = String::NewFromUtf8(CcTest::isolate(), "\x66\x6f\x6f");
-  Handle<Value> bar = String::NewFromUtf8(CcTest::isolate(), "\x62\x61\x72");
+  Handle<Value> foo = String::NewFromUtf8(CcTest::isolate(), "foo");
+  Handle<Value> bar = String::NewFromUtf8(CcTest::isolate(), "bar");
   LocalContext context(CcTest::isolate());
   context->SetSecurityToken(foo);
-  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b");
-  Handle<Value> instance = CompileRun("\x6f\x62\x6a");
+  CompileRun("var obj = {};");
+  Handle<Value> instance = CompileRun("obj");
   {
     LocalContext context2(CcTest::isolate());
     context2->SetSecurityToken(bar);
-    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"),
+    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "obj"),
                             instance);
-    CHECK(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4e\x6f\x74\x69\x66\x69\x65\x72\x28\x6f\x62\x6a\x29")->IsNull());
+    CHECK(CompileRun("Object.getNotifier(obj)")->IsNull());
   }
 }
 
 
 TEST(GetNotifierFromSameOrigin) {
   HandleScope scope(CcTest::isolate());
-  Handle<Value> foo = String::NewFromUtf8(CcTest::isolate(), "\x66\x6f\x6f");
+  Handle<Value> foo = String::NewFromUtf8(CcTest::isolate(), "foo");
   LocalContext context(CcTest::isolate());
   context->SetSecurityToken(foo);
-  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b");
-  Handle<Value> instance = CompileRun("\x6f\x62\x6a");
+  CompileRun("var obj = {};");
+  Handle<Value> instance = CompileRun("obj");
   {
     LocalContext context2(CcTest::isolate());
     context2->SetSecurityToken(foo);
-    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"),
+    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "obj"),
                             instance);
-    CHECK(CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4e\x6f\x74\x69\x66\x69\x65\x72\x28\x6f\x62\x6a\x29")->IsObject());
+    CHECK(CompileRun("Object.getNotifier(obj)")->IsObject());
   }
 }
 
@@ -642,20 +642,20 @@ static void CheckSurvivingGlobalObjectsCount(int expected) {
 
 TEST(DontLeakContextOnObserve) {
   HandleScope scope(CcTest::isolate());
-  Handle<Value> foo = String::NewFromUtf8(CcTest::isolate(), "\x66\x6f\x6f");
+  Handle<Value> foo = String::NewFromUtf8(CcTest::isolate(), "foo");
   LocalContext context(CcTest::isolate());
   context->SetSecurityToken(foo);
-  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b");
-  Handle<Value> object = CompileRun("\x6f\x62\x6a");
+  CompileRun("var obj = {};");
+  Handle<Value> object = CompileRun("obj");
   {
     HandleScope scope(CcTest::isolate());
     LocalContext context2(CcTest::isolate());
     context2->SetSecurityToken(foo);
-    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"),
+    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "obj"),
                             object);
-    CompileRun("\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x28\x29\x20\x7b\x7d\x3b"
-               "\x4f\x62\x6a\x65\x63\x74\x2e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x2c\x20\x5b\x27\x66\x6f\x6f\x27\x2c\x20\x27\x62\x61\x72\x27\x2c\x20\x27\x62\x61\x7a\x27\x5d\x29\x3b"
-               "\x4f\x62\x6a\x65\x63\x74\x2e\x75\x6e\x6f\x62\x73\x65\x72\x76\x65\x28\x6f\x62\x6a\x2c\x20\x6f\x62\x73\x65\x72\x76\x65\x72\x29\x3b");
+    CompileRun("function observer() {};"
+               "Object.observe(obj, observer, ['foo', 'bar', 'baz']);"
+               "Object.unobserve(obj, observer);");
   }
 
   CcTest::isolate()->ContextDisposedNotification();
@@ -665,18 +665,18 @@ TEST(DontLeakContextOnObserve) {
 
 TEST(DontLeakContextOnGetNotifier) {
   HandleScope scope(CcTest::isolate());
-  Handle<Value> foo = String::NewFromUtf8(CcTest::isolate(), "\x66\x6f\x6f");
+  Handle<Value> foo = String::NewFromUtf8(CcTest::isolate(), "foo");
   LocalContext context(CcTest::isolate());
   context->SetSecurityToken(foo);
-  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b");
-  Handle<Value> object = CompileRun("\x6f\x62\x6a");
+  CompileRun("var obj = {};");
+  Handle<Value> object = CompileRun("obj");
   {
     HandleScope scope(CcTest::isolate());
     LocalContext context2(CcTest::isolate());
     context2->SetSecurityToken(foo);
-    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"),
+    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "obj"),
                             object);
-    CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4e\x6f\x74\x69\x66\x69\x65\x72\x28\x6f\x62\x6a\x29\x3b");
+    CompileRun("Object.getNotifier(obj);");
   }
 
   CcTest::isolate()->ContextDisposedNotification();
@@ -686,24 +686,24 @@ TEST(DontLeakContextOnGetNotifier) {
 
 TEST(DontLeakContextOnNotifierPerformChange) {
   HandleScope scope(CcTest::isolate());
-  Handle<Value> foo = String::NewFromUtf8(CcTest::isolate(), "\x66\x6f\x6f");
+  Handle<Value> foo = String::NewFromUtf8(CcTest::isolate(), "foo");
   LocalContext context(CcTest::isolate());
   context->SetSecurityToken(foo);
-  CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x20\x3d\x20\x7b\x7d\x3b");
-  Handle<Value> object = CompileRun("\x6f\x62\x6a");
-  Handle<Value> notifier = CompileRun("\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4e\x6f\x74\x69\x66\x69\x65\x72\x28\x6f\x62\x6a\x29");
+  CompileRun("var obj = {};");
+  Handle<Value> object = CompileRun("obj");
+  Handle<Value> notifier = CompileRun("Object.getNotifier(obj)");
   {
     HandleScope scope(CcTest::isolate());
     LocalContext context2(CcTest::isolate());
     context2->SetSecurityToken(foo);
-    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6f\x62\x6a"),
+    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "obj"),
                             object);
-    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "\x6e\x6f\x74\x69\x66\x69\x65\x72"),
+    context2->Global()->Set(String::NewFromUtf8(CcTest::isolate(), "notifier"),
                             notifier);
-    CompileRun("\x76\x61\x72\x20\x6f\x62\x6a\x32\x20\x3d\x20\x7b\x7d\x3b"
-               "\x76\x61\x72\x20\x6e\x6f\x74\x69\x66\x69\x65\x72\x32\x20\x3d\x20\x4f\x62\x6a\x65\x63\x74\x2e\x67\x65\x74\x4e\x6f\x74\x69\x66\x69\x65\x72\x28\x6f\x62\x6a\x32\x29\x3b"
-               "\x6e\x6f\x74\x69\x66\x69\x65\x72\x32\x2e\x70\x65\x72\x66\x6f\x72\x6d\x43\x68\x61\x6e\x67\x65\x2e\x63\x61\x6c\x6c\x28"
-                   "\x6e\x6f\x74\x69\x66\x69\x65\x72\x2c\x20\x27\x66\x6f\x6f\x27\x2c\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x28\x29\x7b\x7d\x29");
+    CompileRun("var obj2 = {};"
+               "var notifier2 = Object.getNotifier(obj2);"
+               "notifier2.performChange.call("
+                   "notifier, 'foo', function(){})");
   }
 
   CcTest::isolate()->ContextDisposedNotification();

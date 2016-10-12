@@ -40,7 +40,7 @@ using namespace v8::internal;
 
 bool Equal32(uint32_t expected, const RegisterDump*, uint32_t result) {
   if (result != expected) {
-    printf("\x45\x78\x70\x65\x63\x74\x65\x64\x20\x30\x78\x25\x30\x38" PRIx32 "\x9\x20\x46\x6f\x75\x6e\x64\x20\x30\x78\x25\x30\x38" PRIx32 "\xa",
+    printf("Expected 0x%08" PRIx32 "\t Found 0x%08" PRIx32 "\n",
            expected, result);
   }
 
@@ -50,7 +50,7 @@ bool Equal32(uint32_t expected, const RegisterDump*, uint32_t result) {
 
 bool Equal64(uint64_t expected, const RegisterDump*, uint64_t result) {
   if (result != expected) {
-    printf("\x45\x78\x70\x65\x63\x74\x65\x64\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\x9\x20\x46\x6f\x75\x6e\x64\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\xa",
+    printf("Expected 0x%016" PRIx64 "\t Found 0x%016" PRIx64 "\n",
            expected, result);
   }
 
@@ -63,11 +63,11 @@ bool EqualFP32(float expected, const RegisterDump*, float result) {
     return true;
   } else {
     if (isnan(expected) || (expected == 0.0)) {
-      printf("\x45\x78\x70\x65\x63\x74\x65\x64\x20\x30\x78\x25\x30\x38" PRIx32 "\x9\x20\x46\x6f\x75\x6e\x64\x20\x30\x78\x25\x30\x38" PRIx32 "\xa",
+      printf("Expected 0x%08" PRIx32 "\t Found 0x%08" PRIx32 "\n",
              float_to_rawbits(expected), float_to_rawbits(result));
     } else {
-      printf("\x45\x78\x70\x65\x63\x74\x65\x64\x20\x6c\x4b\xf9\x86\x20\x28\x30\x78\x25\x30\x38" PRIx32 "\x29\x9\x20"
-             "\x46\x6f\x75\x6e\x64\x20\x6c\x4b\xf9\x86\x20\x28\x30\x78\x25\x30\x38" PRIx32 "\x29\xa",
+      printf("Expected %.9f (0x%08" PRIx32 ")\t "
+             "Found %.9f (0x%08" PRIx32 ")\n",
              expected, float_to_rawbits(expected),
              result, float_to_rawbits(result));
     }
@@ -82,11 +82,11 @@ bool EqualFP64(double expected, const RegisterDump*, double result) {
   }
 
   if (isnan(expected) || (expected == 0.0)) {
-    printf("\x45\x78\x70\x65\x63\x74\x65\x64\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\x9\x20\x46\x6f\x75\x6e\x64\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\xa",
+    printf("Expected 0x%016" PRIx64 "\t Found 0x%016" PRIx64 "\n",
            double_to_rawbits(expected), double_to_rawbits(result));
   } else {
-    printf("\x45\x78\x70\x65\x63\x74\x65\x64\x20\x6c\x4b\xf1\xf7\x86\x20\x28\x30\x78\x25\x30\x31\x36" PRIx64 "\x29\x9\x20"
-           "\x46\x6f\x75\x6e\x64\x20\x6c\x4b\xf1\xf7\x86\x20\x28\x30\x78\x25\x30\x31\x36" PRIx64 "\x29\xa",
+    printf("Expected %.17f (0x%016" PRIx64 ")\t "
+           "Found %.17f (0x%016" PRIx64 ")\n",
            expected, double_to_rawbits(expected),
            result, double_to_rawbits(result));
   }
@@ -100,7 +100,7 @@ bool Equal32(uint32_t expected, const RegisterDump* core, const Register& reg) {
   // was properly cleared.
   int64_t result_x = core->xreg(reg.code());
   if ((result_x & 0xffffffff00000000L) != 0) {
-    printf("\x45\x78\x70\x65\x63\x74\x65\x64\x20\x30\x78\x25\x30\x38" PRIx32 "\x9\x20\x46\x6f\x75\x6e\x64\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\xa",
+    printf("Expected 0x%08" PRIx32 "\t Found 0x%016" PRIx64 "\n",
            expected, result_x);
     return false;
   }
@@ -126,7 +126,7 @@ bool EqualFP32(float expected,
   // was properly cleared.
   uint64_t result_64 = core->dreg_bits(fpreg.code());
   if ((result_64 & 0xffffffff00000000L) != 0) {
-    printf("\x45\x78\x70\x65\x63\x74\x65\x64\x20\x30\x78\x25\x30\x38" PRIx32 "\x20\x28\x6c\x86\x29\x9\x20\x46\x6f\x75\x6e\x64\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\xa",
+    printf("Expected 0x%08" PRIx32 " (%f)\t Found 0x%016" PRIx64 "\n",
            float_to_rawbits(expected), expected, result_64);
     return false;
   }
@@ -154,22 +154,22 @@ bool Equal64(const Register& reg0,
 
 
 static char FlagN(uint32_t flags) {
-  return (flags & NFlag) ? '\x4e' : '\x6e';
+  return (flags & NFlag) ? 'N' : 'n';
 }
 
 
 static char FlagZ(uint32_t flags) {
-  return (flags & ZFlag) ? '\x5a' : '\x7a';
+  return (flags & ZFlag) ? 'Z' : 'z';
 }
 
 
 static char FlagC(uint32_t flags) {
-  return (flags & CFlag) ? '\x43' : '\x63';
+  return (flags & CFlag) ? 'C' : 'c';
 }
 
 
 static char FlagV(uint32_t flags) {
-  return (flags & VFlag) ? '\x56' : '\x76';
+  return (flags & VFlag) ? 'V' : 'v';
 }
 
 
@@ -177,7 +177,7 @@ bool EqualNzcv(uint32_t expected, uint32_t result) {
   DCHECK((expected & ~NZCVFlag) == 0);
   DCHECK((result & ~NZCVFlag) == 0);
   if (result != expected) {
-    printf("\x45\x78\x70\x65\x63\x74\x65\x64\x3a\x20\x6c\x83\x6c\x83\x6c\x83\x6c\x83\x9\x20\x46\x6f\x75\x6e\x64\x3a\x20\x6c\x83\x6c\x83\x6c\x83\x6c\x83\xa",
+    printf("Expected: %c%c%c%c\t Found: %c%c%c%c\n",
         FlagN(expected), FlagZ(expected), FlagC(expected), FlagV(expected),
         FlagN(result), FlagZ(result), FlagC(result), FlagV(result));
     return false;
@@ -190,7 +190,7 @@ bool EqualNzcv(uint32_t expected, uint32_t result) {
 bool EqualRegisters(const RegisterDump* a, const RegisterDump* b) {
   for (unsigned i = 0; i < kNumberOfRegisters; i++) {
     if (a->xreg(i) != b->xreg(i)) {
-      printf("\x78\x6c\x84\x9\x20\x45\x78\x70\x65\x63\x74\x65\x64\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\x9\x20\x46\x6f\x75\x6e\x64\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\xa",
+      printf("x%d\t Expected 0x%016" PRIx64 "\t Found 0x%016" PRIx64 "\n",
              i, a->xreg(i), b->xreg(i));
       return false;
     }
@@ -200,7 +200,7 @@ bool EqualRegisters(const RegisterDump* a, const RegisterDump* b) {
     uint64_t a_bits = a->dreg_bits(i);
     uint64_t b_bits = b->dreg_bits(i);
     if (a_bits != b_bits) {
-      printf("\x64\x6c\x84\x9\x20\x45\x78\x70\x65\x63\x74\x65\x64\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\x9\x20\x46\x6f\x75\x6e\x64\x20\x30\x78\x25\x30\x31\x36" PRIx64 "\xa",
+      printf("d%d\t Expected 0x%016" PRIx64 "\t Found 0x%016" PRIx64 "\n",
              i, a_bits, b_bits);
       return false;
     }

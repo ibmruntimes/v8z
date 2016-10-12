@@ -576,9 +576,9 @@ struct Tests : Rep {
       for (DoubleIterator j = T.doubles.begin(); j != T.doubles.end(); ++j) {
         double min = T.dmin(*i, *j);
         double max = T.dmax(*i, *j);
-        printf("\x52\x61\x6e\x67\x65\x54\x79\x70\x65\x3a\x20\x6d\x69\x6e\x2c\x20\x6d\x61\x78\x20\x3d\x20\x6c\x86\x2c\x20\x6c\x86\xa", min, max);
+        printf("RangeType: min, max = %f, %f\n", min, max);
         TypeHandle type = T.Range(min, max);
-        printf("\x52\x61\x6e\x67\x65\x54\x79\x70\x65\x3a\x20\x4d\x69\x6e\x2c\x20\x4d\x61\x78\x20\x3d\x20\x6c\x86\x2c\x20\x6c\x86\xa",
+        printf("RangeType: Min, Max = %f, %f\n",
                type->AsRange()->Min(), type->AsRange()->Max());
         CHECK(min == type->AsRange()->Min());
         CHECK(max == type->AsRange()->Max());

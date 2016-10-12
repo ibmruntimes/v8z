@@ -39,7 +39,7 @@ using namespace ::v8::internal;
 class WaitAndSignalThread V8_FINAL : public v8::base::Thread {
  public:
   explicit WaitAndSignalThread(v8::base::Semaphore* semaphore)
-      : Thread(Options("\x57\x61\x69\x74\x41\x6e\x64\x53\x69\x67\x6e\x61\x6c\x54\x68\x72\x65\x61\x64")), semaphore_(semaphore) {}
+      : Thread(Options("WaitAndSignalThread")), semaphore_(semaphore) {}
   virtual ~WaitAndSignalThread() {}
 
   virtual void Run() V8_OVERRIDE {
@@ -105,7 +105,7 @@ TEST(WaitFor) {
 }
 
 
-static const char alphabet[] = "\x58\x4b\x4f\x41\x44";
+static const char alphabet[] = "XKOAD";
 static const int kAlphabetSize = sizeof(alphabet) - 1;
 static const int kBufferSize = 4096;  // GCD(buffer size, alphabet size) = 1
 static char buffer[kBufferSize];
@@ -117,7 +117,7 @@ static v8::base::Semaphore used_space(0);
 
 class ProducerThread V8_FINAL : public v8::base::Thread {
  public:
-  ProducerThread() : Thread(Options("\x50\x72\x6f\x64\x75\x63\x65\x72\x54\x68\x72\x65\x61\x64")) {}
+  ProducerThread() : Thread(Options("ProducerThread")) {}
   virtual ~ProducerThread() {}
 
   virtual void Run() V8_OVERRIDE {
@@ -132,7 +132,7 @@ class ProducerThread V8_FINAL : public v8::base::Thread {
 
 class ConsumerThread V8_FINAL : public v8::base::Thread {
  public:
-  ConsumerThread() : Thread(Options("\x43\x6f\x6e\x73\x75\x6d\x65\x72\x54\x68\x72\x65\x61\x64")) {}
+  ConsumerThread() : Thread(Options("ConsumerThread")) {}
   virtual ~ConsumerThread() {}
 
   virtual void Run() V8_OVERRIDE {
