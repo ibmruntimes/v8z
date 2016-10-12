@@ -142,7 +142,7 @@ int VSNPrintFASCII(char* out, int length, const char* format_a, va_list args) {
     } else if (flag == 'c') {
       ret = v8::base::OS::SNPrintF(out + bytes_written, bytes_remain, format_e, Ascii2Ebcdic(va_arg(args, char)));
     } else {
-      ret = v8::base::OS::SNPrintF(out + bytes_written, bytes_remain, format_e, args);
+      ret = v8::base::OS::VSNPrintF(out + bytes_written, bytes_remain, format_e, args);
     }
     CHECK(ret >= 0);
     bytes_written += ret;
