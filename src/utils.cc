@@ -346,7 +346,7 @@ char* ReadCharsFromFile(const char* filename,
                         int* size,
                         int extra_space,
                         bool verbose) {
-  FILE* file = base::OS::FOpen(filename, "\x72\x62");
+  FILE* file = base::OS::FOpenASCII(filename, "\x72\x62");
   char* result = ReadCharsFromFile(file, size, extra_space, verbose, filename);
   if (file != NULL) fclose(file);
   return result;
