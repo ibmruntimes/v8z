@@ -481,6 +481,25 @@ FILE* OS::FOpen(const char* path, const char* mode) {
   return NULL;
 }
 
+FILE* OS::FOpenASCII(const char* path_a, const char* mode_a) {
+  int path_len = strlen(path_a);
+  int mode_len = strlen(mode_a);
+  char path[path_len + 1];
+  char mode[mode_len + 1];
+  memmove(path, path_a, path_len + 1);
+  memmove(mode, mode_a, mode_len + 1);
+  __a2e_s(path);
+  __a2e_s(mode);
+  FILE* file = fopen(path, mode);
+  if (file == NULL) return NULL;
+  struct stat file_stat;
+  if (fstat(fileno(file), &file_stat) != 0) return NULL;
+  bool is_regular_file = ((file_stat.st_mode & S_IFREG) != 0);
+  if (is_regular_file) return file;
+  fclose(file);
+  return NULL;
+}
+
 
 bool OS::Remove(const char* path) {
   return (remove(path) == 0);

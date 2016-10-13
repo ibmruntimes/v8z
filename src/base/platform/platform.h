@@ -178,6 +178,7 @@ class OS {
   static int GetLastError();
 
   static FILE* FOpen(const char* path, const char* mode);
+  static FILE* FOpenASCII(const char* path_a, const char* mode_a);
   static bool Remove(const char* path);
 
   // Opens a temporary file, the file is auto removed on close.
