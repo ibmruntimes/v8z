@@ -167,10 +167,10 @@ TEST(ExternalReferenceDecoder) {
 class FileByteSink : public SnapshotByteSink {
  public:
   explicit FileByteSink(const char* snapshot_file) {
-    fp_ = v8::base::OS::FOpen(snapshot_file, "wb");
+    fp_ = v8::base::OS::FOpenASCII(snapshot_file, "wb");
     file_name_ = snapshot_file;
     if (fp_ == NULL) {
-      PrintF("Unable to write to snapshot file \"%s\"\n", snapshot_file);
+      PrintASCII("Unable to write to snapshot file \"%s\"\n", snapshot_file);
       exit(1);
     }
   }
@@ -213,7 +213,7 @@ void FileByteSink::WriteSpaceUsed(
   int file_name_length = StrLength(file_name_) + 10;
   Vector<char> name = Vector<char>::New(file_name_length + 1);
   SNPrintF(name, "%s.size", file_name_);
-  FILE* fp = v8::base::OS::FOpen(name.start(), "w");
+  FILE* fp = v8::base::OS::FOpenASCII(name.start(), "w");
   name.Dispose();
   fprintf(fp, "new %d\n", new_space_used);
   fprintf(fp, "pointer %d\n", pointer_space_used);
@@ -291,7 +291,7 @@ static void ReserveSpaceForSnapshot(Deserializer* deserializer,
   int file_name_length = StrLength(file_name) + 10;
   Vector<char> name = Vector<char>::New(file_name_length + 1);
   SNPrintF(name, "%s.size", file_name);
-  FILE* fp = v8::base::OS::FOpen(name.start(), "r");
+  FILE* fp = v8::base::OS::FOpenASCII(name.start(), "r");
   name.Dispose();
   int new_size, pointer_size, data_size, code_size, map_size, cell_size,
       property_cell_size;
