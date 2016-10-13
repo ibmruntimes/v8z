@@ -9544,12 +9544,14 @@ uint32_t StringHasher::ComputeUtf8Hash(Vector<const char> chars,
 }
 
 
+#pragma convert("ISO8859-1")
 void String::PrintOn(FILE* file) {
   int length = this->length();
   for (int i = 0; i < length; i++) {
-    PrintF(file, "%c", Get(i));
+    FPrintASCII(file, "%c", Get(i));
   }
 }
+#pragma convert(pop)
 
 
 int Map::Hash() {
