@@ -144,6 +144,9 @@ int main(int argc, char* argv[]) {
   v8::Platform* platform = v8::platform::CreateDefaultPlatform();
   v8::V8::InitializePlatform(platform);
 
+  for (int i = 0; i < argc; i++) {
+    __e2a_s(argv[i]);
+  }
   v8::internal::FlagList::SetFlagsFromCommandLine(&argc, argv, true);
 
   CcTestArrayBufferAllocator array_buffer_allocator;
@@ -160,7 +163,6 @@ int main(int argc, char* argv[]) {
   bool print_run_count = true;
   for (int i = 1; i < argc; i++) {
     char* arg = argv[i];
-    __e2a_s(arg);
     if (strcmp(arg, "--list") == 0) {
       // TODO(svenpanne) Serializer::enabled() and Serializer::code_address_map_
       // are fundamentally broken, so we can't unconditionally initialize and
