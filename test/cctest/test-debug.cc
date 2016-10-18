@@ -4781,7 +4781,11 @@ bool IsEvaluateResponseMessage(char* message) {
 
 
 static int StringToInt(const char* s) {
-  return atoi(s);  // NOLINT
+  char buffer[128];
+  memcpy(buffer, s, 128);
+  buffer[127] = '\0';
+  __a2e_s(buffer);
+  return atoi(buffer);  // NOLINT
 }
 
 
