@@ -96,15 +96,7 @@ void PrintF(FILE* out, const char* format, ...) {
 #pragma convert("IBM-1047")
 inline int GetFirstFlagFrom(const char* format_e, int start = 0) {
   int flag_pos = start;
-  do {
-    for (; format_e[flag_pos] != '\0' && format_e[flag_pos] != '%'; flag_pos++); // find the first flag
-    if (format_e[flag_pos] != '\0' && format_e[flag_pos + 1] == '%') {
-      flag_pos += 2;
-      continue;
-    } else {
-      break;
-    }
-  } while (true);
+  for (; format_e[flag_pos] != '\0' && format_e[flag_pos] != '%'; flag_pos++); // find the first flag
   return flag_pos;
 }
 
@@ -126,7 +118,7 @@ int VSNPrintFASCII(char* out, int length, const char* format_a, va_list args) {
   if (format_e[0] == '\0') return bytes_written;
 
   do {
-    int next_flag = GetFirstFlagFrom(format_e, 1);
+    int next_flag = GetFirstFlagFrom(format_e, 2);
     char tmp = format_e[next_flag];
     int ret = 0;
     format_e[next_flag] = '\0';
