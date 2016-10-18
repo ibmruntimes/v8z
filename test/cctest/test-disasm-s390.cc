@@ -46,6 +46,7 @@ bool DisassembleAndCompare(byte* pc, const char* compare_string) {
 
   disasm.InstructionDecode(disasm_buffer, pc);
 
+  __e2a_s(disasm_buffer.start());
   if (strcmp(compare_string, disasm_buffer.start()) != 0) {
     fprintf(stderr,
             "expected: \n"
