@@ -28,6 +28,7 @@
 #include "src/v8.h"
 
 #include "src/version.h"
+#pragma convert("ISO8859-1")
 
 // These macros define the version number for the current version.
 // NOTE these macros are used by some of the tool scripts and the build
@@ -46,7 +47,7 @@
 #define SONAME            ""
 
 #if IS_CANDIDATE_VERSION
-#define CANDIDATE_STRING "\x20\x28\x63\x61\x6e\x64\x69\x64\x61\x74\x65\x29"
+#define CANDIDATE_STRING " (candidate)"
 #else
 #define CANDIDATE_STRING ""
 #endif
@@ -56,11 +57,11 @@
 
 #if PATCH_LEVEL > 0
 #define VERSION_STRING                                                         \
-    "\x33\x2E\x32\x38\x2E\x37\x31\x2E\x31\x39" CANDIDATE_STRING
-    // S(MAJOR_VERSION) "\x2e" S(MINOR_VERSION) "\x2e" S(BUILD_NUMBER) "\x2e" S(PATCH_LEVEL) CANDIDATE_STRING
+    S(MAJOR_VERSION) "." S(MINOR_VERSION) "." S(BUILD_NUMBER) "."              \
+        S(PATCH_LEVEL) CANDIDATE_STRING
 #else
 #define VERSION_STRING                                                         \
-    S(MAJOR_VERSION) "\x2e" S(MINOR_VERSION) "\x2e" S(BUILD_NUMBER)                  \
+    S(MAJOR_VERSION) "." S(MINOR_VERSION) "." S(BUILD_NUMBER)                  \
         CANDIDATE_STRING
 #endif
 
@@ -77,18 +78,18 @@ const char* Version::version_string_ = VERSION_STRING;
 
 // Calculate the V8 version string.
 void Version::GetString(Vector<char> str) {
-  const char* candidate = IsCandidate() ? "\x20\x28\x63\x61\x6e\x64\x69\x64\x61\x74\x65\x29" : "";
+  const char* candidate = IsCandidate() ? " (candidate)" : "";
 #ifdef USE_SIMULATOR
-  const char* is_simulator = "\x20\x53\x49\x4d\x55\x4c\x41\x54\x4f\x52";
+  const char* is_simulator = " SIMULATOR";
 #else
   const char* is_simulator = "";
 #endif  // USE_SIMULATOR
   if (GetPatch() > 0) {
-    SNPrintF(str, "\x6c\x84\x2e\x6c\x84\x2e\x6c\x84\x2e\x6c\x84\x6c\xa2\x6c\xa2",
+    SNPrintFASCII(str, "%d.%d.%d.%d%s%s",
              GetMajor(), GetMinor(), GetBuild(), GetPatch(), candidate,
              is_simulator);
   } else {
-    SNPrintF(str, "\x6c\x84\x2e\x6c\x84\x2e\x6c\x84\x6c\xa2\x6c\xa2",
+    SNPrintFASCII(str, "%d.%d.%d%s%s",
              GetMajor(), GetMinor(), GetBuild(), candidate,
              is_simulator);
   }
@@ -97,19 +98,19 @@ void Version::GetString(Vector<char> str) {
 
 // Calculate the SONAME for the V8 shared library.
 void Version::GetSONAME(Vector<char> str) {
-  if (soname_ == NULL || *soname_ == '\x0') {
+  if (soname_ == NULL || *soname_ == '\0') {
     // Generate generic SONAME if no specific SONAME is defined.
-    const char* candidate = IsCandidate() ? "\x2d\x63\x61\x6e\x64\x69\x64\x61\x74\x65" : "";
+    const char* candidate = IsCandidate() ? "-candidate" : "";
     if (GetPatch() > 0) {
-      SNPrintF(str, "\x6c\x69\x62\x76\x38\x2d\x6c\x84\x2e\x6c\x84\x2e\x6c\x84\x2e\x6c\x84\x6c\xa2\x2e\x73\x6f",
+      SNPrintFASCII(str, "libv8-%d.%d.%d.%d%s.so",
                GetMajor(), GetMinor(), GetBuild(), GetPatch(), candidate);
     } else {
-      SNPrintF(str, "\x6c\x69\x62\x76\x38\x2d\x6c\x84\x2e\x6c\x84\x2e\x6c\x84\x6c\xa2\x2e\x73\x6f",
+      SNPrintFASCII(str, "libv8-%d.%d.%d%s.so",
                GetMajor(), GetMinor(), GetBuild(), candidate);
     }
   } else {
     // Use specific SONAME.
-    SNPrintF(str, "\x6c\xa2", soname_);
+    SNPrintFASCII(str, "%s", soname_);
   }
 }
 
