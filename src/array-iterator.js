@@ -120,7 +120,7 @@ function ExtendArrayPrototype() {
   %CheckIsBootstrapping();
 
   InstallFunctions($Array.prototype, DONT_ENUM, $Array(
-    // No 'values' since it breaks webcompat: http://crbug.com/409858
+    'values', ArrayValues,
     'entries', ArrayEntries,
     'keys', ArrayKeys
   ));
