@@ -989,11 +989,7 @@ void StoreBufferOverflowStub::Generate(MacroAssembler* masm) {
 
   AllowExternalCallThatCantCauseGC scope(masm);
   __ PrepareCallCFunction(argument_count, fp_argument_count, scratch);
-#ifdef V8_OS_ZOS
-  __ mov(r1, Operand(ExternalReference::isolate_address(isolate())));
-#else
   __ mov(r2, Operand(ExternalReference::isolate_address(isolate())));
-#endif
   __ CallCFunction(
       ExternalReference::store_buffer_overflow_function(isolate()),
       argument_count);
@@ -4681,6 +4677,7 @@ void RecordWriteStub::InformIncrementalMarker(MacroAssembler* masm) {
   regs_.SaveCallerSaveRegisters(masm, save_fp_regs_mode_);
   int argument_count = 3;
   __ PrepareCallCFunction(argument_count, regs_.scratch0());
+
   Register address =
       r2.is(regs_.address()) ? regs_.scratch0() : regs_.address();
   DCHECK(!address.is(regs_.object()));
@@ -4691,11 +4688,6 @@ void RecordWriteStub::InformIncrementalMarker(MacroAssembler* masm) {
   __ mov(r4, Operand(ExternalReference::isolate_address(isolate())));
 
   AllowExternalCallThatCantCauseGC scope(masm);
-#ifdef V8_OS_ZOS
-  __ LoadRR(r1, r2);
-  __ LoadRR(r2, r3);
-  __ LoadRR(r3, r4);
-#endif
   __ CallCFunction(
       ExternalReference::incremental_marking_record_write_function(isolate()),
       argument_count);

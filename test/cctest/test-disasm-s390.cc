@@ -1,3 +1,4 @@
+#pragma convert("ISO8859-1")
 // Copyright 2011 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -45,6 +46,7 @@ bool DisassembleAndCompare(byte* pc, const char* compare_string) {
 
   disasm.InstructionDecode(disasm_buffer, pc);
 
+  __e2a_s(disasm_buffer.start());
   if (strcmp(compare_string, disasm_buffer.start()) != 0) {
     fprintf(stderr,
             "expected: \n"

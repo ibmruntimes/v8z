@@ -2265,6 +2265,7 @@ RUNTIME_FUNCTION(Runtime_InitializeVarGlobal) {
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, result, Object::SetProperty(global, name, value, strict_mode));
+
   return *result;
 }
 
@@ -9596,27 +9597,28 @@ static int StackSize(Isolate* isolate) {
   return n;
 }
 
-
+#pragma convert("IBM-1047")
 static void PrintTransition(Isolate* isolate, Object* result) {
   // indentation
   { const int nmax = 80;
     int n = StackSize(isolate);
     if (n <= nmax)
-      PrintF("\x6c\xf4\x84\x3a\x25\x2a\x73", n, n, "");
+      PrintF("%4d:%*s", n, n, "");
     else
-      PrintF("\x6c\xf4\x84\x3a\x25\x2a\x73", n, nmax, "\x2e\x2e\x2e");
+      PrintF("%4d:%*s", n, nmax, "...");
   }
 
   if (result == NULL) {
     JavaScriptFrame::PrintTop(isolate, stdout, true, false);
-    PrintF("\x20\x7b\xa");
+    PrintF(" {\n");
   } else {
     // function result
-    PrintF("\x7d\x20\x2d\x3e\x20");
+    PrintF("} -> ");
     result->ShortPrint();
-    PrintF("\xa");
+    PrintF("\n");
   }
 }
+#pragma convert(pop)
 
 
 RUNTIME_FUNCTION(Runtime_TraceEnter) {
@@ -15504,6 +15506,7 @@ RUNTIME_FUNCTION(RuntimeReference_ClassOf) {
   DCHECK(args.length() == 1);
   CONVERT_ARG_CHECKED(Object, obj, 0);
   if (!obj->IsJSReceiver()) return isolate->heap()->null_value();
+  JSReceiver::cast(obj)->class_name()->PrintOn(stdout);
   return JSReceiver::cast(obj)->class_name();
 }
 

@@ -586,6 +586,16 @@
   'debug-liveedit-double-call': [SKIP],
 }],  # 'arch == s390 or arch == s390x'
 
+['system == zos', {
+  # scp issue on unicode characters
+  'string-case': [SKIP],
+  'unicode-test': [SKIP],
+  'unicodelctest': [SKIP],
+  'unicodelctest-no-optimization': [SKIP],
+  'regress/regress-2032': [SKIP],
+  'regexp-capture-3': [SKIP],
+}], # 'system == zos'
+
 ['arch == ppc or arch == ppc64', {
 
   # Test does not handle increased precision of multiply-add optimization

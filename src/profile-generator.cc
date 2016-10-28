@@ -18,6 +18,7 @@ namespace v8 {
 namespace internal {
 
 
+#pragma convert("ISO8859-1")
 bool StringsStorage::StringsMatch(void* key1, void* key2) {
   return strcmp(reinterpret_cast<char*>(key1),
                 reinterpret_cast<char*>(key2)) == 0;
@@ -44,7 +45,7 @@ const char* StringsStorage::GetCopy(const char* src) {
   if (entry->value == NULL) {
     Vector<char> dst = Vector<char>::New(len + 1);
     StrNCpy(dst, src, len);
-    dst[len] = '\x0';
+    dst[len] = '\0';
     entry->key = dst.start();
     entry->value = entry->key;
   }
@@ -76,7 +77,7 @@ const char* StringsStorage::AddOrDisposeString(char* str, int len) {
 
 const char* StringsStorage::GetVFormatted(const char* format, va_list args) {
   Vector<char> str = Vector<char>::New(1024);
-  int len = VSNPrintF(str, format, args);
+  int len = VSNPrintFASCII(str, format, args);
   if (len == -1) {
     DeleteArray(str.start());
     return GetCopy(format);
@@ -95,14 +96,14 @@ const char* StringsStorage::GetName(Name* name) {
                        &actual_length);
     return AddOrDisposeString(data.Detach(), actual_length);
   } else if (name->IsSymbol()) {
-    return "\x3c\x73\x79\x6d\x62\x6f\x6c\x3e";
+    return "<symbol>";
   }
   return "";
 }
 
 
 const char* StringsStorage::GetName(int index) {
-  return GetFormatted("\x6c\x84", index);
+  return GetFormatted("%d", index);
 }
 
 
@@ -203,12 +204,12 @@ ProfileNode* ProfileNode::FindOrAddChild(CodeEntry* entry) {
 
 
 void ProfileNode::Print(int indent) {
-  base::OS::Print("\x6c\xf5\xa4\x20\x25\x2a\x73\x20\x6c\xa2\x6c\xa2\x20\x6c\x84\x20\x23\x6c\x84\x20\x6c\xa2", self_ticks_, indent, "",
+  PrintASCII("%5u %*s %s%s %d #%d %s", self_ticks_, indent, "",
                   entry_->name_prefix(), entry_->name(), entry_->script_id(),
                   id(), entry_->bailout_reason());
-  if (entry_->resource_name()[0] != '\x0')
-    base::OS::Print("\x20\x6c\xa2\x3a\x6c\x84", entry_->resource_name(), entry_->line_number());
-  base::OS::Print("\xa");
+  if (entry_->resource_name()[0] != '\0')
+    PrintASCII(" %s:%d", entry_->resource_name(), entry_->line_number());
+  PrintASCII("\n");
   for (HashMap::Entry* p = children_.Start();
        p != NULL;
        p = children_.Next(p)) {
@@ -230,7 +231,7 @@ class DeleteNodesCallback {
 
 
 ProfileTree::ProfileTree()
-    : root_entry_(Logger::FUNCTION_TAG, "\x28\x72\x6f\x6f\x74\x29"),
+    : root_entry_(Logger::FUNCTION_TAG, "(root)"),
       next_node_id_(1),
       root_(new ProfileNode(this, &root_entry_)) {
 }
@@ -342,7 +343,7 @@ void CpuProfile::CalculateTotalTicksAndSamplingRate() {
 
 
 void CpuProfile::Print() {
-  base::OS::Print("\x5b\x54\x6f\x70\x20\x64\x6f\x77\x6e\x5d\x3a\xa");
+  PrintASCII("[Top down]:\n");
   top_down_.Print();
 }
 
@@ -419,9 +420,9 @@ void CodeMap::CodeTreePrinter::Call(
     const Address& key, const CodeMap::CodeEntryInfo& value) {
   // For shared function entries, 'size' field is used to store their IDs.
   if (value.entry == kSharedFunctionCodeEntry) {
-    base::OS::Print("\x6c\x97\x20\x53\x68\x61\x72\x65\x64\x46\x75\x6e\x63\x74\x69\x6f\x6e\x49\x6e\x66\x6f\x20\x6c\x84\xa", key, value.size);
+    PrintASCII("%p SharedFunctionInfo %d\n", key, value.size);
   } else {
-    base::OS::Print("\x6c\x97\x20\x6c\xf5\x84\x20\x6c\xa2\xa", key, value.size, value.entry->name());
+    PrintASCII("%p %5d %s\n", key, value.size, value.entry->name());
   }
 }
 
@@ -548,13 +549,13 @@ CodeEntry* CpuProfilesCollection::NewCodeEntry(
 
 
 const char* const ProfileGenerator::kProgramEntryName =
-    "\x28\x70\x72\x6f\x67\x72\x61\x6d\x29";
+    "(program)";
 const char* const ProfileGenerator::kIdleEntryName =
-    "\x28\x69\x64\x6c\x65\x29";
+    "(idle)";
 const char* const ProfileGenerator::kGarbageCollectorEntryName =
-    "\x28\x67\x61\x72\x62\x61\x67\x65\x20\x63\x6f\x6c\x6c\x65\x63\x74\x6f\x72\x29";
+    "(garbage collector)";
 const char* const ProfileGenerator::kUnresolvedFunctionName =
-    "\x28\x75\x6e\x72\x65\x73\x6f\x6c\x76\x65\x64\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x29";
+    "(unresolved function)";
 
 
 ProfileGenerator::ProfileGenerator(CpuProfilesCollection* profiles)

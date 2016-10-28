@@ -159,7 +159,9 @@ struct StaticParameterTraits<ExternalReference> {
 template <>
 struct StaticParameterTraits<int> {
   static OStream& PrintTo(OStream& os, int val) {  // NOLINT
-    return os << val;
+    char arr[100];
+	Vector<char> buffer(arr, sizeof(arr));
+	return os << IntToCString(val, buffer);
   }
   static int HashCode(int a) { return a; }
   static bool Equals(int a, int b) { return a == b; }

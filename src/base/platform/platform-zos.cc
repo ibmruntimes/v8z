@@ -470,4 +470,28 @@ bool VirtualMemory::HasLazyCommits() {
   return true;
 }
 
+int OS::SNPrintFASCII(char* str, int length, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  int result = VSNPrintFASCII(str, length, format, args);
+  va_end(args);
+  return result;
+}
+
+
+int OS::VSNPrintFASCII(char* str,
+                  int length,
+                  const char* format,
+                  va_list args) {
+  int n = VSNPrintFASCII(str, length, format, args);
+  if (n < 0 || n >= length) {
+    // If the length is zero, the assignment fails.
+    if (length > 0)
+      str[length - 1] = '\x0';
+    return -1;
+  } else {
+    return n;
+  }
+}
+
 } }  // namespace v8::base

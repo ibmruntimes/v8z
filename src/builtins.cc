@@ -1580,12 +1580,18 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
       builtins_[i] = *code;
       if (code->kind() == Code::BUILTIN) code->set_builtin_index(i);
 #ifdef ENABLE_DISASSEMBLER
+#pragma convert("IBM-1047")
       if (FLAG_print_builtin_code) {
         CodeTracer::Scope trace_scope(isolate->GetCodeTracer());
         OFStream os(trace_scope.file());
-        os << "\x42\x75\x69\x6c\x74\x69\x6e\x3a\x20" << functions[i].s_name << "\xa";
+        os << "Builtin: ";
+        for (int n = 0; functions[i].s_name[n] != '\0'; n++) {
+          os << Ascii2Ebcdic(functions[i].s_name[n]);
+        }
+        os << "\n";
         code->Disassemble(functions[i].s_name, os);
-        os << "\xa";
+        os << "\n";
+#pragma convert(pop)
       }
 #endif
     } else {

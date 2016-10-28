@@ -1092,6 +1092,15 @@ int VSNPrintF(Vector<char> str, const char* format, va_list args);
 
 void StrNCpy(Vector<char> dest, const char* src, size_t n);
 
+// Ascii version printfs
+int VSNPrintFASCII(char* out, int length, const char* format_a, va_list args);
+int SNPrintFASCII(char * out, int length, const char* format_a, ...);
+int SNPrintFASCII(Vector<char> str, const char* format, ...);
+int VSNPrintFASCII(Vector<char> str, const char* format, va_list args);
+void VFPrintASCII(FILE* out, const char* format_a, va_list args);
+void FPrintASCII(FILE* out, const char* format_a, ...);
+void PrintASCII(const char* format_a, ...);
+
 // Our version of fflush.
 void Flush(FILE* out);
 

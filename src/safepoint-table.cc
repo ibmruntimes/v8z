@@ -79,7 +79,7 @@ void SafepointTable::PrintEntry(unsigned index, OStream& os) const {  // NOLINT
     if (!entry.HasRegisters()) return;
     for (int j = 0; j < kNumSafepointRegisters; j++) {
       if (entry.HasRegisterAt(j)) {
-        os << "\x20\x7c\x20" << converter.NameOfCPURegister(j);
+        os << " | " << converter.NameOfCPURegister(j);
       }
     }
   }
@@ -90,7 +90,7 @@ void SafepointTable::PrintBits(OStream& os,  // NOLINT
                                uint8_t byte, int digits) {
   DCHECK(digits >= 0 && digits <= kBitsPerByte);
   for (int i = 0; i < digits; i++) {
-    os << (((byte & (1 << i)) == 0) ? "\x30" : "\x31");
+    os << (((byte & (1 << i)) == 0) ? "0" : "1");
   }
 }
 

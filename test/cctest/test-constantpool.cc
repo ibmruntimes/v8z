@@ -1,3 +1,4 @@
+#pragma convert("ISO8859-1")
 // Copyright 2013 the V8 project authors. All rights reserved.
 
 // Test constant pool array code.

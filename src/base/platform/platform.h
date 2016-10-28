@@ -178,6 +178,7 @@ class OS {
   static int GetLastError();
 
   static FILE* FOpen(const char* path, const char* mode);
+  static FILE* FOpenASCII(const char* path_a, const char* mode_a);
   static bool Remove(const char* path);
 
   // Opens a temporary file, the file is auto removed on close.
@@ -257,6 +258,12 @@ class OS {
   // Returns the number of chars written, or -1 if output was truncated.
   static int SNPrintF(char* str, int length, const char* format, ...);
   static int VSNPrintF(char* str,
+                       int length,
+                       const char* format,
+                       va_list args);
+
+  static int SNPrintFASCII(char* str, int length, const char* format, ...);
+  static int VSNPrintFASCII(char* str,
                        int length,
                        const char* format,
                        va_list args);

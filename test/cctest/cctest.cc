@@ -1,3 +1,4 @@
+#pragma convert("ISO8859-1")
 // Copyright 2008 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -33,6 +34,7 @@
 #include "test/cctest/print-extension.h"
 #include "test/cctest/profiler-extension.h"
 #include "test/cctest/trace-extension.h"
+#include <unistd.h>
 
 enum InitializationState {kUnset, kUnintialized, kInitialized};
 static InitializationState initialization_state_  = kUnset;
@@ -142,6 +144,9 @@ int main(int argc, char* argv[]) {
   v8::Platform* platform = v8::platform::CreateDefaultPlatform();
   v8::V8::InitializePlatform(platform);
 
+  for (int i = 0; i < argc; i++) {
+    __e2a_s(argv[i]);
+  }
   v8::internal::FlagList::SetFlagsFromCommandLine(&argc, argv, true);
 
   CcTestArrayBufferAllocator array_buffer_allocator;

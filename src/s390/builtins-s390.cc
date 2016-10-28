@@ -886,10 +886,6 @@ static void GenerateMakeCodeYoungAgainCommon(MacroAssembler* masm) {
 #endif
   __ PrepareCallCFunction(2, 0, r4);
   __ mov(r3, Operand(ExternalReference::isolate_address(masm->isolate())));
-#ifdef V8_OS_ZOS
-  __ LoadRR(r1, r2);
-  __ LoadRR(r2, r3);
-#endif  
   __ CallCFunction(
       ExternalReference::get_make_code_young_function(masm->isolate()), 2);
 #ifdef V8_OS_ZOS
@@ -941,10 +937,6 @@ void Builtins::Generate_MarkCodeAsExecutedOnce(MacroAssembler* masm) {
   
   __ PrepareCallCFunction(2, 0, r4);
   __ mov(r3, Operand(ExternalReference::isolate_address(masm->isolate())));
-#ifdef V8_OS_ZOS
-  __ LoadRR(r1, r2);
-  __ LoadRR(r2, r3);
-#endif
   __ CallCFunction(ExternalReference::get_mark_code_as_executed_function(
         masm->isolate()), 2);
 #ifdef V8_OS_ZOS

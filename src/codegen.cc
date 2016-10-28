@@ -117,32 +117,41 @@ void CodeGenerator::MakeCodePrologue(CompilationInfo* info, const char* kind) {
   if (info->isolate()->bootstrapper()->IsActive()) {
     print_source = FLAG_print_builtin_source;
     print_ast = FLAG_print_builtin_ast;
-    ftype = "\x62\x75\x69\x6c\x74\x69\x6e";
+    ftype = "builtin";
   } else {
     print_source = FLAG_print_source;
     print_ast = FLAG_print_ast;
-    ftype = "\x75\x73\x65\x72\x2d\x64\x65\x66\x69\x6e\x65\x64";
+    ftype = "user-defined";
   }
 
   if (FLAG_trace_codegen || print_source || print_ast) {
-    PrintF("\x5b\x67\x65\x6e\x65\x72\x61\x74\x69\x6e\x67\x20\x6c\xa2\x20\x63\x6f\x64\x65\x20\x66\x6f\x72\x20\x6c\xa2\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20", kind, ftype);
+    PrintF("[generating %s code for %s function: ", kind, ftype);
     if (info->IsStub()) {
       const char* name =
           CodeStub::MajorName(info->code_stub()->MajorKey(), true);
-      PrintF("\x6c\xa2", name == NULL ? "\x3c\x75\x6e\x6b\x6e\x6f\x77\x6e\x3e" : name);
+      if (name == NULL) {
+        PrintF("<unknown>");
+      } else {
+        for (int i = 0; name[i] != '\0'; i++) {
+          PrintF("%c", Ascii2Ebcdic(name[i]));
+        }
+      }
     } else {
-      PrintF("\x6c\xa2", info->function()->debug_name()->ToCString().get());
+      SmartArrayPointer<char> name = info->function()->debug_name()->ToCString();
+      char * name_cstr = name.get();
+      __a2e_s(name_cstr);
+      PrintF("%s", name_cstr);
     }
-    PrintF("\x5d\xa");
+    PrintF("]\n");
   }
 
 #ifdef DEBUG
-  if (!info->IsStub() && print_source) {
-    PrintF("\x2d\x2d\x2d\x20\x53\x6f\x75\x72\x63\x65\x20\x66\x72\x6f\x6d\x20\x41\x53\x54\x20\x2d\x2d\x2d\xa\x6c\xa2\xa",
+  if (!info->IsStub() && print_source && false) {
+    PrintF("--- Source from AST ---\n%s\n",
            PrettyPrinter(info->zone()).PrintProgram(info->function()));
   }
 
-  if (!info->IsStub() && print_ast) {
+  if (!info->IsStub() && print_ast && false) {
     PrintF("\x2d\x2d\x2d\x20\x41\x53\x54\x20\x2d\x2d\x2d\xa\x6c\xa2\xa",
            AstPrinter(info->zone()).PrintProgram(info->function()));
   }
@@ -193,7 +202,7 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
     if (print_source) {
       Handle<Script> script = info->script();
       if (!script->IsUndefined() && !script->source()->IsUndefined()) {
-        os << "\x2d\x2d\x2d\x20\x52\x61\x77\x20\x73\x6f\x75\x72\x63\x65\x20\x2d\x2d\x2d\xa";
+        os << "--- Raw source ---\n";
         ConsStringIteratorOp op;
         StringCharacterStream stream(String::cast(script->source()),
                                      &op,
@@ -207,22 +216,22 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
             os << AsUC16(stream.GetNext());
           }
         }
-        os << "\xa\xa";
+        os << "\n\n";
       }
     }
     if (info->IsOptimizing()) {
       if (FLAG_print_unopt_code) {
-        os << "\x2d\x2d\x2d\x20\x55\x6e\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x2d\x2d\x2d\xa";
+        os << "--- Unoptimized code ---\n";
         info->closure()->shared()->code()->Disassemble(
             function->debug_name()->ToCString().get(), os);
       }
-      os << "\x2d\x2d\x2d\x20\x4f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x2d\x2d\x2d\xa"
-         << "\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x5f\x69\x64\x20\x3d\x20" << info->optimization_id() << "\xa";
+      os << "--- Optimized code ---\n"
+         << "optimization_id = " << info->optimization_id() << "\n";
     } else {
-      os << "\x2d\x2d\x2d\x20\x43\x6f\x64\x65\x20\x2d\x2d\x2d\xa";
+      os << "--- Code ---\n";
     }
     if (print_source) {
-      os << "\x73\x6f\x75\x72\x63\x65\x5f\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x3d\x20" << function->start_position() << "\xa";
+      os << "source_position = " << function->start_position() << "\n";
     }
     if (info->IsStub()) {
       CodeStub::Major major_key = info->code_stub()->MajorKey();
@@ -230,7 +239,7 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
     } else {
       code->Disassemble(function->debug_name()->ToCString().get(), os);
     }
-    os << "\x2d\x2d\x2d\x20\x45\x6e\x64\x20\x63\x6f\x64\x65\x20\x2d\x2d\x2d\xa";
+    os << "--- End code ---\n";
   }
 #endif  // ENABLE_DISASSEMBLER
 }

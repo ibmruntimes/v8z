@@ -386,6 +386,7 @@ Handle<FixedArray> JSObject::EnsureWritableFastElements(
 }
 
 
+#pragma convert("ISO8859-1")
 MaybeHandle<Object> JSProxy::GetPropertyWithHandler(Handle<JSProxy> proxy,
                                                     Handle<Object> receiver,
                                                     Handle<Name> name) {
@@ -398,7 +399,6 @@ MaybeHandle<Object> JSProxy::GetPropertyWithHandler(Handle<JSProxy> proxy,
   return CallTrap(
       proxy, "get",  isolate->derived_get_trap(), ARRAY_SIZE(args), args);
 }
-
 
 MaybeHandle<Object> Object::GetPropertyWithAccessor(Handle<Object> receiver,
                                                     Handle<Name> name,
@@ -533,7 +533,7 @@ MaybeHandle<Object> Object::SetPropertyWithAccessor(
   UNREACHABLE();
   return MaybeHandle<Object>();
 }
-
+#pragma convert(pop)
 
 MaybeHandle<Object> Object::GetPropertyWithDefinedGetter(
     Handle<Object> receiver,
@@ -1203,7 +1203,8 @@ void String::StringShortPrint(StringStream* accumulator) {
   if (ascii) {
     accumulator->Add("<String[%u]: ", length());
     for (int i = 0; i < len; i++) {
-      accumulator->Put(static_cast<char>(stream.GetNext()));
+      accumulator->Put(
+          Ascii2Ebcdic(static_cast<char>(stream.GetNext())));
     }
     accumulator->Put('>');
   } else {
@@ -1212,16 +1213,17 @@ void String::StringShortPrint(StringStream* accumulator) {
     accumulator->Add("<String[%u]\\: ", length());
     for (int i = 0; i < len; i++) {
       uint16_t c = stream.GetNext();
-      if (c == '\n') {
+      char ec = Ascii2Ebcdic(static_cast<char>(c));
+      if (ec == '\n') {
         accumulator->Add("\\n");
-      } else if (c == '\r') {
+      } else if (ec == '\r') {
         accumulator->Add("\\r");
-      } else if (c == '\\') {
+      } else if (ec == '\\') {
         accumulator->Add("\\\\");
       } else if (GET_ASCII_CODE(c) < 32 || GET_ASCII_CODE(c) > 126) {
         accumulator->Add("\\x%02x", c);
       } else {
-        accumulator->Put(static_cast<char>(c));
+        accumulator->Put(static_cast<char>(ec));
       }
     }
     if (truncated) {
@@ -1884,7 +1886,7 @@ void JSObject::AddSlowProperty(Handle<JSObject> object,
   if (*dict != *result) object->set_properties(*result);
 }
 
-
+#pragma convert("ISO8859-1")
 MaybeHandle<Object> JSObject::AddPropertyInternal(
     Handle<JSObject> object, Handle<Name> name, Handle<Object> value,
     PropertyAttributes attributes, JSReceiver::StoreFromKeyed store_mode,
@@ -1917,14 +1919,14 @@ MaybeHandle<Object> JSObject::AddPropertyInternal(
   if (object->map()->is_observed() &&
       *name != isolate->heap()->hidden_string()) {
     Handle<Object> old_value = isolate->factory()->the_hole_value();
-#pragma convert("ISO8859-1")
+
     EnqueueChangeRecord(object, "add", name, old_value);
-#pragma convert(pop)  
+ 
   }
 
   return value;
 }
-
+#pragma convert(pop) 
 
 Context* JSObject::GetCreationContext() {
   Object* constructor = this->map()->constructor();
@@ -3082,7 +3084,7 @@ MaybeHandle<Object> Object::SetDataProperty(LookupIterator* it,
   return value;
 }
 
-
+#pragma convert("ISO8859-1")
 MaybeHandle<Object> Object::AddDataProperty(LookupIterator* it,
                                             Handle<Object> value,
                                             PropertyAttributes attributes,
@@ -3127,17 +3129,17 @@ MaybeHandle<Object> Object::AddDataProperty(LookupIterator* it,
     // Write the property value.
     it->WriteDataValue(value);
   }
-#pragma convert("ISO8859-1")
+
   // Send the change record if there are observers.
   if (receiver->map()->is_observed() &&
       !it->name().is_identical_to(it->factory()->hidden_string())) {
     JSObject::EnqueueChangeRecord(receiver, "add", it->name(),
                                   it->factory()->the_hole_value());
   }
-#pragma convert(pop)
+
   return value;
 }
-
+#pragma convert(pop)
 
 MaybeHandle<Object> JSObject::SetElementWithCallbackSetterInPrototypes(
     Handle<JSObject> object,
@@ -3577,6 +3579,7 @@ void JSObject::LookupRealNamedPropertyInPrototypes(Handle<Name> name,
 }
 
 
+#pragma convert("ISO8859-1")
 Maybe<bool> JSProxy::HasPropertyWithHandler(Handle<JSProxy> proxy,
                                             Handle<Name> name) {
   Isolate* isolate = proxy->GetIsolate();
@@ -3749,7 +3752,6 @@ MaybeHandle<Object> JSProxy::DeletePropertyWithHandler(
   return isolate->factory()->ToBoolean(result_bool);
 }
 #pragma convert(pop)
-
 
 MaybeHandle<Object> JSProxy::DeleteElementWithHandler(
     Handle<JSProxy> proxy, uint32_t index, DeleteMode mode) {
@@ -9542,12 +9544,14 @@ uint32_t StringHasher::ComputeUtf8Hash(Vector<const char> chars,
 }
 
 
+#pragma convert("ISO8859-1")
 void String::PrintOn(FILE* file) {
   int length = this->length();
   for (int i = 0; i < length; i++) {
-    PrintF(file, "%c", Get(i));
+    FPrintASCII(file, "%c", Get(i));
   }
 }
+#pragma convert(pop)
 
 
 int Map::Hash() {
@@ -10058,7 +10062,9 @@ void JSFunction::SetInstanceClassName(String* name) {
 
 void JSFunction::PrintName(FILE* out) {
   SmartArrayPointer<char> name = shared()->DebugName()->ToCString();
-  PrintF(out, "%s", name.get());
+  char * name_cstr = name.get();
+  __a2e_s(name_cstr);
+  PrintF(out, "%s", name_cstr);
 }
 
 
@@ -11406,7 +11412,15 @@ void Code::Disassemble(const char* name, OStream& os) {  // NOLINT
   os << "kind = " << Kind2String(kind()) << "\n";
   if (IsCodeStubOrIC()) {
     const char* n = CodeStub::MajorName(CodeStub::GetMajorKey(this), true);
-    os << "major_key = " << (n == NULL ? "null" : n) << "\n";
+    os << "major_key = ";
+    if (n == NULL) {
+      os << "null";
+    } else {
+      for (int i = 0; n[i] != '\0'; i++) {
+        os << Ascii2Ebcdic(n[i]);
+      }
+    }
+    os << "\n";
   }
   if (is_inline_cache_stub()) {
     os << "ic_state = " << ICState2String(ic_state()) << "\n";
@@ -11427,7 +11441,11 @@ void Code::Disassemble(const char* name, OStream& os) {  // NOLINT
     }
   }
   if ((name != NULL) && (name[0] != '\0')) {
-    os << "name = " << name << "\n";
+    os << "name = ";
+    for (int n = 0; name[n] != '\0'; n++) {
+      os << Ascii2Ebcdic(name[n]);
+    }
+    os << "\n";
   }
   if (kind() == OPTIMIZED_FUNCTION) {
     os << "stack_slots = " << stack_slots() << "\n";
@@ -12575,7 +12593,7 @@ MaybeHandle<Object> JSObject::SetFastElement(Handle<JSObject> object,
   return value;
 }
 
-
+#pragma convert("ISO8859-1")
 MaybeHandle<Object> JSObject::SetDictionaryElement(
     Handle<JSObject> object,
     uint32_t index,
@@ -12714,6 +12732,7 @@ MaybeHandle<Object> JSObject::SetDictionaryElement(
   }
   return value;
 }
+#pragma convert(pop)
 
 MaybeHandle<Object> JSObject::SetFastDoubleElement(
     Handle<JSObject> object,

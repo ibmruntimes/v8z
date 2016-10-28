@@ -475,7 +475,7 @@ Handle<Code> LChunk::Codegen() {
 
   if (generator.GenerateCode()) {
     generator.CheckEnvironmentUsage();
-    CodeGenerator::MakeCodePrologue(info(), "\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64");
+    CodeGenerator::MakeCodePrologue(info(), "optimized");
     Code::Flags flags = info()->flags();
     Handle<Code> code =
         CodeGenerator::MakeCodeEpilogue(&assembler, flags, info());

@@ -2464,20 +2464,12 @@ void MacroAssembler::CallApiFunctionAndReturn(
   // HandleScope limit has changed. Delete allocated extensions.
   bind(&delete_allocated_handles);
   StoreP(r7, MemOperand(r9, kLimitOffset));
-#ifndef V8_OS_ZOS  
   LoadRR(r6, r2);
-#endif
   PrepareCallCFunction(1, r7);
-#ifdef V8_OS_ZOS
-  mov(r1, Operand(ExternalReference::isolate_address(isolate())));
-#else
   mov(r2, Operand(ExternalReference::isolate_address(isolate())));
-#endif 
   CallCFunction(
       ExternalReference::delete_handle_scope_extensions(isolate()), 1);
-#ifndef V8_OS_ZOS  
   LoadRR(r2, r6);
-#endif 
   b(&leave_exit_frame);
 }
 
@@ -3526,27 +3518,19 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
   int frame_alignment = ActivationFrameAlignment();
   int stack_passed_arguments = CalculateStackPassedWords(
       num_reg_arguments, num_double_arguments);
-#ifdef V8_OS_ZOS
-  Register c_sp   = r4;  // Stack pointer in C/C++.
-  int stack_space = 16;  // Save area + debug area + reserved space.
-  LoadRR(c_sp , sp);
-#else
   int stack_space = kNumRequiredStackFrameSlots;
-  Register c_sp   = sp;
-#endif
   if (frame_alignment > kPointerSize) {
     // Make stack end at alignment and make room for stack arguments
     // -- preserving original value of sp.
-    LoadRR(scratch, c_sp);
-    lay(c_sp, MemOperand(c_sp, -(stack_passed_arguments + 1) * kPointerSize));
+    LoadRR(scratch, sp);
+    lay(sp, MemOperand(sp, -(stack_passed_arguments + 1) * kPointerSize));
     DCHECK(IsPowerOf2(frame_alignment));
-    ClearRightImm(c_sp, c_sp, Operand(WhichPowerOf2(frame_alignment)));
-    StoreP(scratch, MemOperand(c_sp, (stack_passed_arguments) * kPointerSize));
+    ClearRightImm(sp, sp, Operand(WhichPowerOf2(frame_alignment)));
+    StoreP(scratch, MemOperand(sp, (stack_passed_arguments) * kPointerSize));
   } else {
     stack_space += stack_passed_arguments;
   }
-  lay(c_sp,
-      MemOperand(c_sp, -((stack_space * kPointerSize) + kStackPointerBias)));
+  lay(sp, MemOperand(sp, -(stack_space) * kPointerSize));
 }
 
 
@@ -3610,6 +3594,25 @@ void MacroAssembler::CallCFunctionHelper(Register function,
                                          int num_reg_arguments,
                                          int num_double_arguments) {
   DCHECK(has_frame());
+  int stack_space;
+#if V8_OS_ZOS
+  // TODO(mcornac): Careful not to clobber function.
+  // LoadRR(r0, function);
+  // function = r0;
+  // Shuffle params.
+  LoadRR(r1, r2);
+  LoadRR(r2, r3);
+  LoadRR(r3, r4);
+  
+  // Set up stack.
+  stack_space = 16;  // Save area + debug area + reserved space.
+  stack_space += 5;  // Stack passed arguments.
+  lay(r4, MemOperand(sp, -((stack_space * kPointerSize) + kStackPointerBias)));
+  // XPLINK linkage requires args in r5-r7 to be passed on the stack.
+  StoreMultipleP(r5, r7,
+                 MemOperand(r4, kStackPointerBias + 19 * kPointerSize));
+#endif
+
   // Just call directly. The function called cannot cause a GC, or
   // allow preemption, so the return address in the link register
   // stays correct.
@@ -3627,21 +3630,24 @@ void MacroAssembler::CallCFunctionHelper(Register function,
 
 #ifdef V8_OS_ZOS
   CallC(dest);
+  // Restore r5-r7. 
+  LoadMultipleP(r5, r7,
+                MemOperand(r4, kStackPointerBias + 19 * kPointerSize));
+  // Shuffle result.
+  LoadRR(r2, r3);
 #else
   Call(dest);
 #endif
   // Javascript stack pointer will be restored by the callee's epilogue.
-#ifndef V8_OS_ZOS
   int stack_passed_arguments = CalculateStackPassedWords(
       num_reg_arguments, num_double_arguments);
-  int stack_space = kNumRequiredStackFrameSlots + stack_passed_arguments;
+  stack_space = kNumRequiredStackFrameSlots + stack_passed_arguments;
   if (ActivationFrameAlignment() > kPointerSize) {
     // Load the original stack pointer (pre-alignment) from the stack.
     LoadP(sp, MemOperand(sp, stack_space * kPointerSize));
   } else {
     la(sp, MemOperand(sp, stack_space * kPointerSize));
   }
-#endif
 }
 
 

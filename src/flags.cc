@@ -397,15 +397,21 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
         case Flag::TYPE_MAYBE_BOOL:
           *flag->maybe_bool_variable() = MaybeBoolFlag::Create(true, !is_bool);
           break;
-        case Flag::TYPE_INT:
-          __a2e_s(const_cast<char *>(value));
-          *flag->int_variable() = (value, &endp, 10);  // NOLINT
+        case Flag::TYPE_INT: {
+          int value_len = strlen(value);
+          char value_e[value_len + 1];
+          MemCopy(value_e, value, value_len + 1);
+          __a2e_s(value_e);
+          *flag->int_variable() = strtol(value_e, &endp, 10);  // NOLINT
           break;
-        case Flag::TYPE_FLOAT:
-          __a2e_s(const_cast<char *>(value));
-          *flag->float_variable() = strtod(value, &endp);
+        } case Flag::TYPE_FLOAT: {
+          int value_len = strlen(value);
+          char value_e[value_len + 1];
+          MemCopy(value_e, value, value_len + 1);
+          __a2e_s(value_e);
+          *flag->float_variable() = strtod(value_e, &endp);
           break;
-        case Flag::TYPE_STRING:
+        } case Flag::TYPE_STRING:
           flag->set_string_value(value ? StrDup(value) : NULL, true);
           break;
         case Flag::TYPE_ARGS: {
@@ -486,6 +492,7 @@ int FlagList::SetFlagsFromString(const char* str, int len) {
   ScopedVector<char> copy0(len + 1);
   MemCopy(copy0.start(), str, len);
   copy0[len] = '\0';
+  __a2e_s(copy0.start());
 
   // strip leading white space
   char* copy = SkipWhiteSpace(copy0.start());
@@ -507,6 +514,7 @@ int FlagList::SetFlagsFromString(const char* str, int len) {
     p = SkipBlackSpace(p);
     if (*p != '\0') *p++ = '\0';  // 0-terminate argument
     p = SkipWhiteSpace(p);
+    __e2a_s(argv[argc]);
   }
 
   // set the flags

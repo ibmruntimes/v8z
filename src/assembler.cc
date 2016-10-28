@@ -757,81 +757,81 @@ bool RelocInfo::RequiresRelocation(const CodeDesc& desc) {
 const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
   switch (rmode) {
     case RelocInfo::NONE32:
-      return "\x6e\x6f\x20\x72\x65\x6c\x6f\x63\x20\x33\x32";
+      return "no reloc 32";
     case RelocInfo::NONE64:
-      return "\x6e\x6f\x20\x72\x65\x6c\x6f\x63\x20\x36\x34";
+      return "no reloc 64";
     case RelocInfo::EMBEDDED_OBJECT:
-      return "\x65\x6d\x62\x65\x64\x64\x65\x64\x20\x6f\x62\x6a\x65\x63\x74";
+      return "embedded object";
     case RelocInfo::CONSTRUCT_CALL:
-      return "\x63\x6f\x64\x65\x20\x74\x61\x72\x67\x65\x74\x20\x28\x6a\x73\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x20\x63\x61\x6c\x6c\x29";
+      return "code target (js construct call)";
     case RelocInfo::DEBUG_BREAK:
-      return "\x64\x65\x62\x75\x67\x20\x62\x72\x65\x61\x6b";
+      return "debug break";
     case RelocInfo::CODE_TARGET:
-      return "\x63\x6f\x64\x65\x20\x74\x61\x72\x67\x65\x74";
+      return "code target";
     case RelocInfo::CODE_TARGET_WITH_ID:
-      return "\x63\x6f\x64\x65\x20\x74\x61\x72\x67\x65\x74\x20\x77\x69\x74\x68\x20\x69\x64";
+      return "code target with id";
     case RelocInfo::CELL:
-      return "\x70\x72\x6f\x70\x65\x72\x74\x79\x20\x63\x65\x6c\x6c";
+      return "property cell";
     case RelocInfo::RUNTIME_ENTRY:
-      return "\x72\x75\x6e\x74\x69\x6d\x65\x20\x65\x6e\x74\x72\x79";
+      return "runtime entry";
     case RelocInfo::JS_RETURN:
-      return "\x6a\x73\x20\x72\x65\x74\x75\x72\x6e";
+      return "js return";
     case RelocInfo::COMMENT:
-      return "\x63\x6f\x6d\x6d\x65\x6e\x74";
+      return "comment";
     case RelocInfo::POSITION:
-      return "\x70\x6f\x73\x69\x74\x69\x6f\x6e";
+      return "position";
     case RelocInfo::STATEMENT_POSITION:
-      return "\x73\x74\x61\x74\x65\x6d\x65\x6e\x74\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e";
+      return "statement position";
     case RelocInfo::EXTERNAL_REFERENCE:
-      return "\x65\x78\x74\x65\x72\x6e\x61\x6c\x20\x72\x65\x66\x65\x72\x65\x6e\x63\x65";
+      return "external reference";
     case RelocInfo::INTERNAL_REFERENCE:
-      return "\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x72\x65\x66\x65\x72\x65\x6e\x63\x65";
+      return "internal reference";
     case RelocInfo::CONST_POOL:
-      return "\x63\x6f\x6e\x73\x74\x61\x6e\x74\x20\x70\x6f\x6f\x6c";
+      return "constant pool";
     case RelocInfo::VENEER_POOL:
-      return "\x76\x65\x6e\x65\x65\x72\x20\x70\x6f\x6f\x6c";
+      return "veneer pool";
     case RelocInfo::DEBUG_BREAK_SLOT:
-      return "\x64\x65\x62\x75\x67\x20\x62\x72\x65\x61\x6b\x20\x73\x6c\x6f\x74";
+      return "debug break slot";
     case RelocInfo::CODE_AGE_SEQUENCE:
-      return "\x63\x6f\x64\x65\x5f\x61\x67\x65\x5f\x73\x65\x71\x75\x65\x6e\x63\x65";
+      return "code_age_sequence";
     case RelocInfo::NUMBER_OF_MODES:
       UNREACHABLE();
-      return "\x6e\x75\x6d\x62\x65\x72\x5f\x6f\x66\x5f\x6d\x6f\x64\x65\x73";
+      return "number_of_modes";
   }
-  return "\x75\x6e\x6b\x6e\x6f\x77\x6e\x20\x72\x65\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x74\x79\x70\x65";
+  return "unknown relocation type";
 }
 
 
 void RelocInfo::Print(Isolate* isolate, OStream& os) {  // NOLINT
-  os << pc_ << "\x20\x20" << RelocModeName(rmode_);
+  os << pc_ << "  " << RelocModeName(rmode_);
   if (IsComment(rmode_)) {
-    os << "\x20\x20\x28" << reinterpret_cast<char*>(data_) << "\x29";
+    os << "  (" << reinterpret_cast<char*>(data_) << ")";
   } else if (rmode_ == EMBEDDED_OBJECT) {
-    os << "\x20\x20\x28" << Brief(target_object()) << "\x29";
+    os << "  (" << Brief(target_object()) << ")";
   } else if (rmode_ == EXTERNAL_REFERENCE) {
     ExternalReferenceEncoder ref_encoder(isolate);
-    os << "\x20\x28" << ref_encoder.NameOfAddress(target_reference()) << "\x29\x20\x20\x28"
-       << target_reference() << "\x29";
+    os << " (" << ref_encoder.NameOfAddress(target_reference()) << ")  ("
+       << target_reference() << ")";
   } else if (IsCodeTarget(rmode_)) {
     Code* code = Code::GetCodeFromTargetAddress(target_address());
-    os << "\x20\x28" << Code::Kind2String(code->kind()) << "\x29\x20\x20\x28" << target_address()
-       << "\x29";
+    os << " (" << Code::Kind2String(code->kind()) << ")  (" << target_address()
+       << ")";
     if (rmode_ == CODE_TARGET_WITH_ID) {
-      os << "\x20\x28\x69\x64\x3d" << static_cast<int>(data_) << "\x29";
+      os << " (id=" << static_cast<int>(data_) << ")";
     }
   } else if (IsPosition(rmode_)) {
-    os << "\x20\x20\x28" << data() << "\x29";
+    os << "  (" << data() << ")";
   } else if (IsRuntimeEntry(rmode_) &&
              isolate->deoptimizer_data() != NULL) {
     // Depotimization bailouts are stored as runtime entries.
     int id = Deoptimizer::GetDeoptimizationId(
         isolate, target_address(), Deoptimizer::EAGER);
     if (id != Deoptimizer::kNotDeoptimizationEntry) {
-      os << "\x20\x20\x28\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x62\x61\x69\x6c\x6f\x75\x74\x20" << id << "\x29";
+      os << "  (deoptimization bailout " << id << ")";
     }
   }
 
-  os << "\xa";
+  os << "\n";
 }
 #endif  // ENABLE_DISASSEMBLER
 

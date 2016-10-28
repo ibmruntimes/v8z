@@ -1,3 +1,4 @@
+#pragma convert("ISO8859-1")
 // Copyright 2011 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -105,6 +106,16 @@ static const v8::HeapGraphNode* GetGlobalObject(
   CHECK_EQ(0, strncmp("Object", const_cast<i::HeapEntry*>(
       reinterpret_cast<const i::HeapEntry*>(global_obj))->name(), 6));
   return global_obj;
+}
+
+static void PrintProperty(const v8::HeapGraphNode* node) {
+  v8::String::Utf8Value node_name(node->GetName());
+  i::PrintASCII("node(%s):", *node_name);
+  for (int i = 0, count = node->GetChildrenCount(); i < count; ++i) {
+    const v8::HeapGraphEdge* prop = node->GetChild(i);
+    v8::String::Utf8Value prop_name(prop->GetName());
+    i::PrintASCII("  %d: %s\n", i, *prop_name);
+  }
 }
 
 
@@ -2278,7 +2289,7 @@ static const v8::HeapGraphNode* GetNodeByPath(const v8::HeapSnapshot* snapshot,
       const v8::HeapGraphNode* to_node = edge->GetToNode();
       v8::String::Utf8Value edge_name(edge->GetName());
       v8::String::Utf8Value node_name(to_node->GetName());
-      i::EmbeddedVector<char, 100> name;
+      i::EmbeddedVector<char, 1024> name;
       i::SNPrintF(name, "%s::%s", *edge_name, *node_name);
       if (strstr(name.start(), path[current_depth])) {
         node = to_node;

@@ -1941,7 +1941,7 @@ def WriteAutoRegenerationRule(params, root_makefile, makefile_name,
           'makefile_name': makefile_name,
           'deps': ' '.join(map(Sourceify, build_files)),
           'cmd': gyp.common.EncodePOSIXShellList(
-                     [gyp_binary, '-fmake'] +
+                     [gyp_binary, '-fmake', '--no-parallel'] +
                      gyp.RegenerateFlags(options) +
                      build_files_args)})
 
