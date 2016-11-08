@@ -159,7 +159,11 @@ void Deoptimizer::EntryGenerator::Generate() {
 
   // Push all GPRs onto the stack
   __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize));
+#ifdef V8_OS_ZOS
+  __ StoreMultipleP(r0, r4, MemOperand(sp));   // Save all 16 registers
+#else
   __ StoreMultipleP(r0, sp, MemOperand(sp));   // Save all 16 registers
+#endif
 
   const int kSavedRegistersAreaSize =
       (kNumberOfRegisters * kPointerSize) + kDoubleRegsSize;

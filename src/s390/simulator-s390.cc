@@ -1331,7 +1331,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       }
       intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
 #ifdef V8_OS_ZOS
-      intptr_t* argument_area = reinterpret_cast<intptr_t*>(get_register(r4)
+      intptr_t* argument_area = reinterpret_cast<intptr_t*>(get_register(sp)
          + 2048 + 16 * kPointerSize);
       arg[3] = argument_area[3];
       arg[4] = argument_area[4];
@@ -4617,11 +4617,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   }
 
   va_end(parameters);
-#ifdef V8_OS_ZOS
-  set_register(r4, entry_stack);
-#else
   set_register(sp, entry_stack);
-#endif
 
   // Prepare to execute the code at entry
 #if ABI_USES_FUNCTION_DESCRIPTORS
@@ -4694,13 +4690,8 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   set_register(r12, r12_val);
   set_register(r13, r13_val);
   // Pop stack passed arguments.
-#ifdef V8_OS_ZOS
-  CHECK_EQ(entry_stack, get_register(r4));
-  set_register(r4, original_stack);
-#else
   CHECK_EQ(entry_stack, get_register(sp));
   set_register(sp, original_stack);
-#endif
 
   // Return value register
 #if V8_OS_ZOS

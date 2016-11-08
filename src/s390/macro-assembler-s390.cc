@@ -2392,7 +2392,7 @@ void MacroAssembler::CallApiFunctionAndReturn(
     LoadRR(r2, r3);
     LoadRR(r3, r4);
   }
-  lay(r4, MemOperand(sp, -(kStackPointerBias + 18 * kPointerSize)));
+  lay(sp, MemOperand(sp, -(kStackPointerBias + 18 * kPointerSize)));
   LoadRR(r10, r7);  // Clobbered root register.
 #endif
 
@@ -3607,10 +3607,10 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   // Set up stack.
   stack_space = 16;  // Save area + debug area + reserved space.
   stack_space += 5;  // Stack passed arguments.
-  lay(r4, MemOperand(sp, -((stack_space * kPointerSize) + kStackPointerBias)));
+  lay(sp, MemOperand(sp, -((stack_space * kPointerSize) + kStackPointerBias)));
   // XPLINK linkage requires args in r5-r7 to be passed on the stack.
   StoreMultipleP(r5, r7,
-                 MemOperand(r4, kStackPointerBias + 19 * kPointerSize));
+                 MemOperand(sp, kStackPointerBias + 19 * kPointerSize));
 #endif
 
   // Just call directly. The function called cannot cause a GC, or
@@ -3632,7 +3632,7 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   CallC(dest);
   // Restore r5-r7. 
   LoadMultipleP(r5, r7,
-                MemOperand(r4, kStackPointerBias + 19 * kPointerSize));
+                MemOperand(sp, kStackPointerBias + 19 * kPointerSize));
   // Shuffle result.
   LoadRR(r2, r3);
 #else
