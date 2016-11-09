@@ -3633,6 +3633,8 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   // Restore r5-r7. 
   LoadMultipleP(r5, r7,
                 MemOperand(sp, kStackPointerBias + 19 * kPointerSize));
+  // Unbias the stack pointer.
+  la(sp, MemOperand(sp, stack_space * kPointerSize + kStackPointerBias));
   // Shuffle result.
   LoadRR(r2, r3);
 #else
