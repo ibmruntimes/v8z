@@ -2412,6 +2412,8 @@ void FullCodeGenerator::EmitInlineSmiBinaryOp(BinaryOperation* expr,
       break;
     }
     case Token::MUL: {
+      scratch1 = r0;
+      scratch2 = r1;
       Label mul_zero;
 #if V8_TARGET_ARCH_S390X
       // Remove tag from both operands.
