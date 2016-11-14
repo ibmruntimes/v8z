@@ -3275,15 +3275,20 @@ void MacroAssembler::CopyFields(Register dst,
                                 Register src,
                                 RegList temps,
                                 int field_count) {
+#ifdef V8_OS_ZOS
+  // On z/OS r4 is the stack pointer and r15 takes the place of r4.
+  DCHECK((temps & (((1 << 16) - 1) & ~(1 << 4))) != 0);
+#else
   // At least one bit set in the first 15 registers.
   DCHECK((temps & ((1 << 15) - 1)) != 0);
+#endif
   DCHECK((temps & dst.bit()) == 0);
   DCHECK((temps & src.bit()) == 0);
   // Primitive implementation using only one temporary register.
 
   Register tmp = no_reg;
   // Find a temp register in temps list.
-  for (int i = 0; i < 15; i++) {
+  for (int i = 0; i < 16; i++) {
     if ((temps & (1 << i)) != 0) {
       tmp.set_code(i);
       break;
