@@ -295,7 +295,7 @@ class RecordWriteStub: public PlatformCodeStub {
       masm->MultiPush(kJSCallerSaved & ~scratch1_.bit());
       if (mode == kSaveFPRegs) {
         // Save all volatile FP registers except d0.
-        masm->SaveFPRegs(sp, 1, DoubleRegister::kNumVolatileRegisters - 1);
+        masm->SaveFPRegs(1, DoubleRegister::kNumVolatileRegisters - 1);
       }
     }
 
@@ -303,7 +303,7 @@ class RecordWriteStub: public PlatformCodeStub {
                                            SaveFPRegsMode mode) {
       if (mode == kSaveFPRegs) {
         // Restore all volatile FP registers except d0.
-        masm->RestoreFPRegs(sp, 1, DoubleRegister::kNumVolatileRegisters - 1);
+        masm->RestoreFPRegs(1, DoubleRegister::kNumVolatileRegisters - 1);
       }
       masm->MultiPop(kJSCallerSaved & ~scratch1_.bit());
       masm->pop(r14);

@@ -331,7 +331,7 @@ void DebugCodegen::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
   __ StoreP(r3, MemOperand(ip, 0));
 
   // Load the function pointer off of our current stack frame.
-  __ LoadP(r3, StackMemOperand(fp,
+  __ LoadP(r3, MemOperand(fp,
            StandardFrameConstants::kConstantPoolOffset - kPointerSize));
 
   // Pop return address, frame and constant pool pointer (if
