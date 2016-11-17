@@ -690,7 +690,7 @@ CodeAgingHelper::CodeAgingHelper() {
   PredictableCodeSizeScope scope(patcher->masm(), young_sequence_.length());
   patcher->masm()->PushFixedFrame(r3);
   patcher->masm()->la(
-        fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+        fp, StackMemOperand(StandardFrameConstants::kFixedFrameSizeFromFp));
 }
 
 
