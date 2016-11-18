@@ -461,7 +461,7 @@ void FullCodeGenerator::EmitReturnSequence() {
       int32_t sp_delta = (info_->scope()->num_parameters() + 1) * kPointerSize;
       CodeGenerator::RecordPositions(masm_, function()->end_position() - 1);
       __ RecordJSReturn();
-      masm_->LoadRR(sp, fp);
+      masm_->lay(sp, MemOperand(fp, -kStackPointerBias));
 
       // Mark range where no frame exists, in case profiler receives sample here
       int32_t no_frame_start = masm_->pc_offset();
