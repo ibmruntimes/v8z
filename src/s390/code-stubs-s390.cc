@@ -1597,9 +1597,9 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   Label non_outermost_js;
   ExternalReference js_entry_sp(Isolate::kJSEntrySPAddress, isolate());
   __ mov(r7, Operand(ExternalReference(js_entry_sp)));
-  __ LoadAndTestP(r8, MemOperand(r7));
+  __ LoadAndTestP(r8, MemOperand(r7, kStackPointerBias));
   __ bne(&non_outermost_js, Label::kNear);
-  __ StoreP(fp, MemOperand(r7));
+  __ StoreP(fp, MemOperand(r7, kStackPointerBias));
   __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::OUTERMOST_JSENTRY_FRAME));
   Label cont;
   __ b(&cont, Label::kNear);
