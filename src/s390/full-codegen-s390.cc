@@ -174,7 +174,8 @@ void FullCodeGenerator::Generate() {
     if (locals_count > 0) {
       if (locals_count >= 128) {
         Label ok;
-        __ AddP(ip, sp, Operand(-(locals_count * kPointerSize)));
+        __ AddP(ip, sp,
+                Operand(-(locals_count * kPointerSize) + kStackPointerBias));
         __ LoadRoot(r5, Heap::kRealStackLimitRootIndex);
         __ CmpLogicalP(ip, r5);
         __ bge(&ok, Label::kNear);
@@ -330,6 +331,7 @@ void FullCodeGenerator::Generate() {
       PrepareForBailoutForId(BailoutId::Declarations(), NO_REGISTERS);
       Label ok;
       __ LoadRoot(ip, Heap::kStackLimitRootIndex);
+      __ lay(ip, MemOperand(ip, -kStackPointerBias));
       __ CmpLogicalP(sp, ip);
       __ bge(&ok, Label::kNear);
       __ Call(isolate()->builtins()->StackCheck(), RelocInfo::CODE_TARGET);
@@ -2012,7 +2014,8 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       __ LoadRR(r3, cp);
       __ RecordWriteField(r2, JSGeneratorObject::kContextOffset, r3, r4,
                           kLRHasBeenSaved, kDontSaveFPRegs);
-      __ AddP(r3, fp, Operand(StandardFrameConstants::kExpressionsOffset));
+      __ AddP(r3, fp, Operand(StandardFrameConstants::kExpressionsOffset -
+                              kStackPointerBias));
       __ CmpP(sp, r3);
       __ beq(&post_runtime);
       __ push(r2);  // generator object
@@ -2208,7 +2211,7 @@ void FullCodeGenerator::EmitGeneratorResume(Expression *generator,
   // r6 = callee's JS function.
   __ PushFixedFrame(r6);
   // Adjust FP to point to saved FP.
-  __ lay(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ lay(fp, StackMemOperand(StandardFrameConstants::kFixedFrameSizeFromFp));
 
   // Load the operand stack size.
   __ LoadP(r5, FieldMemOperand(r3, JSGeneratorObject::kOperandStackOffset));

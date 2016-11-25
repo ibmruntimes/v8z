@@ -305,7 +305,9 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
   // would be quite expensive.  A good compromise is to first check against
   // stack limit as a cue for an interrupt signal.
   Label ok;
+  __ lay(sp, StackMemOperand());
   __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
+  __ lay(sp, MemOperand(sp, -kStackPointerBias));
   __ bge(&ok, Label::kNear);
 
   CallRuntimePassFunction(masm, Runtime::kTryInstallOptimizedCode);
@@ -949,7 +951,7 @@ void Builtins::Generate_MarkCodeAsExecutedOnce(MacroAssembler* masm) {
 
   // Perform prologue operations usually performed by the young code stub.
   __ PushFixedFrame(r3);
-  __ la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ la(fp, StackMemOperand(StandardFrameConstants::kFixedFrameSizeFromFp));
 
   // Jump to point after the code-age stub.
   __ AddP(r2, ip, Operand(kNoCodeAgeSequenceLength));
@@ -1080,7 +1082,10 @@ void Builtins::Generate_OnStackReplacement(MacroAssembler* masm) {
 void Builtins::Generate_OsrAfterStackCheck(MacroAssembler* masm) {
   // We check the stack limit as indicator that recompilation might be done.
   Label ok;
+  // TODO(mcornac):
+  __ lay(sp, StackMemOperand());
   __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
+  __ lay(sp, MemOperand(sp, -kStackPointerBias));
   __ bge(&ok, Label::kNear);
   {
     FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
@@ -1239,7 +1244,10 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ LoadP(ip, MemOperand(r4, -kPointerSize));
     __ StoreP(ip, MemOperand(r4));
     __ SubP(r4, Operand(kPointerSize));
+    // TODO(mcornac):
+    __ lay(sp, StackMemOperand());
     __ CmpP(r4, sp);
+    __ lay(sp, MemOperand(sp, -kStackPointerBias));
     __ bne(&loop);
     // Adjust the actual number of arguments and remove the top element
     // (which is a copy of the last argument).
@@ -1321,6 +1329,7 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     // Make r4 the space we have left. The stack might already be overflowed
     // here which will cause r4 to become negative.
     __ SubP(r4, sp, r4);
+    __ lay(r4, MemOperand(r4, kStackPointerBias));
     // Check if the arguments will overflow the stack.
     __ SmiToPtrArrayOffset(r0, r2);
     __ CmpP(r4, r0);
@@ -1476,6 +1485,7 @@ static void ArgumentAdaptorStackCheck(MacroAssembler* masm,
   __ LoadRoot(r7, Heap::kRealStackLimitRootIndex);
   // Make r7 the space we have left. The stack might already be overflowed
   // here which will cause r7 to become negative.
+  __ lay(r7, MemOperand(r7, -kStackPointerBias));
   __ SubP(r7, sp, r7);
   // Check if the arguments will overflow the stack.
   __ ShiftLeftP(r0, r4, Operand(kPointerSizeLog2));
@@ -1503,7 +1513,7 @@ static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
   __ StoreP(r6, StackMemOperand(2 * kPointerSize));
   __ StoreP(r3, StackMemOperand(kPointerSize));
   __ StoreP(r2, StackMemOperand());
-  __ la(fp, MemOperand(sp,
+  __ la(fp, StackMemOperand(
         StandardFrameConstants::kFixedFrameSizeFromFp + kPointerSize));
 }
 
@@ -1614,7 +1624,9 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     Label fill;
     __ bind(&fill);
     __ push(r0);
+    __ lay(sp, StackMemOperand());
     __ CmpP(sp, r4);
+    __ lay(sp, MemOperand(sp, -kStackPointerBias));
     __ bne(&fill);
   }
 

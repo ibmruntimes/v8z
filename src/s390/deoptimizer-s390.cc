@@ -158,10 +158,13 @@ void Deoptimizer::EntryGenerator::Generate() {
   }
 
   // Push all GPRs onto the stack
-  __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize));
 #ifdef V8_OS_ZOS
-  __ StoreMultipleP(r0, r4, StackMemOperand());   // Save all 16 registers
+  // Unbias the sp before storing it on the stack then rebias it.
+  __ lay(sp, StackMemOperand(-kNumberOfRegisters * kPointerSize));
+  __ StoreMultipleP(r0, r4, MemOperand(sp));   // Save all 16 registers
+  __ lay(sp, MemOperand(sp, -kStackPointerBias));
 #else
+  __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize));
   __ StoreMultipleP(r0, sp, StackMemOperand());   // Save all 16 registers
 #endif
 
@@ -177,7 +180,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   // address for lazy deoptimization) and compute the fp-to-sp delta in
   // register r6.
   __ LoadRR(r5, r14);
-  __ la(r6, MemOperand(sp, kSavedRegistersAreaSize + (1 * kPointerSize)));
+  __ la(r6, StackMemOperand(kSavedRegistersAreaSize + (1 * kPointerSize)));
   __ SubP(r6, fp, r6);
 
   // Allocate a new deoptimizer object.
