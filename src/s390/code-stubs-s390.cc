@@ -1518,8 +1518,12 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
 #if V8_OS_ZOS
+  // TODO(mcornac): combine these if correct.
   __ lay(sp, MemOperand(sp, -12 * kPointerSize));
-  __ StoreMultipleP(sp, r4, StackMemOperand());
+  __ lay(sp, StackMemOperand());
+  __ StoreMultipleP(sp, r4, MemOperand(sp));
+  __ lay(sp, MemOperand(sp, -kStackPointerBias));
+
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
   // parameters and also places them starting at r4+2112 on the biased stack.
   // Explicitly load argc and argv from stack back into r5/r6 respectively.
@@ -1597,9 +1601,9 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   Label non_outermost_js;
   ExternalReference js_entry_sp(Isolate::kJSEntrySPAddress, isolate());
   __ mov(r7, Operand(ExternalReference(js_entry_sp)));
-  __ LoadAndTestP(r8, MemOperand(r7, kStackPointerBias));
+  __ LoadAndTestP(r8, MemOperand(r7));
   __ bne(&non_outermost_js, Label::kNear);
-  __ StoreP(fp, MemOperand(r7, kStackPointerBias));
+  __ StoreP(fp, MemOperand(r7));
   __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::OUTERMOST_JSENTRY_FRAME));
   Label cont;
   __ b(&cont, Label::kNear);
@@ -1682,7 +1686,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ bne(&non_outermost_js_2, Label::kNear);
   __ mov(r8, Operand::Zero());
   __ mov(r7, Operand(ExternalReference(js_entry_sp)));
-  __ StoreP(r8, MemOperand(r7, kStackPointerBias));
+  __ StoreP(r8, MemOperand(r7));
   __ bind(&non_outermost_js_2);
 
   // Restore the top frame descriptors from the stack.
@@ -1732,7 +1736,9 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #ifdef V8_OS_ZOS
   __ LoadRR(r3, r2);
   __ LoadMultipleP(sp, r4, StackMemOperand());
+  //TODO(mcornac): combine these if correct.
   __ lay(sp, MemOperand(sp, 12 * kPointerSize));
+  __ lay(sp, MemOperand(sp, -kStackPointerBias));
   __ b(r7);
 #else
   __ b(r14);
@@ -4301,7 +4307,8 @@ void DirectCEntryStub::Generate(MacroAssembler* masm) {
   __ CleanseP(r14);
 #else
   __ CleanseP(r7);
-  __ StoreP(r7, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+  // TODO(mcornac): missed?!
+  __ StoreP(r7, StackMemOperand(kStackFrameRASlot * kPointerSize));
 #endif
   // Statement positions are expected to be recorded when the target
   // address is loaded.
@@ -5332,7 +5339,7 @@ void CallApiFunctionStub::Generate(MacroAssembler* masm) {
   __ push(holder);
 
   // Prepare arguments.
-  __ LoadRR(scratch, sp);
+  __ lay(scratch, StackMemOperand());
 
   // Allocate the v8::Arguments structure in the arguments' space since
   // it's not controlled by GC.
@@ -5396,7 +5403,7 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   // -----------------------------------
 
   Register api_function_address = r4;
-  __ LoadRR(r2, sp);  // r0 = Handle<Name>
+  __ lay(r2, StackMemOperand());  // r0 = Handle<Name>
 
   __ AddP(r3, r2, Operand(1 * kPointerSize));  // r3 = PCA
 
@@ -5427,14 +5434,15 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
 #if !ABI_PASSES_HANDLES_IN_REGS
   // pass 1st arg by reference
   __ StoreP(r2, StackMemOperand(kArg0Slot * kPointerSize));
-  __ AddP(r2, sp, Operand(kArg0Slot * kPointerSize));
+  __ AddP(r2, sp, Operand(kArg0Slot * kPointerSize + kStackPointerBias));
 #endif
 
   // Create PropertyAccessorInfo instance on the stack above the exit frame with
   // r3 (internal::Object** args_) as the data.
   __ StoreP(r3, StackMemOperand(kAccessorInfoSlot * kPointerSize));
   // r3 = AccessorInfo&
-  __ AddP(r3, sp, Operand(kAccessorInfoSlot * kPointerSize));
+  __ AddP(r3, sp,
+          Operand(kAccessorInfoSlot * kPointerSize + kStackPointerBias));
 
   const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
 

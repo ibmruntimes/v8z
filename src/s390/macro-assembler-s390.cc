@@ -903,7 +903,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   lay(sp, MemOperand(sp, -kNumRequiredStackFrameSlots * kPointerSize));
   // Set the exit frame sp value to point just before the return address
   // location.
-  lay(r1, MemOperand(sp, kStackFrameSPSlot * kPointerSize));
+  lay(r1, StackMemOperand(kStackFrameSPSlot * kPointerSize));
   StoreP(r1, MemOperand(fp, ExitFrameConstants::kSPOffset));
 }
 
@@ -947,10 +947,10 @@ void MacroAssembler::LeaveExitFrame(bool save_doubles,
     // Calculate the stack location of the saved doubles and restore them.
     const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
     lay(sp, MemOperand(fp, -(2 * kPointerSize + kNumRegs * kDoubleSize) -
-                           kStackPointerBias));
+                             kStackPointerBias));
 #define LoadFloatingPointRegisterToStack(reg, offset) \
     LoadF(DoubleRegister::from_code(reg), \
-      MemOperand(sp, (offset) * kDoubleSize));
+      StackMemOperand((offset) * kDoubleSize));
 #ifdef V8_TARGET_ARCH_S390X
     for (int i = 0; i < 7; i++) {
       LoadFloatingPointRegisterToStack(i, i);
@@ -1253,7 +1253,9 @@ void MacroAssembler::PushTryHandler(StackHandler::Kind kind,
       MemOperand(r7), kPointerSize);
   // Set this new handler as the current one.
   // TODO(mcornac): should we store the unbiased stack pointer here?
+  la(sp, MemOperand(sp, kStackPointerBias));
   StoreP(sp, MemOperand(r7));
+  lay(sp, MemOperand(sp, -kStackPointerBias));
 
   unsigned state =
       StackHandler::IndexField::encode(handler_index) |
@@ -1328,6 +1330,7 @@ void MacroAssembler::Throw(Register value) {
   // Drop the stack pointer to the top of the top handler.
   mov(r5, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
   LoadP(sp, MemOperand(r5));
+  lay(sp, MemOperand(sp, -kStackPointerBias));
   // Restore the next handler.
   pop(r4);
   StoreP(r4, MemOperand(r5));
@@ -1367,12 +1370,14 @@ void MacroAssembler::ThrowUncatchable(Register value) {
   // Drop the stack pointer to the top of the top stack handler.
   mov(r5, Operand(ExternalReference(Isolate::kHandlerAddress, isolate())));
   LoadP(sp, MemOperand(r5));
+  lay(sp, MemOperand(sp, -kStackPointerBias));
 
   // Unwind the handlers until the ENTRY handler is found.
   Label fetch_next, check_kind;
   b(&check_kind, Label::kNear);
   bind(&fetch_next);
   LoadP(sp, StackMemOperand(StackHandlerConstants::kNextOffset));
+  lay(sp, MemOperand(sp, -kStackPointerBias));
 
   bind(&check_kind);
   STATIC_ASSERT(StackHandler::JS_ENTRY == 0);
@@ -2397,7 +2402,7 @@ void MacroAssembler::CallApiFunctionAndReturn(
     LoadRR(r2, r3);
     LoadRR(r3, r4);
   }
-  lay(sp, MemOperand(sp, -(kStackPointerBias + 18 * kPointerSize)));
+  lay(sp, MemOperand(sp, - 18 * kPointerSize));
   LoadRR(r10, r7);  // Clobbered root register.
 #endif
 
@@ -3532,7 +3537,9 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
   if (frame_alignment > kPointerSize) {
     // Make stack end at alignment and make room for stack arguments
     // -- preserving original value of sp.
-    LoadRR(scratch, sp);
+    // TODO(mcornac): using unbiased sp on stack.
+    // LoadRR(scratch, sp);
+    lay(scratch, MemOperand(sp, kStackPointerBias));
     lay(sp, MemOperand(sp, -(stack_passed_arguments + 1) * kPointerSize));
     DCHECK(IsPowerOf2(frame_alignment));
     ClearRightImm(sp, sp, Operand(WhichPowerOf2(frame_alignment)));
@@ -3617,10 +3624,9 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   // Set up stack.
   stack_space = 16;  // Save area + debug area + reserved space.
   stack_space += 5;  // Stack passed arguments.
-  lay(sp, MemOperand(sp, -((stack_space * kPointerSize) + kStackPointerBias)));
+  lay(sp, MemOperand(sp, -stack_space * kPointerSize));
   // XPLINK linkage requires args in r5-r7 to be passed on the stack.
-  StoreMultipleP(r5, r7,
-                 MemOperand(sp, kStackPointerBias + 19 * kPointerSize));
+  StoreMultipleP(r5, r7, StackMemOperand(19 * kPointerSize));
 #endif
 
   // Just call directly. The function called cannot cause a GC, or
@@ -3641,10 +3647,9 @@ void MacroAssembler::CallCFunctionHelper(Register function,
 #ifdef V8_OS_ZOS
   CallC(dest);
   // Restore r5-r7. 
-  LoadMultipleP(r5, r7,
-                MemOperand(sp, kStackPointerBias + 19 * kPointerSize));
+  LoadMultipleP(r5, r7, StackMemOperand(sp, 19 * kPointerSize));
   // Unbias the stack pointer.
-  la(sp, MemOperand(sp, stack_space * kPointerSize + kStackPointerBias));
+  la(sp, MemOperand(sp, stack_space * kPointerSize));
   // Shuffle result.
   LoadRR(r2, r3);
 #else
@@ -3657,6 +3662,8 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   if (ActivationFrameAlignment() > kPointerSize) {
     // Load the original stack pointer (pre-alignment) from the stack.
     LoadP(sp, StackMemOperand(stack_space * kPointerSize));
+    // TODO(mcornac): rebias sp loaded from stack.
+    lay(sp, MemOperand(sp, -kStackPointerBias));
   } else {
     la(sp, MemOperand(sp, stack_space * kPointerSize));
   }
