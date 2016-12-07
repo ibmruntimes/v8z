@@ -787,6 +787,9 @@ HandleScope::~HandleScope() {
   i::HandleScope::CloseScope(isolate_, prev_next_, prev_limit_);
 }
 
+void HandleScope::operator delete(void*, size_t){
+	base::OS::Abort();
+}
 
 int HandleScope::NumberOfHandles(Isolate* isolate) {
   return i::HandleScope::NumberOfHandles(
@@ -812,6 +815,9 @@ EscapableHandleScope::EscapableHandleScope(Isolate* v8_isolate) {
   Initialize(v8_isolate);
 }
 
+void EscapableHandleScope::operator delete(void*, size_t){
+	base::OS::Abort();
+}
 
 i::Object** EscapableHandleScope::Escape(i::Object** escape_value) {
   i::Heap* heap = reinterpret_cast<i::Isolate*>(GetIsolate())->heap();
@@ -2261,6 +2267,9 @@ v8::TryCatch::~TryCatch() {
   }
 }
 
+void v8::TryCatch::operator delete(void*, size_t){
+	base::OS::Abort();
+}
 
 bool v8::TryCatch::HasCaught() const {
   return !reinterpret_cast<i::Object*>(exception_)->IsTheHole();
