@@ -116,6 +116,9 @@
 # define V8_OS_QNX 1
 #elif defined(_WIN32)
 # define V8_OS_WIN 1
+#elif defined(__MVS__)
+# define V8_OS_POSIX 1
+# define V8_OS_ZOS 1
 #endif
 
 
@@ -152,6 +155,7 @@
 // -----------------------------------------------------------------------------
 // Compiler detection
 //
+//  V8_CC_CLANG   - Clang
 //  V8_CC_GNU     - GCC, or clang in gcc mode
 //  V8_CC_INTEL   - Intel C++
 //  V8_CC_MINGW   - Minimalist GNU for Windows
@@ -201,8 +205,12 @@
 
 #if defined(__clang__)
 
+# define V8_CC_CLANG 1
+
+#if !defined(__MVS__)
 #if defined(__GNUC__)  // Clang in gcc mode.
 # define V8_CC_GNU 1
+#endif
 #endif
 
 // Clang defines __alignof__ as alias for __alignof
@@ -219,6 +227,7 @@
 # define V8_HAS_ATTRIBUTE_WARN_UNUSED_RESULT \
     (__has_attribute(warn_unused_result))
 
+#if !defined(__MVS__)
 # define V8_HAS_BUILTIN_CLZ (__has_builtin(__builtin_clz))
 # define V8_HAS_BUILTIN_CTZ (__has_builtin(__builtin_ctz))
 # define V8_HAS_BUILTIN_EXPECT (__has_builtin(__builtin_expect))
@@ -227,7 +236,7 @@
 # define V8_HAS_BUILTIN_SADD_OVERFLOW (__has_builtin(__builtin_sadd_overflow))
 # define V8_HAS_BUILTIN_SSUB_OVERFLOW (__has_builtin(__builtin_ssub_overflow))
 # define V8_HAS_BUILTIN_UADD_OVERFLOW (__has_builtin(__builtin_uadd_overflow))
-
+#endif
 # define V8_HAS_CXX11_ALIGNAS (__has_feature(cxx_alignas))
 
 #elif defined(__GNUC__)
@@ -283,6 +292,11 @@
 # define V8_HAS_DECLSPEC_NORETURN 1
 
 # define V8_HAS___FORCEINLINE 1
+
+// TODO(mcornac): Should we check if xlc compiler instead of z/OS?
+//#elif defined(V8_OS_ZOS)
+//# define V8_HAS___ALIGNOF__ 1
+//# define V8_HAS_ATTRIBUTE_ALIGNED 1
 
 #endif
 
