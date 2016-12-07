@@ -1080,6 +1080,11 @@ class ExternalReference BASE_EMBEDDED {
   static ExternalReference stress_deopt_count(Isolate* isolate);
 
   static ExternalReference fixed_typed_array_base_data_offset();
+  
+  //EBCDIC<->ASCII conversion lookup tables
+  static ExternalReference ebcdic_to_ascii_table();
+
+  static ExternalReference ascii_to_ebcdic_table();
 
  private:
   explicit ExternalReference(void* address)
