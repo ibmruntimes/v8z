@@ -1335,7 +1335,7 @@ class Instruction {
 
 // I Instruction -- suspect this will not be used,
 // but implement for completeness
-class IInstruction : Instruction {
+class IInstruction : private Instruction {
  public:
   inline int IValue() const { return Bits<TwoByteInstr, int>(7, 0); }
 
@@ -1343,7 +1343,7 @@ class IInstruction : Instruction {
 };
 
 // RR Instruction
-class RRInstruction : Instruction {
+class RRInstruction : private Instruction {
  public:
   inline int R1Value() const {
     // the high and low parameters of Bits is the number of bits from
@@ -1359,7 +1359,7 @@ class RRInstruction : Instruction {
 };
 
 // RRE Instruction
-class RREInstruction : Instruction {
+class RREInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<FourByteInstr, int>(7, 4); }
   inline int R2Value() const { return Bits<FourByteInstr, int>(3, 0); }
@@ -1369,7 +1369,7 @@ class RREInstruction : Instruction {
 };
 
 // RRF Instruction
-class RRFInstruction : Instruction {
+class RRFInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<FourByteInstr, int>(7, 4); }
   inline int R2Value() const { return Bits<FourByteInstr, int>(3, 0); }
@@ -1380,7 +1380,7 @@ class RRFInstruction : Instruction {
 };
 
 // RRD Isntruction
-class RRDInstruction : Instruction {
+class RRDInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<FourByteInstr, int>(15, 12); }
   inline int R2Value() const { return Bits<FourByteInstr, int>(3, 0); }
@@ -1389,7 +1389,7 @@ class RRDInstruction : Instruction {
 };
 
 // RI Instruction
-class RIInstruction : Instruction {
+class RIInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<FourByteInstr, int>(23, 20); }
   inline int16_t I2Value() const { return Bits<FourByteInstr, int16_t>(15, 0); }
@@ -1403,7 +1403,7 @@ class RIInstruction : Instruction {
 };
 
 // RS Instruction
-class RSInstruction : Instruction {
+class RSInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<FourByteInstr, int>(23, 20); }
   inline int R3Value() const { return Bits<FourByteInstr, int>(19, 16); }
@@ -1415,7 +1415,7 @@ class RSInstruction : Instruction {
 };
 
 // RSY Instruction
-class RSYInstruction : Instruction {
+class RSYInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<SixByteInstr, int>(39, 36); }
   inline int R3Value() const { return Bits<SixByteInstr, int>(35, 32); }
@@ -1429,7 +1429,7 @@ class RSYInstruction : Instruction {
 };
 
 // RX Instruction
-class RXInstruction : Instruction {
+class RXInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<FourByteInstr, int>(23, 20); }
   inline int X2Value() const { return Bits<FourByteInstr, int>(19, 16); }
@@ -1441,7 +1441,7 @@ class RXInstruction : Instruction {
 };
 
 // RXY Instruction
-class RXYInstruction : Instruction {
+class RXYInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<SixByteInstr, int>(39, 36); }
   inline int X2Value() const { return Bits<SixByteInstr, int>(35, 32); }
@@ -1455,7 +1455,7 @@ class RXYInstruction : Instruction {
 };
 
 // RIL Instruction
-class RILInstruction : Instruction {
+class RILInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<SixByteInstr, int>(39, 36); }
   inline int32_t I2Value() const { return Bits<SixByteInstr, int32_t>(31, 0); }
@@ -1466,7 +1466,7 @@ class RILInstruction : Instruction {
 };
 
 // SI Instruction
-class SIInstruction : Instruction {
+class SIInstruction : private Instruction {
  public:
   inline int B1Value() const { return Bits<FourByteInstr, int>(15, 12); }
   inline uint32_t D1Value() const {
@@ -1479,7 +1479,7 @@ class SIInstruction : Instruction {
 };
 
 // SIY Instruction
-class SIYInstruction : Instruction {
+class SIYInstruction : private Instruction {
  public:
   inline int B1Value() const { return Bits<SixByteInstr, int>(31, 28); }
   inline int32_t D1Value() const {
@@ -1492,7 +1492,7 @@ class SIYInstruction : Instruction {
 };
 
 // SIL Instruction
-class SILInstruction : Instruction {
+class SILInstruction : private Instruction {
  public:
   inline int B1Value() const { return Bits<SixByteInstr, int>(31, 28); }
   inline int D1Value() const { return Bits<SixByteInstr, int>(27, 16); }
@@ -1501,7 +1501,7 @@ class SILInstruction : Instruction {
 };
 
 // SS Instruction
-class SSInstruction : Instruction {
+class SSInstruction : private Instruction {
  public:
   inline int B1Value() const { return Bits<SixByteInstr, int>(31, 28); }
   inline int B2Value() const { return Bits<SixByteInstr, int>(15, 12); }
@@ -1512,7 +1512,7 @@ class SSInstruction : Instruction {
 };
 
 // RXE Instruction
-class RXEInstruction : Instruction {
+class RXEInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<SixByteInstr, int>(39, 36); }
   inline int X2Value() const { return Bits<SixByteInstr, int>(35, 32); }
@@ -1522,7 +1522,7 @@ class RXEInstruction : Instruction {
 };
 
 // RIE Instruction
-class RIEInstruction : Instruction {
+class RIEInstruction : private Instruction {
  public:
   inline int R1Value() const { return Bits<SixByteInstr, int>(39, 36); }
   inline int R2Value() const { return Bits<SixByteInstr, int>(35, 32); }
