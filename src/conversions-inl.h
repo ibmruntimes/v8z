@@ -22,6 +22,10 @@
 #include "src/objects-inl.h"
 #include "src/strtod.h"
 
+#ifndef V8_OS_ZOS
+using std::isfinite;
+#endif
+
 namespace v8 {
 namespace internal {
 
