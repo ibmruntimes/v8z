@@ -157,8 +157,8 @@ Atomic64 Release_Load(volatile const Atomic64* ptr);
 #include "src/base/atomicops_internals_mips_gcc.h"
 #elif defined(__GNUC__) && V8_HOST_ARCH_MIPS64
 #include "src/base/atomicops_internals_mips64_gcc.h"
-#elif defined(__GNUC__) && V8_HOST_ARCH_S390
-#include "src/base/atomicops_internals_s390_gcc.h"
+#elif defined(__GNUC__) && || defined(__IBMCPP__) && V8_HOST_ARCH_S390
+#include "src/base/atomicops_internals_s390.h"
 #else
 #error "Atomic operations are not supported on your platform"
 #endif
