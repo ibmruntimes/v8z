@@ -194,6 +194,7 @@ class MacroAssembler : public Assembler {
             TypeFeedbackId ast_id = TypeFeedbackId::None(),
             Condition cond = al);
   void Ret() { b(r14); }
+  void RetC();
   void Ret(Condition cond) { b(cond, r14); }
 
   // Emit code to discard a non-negative number of pointer-sized elements

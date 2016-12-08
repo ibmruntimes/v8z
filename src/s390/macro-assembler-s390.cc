@@ -17,6 +17,7 @@
 
 #include "src/s390/macro-assembler-s390.h"
 
+#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -150,6 +151,14 @@ void MacroAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode,
 #endif
   call(code, rmode, ast_id);
   DCHECK_EQ(expected_size, SizeOfCodeGeneratedSince(&start));
+}
+
+void MacroAssembler::RetC() {
+#ifdef V8_OS_ZOS
+    b(r7);
+#else
+    b(r14);
+#endif
 }
 
 void MacroAssembler::Drop(int count) {
@@ -3088,6 +3097,11 @@ static const int kRegisterPassedArguments = 5;
 int MacroAssembler::CalculateStackPassedWords(int num_reg_arguments,
                                               int num_double_arguments) {
   int stack_passed_words = 0;
+#ifdef V8_OS_ZOS
+  // XPLINK Linkage reserves space for arguments on the stack
+  // even when passing them via registers.
+  stack_passed_words = num_reg_arguments + num_double_arguments;
+#else  
   if (num_double_arguments > DoubleRegister::kNumRegisters) {
     stack_passed_words +=
         2 * (num_double_arguments - DoubleRegister::kNumRegisters);
@@ -3096,6 +3110,7 @@ int MacroAssembler::CalculateStackPassedWords(int num_reg_arguments,
   if (num_reg_arguments > kRegisterPassedArguments) {
     stack_passed_words += num_reg_arguments - kRegisterPassedArguments;
   }
+#endif
   return stack_passed_words;
 }
 
