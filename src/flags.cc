@@ -8,6 +8,11 @@
 #include <cstdlib>
 #include <sstream>
 
+#include "src/v8.h"
+#ifdef IBM_TAG
+#include "src/version.h"
+#endif
+
 #include "src/allocation.h"
 #include "src/assembler.h"
 #include "src/base/functional.h"
@@ -16,6 +21,7 @@
 #include "src/ostreams.h"
 #include "src/utils.h"
 
+#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -396,13 +402,21 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
         case Flag::TYPE_MAYBE_BOOL:
           *flag->maybe_bool_variable() = MaybeBoolFlag::Create(true, !is_bool);
           break;
-        case Flag::TYPE_INT:
-          *flag->int_variable() = static_cast<int>(strtol(value, &endp, 10));
+        case Flag::TYPE_INT: {
+          int value_len = strlen(value);
+          char value_e[value_len + 1];
+          MemCopy(value_e, value, value_len + 1);
+          __a2e_s(value_e);
+          *flag->int_variable() = strtol(value_e, &endp, 10);  // NOLINT
           break;
-        case Flag::TYPE_FLOAT:
-          *flag->float_variable() = strtod(value, &endp);
+       }case Flag::TYPE_FLOAT: {
+          int value_len = strlen(value);
+          char value_e[value_len + 1];
+          MemCopy(value_e, value, value_len + 1);
+          __a2e_s(value_e);
+          *flag->float_variable() = strtod(value_e, &endp);
           break;
-        case Flag::TYPE_STRING:
+	   }case Flag::TYPE_STRING:
           flag->set_string_value(value ? StrDup(value) : NULL, true);
           break;
         case Flag::TYPE_ARGS: {
@@ -577,5 +591,7 @@ void FlagList::EnforceFlagImplications() {
 
 
 uint32_t FlagList::Hash() { return flag_hash; }
+
+#pragma convert(pop)
 }  // namespace internal
 }  // namespace v8
