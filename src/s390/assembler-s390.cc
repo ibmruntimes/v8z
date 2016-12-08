@@ -39,7 +39,7 @@
 #if V8_TARGET_ARCH_S390
 
 #if V8_HOST_ARCH_S390
-#include <elf.h>  // Required for auxv checks for STFLE support
+//#include <elf.h>  // Required for auxv checks for STFLE support
 #endif
 
 #include "src/base/bits.h"
@@ -60,6 +60,9 @@ static unsigned CpuFeaturesImpliedByCompiler() {
 // Check whether Store Facility STFLE instruction is available on the platform.
 // Instruction returns a bit vector of the enabled hardware facilities.
 static bool supportsSTFLE() {
+#if v8_OS_ZOS
+  return false;
+#else
 #if V8_HOST_ARCH_S390
   static bool read_tried = false;
   static uint32_t auxv_hwcap = 0;
@@ -112,6 +115,7 @@ static bool supportsSTFLE() {
   // STFLE is not available on non-s390 hosts
   return false;
 #endif
+#endif
 }
 
 void CpuFeatures::ProbeImpl(bool cross_compile) {
@@ -129,7 +133,7 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
 
 // Need to define host, as we are generating inlined S390 assembly to test
 // for facilities.
-#if V8_HOST_ARCH_S390
+#if V8_HOST_ARCH_S390 && !defined(V8_OS_ZOS)
   if (performSTFLE) {
     // STFLE D(B) requires:
     //    GPR0 to specify # of double words to update minus 1.
@@ -196,8 +200,8 @@ void CpuFeatures::PrintFeatures() {
 
 Register ToRegister(int num) {
   DCHECK(num >= 0 && num < kNumRegisters);
-  const Register kRegisters[] = {r0, r1, r2,  r3, r4, r5,  r6,  r7,
-                                 r8, r9, r10, fp, ip, r13, r14, sp};
+  const Register kRegisters[] = {r0, r1, r2,  r3, sp, r5,  r6,  r7,
+                                 r8, r9, r10, fp, ip, r13, r14, r4};
   return kRegisters[num];
 }
 
@@ -547,6 +551,12 @@ void Assembler::nop(int type) {
     case DEBUG_BREAK_NOP:
       // TODO(john.yan): Use a better NOP break
       oill(r3, Operand::Zero());
+      break;
+    case BASR_CALL_TYPE_NOP:
+      emit2bytes(0x0000);
+      break;
+    case BRAS_CALL_TYPE_NOP:
+      emit2bytes(0x0001);
       break;
     default:
       UNIMPLEMENTED();
@@ -2975,7 +2985,16 @@ void Assembler::GrowBuffer(int needed) {
   reloc_info_writer.Reposition(reloc_info_writer.pos() + rc_delta,
                                reloc_info_writer.last_pc() + pc_delta);
 
-  // None of our relocation types are pc relative pointing outside the code
+
+#ifdef V8_OS_ZOS
+  for (RelocIterator it(desc); !it.done(); it.next()) {
+	RelocInfo::Mode rmode = it.rinfo()->rmode();
+    if (rmode == RelocInfo::INTERNAL_REFERENCE) {
+	  RelocateInternalReference(it.rinfo()->pc(), pc_delta, 0);  
+	}
+  }
+#endif
+  // On s390 Linux None of our relocation types are pc relative pointing outside the code
   // buffer nor pc absolute pointing inside the code buffer, so there is no need
   // to relocate any emitted relocation entries.
 }
@@ -3055,6 +3074,58 @@ void Assembler::EmitRelocations() {
 
   reloc_info_writer.Finish();
 }
+
+#ifdef V8_OS_ZOS
+void Assembler::function_descriptor() {
+  DCHECK(pc_offset() == 0);
+  RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
+  dp(0);
+  dp(reinterpret_cast<uintptr_t>(pc_) + kPointerSize);
+}
+
+void Assembler::RelocateInternalReference(Address pc,
+                                          intptr_t delta,
+                                          Address code_start,
+                                          ICacheFlushMode icache_flush_mode) {
+  DCHECK(delta || code_start);
+#if ABI_USES_FUNCTION_DESCRIPTORS
+  uintptr_t *fd = reinterpret_cast<uintptr_t*>(pc);
+  if (fd[0] == 0) {
+    // Function descriptor
+    if (delta) {
+      fd[1] += delta;
+    } else {
+      fd[1] = reinterpret_cast<uintptr_t>(code_start) + (2* kPointerSize);
+    }
+    return;
+  }
+#endif
+/* Todo: investigate if this is needed for zOS
+  Address constant_pool = NULL;
+  if (delta) {
+    code_start = target_address_at(pc, constant_pool) + delta;
+  }
+  set_target_address_at(pc, constant_pool, code_start, icache_flush_mode);
+*/
+}
+
+
+int Assembler::DecodeInternalReference(Vector<char> buffer, Address pc) {
+#if ABI_USES_FUNCTION_DESCRIPTORS
+  uintptr_t *fd = reinterpret_cast<uintptr_t*>(pc);
+  if (fd[0] == 0 && (fd[1] & 0x00000000) == 0) {
+    // Function descriptor
+    SNPrintF(buffer,
+             "[%08" V8PRIxPTR ", %08" V8PRIxPTR "]"
+             "   function descriptor",
+             fd[0], fd[1]);
+    return kPointerSize * 2;
+  }
+#endif
+  return 0;
+}
+#endif //V8_OS_ZOS
+
 
 }  // namespace internal
 }  // namespace v8

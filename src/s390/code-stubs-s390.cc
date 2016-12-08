@@ -1031,7 +1031,8 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Pass buffer for return value on stack if necessary
   bool needs_return_buffer =
       result_size() > 2 ||
-      (result_size() == 2 && !ABI_RETURNS_OBJECTPAIR_IN_REGS);
+      //(result_size() == 2 && !ABI_RETURNS_OBJECTPAIR_IN_REGS);
+	  (result_size() == 2);
   if (needs_return_buffer) {
     arg_stack_space += result_size();
   }
@@ -1044,12 +1045,20 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ EnterExitFrame(save_doubles(), arg_stack_space);
 
   // Store a copy of argc, argv in callee-saved registers for later.
+#ifdef V8_OS_ZOS
+  __ LoadRR(r9, r2);
+  __ LoadRR(r10, r3);
+  // r2, r9: number of arguments including receiver  (C callee-saved)
+  // r3, r10: pointer to the first argument
+  // r7: pointer to builtin function descriptor (C callee-saved)
+  // r8: pointer to builtin function (C callee-saved)
+#else
   __ LoadRR(r6, r2);
   __ LoadRR(r8, r3);
   // r2, r6: number of arguments including receiver  (C callee-saved)
   // r3, r8: pointer to the first argument
   // r7: pointer to builtin function  (C callee-saved)
-
+#endif
   // Result returned in registers or stack, depending on result size and ABI.
 
   Register isolate_reg = r4;
@@ -1066,7 +1075,25 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
 
-  Register target = r7;
+#if V8_OS_ZOS
+  // TODO(mcornac): Move params from r2-r6 to r1-r3.
+  __ LoadRR(r1, r2);
+  __ LoadRR(r2, r3);
+  __ LoadRR(r3, r4);
+
+  // TODO(mcornac): fn descriptor.
+  // Load environment from slot 0 of fn desc.
+  __ LoadP(r5, MemOperand(r7));
+#if !defined(USE_SIMULATOR)
+  // Load function pointer from slot 1 of fn desc.
+  __ LoadP(r8, MemOperand(r7, kPointerSize));
+#else
+  __ LoadRR(r8, r7);
+#endif  // USE_SIMULATOR
+  Register target = r8;
+#else
+   Register target = r7;
+#endif   // V8_OS_ZOS
 
   // To let the GC traverse the return address of the exit frames, we need to
   // know where the return address is. The CEntryStub is unmovable, so
@@ -1074,18 +1101,55 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // we never have to restore it, because it will not change.
   {
     Label return_label;
-    __ larl(r14, &return_label);  // Generate the return addr of call later.
-    __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+
+#if V8_OS_ZOS
+    Register ra = r7;
+#else
+    Register ra = r14;
+#endif
+    __ larl(ra, &return_label);  // Generate the return addr of call later.
+#if V8_OS_ZOS
+    // TODO(mcornac): why do I have to -2?
+    __ lay(ra, MemOperand(ra, -2));
+    __ StoreP(ra, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+#else
+    __ StoreP(ra, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+#endif
 
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
     // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
     __ positions_recorder()->WriteRecordedPositions();
+	
+#if V8_OS_ZOS
+    // Load the biased stack pointer into r4 before calling native code
+    // Stack Pointer Bias = Xplink Bias(2048) + SaveArea(12 ptrs +
+    // Reserved(2ptrs) + Debug Area(1ptr) +
+    // Arg Area Prefix(1ptr) + Argument Area(3 ptrs).
+    __ lay(sp, MemOperand(sp, -(kStackPointerBias + 19 * kPointerSize)));
+#endif
+	
     __ b(target);
     __ bind(&return_label);
     // __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
 
+#if V8_OS_ZOS
+  // TODO(mcornac): r9 and r10 are used to store argc and argv on z/OS instead
+  // of r6 and r8 since r6 is not callee saved.
+  __ LoadRR(r6, r9);
+  __ LoadRR(r8, r10);
+  __ InitializeRootRegister();  // Rematerializing the root address in r10
+
+  if (result_size() == 1) {
+    __ LoadRR(r2, r3);
+  }
+  else {
+    __ LoadRR(r3, r2);
+    __ LoadRR(r2, r1);
+  }
+#endif
+  
   // If return value is on the stack, pop it to registers.
   if (needs_return_buffer) {
     if (result_size() > 2) __ LoadP(r4, MemOperand(r2, 2 * kPointerSize));
@@ -1192,6 +1256,20 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
+#if V8_OS_ZOS
+  __ lay(sp, MemOperand(sp, -12 * kPointerSize));
+  __ StoreMultipleP(sp, r4, MemOperand(sp, 0));
+  // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
+  // parameters and also places them starting at r4+2112 on the biased stack.
+  // Explicitly load argc and argv from stack back into r5/r6 respectively.
+  __ LoadP(r5, MemOperand(sp, 2048 + ((19 + 12) * kPointerSize)));
+  __ LoadP(r6, MemOperand(sp, 2048 + ((20 + 12) * kPointerSize)));
+
+  __ LoadRR(r4, r3);
+  __ LoadRR(r3, r2);
+  __ LoadRR(r2, r1);
+#endif  // V8_OS_ZOS
+  
 // saving floating point registers
 #if V8_TARGET_ARCH_S390X
   // 64bit ABI requires f8 to f15 be saved
@@ -1212,6 +1290,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ std(d6, MemOperand(sp, kDoubleSize));
 #endif
 
+#if !V8_OS_ZOS
   // zLinux ABI
   //    Incoming parameters:
   //          r2: code entry
@@ -1224,7 +1303,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   //    sp/r15 as well in a single STM/STMG
   __ lay(sp, MemOperand(sp, -10 * kPointerSize));
   __ StoreMultipleP(r6, sp, MemOperand(sp, 0));
-
+#endif
   // Set up the reserved register for 0.0.
   // __ LoadDoubleLiteral(kDoubleRegZero, 0.0, r0);
 
@@ -1351,8 +1430,10 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ lay(sp, MemOperand(sp, -EntryFrameConstants::kCallerFPOffset));
 
   // Reload callee-saved preserved regs, return address reg (r14) and sp
+#ifndef V8_OS_ZOS
   __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
+#endif
 
 // saving floating point registers
 #if V8_TARGET_ARCH_S390X
@@ -1374,7 +1455,14 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ la(sp, MemOperand(sp, 2 * kDoubleSize));
 #endif
 
+#ifdef V8_OS_ZOS
+  __ LoadRR(r3, r2);
+  __ LoadMultipleP(sp, r4, MemOperand(sp, 0));
+  __ lay(sp, MemOperand(sp, 12 * kPointerSize));
+  __ b(r7);
+#else
   __ b(r14);
+#endif
 }
 
 void InstanceOfStub::Generate(MacroAssembler* masm) {
@@ -3309,11 +3397,12 @@ void DirectCEntryStub::Generate(MacroAssembler* masm) {
 void DirectCEntryStub::GenerateCall(MacroAssembler* masm, Register target) {
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // Native AIX/S390X Linux use a function descriptor.
-  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(target, kPointerSize));
-  __ LoadP(target, MemOperand(target, 0));  // Instruction address
-#else
+  // __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(target, kPointerSize));
   // ip needs to be set for DirectCEentryStub::Generate, and also
   // for ABI_CALL_VIA_IP.
+  __  LoadP(ip, MemOperand(target, kPointerSize));
+  __ LoadP(r5, MemOperand(target, 0));
+#else
   __ Move(ip, target);
 #endif
 
@@ -4251,8 +4340,8 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 
 #if ABI_USES_FUNCTION_DESCRIPTORS
   // Function descriptor
-  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(ip, kPointerSize));
-  __ LoadP(ip, MemOperand(ip, 0));
+  // __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(ip, kPointerSize));
+  __ LoadP(ip, MemOperand(ip, kPointerSize));
 // ip already set.
 #endif
 #endif
