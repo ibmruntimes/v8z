@@ -23,7 +23,7 @@ inline bool AtomicIsLockFree(uint32_t size) {
   return size == 1 || size == 2 || size == 4;
 }
 
-#if V8_CC_GNU
+#if V8_CC_GNU || V8_CC_CLANG
 
 template <typename T>
 inline T CompareExchangeSeqCst(T* p, T oldval, T newval) {
@@ -35,43 +35,43 @@ inline T CompareExchangeSeqCst(T* p, T oldval, T newval) {
 template <typename T>
 inline T LoadSeqCst(T* p) {
   T result;
-  __atomic_load(p, &result, __ATOMIC_SEQ_CST);
+  //__atomic_load(p, &result, __ATOMIC_SEQ_CST);
   return result;
 }
 
 template <typename T>
 inline void StoreSeqCst(T* p, T value) {
-  __atomic_store_n(p, value, __ATOMIC_SEQ_CST);
+  //__atomic_store_n(p, value, __ATOMIC_SEQ_CST);
 }
 
 template <typename T>
 inline T AddSeqCst(T* p, T value) {
-  return __atomic_fetch_add(p, value, __ATOMIC_SEQ_CST);
+  //return __atomic_fetch_add(p, value, __ATOMIC_SEQ_CST);
 }
 
 template <typename T>
 inline T SubSeqCst(T* p, T value) {
-  return __atomic_fetch_sub(p, value, __ATOMIC_SEQ_CST);
+  //return __atomic_fetch_sub(p, value, __ATOMIC_SEQ_CST);
 }
 
 template <typename T>
 inline T AndSeqCst(T* p, T value) {
-  return __atomic_fetch_and(p, value, __ATOMIC_SEQ_CST);
+  //return __atomic_fetch_and(p, value, __ATOMIC_SEQ_CST);
 }
 
 template <typename T>
 inline T OrSeqCst(T* p, T value) {
-  return __atomic_fetch_or(p, value, __ATOMIC_SEQ_CST);
+  //return __atomic_fetch_or(p, value, __ATOMIC_SEQ_CST);
 }
 
 template <typename T>
 inline T XorSeqCst(T* p, T value) {
-  return __atomic_fetch_xor(p, value, __ATOMIC_SEQ_CST);
+  //return __atomic_fetch_xor(p, value, __ATOMIC_SEQ_CST);
 }
 
 template <typename T>
 inline T ExchangeSeqCst(T* p, T value) {
-  return __atomic_exchange_n(p, value, __ATOMIC_SEQ_CST);
+  //return __atomic_exchange_n(p, value, __ATOMIC_SEQ_CST);
 }
 
 #elif V8_CC_MSVC
