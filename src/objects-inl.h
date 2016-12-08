@@ -6882,17 +6882,23 @@ uint32_t StringHasher::ComputeRunningHashOneByte(uint32_t running_hash,
   return running_hash;
 }
 
-
-void StringHasher::AddCharacter(uint16_t c) {
+template <typename Char>
+void StringHasher::AddCharacter(Char c) {
   // Use the Jenkins one-at-a-time hash function to update the hash
   // for the given character.
+  if (sizeof(Char) == 1) {
+	  c = GET_ASCII_CODE(c);
+  }
   raw_running_hash_ = AddCharacterCore(raw_running_hash_, c);
 }
 
-
-bool StringHasher::UpdateIndex(uint16_t c) {
+template <typename Char>
+bool StringHasher::UpdateIndex(Char c) {
   DCHECK(is_array_index_);
-  if (c < '0' || c > '9') {
+  if (sizeof(Char) == 1) {
+	  c = GET_ASCII_CODE(c);
+  }
+  if (c < GET_ASCII_CODE('\x30') || c > GET_ASCII_CODE('\x39')) {
     is_array_index_ = false;
     return false;
   }
