@@ -700,7 +700,11 @@ void String::StringPrint(std::ostream& os) {  // NOLINT
     }
   }
   for (int i = 0; i < len; i++) {
+#ifndef V8_OS_ZOS
     os << AsUC16(Get(i));
+#else
+    os << static_cast<char>(Ascii2Ebcdic(GET(i)));
+#endif
   }
   if (len != length()) {
     os << truncated_epilogue;
