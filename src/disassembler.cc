@@ -107,6 +107,10 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
         pc += 4;
       } else if (it != NULL && !it->done() && it->rinfo()->pc() == pc &&
           it->rinfo()->rmode() == RelocInfo::INTERNAL_REFERENCE) {
+#if ABI_USES_FUNCTION_DESCRIPTORS
+        // z/OS.
+		pc += Assembler::DecodeInternalReference(decode_buffer, pc);
+#else
         // raw pointer embedded in code stream, e.g., jump table
         byte* ptr = *reinterpret_cast<byte**>(pc);
         SNPrintF(decode_buffer,
@@ -114,6 +118,7 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
                  reinterpret_cast<intptr_t>(ptr),
                  ptr - begin);
         pc += sizeof(ptr);
+#endif
       } else {
         decode_buffer[0] = '\0';
         pc += d.InstructionDecode(decode_buffer, pc);
@@ -213,8 +218,13 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
           uint32_t minor_key = CodeStub::MinorKeyFromKey(key);
           CodeStub::Major major_key = CodeStub::GetMajorKey(code);
           DCHECK(major_key == CodeStub::MajorKeyFromKey(key));
-          out.AddFormatted(" %s, %s, ", Code::Kind2String(kind),
-                           CodeStub::MajorName(major_key));
+          const char * name = CodeStub::MajorName(major_key, false);
+          char name_e[name != NULL ? strlen(name) : 1];
+          name_e[0] = '\0';
+          strcpy(name_e, name);
+          __a2e_s(name_e);
+          out.AddFormatted(" %s, %s, ", Code::Kind2String(kind), name_e);
+		  
           out.AddFormatted("minor: %d", minor_key);
         } else {
           out.AddFormatted(" %s", Code::Kind2String(kind));
