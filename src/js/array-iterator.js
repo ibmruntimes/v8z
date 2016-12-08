@@ -139,7 +139,7 @@ utils.SetFunctionName(ArrayIteratorIterator, iteratorSymbol);
                   "Array Iterator", READ_ONLY | DONT_ENUM);
 
 utils.InstallFunctions(GlobalArray.prototype, DONT_ENUM, [
-  // No 'values' since it breaks webcompat: http://crbug.com/409858
+  'values', ArrayValues,
   'entries', ArrayEntries,
   'keys', ArrayKeys
 ]);
