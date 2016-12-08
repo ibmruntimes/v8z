@@ -41,7 +41,7 @@ TestWithIsolate::~TestWithIsolate() {}
 // static
 void TestWithIsolate::SetUpTestCase() {
   Test::SetUpTestCase();
-  EXPECT_EQ(NULL, isolate_);
+  EXPECT_EQ((v8::Isolate *)NULL, isolate_);
   v8::Isolate::CreateParams create_params;
   array_buffer_allocator_ = new ArrayBufferAllocator;
   create_params.array_buffer_allocator = array_buffer_allocator_;
