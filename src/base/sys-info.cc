@@ -91,6 +91,8 @@ int64_t SysInfo::AmountOfPhysicalMemory() {
 #elif V8_OS_AIX
   int64_t result = sysconf(_SC_AIX_REALMEM);
   return static_cast<int64_t>(result) * 1024L;
+#elif V8_OS_ZOS
+  return 0;
 #elif V8_OS_POSIX
   long pages = sysconf(_SC_PHYS_PAGES);    // NOLINT(runtime/int)
   long page_size = sysconf(_SC_PAGESIZE);  // NOLINT(runtime/int)
