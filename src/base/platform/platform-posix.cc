@@ -40,8 +40,15 @@
 #include "src/base/lazy-instance.h"
 #include "src/base/macros.h"
 #include "src/base/platform/platform.h"
+#if V8_OS_ZOS
+#include "src/base/platform/platform-zos.h"
+#endif
 #include "src/base/platform/time.h"
 #include "src/base/utils/random-number-generator.h"
+
+#if !defined(V8_OS_NACL) && !defined(_AIX) && !defined(V8_OS_ZOS)
+#include <sys/syscall.h>
+#endif
 
 #ifdef V8_FAST_TLS_SUPPORTED
 #include "src/base/atomicops.h"
@@ -55,17 +62,18 @@
 #include <sys/prctl.h>  // NOLINT, for prctl
 #endif
 
-#if !defined(V8_OS_NACL) && !defined(_AIX)
-#include <sys/syscall.h>
-#endif
-
 namespace v8 {
 namespace base {
 
 namespace {
 
 // 0 is never a valid thread id.
+#if V8_OS_ZOS
+  // TODO(mcornac):
+  const pthread_t kNoThread = {0, 0, 0, 0, 0, 0, 0, 0};
+#else
 const pthread_t kNoThread = (pthread_t) 0;
+#endif
 
 bool g_hard_abort = false;
 
@@ -73,6 +81,16 @@ const char* g_gc_fake_mmap = NULL;
 
 }  // namespace
 
+int OS::NumberOfProcessorsOnline(){
+if V8_OS_ZOS
+  ZOSCVT* __ptr32 cvt = ((ZOSPSA*)0)->cvt;
+  ZOSRMCT* __ptr32 rmct = cvt->rmct;
+  ZOSCCT* __ptr32 cct = rmct->cct;
+  return static_cast<int>(cct->cpuCount);
+#else
+  return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
+#endif
+}
 
 int OS::ActivationFrameAlignment() {
 #if V8_TARGET_ARCH_ARM
@@ -99,14 +117,14 @@ intptr_t OS::CommitPageSize() {
   return page_size;
 }
 
-
+#ifndef V8_OS_ZOS
 void OS::Free(void* address, const size_t size) {
   // TODO(1240712): munmap has a return value which is ignored here.
   int result = munmap(address, size);
   USE(result);
   DCHECK(result == 0);
 }
-
+#endif
 
 // Get rid of writable permission on code allocations.
 void OS::ProtectCode(void* address, const size_t size) {
@@ -154,7 +172,7 @@ const char* OS::GetGCFakeMMapFile() {
 
 
 void* OS::GetRandomMmapAddr() {
-#if V8_OS_NACL
+#if V8_OS_NACL || V8_OS_ZOS
   // TODO(bradchen): restore randomization once Native Client gets
   // smarter about using mmap address hints.
   // See http://code.google.com/p/nativeclient/issues/3341
@@ -335,8 +353,12 @@ int OS::GetCurrentProcessId() {
   return static_cast<int>(getpid());
 }
 
-
+#if defined(V8_OS_ZOS)
+pthread_t OS::GetCurrentThreadId() {
+#else
 int OS::GetCurrentThreadId() {
+#endif
+
 #if V8_OS_MACOSX || (V8_OS_ANDROID && defined(__APPLE__))
   return static_cast<int>(pthread_mach_thread_np(pthread_self()));
 #elif V8_OS_LINUX
@@ -347,6 +369,9 @@ int OS::GetCurrentThreadId() {
   return static_cast<int>(thread_self());
 #elif V8_OS_SOLARIS
   return static_cast<int>(pthread_self());
+#elif V8_OS_ZOS
+  // TODO(mcornac):
+  return pthread_self();
 #else
   return static_cast<int>(reinterpret_cast<intptr_t>(pthread_self()));
 #endif
@@ -414,6 +439,25 @@ int OS::GetLastError() {
 //
 
 FILE* OS::FOpen(const char* path, const char* mode) {
+  FILE* file = fopen(path, mode);
+  if (file == NULL) return NULL;
+  struct stat file_stat;
+  if (fstat(fileno(file), &file_stat) != 0) return NULL;
+  bool is_regular_file = ((file_stat.st_mode & S_IFREG) != 0);
+  if (is_regular_file) return file;
+  fclose(file);
+  return NULL;
+}
+
+FILE* OS::FOpenASCII(const char* path_a, const char* mode_a) {
+  int path_len = strlen(path_a);
+  int mode_len = strlen(mode_a);
+  char path[path_len + 1];
+  char mode[mode_len + 1];
+  memmove(path, path_a, path_len + 1);
+  memmove(mode, mode_a, mode_len + 1);
+  __a2e_s(path);
+  __a2e_s(mode);
   FILE* file = fopen(path, mode);
   if (file == NULL) return NULL;
   struct stat file_stat;
@@ -596,7 +640,10 @@ static void* ThreadEntry(void* arg) {
   // one).
   { LockGuard<Mutex> lock_guard(&thread->data()->thread_creation_mutex_); }
   SetThreadName(thread->name());
+#ifndef V8_OS_ZOS
+  // TODO(muntasir): FIXME
   DCHECK(thread->data()->thread_ != kNoThread);
+#endif
   thread->NotifyStartedAndRun();
   return NULL;
 }
@@ -611,6 +658,7 @@ void Thread::set_name(const char* name) {
 void Thread::Start() {
   int result;
   pthread_attr_t attr;
+#if !V8_OS_ZOS
   memset(&attr, 0, sizeof(attr));
   result = pthread_attr_init(&attr);
   DCHECK_EQ(0, result);
@@ -628,14 +676,22 @@ void Thread::Start() {
     DCHECK_EQ(0, result);
   }
 #endif
+#endif
   {
     LockGuard<Mutex> lock_guard(&data_->thread_creation_mutex_);
+#if V8_OS_ZOS
+    result = pthread_create(&data_->thread_, NULL, ThreadEntry, this);
+#else
     result = pthread_create(&data_->thread_, &attr, ThreadEntry, this);
+#endif
   }
   DCHECK_EQ(0, result);
+#if !V8_OS_ZOS
   result = pthread_attr_destroy(&attr);
   DCHECK_EQ(0, result);
+  // TODO(muntasir): FIXME
   DCHECK(data_->thread_ != kNoThread);
+#endif
   USE(result);
 }
 

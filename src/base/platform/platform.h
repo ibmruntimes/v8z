@@ -140,6 +140,7 @@ class OS {
   static int GetLastError();
 
   static FILE* FOpen(const char* path, const char* mode);
+  static FILE* FOpenASCII(const char* path_a, const char* mode_a);
   static bool Remove(const char* path);
 
   static char DirectorySeparator();
@@ -227,7 +228,11 @@ class OS {
                        int length,
                        const char* format,
                        va_list args);
-
+  static int SNPrintFASCII(char* str, int length, const char* format, ...);
+  static int VSNPrintFASCII(char* str,
+                       int length,
+                       const char* format,
+                       va_list args);
   static char* StrChr(char* str, int c);
   static void StrNCpy(char* dest, int length, const char* src, size_t n);
 
@@ -260,13 +265,21 @@ class OS {
   static int ActivationFrameAlignment();
 
   static int GetCurrentProcessId();
+  
+#if defined(V8_OS_ZOS)
+  static pthread_t GetCurrentThreadID();
 
+  // On zOS the default character encoding is in EBCDIC, this utility funciton
+  // will convert strings to ASCII.
+  static void ConvertToASCII(char * str);
+#else
   static int GetCurrentThreadId();
+#endif
 
  private:
   static const int msPerSecond = 1000;
 
-#if V8_OS_POSIX
+#if V8_OS_POSIX || V8_OS_ZOS
   static const char* GetGCFakeMMapFile();
 #endif
 
@@ -390,8 +403,11 @@ class VirtualMemory {
 class Thread {
  public:
   // Opaque data type for thread-local storage keys.
+#if defined(V8_OS_ZOS)
+  typedef pthread_key_t LocalStorageKey;
+#else
   typedef int32_t LocalStorageKey;
-
+#endif
   class Options {
    public:
     Options() : name_("v8:<unknown>"), stack_size_(0) {}
