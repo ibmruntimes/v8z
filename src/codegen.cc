@@ -107,12 +107,12 @@ void CodeGenerator::MakeCodePrologue(CompilationInfo* info, const char* kind) {
   }
 
 #ifdef DEBUG
-  if (info->parse_info() && print_source) {
+  if (info->parse_info() && print_source && false) {
     PrintF("--- Source from AST ---\n%s\n",
            PrettyPrinter(info->isolate()).PrintProgram(info->literal()));
   }
 
-  if (info->parse_info() && print_ast) {
+  if (info->parse_info() && print_ast && false) {
     PrintF("--- AST ---\n%s\n",
            AstPrinter(info->isolate()).PrintProgram(info->literal()));
   }

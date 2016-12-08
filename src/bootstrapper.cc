@@ -18,6 +18,7 @@
 #include "src/snapshot/snapshot.h"
 #include "src/wasm/wasm-js.h"
 
+#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -3639,6 +3640,6 @@ char* Bootstrapper::RestoreState(char* from) {
 void Bootstrapper::FreeThreadResources() {
   DCHECK(!IsActive());
 }
-
+#pragma convert(pop)
 }  // namespace internal
 }  // namespace v8

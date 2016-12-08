@@ -25,6 +25,7 @@
 #include "src/string-builder.h"
 #include "src/vm-state-inl.h"
 
+#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -4854,13 +4855,19 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
       builtins_[i] = *code;
       code->set_builtin_index(i);
 #ifdef ENABLE_DISASSEMBLER
+#pragma convert("IBM-1047")
       if (FLAG_print_builtin_code) {
         CodeTracer::Scope trace_scope(isolate->GetCodeTracer());
         OFStream os(trace_scope.file());
-        os << "Builtin: " << functions[i].s_name << "\n";
+        os << "Builtin: ";
+		for (int n = 0; functions[i].s_name[n] != '\0'; n++) {
+          os << Ascii2Ebcdic(functions[i].s_name[n]);
+        }
+        os << "\n";
         code->Disassemble(functions[i].s_name, os);
         os << "\n";
-      }
+#pragma convert(pop)
+		}
 #endif
     } else {
       // Deserializing. The values will be filled in during IterateBuiltins.
@@ -4940,6 +4947,6 @@ BUILTIN_LIST_DEBUG_A(DEFINE_BUILTIN_ACCESSOR_A)
 #undef DEFINE_BUILTIN_ACCESSOR_A
 #undef DEFINE_BUILTIN_ACCESSOR_T
 #undef DEFINE_BUILTIN_ACCESSOR_H
-
+#pragma convert(pop)
 }  // namespace internal
 }  // namespace v8

@@ -195,7 +195,7 @@ Handle<Code> CodeStub::GetCode() {
   return Handle<Code>(code, isolate());
 }
 
-
+#pragma convert("ISO8859-1")
 const char* CodeStub::MajorName(CodeStub::Major major_key) {
   switch (major_key) {
 #define DEF_CASE(name) case name: return #name "Stub";
@@ -209,7 +209,7 @@ const char* CodeStub::MajorName(CodeStub::Major major_key) {
   }
   return NULL;
 }
-
+#pragma convert(pop)
 
 void CodeStub::PrintBaseName(std::ostream& os) const {  // NOLINT
   os << MajorName(MajorKey());
