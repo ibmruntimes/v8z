@@ -4,7 +4,7 @@
 
 #include "src/profiler/sampler.h"
 
-#if V8_OS_POSIX && !V8_OS_CYGWIN
+#if (V8_OS_POSIX || V8_OS_ZOS) && !V8_OS_CYGWIN
 
 #define USE_SIGNALS
 
@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <sys/time.h>
 
-#if !V8_OS_QNX && !V8_OS_NACL && !V8_OS_AIX
+#if !V8_OS_QNX && !V8_OS_NACL && !V8_OS_AIX && !V8_OS_ZOS
 #include <sys/syscall.h>  // NOLINT
 #endif
 
