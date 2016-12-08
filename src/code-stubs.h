@@ -15,6 +15,8 @@
 #include "src/macro-assembler.h"
 #include "src/ostreams.h"
 
+#undef index
+
 namespace v8 {
 namespace internal {
 

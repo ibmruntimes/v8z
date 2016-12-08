@@ -10,6 +10,8 @@
 #include "src/types.h"
 #include "src/zone-containers.h"
 
+#undef index
+
 namespace v8 {
 namespace internal {
 namespace compiler {

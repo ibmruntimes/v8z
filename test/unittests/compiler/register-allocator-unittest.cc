@@ -5,6 +5,8 @@
 #include "src/compiler/pipeline.h"
 #include "test/unittests/compiler/instruction-sequence-unittest.h"
 
+#undef index
+
 namespace v8 {
 namespace internal {
 namespace compiler {

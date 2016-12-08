@@ -9,6 +9,8 @@
 #include "src/interpreter/bytecodes.h"
 #include "test/unittests/test-utils.h"
 
+#undef index
+
 namespace v8 {
 namespace internal {
 namespace interpreter {

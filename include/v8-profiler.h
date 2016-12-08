@@ -8,6 +8,8 @@
 #include <vector>
 #include "v8.h"  // NOLINT(build/include)
 
+#undef index
+
 /**
  * Profiler support for the V8 JavaScript engine.
  */

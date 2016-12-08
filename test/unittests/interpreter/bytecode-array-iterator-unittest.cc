@@ -8,6 +8,8 @@
 #include "src/interpreter/bytecode-array-iterator.h"
 #include "test/unittests/test-utils.h"
 
+#undef index
+
 namespace v8 {
 namespace internal {
 namespace interpreter {
