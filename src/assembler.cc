@@ -1790,7 +1790,7 @@ static const byte tr_ebcdic_ascii[256] = {
 };
 
 ExternalReference ExternalReference::ebcdic_to_ascii_table(){
-  return ExternalReference(reinterpret_cast<void *>(reinterpret_cast<intptr_t>(tr_ebcdic_ascii
+  return ExternalReference(reinterpret_cast<void *>(reinterpret_cast<intptr_t>(tr_ebcdic_ascii)));
 }
 static const byte tr_ascii_ebcdic[256] = {
   0,1,2,3,55,45,46,47,22,5,21,11,12,13,14,15,
@@ -1811,7 +1811,7 @@ static const byte tr_ascii_ebcdic[256] = {
   220,221,222,223,234,235,236,237,238,239,250,251,252,253,254,255
 };
 ExternalReference ExternalReference::ascii_to_ebcdic_table() {
-  return ExternalReference(reinterpret_cast<void *>(reinterpret_cast<intptr_t>(tr_ascii_ebcdic
+  return ExternalReference(reinterpret_cast<void *>(reinterpret_cast<intptr_t>(tr_ebcdic_ascii)));
 }
 
 void AssemblerPositionsRecorder::RecordPosition(int pos) {
