@@ -7,6 +7,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <sstream>
+#include <unistd.h>
 
 #include "src/v8.h"
 #ifdef IBM_TAG
