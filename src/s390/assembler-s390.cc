@@ -60,7 +60,7 @@ static unsigned CpuFeaturesImpliedByCompiler() {
 // Check whether Store Facility STFLE instruction is available on the platform.
 // Instruction returns a bit vector of the enabled hardware facilities.
 static bool supportsSTFLE() {
-#if v8_OS_ZOS
+#if V8_OS_ZOS
   return false;
 #else
 #if V8_HOST_ARCH_S390
