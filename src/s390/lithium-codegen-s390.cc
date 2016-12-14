@@ -2867,7 +2867,7 @@ void LCodeGen::DoHasCachedArrayIndexAndBranch(
   EmitBranch(instr, eq, cr0);
 }
 
-
+#pragma convert("ISO8859-1")
 // Branches to a label or falls through with the answer in flags.  Trashes
 // the temp registers, but not the input.
 void LCodeGen::EmitClassOfTest(Label* is_true,
@@ -2933,7 +2933,7 @@ void LCodeGen::EmitClassOfTest(Label* is_true,
   __ CmpP(temp, Operand(class_name));
   // End with the answer in flags.
 }
-
+#pragma convert(pop)
 
 void LCodeGen::DoClassOfTestAndBranch(LClassOfTestAndBranch* instr) {
   Register input = ToRegister(instr->value());
