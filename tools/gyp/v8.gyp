@@ -1880,6 +1880,29 @@
             '../../src/base/platform/platform-posix.cc'
           ]},
         ],
+		['OS=="os390"', {
+            'conditions': [
+              ['nacl_target_arch=="none"', {
+                'link_settings': {
+                  'libraries': [
+                    '-ldl',
+                    '-lrt'
+                  ],
+                },
+              }, {
+                'defines': [
+                  'V8_LIBRT_NOT_AVAILABLE=1',
+                ],
+              }],
+            ],
+            'sources': [
+              '../../src/s390/semaphore-zos.cc',
+              '../../src/s390/semaphore-zos.h',
+              '../../src/base/platform/platform-zos.cc',
+              '../../src/base/platform/platform-posix.cc'
+            ],
+          }
+        ],
         ['OS=="win"', {
           'defines': [
             '_CRT_RAND_S'  # for rand_s()
