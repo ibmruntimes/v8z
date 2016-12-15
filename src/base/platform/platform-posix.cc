@@ -82,7 +82,7 @@ const char* g_gc_fake_mmap = NULL;
 }  // namespace
 
 int OS::NumberOfProcessorsOnline(){
-if V8_OS_ZOS
+#if V8_OS_ZOS
   ZOSCVT* __ptr32 cvt = ((ZOSPSA*)0)->cvt;
   ZOSRMCT* __ptr32 rmct = cvt->rmct;
   ZOSCCT* __ptr32 cct = rmct->cct;
