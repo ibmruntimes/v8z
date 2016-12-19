@@ -11408,6 +11408,7 @@ void Code::PrintExtraICState(OStream& os,  // NOLINT
 }
 
 
+#pragma convert("IBM-1047")
 void Code::Disassemble(const char* name, OStream& os) {  // NOLINT
   os << "kind = " << Kind2String(kind()) << "\n";
   if (IsCodeStubOrIC()) {
@@ -11541,6 +11542,7 @@ void Code::Disassemble(const char* name, OStream& os) {  // NOLINT
 #endif
 }
 #endif  // ENABLE_DISASSEMBLER
+#pragma convert(pop)
 
 
 Handle<FixedArray> JSObject::SetFastElementsCapacityAndLength(

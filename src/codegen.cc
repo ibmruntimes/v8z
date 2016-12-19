@@ -213,7 +213,7 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
             function->end_position() - function->start_position() + 1;
         for (int i = 0; i < source_len; i++) {
           if (stream.HasMore()) {
-            os << AsUC16(stream.GetNext());
+            os << AsUC16(Ascii2Ebcdic(stream.GetNext()));
           }
         }
         os << "\n\n";
@@ -222,8 +222,9 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
     if (info->IsOptimizing()) {
       if (FLAG_print_unopt_code) {
         os << "--- Unoptimized code ---\n";
-        info->closure()->shared()->code()->Disassemble(
-            function->debug_name()->ToCString().get(), os);
+        char* ebc = function->debug_name()->ToCString().get();
+        __a2e_s(ebc);
+        info->closure()->shared()->code()->Disassemble(ebc, os);
       }
       os << "--- Optimized code ---\n"
          << "optimization_id = " << info->optimization_id() << "\n";
