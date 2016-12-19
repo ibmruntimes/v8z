@@ -1881,20 +1881,6 @@
           ]},
         ],
 		['OS=="os390"', {
-            'conditions': [
-              ['nacl_target_arch=="none"', {
-                'link_settings': {
-                  'libraries': [
-                    '-ldl',
-                    '-lrt'
-                  ],
-                },
-              }, {
-                'defines': [
-                  'V8_LIBRT_NOT_AVAILABLE=1',
-                ],
-              }],
-            ],
             'sources': [
               '../../src/s390/semaphore-zos.cc',
               '../../src/s390/semaphore-zos.h',
