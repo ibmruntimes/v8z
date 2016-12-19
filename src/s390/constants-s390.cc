@@ -20,7 +20,7 @@ namespace internal {
 const char* Registers::names_[kNumRegisters] = {
 #ifdef V8_OS_ZOS
   "r0", "r1", "r2", "r3", "sp", "r5", "r6", "r7",
-  "r8", "r9", "r10", "fp", "ip", "r13", "r14", "r4"
+  "r8", "r9", "r10", "fp", "ip", "r13", "r14", "r15"
 #else
   "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
   "r8", "r9", "r10", "fp", "ip", "r13", "r14", "sp"
