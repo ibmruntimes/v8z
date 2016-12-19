@@ -408,7 +408,11 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
 
   if (!skip_fastpath()) {
     // Load double input.
-    __ LoadF(double_scratch, MemOperand(input_reg, double_offset));
+    if (input_reg.is(sp)) {
+      __ LoadF(double_scratch, StackMemOperand(double_offset));
+    } else {
+      __ LoadF(double_scratch, MemOperand(input_reg, double_offset));
+    }
 
     // Do fast-path convert from double to int.
     __ ConvertDoubleToInt64(double_scratch, result_reg);
@@ -419,13 +423,20 @@ void DoubleToIStub::Generate(MacroAssembler* masm) {
   }
 
   __ Push(scratch_high, scratch_low);
-  // Account for saved regs if input is sp.
-  if (input_reg.is(sp)) double_offset += 2 * kPointerSize;
 
-  __ LoadlW(scratch_high, MemOperand(input_reg, double_offset +
-                                  Register::kExponentOffset));
-  __ LoadlW(scratch_low, MemOperand(input_reg, double_offset +
-                                 Register::kMantissaOffset));
+  if (input_reg.is(sp)) {
+    // Account for saved regs if input is sp.
+    double_offset += 2 * kPointerSize;
+    __ LoadlW(scratch_high, StackMemOperand(double_offset +
+                                            Register::kExponentOffset));
+    __ LoadlW(scratch_low, StackMemOperand(double_offset +
+                                           Register::kMantissaOffset));
+  } else {
+    __ LoadlW(scratch_high, MemOperand(input_reg, double_offset +
+                                       Register::kExponentOffset));
+    __ LoadlW(scratch_low, MemOperand(input_reg, double_offset +
+                                      Register::kMantissaOffset));
+  }
 
   __ ExtractBitMask(scratch, scratch_high, HeapNumber::kExponentMask);
   // Load scratch with exponent - 1. This is faster than loading
