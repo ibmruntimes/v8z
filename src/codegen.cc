@@ -174,7 +174,11 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
             literal->end_position() - literal->start_position() + 1;
         for (int i = 0; i < source_len; i++) {
           if (stream.HasMore()) {
+#ifdef V8_OS_ZOS
+            os << AsReversiblyEscapedUC16(Ascii2Ebcdic(stream.GetNext()));
+#else
             os << AsReversiblyEscapedUC16(stream.GetNext());
+#endif
           }
         }
         os << "\n\n";
@@ -183,7 +187,13 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
     if (info->IsOptimizing()) {
       if (FLAG_print_unopt_code && info->parse_info()) {
         os << "--- Unoptimized code ---\n";
+#ifdef V8_OS_ZOS
+        char* ebc = debug_name.get();
+        __a2e_s(ebc);
+        info->closure()->shared()->code()->Disassemble(ebc, os);
+#else
         info->closure()->shared()->code()->Disassemble(debug_name.get(), os);
+#endif
       }
       os << "--- Optimized code ---\n"
          << "optimization_id = " << info->optimization_id() << "\n";
