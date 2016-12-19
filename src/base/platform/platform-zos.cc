@@ -186,19 +186,19 @@ void* OS::Allocate(const size_t requested,
 }
 
 
-class PosixMemoryMappedFile : public OS::MemoryMappedFile {
+class PosixMemoryMappedFile final : public OS::MemoryMappedFile {
  public:
-  PosixMemoryMappedFile(FILE* file, void* memory, int size)
-    : file_(file), memory_(memory), size_(size) { }
-  virtual ~PosixMemoryMappedFile();
-  virtual void* memory() { return memory_; }
-  virtual int size() { return size_; }
- private:
-  FILE* file_;
-  void* memory_;
-  int size_;
-};
+  PosixMemoryMappedFile(FILE* file, void* memory, size_t size)
+      : file_(file), memory_(memory), size_(size) {}
+  ~PosixMemoryMappedFile() final;
+  void* memory() const final { return memory_; }
+  size_t size() const final { return size_; }
 
+ private:
+  FILE* const file_;
+  void* const memory_;
+  size_t const size_;
+};
 
 OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
   FILE* file = fopen(name, "\x72\x2b");
@@ -217,8 +217,8 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
   return new PosixMemoryMappedFile(file, memory, size);
 }
 
-OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name, int size,
-    void* initial) {
+OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name,
+                                                   size_t size, void* initial) {
   FILE* file = fopen(name, "\x77\x2b");
   if (file == NULL) return NULL;
   int result = fwrite(initial, size, 1, file);

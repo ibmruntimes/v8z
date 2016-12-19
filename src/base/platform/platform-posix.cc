@@ -70,7 +70,7 @@ namespace {
 // 0 is never a valid thread id.
 #if V8_OS_ZOS
   // TODO(mcornac):
-  const pthread_t kNoThread = {0, 0, 0, 0, 0, 0, 0, 0};
+  const pthread_t kNoThread = {0};
 #else
 const pthread_t kNoThread = (pthread_t) 0;
 #endif
@@ -80,17 +80,6 @@ bool g_hard_abort = false;
 const char* g_gc_fake_mmap = NULL;
 
 }  // namespace
-
-int OS::NumberOfProcessorsOnline(){
-#if V8_OS_ZOS
-  ZOSCVT* __ptr32 cvt = ((ZOSPSA*)0)->cvt;
-  ZOSRMCT* __ptr32 rmct = cvt->rmct;
-  ZOSCCT* __ptr32 cct = rmct->cct;
-  return static_cast<int>(cct->cpuCount);
-#else
-  return static_cast<int>(sysconf(_SC_NPROCESSORS_ONLN));
-#endif
-}
 
 int OS::ActivationFrameAlignment() {
 #if V8_TARGET_ARCH_ARM
@@ -282,8 +271,12 @@ void OS::DebugBreak() {
 #elif V8_HOST_ARCH_X64
   asm("int $3");
 #elif V8_HOST_ARCH_S390
+#if V8_OS_ZOS
+  // TODO(mcornac):
+#else
   // Software breakpoint instruction is 0x0001
   asm volatile(".word 0x0001");
+#endif //V8_OS_ZOS
 #else
 #error Unsupported host architecture.
 #endif
@@ -314,9 +307,9 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
         void* const memory =
             mmap(OS::GetRandomMmapAddr(), size, PROT_READ | PROT_WRITE,
                  MAP_SHARED, fileno(file), 0);
-        if (memory != MAP_FAILED) {
+        //if (memory != MAP_FAILED) {
           return new PosixMemoryMappedFile(file, memory, size);
-        }
+        //}
       }
     }
     fclose(file);
@@ -333,9 +326,9 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name,
     if (result == size && !ferror(file)) {
       void* memory = mmap(OS::GetRandomMmapAddr(), result,
                           PROT_READ | PROT_WRITE, MAP_SHARED, fileno(file), 0);
-      if (memory != MAP_FAILED) {
-        return new PosixMemoryMappedFile(file, memory, result);
-      }
+      //if (memory != MAP_FAILED) {
+      return new PosixMemoryMappedFile(file, memory, result);
+      //}
     }
     fclose(file);
   }
@@ -354,9 +347,9 @@ int OS::GetCurrentProcessId() {
 }
 
 #if defined(V8_OS_ZOS)
-pthread_t OS::GetCurrentThreadId() {
+pthread_t OS::GetCurrentThreadID() {
 #else
-int OS::GetCurrentThreadId() {
+int OS::GetCurrentThreadID() {
 #endif
 
 #if V8_OS_MACOSX || (V8_OS_ANDROID && defined(__APPLE__))
