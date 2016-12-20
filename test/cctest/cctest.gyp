@@ -37,6 +37,7 @@
       'type': 'executable',
       'dependencies': [
         'resources',
+		'../../tools/gyp/v8.gyp:v8',
         '../../tools/gyp/v8.gyp:v8_libplatform',
       ],
       'include_dirs': [
@@ -371,6 +372,7 @@
       'target_name': 'generate-bytecode-expectations',
       'type': 'executable',
       'dependencies': [
+	    '../../tools/gyp/v8.gyp:v8',
         '../../tools/gyp/v8.gyp:v8_libplatform',
       ],
       'conditions': [

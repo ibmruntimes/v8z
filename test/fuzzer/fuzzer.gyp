@@ -13,6 +13,9 @@
       'type': 'executable',
       'dependencies': [
         'json_fuzzer_lib',
+		'fuzzer_support',
+		'../../tools/gyp/v8.gyp:v8',
+        '../../tools/gyp/v8.gyp:v8_libplatform',
       ],
       'include_dirs': [
         '../..',
@@ -24,9 +27,6 @@
     {
       'target_name': 'json_fuzzer_lib',
       'type': 'static_library',
-      'dependencies': [
-        'fuzzer_support',
-      ],
       'include_dirs': [
         '../..',
       ],
@@ -34,37 +34,40 @@
         'json.cc',
       ],
     },
-    {
-      'target_name': 'parser_fuzzer',
-      'type': 'executable',
-      'dependencies': [
-        'parser_fuzzer_lib',
-      ],
-      'include_dirs': [
-        '../..',
-      ],
-      'sources': [
-        'fuzzer.cc',
-      ],
-    },
-    {
-      'target_name': 'parser_fuzzer_lib',
-      'type': 'static_library',
-      'dependencies': [
-        'fuzzer_support',
-      ],
-      'include_dirs': [
-        '../..',
-      ],
-      'sources': [  ### gcmole(all) ###
-        'parser.cc',
-      ],
-    },
+#    {
+#      'target_name': 'parser_fuzzer',
+#      'type': 'executable',
+#      'dependencies': [
+#        'parser_fuzzer_lib',
+#      ],
+#      'include_dirs': [
+#        '../..',
+#      ],
+#      'sources': [
+#        'fuzzer.cc',
+#      ],
+#    },
+#    {
+#      'target_name': 'parser_fuzzer_lib',
+#      'type': 'static_library',
+#      'dependencies': [
+#        'fuzzer_support',
+#      ],
+#      'include_dirs': [
+#        '../..',
+#      ],
+#      'sources': [  ### gcmole(all) ###
+#        'parser.cc',
+#      ],
+#    },
     {
       'target_name': 'regexp_fuzzer',
       'type': 'executable',
       'dependencies': [
         'regexp_fuzzer_lib',
+		'fuzzer_support',
+		'../../tools/gyp/v8.gyp:v8',
+        '../../tools/gyp/v8.gyp:v8_libplatform',
       ],
       'include_dirs': [
         '../..',
@@ -76,9 +79,6 @@
     {
       'target_name': 'regexp_fuzzer_lib',
       'type': 'static_library',
-      'dependencies': [
-        'fuzzer_support',
-      ],
       'include_dirs': [
         '../..',
       ],
@@ -91,6 +91,9 @@
       'type': 'executable',
       'dependencies': [
         'wasm_fuzzer_lib',
+		'fuzzer_support',
+		'../../tools/gyp/v8.gyp:v8',
+        '../../tools/gyp/v8.gyp:v8_libplatform',
       ],
       'include_dirs': [
         '../..',
@@ -102,9 +105,6 @@
     {
       'target_name': 'wasm_fuzzer_lib',
       'type': 'static_library',
-      'dependencies': [
-        'fuzzer_support',
-      ],
       'include_dirs': [
         '../..',
       ],
@@ -117,6 +117,9 @@
       'type': 'executable',
       'dependencies': [
         'wasm_asmjs_fuzzer_lib',
+		'fuzzer_support',
+		'../../tools/gyp/v8.gyp:v8',
+        '../../tools/gyp/v8.gyp:v8_libplatform',
       ],
       'include_dirs': [
         '../..',
@@ -128,9 +131,6 @@
     {
       'target_name': 'wasm_asmjs_fuzzer_lib',
       'type': 'static_library',
-      'dependencies': [
-        'fuzzer_support',
-      ],
       'include_dirs': [
         '../..',
       ],
@@ -141,9 +141,6 @@
     {
       'target_name': 'fuzzer_support',
       'type': 'static_library',
-      'dependencies': [
-        '../../tools/gyp/v8.gyp:v8_libplatform',
-      ],
       'include_dirs': [
         '../..',
       ],

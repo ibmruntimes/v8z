@@ -17,6 +17,7 @@
       'dependencies': [
         '../../testing/gmock.gyp:gmock',
         '../../testing/gtest.gyp:gtest',
+		'../../tools/gyp/v8.gyp:v8',
         '../../tools/gyp/v8.gyp:v8_libplatform',
       ],
       'include_dirs': [
