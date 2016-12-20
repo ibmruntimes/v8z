@@ -45,4 +45,4 @@ class JUnitTestOutput:
     self.root.append(testCaseElement)
 
   def FinishAndWrite(self, file):
-    xml.ElementTree(self.root).write(file, "UTF-8")
+    xml.ElementTree(self.root).write(file)
