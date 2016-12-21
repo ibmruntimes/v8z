@@ -280,14 +280,16 @@ Operand::Operand(Handle<Object> handle) {
 }
 
 
-MemOperand::MemOperand(Register rn, int32_t offset) {
+MemOperand::MemOperand(Register rn, int32_t offset, bool stack) {
+  if (rn.is(sp) && !stack) DCHECK(false);
   baseRegister = rn;
   indexRegister = r0;
   offset_ = offset;
 }
 
 
-MemOperand::MemOperand(Register rx, Register rb, int32_t offset) {
+MemOperand::MemOperand(Register rx, Register rb, int32_t offset, bool stack) {
+  if (rx.is(sp) && !stack) DCHECK(false);
   baseRegister = rb;
   indexRegister = rx;
   offset_ = offset;

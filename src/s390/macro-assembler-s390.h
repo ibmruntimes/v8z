@@ -38,9 +38,9 @@ inline MemOperand RootMemOperand(Heap::RootListIndex index) {
 inline MemOperand StackMemOperand(Register rb, int offset) {
 #if V8_OS_ZOS
   // TODO(mcornac): Need to check range of offset?
-  return MemOperand(sp, rb, offset + 2048);
+  return MemOperand(sp, rb, offset + 2048, true);
 #else
-  return MemOperand(sp, rb, offset);
+  return MemOperand(sp, rb, offset, true);
 #endif
 }
 
@@ -49,9 +49,9 @@ inline MemOperand StackMemOperand(Register rb, int offset) {
 inline MemOperand StackMemOperand(Register offset) {
 #if V8_OS_ZOS
   // TODO(mcornac): Need to check range of offset?
-  return MemOperand(sp, offset, 2048);
+  return MemOperand(sp, offset, 2048, true);
 #else
-  return MemOperand(sp, offset);
+  return MemOperand(sp, offset, true);
 #endif
 }
 
@@ -60,9 +60,9 @@ inline MemOperand StackMemOperand(Register offset) {
 inline MemOperand StackMemOperand(int offset) {
 #if V8_OS_ZOS
   // TODO(mcornac): Need to check range of offset?
-  return MemOperand(sp, offset + 2048);
+  return MemOperand(sp, offset + 2048, true);
 #else
-  return MemOperand(sp, offset);
+  return MemOperand(sp, offset, true);
 #endif
 }
 
