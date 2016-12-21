@@ -154,25 +154,25 @@ void Deoptimizer::EntryGenerator::Generate() {
   for (int i = 0; i < DoubleRegister::kMaxNumAllocatableRegisters; ++i) {
     DoubleRegister fpu_reg = DoubleRegister::FromAllocationIndex(i);
     int offset = i * kDoubleSize;
-    __ StoreF(fpu_reg, StackMemOperand(offset));
+    __ StoreF(fpu_reg, MemOperand(sp, offset));
   }
 
   // Push all GPRs onto the stack
 #ifdef V8_OS_ZOS
   // Unbias the sp before storing it on the stack then rebias it.
-  __ lay(sp, StackMemOperand(-kNumberOfRegisters * kPointerSize));
+  __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize));
   __ StoreMultipleP(r0, r4, MemOperand(sp));   // Save all 16 registers
   __ lay(sp, MemOperand(sp, -kStackPointerBias));
 #else
   __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize));
-  __ StoreMultipleP(r0, sp, StackMemOperand());   // Save all 16 registers
+  __ StoreMultipleP(r0, sp, MemOperand(sp));   // Save all 16 registers
 #endif
 
   const int kSavedRegistersAreaSize =
       (kNumberOfRegisters * kPointerSize) + kDoubleRegsSize;
 
   // Get the bailout id from the stack.
-  __ LoadP(r4, StackMemOperand(kSavedRegistersAreaSize));
+  __ LoadP(r4, MemOperand(sp, kSavedRegistersAreaSize));
   // Cleanse the Return address for 31-bit
   __ CleanseP(r14);
 
@@ -180,7 +180,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   // address for lazy deoptimization) and compute the fp-to-sp delta in
   // register r6.
   __ LoadRR(r5, r14);
-  __ la(r6, StackMemOperand(kSavedRegistersAreaSize + (1 * kPointerSize)));
+  __ la(r6, MemOperand(sp, kSavedRegistersAreaSize + (1 * kPointerSize)));
   __ SubP(r6, fp, r6);
 
   // Allocate a new deoptimizer object.
@@ -194,7 +194,7 @@ void Deoptimizer::EntryGenerator::Generate() {
   // r5: code address or 0 already loaded.
   // r6: Fp-to-sp delta.
   // Parm6: isolate is passed on the stack.
-  __ StoreP(r7, StackMemOperand(kStackFrameExtraParamSlot * kPointerSize));
+  __ StoreP(r7, MemOperand(sp, kStackFrameExtraParamSlot * kPointerSize));
 
   // Call Deoptimizer::New().
   {
@@ -209,14 +209,14 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Copy core registers into FrameDescription::registers_[kNumRegisters].
   DCHECK(Register::kNumRegisters == kNumberOfRegisters);
   __ mvc(MemOperand(r3, FrameDescription::registers_offset()),
-         StackMemOperand(),
+         MemOperand(sp),
          kNumberOfRegisters * kPointerSize);
 
   int double_regs_offset = FrameDescription::double_registers_offset();
   // Copy VFP registers to
   // double_registers_[DoubleRegister::kNumAllocatableRegisters]
   __ mvc(MemOperand(r3, double_regs_offset),
-         StackMemOperand(kNumberOfRegisters * kPointerSize),
+         MemOperand(sp, kNumberOfRegisters * kPointerSize),
          DoubleRegister::NumAllocatableRegisters() * kDoubleSize);
 
   // Remove the bailout id and the saved registers from the stack.
@@ -335,7 +335,7 @@ void Deoptimizer::TableEntryGenerator::GeneratePrologue() {
     DCHECK(masm()->pc_offset() - start == table_entry_size_);
   }
   __ bind(&done);
-  __ StoreP(ip, StackMemOperand());
+  __ StoreP(ip, MemOperand(sp));
 }
 
 

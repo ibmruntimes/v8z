@@ -79,7 +79,7 @@ void LCodeGen::SaveCallerDoubles() {
   BitVector::Iterator save_iterator(doubles);
   while (!save_iterator.Done()) {
     __ std(DoubleRegister::FromAllocationIndex(save_iterator.Current()),
-            StackMemOperand(count * kDoubleSize));
+            MemOperand(sp, count * kDoubleSize));
     save_iterator.Advance();
     count++;
   }
@@ -95,7 +95,7 @@ void LCodeGen::RestoreCallerDoubles() {
   int count = 0;
   while (!save_iterator.Done()) {
     __ ld(DoubleRegister::FromAllocationIndex(save_iterator.Current()),
-           StackMemOperand(count * kDoubleSize));
+           MemOperand(sp, count * kDoubleSize));
     save_iterator.Advance();
     count++;
   }
@@ -129,14 +129,14 @@ bool LCodeGen::GeneratePrologue() {
         !info_->is_native()) {
       Label ok;
       int receiver_offset = info_->scope()->num_parameters() * kPointerSize;
-      __ LoadP(r4, StackMemOperand(receiver_offset));
+      __ LoadP(r4, MemOperand(sp, receiver_offset));
       __ CompareRoot(r4, Heap::kUndefinedValueRootIndex);
       __ bne(&ok, Label::kNear);
 
       __ LoadP(r4, GlobalObjectOperand());
       __ LoadP(r4, FieldMemOperand(r4, GlobalObject::kGlobalProxyOffset));
 
-      __ StoreP(r4, StackMemOperand(receiver_offset));
+      __ StoreP(r4, MemOperand(sp, receiver_offset));
 
       __ bind(&ok);
     }
@@ -171,7 +171,7 @@ bool LCodeGen::GeneratePrologue() {
       __ mov(r3, Operand(kSlotsZapValue));
       Label loop;
       __ bind(&loop);
-      __ StoreP(r3, StackMemOperand(r2, kPointerSize));
+      __ StoreP(r3, MemOperand(sp, r2, kPointerSize));
       __ lay(r2, MemOperand(r2, -kPointerSize));
       __ CmpP(r2, Operand::Zero());
       __ bne(&loop);
@@ -295,7 +295,7 @@ bool LCodeGen::GenerateDeferredCode() {
         __ LoadSmiLiteral(scratch0(), Smi::FromInt(StackFrame::STUB));
         __ PushFixedFrame(scratch0());
         __ la(fp,
-              StackMemOperand(StandardFrameConstants::kFixedFrameSizeFromFp));
+              MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
         Comment(";;; Deferred code");
       }
       code->Generate();
@@ -354,7 +354,7 @@ bool LCodeGen::GenerateDeoptJumpTable() {
           __ LoadSmiLiteral(ip, Smi::FromInt(StackFrame::STUB));
           __ PushFixedFrame(ip);
           __ la(fp,
-                StackMemOperand(StandardFrameConstants::kFixedFrameSizeFromFp));
+                MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
           __ bind(&call_deopt_entry);
           // Add the base address to the offset previously loaded in
           // entry_offset.
@@ -553,7 +553,7 @@ MemOperand LCodeGen::ToMemOperand(LOperand* op) const {
   } else {
     // Retrieve parameter without eager stack-frame relative to the
     // stack-pointer.
-    return StackMemOperand(ArgumentsOffsetWithoutFrame(op->index()));
+    return MemOperand(sp, ArgumentsOffsetWithoutFrame(op->index()));
   }
 }
 
@@ -565,7 +565,7 @@ MemOperand LCodeGen::ToHighMemOperand(LOperand* op) const {
   } else {
     // Retrieve parameter without eager stack-frame relative to the
     // stack-pointer.
-    return StackMemOperand(
+    return MemOperand(sp, 
         ArgumentsOffsetWithoutFrame(op->index()) + kPointerSize);
   }
 }
@@ -2645,8 +2645,8 @@ void LCodeGen::DoCmpHoleAndBranch(LCmpHoleAndBranch* instr) {
   __ lgdr(scratch, input_reg);
   __ ExtractBitRange(scratch, scratch, 63, 32);
 #else
-  __ stdy(input_reg, StackMemOperand(-kDoubleSize));
-  __ LoadlW(scratch, StackMemOperand(-kDoubleSize + Register::kExponentOffset));
+  __ stdy(input_reg, MemOperand(sp, -kDoubleSize));
+  __ LoadlW(scratch, MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
 #endif
   __ CmpP(scratch, Operand(kHoleNanUpper32));
   EmitBranch(instr, eq);
@@ -3723,7 +3723,7 @@ void LCodeGen::DoArgumentsElements(LArgumentsElements* instr) {
   Register result = ToRegister(instr->result());
 
   if (instr->hydrogen()->from_inlined()) {
-    __ lay(result, StackMemOperand(-2 * kPointerSize));
+    __ lay(result, MemOperand(sp, -2 * kPointerSize));
   } else {
     // Check if the calling frame is an arguments adaptor frame.
     Label done, adapted;
@@ -4423,7 +4423,7 @@ void LCodeGen::DoCallNewArray(LCallNewArray* instr) {
       Label packed_case;
       // We might need a change here
       // look at the first argument
-      __ LoadP(r7, StackMemOperand());
+      __ LoadP(r7, MemOperand(sp));
       __ CmpP(r7, Operand::Zero());
       __ beq(&packed_case, Label::kNear);
 
@@ -5733,13 +5733,13 @@ void LCodeGen::DoDoubleBits(LDoubleBits* instr) {
   DoubleRegister value_reg = ToDoubleRegister(instr->value());
   Register result_reg = ToRegister(instr->result());
   // TODO(joransiu): Use non-memory version.
-  __ stdy(value_reg, StackMemOperand(-kDoubleSize));
+  __ stdy(value_reg, MemOperand(sp, -kDoubleSize));
   if (instr->hydrogen()->bits() == HDoubleBits::HIGH) {
     __ LoadlW(result_reg,
-              StackMemOperand(-kDoubleSize + Register::kExponentOffset));
+              MemOperand(sp, -kDoubleSize + Register::kExponentOffset));
   } else {
     __ LoadlW(result_reg,
-              StackMemOperand(-kDoubleSize + Register::kMantissaOffset));
+              MemOperand(sp, -kDoubleSize + Register::kMantissaOffset));
   }
 }
 
@@ -5750,13 +5750,13 @@ void LCodeGen::DoConstructDouble(LConstructDouble* instr) {
   DoubleRegister result_reg = ToDoubleRegister(instr->result());
   // TODO(joransiu): Construct with ldgr
 #if V8_TARGET_LITTLE_ENDIAN
-  __ StoreW(hi_reg, StackMemOperand(-kDoubleSize / 2));
-  __ StoreW(lo_reg, StackMemOperand(-kDoubleSize));
+  __ StoreW(hi_reg, MemOperand(sp, -kDoubleSize / 2));
+  __ StoreW(lo_reg, MemOperand(sp, -kDoubleSize));
 #else
-  __ StoreW(lo_reg, StackMemOperand(-kDoubleSize / 2));
-  __ StoreW(hi_reg, StackMemOperand(-kDoubleSize));
+  __ StoreW(lo_reg, MemOperand(sp, -kDoubleSize / 2));
+  __ StoreW(hi_reg, MemOperand(sp, -kDoubleSize));
 #endif
-  __ ldy(result_reg, StackMemOperand(-kDoubleSize));
+  __ ldy(result_reg, MemOperand(sp, -kDoubleSize));
 }
 
 
@@ -6167,7 +6167,7 @@ void LCodeGen::DoStackCheck(LStackCheck* instr) {
   if (instr->hydrogen()->is_function_entry()) {
     // Perform stack overflow check.
     Label done;
-    __ lay(sp, StackMemOperand());
+    __ lay(sp, MemOperand(sp));
     __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
     __ lay(sp, MemOperand(sp, -kStackPointerBias));
     __ bge(&done, Label::kNear);
@@ -6182,7 +6182,7 @@ void LCodeGen::DoStackCheck(LStackCheck* instr) {
     // Perform stack overflow check if this goto needs it before jumping.
     DeferredStackCheck* deferred_stack_check =
         new(zone()) DeferredStackCheck(this, instr);
-    __ lay(sp, StackMemOperand());
+    __ lay(sp, MemOperand(sp));
     __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
     __ lay(sp, MemOperand(sp, -kStackPointerBias));
     __ blt(deferred_stack_check->entry());

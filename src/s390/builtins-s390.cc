@@ -168,7 +168,7 @@ void Builtins::Generate_StringConstructCode(MacroAssembler* masm) {
   __ SubP(r2, Operand(1));
   __ ShiftLeftP(r2, r2, Operand(kPointerSizeLog2));
   __ la(sp, MemOperand(sp, r2));
-  __ LoadP(r2, StackMemOperand());
+  __ LoadP(r2, MemOperand(sp));
   // sp now point to args[0], drop args[0] + receiver.
   __ Drop(2);
 
@@ -305,7 +305,7 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
   // would be quite expensive.  A good compromise is to first check against
   // stack limit as a cue for an interrupt signal.
   Label ok;
-  __ lay(sp, StackMemOperand());
+  __ lay(sp, MemOperand(sp));
   __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
   __ lay(sp, MemOperand(sp, -kStackPointerBias));
   __ bge(&ok, Label::kNear);
@@ -477,7 +477,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
         __ LoadRoot(r9, Heap::kAllocationMementoMapRootIndex);
         __ StoreP(r9, MemOperand(r7, AllocationMemento::kMapOffset));
         // Load the AllocationSite
-        __ LoadP(r9, StackMemOperand(2 * kPointerSize));
+        __ LoadP(r9, MemOperand(sp, 2 * kPointerSize));
         __ StoreP(r9,
                   MemOperand(r7, AllocationMemento::kAllocationSiteOffset));
         __ AddP(r7, Operand(AllocationMemento::kAllocationSiteOffset +
@@ -585,7 +585,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ bind(&rt_call);
     if (create_memento) {
       // Get the cell or allocation site.
-      __ LoadP(r4, StackMemOperand(2 * kPointerSize));
+      __ LoadP(r4, MemOperand(sp, 2 * kPointerSize));
       __ push(r4);
     }
 
@@ -610,7 +610,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     __ bind(&allocated);
 
     if (create_memento) {
-      __ LoadP(r4, StackMemOperand(kPointerSize * 2));
+      __ LoadP(r4, MemOperand(sp, kPointerSize * 2));
       __ CompareRoot(r4, Heap::kUndefinedValueRootIndex);
       __ beq(&count_incremented);
       // r4 is an AllocationSite. We are creating a memento from it, so we
@@ -631,8 +631,8 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // sp[1]: receiver
     // sp[2]: constructor function
     // sp[3]: number of arguments (smi-tagged)
-    __ LoadP(r3, StackMemOperand(2 * kPointerSize));
-    __ LoadP(r5, StackMemOperand(3 * kPointerSize));
+    __ LoadP(r3, MemOperand(sp, 2 * kPointerSize));
+    __ LoadP(r5, MemOperand(sp, 3 * kPointerSize));
 
     // Set up pointer to last argument.
     __ la(r4, MemOperand(fp, StandardFrameConstants::kCallerSPOffset));
@@ -706,7 +706,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // Throw away the result of the constructor invocation and use the
     // on-stack receiver as the result.
     __ bind(&use_receiver);
-    __ LoadP(r2, StackMemOperand());
+    __ LoadP(r2, MemOperand(sp));
 
     // Remove receiver from the stack, remove caller arguments, and
     // return.
@@ -715,7 +715,7 @@ static void Generate_JSConstructStubHelper(MacroAssembler* masm,
     // sp[0]: receiver (newly allocated object)
     // sp[1]: constructor function
     // sp[2]: number of arguments (smi-tagged)
-    __ LoadP(r3, StackMemOperand(2 * kPointerSize));
+    __ LoadP(r3, MemOperand(sp, 2 * kPointerSize));
 
     // Leave construct frame.
   }
@@ -764,8 +764,8 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
 
     // Push the function and the receiver onto the stack.
     __ lay(sp, MemOperand(sp, -2 * kPointerSize));
-    __ StoreP(r3, StackMemOperand(kPointerSize));
-    __ StoreP(r4, StackMemOperand());
+    __ StoreP(r3, MemOperand(sp, kPointerSize));
+    __ StoreP(r4, MemOperand(sp));
 
     // Copy arguments to the stack in a loop from argv to sp.
     // The arguments are actually placed in reverse order on sp
@@ -788,7 +788,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     __ LoadP(r8, MemOperand(r9, r6));  // read next parameter
     __ la(r9, MemOperand(r9, kPointerSize));  // r9++;
     __ LoadP(r0, MemOperand(r8));  // dereference handle
-    __ StoreP(r0, StackMemOperand(r7));  // push parameter
+    __ StoreP(r0, MemOperand(sp, r7));  // push parameter
     __ b(&argLoop);
     __ bind(&argExit);
 
@@ -839,15 +839,15 @@ static void CallCompileOptimized(MacroAssembler* masm, bool concurrent) {
   FrameAndConstantPoolScope scope(masm, StackFrame::INTERNAL);
     // Push a copy of the function onto the stack.
     __ lay(sp, MemOperand(sp, -2 * kPointerSize));
-    __ StoreP(r3, StackMemOperand(kPointerSize));
+    __ StoreP(r3, MemOperand(sp, kPointerSize));
     // Push function as parameter to the runtime call.
-    __ StoreP(r3, StackMemOperand());
+    __ StoreP(r3, MemOperand(sp));
   // Whether to compile in a background thread.
   __ Push(masm->isolate()->factory()->ToBoolean(concurrent));
   __ CallRuntime(Runtime::kCompileOptimized, 2);
 
   // Restore receiver.
-    __ LoadP(r3, StackMemOperand());
+    __ LoadP(r3, MemOperand(sp));
     __ la(sp, MemOperand(sp, kPointerSize));
 }
 
@@ -951,7 +951,7 @@ void Builtins::Generate_MarkCodeAsExecutedOnce(MacroAssembler* masm) {
 
   // Perform prologue operations usually performed by the young code stub.
   __ PushFixedFrame(r3);
-  __ la(fp, StackMemOperand(StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ la(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
 
   // Jump to point after the code-age stub.
   __ AddP(r2, ip, Operand(kNoCodeAgeSequenceLength));
@@ -1004,7 +1004,7 @@ static void Generate_NotifyDeoptimizedHelper(MacroAssembler* masm,
   }
 
   // Get the full codegen state from the stack and untag it -> r8.
-  __ LoadP(r8, StackMemOperand());
+  __ LoadP(r8, MemOperand(sp));
   __ SmiUntag(r8);
   // Switch on the state.
   Label with_tos_register, unknown_state;
@@ -1014,7 +1014,7 @@ static void Generate_NotifyDeoptimizedHelper(MacroAssembler* masm,
   __ Ret();
 
   __ bind(&with_tos_register);
-  __ LoadP(r2, StackMemOperand(kPointerSize));
+  __ LoadP(r2, MemOperand(sp, kPointerSize));
   __ CmpP(r8, Operand(FullCodeGenerator::TOS_REG));
   __ bne(&unknown_state);
   __ la(sp, MemOperand(sp, 2 * kPointerSize));  // Remove state.
@@ -1083,7 +1083,7 @@ void Builtins::Generate_OsrAfterStackCheck(MacroAssembler* masm) {
   // We check the stack limit as indicator that recompilation might be done.
   Label ok;
   // TODO(mcornac):
-  __ lay(sp, StackMemOperand());
+  __ lay(sp, MemOperand(sp));
   __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
   __ lay(sp, MemOperand(sp, -kStackPointerBias));
   __ bge(&ok, Label::kNear);
@@ -1116,7 +1116,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r2: actual number of arguments
   Label slow, non_function;
   __ ShiftLeftP(r3, r2, Operand(kPointerSizeLog2));
-  __ lay(r3, StackMemOperand(r3));
+  __ lay(r3, MemOperand(sp, r3));
   __ LoadP(r3, MemOperand(r3));
   __ JumpIfSmi(r3, &non_function);
   __ CompareObjectType(r3, r4, r4, JS_FUNCTION_TYPE);
@@ -1158,7 +1158,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     // Compute the receiver in sloppy mode.
     __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
-    __ lay(r4, StackMemOperand(ip));
+    __ lay(r4, MemOperand(sp, ip));
     __ LoadP(r4, MemOperand(r4, -kPointerSize));
     // r2: actual number of arguments
     // r3: function
@@ -1192,7 +1192,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     // Restore the function to r3, and the flag to r6.
     __ ShiftLeftP(r6, r2, Operand(kPointerSizeLog2));
-    __ lay(r6, StackMemOperand(r6));
+    __ lay(r6, MemOperand(sp, r6));
     __ LoadP(r3, MemOperand(r6));
     __ LoadImmP(r6, Operand::Zero());
     __ b(&patch_receiver, Label::kNear);
@@ -1203,7 +1203,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
 
     __ bind(&patch_receiver);
     __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
-    __ lay(r5, StackMemOperand(ip));
+    __ lay(r5, MemOperand(sp, ip));
     __ StoreP(r4, MemOperand(r5, -kPointerSize));
 
     __ b(&shift_arguments);
@@ -1225,7 +1225,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   // r3: function
   // r6: call type (0: JS function, 1: function proxy, 2: non-function)
   __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
-  __ lay(r4, StackMemOperand(ip));
+  __ lay(r4, MemOperand(sp, ip));
   __ StoreP(r3, MemOperand(r4, -kPointerSize));
 
   // 4. Shift arguments and return address one slot down on the stack
@@ -1238,14 +1238,14 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
   { Label loop;
     // Calculate the copy start address (destination). Copy end address is sp.
     __ ShiftLeftP(ip, r2, Operand(kPointerSizeLog2));
-    __ lay(r4, StackMemOperand(ip));
+    __ lay(r4, MemOperand(sp, ip));
 
     __ bind(&loop);
     __ LoadP(ip, MemOperand(r4, -kPointerSize));
     __ StoreP(ip, MemOperand(r4));
     __ SubP(r4, Operand(kPointerSize));
     // TODO(mcornac):
-    __ lay(sp, StackMemOperand());
+    __ lay(sp, MemOperand(sp));
     __ CmpP(r4, sp);
     __ lay(sp, MemOperand(sp, -kStackPointerBias));
     __ bne(&loop);
@@ -1508,12 +1508,12 @@ static void EnterArgumentsAdaptorFrame(MacroAssembler* masm) {
 
   // Cleanse the top nibble of 31-bit pointers.
   __ CleanseP(r14);
-  __ StoreP(r14, StackMemOperand(4 * kPointerSize));
-  __ StoreP(fp, StackMemOperand(3 * kPointerSize));
-  __ StoreP(r6, StackMemOperand(2 * kPointerSize));
-  __ StoreP(r3, StackMemOperand(kPointerSize));
-  __ StoreP(r2, StackMemOperand());
-  __ la(fp, StackMemOperand(
+  __ StoreP(r14, MemOperand(sp, 4 * kPointerSize));
+  __ StoreP(fp, MemOperand(sp, 3 * kPointerSize));
+  __ StoreP(r6, MemOperand(sp, 2 * kPointerSize));
+  __ StoreP(r3, MemOperand(sp, kPointerSize));
+  __ StoreP(r2, MemOperand(sp));
+  __ la(fp, MemOperand(sp, 
         StandardFrameConstants::kFixedFrameSizeFromFp + kPointerSize));
 }
 
@@ -1624,7 +1624,7 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     Label fill;
     __ bind(&fill);
     __ push(r0);
-    __ lay(sp, StackMemOperand());
+    __ lay(sp, MemOperand(sp));
     __ CmpP(sp, r4);
     __ lay(sp, MemOperand(sp, -kStackPointerBias));
     __ bne(&fill);

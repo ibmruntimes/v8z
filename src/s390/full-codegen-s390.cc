@@ -139,14 +139,14 @@ void FullCodeGenerator::Generate() {
   if (info->strict_mode() == SLOPPY && !info->is_native()) {
     Label ok;
     int receiver_offset = info->scope()->num_parameters() * kPointerSize;
-    __ LoadP(r4, StackMemOperand(receiver_offset), r0);
+    __ LoadP(r4, MemOperand(sp, receiver_offset), r0);
     __ CompareRoot(r4, Heap::kUndefinedValueRootIndex);
     __ bne(&ok, Label::kNear);
 
     __ LoadP(r4, GlobalObjectOperand());
     __ LoadP(r4, FieldMemOperand(r4, GlobalObject::kGlobalProxyOffset));
 
-    __ StoreP(r4, StackMemOperand(receiver_offset), r0);
+    __ StoreP(r4, MemOperand(sp, receiver_offset), r0);
 
     __ bind(&ok);
   }
@@ -193,7 +193,7 @@ void FullCodeGenerator::Generate() {
         // TODO(joransiu): Consider using MVC
         __ lay(sp, MemOperand(sp, -kMaxPushes * kPointerSize));
         for (int i = 0; i < kMaxPushes; i++) {
-          __ StoreP(ip, StackMemOperand(i * kPointerSize));
+          __ StoreP(ip, MemOperand(sp, i * kPointerSize));
         }
         // Continue loop if not done.
         __ BranchOnCount(r4, &loop_header);
@@ -204,7 +204,7 @@ void FullCodeGenerator::Generate() {
       if (remaining > 0) {
         __ lay(sp, MemOperand(sp, -remaining * kPointerSize));
         for (int i  = 0; i < remaining; i++) {
-          __ StoreP(ip, StackMemOperand(i * kPointerSize));
+          __ StoreP(ip, MemOperand(sp, i * kPointerSize));
         }
       }
     }
@@ -467,8 +467,8 @@ void FullCodeGenerator::EmitReturnSequence() {
 
       // Mark range where no frame exists, in case profiler receives sample here
       int32_t no_frame_start = masm_->pc_offset();
-      masm_->LoadP(fp, StackMemOperand());
-      masm_->LoadP(r14, StackMemOperand(kPointerSize));
+      masm_->LoadP(fp, MemOperand(sp));
+      masm_->LoadP(r14, MemOperand(sp, kPointerSize));
       masm_->lay(sp, MemOperand(sp, (uint32_t)(sp_delta + (2 * kPointerSize))));
       masm_->Ret();
       info_->AddNoFrameRange(no_frame_start, masm_->pc_offset());
@@ -613,7 +613,7 @@ void FullCodeGenerator::StackValueContext::DropAndPlug(int count,
                                                        Register reg) const {
   DCHECK(count > 0);
   if (count > 1) __ Drop(count - 1);
-  __ StoreP(reg, StackMemOperand());
+  __ StoreP(reg, MemOperand(sp));
 }
 
 
@@ -1050,7 +1050,7 @@ void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
     VisitForAccumulatorValue(clause->label());
 
     // Perform the comparison as if via '==='.
-    __ LoadP(r3, StackMemOperand());  // Switch value.
+    __ LoadP(r3, MemOperand(sp));  // Switch value.
     bool inline_smi_code = ShouldInlineSmiCase(Token::EQ_STRICT);
     JumpPatchSite patch_site(masm_);
     if (inline_smi_code) {
@@ -1210,7 +1210,7 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   __ StoreP(r4, FieldMemOperand(r3, FixedArray::OffsetOfElementAt(slot)));
 
   __ LoadSmiLiteral(r3, Smi::FromInt(1));  // Smi indicates slow check
-  __ LoadP(r4, StackMemOperand());  // Get enumerated object
+  __ LoadP(r4, MemOperand(sp));  // Get enumerated object
   STATIC_ASSERT(FIRST_JS_PROXY_TYPE == FIRST_SPEC_OBJECT_TYPE);
   __ CompareObjectType(r4, r5, r5, LAST_JS_PROXY_TYPE);
   __ bgt(&non_proxy, Label::kNear);
@@ -1225,25 +1225,25 @@ void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
   PrepareForBailoutForId(stmt->BodyId(), NO_REGISTERS);
   __ bind(&loop);
   // Load the current count to r2, load the length to r3.
-  __ LoadP(r2, StackMemOperand());
-  __ LoadP(r3, StackMemOperand(kPointerSize));
+  __ LoadP(r2, MemOperand(sp));
+  __ LoadP(r3, MemOperand(sp, kPointerSize));
   __ CmpLogicalP(r2, r3);  // Compare to the array length.
   __ bge(loop_statement.break_label());
 
   // Get the current entry of the array into register r5.
-  __ LoadP(r4, StackMemOperand(2 * kPointerSize));
+  __ LoadP(r4, MemOperand(sp, 2 * kPointerSize));
   __ AddP(r4, Operand(FixedArray::kHeaderSize - kHeapObjectTag));
   __ SmiToPtrArrayOffset(r5, r2);
   __ LoadP(r5, MemOperand(r5, r4));
 
   // Get the expected map from the stack or a smi in the
   // permanent slow case into register r4.
-  __ LoadP(r4, StackMemOperand(3 * kPointerSize));
+  __ LoadP(r4, MemOperand(sp, 3 * kPointerSize));
 
   // Check if the expected map still matches that of the enumerable.
   // If not, we may have to filter the key.
   Label update_each;
-  __ LoadP(r3, StackMemOperand(4 * kPointerSize));
+  __ LoadP(r3, MemOperand(sp, 4 * kPointerSize));
   __ LoadP(r6, FieldMemOperand(r3, HeapObject::kMapOffset));
   __ CmpP(r6, r4);
   __ beq(&update_each);
@@ -1721,7 +1721,7 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
             VisitForAccumulatorValue(value);
             DCHECK(StoreIC::ValueRegister().is(r2));
             __ mov(StoreIC::NameRegister(), Operand(key->value()));
-            __ LoadP(StoreIC::ReceiverRegister(), StackMemOperand());
+            __ LoadP(StoreIC::ReceiverRegister(), MemOperand(sp));
             CallStoreIC(key->LiteralFeedbackId());
             PrepareForBailoutForId(key->id(), NO_REGISTERS);
           } else {
@@ -1730,7 +1730,7 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
           break;
         }
         // Duplicate receiver on stack.
-        __ LoadP(r2, StackMemOperand());
+        __ LoadP(r2, MemOperand(sp));
         __ push(r2);
         VisitForStackValue(key);
         VisitForStackValue(value);
@@ -1744,7 +1744,7 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
         break;
       case ObjectLiteral::Property::PROTOTYPE:
         // Duplicate receiver on stack.
-        __ LoadP(r2, StackMemOperand());
+        __ LoadP(r2, MemOperand(sp));
         __ push(r2);
         VisitForStackValue(value);
         if (property->emit_store()) {
@@ -1767,7 +1767,7 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
   for (AccessorTable::Iterator it = accessor_table.begin();
        it != accessor_table.end();
        ++it) {
-    __ LoadP(r2, StackMemOperand());  // Duplicate receiver.
+    __ LoadP(r2, MemOperand(sp));  // Duplicate receiver.
     __ push(r2);
     VisitForStackValue(it->first);
     EmitAccessor(it->second->getter);
@@ -1779,7 +1779,7 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 
   if (expr->has_function()) {
     DCHECK(result_saved);
-    __ LoadP(r2, StackMemOperand());
+    __ LoadP(r2, MemOperand(sp));
     __ push(r2);
     __ CallRuntime(Runtime::kToFastProperties, 1);
   }
@@ -1849,7 +1849,7 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
 
     if (IsFastObjectElementsKind(constant_elements_kind)) {
       int offset = FixedArray::kHeaderSize + (i * kPointerSize);
-      __ LoadP(r7, StackMemOperand(kPointerSize));  // Copy of array literal
+      __ LoadP(r7, MemOperand(sp, kPointerSize));  // Copy of array literal
       __ LoadP(r3, FieldMemOperand(r7, JSObject::kElementsOffset));
       __ StoreP(result_register(), FieldMemOperand(r3, offset));
       // Update the write barrier for the array store.
@@ -1899,7 +1899,7 @@ void FullCodeGenerator::VisitAssignment(Assignment* expr) {
       if (expr->is_compound()) {
         // We need the receiver both on the stack and in the register.
         VisitForStackValue(property->obj());
-        __ LoadP(LoadIC::ReceiverRegister(), StackMemOperand());
+        __ LoadP(LoadIC::ReceiverRegister(), MemOperand(sp));
       } else {
         VisitForStackValue(property->obj());
       }
@@ -1908,8 +1908,8 @@ void FullCodeGenerator::VisitAssignment(Assignment* expr) {
       if (expr->is_compound()) {
         VisitForStackValue(property->obj());
         VisitForStackValue(property->key());
-        __ LoadP(LoadIC::ReceiverRegister(), StackMemOperand(kPointerSize));
-        __ LoadP(LoadIC::NameRegister(), StackMemOperand());
+        __ LoadP(LoadIC::ReceiverRegister(), MemOperand(sp, kPointerSize));
+        __ LoadP(LoadIC::NameRegister(), MemOperand(sp));
       } else {
         VisitForStackValue(property->obj());
         VisitForStackValue(property->key());
@@ -2062,7 +2062,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       __ bind(&l_catch);
       handler_table()->set(expr->index(), Smi::FromInt(l_catch.pos()));
       __ LoadRoot(load_name, Heap::kthrow_stringRootIndex);   // "throw"
-      __ LoadP(r5, StackMemOperand(kPointerSize));   // iter
+      __ LoadP(r5, MemOperand(sp, kPointerSize));   // iter
       __ Push(load_name, r5, r2);                       // "throw", iter, except
       __ b(&l_call);
 
@@ -2079,7 +2079,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       __ b(&l_resume);
       __ bind(&l_suspend);
       const int generator_object_depth = kPointerSize + handler_size;
-      __ LoadP(r2, StackMemOperand(generator_object_depth));
+      __ LoadP(r2, MemOperand(sp, generator_object_depth));
       __ push(r2);                                       // g
       DCHECK(l_continuation.pos() > 0 && Smi::IsValid(l_continuation.pos()));
       __ LoadSmiLiteral(r3, Smi::FromInt(l_continuation.pos()));
@@ -2100,13 +2100,13 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       __ bind(&l_next);
 
       __ LoadRoot(load_name, Heap::knext_stringRootIndex);  // "next"
-      __ LoadP(r5, StackMemOperand(kPointerSize));  // iter
+      __ LoadP(r5, MemOperand(sp, kPointerSize));  // iter
       __ Push(load_name, r5, r2);                      // "next", iter, received
 
       // result = receiver[f](arg);
       __ bind(&l_call);
-      __ LoadP(load_receiver, StackMemOperand(kPointerSize));
-      __ LoadP(load_name, StackMemOperand(2 * kPointerSize));
+      __ LoadP(load_receiver, MemOperand(sp, kPointerSize));
+      __ LoadP(load_name, MemOperand(sp, 2 * kPointerSize));
       if (FLAG_vector_ics) {
         __ mov(LoadIC::SlotRegister(),
                Operand(Smi::FromInt(expr->KeyedLoadFeedbackSlot())));
@@ -2114,7 +2114,7 @@ void FullCodeGenerator::VisitYield(Yield* expr) {
       Handle<Code> ic = isolate()->builtins()->KeyedLoadIC_Initialize();
       CallIC(ic, TypeFeedbackId::None());
       __ LoadRR(r3, r2);
-      __ StoreP(r3, StackMemOperand(2 * kPointerSize));
+      __ StoreP(r3, MemOperand(sp, 2 * kPointerSize));
       CallFunctionStub stub(isolate(), 1, CALL_AS_METHOD);
       __ CallStub(&stub);
 
@@ -2211,7 +2211,7 @@ void FullCodeGenerator::EmitGeneratorResume(Expression *generator,
   // r6 = callee's JS function.
   __ PushFixedFrame(r6);
   // Adjust FP to point to saved FP.
-  __ lay(fp, StackMemOperand(StandardFrameConstants::kFixedFrameSizeFromFp));
+  __ lay(fp, MemOperand(sp, StandardFrameConstants::kFixedFrameSizeFromFp));
 
   // Load the operand stack size.
   __ LoadP(r5, FieldMemOperand(r3, JSGeneratorObject::kOperandStackOffset));
@@ -2700,13 +2700,13 @@ void FullCodeGenerator::EmitCallWithLoadIC(Call* expr) {
   } else {
     // Load the function from the receiver.
     DCHECK(callee->IsProperty());
-    __ LoadP(LoadIC::ReceiverRegister(), StackMemOperand());
+    __ LoadP(LoadIC::ReceiverRegister(), MemOperand(sp));
     EmitNamedPropertyLoad(callee->AsProperty());
     PrepareForBailoutForId(callee->AsProperty()->LoadId(), TOS_REG);
     // Push the target function under the receiver.
-    __ LoadP(ip, StackMemOperand());
+    __ LoadP(ip, MemOperand(sp));
     __ push(ip);
-    __ StoreP(r2, StackMemOperand(kPointerSize));
+    __ StoreP(r2, MemOperand(sp, kPointerSize));
   }
 
   EmitCall(expr, call_type);
@@ -2723,15 +2723,15 @@ void FullCodeGenerator::EmitKeyedCallWithLoadIC(Call* expr,
 
   // Load the function from the receiver.
   DCHECK(callee->IsProperty());
-  __ LoadP(LoadIC::ReceiverRegister(), StackMemOperand());
+  __ LoadP(LoadIC::ReceiverRegister(), MemOperand(sp));
   __ Move(LoadIC::NameRegister(), r2);
   EmitKeyedPropertyLoad(callee->AsProperty());
   PrepareForBailoutForId(callee->AsProperty()->LoadId(), TOS_REG);
 
   // Push the target function under the receiver.
-  __ LoadP(ip, StackMemOperand());
+  __ LoadP(ip, MemOperand(sp));
   __ push(ip);
-  __ StoreP(r2, StackMemOperand(kPointerSize));
+  __ StoreP(r2, MemOperand(sp, kPointerSize));
 
   EmitCall(expr, CallIC::METHOD);
 }
@@ -2752,7 +2752,7 @@ void FullCodeGenerator::EmitCall(Call* expr, CallIC::CallType call_type) {
   Handle<Code> ic = CallIC::initialize_stub(
       isolate(), arg_count, call_type);
   __ LoadSmiLiteral(r5, Smi::FromInt(expr->CallFeedbackSlot()));
-  __ LoadP(r3, StackMemOperand((arg_count + 1) * kPointerSize), r0);
+  __ LoadP(r3, MemOperand(sp, (arg_count + 1) * kPointerSize), r0);
   // Don't assign a type feedback id to the IC, since type feedback is provided
   // by the vector above.
   CallIC(ic);
@@ -2767,7 +2767,7 @@ void FullCodeGenerator::EmitCall(Call* expr, CallIC::CallType call_type) {
 void FullCodeGenerator::EmitResolvePossiblyDirectEval(int arg_count) {
   // r6: copy of the first argument or undefined if it doesn't exist.
   if (arg_count > 0) {
-    __ LoadP(r6, StackMemOperand(arg_count * kPointerSize), r0);
+    __ LoadP(r6, MemOperand(sp, arg_count * kPointerSize), r0);
   } else {
     __ LoadRoot(r6, Heap::kUndefinedValueRootIndex);
   }
@@ -2819,20 +2819,20 @@ void FullCodeGenerator::VisitCall(Call* expr) {
 
       // Push a copy of the function (found below the arguments) and
       // resolve eval.
-      __ LoadP(r3, StackMemOperand((arg_count + 1) * kPointerSize), r0);
+      __ LoadP(r3, MemOperand(sp, (arg_count + 1) * kPointerSize), r0);
       __ push(r3);
       EmitResolvePossiblyDirectEval(arg_count);
 
       // The runtime call returns a pair of values in r2 (function) and
       // r3 (receiver). Touch up the stack with the right values.
-      __ StoreP(r2, StackMemOperand((arg_count + 1) * kPointerSize));
-      __ StoreP(r3, StackMemOperand(arg_count * kPointerSize));
+      __ StoreP(r2, MemOperand(sp, (arg_count + 1) * kPointerSize));
+      __ StoreP(r3, MemOperand(sp, arg_count * kPointerSize));
     }
 
     // Record source position for debugger.
     SetSourcePosition(expr->position());
     CallFunctionStub stub(isolate(), arg_count, NO_CALL_FUNCTION_FLAGS);
-    __ LoadP(r3, StackMemOperand((arg_count + 1) * kPointerSize), r0);
+    __ LoadP(r3, MemOperand(sp, (arg_count + 1) * kPointerSize), r0);
     __ CallStub(&stub);
     RecordJSReturnSite(expr);
     // Restore context register.
@@ -2933,7 +2933,7 @@ void FullCodeGenerator::VisitCallNew(CallNew* expr) {
 
   // Load function and argument count into r3 and r2.
   __ mov(r2, Operand(arg_count));
-  __ LoadP(r3, StackMemOperand(arg_count * kPointerSize), r0);
+  __ LoadP(r3, MemOperand(sp, arg_count * kPointerSize), r0);
 
   // Record call targets in unoptimized code.
   if (FLAG_pretenuring_call_new) {
@@ -4206,9 +4206,9 @@ void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
     }
 
     // Push the target function under the receiver.
-    __ LoadP(ip, StackMemOperand());
+    __ LoadP(ip, MemOperand(sp));
     __ push(ip);
-    __ StoreP(r2, StackMemOperand(kPointerSize));
+    __ StoreP(r2, MemOperand(sp, kPointerSize));
 
     // Push the arguments ("left-to-right").
     int arg_count = args->length();
@@ -4219,7 +4219,7 @@ void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
     // Record source position of the IC call.
     SetSourcePosition(expr->position());
     CallFunctionStub stub(isolate(), arg_count, NO_CALL_FUNCTION_FLAGS);
-    __ LoadP(r3, StackMemOperand((arg_count + 1) * kPointerSize));
+    __ LoadP(r3, MemOperand(sp, (arg_count + 1) * kPointerSize));
     __ CallStub(&stub);
 
     // Restore context register.
@@ -4381,14 +4381,14 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
     if (assign_type == NAMED_PROPERTY) {
       // Put the object both on the stack and in the register.
       VisitForStackValue(prop->obj());
-      __ LoadP(LoadIC::ReceiverRegister(), StackMemOperand());
+      __ LoadP(LoadIC::ReceiverRegister(), MemOperand(sp));
       EmitNamedPropertyLoad(prop);
     } else {
       VisitForStackValue(prop->obj());
       VisitForStackValue(prop->key());
       __ LoadP(LoadIC::ReceiverRegister(),
-               StackMemOperand(kPointerSize));
-      __ LoadP(LoadIC::NameRegister(), StackMemOperand());
+               MemOperand(sp, kPointerSize));
+      __ LoadP(LoadIC::NameRegister(), MemOperand(sp));
       EmitKeyedPropertyLoad(prop);
     }
   }
@@ -4421,10 +4421,10 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
             __ push(r2);
             break;
           case NAMED_PROPERTY:
-            __ StoreP(r2, StackMemOperand(kPointerSize));
+            __ StoreP(r2, MemOperand(sp, kPointerSize));
             break;
           case KEYED_PROPERTY:
-            __ StoreP(r2, StackMemOperand(2 * kPointerSize));
+            __ StoreP(r2, MemOperand(sp, 2 * kPointerSize));
             break;
         }
       }
@@ -4454,10 +4454,10 @@ void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
           __ push(r2);
           break;
         case NAMED_PROPERTY:
-          __ StoreP(r2, StackMemOperand(kPointerSize));
+          __ StoreP(r2, MemOperand(sp, kPointerSize));
           break;
         case KEYED_PROPERTY:
-          __ StoreP(r2, StackMemOperand(2 * kPointerSize));
+          __ StoreP(r2, MemOperand(sp, 2 * kPointerSize));
           break;
       }
     }
@@ -4886,7 +4886,7 @@ FullCodeGenerator::NestedStatement* FullCodeGenerator::TryFinally::Exit(
   __ Drop(*stack_depth);  // Down to the handler block.
   if (*context_length > 0) {
     // Restore the context to its dedicated register and the stack.
-    __ LoadP(cp, StackMemOperand(StackHandlerConstants::kContextOffset));
+    __ LoadP(cp, MemOperand(sp, StackHandlerConstants::kContextOffset));
     __ StoreP(cp, MemOperand(fp, StandardFrameConstants::kContextOffset));
   }
   __ PopTryHandler();

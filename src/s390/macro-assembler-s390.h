@@ -537,11 +537,11 @@ class MacroAssembler: public Assembler {
 
   void push(Register src) {
     lay(sp, MemOperand(sp, -kPointerSize));
-    StoreP(src, StackMemOperand());
+    StoreP(src, MemOperand(sp));
   }
 
   void pop(Register dst) {
-    LoadP(dst, StackMemOperand());
+    LoadP(dst, MemOperand(sp));
     la(sp, MemOperand(sp, kPointerSize));
   }
 
@@ -558,16 +558,16 @@ class MacroAssembler: public Assembler {
   // Push two registers.  Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2) {
     lay(sp, MemOperand(sp, -kPointerSize * 2));
-    StoreP(src1, StackMemOperand(kPointerSize));
-    StoreP(src2, StackMemOperand());
+    StoreP(src1, MemOperand(sp, kPointerSize));
+    StoreP(src2, MemOperand(sp));
   }
 
   // Push three registers.  Pushes leftmost register first (to highest address).
   void Push(Register src1, Register src2, Register src3) {
     lay(sp, MemOperand(sp, -kPointerSize * 3));
-    StoreP(src1, StackMemOperand(kPointerSize * 2));
-    StoreP(src2, StackMemOperand(kPointerSize));
-    StoreP(src3, StackMemOperand());
+    StoreP(src1, MemOperand(sp, kPointerSize * 2));
+    StoreP(src2, MemOperand(sp, kPointerSize));
+    StoreP(src3, MemOperand(sp));
   }
 
   // Push four registers.  Pushes leftmost register first (to highest address).
@@ -576,10 +576,10 @@ class MacroAssembler: public Assembler {
             Register src3,
             Register src4) {
     lay(sp, MemOperand(sp, -kPointerSize * 4));
-    StoreP(src1, StackMemOperand(kPointerSize * 3));
-    StoreP(src2, StackMemOperand(kPointerSize * 2));
-    StoreP(src3, StackMemOperand(kPointerSize));
-    StoreP(src4, StackMemOperand());
+    StoreP(src1, MemOperand(sp, kPointerSize * 3));
+    StoreP(src2, MemOperand(sp, kPointerSize * 2));
+    StoreP(src3, MemOperand(sp, kPointerSize));
+    StoreP(src4, MemOperand(sp));
   }
 
   // Push five registers.  Pushes leftmost register first (to highest address).
@@ -600,27 +600,27 @@ class MacroAssembler: public Assembler {
     DCHECK(!src4.is(src5));
 
     lay(sp, MemOperand(sp, -kPointerSize * 5));
-    StoreP(src1, StackMemOperand(kPointerSize * 4));
-    StoreP(src2, StackMemOperand(kPointerSize * 3));
-    StoreP(src3, StackMemOperand(kPointerSize * 2));
-    StoreP(src4, StackMemOperand(kPointerSize));
-    StoreP(src5, StackMemOperand());
+    StoreP(src1, MemOperand(sp, kPointerSize * 4));
+    StoreP(src2, MemOperand(sp, kPointerSize * 3));
+    StoreP(src3, MemOperand(sp, kPointerSize * 2));
+    StoreP(src4, MemOperand(sp, kPointerSize));
+    StoreP(src5, MemOperand(sp));
   }
 
   void Pop(Register dst) { pop(dst); }
 
   // Pop two registers. Pops rightmost register first (from lower address).
   void Pop(Register src1, Register src2) {
-    LoadP(src2, StackMemOperand());
-    LoadP(src1, StackMemOperand(kPointerSize));
+    LoadP(src2, MemOperand(sp));
+    LoadP(src1, MemOperand(sp, kPointerSize));
     la(sp, MemOperand(sp, 2 * kPointerSize));
   }
 
   // Pop three registers.  Pops rightmost register first (from lower address).
   void Pop(Register src1, Register src2, Register src3) {
-    LoadP(src3, StackMemOperand());
-    LoadP(src2, StackMemOperand(kPointerSize));
-    LoadP(src1, StackMemOperand(2 * kPointerSize));
+    LoadP(src3, MemOperand(sp));
+    LoadP(src2, MemOperand(sp, kPointerSize));
+    LoadP(src1, MemOperand(sp, 2 * kPointerSize));
     la(sp, MemOperand(sp, 3 * kPointerSize));
   }
 
@@ -629,10 +629,10 @@ class MacroAssembler: public Assembler {
            Register src2,
            Register src3,
            Register src4) {
-    LoadP(src4, StackMemOperand());
-    LoadP(src3, StackMemOperand(kPointerSize));
-    LoadP(src2, StackMemOperand(2 * kPointerSize));
-    LoadP(src1, StackMemOperand(3 * kPointerSize));
+    LoadP(src4, MemOperand(sp));
+    LoadP(src3, MemOperand(sp, kPointerSize));
+    LoadP(src2, MemOperand(sp, 2 * kPointerSize));
+    LoadP(src1, MemOperand(sp, 3 * kPointerSize));
     la(sp, MemOperand(sp, 4 * kPointerSize));
   }
 
@@ -642,11 +642,11 @@ class MacroAssembler: public Assembler {
            Register src3,
            Register src4,
            Register src5) {
-    LoadP(src5, StackMemOperand());
-    LoadP(src4, StackMemOperand(sp, kPointerSize));
-    LoadP(src3, StackMemOperand(2 * kPointerSize));
-    LoadP(src2, StackMemOperand(3 * kPointerSize));
-    LoadP(src1, StackMemOperand(4 * kPointerSize));
+    LoadP(src5, MemOperand(sp));
+    LoadP(src4, MemOperand(sp, sp, kPointerSize));
+    LoadP(src3, MemOperand(sp, 2 * kPointerSize));
+    LoadP(src2, MemOperand(sp, 3 * kPointerSize));
+    LoadP(src1, MemOperand(sp, 4 * kPointerSize));
     la(sp, MemOperand(sp, 5 * kPointerSize));
   }
 

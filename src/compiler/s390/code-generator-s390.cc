@@ -92,7 +92,7 @@ class S390OperandConverter : public InstructionOperandConverter {
     // The linkage computes where all spill slots are located.
     FrameOffset offset = linkage()->GetFrameOffset(op->index(), frame(), 0);
     return offset.from_stack_pointer() ?
-             StackMemOperand(offset.offset()) :
+             MemOperand(sp, offset.offset()) :
              MemOperand(fp, offset.offset());
   }
 };
