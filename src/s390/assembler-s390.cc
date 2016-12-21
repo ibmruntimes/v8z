@@ -280,19 +280,29 @@ Operand::Operand(Handle<Object> handle) {
 }
 
 
-MemOperand::MemOperand(Register rn, int32_t offset, bool stack) {
-  if (rn.is(sp) && !stack) DCHECK(false);
+MemOperand::MemOperand(Register rn, int32_t offset, bool bias) {
   baseRegister = rn;
   indexRegister = r0;
+  // TODO(mcornac): Need to check range of offset?
+#if V8_OS_ZOS
+  if (rn.is(sp) && bias) offset_ = offset + kStackPointerBias;
+  else offset_ = offset;
+#else
   offset_ = offset;
+#endif
 }
 
 
-MemOperand::MemOperand(Register rx, Register rb, int32_t offset, bool stack) {
-  if (rx.is(sp) && !stack) DCHECK(false);
+MemOperand::MemOperand(Register rx, Register rb, int32_t offset, bool bias) {
   baseRegister = rb;
   indexRegister = rx;
+  // TODO(mcornac): Need to check range of offset?
+#if V8_OS_ZOS
+  if (rx.is(sp) && bias) offset_ = offset + kStackPointerBias;
+  else offset_ = offset;
+#else
   offset_ = offset;
+#endif
 }
 
 

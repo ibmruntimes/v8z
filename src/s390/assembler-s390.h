@@ -439,9 +439,9 @@ typedef int32_t Disp;
 //   3) a base register + index register + 20 bit signed displacement
 class MemOperand BASE_EMBEDDED {
  public:
-  explicit MemOperand(Register rx, Disp offset = 0, bool stack = false);
+  explicit MemOperand(Register rx, Disp offset = 0, bool bias = true);
   explicit MemOperand(Register rx, Register rb, Disp offset = 0,
-                      bool stack = false);
+                      bool bias = true);
 
   int32_t offset() const {
     return offset_;

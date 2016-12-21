@@ -33,45 +33,6 @@ inline MemOperand RootMemOperand(Heap::RootListIndex index) {
   return MemOperand(kRootRegister, index << kPointerSizeLog2);
 }
 
-// Generate a MemOperand for loading a field from the stack.
-// This is useful since z/OS uses a biased stack while zLinux does not.
-inline MemOperand StackMemOperand(Register rb, int offset) {
-#if V8_OS_ZOS
-  // TODO(mcornac): Need to check range of offset?
-  return MemOperand(sp, rb, offset + 2048, true);
-#else
-  return MemOperand(sp, rb, offset, true);
-#endif
-}
-
-// Generate a MemOperand for loading a field from the stack.
-// This is useful since z/OS uses a biased stack while zLinux does not.
-inline MemOperand StackMemOperand(Register offset) {
-#if V8_OS_ZOS
-  // TODO(mcornac): Need to check range of offset?
-  return MemOperand(sp, offset, 2048, true);
-#else
-  return MemOperand(sp, offset, true);
-#endif
-}
-
-// Generate a MemOperand for loading a field from the stack.
-// This is useful since z/OS uses a biased stack while zLinux does not.
-inline MemOperand StackMemOperand(int offset) {
-#if V8_OS_ZOS
-  // TODO(mcornac): Need to check range of offset?
-  return MemOperand(sp, offset + 2048, true);
-#else
-  return MemOperand(sp, offset, true);
-#endif
-}
-
-// Generate a MemOperand for loading a field from the stack.
-// This is useful since z/OS uses a biased stack while zLinux does not.
-inline MemOperand StackMemOperand() {
-  return StackMemOperand(0);
-}
-
 // Flags used for AllocateHeapNumber
 enum TaggingMode {
   // Tag the result.
