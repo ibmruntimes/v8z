@@ -185,64 +185,6 @@ void* OS::Allocate(const size_t requested,
   return mbase;
 }
 
-
-class PosixMemoryMappedFile final : public OS::MemoryMappedFile {
- public:
-  PosixMemoryMappedFile(FILE* file, void* memory, size_t size)
-      : file_(file), memory_(memory), size_(size) {}
-  ~PosixMemoryMappedFile() final;
-  void* memory() const final { return memory_; }
-  size_t size() const final { return size_; }
-
- private:
-  FILE* const file_;
-  void* const memory_;
-  size_t const size_;
-};
-
-OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
-  FILE* file = fopen(name, "\x72\x2b");
-  if (file == NULL) return NULL;
-
-  fseek(file, 0, SEEK_END);
-  int size = ftell(file);
-
-  void* memory =
-      mmap(OS::GetRandomMmapAddr(),
-           size,
-           PROT_READ | PROT_WRITE,
-           MAP_SHARED,
-           fileno(file),
-           0);
-  return new PosixMemoryMappedFile(file, memory, size);
-}
-
-OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name,
-                                                   size_t size, void* initial) {
-  FILE* file = fopen(name, "\x77\x2b");
-  if (file == NULL) return NULL;
-  int result = fwrite(initial, size, 1, file);
-  if (result < 1) {
-    fclose(file);
-    return NULL;
-  }
-  void* memory =
-      mmap(OS::GetRandomMmapAddr(),
-           size,
-           PROT_READ | PROT_WRITE,
-           MAP_SHARED,
-           fileno(file),
-           0);
-  return new PosixMemoryMappedFile(file, memory, size);
-}
-
-
-PosixMemoryMappedFile::~PosixMemoryMappedFile() {
-  if (memory_) OS::Free(memory_, size_);
-  fclose(file_);
-}
-
-
 std::vector<OS::SharedLibraryAddress> OS::GetSharedLibraryAddresses() {
   std::vector<SharedLibraryAddress> result;
   // This function assumes that the layout of the file is as follows:
