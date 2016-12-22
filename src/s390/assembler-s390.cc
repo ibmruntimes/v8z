@@ -286,10 +286,9 @@ MemOperand::MemOperand(Register rn, int32_t offset, bool bias) {
   // TODO(mcornac): Need to check range of offset?
 #if V8_OS_ZOS
   if (rn.is(sp) && bias) offset_ = offset + kStackPointerBias;
-  else offset_ = offset;
-#else
-  offset_ = offset;
+  else
 #endif
+  offset_ = offset;
 }
 
 
@@ -299,10 +298,9 @@ MemOperand::MemOperand(Register rx, Register rb, int32_t offset, bool bias) {
   // TODO(mcornac): Need to check range of offset?
 #if V8_OS_ZOS
   if (rx.is(sp) && bias) offset_ = offset + kStackPointerBias;
-  else offset_ = offset;
-#else
-  offset_ = offset;
+  else
 #endif
+  offset_ = offset;
 }
 
 
@@ -2886,12 +2884,22 @@ void Assembler::llgc(Register r1, const MemOperand& opnd) {
 
 // Load Address Register-Storage
 void Assembler::la(Register r1, const MemOperand& opnd) {
+#if V8_OS_ZOS
+  if (r1.is(sp) && (opnd.rb().is(sp) || opnd.rx().is(sp))) {
+    rx_form(LA, r1, opnd.rx(), opnd.rb(), opnd.offset() - kStackPointerBias);
+  } else
+#endif
   rx_form(LA, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 
 // Load Address Register-Storage
 void Assembler::lay(Register r1, const MemOperand& opnd) {
+#if V8_OS_ZOS
+  if (r1.is(sp) && (opnd.rb().is(sp) || opnd.rx().is(sp))) {
+    rxy_form(LAY, r1, opnd.rx(), opnd.rb(), opnd.offset() - kStackPointerBias);
+  } else
+#endif
   rxy_form(LAY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
