@@ -867,6 +867,7 @@ void MacroAssembler::EnterExitFrame(bool save_doubles, int stack_space) {
   if (save_doubles) {
     const int kNumRegs = DoubleRegister::kNumVolatileRegisters;
     lay(sp, MemOperand(sp, -kNumRegs * kDoubleSize));
+// TODO(mcornac): What's going on with the biasing here?
 #define StoreFloatingPointRegisterToStack(reg, offset) \
     StoreF(DoubleRegister::from_code(reg), \
       MemOperand(sp, (offset) * kDoubleSize));

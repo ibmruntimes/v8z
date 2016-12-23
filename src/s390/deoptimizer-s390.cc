@@ -160,8 +160,10 @@ void Deoptimizer::EntryGenerator::Generate() {
   // Push all GPRs onto the stack
 #ifdef V8_OS_ZOS
   // Unbias the sp before storing it on the stack then rebias it.
-  __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize));
-  __ StoreMultipleP(r0, r4, MemOperand(sp));   // Save all 16 registers
+  __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize +
+                        kStackPointerBias));
+  // Save all 16 registers.
+  __ StoreMultipleP(r0, r4, MemOperand(sp, -kStackPointerBias));
   __ lay(sp, MemOperand(sp, -kStackPointerBias));
 #else
   __ lay(sp, MemOperand(sp, -kNumberOfRegisters * kPointerSize));

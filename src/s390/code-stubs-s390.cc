@@ -1531,8 +1531,8 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #if V8_OS_ZOS
   // TODO(mcornac): combine these if correct.
   __ lay(sp, MemOperand(sp, -12 * kPointerSize));
-  __ lay(sp, MemOperand(sp));
-  __ StoreMultipleP(sp, r4, MemOperand(sp));
+  __ lay(sp, MemOperand(sp, kStackPointerBias));
+  __ StoreMultipleP(sp, r4, MemOperand(sp, -kStackPointerBias));
   __ lay(sp, MemOperand(sp, -kStackPointerBias));
 
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
@@ -4888,7 +4888,7 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
   }
   masm->LeaveFrame(StackFrame::STUB_FAILURE_TRAMPOLINE);
   __ ShiftLeftP(r3, r3, Operand(kPointerSizeLog2));
-  __ la(sp, MemOperand(r3, sp));
+  __ la(sp, MemOperand(sp, r3));
   __ Ret();
 }
 

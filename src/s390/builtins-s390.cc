@@ -1624,7 +1624,8 @@ void Builtins::Generate_ArgumentsAdaptorTrampoline(MacroAssembler* masm) {
     Label fill;
     __ bind(&fill);
     __ push(r0);
-    __ lay(sp, MemOperand(sp));
+    // Compare the unbiased sp. TODO(mcornac):
+    __ lay(sp, MemOperand(sp, kStackPointerBias));
     __ CmpP(sp, r4);
     __ lay(sp, MemOperand(sp, -kStackPointerBias));
     __ bne(&fill);
