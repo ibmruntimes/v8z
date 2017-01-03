@@ -305,7 +305,7 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
   // would be quite expensive.  A good compromise is to first check against
   // stack limit as a cue for an interrupt signal.
   Label ok;
-  __ lay(sp, MemOperand(sp));
+  __ lay(sp, MemOperand(sp, kStackPointerBias));
   __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
   __ lay(sp, MemOperand(sp, -kStackPointerBias));
   __ bge(&ok, Label::kNear);
@@ -1083,7 +1083,7 @@ void Builtins::Generate_OsrAfterStackCheck(MacroAssembler* masm) {
   // We check the stack limit as indicator that recompilation might be done.
   Label ok;
   // TODO(mcornac):
-  __ lay(sp, MemOperand(sp));
+  __ lay(sp, MemOperand(sp, kStackPointerBias));
   __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
   __ lay(sp, MemOperand(sp, -kStackPointerBias));
   __ bge(&ok, Label::kNear);
@@ -1245,7 +1245,7 @@ void Builtins::Generate_FunctionCall(MacroAssembler* masm) {
     __ StoreP(ip, MemOperand(r4));
     __ SubP(r4, Operand(kPointerSize));
     // TODO(mcornac):
-    __ lay(sp, MemOperand(sp));
+    __ lay(sp, MemOperand(sp, kStackPointerBias));
     __ CmpP(r4, sp);
     __ lay(sp, MemOperand(sp, -kStackPointerBias));
     __ bne(&loop);

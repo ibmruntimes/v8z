@@ -1530,8 +1530,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
 #if V8_OS_ZOS
   // TODO(mcornac): combine these if correct.
-  __ lay(sp, MemOperand(sp, -12 * kPointerSize));
-  __ lay(sp, MemOperand(sp, kStackPointerBias));
+  __ lay(sp, MemOperand(sp, kStackPointerBias - 12 * kPointerSize));
   __ StoreMultipleP(sp, r4, MemOperand(sp, -kStackPointerBias));
   __ lay(sp, MemOperand(sp, -kStackPointerBias));
 

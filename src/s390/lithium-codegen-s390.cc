@@ -6167,7 +6167,7 @@ void LCodeGen::DoStackCheck(LStackCheck* instr) {
   if (instr->hydrogen()->is_function_entry()) {
     // Perform stack overflow check.
     Label done;
-    __ lay(sp, MemOperand(sp));
+    __ lay(sp, MemOperand(sp, kStackPointerBias));
     __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
     __ lay(sp, MemOperand(sp, -kStackPointerBias));
     __ bge(&done, Label::kNear);
@@ -6182,7 +6182,7 @@ void LCodeGen::DoStackCheck(LStackCheck* instr) {
     // Perform stack overflow check if this goto needs it before jumping.
     DeferredStackCheck* deferred_stack_check =
         new(zone()) DeferredStackCheck(this, instr);
-    __ lay(sp, MemOperand(sp));
+    __ lay(sp, MemOperand(sp, kStackPointerBias));
     __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
     __ lay(sp, MemOperand(sp, -kStackPointerBias));
     __ blt(deferred_stack_check->entry());
