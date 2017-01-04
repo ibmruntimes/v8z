@@ -104,7 +104,7 @@ TEST(TwoBytes) {
   COMPARE(mr_z(r0, r6), "1c06           mr\tr0,r6");
   COMPARE(dr(r1, r5), "1d15           dr\tr1,r5");
 #if V8_OS_ZOS
-  COMPARE(or_z(r4, r2), "16f2           or\tr4,r2");
+  COMPARE(or_z(r4, r2), "16f2           or\tr15,r2");
 #else
   COMPARE(or_z(r4, r2), "1642           or\tr4,r2");
 #endif
@@ -113,7 +113,7 @@ TEST(TwoBytes) {
   COMPARE(lr(r2, r13), "182d           lr\tr2,r13");
   COMPARE(cr_z(r9, r3), "1993           cr\tr9,r3");
 #if V8_OS_ZOS
-  COMPARE(clr(sp, r4), "154f           clr\tsp,r4");
+  COMPARE(clr(sp, r4), "154f           clr\tsp,r15");
 #else
   COMPARE(clr(sp, r4), "15f4           clr\tsp,r4");
 #endif
@@ -122,7 +122,7 @@ TEST(TwoBytes) {
   COMPARE(alr(r6, r8), "1e68           alr\tr6,r8");
   COMPARE(slr(r3, ip), "1f3c           slr\tr3,ip");
 #if V8_OS_ZOS
-  COMPARE(lnr(r4, r1), "11f1           lnr\tr4,r1");
+  COMPARE(lnr(r4, r1), "11f1           lnr\tr15,r1");
 #else
   COMPARE(lnr(r4, r1), "1141           lnr\tr4,r1");
 #endif
@@ -208,7 +208,7 @@ TEST(FourBytes) {
           "a59b0009       oill\tr9,9");
 #if V8_OS_ZOS
   COMPARE(tmll(r4, Operand(7)),
-          "a7f10007       tmll\tr4,7");
+          "a7f10007       tmll\tr15,7");
 #else
   COMPARE(tmll(r4, Operand(7)),
           "a7410007       tmll\tr4,7");
@@ -217,7 +217,7 @@ TEST(FourBytes) {
           "9025902c       stm\tr2,r5,44(r9)");
 #if V8_OS_ZOS
   COMPARE(lm(r8, r0, MemOperand(sp, 88)),
-          "98804058       lm\tr8,r0,88(sp)");
+          "98804858       lm\tr8,r0,2136(sp)");
 #else
   COMPARE(lm(r8, r0, MemOperand(sp, 88)),
           "9880f058       lm\tr8,r0,88(sp)");
@@ -228,7 +228,7 @@ TEST(FourBytes) {
           "a5860004       nilh\tr8,4");
 #if V8_OS_ZOS
   COMPARE(ah(r9, MemOperand(r5, r4, 4)),
-          "4a95f004       ah\tr9,4(r5,r4)");
+          "4a95f004       ah\tr9,4(r5,r15)");
 #else
   COMPARE(ah(r9, MemOperand(r5, r4, 4)),
           "4a954004       ah\tr9,4(r5,r4)");
@@ -278,9 +278,9 @@ TEST(SixBytes) {
           "ec1203050259   risbgn\tr1,r2,3,5,2");
 #if V8_OS_ZOS
   COMPARE(stmg(r3, r4, MemOperand(sp, 10)),
-          "eb3f400a0024   stmg\tr3,r4,10(sp)");
+          "eb3f480a0024   stmg\tr3,r15,2058(sp)");
   COMPARE(ltg(r1, MemOperand(r4, sp, 10)),
-          "e31f400a0002   ltg\tr1,10(r4,sp)");
+          "e31f400a0002   ltg\tr1,10(r15,sp)");
 #else
   COMPARE(stmg(r3, r4, MemOperand(sp, 10)),
           "eb34f00a0024   stmg\tr3,r4,10(sp)");
@@ -291,7 +291,7 @@ TEST(SixBytes) {
           "e38012b80215   lgh\tr8,8888(r1)");
 #if V8_OS_ZOS
   COMPARE(ag(r4, MemOperand(r9, r4, 2046)),
-          "e3f9f7fe0008   ag\tr4,2046(r9,r4)");
+          "e3f9f7fe0008   ag\tr15,2046(r9,r15)");
   COMPARE(agf(r1, MemOperand(r3, sp, 9)),
           "e31340090018   agf\tr1,9(r3,sp)");
 #else
@@ -316,7 +316,7 @@ TEST(SixBytes) {
           "e390300f0082   xg\tr9,15(r3)");
 #if V8_OS_ZOS
   COMPARE(cg(r0, MemOperand(r5, r4, 4)),
-          "e305f0040020   cg\tr0,4(r5,r4)");
+          "e305f0040020   cg\tr0,4(r5,r15)");
 #else
   COMPARE(cg(r0, MemOperand(r5, r4, 4)),
           "e30540040020   cg\tr0,4(r5,r4)");
@@ -325,11 +325,11 @@ TEST(SixBytes) {
           "e317805a0004   lg\tr1,90(r7,r8)");
 #if V8_OS_ZOS
   COMPARE(lgf(r1, MemOperand(sp, 15)),
-          "e310400f0014   lgf\tr1,15(sp)");
+          "e310480f0014   lgf\tr1,2063(sp)");
   COMPARE(llgf(r0, MemOperand(r3, r4, 8)),
-          "e303f0080016   llgf\tr0,8(r3,r4)");
+          "e303f0080016   llgf\tr0,8(r3,r15)");
   COMPARE(alg(r8, MemOperand(r4, 11)),
-          "e380f00b000a   alg\tr8,11(r4)");
+          "e380f00b000a   alg\tr8,11(r15)");
 #else
   COMPARE(lgf(r1, MemOperand(sp, 15)),
           "e310f00f0014   lgf\tr1,15(sp)");
@@ -342,11 +342,11 @@ TEST(SixBytes) {
           "e315600b000b   slg\tr1,11(r5,r6)");
 #if V8_OS_ZOS
   COMPARE(sgf(r0, MemOperand(r4, r5, 8888)),
-          "e30f52b80219   sgf\tr0,8888(r4,r5)");
+          "e30f52b80219   sgf\tr0,8888(r15,r5)");
   COMPARE(llgh(r4, MemOperand(r1, 8000)),
-          "e3f01f400191   llgh\tr4,8000(r1)");
+          "e3f01f400191   llgh\tr15,8000(r1)");
   COMPARE(llgc(r0, MemOperand(r4, r5, 30)),
-          "e30f501e0090   llgc\tr0,30(r4,r5)");
+          "e30f501e0090   llgc\tr0,30(r15,r5)");
 #else
   COMPARE(sgf(r0, MemOperand(r4, r5, 8888)),
           "e30452b80219   sgf\tr0,8888(r4,r5)");
@@ -459,9 +459,9 @@ TEST(SixBytes) {
           "eb7890640004   lmg\tr7,r8,100(r9)");
 #if V8_OS_ZOS
   COMPARE(lay(fp, MemOperand(sp, 8000)),
-          "e3b04f400171   lay\tfp,8000(sp)");
+          "e3b047400271   lay\tfp,10048(sp)");
   COMPARE(cliy(MemOperand(sp, 80), Operand(80)),
-          "eb5040500055   cliy\t80(sp),80");
+          "eb5048500055   cliy\t2128(sp),80");
 #else
   COMPARE(lay(fp, MemOperand(sp, 8000)),
           "e3b0ff400171   lay\tfp,8000(sp)");
@@ -474,7 +474,7 @@ TEST(SixBytes) {
           "e39670130021   clg\tr9,19(r6,r7)");
 #if V8_OS_ZOS
   COMPARE(bctg(r8, MemOperand(sp, 10)),
-          "e380400a0046   bctg\tr8,10(sp)");
+          "e380480a0046   bctg\tr8,2058(sp)");
 #else
   COMPARE(bctg(r8, MemOperand(sp, 10)),
           "e380f00a0046   bctg\tr8,10(sp)");
