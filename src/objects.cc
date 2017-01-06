@@ -1497,6 +1497,7 @@ void HeapObject::HeapObjectShortPrint(OStream& os) {  // NOLINT
       SharedFunctionInfo* shared = SharedFunctionInfo::cast(this);
       SmartArrayPointer<char> debug_name =
           shared->DebugName()->ToCString();
+      __a2e_s(debug_name.get());
       if (debug_name[0] != 0) {
         os << "<SharedFunctionInfo " << debug_name.get() << ">";
       } else {
@@ -9796,16 +9797,18 @@ void SharedFunctionInfo::EvictFromOptimizedCodeMap(Code* optimized_code,
     DCHECK(code_map->get(src)->IsNativeContext());
     if (Code::cast(code_map->get(src + kCachedCodeOffset)) == optimized_code) {
       // Evict the src entry by not copying it to the dst entry.
+#pragma convert("ISO8859-1")
       if (FLAG_trace_opt) {
-        PrintF("[evicting entry from optimizing code map (%s) for ", reason);
+        PrintASCII("[evicting entry from optimizing code map (%s) for ", reason);
         ShortPrint();
         BailoutId osr(Smi::cast(code_map->get(src + kOsrAstIdOffset))->value());
         if (osr.IsNone()) {
-          PrintF("]\n");
+          PrintASCII("]\n");
         } else {
-          PrintF(" (osr ast id %d)]\n", osr.ToInt());
+          PrintASCII(" (osr ast id %d)]\n", osr.ToInt());
         }
       }
+#pragma convert(pop)
     } else {
       // Keep the src entry by copying it to the dst entry.
       if (dst != src) {
@@ -10062,9 +10065,9 @@ void JSFunction::SetInstanceClassName(String* name) {
 
 void JSFunction::PrintName(FILE* out) {
   SmartArrayPointer<char> name = shared()->DebugName()->ToCString();
-  char * name_cstr = name.get();
-  __a2e_s(name_cstr);
-  PrintF(out, "%s", name_cstr);
+#pragma convert("ISO8859-1")
+    FPrintASCII(out, "%s", name.get());
+#pragma convert(pop)
 }
 
 
@@ -10418,11 +10421,13 @@ void SharedFunctionInfo::DisableOptimization(BailoutReason reason) {
     code()->set_optimizable(false);
   }
   PROFILE(GetIsolate(), CodeDisableOptEvent(code(), this));
+#pragma convert("ISO8859-1")
   if (FLAG_trace_opt) {
-    PrintF("[disabled optimization for ");
+    PrintASCII("[disabled optimization for ");
     ShortPrint();
-    PrintF(", reason: %s]\n", GetBailoutReason(reason));
+    PrintASCII(", reason: %s]\n", GetBailoutReason(reason));
   }
+#pragma convert(pop)
 }
 
 
@@ -10528,11 +10533,13 @@ int SharedFunctionInfo::SearchOptimizedCodeMap(Context* native_context,
         return i + kCachedCodeOffset;
       }
     }
+#pragma convert("ISO8859-1")
     if (FLAG_trace_opt) {
-      PrintF("[didn't find optimized code in optimized code map for ");
+      PrintASCII("[didn't find optimized code in optimized code map for ");
       ShortPrint();
-      PrintF("]\n");
+      PrintASCII("]\n");
     }
+#pragma convert(pop)
   }
   return -1;
 }
@@ -13169,12 +13176,14 @@ void AllocationSite::DigestTransitionFeedback(Handle<AllocationSite> site,
       to_kind = GetHoleyElementsKind(to_kind);
     }
     if (IsMoreGeneralElementsKindTransition(kind, to_kind)) {
+#pragma convert("ISO8859-1")
       if (FLAG_trace_track_allocation_sites) {
-        PrintF("AllocationSite: JSArray %p site updated %s->%s\n",
+        PrintASCII("AllocationSite: JSArray %p site updated %s->%s\n",
                reinterpret_cast<void*>(*site),
                ElementsKindToString(kind),
                ElementsKindToString(to_kind));
       }
+#pragma convert(pop)
       site->SetElementsKind(to_kind);
       site->dependent_code()->DeoptimizeDependentCodeGroup(
           isolate, DependentCode::kAllocationSiteTransitionChangedGroup);

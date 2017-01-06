@@ -8450,9 +8450,11 @@ RUNTIME_FUNCTION(Runtime_CompileUnoptimized) {
   CONVERT_ARG_HANDLE_CHECKED(JSFunction, function, 0);
 #ifdef DEBUG
   if (FLAG_trace_lazy && !function->shared()->is_compiled()) {
-    PrintF("\x5b\x75\x6e\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x3a\x20");
+#pragma convert("ISO8859-1")
+    PrintASCII("[unoptimized: ");
     function->PrintName();
-    PrintF("\x5d\xa");
+    PrintASCII("]\n");
+#pragma convert(pop)
   }
 #endif
 
@@ -8492,11 +8494,13 @@ RUNTIME_FUNCTION(Runtime_CompileOptimized) {
     // If the function is not optimizable or debugger is active continue
     // using the code from the full compiler.
     if (FLAG_trace_opt) {
-      PrintF("\x5b\x66\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x20");
+#pragma convert("ISO8859-1")
+      PrintASCII("[failed to optimize ");
       function->PrintName();
-      PrintF("\x3a\x20\x69\x73\x20\x63\x6f\x64\x65\x20\x6f\x70\x74\x69\x6d\x69\x7a\x61\x62\x6c\x65\x3a\x20\x6c\xa2\x2c\x20\x69\x73\x20\x64\x65\x62\x75\x67\x67\x65\x72\x20\x65\x6e\x61\x62\x6c\x65\x64\x3a\x20\x6c\xa2\x5d\xa",
-          function->shared()->optimization_disabled() ? "\x46" : "\x54",
-          isolate->DebuggerHasBreakPoints() ? "\x54" : "\x46");
+      PrintASCII(": is code optimizable: %s, is debugger enabled: %s]\n",
+          function->shared()->optimization_disabled() ? "F" : "T",
+          isolate->DebuggerHasBreakPoints() ? "T" : "F");
+#pragma convert(pop)
     }
     function->ReplaceCode(*unoptimized);
   } else {
@@ -8589,9 +8593,11 @@ RUNTIME_FUNCTION(Runtime_NotifyDeoptimized) {
   if (!activations_finder.has_code_activations_) {
     if (function->code() == *optimized_code) {
       if (FLAG_trace_deopt) {
-        PrintF("\x5b\x72\x65\x6d\x6f\x76\x69\x6e\x67\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x66\x6f\x72\x3a\x20");
+#pragma convert("ISO8859-1")
+        PrintASCII("[removing optimized code for: ");
         function->PrintName();
-        PrintF("\x5d\xa");
+        PrintASCII("]\n");
+#pragma convert(pop)
       }
       function->ReplaceCode(function->shared()->code());
       // Evict optimized code for this function from the cache so that it

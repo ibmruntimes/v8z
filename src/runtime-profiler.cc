@@ -83,20 +83,22 @@ static void GetICCounts(Code* shared_code, int* ic_with_type_info_count,
 void RuntimeProfiler::Optimize(JSFunction* function, const char* reason) {
   DCHECK(function->IsOptimizable());
 
+#pragma convert("ISO8859-1")
   if (FLAG_trace_opt && function->PassesFilter(FLAG_hydrogen_filter)) {
-    PrintF("\x5b\x6d\x61\x72\x6b\x69\x6e\x67\x20");
+    PrintASCII("[marking ");
     function->ShortPrint();
-    PrintF("\x20\x66\x6f\x72\x20\x72\x65\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x2c\x20\x72\x65\x61\x73\x6f\x6e\x3a\x20\x6c\xa2", reason);
+    PrintASCII(" for recompilation, reason: %s", reason);
     if (FLAG_type_info_threshold > 0) {
       int typeinfo, generic, total, type_percentage, generic_percentage;
       GetICCounts(function->shared()->code(), &typeinfo, &generic, &total,
                   &type_percentage, &generic_percentage);
-      PrintF("\x2c\x20\x49\x43\x73\x20\x77\x69\x74\x68\x20\x74\x79\x70\x65\x69\x6e\x66\x6f\x3a\x20\x6c\x84\x2f\x6c\x84\x20\x28\x6c\x84\x25\x25\x29", typeinfo, total,
+      PrintASCII(", ICs with typeinfo: %d/%d (%d%%)", typeinfo, total,
              type_percentage);
-      PrintF("\x2c\x20\x67\x65\x6e\x65\x72\x69\x63\x20\x49\x43\x73\x3a\x20\x6c\x84\x2f\x6c\x84\x20\x28\x6c\x84\x25\x25\x29", generic, total, generic_percentage);
+      PrintASCII(", generic ICs: %d/%d (%d%%)", generic, total, generic_percentage);
     }
-    PrintF("\x5d\xa");
+    PrintASCII("]\n");
   }
+#pragma convert(pop)
 
 
   if (isolate_->concurrent_recompilation_enabled() &&
@@ -140,11 +142,13 @@ void RuntimeProfiler::AttemptOnStackReplacement(JSFunction* function,
   // We're using on-stack replacement: patch the unoptimized code so that
   // any back edge in any unoptimized frame will trigger on-stack
   // replacement for that frame.
+#pragma convert("ISO8859-1")
   if (FLAG_trace_osr) {
-    PrintF("\x5b\x4f\x53\x52\x20\x2d\x20\x70\x61\x74\x63\x68\x69\x6e\x67\x20\x62\x61\x63\x6b\x20\x65\x64\x67\x65\x73\x20\x69\x6e\x20");
+    PrintASCII("[OSR - patching back edges in ");
     function->PrintName();
-    PrintF("\x5d\xa");
+    PrintASCII("]\n");
   }
+#pragma convert(pop)
 
   for (int i = 0; i < loop_nesting_levels; i++) {
     BackEdgeTable::Patch(isolate_, shared->code());
@@ -248,10 +252,12 @@ void RuntimeProfiler::OptimizeNow() {
       } else {
         shared_code->set_profiler_ticks(ticks + 1);
         if (FLAG_trace_opt_verbose) {
-          PrintF("\x5b\x6e\x6f\x74\x20\x79\x65\x74\x20\x6f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x20");
+#pragma convert("ISO8859-1")
+          PrintASCII("[not yet optimizing ");
           function->PrintName();
-          PrintF("\x2c\x20\x6e\x6f\x74\x20\x65\x6e\x6f\x75\x67\x68\x20\x74\x79\x70\x65\x20\x69\x6e\x66\x6f\x3a\x20\x6c\x84\x2f\x6c\x84\x20\x28\x6c\x84\x25\x25\x29\x5d\xa", typeinfo, total,
+          PrintASCII(", not enough type info: %d/%d (%d%%)]\n", typeinfo, total,
                  type_percentage);
+#pragma convert(pop)
         }
       }
     } else if (!any_ic_changed_ &&

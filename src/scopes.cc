@@ -788,7 +788,9 @@ static void Indent(int n, const char* str) {
 
 
 static void PrintName(const AstRawString* name) {
-  PrintF("\x25\x2e\x2a\x73", name->length(), name->raw_data());
+#pragma convert("ISO8859-1")
+  PrintASCII("%.*s", name->length(), name->raw_data());
+#pragma convert(pop)
 }
 
 

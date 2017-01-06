@@ -915,15 +915,17 @@ void JavaScriptFrame::RestoreOperandStack(FixedArray* store,
 
 
 void FrameSummary::Print() {
-  PrintF("\x72\x65\x63\x65\x69\x76\x65\x72\x3a\x20");
+#pragma convert("ISO8859-1")
+  PrintASCII("receiver: ");
   receiver_->ShortPrint();
-  PrintF("\xaf\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20");
+  PrintASCII("\nfunction: ");
   function_->shared()->DebugName()->ShortPrint();
-  PrintF("\xac\x6f\x64\x65\x3a\x20");
+  PrintASCII("\ncode: ");
   code_->ShortPrint();
-  if (code_->kind() == Code::FUNCTION) PrintF("\x20\x4e\x4f\x4e\x2d\x4f\x50\x54");
-  if (code_->kind() == Code::OPTIMIZED_FUNCTION) PrintF("\x20\x4f\x50\x54");
-  PrintF("\xa\x70\x63\x3a\x20\x6c\x84\xa", offset_);
+  if (code_->kind() == Code::FUNCTION) PrintASCII(" NON-OPT");
+  if (code_->kind() == Code::OPTIMIZED_FUNCTION) PrintASCII(" OPT");
+  PrintASCII("\npc: %d\n", offset_);
+#pragma convert("ISO8859-1")
 }
 
 
