@@ -193,6 +193,9 @@ void VFPrintASCII(FILE* out, const char* format_a, va_list args) {
       memcpy(str_e, str, str_len + 1);
       __a2e_s(str_e);
       v8::base::OS::FPrint(out, format_e, str_e);
+    } else if (flag == 'd') {
+      int num = va_arg(args, int);
+      v8::base::OS::FPrint(out, format_e, num);
     } else if (flag == 'c') {
       v8::base::OS::FPrint(out, format_e, Ascii2Ebcdic(va_arg(args, char)));
     } else {

@@ -423,8 +423,10 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
 
   if (FLAG_trace_hydrogen) {
     Handle<String> name = info()->function()->debug_name();
-    PrintF("\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\xa");
-    PrintF("\x43\x6f\x6d\x70\x69\x6c\x69\x6e\x67\x20\x6d\x65\x74\x68\x6f\x64\x20\x6c\xa2\x20\x75\x73\x69\x6e\x67\x20\x68\x79\x64\x72\x6f\x67\x65\x6e\xa", name->ToCString().get());
+#pragma convert("ISO8859-1")
+    PrintASCII("-----------------------------------------------------------\n");
+    PrintASCII("Compiling method %s using hydrogen\n", name->ToCString().get());
+#pragma convert(pop)
     isolate()->GetHTracer()->TraceCompilation(info());
   }
 
@@ -516,16 +518,20 @@ OptimizedCompileJob::Status OptimizedCompileJob::GenerateCode() {
         info_->set_bailout_reason(kCodeGenerationFailed);
       } else if (info()->bailout_reason() == kMapBecameDeprecated) {
         if (FLAG_trace_opt) {
-          PrintF("\x5b\x61\x62\x6f\x72\x74\x65\x64\x20\x6f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x20");
+#pragma convert("ISO8859-1")
+          PrintASCII("[aborted optimizing ");
           info()->closure()->ShortPrint();
-          PrintF("\x20\x62\x65\x63\x61\x75\x73\x65\x20\x61\x20\x6d\x61\x70\x20\x62\x65\x63\x61\x6d\x65\x20\x64\x65\x70\x72\x65\x63\x61\x74\x65\x64\x5d\xa");
+          PrintASCII(" because a map became deprecated]\n");
+#pragma convert(pop)
         }
         return AbortOptimization();
       } else if (info()->bailout_reason() == kMapBecameUnstable) {
         if (FLAG_trace_opt) {
-          PrintF("\x5b\x61\x62\x6f\x72\x74\x65\x64\x20\x6f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x20");
+#pragma convert("ISO8859-1")
+          PrintASCII("[aborted optimizing ");
           info()->closure()->ShortPrint();
-          PrintF("\x20\x62\x65\x63\x61\x75\x73\x65\x20\x61\x20\x6d\x61\x70\x20\x62\x65\x63\x61\x6d\x65\x20\x75\x6e\x73\x74\x61\x62\x6c\x65\x5d\xa");
+          PrintASCII(" because a map became unstable]\n");
+#pragma convert(pop)
         }
         return AbortOptimization();
       }
@@ -551,9 +557,11 @@ void OptimizedCompileJob::RecordOptimizationStats() {
   double ms_optimize = time_taken_to_optimize_.InMillisecondsF();
   double ms_codegen = time_taken_to_codegen_.InMillisecondsF();
   if (FLAG_trace_opt) {
-    PrintF("\x5b\x6f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x20");
+#pragma convert("ISO8859-1")
+    PrintASCII("[optimizing ");
     function->ShortPrint();
-    PrintF("\x20\x2d\x20\x74\x6f\x6f\x6b\x20\x6c\xf0\x4b\xf3\x86\x2c\x20\x6c\xf0\x4b\xf3\x86\x2c\x20\x6c\xf0\x4b\xf3\x86\x20\x6d\x73\x5d\xa", ms_creategraph, ms_optimize,
+    PrintASCII(" - took %0.3f, %0.3f, %0.3f ms]\n", ms_creategraph, ms_optimize,
+#pragma convert(pop)
            ms_codegen);
   }
   if (FLAG_trace_opt_stats) {
@@ -564,10 +572,12 @@ void OptimizedCompileJob::RecordOptimizationStats() {
     compilation_time += (ms_creategraph + ms_optimize + ms_codegen);
     compiled_functions++;
     code_size += function->shared()->SourceSize();
-    PrintF("\x43\x6f\x6d\x70\x69\x6c\x65\x64\x3a\x20\x6c\x84\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x73\x20\x77\x69\x74\x68\x20\x6c\x84\x20\x62\x79\x74\x65\x20\x73\x6f\x75\x72\x63\x65\x20\x73\x69\x7a\x65\x20\x69\x6e\x20\x6c\x86\x6d\x73\x2e\xa",
+#pragma convert("ISO8859-1")
+    PrintASCII("Compiled: %d functions with %d byte source size in %fms.\n",
            compiled_functions,
            code_size,
            compilation_time);
+#pragma convert(pop)
   }
   if (FLAG_hydrogen_stats) {
     isolate()->GetHStatistics()->IncrementSubtotals(time_taken_to_create_graph_,
@@ -1045,8 +1055,10 @@ Handle<SharedFunctionInfo> Compiler::CompileScript(
           compile_options == ScriptCompiler::kProduceCodeCache) {
         *cached_data = CodeSerializer::Serialize(isolate, result, source);
         if (FLAG_profile_deserialization) {
-          PrintF("\x5b\x43\x6f\x6d\x70\x69\x6c\x69\x6e\x67\x20\x61\x6e\x64\x20\x73\x65\x72\x69\x61\x6c\x69\x7a\x69\x6e\x67\x20\x6c\x84\x20\x62\x79\x74\x65\x73\x20\x74\x6f\x6f\x6b\x20\x6c\xf0\x4b\xf3\x86\x20\x6d\x73\x5d\xa",
+#pragma convert("ISO8859-1")
+          PrintASCII("[Compiling and serializing %d bytes took %0.3f ms]\n",
                  (*cached_data)->length(), timer.Elapsed().InMillisecondsF());
+#pragma convert(pop)
         }
       }
     }
@@ -1129,12 +1141,14 @@ MUST_USE_RESULT static MaybeHandle<Code> GetCodeFromOptimizedCodeMap(
         function->context()->native_context(), osr_ast_id);
     if (index > 0) {
       if (FLAG_trace_opt) {
-        PrintF("\x5b\x66\x6f\x75\x6e\x64\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x66\x6f\x72\x20");
+#pragma convert("ISO8859-1")
+        PrintASCII("[found optimized code for ");
         function->ShortPrint();
         if (!osr_ast_id.IsNone()) {
-          PrintF("\x20\x61\x74\x20\x4f\x53\x52\x20\x41\x53\x54\x20\x69\x64\x20\x6c\x84", osr_ast_id.ToInt());
+          PrintASCII(" at OSR AST id %d", osr_ast_id.ToInt());
         }
-        PrintF("\x5d\xa");
+        PrintASCII("]\n");
+#pragma convert(pop)
       }
       FixedArray* literals = shared->GetLiteralsFromOptimizedCodeMap(index);
       if (literals != NULL) function->set_literals(literals);
@@ -1200,9 +1214,11 @@ static bool GetOptimizedCodeLater(CompilationInfo* info) {
   Isolate* isolate = info->isolate();
   if (!isolate->optimizing_compiler_thread()->IsQueueAvailable()) {
     if (FLAG_trace_concurrent_recompilation) {
-      PrintF("\x20\x20\x2a\x2a\x20\x43\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x71\x75\x65\x75\x65\x20\x66\x75\x6c\x6c\x2c\x20\x77\x69\x6c\x6c\x20\x72\x65\x74\x72\x79\x20\x6f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x20");
+#pragma convert("ISO8859-1")
+      PrintASCII("  ** Compilation queue full, will retry optimizing ");
       info->closure()->PrintName();
-      PrintF("\x20\x6c\x61\x74\x65\x72\x2e\xa");
+      PrintASCII(" later.\n");
+#pragma convert(pop)
     }
     return false;
   }
@@ -1219,12 +1235,14 @@ static bool GetOptimizedCodeLater(CompilationInfo* info) {
   isolate->optimizing_compiler_thread()->QueueForOptimization(job);
 
   if (FLAG_trace_concurrent_recompilation) {
-    PrintF("\x20\x20\x2a\x2a\x20\x51\x75\x65\x75\x65\x64\x20");
+#pragma convert("ISO8859-1")
+    PrintASCII("  ** Queued ");
      info->closure()->PrintName();
     if (info->is_osr()) {
-      PrintF("\x20\x66\x6f\x72\x20\x63\x6f\x6e\x63\x75\x72\x72\x65\x6e\x74\x20\x4f\x53\x52\x20\x61\x74\x20\x6c\x84\x2e\xa", info->osr_ast_id().ToInt());
+      PrintASCII(" for concurrent OSR at %d.\n", info->osr_ast_id().ToInt());
     } else {
-      PrintF("\x20\x66\x6f\x72\x20\x63\x6f\x6e\x63\x75\x72\x72\x65\x6e\x74\x20\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x2e\xa");
+      PrintASCII(" for concurrent optimization.\n");
+#pragma convert(pop)
     }
   }
   return true;
@@ -1267,9 +1285,11 @@ MaybeHandle<Code> Compiler::GetOptimizedCode(Handle<JSFunction> function,
 
   // Failed.
   if (FLAG_trace_opt) {
-    PrintF("\x5b\x66\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x20");
+#pragma convert("ISO8859-1")
+    PrintASCII("[failed to optimize ");
     function->PrintName();
-    PrintF("\x3a\x20\x6c\xa2\x5d\xa", GetBailoutReason(info->bailout_reason()));
+    PrintASCII(": %s]\n", GetBailoutReason(info->bailout_reason()));
+#pragma convert(pop)
   }
 
   if (isolate->has_pending_exception()) isolate->clear_pending_exception();
@@ -1314,9 +1334,11 @@ Handle<Code> Compiler::GetConcurrentlyOptimizedCode(OptimizedCompileJob* job) {
   }
 
   if (FLAG_trace_concurrent_recompilation) {
-    PrintF("\x20\x20\x2a\x2a\x20\x4f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x66\x6f\x72\x20");
+#pragma convert("ISO8859-1")
+    PrintASCII("  ** Optimized code for ");
     info->closure()->PrintName();
-    PrintF("\x20\x67\x65\x6e\x65\x72\x61\x74\x65\x64\x2e\xa");
+    PrintASCII(" generated.\n");
+#pragma convert(pop)
   }
 
   return Handle<Code>(*info->code());
