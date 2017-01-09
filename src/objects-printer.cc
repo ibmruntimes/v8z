@@ -703,7 +703,7 @@ void String::StringPrint(std::ostream& os) {  // NOLINT
 #ifndef V8_OS_ZOS
     os << AsUC16(Get(i));
 #else
-    os << static_cast<char>(Ascii2Ebcdic(GET(i)));
+    os << static_cast<char>(Ascii2Ebcdic(Get(i)));
 #endif
   }
   if (len != length()) {

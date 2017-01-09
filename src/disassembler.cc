@@ -218,7 +218,7 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
           uint32_t minor_key = CodeStub::MinorKeyFromKey(key);
           CodeStub::Major major_key = CodeStub::GetMajorKey(code);
           DCHECK(major_key == CodeStub::MajorKeyFromKey(key));
-          const char * name = CodeStub::MajorName(major_key, false);
+          const char * name = CodeStub::MajorName(major_key);
           char name_e[name != NULL ? strlen(name) : 1];
           name_e[0] = '\0';
           strcpy(name_e, name);
