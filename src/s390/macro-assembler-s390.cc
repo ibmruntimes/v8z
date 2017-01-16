@@ -3648,8 +3648,7 @@ void MacroAssembler::CallCFunctionHelper(Register function,
 #ifdef V8_OS_ZOS
   CallC(dest);
   // Restore r5-r7. 
-  LoadMultipleP(r5, r7, MemOperand(sp, sp, 19 * kPointerSize));
-  // Unbias the stack pointer.
+  LoadMultipleP(r5, r7, MemOperand(sp, 19 * kPointerSize));
   la(sp, MemOperand(sp, stack_space * kPointerSize));
   // Shuffle result.
   LoadRR(r2, r3);

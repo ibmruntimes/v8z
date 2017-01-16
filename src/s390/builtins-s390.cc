@@ -1326,10 +1326,10 @@ void Builtins::Generate_FunctionApply(MacroAssembler* masm) {
     // limit" is checked.
     Label okay;
     __ LoadRoot(r4, Heap::kRealStackLimitRootIndex);
+    __ lay(r4, MemOperand(r4, -kStackPointerBias));
     // Make r4 the space we have left. The stack might already be overflowed
     // here which will cause r4 to become negative.
     __ SubP(r4, sp, r4);
-    __ lay(r4, MemOperand(r4, kStackPointerBias));
     // Check if the arguments will overflow the stack.
     __ SmiToPtrArrayOffset(r0, r2);
     __ CmpP(r4, r0);
