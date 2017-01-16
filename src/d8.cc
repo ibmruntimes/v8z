@@ -1512,21 +1512,21 @@ static void DumpHeapConstants(i::Isolate* isolate) {
   i::Heap* heap = isolate->heap();
 
   // Dump the INSTANCE_TYPES table to the console.
-  printf("\x23\x20\x4c\x69\x73\x74\x20\x6f\x66\x20\x6b\x6e\x6f\x77\x6e\x20\x56\x38\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x74\x79\x70\x65\x73\x2e\xa");
-#define DUMP_TYPE(T) printf("\x20\x20\x6c\x84\x3a\x20\x22\x6c\xa2\x22\x2c\xa", i::T, #T);
-  printf("\x49\x4e\x53\x54\x41\x4e\x43\x45\x5f\x54\x59\x50\x45\x53\x20\x3d\x20\x7b\xa");
+  printf("# List of known V8 instance types.\n");
+#define DUMP_TYPE(T) printf("  %d: \"%s\",\n", i::T, #T);
+  printf("INSTANCE_TYPES = {\n");
   INSTANCE_TYPE_LIST(DUMP_TYPE)
-  printf("\x7d\xa");
+  printf("}\n");
 #undef DUMP_TYPE
 
   // Dump the KNOWN_MAP table to the console.
-  printf("\xa\x23\x20\x4c\x69\x73\x74\x20\x6f\x66\x20\x6b\x6e\x6f\x77\x6e\x20\x56\x38\x20\x6d\x61\x70\x73\x2e\xa");
+  printf("\n# List of known V8 maps.\n");
 #define ROOT_LIST_CASE(type, name, camel_name) \
   if (n == NULL && o == heap->name()) n = #camel_name;
 #define STRUCT_LIST_CASE(upper_name, camel_name, name) \
-  if (n == NULL && o == heap->name##_map()) n = #camel_name "\x4d\x61\x70";
+  if (n == NULL && o == heap->name##_map()) n = #camel_name "Map";
   i::HeapObjectIterator it(heap->map_space());
-  printf("\x4b\x4e\x4f\x57\x4e\x5f\x4d\x41\x50\x53\x20\x3d\x20\x7b\xa");
+  printf("KNOWN_MAPS = {\n");
   for (i::Object* o = it.Next(); o != NULL; o = it.Next()) {
     i::Map* m = i::Map::cast(o);
     const char* n = NULL;
@@ -1535,18 +1535,18 @@ static void DumpHeapConstants(i::Isolate* isolate) {
     ROOT_LIST(ROOT_LIST_CASE)
     STRUCT_LIST(STRUCT_LIST_CASE)
     if (n == NULL) continue;
-    printf("\x20\x20\x30\x78\x25\x30\x35" V8PRIxPTR "\x3a\x20\x28\x6c\x84\x2c\x20\x22\x6c\xa2\x22\x29\x2c\xa", p, t, n);
+    printf("  0x%05" V8PRIxPTR ": (%d, \"%s\"),\n", p, t, n);
   }
-  printf("\x7d\xa");
+  printf("}\n");
 #undef STRUCT_LIST_CASE
 #undef ROOT_LIST_CASE
 
   // Dump the KNOWN_OBJECTS table to the console.
-  printf("\xa\x23\x20\x4c\x69\x73\x74\x20\x6f\x66\x20\x6b\x6e\x6f\x77\x6e\x20\x56\x38\x20\x6f\x62\x6a\x65\x63\x74\x73\x2e\xa");
+  printf("\n# List of known V8 objects.\n");
 #define ROOT_LIST_CASE(type, name, camel_name) \
   if (n == NULL && o == heap->name()) n = #camel_name;
   i::OldSpaces spit(heap);
-  printf("\x4b\x4e\x4f\x57\x4e\x5f\x4f\x42\x4a\x45\x43\x54\x53\x20\x3d\x20\x7b\xa");
+  printf("KNOWN_OBJECTS = {\n");
   for (i::PagedSpace* s = spit.next(); s != NULL; s = spit.next()) {
     i::HeapObjectIterator it(s);
     const char* sname = AllocationSpaceName(s->identity());
@@ -1555,10 +1555,10 @@ static void DumpHeapConstants(i::Isolate* isolate) {
       intptr_t p = reinterpret_cast<intptr_t>(o) & 0xfffff;
       ROOT_LIST(ROOT_LIST_CASE)
       if (n == NULL) continue;
-      printf("\x20\x20\x28\x22\x6c\xa2\x22\x2c\x20\x30\x78\x25\x30\x35" V8PRIxPTR "\x29\x3a\x20\x22\x6c\xa2\x22\x2c\xa", sname, p, n);
+      printf("  (\"%s\", 0x%05" V8PRIxPTR "): \"%s\",\n", sname, p, n);
     }
   }
-  printf("\x7d\xa");
+  printf("}\n");
 #undef ROOT_LIST_CASE
 }
 #endif  // !V8_SHARED
@@ -1697,18 +1697,18 @@ int Shell::Main(int argc, char* argv[]) {
                                 : Testing::kStressTypeDeopt);
       int stress_runs = Testing::GetStressRuns();
       for (int i = 0; i < stress_runs && result == 0; i++) {
-        printf("\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x20\x53\x74\x72\x65\x73\x73\x20\x6c\x84\x2f\x6c\x84\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa", i + 1, stress_runs);
+        printf("============ Stress %d/%d ============\n", i + 1, stress_runs);
         Testing::PrepareStressRun(i);
         options.last_run = (i == stress_runs - 1);
         result = RunMain(isolate, argc, argv);
       }
-      printf("\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x20\x46\x75\x6c\x6c\x20\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa");
+      printf("======== Full Deoptimization =======\n");
       Testing::DeoptimizeAll();
 #if !defined(V8_SHARED)
     } else if (i::FLAG_stress_runs > 0) {
       int stress_runs = i::FLAG_stress_runs;
       for (int i = 0; i < stress_runs && result == 0; i++) {
-        printf("\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x20\x52\x75\x6e\x20\x6c\x84\x2f\x6c\x84\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa", i + 1, stress_runs);
+        printf("============ Run %d/%d ============\n", i + 1, stress_runs);
         options.last_run = (i == stress_runs - 1);
         result = RunMain(isolate, argc, argv);
       }
