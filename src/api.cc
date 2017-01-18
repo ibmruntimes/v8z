@@ -5107,6 +5107,13 @@ const char* v8::V8::GetVersion() {
 }
 
 
+void v8::V8::ReleaseSystemResources() {
+#ifdef V8_OS_ZOS
+  v8::base::Semaphore::ReleaseSystemResources();
+#endif
+}
+
+
 static i::Handle<i::Context> CreateEnvironment(
     i::Isolate* isolate,
     v8::ExtensionConfiguration* extensions,
