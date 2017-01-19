@@ -12,6 +12,7 @@
 #include <inttypes.h>
 #include <pthread.h>
 #include <sys/sem.h>
+#include <vector>
 
 #if __WORDSIZE == 64
 # define __SIZEOF_SEM_T 32
@@ -21,21 +22,23 @@
 
 #define SEM_FAILED ((sem_t *) 0)
 
-typedef union {
-  char __size[__SIZEOF_SEM_T];
-  int64_t __align;
+typedef struct{
+  int __semid;
+  bool __removed;
 } sem_t;
 
-int sem_init(int *semid, int pshared, unsigned int value);
+int sem_init(sem_t *semid, int pshared, unsigned int value);
 
-int sem_destroy(int *semid);
+int sem_destroy(sem_t *semid);
 
-int sem_wait(int *semid);
+int sem_wait(sem_t *semid);
 
-int sem_trywait(int *semid);
+int sem_trywait(sem_t *semid);
 
-int sem_post(int *semid);
+int sem_post(sem_t *semid);
 
-int sem_timedwait(int *semid, struct timespec *timeout);
+int sem_timedwait(sem_t *semid, struct timespec *timeout);
+
+void sem_destroy_all();
 
 #endif  // V8_S390_SEMAPHORE_ZOS_H_

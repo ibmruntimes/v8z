@@ -9,6 +9,7 @@
 #include <mach/task.h>
 #elif V8_OS_ZOS
 #include <algorithm>
+#include <sched.h>
 #endif
 
 #include <errno.h>
@@ -75,10 +76,6 @@ bool Semaphore::WaitFor(const TimeDelta& rel_time) {
 
 #elif V8_OS_POSIX
 
-#ifdef V8_OS_ZOS
-std::vector<Semaphore::NativeHandle> Semaphore::system_ipc;
-#endif
-
 Semaphore::Semaphore(int count) {
   DCHECK(count >= 0);
 #if V8_LIBC_GLIBC
@@ -88,17 +85,10 @@ Semaphore::Semaphore(int count) {
   int result = sem_init(&native_handle_, 0, count);
   DCHECK_EQ(0, result);
   USE(result);
-#ifdef V8_OS_ZOS
-  system_ipc.push_back(native_handle_);
-#endif
 }
 
 
 Semaphore::~Semaphore() {
-#ifdef V8_OS_ZOS
-  system_ipc.erase(std::remove(system_ipc.begin(), system_ipc.end(), native_handle_),
-                   system_ipc.end());
-#endif
   int result = sem_destroy(&native_handle_);
   DCHECK_EQ(0, result);
   USE(result);
@@ -115,8 +105,8 @@ void Semaphore::Wait() {
   while (true) {
     int result = sem_wait(&native_handle_);
     if (result == 0) return;  // Semaphore was signalled.
-    // Signal caused spurious wakeup.
     DCHECK_EQ(-1, result);
+    // Signal caused spurious wakeup.
     DCHECK_EQ(EINTR, errno);
   }
 }
@@ -169,11 +159,9 @@ bool Semaphore::WaitFor(const TimeDelta& rel_time) {
 
 
 void Semaphore::ReleaseSystemResources() {
-  std::vector<NativeHandle>::iterator i = system_ipc.begin();
-  while(i != system_ipc.end()) {
-    sem_destroy(&(*i));
-    i++;
-  }
+#if V8_OS_ZOS
+  sem_destroy_all();
+#endif
 }
 
 #elif V8_OS_WIN

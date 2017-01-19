@@ -73,8 +73,11 @@ void assignSemopErrorCode() {
   case EFAULT:
     errno = EINVAL;
     break;
-  case EFBIG || EIDRM:
+  case EFBIG:
     errno = EINVAL;
+    break;
+  case EIDRM:
+    errno = EINTR;
     break;
   case ERANGE:
     break;
@@ -90,10 +93,11 @@ void assignSemopErrorCode() {
   }
 }
 
+static std::vector<sem_t> system_ipc;
 
 // On success returns 0. On error returns -1 and errno is set.
-int sem_init(int *semid, int pshared, unsigned int value) {
-  if ((*semid = semget(IPC_PRIVATE, 1, S_IRUSR | S_IWUSR)) == -1) {
+int sem_init(sem_t *sem, int pshared, unsigned int value) {
+  if ((sem->__semid = semget(IPC_PRIVATE, 1, S_IRUSR | S_IWUSR)) == -1) {
     assignSemgetError();
     return -1;
   }
@@ -102,31 +106,44 @@ int sem_init(int *semid, int pshared, unsigned int value) {
   buf.sem_num = 0;
   buf.sem_op = value;
   buf.sem_flg = 0;
-  if (semop(*semid, &buf, 1) == -1) {
+  if (semop(sem->__semid, &buf, 1) == -1) {
     assignSemInitializeError();
     return -1;
   }
+  sem->__removed = false;
+  system_ipc.push_back(*sem);
   return 0;
 }
 
 
 /* sem_destroy -- destroys the semaphore using semctl() */
-int sem_destroy(int *semid) {
-  int ret = semctl(*semid, 0, IPC_RMID);
+int sem_destroy(sem_t *sem) {
+  int ret = semctl(sem->__semid, 0, IPC_RMID);
   if (ret == -1) {
     assignSemDestroyError();  /* assign err code for semctl*/
   }
+  sem->__removed = true;
   return ret;
 }
 
 /* sem_wait -- it gets a lock on semaphore and implemented using semop() */
-int sem_wait(int *semid) {
+int sem_wait(sem_t *sem) {
   struct sembuf sb;
+
+  if (sem->__removed == true) {
+    errno = EINTR;
+    return -1;
+  }
+
   sb.sem_num = 0;
   sb.sem_op = -1;
   sb.sem_flg = 0;
-  if (semop(*semid, &sb, 1) == -1) {
-    assignSemopErrorCode();
+  if (semop(sem->__semid, &sb, 1) == -1) {
+    if (errno == EIDRM) {
+      sem->__removed = true;
+      errno = EINTR;
+    } else
+      assignSemopErrorCode();
     return -1;
   }
   return 0;
@@ -135,14 +152,14 @@ int sem_wait(int *semid) {
 
 /* sem_timedwait -- it waits for a specific time-period to get a lock on
  * semaphore. Implemented using __semop_timed() */
-int sem_timedwait(int *semid, struct timespec *ts) {
+int sem_timedwait(sem_t *sem, struct timespec *ts) {
   int ret;
   struct sembuf sb;
   sb.sem_num = 0;
   sb.sem_op = -1;
   sb.sem_flg = 0;
 
-  ret = __semop_timed(*semid, &sb, 1, ts);
+  ret = __semop_timed(sem->__semid, &sb, 1, ts);
   if (ret != 0) {
     assignSemopErrorCode();
   }
@@ -151,14 +168,22 @@ int sem_timedwait(int *semid, struct timespec *ts) {
 
 
 /* sem_post -- it releases lock on semaphore using semop */
-int sem_post(int *semid) {
+int sem_post(sem_t *sem) {
   struct sembuf sb;
   sb.sem_num = 0;
   sb.sem_op = 1;
   sb.sem_flg = 0;
-  if (semop(*semid, &sb, 1) == -1) {
+  if (semop(sem->__semid, &sb, 1) == -1) {
     assignSemopErrorCode();
     return -1;
   }
   return 0;
+}
+
+void sem_destroy_all() {
+  std::vector<sem_t>::iterator i = system_ipc.begin();
+  while(i != system_ipc.end()) {
+    sem_destroy(&(*i));
+    i++;
+  }
 }

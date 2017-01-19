@@ -60,11 +60,7 @@ class Semaphore final {
 #if V8_OS_MACOSX
   typedef semaphore_t NativeHandle;
 #elif V8_OS_POSIX
-  #ifdef V8_OS_ZOS
-  typedef int NativeHandle;
-  #else
   typedef sem_t NativeHandle;
-  #endif
 #elif V8_OS_WIN
   typedef HANDLE NativeHandle;
 #endif
@@ -78,9 +74,6 @@ class Semaphore final {
 
  private:
   NativeHandle native_handle_;
-#ifdef V8_OS_ZOS
-  static std::vector<NativeHandle> system_ipc;
-#endif
 
   DISALLOW_COPY_AND_ASSIGN(Semaphore);
 };
