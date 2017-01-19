@@ -84,10 +84,6 @@ Semaphore::Semaphore(int count) {
 
 
 Semaphore::~Semaphore() {
-#ifdef V8_OS_ZOS
-  system_ipc.erase(std::remove(system_ipc.begin(), system_ipc.end(), native_handle_),
-                   system_ipc.end());
-#endif
   int result = sem_destroy(&native_handle_);
   DCHECK_EQ(0, result);
   USE(result);

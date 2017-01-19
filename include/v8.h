@@ -830,7 +830,7 @@ class V8_EXPORT HandleScope {
   HandleScope(const HandleScope&);
   void operator=(const HandleScope&);
   void* operator new(size_t size);
-  void operator delete(void*, size_t) {}
+  void operator delete(void*, size_t);
 
   internal::Isolate* isolate_;
   internal::Object** prev_next_;
@@ -874,7 +874,7 @@ class V8_EXPORT EscapableHandleScope : public HandleScope {
   EscapableHandleScope(const EscapableHandleScope&);
   void operator=(const EscapableHandleScope&);
   void* operator new(size_t size);
-  void operator delete(void*, size_t) {};
+  void operator delete(void*, size_t);
 
   internal::Object** escape_slot_;
 };
@@ -5192,7 +5192,7 @@ class V8_EXPORT TryCatch {
   TryCatch(const TryCatch&);
   void operator=(const TryCatch&);
   void* operator new(size_t size);
-  void operator delete(void*, size_t) {};
+  void operator delete(void*, size_t);
 
   v8::internal::Isolate* isolate_;
   v8::TryCatch* next_;
