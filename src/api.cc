@@ -175,8 +175,10 @@ void Utils::ReportApiFailure(const char* location, const char* message) {
   i::Isolate* isolate = i::Isolate::Current();
   FatalErrorCallback callback = isolate->exception_behavior();
   if (callback == NULL) {
-    base::OS::PrintError("\xa\x23\xa\x23\x20\x46\x61\x74\x61\x6c\x20\x65\x72\x72\x6f\x72\x20\x69\x6e\x20\x6c\xa2\xa\x23\x20\x6c\xa2\xa\x23\xa\xa", location,
+#pragma convert("ISO8859-1")
+    base::OS::PrintError("\n#\n# Fatal error in %s\n# %s\n#\n\n", location,
                          message);
+#pragma convert(pop)
     base::OS::Abort();
   } else {
     callback(location, message);

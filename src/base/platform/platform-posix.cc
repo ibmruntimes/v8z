@@ -49,6 +49,7 @@
 #include "src/base/platform/platform.h"
 #if V8_OS_ZOS
 #include "src/base/platform/platform-zos.h"
+#include "src/utils.h"
 #endif
 #include "src/base/platform/time.h"
 #include "src/base/utils/random-number-generator.h"
@@ -338,6 +339,7 @@ void OS::Sleep(int milliseconds) {
 
 
 void OS::Abort() {
+  v8::V8::ReleaseSystemResources();
   if (g_hard_abort) {
     V8_IMMEDIATE_CRASH();
   }
@@ -559,6 +561,8 @@ void OS::PrintError(const char* format, ...) {
 void OS::VPrintError(const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_ERROR, LOG_TAG, format, args);
+#elif defined(V8_OS_ZOS)
+  v8::internal::VFPrintASCII(stderr, format, args);
 #else
   vfprintf(stderr, format, args);
 #endif
