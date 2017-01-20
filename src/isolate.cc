@@ -1075,12 +1075,12 @@ void Isolate::DoThrow(Object* exception, MessageLocation* location) {
             Execution::ToDetailString(this, exception_arg);
         if (!maybe_exception.ToHandle(&exception_arg)) {
           exception_arg = factory()->InternalizeOneByteString(
-              STATIC_ASCII_VECTOR("\x65\x78\x63\x65\x70\x74\x69\x6f\x6e"));
+              STATIC_ASCII_VECTOR("exception"));
         }
       }
       Handle<Object> message_obj = MessageHandler::MakeMessageObject(
           this,
-          "\x75\x6e\x63\x61\x75\x67\x68\x74\x5f\x65\x78\x63\x65\x70\x74\x69\x6f\x6e",
+          "uncaught_exception",
           location,
           HandleVector<Object>(&exception_arg, 1),
           stack_trace_object);
@@ -1127,32 +1127,32 @@ void Isolate::DoThrow(Object* exception, MessageLocation* location) {
           location->script()->GetLineNumber(location->start_pos()) + 1;
       if (exception->IsString() && location->script()->name()->IsString()) {
         base::OS::PrintError(
-            "\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x20\x6f\x72\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x65\x72\x72\x6f\x72\x3a\x20\x6c\xa2\x20\x69\x6e\x20\x6c\xa2\x20\x61\x74\x20\x6c\x69\x6e\x65\x20\x6c\x84\x2e\xa",
+            "Extension or internal compilation error: %s in %s at line %d.\n",
             String::cast(exception)->ToCString().get(),
             String::cast(location->script()->name())->ToCString().get(),
             line_number);
       } else if (location->script()->name()->IsString()) {
         base::OS::PrintError(
-            "\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x20\x6f\x72\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x65\x72\x72\x6f\x72\x20\x69\x6e\x20\x6c\xa2\x20\x61\x74\x20\x6c\x69\x6e\x65\x20\x6c\x84\x2e\xa",
+            "Extension or internal compilation error in %s at line %d.\n",
             String::cast(location->script()->name())->ToCString().get(),
             line_number);
       } else {
-        base::OS::PrintError("\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x20\x6f\x72\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x63\x6f\x6d\x70\x69\x6c\x61\x74\x69\x6f\x6e\x20\x65\x72\x72\x6f\x72\x2e\xa");
+        base::OS::PrintError("Extension or internal compilation error.\n");
       }
 #ifdef OBJECT_PRINT
       // Since comments and empty lines have been stripped from the source of
       // builtins, print the actual source here so that line numbers match.
       if (location->script()->source()->IsString()) {
         Handle<String> src(String::cast(location->script()->source()));
-        PrintF("\x46\x61\x69\x6c\x69\x6e\x67\x20\x73\x63\x72\x69\x70\x74\x3a\xa");
+        PrintASCII("Failing script:\n");
         int len = src->length();
         int line_number = 1;
-        PrintF("\x6c\xf5\x84\x3a\x20", line_number);
+        PrintASCII("%5d: ", line_number);
         for (int i = 0; i < len; i++) {
           uint16_t character = src->Get(i);
-          PrintF("\x6c\x83", character);
-          if (character == '\xa' && i < len - 2) {
-            PrintF("\x6c\xf5\x84\x3a\x20", ++line_number);
+          PrintASCII("%c", character);
+          if (character == '\n' && i < len - 2) {
+            PrintASCII("%5d: ", ++line_number);
           }
         }
       }
