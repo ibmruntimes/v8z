@@ -73,11 +73,11 @@ class SourcePosition {
 
 inline std::ostream& operator<<(std::ostream& os, const SourcePosition& p) {
   if (p.IsUnknown()) {
-    return os << "<?>";
+    return os << u8"<?>";
   } else if (FLAG_hydrogen_track_positions) {
-    return os << "<" << p.inlining_id() << ":" << p.position() << ">";
+    return os << u8"<" << p.inlining_id() << u8":" << p.position() << u8">";
   } else {
-    return os << "<0:" << p.raw() << ">";
+    return os << u8"<0:" << p.raw() << u8">";
   }
 }
 

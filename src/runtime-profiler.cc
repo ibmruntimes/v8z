@@ -92,18 +92,18 @@ static void GetICCounts(SharedFunctionInfo* shared,
 void RuntimeProfiler::Optimize(JSFunction* function, const char* reason) {
   if (FLAG_trace_opt &&
       function->shared()->PassesFilter(FLAG_hydrogen_filter)) {
-    PrintF("[marking ");
+    PrintF(u8"[marking ");
     function->ShortPrint();
-    PrintF(" for recompilation, reason: %s", reason);
+    PrintF(u8" for recompilation, reason: %s", reason);
     if (FLAG_type_info_threshold > 0) {
       int typeinfo, generic, total, type_percentage, generic_percentage;
       GetICCounts(function->shared(), &typeinfo, &generic, &total,
                   &type_percentage, &generic_percentage);
-      PrintF(", ICs with typeinfo: %d/%d (%d%%)", typeinfo, total,
+      PrintF(u8", ICs with typeinfo: %d/%d (%d%%)", typeinfo, total,
              type_percentage);
-      PrintF(", generic ICs: %d/%d (%d%%)", generic, total, generic_percentage);
+      PrintF(u8", generic ICs: %d/%d (%d%%)", generic, total, generic_percentage);
     }
-    PrintF("]\n");
+    PrintF(u8"]\n");
   }
 
   function->AttemptConcurrentOptimization();
@@ -129,9 +129,9 @@ void RuntimeProfiler::AttemptOnStackReplacement(JSFunction* function,
   // any back edge in any unoptimized frame will trigger on-stack
   // replacement for that frame.
   if (FLAG_trace_osr) {
-    PrintF("[OSR - patching back edges in ");
+    PrintF(u8"[OSR - patching back edges in ");
     function->PrintName();
-    PrintF("]\n");
+    PrintF(u8"]\n");
   }
 
   for (int i = 0; i < loop_nesting_levels; i++) {
@@ -205,15 +205,15 @@ void RuntimeProfiler::MaybeOptimizeFullCodegen(JSFunction* function,
         generic_percentage <= FLAG_generic_ic_threshold) {
       // If this particular function hasn't had any ICs patched for enough
       // ticks, optimize it now.
-      Optimize(function, "hot and stable");
+      Optimize(function, u8"hot and stable");
     } else if (ticks >= kTicksWhenNotEnoughTypeInfo) {
-      Optimize(function, "not much type info but very hot");
+      Optimize(function, u8"not much type info but very hot");
     } else {
       shared_code->set_profiler_ticks(ticks + 1);
       if (FLAG_trace_opt_verbose) {
-        PrintF("[not yet optimizing ");
+        PrintF(u8"[not yet optimizing ");
         function->PrintName();
-        PrintF(", not enough type info: %d/%d (%d%%)]\n", typeinfo, total,
+        PrintF(u8", not enough type info: %d/%d (%d%%)]\n", typeinfo, total,
                type_percentage);
       }
     }
@@ -226,7 +226,7 @@ void RuntimeProfiler::MaybeOptimizeFullCodegen(JSFunction* function,
                 &generic_percentage);
     if (type_percentage >= FLAG_type_info_threshold &&
         generic_percentage <= FLAG_generic_ic_threshold) {
-      Optimize(function, "small function");
+      Optimize(function, u8"small function");
     } else {
       shared_code->set_profiler_ticks(ticks + 1);
     }
@@ -278,14 +278,14 @@ void RuntimeProfiler::MaybeOptimizeIgnition(JSFunction* function,
         generic_percentage <= FLAG_generic_ic_threshold) {
       // If this particular function hasn't had any ICs patched for enough
       // ticks, optimize it now.
-      Optimize(function, "hot and stable");
+      Optimize(function, u8"hot and stable");
     } else if (ticks >= kTicksWhenNotEnoughTypeInfo) {
-      Optimize(function, "not much type info but very hot");
+      Optimize(function, u8"not much type info but very hot");
     } else {
       if (FLAG_trace_opt_verbose) {
-        PrintF("[not yet optimizing ");
+        PrintF(u8"[not yet optimizing ");
         function->PrintName();
-        PrintF(", not enough type info: %d/%d (%d%%)]\n", typeinfo, total,
+        PrintF(u8", not enough type info: %d/%d (%d%%)]\n", typeinfo, total,
                type_percentage);
       }
     }

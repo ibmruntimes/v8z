@@ -962,8 +962,8 @@ static bool FastAsciiConvert(char* dst, const char* src, int length,
   // being a known power of 2.
   DCHECK('a' - 'A' == (1 << 5));
   // Boundaries for the range of input characters than require conversion.
-  static const char lo = Converter::kIsToLower ? 'A' - 1 : 'a' - 1;
-  static const char hi = Converter::kIsToLower ? 'Z' + 1 : 'z' + 1;
+  static const char lo = Converter::kIsToLower ? '\x41' - 1 : '\x61' - 1;
+  static const char hi = Converter::kIsToLower ? '\x5a' + 1 : '\x7a' + 1;
   bool changed = false;
   uintptr_t or_acc = 0;
   const char* const limit = src + length;

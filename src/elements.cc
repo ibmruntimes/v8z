@@ -2827,13 +2827,13 @@ void CheckArrayAbuse(Handle<JSObject> obj, const char* op, uint32_t index,
                      bool allow_appending) {
   DisallowHeapAllocation no_allocation;
   Object* raw_length = NULL;
-  const char* elements_type = "array";
+  const char* elements_type = u8"array";
   if (obj->IsJSArray()) {
     JSArray* array = JSArray::cast(*obj);
     raw_length = array->length();
   } else {
     raw_length = Smi::FromInt(obj->elements()->length());
-    elements_type = "object";
+    elements_type = u8"object";
   }
 
   if (raw_length->IsNumber()) {
@@ -2955,7 +2955,7 @@ MaybeHandle<Object> ArrayConstructInitializeElements(Handle<JSArray> array,
 
 void ElementsAccessor::InitializeOncePerProcess() {
   static ElementsAccessor* accessor_array[] = {
-#define ACCESSOR_ARRAY(Class, Kind, Store) new Class(#Kind),
+#define ACCESSOR_ARRAY(Class, Kind, Store) new Class(USTR(#Kind)),
       ELEMENTS_LIST(ACCESSOR_ARRAY)
 #undef ACCESSOR_ARRAY
   };

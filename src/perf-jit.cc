@@ -85,7 +85,7 @@ struct PerfJitCodeDebugInfo : PerfJitBase {
   // Followed by entry_count_ instances of PerfJitDebugEntry.
 };
 
-const char PerfJitLogger::kFilenameFormatString[] = "./jit-%d.dump";
+const char PerfJitLogger::kFilenameFormatString[] = u8"./jit-%d.dump";
 
 // Extra padding for the PID in the filename
 const int PerfJitLogger::kFilenameBufferPadding = 16;
@@ -113,7 +113,7 @@ void PerfJitLogger::OpenJitDumpFile() {
   marker_address_ = OpenMarkerFile(fd);
   if (marker_address_ == nullptr) return;
 
-  perf_output_handle_ = fdopen(fd, "w+");
+  perf_output_handle_ = fdopen(fd, u8"w+");
   if (perf_output_handle_ == nullptr) return;
 
   setvbuf(perf_output_handle_, NULL, _IOFBF, kLogBufferSize);
@@ -204,7 +204,7 @@ void PerfJitLogger::LogRecordedBuffer(AbstractCode* abstract_code,
   uint32_t code_size = code->is_crankshafted() ? code->safepoint_table_offset()
                                                : code->instruction_size();
 
-  static const char string_terminator[] = "\0";
+  static const char string_terminator[] = u8"\0";
 
   PerfJitCodeLoad code_load;
   code_load.event_ = PerfJitCodeLoad::kLoad;
@@ -245,7 +245,7 @@ void PerfJitLogger::LogWriteDebugInfo(Code* code, SharedFunctionInfo* shared) {
             ->ToCString(DISALLOW_NULLS, FAST_STRING_TRAVERSAL, &name_length);
     DCHECK_EQ(0, name_string.get()[name_length]);
   } else {
-    const char unknown[] = "<unknown>";
+    const char unknown[] = u8"<unknown>";
     name_length = static_cast<int>(strlen(unknown));
     char* buffer = NewArray<char>(name_length);
     base::OS::StrNCpy(buffer, name_length + 1, unknown,
@@ -299,7 +299,7 @@ void PerfJitLogger::LogWriteDebugInfo(Code* code, SharedFunctionInfo* shared) {
     LogWriteBytes(reinterpret_cast<const char*>(&entry), sizeof(entry));
     LogWriteBytes(name_string.get(), name_length + 1);
   }
-  char padding_bytes[] = "\0\0\0\0\0\0\0\0";
+  char padding_bytes[] = u8"\0\0\0\0\0\0\0\0";
   LogWriteBytes(padding_bytes, padding);
 }
 

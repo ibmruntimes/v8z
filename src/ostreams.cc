@@ -51,12 +51,12 @@ namespace {
 // Locale-independent predicates.
 bool IsPrint(uint16_t c) { return 0x20 <= c && c <= 0x7e; }
 bool IsSpace(uint16_t c) { return (0x9 <= c && c <= 0xd) || c == 0x20; }
-bool IsOK(uint16_t c) { return (IsPrint(c) || IsSpace(c)) && c != '\\'; }
+bool IsOK(uint16_t c) { return (IsPrint(c) || IsSpace(c)) && c != '\x5c'; }
 
 
 std::ostream& PrintUC16(std::ostream& os, uint16_t c, bool (*pred)(uint16_t)) {
   char buf[10];
-  const char* format = pred(c) ? "%c" : (c <= 0xff) ? "\\x%02x" : "\\u%04x";
+  const char* format = pred(c) ? u8"%c" : (c <= 0xff) ? u8"\\x%02x" : u8"\\u%04x";
   snprintf(buf, sizeof(buf), format, c);
   return os << buf;
 }
@@ -67,7 +67,7 @@ std::ostream& PrintUC32(std::ostream& os, int32_t c, bool (*pred)(uint16_t)) {
     return PrintUC16(os, static_cast<uint16_t>(c), pred);
   }
   char buf[13];
-  snprintf(buf, sizeof(buf), "\\u{%06x}", c);
+  snprintf(buf, sizeof(buf), u8"\\u{%06x}", c);
   return os << buf;
 }
 
@@ -80,10 +80,10 @@ std::ostream& operator<<(std::ostream& os, const AsReversiblyEscapedUC16& c) {
 
 
 std::ostream& operator<<(std::ostream& os, const AsEscapedUC16ForJSON& c) {
-  if (c.value == '\n') return os << "\\n";
-  if (c.value == '\r') return os << "\\r";
-  if (c.value == '\t') return os << "\\t";
-  if (c.value == '\"') return os << "\\\"";
+  if (c.value == '\xa') return os << u8"\\n";
+  if (c.value == '\xd') return os << u8"\\r";
+  if (c.value == '\x9') return os << u8"\\t";
+  if (c.value == '\x22') return os << u8"\\\"";
   return PrintUC16(os, c.value, IsOK);
 }
 

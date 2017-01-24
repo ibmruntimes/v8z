@@ -10,15 +10,15 @@
 // Define SONAME to have the build system put a specific SONAME into the
 // shared library instead the generic SONAME generated from the V8 version
 // number. This define is mainly used by the build system script.
-#define SONAME            ""
+#define SONAME            u8""
 
 #if V8_IS_CANDIDATE_VERSION
 #define CANDIDATE_STRING " (candidate)"
 #else
-#define CANDIDATE_STRING ""
+#define CANDIDATE_STRING u8""
 #endif
 
-#define SX(x) #x
+#define SX(x) USTR(#x)
 #define S(x) SX(x)
 
 #if V8_PATCH_LEVEL > 0
@@ -27,7 +27,7 @@
       V8_PATCH_LEVEL) CANDIDATE_STRING
 #else
 #define VERSION_STRING                                               \
-  S(V8_MAJOR_VERSION) "." S(V8_MINOR_VERSION) "." S(V8_BUILD_NUMBER) \
+  S(V8_MAJOR_VERSION) u8"." S(V8_MINOR_VERSION) u8"." S(V8_BUILD_NUMBER) \
       CANDIDATE_STRING
 #endif
 
@@ -44,9 +44,9 @@ const char* Version::version_string_ = VERSION_STRING;
 
 // Calculate the V8 version string.
 void Version::GetString(Vector<char> str) {
-  const char* candidate = IsCandidate() ? " (candidate)" : "";
+  const char* candidate = IsCandidate() ? u8" (candidate)" : u8"";
 #ifdef USE_SIMULATOR
-  const char* is_simulator = " SIMULATOR";
+  const char* is_simulator = u8" SIMULATOR";
 #else
   const char* is_simulator = "";
 #endif  // USE_SIMULATOR
@@ -64,9 +64,9 @@ void Version::GetString(Vector<char> str) {
 
 // Calculate the SONAME for the V8 shared library.
 void Version::GetSONAME(Vector<char> str) {
-  if (soname_ == NULL || *soname_ == '\0') {
+  if (soname_ == NULL || *soname_ == '\x0') {
     // Generate generic SONAME if no specific SONAME is defined.
-    const char* candidate = IsCandidate() ? "-candidate" : "";
+    const char* candidate = IsCandidate() ? u8"-candidate" : u8"";
     if (GetPatch() > 0) {
       SNPrintF(str, "libv8-%d.%d.%d.%d%s.so",
                GetMajor(), GetMinor(), GetBuild(), GetPatch(), candidate);

@@ -15,8 +15,8 @@ namespace v8 {
 namespace internal {
 
 
-const char* const Log::kLogToTemporaryFile = "&";
-const char* const Log::kLogToConsole = "-";
+const char* const Log::kLogToTemporaryFile = u8"&";
+const char* const Log::kLogToConsole = u8"-";
 
 
 Log::Log(Logger* logger)
@@ -56,7 +56,7 @@ void Log::Initialize(const char* log_file_name) {
 
     if (output_handle_ != nullptr) {
       Log::MessageBuilder msg(this);
-      msg.Append("v8-version,%d,%d,%d,%d,%d", Version::GetMajor(),
+      msg.Append(u8"v8-version,%d,%d,%d,%d,%d", Version::GetMajor(),
                  Version::GetMinor(), Version::GetBuild(), Version::GetPatch(),
                  Version::IsCandidate());
       msg.WriteToLogFile();
@@ -145,14 +145,14 @@ void Log::MessageBuilder::Append(const char c) {
 
 
 void Log::MessageBuilder::AppendDoubleQuotedString(const char* string) {
-  Append('"');
-  for (const char* p = string; *p != '\0'; p++) {
-    if (*p == '"') {
-      Append('\\');
+  Append('\x22');
+  for (const char* p = string; *p != '\x0'; p++) {
+    if (*p == '\x22') {
+      Append('\x5c');
     }
     Append(*p);
   }
-  Append('"');
+  Append('\x22');
 }
 
 
@@ -166,19 +166,19 @@ void Log::MessageBuilder::Append(String* str) {
 
 
 void Log::MessageBuilder::AppendAddress(Address addr) {
-  Append("0x%" V8PRIxPTR, addr);
+  Append(u8"0x%" V8PRIxPTR, addr);
 }
 
 
 void Log::MessageBuilder::AppendSymbolName(Symbol* symbol) {
   DCHECK(symbol);
-  Append("symbol(");
+  Append(u8"symbol(");
   if (!symbol->name()->IsUndefined()) {
-    Append("\"");
+    Append(u8"\"");
     AppendDetailed(String::cast(symbol->name()), false);
-    Append("\" ");
+    Append(u8"\" ");
   }
-  Append("hash %x)", symbol->Hash());
+  Append(u8"hash %x)", symbol->Hash());
 }
 
 
@@ -189,27 +189,27 @@ void Log::MessageBuilder::AppendDetailed(String* str, bool show_impl_info) {
   if (len > 0x1000)
     len = 0x1000;
   if (show_impl_info) {
-    Append(str->IsOneByteRepresentation() ? 'a' : '2');
+    Append(str->IsOneByteRepresentation() ? '\x61' : '\x32');
     if (StringShape(str).IsExternal())
-      Append('e');
+      Append('\x65');
     if (StringShape(str).IsInternalized())
-      Append('#');
-    Append(":%i:", str->length());
+      Append('\x23');
+    Append(u8":%i:", str->length());
   }
   for (int i = 0; i < len; i++) {
     uc32 c = str->Get(i);
     if (c > 0xff) {
-      Append("\\u%04x", c);
+      Append(u8"\\u%04x", c);
     } else if (c < 32 || c > 126) {
-      Append("\\x%02x", c);
-    } else if (c == ',') {
-      Append("\\,");
-    } else if (c == '\\') {
-      Append("\\\\");
-    } else if (c == '\"') {
-      Append("\"\"");
+      Append(u8"\\x%02x", c);
+    } else if (c == '\x2c') {
+      Append(u8"\\,");
+    } else if (c == '\x5c') {
+      Append(u8"\\\\");
+    } else if (c == '\x22') {
+      Append(u8"\"\"");
     } else {
-      Append("%lc", c);
+      Append(u8"%lc", c);
     }
   }
 }
@@ -234,7 +234,7 @@ void Log::MessageBuilder::WriteToLogFile() {
   // Assert that we do not already have a new line at the end.
   DCHECK(pos_ == 0 || log_->message_buffer_[pos_ - 1] != '\n');
   if (pos_ == Log::kMessageBufferSize) pos_--;
-  log_->message_buffer_[pos_++] = '\n';
+  log_->message_buffer_[pos_++] = '\xa';
   const int written = log_->WriteToFile(log_->message_buffer_, pos_);
   if (written != pos_) {
     log_->stop();

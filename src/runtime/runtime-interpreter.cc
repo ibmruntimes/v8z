@@ -44,12 +44,12 @@ void AdvanceToOffsetForTracing(
 void PrintRegisters(std::ostream& os, bool is_input,
                     interpreter::BytecodeArrayIterator& bytecode_iterator,
                     Handle<Object> accumulator) {
-  static const char kAccumulator[] = "accumulator";
+  static const char kAccumulator[] = u8"accumulator";
   static const int kRegFieldWidth = static_cast<int>(sizeof(kAccumulator) - 1);
-  static const char* kInputColourCode = "\033[0;36m";
-  static const char* kOutputColourCode = "\033[0;35m";
-  static const char* kNormalColourCode = "\033[0;m";
-  const char* kArrowDirection = is_input ? " -> " : " <- ";
+  static const char* kInputColourCode = u8"\033[0;36m";
+  static const char* kOutputColourCode = u8"\033[0;35m";
+  static const char* kNormalColourCode = u8"\033[0;m";
+  const char* kArrowDirection = is_input ? u8" -> " : u8" <- ";
   if (FLAG_log_colour) {
     os << (is_input ? kInputColourCode : kOutputColourCode);
   }
@@ -59,7 +59,7 @@ void PrintRegisters(std::ostream& os, bool is_input,
   // Print accumulator.
   if ((is_input && interpreter::Bytecodes::ReadsAccumulator(bytecode)) ||
       (!is_input && interpreter::Bytecodes::WritesAccumulator(bytecode))) {
-    os << "      [ " << kAccumulator << kArrowDirection;
+    os << u8"      [ " << kAccumulator << kArrowDirection;
     accumulator->ShortPrint();
     os << " ]" << std::endl;
   }
@@ -119,8 +119,8 @@ RUNTIME_FUNCTION(Runtime_InterpreterTraceBytecodeEntry) {
     // Print bytecode.
     const uint8_t* bytecode_address =
         reinterpret_cast<const uint8_t*>(*bytecode_array) + bytecode_offset;
-    os << " -> " << static_cast<const void*>(bytecode_address)
-       << " (" << bytecode_offset << ") : ";
+    os << u8" -> " << static_cast<const void*>(bytecode_address)
+       << u8" (" << bytecode_offset << u8") : ";
     interpreter::Bytecodes::Decode(os, bytecode_address,
                                    bytecode_array->parameter_count());
     os << std::endl;

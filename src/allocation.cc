@@ -21,7 +21,7 @@ namespace internal {
 void* Malloced::New(size_t size) {
   void* result = malloc(size);
   if (result == NULL) {
-    V8::FatalProcessOutOfMemory("Malloced operator new");
+    V8::FatalProcessOutOfMemory(u8"Malloced operator new");
   }
   return result;
 }
@@ -64,7 +64,7 @@ char* StrDup(const char* str) {
   int length = StrLength(str);
   char* result = NewArray<char>(length + 1);
   MemCopy(result, str, length);
-  result[length] = '\0';
+  result[length] = '\x0';
   return result;
 }
 
@@ -74,7 +74,7 @@ char* StrNDup(const char* str, int n) {
   if (n < length) length = n;
   char* result = NewArray<char>(length + 1);
   MemCopy(result, str, length);
-  result[length] = '\0';
+  result[length] = '\x0';
   return result;
 }
 
@@ -105,7 +105,7 @@ void* AlignedAlloc(size_t size, size_t alignment) {
 #else
   if (posix_memalign(&ptr, alignment, size)) ptr = NULL;
 #endif
-  if (ptr == NULL) V8::FatalProcessOutOfMemory("AlignedAlloc");
+  if (ptr == NULL) V8::FatalProcessOutOfMemory(u8"AlignedAlloc");
   return ptr;
 }
 

@@ -116,7 +116,7 @@ class BasicJsonStringifier BASE_EMBEDDED {
 // Translation table to escape Latin1 characters.
 // Table entries start at a multiple of 8 and are null-terminated.
 const char* const BasicJsonStringifier::JsonEscapeTable =
-    "\\u0000\0 \\u0001\0 \\u0002\0 \\u0003\0 "
+    u8"\\u0000\0 \\u0001\0 \\u0002\0 \\u0003\0 "
     "\\u0004\0 \\u0005\0 \\u0006\0 \\u0007\0 "
     "\\b\0     \\t\0     \\n\0     \\u000b\0 "
     "\\f\0     \\r\0     \\u000e\0 \\u000f\0 "
@@ -652,13 +652,13 @@ void BasicJsonStringifier::SerializeString_(Handle<String> string) {
 
 template <>
 bool BasicJsonStringifier::DoNotEscape(uint8_t c) {
-  return c >= '#' && c <= '~' && c != '\\';
+  return c >= '\x23' && c <= '\x7e' && c != '\x5c';
 }
 
 
 template <>
 bool BasicJsonStringifier::DoNotEscape(uint16_t c) {
-  return c >= '#' && c != '\\' && c != 0x7f;
+  return c >= '\x23' && c != '\x5c' && c != 0x7f;
 }
 
 

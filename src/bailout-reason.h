@@ -10,265 +10,265 @@ namespace internal {
 
 // TODO(svenpanne) introduce an AbortReason and partition this list
 #define ERROR_MESSAGES_LIST(V)                                                 \
-  V(kNoReason, "no reason")                                                    \
+  V(kNoReason, u8"no reason")                                                    \
                                                                                \
   V(k32BitValueInRegisterIsNotZeroExtended,                                    \
-    "32 bit value in register is not zero-extended")                           \
-  V(kAllocationIsNotDoubleAligned, "Allocation is not double aligned")         \
-  V(kAPICallReturnedInvalidObject, "API call returned invalid object")         \
+    u8"32 bit value in register is not zero-extended")                           \
+  V(kAllocationIsNotDoubleAligned, u8"Allocation is not double aligned")         \
+  V(kAPICallReturnedInvalidObject, u8"API call returned invalid object")         \
   V(kArgumentsObjectValueInATestContext,                                       \
-    "Arguments object value in a test context")                                \
-  V(kArrayBoilerplateCreationFailed, "Array boilerplate creation failed")      \
-  V(kArrayIndexConstantValueTooBig, "Array index constant value too big")      \
-  V(kAssignmentToArguments, "Assignment to arguments")                         \
+    u8"Arguments object value in a test context")                                \
+  V(kArrayBoilerplateCreationFailed, u8"Array boilerplate creation failed")      \
+  V(kArrayIndexConstantValueTooBig, u8"Array index constant value too big")      \
+  V(kAssignmentToArguments, u8"Assignment to arguments")                         \
   V(kAssignmentToLetVariableBeforeInitialization,                              \
-    "Assignment to let variable before initialization")                        \
-  V(kAssignmentToLOOKUPVariable, "Assignment to LOOKUP variable")              \
+    u8"Assignment to let variable before initialization")                        \
+  V(kAssignmentToLOOKUPVariable, u8"Assignment to LOOKUP variable")              \
   V(kAssignmentToParameterFunctionUsesArgumentsObject,                         \
-    "Assignment to parameter, function uses arguments object")                 \
+    u8"Assignment to parameter, function uses arguments object")                 \
   V(kAssignmentToParameterInArgumentsObject,                                   \
-    "Assignment to parameter in arguments object")                             \
+    u8"Assignment to parameter in arguments object")                             \
   V(kBadValueContextForArgumentsObjectValue,                                   \
-    "Bad value context for arguments object value")                            \
+    u8"Bad value context for arguments object value")                            \
   V(kBadValueContextForArgumentsValue,                                         \
-    "Bad value context for arguments value")                                   \
-  V(kBailedOutDueToDependencyChange, "Bailed out due to dependency change")    \
-  V(kBailoutWasNotPrepared, "Bailout was not prepared")                        \
+    u8"Bad value context for arguments value")                                   \
+  V(kBailedOutDueToDependencyChange, u8"Bailed out due to dependency change")    \
+  V(kBailoutWasNotPrepared, u8"Bailout was not prepared")                        \
   V(kBothRegistersWereSmisInSelectNonSmi,                                      \
-    "Both registers were smis in SelectNonSmi")                                \
-  V(kClassLiteral, "Class literal")                                            \
-  V(kCodeGenerationFailed, "Code generation failed")                           \
-  V(kCodeObjectNotProperlyPatched, "Code object not properly patched")         \
-  V(kCompoundAssignmentToLookupSlot, "Compound assignment to lookup slot")     \
-  V(kComputedPropertyName, "Computed property name")                           \
-  V(kContextAllocatedArguments, "Context-allocated arguments")                 \
-  V(kCopyBuffersOverlap, "Copy buffers overlap")                               \
-  V(kCouldNotGenerateZero, "Could not generate +0.0")                          \
-  V(kCouldNotGenerateNegativeZero, "Could not generate -0.0")                  \
-  V(kDebuggerStatement, "DebuggerStatement")                                   \
-  V(kDeclarationInCatchContext, "Declaration in catch context")                \
-  V(kDeclarationInWithContext, "Declaration in with context")                  \
-  V(kDefaultNaNModeNotSet, "Default NaN mode not set")                         \
-  V(kDeleteWithGlobalVariable, "Delete with global variable")                  \
-  V(kDeleteWithNonGlobalVariable, "Delete with non-global variable")           \
-  V(kDestinationOfCopyNotAligned, "Destination of copy not aligned")           \
+    u8"Both registers were smis in SelectNonSmi")                                \
+  V(kClassLiteral, u8"Class literal")                                            \
+  V(kCodeGenerationFailed, u8"Code generation failed")                           \
+  V(kCodeObjectNotProperlyPatched, u8"Code object not properly patched")         \
+  V(kCompoundAssignmentToLookupSlot, u8"Compound assignment to lookup slot")     \
+  V(kComputedPropertyName, u8"Computed property name")                           \
+  V(kContextAllocatedArguments, u8"Context-allocated arguments")                 \
+  V(kCopyBuffersOverlap, u8"Copy buffers overlap")                               \
+  V(kCouldNotGenerateZero, u8"Could not generate +0.0")                          \
+  V(kCouldNotGenerateNegativeZero, u8"Could not generate -0.0")                  \
+  V(kDebuggerStatement, u8"DebuggerStatement")                                   \
+  V(kDeclarationInCatchContext, u8"Declaration in catch context")                \
+  V(kDeclarationInWithContext, u8"Declaration in with context")                  \
+  V(kDefaultNaNModeNotSet, u8"Default NaN mode not set")                         \
+  V(kDeleteWithGlobalVariable, u8"Delete with global variable")                  \
+  V(kDeleteWithNonGlobalVariable, u8"Delete with non-global variable")           \
+  V(kDestinationOfCopyNotAligned, u8"Destination of copy not aligned")           \
   V(kDontDeleteCellsCannotContainTheHole,                                      \
-    "DontDelete cells can't contain the hole")                                 \
+    u8"DontDelete cells can't contain the hole")                                 \
   V(kDoExpressionUnmodelable,                                                  \
-    "Encountered a do-expression with unmodelable control statements")         \
+    u8"Encountered a do-expression with unmodelable control statements")         \
   V(kDoPushArgumentNotImplementedForDoubleType,                                \
-    "DoPushArgument not implemented for double type")                          \
-  V(kEliminatedBoundsCheckFailed, "Eliminated bounds check failed")            \
+    u8"DoPushArgument not implemented for double type")                          \
+  V(kEliminatedBoundsCheckFailed, u8"Eliminated bounds check failed")            \
   V(kEmitLoadRegisterUnsupportedDoubleImmediate,                               \
-    "EmitLoadRegister: Unsupported double immediate")                          \
-  V(kEval, "eval")                                                             \
-  V(kExpectedAlignmentMarker, "Expected alignment marker")                     \
-  V(kExpectedAllocationSite, "Expected allocation site")                       \
-  V(kExpectedFunctionObject, "Expected function object in register")           \
-  V(kExpectedHeapNumber, "Expected HeapNumber")                                \
-  V(kExpectedNativeContext, "Expected native context")                         \
-  V(kExpectedNonIdenticalObjects, "Expected non-identical objects")            \
-  V(kExpectedNonNullContext, "Expected non-null context")                      \
-  V(kExpectedPositiveZero, "Expected +0.0")                                    \
-  V(kExpectedNewSpaceObject, "Expected new space object")                      \
-  V(kExpectedUndefinedOrCell, "Expected undefined or cell in register")        \
-  V(kExpectingAlignmentForCopyBytes, "Expecting alignment for CopyBytes")      \
-  V(kExportDeclaration, "Export declaration")                                  \
+    u8"EmitLoadRegister: Unsupported double immediate")                          \
+  V(kEval, u8"eval")                                                             \
+  V(kExpectedAlignmentMarker, u8"Expected alignment marker")                     \
+  V(kExpectedAllocationSite, u8"Expected allocation site")                       \
+  V(kExpectedFunctionObject, u8"Expected function object in register")           \
+  V(kExpectedHeapNumber, u8"Expected HeapNumber")                                \
+  V(kExpectedNativeContext, u8"Expected native context")                         \
+  V(kExpectedNonIdenticalObjects, u8"Expected non-identical objects")            \
+  V(kExpectedNonNullContext, u8"Expected non-null context")                      \
+  V(kExpectedPositiveZero, u8"Expected +0.0")                                    \
+  V(kExpectedNewSpaceObject, u8"Expected new space object")                      \
+  V(kExpectedUndefinedOrCell, u8"Expected undefined or cell in register")        \
+  V(kExpectingAlignmentForCopyBytes, u8"Expecting alignment for CopyBytes")      \
+  V(kExportDeclaration, u8"Export declaration")                                  \
   V(kExternalStringExpectedButNotFound,                                        \
-    "External string expected, but not found")                                 \
+    u8"External string expected, but not found")                                 \
   V(kForInStatementWithNonLocalEachVariable,                                   \
-    "ForInStatement with non-local each variable")                             \
-  V(kForOfStatement, "ForOfStatement")                                         \
-  V(kFrameIsExpectedToBeAligned, "Frame is expected to be aligned")            \
-  V(kFunctionBeingDebugged, "Function is being debugged")                      \
-  V(kFunctionCallsEval, "Function calls eval")                                 \
+    u8"ForInStatement with non-local each variable")                             \
+  V(kForOfStatement, u8"ForOfStatement")                                         \
+  V(kFrameIsExpectedToBeAligned, u8"Frame is expected to be aligned")            \
+  V(kFunctionBeingDebugged, u8"Function is being debugged")                      \
+  V(kFunctionCallsEval, u8"Function calls eval")                                 \
   V(kFunctionDataShouldBeBytecodeArrayOnInterpreterEntry,                      \
-    "The function_data field should be a BytecodeArray on interpreter entry")  \
-  V(kGeneratedCodeIsTooLarge, "Generated code is too large")                   \
-  V(kGeneratorFailedToResume, "Generator failed to resume")                    \
-  V(kGeneratorResumeMethod, "Generator resume method is being called")         \
-  V(kGenerator, "Generator")                                                   \
+    u8"The function_data field should be a BytecodeArray on interpreter entry")  \
+  V(kGeneratedCodeIsTooLarge, u8"Generated code is too large")                   \
+  V(kGeneratorFailedToResume, u8"Generator failed to resume")                    \
+  V(kGeneratorResumeMethod, u8"Generator resume method is being called")         \
+  V(kGenerator, u8"Generator")                                                   \
   V(kGlobalFunctionsMustHaveInitialMap,                                        \
-    "Global functions must have initial map")                                  \
-  V(kHeapNumberMapRegisterClobbered, "HeapNumberMap register clobbered")       \
-  V(kHydrogenFilter, "Optimization disabled by filter")                        \
-  V(kImportDeclaration, "Import declaration")                                  \
-  V(kIndexIsNegative, "Index is negative")                                     \
-  V(kIndexIsTooLarge, "Index is too large")                                    \
-  V(kInliningBailedOut, "Inlining bailed out")                                 \
+    u8"Global functions must have initial map")                                  \
+  V(kHeapNumberMapRegisterClobbered, u8"HeapNumberMap register clobbered")       \
+  V(kHydrogenFilter, u8"Optimization disabled by filter")                        \
+  V(kImportDeclaration, u8"Import declaration")                                  \
+  V(kIndexIsNegative, u8"Index is negative")                                     \
+  V(kIndexIsTooLarge, u8"Index is too large")                                    \
+  V(kInliningBailedOut, u8"Inlining bailed out")                                 \
   V(kInputGPRIsExpectedToHaveUpper32Cleared,                                   \
-    "Input GPR is expected to have upper32 cleared")                           \
-  V(kInputStringTooLong, "Input string too long")                              \
+    u8"Input GPR is expected to have upper32 cleared")                           \
+  V(kInputStringTooLong, u8"Input string too long")                              \
   V(kInteger32ToSmiFieldWritingToNonSmiLocation,                               \
-    "Integer32ToSmiField writing to non-smi location")                         \
-  V(kInvalidBytecode, "Invalid bytecode")                                      \
-  V(kInvalidCaptureReferenced, "Invalid capture referenced")                   \
+    u8"Integer32ToSmiField writing to non-smi location")                         \
+  V(kInvalidBytecode, u8"Invalid bytecode")                                      \
+  V(kInvalidCaptureReferenced, u8"Invalid capture referenced")                   \
   V(kInvalidElementsKindForInternalArrayOrInternalPackedArray,                 \
-    "Invalid ElementsKind for InternalArray or InternalPackedArray")           \
-  V(kInvalidFullCodegenState, "invalid full-codegen state")                    \
-  V(kInvalidHandleScopeLevel, "Invalid HandleScope level")                     \
-  V(kInvalidLeftHandSideInAssignment, "Invalid left-hand side in assignment")  \
-  V(kInvalidLhsInCompoundAssignment, "Invalid lhs in compound assignment")     \
-  V(kInvalidLhsInCountOperation, "Invalid lhs in count operation")             \
-  V(kInvalidMinLength, "Invalid min_length")                                   \
+    u8"Invalid ElementsKind for InternalArray or InternalPackedArray")           \
+  V(kInvalidFullCodegenState, u8"invalid full-codegen state")                    \
+  V(kInvalidHandleScopeLevel, u8"Invalid HandleScope level")                     \
+  V(kInvalidLeftHandSideInAssignment, u8"Invalid left-hand side in assignment")  \
+  V(kInvalidLhsInCompoundAssignment, u8"Invalid lhs in compound assignment")     \
+  V(kInvalidLhsInCountOperation, u8"Invalid lhs in count operation")             \
+  V(kInvalidMinLength, u8"Invalid min_length")                                   \
   V(kJSGlobalObjectNativeContextShouldBeANativeContext,                        \
-    "JSGlobalObject::native_context should be a native context")               \
+    u8"JSGlobalObject::native_context should be a native context")               \
   V(kJSGlobalProxyContextShouldNotBeNull,                                      \
-    "JSGlobalProxy::context() should not be null")                             \
+    u8"JSGlobalProxy::context() should not be null")                             \
   V(kJSObjectWithFastElementsMapHasSlowElements,                               \
-    "JSObject with fast elements map has slow elements")                       \
-  V(kLetBindingReInitialization, "Let binding re-initialization")              \
-  V(kLiveBytesCountOverflowChunkSize, "Live Bytes Count overflow chunk size")  \
-  V(kLiveEdit, "LiveEdit")                                                     \
-  V(kLookupVariableInCountOperation, "Lookup variable in count operation")     \
-  V(kMapBecameDeprecated, "Map became deprecated")                             \
-  V(kMapBecameUnstable, "Map became unstable")                                 \
-  V(kNativeFunctionLiteral, "Native function literal")                         \
-  V(kNeedSmiLiteral, "Need a Smi literal here")                                \
-  V(kNoCasesLeft, "No cases left")                                             \
-  V(kNonInitializerAssignmentToConst, "Non-initializer assignment to const")   \
-  V(kNonSmiIndex, "Non-smi index")                                             \
-  V(kNonSmiKeyInArrayLiteral, "Non-smi key in array literal")                  \
-  V(kNonSmiValue, "Non-smi value")                                             \
-  V(kNonObject, "Non-object value")                                            \
+    u8"JSObject with fast elements map has slow elements")                       \
+  V(kLetBindingReInitialization, u8"Let binding re-initialization")              \
+  V(kLiveBytesCountOverflowChunkSize, u8"Live Bytes Count overflow chunk size")  \
+  V(kLiveEdit, u8"LiveEdit")                                                     \
+  V(kLookupVariableInCountOperation, u8"Lookup variable in count operation")     \
+  V(kMapBecameDeprecated, u8"Map became deprecated")                             \
+  V(kMapBecameUnstable, u8"Map became unstable")                                 \
+  V(kNativeFunctionLiteral, u8"Native function literal")                         \
+  V(kNeedSmiLiteral, u8"Need a Smi literal here")                                \
+  V(kNoCasesLeft, u8"No cases left")                                             \
+  V(kNonInitializerAssignmentToConst, u8"Non-initializer assignment to const")   \
+  V(kNonSmiIndex, u8"Non-smi index")                                             \
+  V(kNonSmiKeyInArrayLiteral, u8"Non-smi key in array literal")                  \
+  V(kNonSmiValue, u8"Non-smi value")                                             \
+  V(kNonObject, u8"Non-object value")                                            \
   V(kNotEnoughVirtualRegistersForValues,                                       \
-    "Not enough virtual registers for values")                                 \
-  V(kNotEnoughSpillSlotsForOsr, "Not enough spill slots for OSR")              \
+    u8"Not enough virtual registers for values")                                 \
+  V(kNotEnoughSpillSlotsForOsr, u8"Not enough spill slots for OSR")              \
   V(kNotEnoughVirtualRegistersRegalloc,                                        \
-    "Not enough virtual registers (regalloc)")                                 \
-  V(kObjectFoundInSmiOnlyArray, "Object found in smi-only array")              \
-  V(kObjectLiteralWithComplexProperty, "Object literal with complex property") \
-  V(kOffsetOutOfRange, "Offset out of range")                                  \
-  V(kOperandIsANumber, "Operand is a number")                                  \
+    u8"Not enough virtual registers (regalloc)")                                 \
+  V(kObjectFoundInSmiOnlyArray, u8"Object found in smi-only array")              \
+  V(kObjectLiteralWithComplexProperty, u8"Object literal with complex property") \
+  V(kOffsetOutOfRange, u8"Offset out of range")                                  \
+  V(kOperandIsANumber, u8"Operand is a number")                                  \
   V(kOperandIsASmiAndNotABoundFunction,                                        \
-    "Operand is a smi and not a bound function")                               \
-  V(kOperandIsASmiAndNotAFunction, "Operand is a smi and not a function")      \
-  V(kOperandIsASmiAndNotAName, "Operand is a smi and not a name")              \
-  V(kOperandIsASmiAndNotAReceiver, "Operand is a smi and not a receiver")      \
-  V(kOperandIsASmiAndNotAString, "Operand is a smi and not a string")          \
-  V(kOperandIsASmi, "Operand is a smi")                                        \
-  V(kOperandIsNotADate, "Operand is not a date")                               \
-  V(kOperandIsNotABoundFunction, "Operand is not a bound function")            \
-  V(kOperandIsNotAFunction, "Operand is not a function")                       \
-  V(kOperandIsNotAName, "Operand is not a name")                               \
-  V(kOperandIsNotANumber, "Operand is not a number")                           \
-  V(kOperandIsNotAReceiver, "Operand is not a receiver")                       \
-  V(kOperandIsNotASmi, "Operand is not a smi")                                 \
-  V(kOperandIsNotAString, "Operand is not a string")                           \
-  V(kOperandIsNotSmi, "Operand is not smi")                                    \
-  V(kOperandNotANumber, "Operand not a number")                                \
-  V(kObjectTagged, "The object is tagged")                                     \
-  V(kObjectNotTagged, "The object is not tagged")                              \
-  V(kOptimizationDisabled, "Optimization is disabled")                         \
-  V(kOptimizedTooManyTimes, "Optimized too many times")                        \
+    u8"Operand is a smi and not a bound function")                               \
+  V(kOperandIsASmiAndNotAFunction, u8"Operand is a smi and not a function")      \
+  V(kOperandIsASmiAndNotAName, u8"Operand is a smi and not a name")              \
+  V(kOperandIsASmiAndNotAReceiver, u8"Operand is a smi and not a receiver")      \
+  V(kOperandIsASmiAndNotAString, u8"Operand is a smi and not a string")          \
+  V(kOperandIsASmi, u8"Operand is a smi")                                        \
+  V(kOperandIsNotADate, u8"Operand is not a date")                               \
+  V(kOperandIsNotABoundFunction, u8"Operand is not a bound function")            \
+  V(kOperandIsNotAFunction, u8"Operand is not a function")                       \
+  V(kOperandIsNotAName, u8"Operand is not a name")                               \
+  V(kOperandIsNotANumber, u8"Operand is not a number")                           \
+  V(kOperandIsNotAReceiver, u8"Operand is not a receiver")                       \
+  V(kOperandIsNotASmi, u8"Operand is not a smi")                                 \
+  V(kOperandIsNotAString, u8"Operand is not a string")                           \
+  V(kOperandIsNotSmi, u8"Operand is not smi")                                    \
+  V(kOperandNotANumber, u8"Operand not a number")                                \
+  V(kObjectTagged, u8"The object is tagged")                                     \
+  V(kObjectNotTagged, u8"The object is not tagged")                              \
+  V(kOptimizationDisabled, u8"Optimization is disabled")                         \
+  V(kOptimizedTooManyTimes, u8"Optimized too many times")                        \
   V(kOutOfVirtualRegistersWhileTryingToAllocateTempRegister,                   \
-    "Out of virtual registers while trying to allocate temp register")         \
-  V(kParseScopeError, "Parse/scope error")                                     \
-  V(kPossibleDirectCallToEval, "Possible direct call to eval")                 \
-  V(kReceivedInvalidReturnAddress, "Received invalid return address")          \
+    u8"Out of virtual registers while trying to allocate temp register")         \
+  V(kParseScopeError, u8"Parse/scope error")                                     \
+  V(kPossibleDirectCallToEval, u8"Possible direct call to eval")                 \
+  V(kReceivedInvalidReturnAddress, u8"Received invalid return address")          \
   V(kReferenceToAVariableWhichRequiresDynamicLookup,                           \
-    "Reference to a variable which requires dynamic lookup")                   \
-  V(kReferenceToGlobalLexicalVariable, "Reference to global lexical variable") \
-  V(kReferenceToUninitializedVariable, "Reference to uninitialized variable")  \
-  V(kRegisterDidNotMatchExpectedRoot, "Register did not match expected root")  \
-  V(kRegisterWasClobbered, "Register was clobbered")                           \
-  V(kRememberedSetPointerInNewSpace, "Remembered set pointer is in new space") \
-  V(kRestParameter, "Rest parameters")                                         \
-  V(kReturnAddressNotFoundInFrame, "Return address not found in frame")        \
+    u8"Reference to a variable which requires dynamic lookup")                   \
+  V(kReferenceToGlobalLexicalVariable, u8"Reference to global lexical variable") \
+  V(kReferenceToUninitializedVariable, u8"Reference to uninitialized variable")  \
+  V(kRegisterDidNotMatchExpectedRoot, u8"Register did not match expected root")  \
+  V(kRegisterWasClobbered, u8"Register was clobbered")                           \
+  V(kRememberedSetPointerInNewSpace, u8"Remembered set pointer is in new space") \
+  V(kRestParameter, u8"Rest parameters")                                         \
+  V(kReturnAddressNotFoundInFrame, u8"Return address not found in frame")        \
   V(kSloppyFunctionExpectsJSReceiverReceiver,                                  \
-    "Sloppy function expects JSReceiver as receiver.")                         \
-  V(kSmiAdditionOverflow, "Smi addition overflow")                             \
-  V(kSmiSubtractionOverflow, "Smi subtraction overflow")                       \
-  V(kStackAccessBelowStackPointer, "Stack access below stack pointer")         \
-  V(kStackFrameTypesMustMatch, "Stack frame types must match")                 \
-  V(kSuperReference, "Super reference")                                        \
-  V(kTailCall, "Tail call")                                                    \
+    u8"Sloppy function expects JSReceiver as receiver.")                         \
+  V(kSmiAdditionOverflow, u8"Smi addition overflow")                             \
+  V(kSmiSubtractionOverflow, u8"Smi subtraction overflow")                       \
+  V(kStackAccessBelowStackPointer, u8"Stack access below stack pointer")         \
+  V(kStackFrameTypesMustMatch, u8"Stack frame types must match")                 \
+  V(kSuperReference, u8"Super reference")                                        \
+  V(kTailCall, u8"Tail call")                                                    \
   V(kTheCurrentStackPointerIsBelowCsp,                                         \
-    "The current stack pointer is below csp")                                  \
+    u8"The current stack pointer is below csp")                                  \
   V(kTheSourceAndDestinationAreTheSame,                                        \
-    "The source and destination are the same")                                 \
+    u8"The source and destination are the same")                                 \
   V(kTheStackWasCorruptedByMacroAssemblerCall,                                 \
-    "The stack was corrupted by MacroAssembler::Call()")                       \
-  V(kTooManyParametersLocals, "Too many parameters/locals")                    \
-  V(kTooManyParameters, "Too many parameters")                                 \
-  V(kTooManySpillSlotsNeededForOSR, "Too many spill slots needed for OSR")     \
-  V(kToOperand32UnsupportedImmediate, "ToOperand32 unsupported immediate.")    \
+    u8"The stack was corrupted by MacroAssembler::Call()")                       \
+  V(kTooManyParametersLocals, u8"Too many parameters/locals")                    \
+  V(kTooManyParameters, u8"Too many parameters")                                 \
+  V(kTooManySpillSlotsNeededForOSR, u8"Too many spill slots needed for OSR")     \
+  V(kToOperand32UnsupportedImmediate, u8"ToOperand32 unsupported immediate.")    \
   V(kToOperandIsDoubleRegisterUnimplemented,                                   \
-    "ToOperand IsDoubleRegister unimplemented")                                \
+    u8"ToOperand IsDoubleRegister unimplemented")                                \
   V(kToOperandUnsupportedDoubleImmediate,                                      \
-    "ToOperand Unsupported double immediate")                                  \
-  V(kTryCatchStatement, "TryCatchStatement")                                   \
-  V(kTryFinallyStatement, "TryFinallyStatement")                               \
-  V(kUnalignedAllocationInNewSpace, "Unaligned allocation in new space")       \
-  V(kUnalignedCellInWriteBarrier, "Unaligned cell in write barrier")           \
-  V(kUnexpectedAllocationTop, "Unexpected allocation top")                     \
-  V(kUnexpectedColorFound, "Unexpected color bit pattern found")               \
+    u8"ToOperand Unsupported double immediate")                                  \
+  V(kTryCatchStatement, u8"TryCatchStatement")                                   \
+  V(kTryFinallyStatement, u8"TryFinallyStatement")                               \
+  V(kUnalignedAllocationInNewSpace, u8"Unaligned allocation in new space")       \
+  V(kUnalignedCellInWriteBarrier, u8"Unaligned cell in write barrier")           \
+  V(kUnexpectedAllocationTop, u8"Unexpected allocation top")                     \
+  V(kUnexpectedColorFound, u8"Unexpected color bit pattern found")               \
   V(kUnexpectedElementsKindInArrayConstructor,                                 \
-    "Unexpected ElementsKind in array constructor")                            \
+    u8"Unexpected ElementsKind in array constructor")                            \
   V(kUnexpectedFallthroughFromCharCodeAtSlowCase,                              \
-    "Unexpected fallthrough from CharCodeAt slow case")                        \
+    u8"Unexpected fallthrough from CharCodeAt slow case")                        \
   V(kUnexpectedFallthroughFromCharFromCodeSlowCase,                            \
-    "Unexpected fallthrough from CharFromCode slow case")                      \
+    u8"Unexpected fallthrough from CharFromCode slow case")                      \
   V(kUnexpectedFallThroughFromStringComparison,                                \
-    "Unexpected fall-through from string comparison")                          \
+    u8"Unexpected fall-through from string comparison")                          \
   V(kUnexpectedFallthroughToCharCodeAtSlowCase,                                \
-    "Unexpected fallthrough to CharCodeAt slow case")                          \
+    u8"Unexpected fallthrough to CharCodeAt slow case")                          \
   V(kUnexpectedFallthroughToCharFromCodeSlowCase,                              \
-    "Unexpected fallthrough to CharFromCode slow case")                        \
+    u8"Unexpected fallthrough to CharFromCode slow case")                        \
   V(kUnexpectedFPUStackDepthAfterInstruction,                                  \
-    "Unexpected FPU stack depth after instruction")                            \
+    u8"Unexpected FPU stack depth after instruction")                            \
   V(kUnexpectedInitialMapForArrayFunction1,                                    \
-    "Unexpected initial map for Array function (1)")                           \
+    u8"Unexpected initial map for Array function (1)")                           \
   V(kUnexpectedInitialMapForArrayFunction2,                                    \
-    "Unexpected initial map for Array function (2)")                           \
+    u8"Unexpected initial map for Array function (2)")                           \
   V(kUnexpectedInitialMapForArrayFunction,                                     \
-    "Unexpected initial map for Array function")                               \
+    u8"Unexpected initial map for Array function")                               \
   V(kUnexpectedInitialMapForInternalArrayFunction,                             \
-    "Unexpected initial map for InternalArray function")                       \
+    u8"Unexpected initial map for InternalArray function")                       \
   V(kUnexpectedLevelAfterReturnFromApiCall,                                    \
-    "Unexpected level after return from api call")                             \
-  V(kUnexpectedNegativeValue, "Unexpected negative value")                     \
+    u8"Unexpected level after return from api call")                             \
+  V(kUnexpectedNegativeValue, u8"Unexpected negative value")                     \
   V(kUnexpectedNumberOfPreAllocatedPropertyFields,                             \
-    "Unexpected number of pre-allocated property fields")                      \
+    u8"Unexpected number of pre-allocated property fields")                      \
   V(kUnexpectedFunctionIDForInvokeIntrinsic,                                   \
-    "Unexpected runtime function id for the InvokeIntrinsic bytecode")         \
-  V(kUnexpectedFPCRMode, "Unexpected FPCR mode.")                              \
-  V(kUnexpectedSmi, "Unexpected smi value")                                    \
-  V(kUnexpectedStackDepth, "Unexpected operand stack depth in full-codegen")   \
-  V(kUnexpectedStackPointer, "The stack pointer is not the expected value")    \
-  V(kUnexpectedStringType, "Unexpected string type")                           \
+    u8"Unexpected runtime function id for the InvokeIntrinsic bytecode")         \
+  V(kUnexpectedFPCRMode, u8"Unexpected FPCR mode.")                              \
+  V(kUnexpectedSmi, u8"Unexpected smi value")                                    \
+  V(kUnexpectedStackDepth, u8"Unexpected operand stack depth in full-codegen")   \
+  V(kUnexpectedStackPointer, u8"The stack pointer is not the expected value")    \
+  V(kUnexpectedStringType, u8"Unexpected string type")                           \
   V(kUnexpectedTypeForRegExpDataFixedArrayExpected,                            \
-    "Unexpected type for RegExp data, FixedArray expected")                    \
-  V(kUnexpectedValue, "Unexpected value")                                      \
+    u8"Unexpected type for RegExp data, FixedArray expected")                    \
+  V(kUnexpectedValue, u8"Unexpected value")                                      \
   V(kUnsupportedConstCompoundAssignment,                                       \
-    "Unsupported const compound assignment")                                   \
+    u8"Unsupported const compound assignment")                                   \
   V(kUnsupportedCountOperationWithConst,                                       \
-    "Unsupported count operation with const")                                  \
-  V(kUnsupportedDoubleImmediate, "Unsupported double immediate")               \
-  V(kUnsupportedLetCompoundAssignment, "Unsupported let compound assignment")  \
+    u8"Unsupported count operation with const")                                  \
+  V(kUnsupportedDoubleImmediate, u8"Unsupported double immediate")               \
+  V(kUnsupportedLetCompoundAssignment, u8"Unsupported let compound assignment")  \
   V(kUnsupportedLookupSlotInDeclaration,                                       \
-    "Unsupported lookup slot in declaration")                                  \
-  V(kUnsupportedNonPrimitiveCompare, "Unsupported non-primitive compare")      \
-  V(kUnsupportedPhiUseOfArguments, "Unsupported phi use of arguments")         \
+    u8"Unsupported lookup slot in declaration")                                  \
+  V(kUnsupportedNonPrimitiveCompare, u8"Unsupported non-primitive compare")      \
+  V(kUnsupportedPhiUseOfArguments, u8"Unsupported phi use of arguments")         \
   V(kUnsupportedPhiUseOfConstVariable,                                         \
-    "Unsupported phi use of const or let variable")                            \
+    u8"Unsupported phi use of const or let variable")                            \
   V(kUnexpectedReturnFromBytecodeHandler,                                      \
-    "Unexpectedly returned from a bytecode handler")                           \
-  V(kUnexpectedReturnFromThrow, "Unexpectedly returned from a throw")          \
-  V(kUnsupportedSwitchStatement, "Unsupported switch statement")               \
-  V(kUnsupportedTaggedImmediate, "Unsupported tagged immediate")               \
-  V(kVariableResolvedToWithContext, "Variable resolved to with context")       \
+    u8"Unexpectedly returned from a bytecode handler")                           \
+  V(kUnexpectedReturnFromThrow, u8"Unexpectedly returned from a throw")          \
+  V(kUnsupportedSwitchStatement, u8"Unsupported switch statement")               \
+  V(kUnsupportedTaggedImmediate, u8"Unsupported tagged immediate")               \
+  V(kVariableResolvedToWithContext, u8"Variable resolved to with context")       \
   V(kWeShouldNotHaveAnEmptyLexicalContext,                                     \
-    "We should not have an empty lexical context")                             \
-  V(kWithStatement, "WithStatement")                                           \
-  V(kWrongFunctionContext, "Wrong context passed to function")                 \
+    u8"We should not have an empty lexical context")                             \
+  V(kWithStatement, u8"WithStatement")                                           \
+  V(kWrongFunctionContext, u8"Wrong context passed to function")                 \
   V(kWrongAddressOrValuePassedToRecordWrite,                                   \
-    "Wrong address or value passed to RecordWrite")                            \
+    u8"Wrong address or value passed to RecordWrite")                            \
   V(kWrongArgumentCountForInvokeIntrinsic,                                     \
-    "Wrong number of arguments for intrinsic")                                 \
+    u8"Wrong number of arguments for intrinsic")                                 \
   V(kShouldNotDirectlyEnterOsrFunction,                                        \
-    "Should not directly enter OSR-compiled function")                         \
-  V(kYield, "Yield")
+    u8"Should not directly enter OSR-compiled function")                         \
+  V(kYield, u8"Yield")
 
 #define ERROR_MESSAGES_CONSTANTS(C, T) C,
 enum BailoutReason {

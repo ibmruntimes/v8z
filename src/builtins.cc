@@ -2873,10 +2873,10 @@ double TimeClip(double time) {
 }
 
 
-const char* kShortWeekDays[] = {"Sun", "Mon", "Tue", "Wed",
-                                "Thu", "Fri", "Sat"};
-const char* kShortMonths[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+const char* kShortWeekDays[] = {u8"Sun", u8"Mon", u8"Tue", u8"Wed",
+                                u8"Thu", u8"Fri", u8"Sat"};
+const char* kShortMonths[] = {u8"Jan", u8"Feb", u8"Mar", u8"Apr", u8"May", u8"Jun",
+                              u8"Jul", u8"Aug", u8"Sep", u8"Oct", u8"Nov", u8"Dec"};
 
 
 // ES6 section 20.3.1.16 Date Time String Format
@@ -3830,13 +3830,13 @@ MaybeHandle<JSFunction> CreateDynamicFunction(
   Handle<String> source;
   {
     IncrementalStringBuilder builder(isolate);
-    builder.AppendCharacter('(');
+    builder.AppendCharacter('\x28');
     builder.AppendCString(token);
-    builder.AppendCharacter('(');
+    builder.AppendCharacter('\x28');
     bool parenthesis_in_arg_string = false;
     if (argc > 1) {
       for (int i = 1; i < argc; ++i) {
-        if (i > 1) builder.AppendCharacter(',');
+        if (i > 1) builder.AppendCharacter('\x2c');
         Handle<String> param;
         ASSIGN_RETURN_ON_EXCEPTION(
             isolate, param, Object::ToString(isolate, args.at<Object>(i)),
@@ -3849,7 +3849,7 @@ MaybeHandle<JSFunction> CreateDynamicFunction(
         DisallowHeapAllocation no_gc;  // Ensure vectors stay valid.
         String::FlatContent param_content = param->GetFlatContent();
         for (int i = 0, length = param->length(); i < length; ++i) {
-          if (param_content.Get(i) == ')') {
+          if (param_content.Get(i) == '\x29') {
             parenthesis_in_arg_string = true;
             break;
           }
@@ -3858,9 +3858,9 @@ MaybeHandle<JSFunction> CreateDynamicFunction(
       // If the formal parameters include an unbalanced block comment, the
       // function must be rejected. Since JavaScript does not allow nested
       // comments we can include a trailing block comment to catch this.
-      builder.AppendCString("\n/**/");
+      builder.AppendCString(u8"\n/**/");
     }
-    builder.AppendCString(") {\n");
+    builder.AppendCString(u8") {\n");
     if (argc > 0) {
       Handle<String> body;
       ASSIGN_RETURN_ON_EXCEPTION(
@@ -3868,7 +3868,7 @@ MaybeHandle<JSFunction> CreateDynamicFunction(
           JSFunction);
       builder.AppendString(body);
     }
-    builder.AppendCString("\n})");
+    builder.AppendCString(u8"\n})");
     ASSIGN_RETURN_ON_EXCEPTION(isolate, source, builder.Finish(), JSFunction);
 
     // The SyntaxError must be thrown after all the (observable) ToString
@@ -4781,7 +4781,7 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->builder = &MacroAssemblerBuilder;                \
   functions->generator = FUNCTION_ADDR(Generate_Adaptor);     \
   functions->c_code = FUNCTION_ADDR(Builtin_##aname);         \
-  functions->s_name = #aname;                                 \
+  functions->s_name = USTR(#aname);                                 \
   functions->name = c_##aname;                                \
   functions->flags = Code::ComputeFlags(Code::BUILTIN);       \
   functions->extra_args = BuiltinExtraArguments::aextra_args; \
@@ -4792,7 +4792,7 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->builder = &MacroAssemblerBuilder;                     \
   functions->generator = FUNCTION_ADDR(Generate_##aname);          \
   functions->c_code = NULL;                                        \
-  functions->s_name = #aname;                                      \
+  functions->s_name = USTR(#aname);                                      \
   functions->name = k##aname;                                      \
   functions->flags = Code::ComputeFlags(Code::kind, state, extra); \
   functions->extra_args = BuiltinExtraArguments::kNone;            \
@@ -4803,7 +4803,7 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->builder = &CodeStubAssemblerBuilder;                        \
   functions->generator = FUNCTION_ADDR(Generate_##aname);                \
   functions->c_code = NULL;                                              \
-  functions->s_name = #aname;                                            \
+  functions->s_name = USTR(#aname);                                            \
   functions->name = k##aname;                                            \
   functions->flags =                                                     \
       Code::ComputeFlags(Code::BUILTIN, UNINITIALIZED, kNoExtraICState); \
@@ -4815,7 +4815,7 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->builder = &MacroAssemblerBuilder;              \
   functions->generator = FUNCTION_ADDR(Generate_##aname);   \
   functions->c_code = NULL;                                 \
-  functions->s_name = #aname;                               \
+  functions->s_name = USTR(#aname);                               \
   functions->name = k##aname;                               \
   functions->flags = Code::ComputeHandlerFlags(Code::kind); \
   functions->extra_args = BuiltinExtraArguments::kNone;     \
@@ -4860,7 +4860,7 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
         CodeTracer::Scope trace_scope(isolate->GetCodeTracer());
         OFStream os(trace_scope.file());
         os << "Builtin: ";
-		for (int n = 0; functions[i].s_name[n] != '\0'; n++) {
+		for (int n = 0; functions[i].s_name[n] != '\x0'; n++) {
           os << Ascii2Ebcdic(functions[i].s_name[n]);
         }
         os << "\n";

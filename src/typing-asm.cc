@@ -23,7 +23,7 @@ namespace internal {
                    ? -1                                        \
                    : script_->GetLineNumber(node->position()); \
     base::OS::SNPrintF(error_message_, sizeof(error_message_), \
-                       "asm: line %d: %s\n", line + 1, msg);   \
+                       u8"asm: line %d: %s\n", line + 1, msg);   \
     return;                                                    \
   } while (false)
 
@@ -82,7 +82,7 @@ void AsmTyper::VisitAsmModule(FunctionLiteral* fun) {
   if (use_asm == NULL) FAIL(fun, "missing \"use asm\"");
   Literal* use_asm_literal = use_asm->expression()->AsLiteral();
   if (use_asm_literal == NULL) FAIL(fun, "missing \"use asm\"");
-  if (!use_asm_literal->raw_value()->AsString()->IsOneByteEqualTo("use asm"))
+  if (!use_asm_literal->raw_value()->AsString()->IsOneByteEqualTo(u8"use asm"))
     FAIL(fun, "missing \"use asm\"");
 
   // Module parameters.
@@ -864,13 +864,13 @@ Expression* AsmTyper::GetReceiverOfPropertyAccess(Expression* expr,
 
 
 bool AsmTyper::IsMathObject(Expression* expr) {
-  Expression* obj = GetReceiverOfPropertyAccess(expr, "Math");
+  Expression* obj = GetReceiverOfPropertyAccess(expr, u8"Math");
   return obj && IsStdlibObject(obj);
 }
 
 
 bool AsmTyper::IsSIMDObject(Expression* expr) {
-  Expression* obj = GetReceiverOfPropertyAccess(expr, "SIMD");
+  Expression* obj = GetReceiverOfPropertyAccess(expr, u8"SIMD");
   return obj && IsStdlibObject(obj);
 }
 
@@ -887,11 +887,11 @@ void AsmTyper::VisitProperty(Property* expr) {
     return;
   }
 #define V(NAME, Name, name, lane_count, lane_type)               \
-  if (IsSIMDTypeObject(expr->obj(), #Name)) {                    \
+  if (IsSIMDTypeObject(expr->obj(), USTR(#Name))) {                    \
     VisitLibraryAccess(&stdlib_simd_##name##_types_, expr);      \
     return;                                                      \
   }                                                              \
-  if (IsSIMDTypeObject(expr, #Name)) {                           \
+  if (IsSIMDTypeObject(expr, USTR(#Name))) {                           \
     VariableInfo* info = stdlib_simd_##name##_constructor_type_; \
     SetResult(expr, info->type);                                 \
     property_info_ = info;                                       \
@@ -1449,32 +1449,32 @@ void AsmTyper::InitializeStdlib() {
     Type* type;
   };
 
-  const Assignment math[] = {{"PI", kMathPI, double_type},
-                             {"E", kMathE, double_type},
-                             {"LN2", kMathLN2, double_type},
-                             {"LN10", kMathLN10, double_type},
-                             {"LOG2E", kMathLOG2E, double_type},
-                             {"LOG10E", kMathLOG10E, double_type},
-                             {"SQRT2", kMathSQRT2, double_type},
-                             {"SQRT1_2", kMathSQRT1_2, double_type},
-                             {"imul", kMathImul, imul_type},
-                             {"abs", kMathAbs, number_fn1_type},
-                             {"ceil", kMathCeil, number_fn1_type},
-                             {"floor", kMathFloor, number_fn1_type},
-                             {"fround", kMathFround, fround_type},
-                             {"pow", kMathPow, double_fn2_type},
-                             {"exp", kMathExp, double_fn1_type},
-                             {"log", kMathLog, double_fn1_type},
-                             {"min", kMathMin, number_fn2_type},
-                             {"max", kMathMax, number_fn2_type},
-                             {"sqrt", kMathSqrt, number_fn1_type},
-                             {"cos", kMathCos, double_fn1_type},
-                             {"sin", kMathSin, double_fn1_type},
-                             {"tan", kMathTan, double_fn1_type},
-                             {"acos", kMathAcos, double_fn1_type},
-                             {"asin", kMathAsin, double_fn1_type},
-                             {"atan", kMathAtan, double_fn1_type},
-                             {"atan2", kMathAtan2, double_fn2_type}};
+  const Assignment math[] = {{u8"PI", kMathPI, double_type},
+                             {u8"E", kMathE, double_type},
+                             {u8"LN2", kMathLN2, double_type},
+                             {u8"LN10", kMathLN10, double_type},
+                             {u8"LOG2E", kMathLOG2E, double_type},
+                             {u8"LOG10E", kMathLOG10E, double_type},
+                             {u8"SQRT2", kMathSQRT2, double_type},
+                             {u8"SQRT1_2", kMathSQRT1_2, double_type},
+                             {u8"imul", kMathImul, imul_type},
+                             {u8"abs", kMathAbs, number_fn1_type},
+                             {u8"ceil", kMathCeil, number_fn1_type},
+                             {u8"floor", kMathFloor, number_fn1_type},
+                             {u8"fround", kMathFround, fround_type},
+                             {u8"pow", kMathPow, double_fn2_type},
+                             {u8"exp", kMathExp, double_fn1_type},
+                             {u8"log", kMathLog, double_fn1_type},
+                             {u8"min", kMathMin, number_fn2_type},
+                             {u8"max", kMathMax, number_fn2_type},
+                             {u8"sqrt", kMathSqrt, number_fn1_type},
+                             {u8"cos", kMathCos, double_fn1_type},
+                             {u8"sin", kMathSin, double_fn1_type},
+                             {u8"tan", kMathTan, double_fn1_type},
+                             {u8"acos", kMathAcos, double_fn1_type},
+                             {u8"asin", kMathAsin, double_fn1_type},
+                             {u8"atan", kMathAtan, double_fn1_type},
+                             {u8"atan2", kMathAtan2, double_fn2_type}};
   for (unsigned i = 0; i < arraysize(math); ++i) {
     stdlib_math_types_[math[i].name] = new (zone()) VariableInfo(math[i].type);
     stdlib_math_types_[math[i].name]->standard_member = math[i].standard_member;
@@ -1487,13 +1487,13 @@ void AsmTyper::InitializeStdlib() {
   stdlib_types_["NaN"]->standard_member = kNaN;
   Type* buffer_type = Type::Any();
 #define TYPED_ARRAY(TypeName, type_name, TYPE_NAME, ctype, size) \
-  stdlib_types_[#TypeName "Array"] = new (zone()) VariableInfo(  \
+  stdlib_types_[USTR(#TypeName) u8"Array"] = new (zone()) VariableInfo(  \
       Type::Function(cache_.k##TypeName##Array, buffer_type, zone()));
   TYPED_ARRAYS(TYPED_ARRAY)
 #undef TYPED_ARRAY
 
 #define TYPED_ARRAY(TypeName, type_name, TYPE_NAME, ctype, size)     \
-  stdlib_heap_types_[#TypeName "Array"] = new (zone()) VariableInfo( \
+  stdlib_heap_types_[USTR(#TypeName) u8"Array"] = new (zone()) VariableInfo( \
       Type::Function(cache_.k##TypeName##Array, buffer_type, zone()));
   TYPED_ARRAYS(TYPED_ARRAY)
 #undef TYPED_ARRAY
@@ -1602,9 +1602,9 @@ void AsmTyper::VisitWithExpectation(Expression* expr, Type* expected_type,
   Type* bounded_type = Type::Intersect(computed_type_, expected_type_, zone());
   if (bounded_type->Is(Type::None())) {
 #ifdef DEBUG
-    PrintF("Computed type: ");
+    PrintF(u8"Computed type: ");
     computed_type_->Print();
-    PrintF("Expected type: ");
+    PrintF(u8"Expected type: ");
     expected_type_->Print();
 #endif
     FAIL(expr, msg);

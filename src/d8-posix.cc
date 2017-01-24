@@ -174,7 +174,7 @@ class ExecArgs {
     String::Utf8Value prog(arg0);
     if (*prog == NULL) {
       const char* message =
-          "os.system(): String conversion of program name failed";
+          u8"os.system(): String conversion of program name failed";
       isolate->ThrowException(
           String::NewFromUtf8(isolate, message, NewStringType::kNormal)
               .ToLocalChecked());
@@ -409,7 +409,7 @@ static bool WaitForChild(Isolate* isolate,
     char message[999];
     snprintf(message,
              sizeof(message),
-             "Child killed by signal %d",
+             u8"Child killed by signal %d",
              child_info.si_status);
     isolate->ThrowException(
         String::NewFromUtf8(isolate, message, NewStringType::kNormal)
@@ -420,7 +420,7 @@ static bool WaitForChild(Isolate* isolate,
     char message[999];
     snprintf(message,
              sizeof(message),
-             "Child exited with status %d",
+             u8"Child exited with status %d",
              child_info.si_status);
     isolate->ThrowException(
         String::NewFromUtf8(isolate, message, NewStringType::kNormal)
@@ -556,7 +556,7 @@ void Shell::System(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Shell::ChangeDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() != 1) {
-    const char* message = "chdir() takes one argument";
+    const char* message = u8"chdir() takes one argument";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -564,7 +564,7 @@ void Shell::ChangeDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
   String::Utf8Value directory(args[0]);
   if (*directory == NULL) {
-    const char* message = "os.chdir(): String conversion of argument failed.";
+    const char* message = u8"os.chdir(): String conversion of argument failed.";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -581,7 +581,7 @@ void Shell::ChangeDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Shell::SetUMask(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() != 1) {
-    const char* message = "umask() takes one argument";
+    const char* message = u8"umask() takes one argument";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -598,7 +598,7 @@ void Shell::SetUMask(const v8::FunctionCallbackInfo<v8::Value>& args) {
     args.GetReturnValue().Set(previous);
     return;
   } else {
-    const char* message = "umask() argument must be numeric";
+    const char* message = u8"umask() argument must be numeric";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -632,7 +632,7 @@ static bool mkdirp(Isolate* isolate, char* directory, mode_t mask) {
   if (errno == EEXIST) {
     return CheckItsADirectory(isolate, directory);
   } else if (errno == ENOENT) {  // Intermediate path element is missing.
-    char* last_slash = strrchr(directory, '/');
+    char* last_slash = strrchr(directory, '\x2f');
     if (last_slash == NULL) {
       isolate->ThrowException(
           String::NewFromUtf8(isolate, strerror(errno), NewStringType::kNormal)
@@ -641,7 +641,7 @@ static bool mkdirp(Isolate* isolate, char* directory, mode_t mask) {
     }
     *last_slash = 0;
     if (!mkdirp(isolate, directory, mask)) return false;
-    *last_slash = '/';
+    *last_slash = '\x2f';
     result = mkdir(directory, mask);
     if (result == 0) return true;
     if (errno == EEXIST) {
@@ -668,14 +668,14 @@ void Shell::MakeDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
                  ->Int32Value(args.GetIsolate()->GetCurrentContext())
                  .FromJust();
     } else {
-      const char* message = "mkdirp() second argument must be numeric";
+      const char* message = u8"mkdirp() second argument must be numeric";
       args.GetIsolate()->ThrowException(
           String::NewFromUtf8(args.GetIsolate(), message,
                               NewStringType::kNormal).ToLocalChecked());
       return;
     }
   } else if (args.Length() != 1) {
-    const char* message = "mkdirp() takes one or two arguments";
+    const char* message = u8"mkdirp() takes one or two arguments";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -683,7 +683,7 @@ void Shell::MakeDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
   String::Utf8Value directory(args[0]);
   if (*directory == NULL) {
-    const char* message = "os.mkdirp(): String conversion of argument failed.";
+    const char* message = u8"os.mkdirp(): String conversion of argument failed.";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -695,7 +695,7 @@ void Shell::MakeDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Shell::RemoveDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() != 1) {
-    const char* message = "rmdir() takes one or two arguments";
+    const char* message = u8"rmdir() takes one or two arguments";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -703,7 +703,7 @@ void Shell::RemoveDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
   String::Utf8Value directory(args[0]);
   if (*directory == NULL) {
-    const char* message = "os.rmdir(): String conversion of argument failed.";
+    const char* message = u8"os.rmdir(): String conversion of argument failed.";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -715,7 +715,7 @@ void Shell::RemoveDirectory(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Shell::SetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() != 2) {
-    const char* message = "setenv() takes two arguments";
+    const char* message = u8"setenv() takes two arguments";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -725,7 +725,7 @@ void Shell::SetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
   String::Utf8Value value(args[1]);
   if (*var == NULL) {
     const char* message =
-        "os.setenv(): String conversion of variable name failed.";
+        u8"os.setenv(): String conversion of variable name failed.";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -733,7 +733,7 @@ void Shell::SetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
   if (*value == NULL) {
     const char* message =
-        "os.setenv(): String conversion of variable contents failed.";
+        u8"os.setenv(): String conversion of variable contents failed.";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -745,7 +745,7 @@ void Shell::SetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Shell::UnsetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() != 1) {
-    const char* message = "unsetenv() takes one argument";
+    const char* message = u8"unsetenv() takes one argument";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());
@@ -754,7 +754,7 @@ void Shell::UnsetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
   String::Utf8Value var(args[0]);
   if (*var == NULL) {
     const char* message =
-        "os.setenv(): String conversion of variable name failed.";
+        u8"os.setenv(): String conversion of variable name failed.";
     args.GetIsolate()->ThrowException(
         String::NewFromUtf8(args.GetIsolate(), message, NewStringType::kNormal)
             .ToLocalChecked());

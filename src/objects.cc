@@ -67,12 +67,12 @@ std::ostream& operator<<(std::ostream& os, InstanceType instance_type) {
   switch (instance_type) {
 #define WRITE_TYPE(TYPE) \
   case TYPE:             \
-    return os << #TYPE;
+    return os << USTR(#TYPE);
     INSTANCE_TYPE_LIST(WRITE_TYPE)
 #undef WRITE_TYPE
   }
   UNREACHABLE();
-  return os << "UNKNOWN";  // Keep the compiler happy.
+  return os << u8"UNKNOWN";  // Keep the compiler happy.
 }
 
 Handle<FieldType> Object::OptimalType(Isolate* isolate,
@@ -1651,15 +1651,15 @@ static bool AnWord(String* str) {
   if (str->length() == 0) return false;  // A nothing.
   int c0 = str->Get(0);
   int c1 = str->length() > 1 ? str->Get(1) : 0;
-  if (c0 == 'U') {
-    if (c1 > 'Z') {
+  if (c0 == '\x55') {
+    if (c1 > '\x5a') {
       return true;  // An Umpire, but a UTF8String, a U.
     }
-  } else if (c0 == 'A' || c0 == 'E' || c0 == 'I' || c0 == 'O') {
+  } else if (c0 == '\x41' || c0 == '\x45' || c0 == '\x49' || c0 == '\x4f') {
     return true;    // An Ape, an ABCBook.
-  } else if ((c1 == 0 || (c1 >= 'A' && c1 <= 'Z')) &&
-           (c0 == 'F' || c0 == 'H' || c0 == 'M' || c0 == 'N' || c0 == 'R' ||
-            c0 == 'S' || c0 == 'X')) {
+  } else if ((c1 == 0 || (c1 >= '\x41' && c1 <= '\x5a')) &&
+           (c0 == '\x46' || c0 == '\x48' || c0 == '\x4d' || c0 == '\x4e' || c0 == '\x52' ||
+            c0 == '\x53' || c0 == '\x58')) {
     return true;    // An MP3File, an M.
   }
   return false;
@@ -1825,12 +1825,12 @@ bool String::MakeExternal(v8::String::ExternalOneByteStringResource* resource) {
 void String::StringShortPrint(StringStream* accumulator) {
   int len = length();
   if (len > kMaxShortPrintLength) {
-    accumulator->Add("<Very long string[%u]>", len);
+    accumulator->Add(u8"<Very long string[%u]>", len);
     return;
   }
 
   if (!LooksValid()) {
-    accumulator->Add("<Invalid String>");
+    accumulator->Add(u8"<Invalid String>");
     return;
   }
 
@@ -1851,35 +1851,35 @@ void String::StringShortPrint(StringStream* accumulator) {
   }
   stream.Reset(this);
   if (one_byte) {
-    accumulator->Add("<String[%u]: ", length());
+    accumulator->Add(u8"<String[%u]: ", length());
     for (int i = 0; i < len; i++) {
       accumulator->Put(static_cast<char>(stream.GetNext()));
     }
-    accumulator->Put('>');
+    accumulator->Put('\x3e');
   } else {
     // Backslash indicates that the string contains control
     // characters and that backslashes are therefore escaped.
-    accumulator->Add("<String[%u]\\: ", length());
+    accumulator->Add(u8"<String[%u]\\: ", length());
     for (int i = 0; i < len; i++) {
       uint16_t c = stream.GetNext();
-      if (c == '\n') {
-        accumulator->Add("\\n");
-      } else if (c == '\r') {
-        accumulator->Add("\\r");
-      } else if (c == '\\') {
-        accumulator->Add("\\\\");
+      if (c == '\xa') {
+        accumulator->Add(u8"\\n");
+      } else if (c == '\xd') {
+        accumulator->Add(u8"\\r");
+      } else if (c == '\x5c') {
+        accumulator->Add(u8"\\\\");
       } else if (c < 32 || c > 126) {
-        accumulator->Add("\\x%02x", c);
+        accumulator->Add(u8"\\x%02x", c);
       } else {
         accumulator->Put(static_cast<char>(c));
       }
     }
     if (truncated) {
-      accumulator->Put('.');
-      accumulator->Put('.');
-      accumulator->Put('.');
+      accumulator->Put('\x2e');
+      accumulator->Put('\x2e');
+      accumulator->Put('\x2e');
     }
-    accumulator->Put('>');
+    accumulator->Put('\x3e');
   }
   return;
 }
@@ -1900,35 +1900,35 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       double length = JSArray::cast(this)->length()->IsUndefined()
           ? 0
           : JSArray::cast(this)->length()->Number();
-      accumulator->Add("<JS Array[%u]>", static_cast<uint32_t>(length));
+      accumulator->Add(u8"<JS Array[%u]>", static_cast<uint32_t>(length));
       break;
     }
     case JS_BOUND_FUNCTION_TYPE: {
       JSBoundFunction* bound_function = JSBoundFunction::cast(this);
       Object* name = bound_function->name();
-      accumulator->Add("<JS BoundFunction");
+      accumulator->Add(u8"<JS BoundFunction");
       if (name->IsString()) {
         String* str = String::cast(name);
         if (str->length() > 0) {
-          accumulator->Add(" ");
+          accumulator->Add(u8" ");
           accumulator->Put(str);
         }
       }
       accumulator->Add(
-          " (BoundTargetFunction %p)>",
+          u8" (BoundTargetFunction %p)>",
           reinterpret_cast<void*>(bound_function->bound_target_function()));
       break;
     }
     case JS_WEAK_MAP_TYPE: {
-      accumulator->Add("<JS WeakMap>");
+      accumulator->Add(u8"<JS WeakMap>");
       break;
     }
     case JS_WEAK_SET_TYPE: {
-      accumulator->Add("<JS WeakSet>");
+      accumulator->Add(u8"<JS WeakSet>");
       break;
     }
     case JS_REGEXP_TYPE: {
-      accumulator->Add("<JS RegExp>");
+      accumulator->Add(u8"<JS RegExp>");
       break;
     }
     case JS_FUNCTION_TYPE: {
@@ -1938,25 +1938,25 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       if (fun_name->IsString()) {
         String* str = String::cast(fun_name);
         if (str->length() > 0) {
-          accumulator->Add("<JS Function ");
+          accumulator->Add(u8"<JS Function ");
           accumulator->Put(str);
           printed = true;
         }
       }
       if (!printed) {
-        accumulator->Add("<JS Function");
+        accumulator->Add(u8"<JS Function");
       }
-      accumulator->Add(" (SharedFunctionInfo %p)",
+      accumulator->Add(u8" (SharedFunctionInfo %p)",
                        reinterpret_cast<void*>(function->shared()));
-      accumulator->Put('>');
+      accumulator->Put('\x3e');
       break;
     }
     case JS_GENERATOR_OBJECT_TYPE: {
-      accumulator->Add("<JS Generator>");
+      accumulator->Add(u8"<JS Generator>");
       break;
     }
     case JS_MODULE_TYPE: {
-      accumulator->Add("<JS Module>");
+      accumulator->Add(u8"<JS Module>");
       break;
     }
     // All other JSObjects are rather similar to each other (JSObject,
@@ -1968,12 +1968,12 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       bool printed = false;
       if (constructor->IsHeapObject() &&
           !heap->Contains(HeapObject::cast(constructor))) {
-        accumulator->Add("!!!INVALID CONSTRUCTOR!!!");
+        accumulator->Add(u8"!!!INVALID CONSTRUCTOR!!!");
       } else {
         bool global_object = IsJSGlobalProxy();
         if (constructor->IsJSFunction()) {
           if (!heap->Contains(JSFunction::cast(constructor)->shared())) {
-            accumulator->Add("!!!INVALID SHARED ON CONSTRUCTOR!!!");
+            accumulator->Add(u8"!!!INVALID SHARED ON CONSTRUCTOR!!!");
           } else {
             Object* constructor_name =
                 JSFunction::cast(constructor)->shared()->name();
@@ -1981,12 +1981,12 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
               String* str = String::cast(constructor_name);
               if (str->length() > 0) {
                 bool vowel = AnWord(str);
-                accumulator->Add("<%sa%s ",
-                       global_object ? "Global Object: " : "",
-                       vowel ? "n" : "");
+                accumulator->Add(u8"<%sa%s ",
+                       global_object ? u8"Global Object: " : u8"",
+                       vowel ? u8"n" : u8"");
                 accumulator->Put(str);
-                accumulator->Add(" with %smap %p",
-                    map_of_this->is_deprecated() ? "deprecated " : "",
+                accumulator->Add(u8" with %smap %p",
+                    map_of_this->is_deprecated() ? u8"deprecated " : u8"",
                     map_of_this);
                 printed = true;
               }
@@ -1994,14 +1994,14 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
           }
         }
         if (!printed) {
-          accumulator->Add("<JS %sObject", global_object ? "Global " : "");
+          accumulator->Add(u8"<JS %sObject", global_object ? u8"Global " : u8"");
         }
       }
       if (IsJSValue()) {
-        accumulator->Add(" value = ");
+        accumulator->Add(u8" value = ");
         JSValue::cast(this)->value()->ShortPrint(accumulator);
       }
-      accumulator->Put('>');
+      accumulator->Put('\x3e');
       break;
     }
   }
@@ -2014,16 +2014,16 @@ void JSObject::PrintElementsTransition(
     ElementsKind to_kind, Handle<FixedArrayBase> to_elements) {
   if (from_kind != to_kind) {
     OFStream os(file);
-    os << "elements transition [" << ElementsKindToString(from_kind) << " -> "
-       << ElementsKindToString(to_kind) << "] in ";
+    os << u8"elements transition [" << ElementsKindToString(from_kind) << u8" -> "
+       << ElementsKindToString(to_kind) << u8"] in ";
     JavaScriptFrame::PrintTop(object->GetIsolate(), file, false, true);
-    PrintF(file, " for ");
+    PrintF(file, u8" for ");
     object->ShortPrint(file);
-    PrintF(file, " from ");
+    PrintF(file, u8" from ");
     from_elements->ShortPrint(file);
-    PrintF(file, " to ");
+    PrintF(file, u8" to ");
     to_elements->ShortPrint(file);
-    PrintF(file, "\n");
+    PrintF(file, u8"\n");
   }
 }
 
@@ -2045,17 +2045,17 @@ MaybeHandle<JSFunction> Map::GetConstructorFunction(
 void Map::PrintReconfiguration(FILE* file, int modify_index, PropertyKind kind,
                                PropertyAttributes attributes) {
   OFStream os(file);
-  os << "[reconfiguring]";
+  os << u8"[reconfiguring]";
   Name* name = instance_descriptors()->GetKey(modify_index);
   if (name->IsString()) {
     String::cast(name)->PrintOn(file);
   } else {
-    os << "{symbol " << static_cast<void*>(name) << "}";
+    os << u8"{symbol " << static_cast<void*>(name) << u8"}";
   }
-  os << ": " << (kind == kData ? "kData" : "ACCESSORS") << ", attrs: ";
-  os << attributes << " [";
+  os << u8": " << (kind == kData ? u8"kData" : u8"ACCESSORS") << u8", attrs: ";
+  os << attributes << u8" [";
   JavaScriptFrame::PrintTop(GetIsolate(), file, false, true);
-  os << "]\n";
+  os << u8"]\n";
 }
 
 void Map::PrintGeneralization(
@@ -2065,47 +2065,47 @@ void Map::PrintGeneralization(
     MaybeHandle<Object> old_value, MaybeHandle<FieldType> new_field_type,
     MaybeHandle<Object> new_value) {
   OFStream os(file);
-  os << "[generalizing]";
+  os << u8"[generalizing]";
   Name* name = instance_descriptors()->GetKey(modify_index);
   if (name->IsString()) {
     String::cast(name)->PrintOn(file);
   } else {
-    os << "{symbol " << static_cast<void*>(name) << "}";
+    os << u8"{symbol " << static_cast<void*>(name) << u8"}";
   }
-  os << ":";
+  os << u8":";
   if (constant_to_field) {
-    os << "c";
+    os << u8"c";
   } else {
-    os << old_representation.Mnemonic() << "{";
+    os << old_representation.Mnemonic() << u8"{";
     if (old_field_type.is_null()) {
       os << Brief(*(old_value.ToHandleChecked()));
     } else {
       old_field_type.ToHandleChecked()->PrintTo(os);
     }
-    os << "}";
+    os << u8"}";
   }
-  os << "->" << new_representation.Mnemonic() << "{";
+  os << u8"->" << new_representation.Mnemonic() << u8"{";
   if (new_field_type.is_null()) {
     os << Brief(*(new_value.ToHandleChecked()));
   } else {
     new_field_type.ToHandleChecked()->PrintTo(os);
   }
-  os << "} (";
+  os << u8"} (";
   if (strlen(reason) > 0) {
     os << reason;
   } else {
-    os << "+" << (descriptors - split) << " maps";
+    os << u8"+" << (descriptors - split) << u8" maps";
   }
-  os << ") [";
+  os << u8") [";
   JavaScriptFrame::PrintTop(GetIsolate(), file, false, true);
-  os << "]\n";
+  os << u8"]\n";
 }
 
 
 void JSObject::PrintInstanceMigration(FILE* file,
                                       Map* original_map,
                                       Map* new_map) {
-  PrintF(file, "[migrating]");
+  PrintF(file, u8"[migrating]");
   DescriptorArray* o = original_map->instance_descriptors();
   DescriptorArray* n = new_map->instance_descriptors();
   for (int i = 0; i < original_map->NumberOfOwnDescriptors(); i++) {
@@ -2113,34 +2113,34 @@ void JSObject::PrintInstanceMigration(FILE* file,
     Representation n_r = n->GetDetails(i).representation();
     if (!o_r.Equals(n_r)) {
       String::cast(o->GetKey(i))->PrintOn(file);
-      PrintF(file, ":%s->%s ", o_r.Mnemonic(), n_r.Mnemonic());
+      PrintF(file, u8":%s->%s ", o_r.Mnemonic(), n_r.Mnemonic());
     } else if (o->GetDetails(i).type() == DATA_CONSTANT &&
                n->GetDetails(i).type() == DATA) {
       Name* name = o->GetKey(i);
       if (name->IsString()) {
         String::cast(name)->PrintOn(file);
       } else {
-        PrintF(file, "{symbol %p}", static_cast<void*>(name));
+        PrintF(file, u8"{symbol %p}", static_cast<void*>(name));
       }
-      PrintF(file, " ");
+      PrintF(file, u8" ");
     }
   }
-  PrintF(file, "\n");
+  PrintF(file, u8"\n");
 }
 
 
 void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
   Heap* heap = GetHeap();
   if (!heap->Contains(this)) {
-    os << "!!!INVALID POINTER!!!";
+    os << u8"!!!INVALID POINTER!!!";
     return;
   }
   if (!heap->Contains(map())) {
-    os << "!!!INVALID MAP!!!";
+    os << u8"!!!INVALID MAP!!!";
     return;
   }
 
-  os << this << " ";
+  os << this << u8" ";
 
   if (IsString()) {
     HeapStringAllocator allocator;
@@ -2158,33 +2158,33 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
   }
   switch (map()->instance_type()) {
     case MAP_TYPE:
-      os << "<Map(" << ElementsKindToString(Map::cast(this)->elements_kind())
-         << ")>";
+      os << u8"<Map(" << ElementsKindToString(Map::cast(this)->elements_kind())
+         << u8")>";
       break;
     case FIXED_ARRAY_TYPE:
-      os << "<FixedArray[" << FixedArray::cast(this)->length() << "]>";
+      os << u8"<FixedArray[" << FixedArray::cast(this)->length() << u8"]>";
       break;
     case FIXED_DOUBLE_ARRAY_TYPE:
-      os << "<FixedDoubleArray[" << FixedDoubleArray::cast(this)->length()
-         << "]>";
+      os << u8"<FixedDoubleArray[" << FixedDoubleArray::cast(this)->length()
+         << u8"]>";
       break;
     case BYTE_ARRAY_TYPE:
-      os << "<ByteArray[" << ByteArray::cast(this)->length() << "]>";
+      os << u8"<ByteArray[" << ByteArray::cast(this)->length() << u8"]>";
       break;
     case BYTECODE_ARRAY_TYPE:
-      os << "<BytecodeArray[" << BytecodeArray::cast(this)->length() << "]>";
+      os << u8"<BytecodeArray[" << BytecodeArray::cast(this)->length() << u8"]>";
       break;
     case TRANSITION_ARRAY_TYPE:
-      os << "<TransitionArray[" << TransitionArray::cast(this)->length()
-         << "]>";
+      os << u8"<TransitionArray[" << TransitionArray::cast(this)->length()
+         << u8"]>";
       break;
     case FREE_SPACE_TYPE:
-      os << "<FreeSpace[" << FreeSpace::cast(this)->size() << "]>";
+      os << u8"<FreeSpace[" << FreeSpace::cast(this)->size() << u8"]>";
       break;
 #define TYPED_ARRAY_SHORT_PRINT(Type, type, TYPE, ctype, size)                \
   case FIXED_##TYPE##_ARRAY_TYPE:                                             \
-    os << "<Fixed" #Type "Array[" << Fixed##Type##Array::cast(this)->length() \
-       << "]>";                                                               \
+    os << u8"<Fixed" USTR(#Type) u8"Array[" << Fixed##Type##Array::cast(this)->length() \
+       << u8"]>";                                                               \
     break;
 
     TYPED_ARRAYS(TYPED_ARRAY_SHORT_PRINT)
@@ -2197,37 +2197,37 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       if (debug_name[0] != 0) {
         os << "<SharedFunctionInfo " << debug_name.get() << ">";
       } else {
-        os << "<SharedFunctionInfo>";
+        os << u8"<SharedFunctionInfo>";
       }
       break;
     }
     case JS_MESSAGE_OBJECT_TYPE:
-      os << "<JSMessageObject>";
+      os << u8"<JSMessageObject>";
       break;
 #define MAKE_STRUCT_CASE(NAME, Name, name) \
   case NAME##_TYPE:                        \
-    os << "<" #Name ">";                   \
+    os << u8"<" USTR(#Name) u8">";                   \
     break;
   STRUCT_LIST(MAKE_STRUCT_CASE)
 #undef MAKE_STRUCT_CASE
     case CODE_TYPE: {
       Code* code = Code::cast(this);
-      os << "<Code: " << Code::Kind2String(code->kind()) << ">";
+      os << u8"<Code: " << Code::Kind2String(code->kind()) << u8">";
       break;
     }
     case ODDBALL_TYPE: {
       if (IsUndefined()) {
-        os << "<undefined>";
+        os << u8"<undefined>";
       } else if (IsTheHole()) {
-        os << "<the hole>";
+        os << u8"<the hole>";
       } else if (IsNull()) {
-        os << "<null>";
+        os << u8"<null>";
       } else if (IsTrue()) {
-        os << "<true>";
+        os << u8"<true>";
       } else if (IsFalse()) {
-        os << "<false>";
+        os << u8"<false>";
       } else {
-        os << "<Odd Oddball>";
+        os << u8"<Odd Oddball>";
       }
       break;
     }
@@ -2237,21 +2237,21 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case HEAP_NUMBER_TYPE: {
-      os << "<Number: ";
+      os << u8"<Number: ";
       HeapNumber::cast(this)->HeapNumberPrint(os);
-      os << ">";
+      os << u8">";
       break;
     }
     case MUTABLE_HEAP_NUMBER_TYPE: {
-      os << "<MutableNumber: ";
+      os << u8"<MutableNumber: ";
       HeapNumber::cast(this)->HeapNumberPrint(os);
-      os << '>';
+      os << '\x3e';
       break;
     }
     case SIMD128_VALUE_TYPE: {
 #define SIMD128_TYPE(TYPE, Type, type, lane_count, lane_type) \
   if (Is##Type()) {                                           \
-    os << "<" #Type ">";                                      \
+    os << u8"<" USTR(#Type) u8">";                                      \
     break;                                                    \
   }
       SIMD128_TYPES(SIMD128_TYPE)
@@ -2260,13 +2260,13 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case JS_PROXY_TYPE:
-      os << "<JSProxy>";
+      os << u8"<JSProxy>";
       break;
     case FOREIGN_TYPE:
-      os << "<Foreign>";
+      os << u8"<Foreign>";
       break;
     case CELL_TYPE: {
-      os << "Cell for ";
+      os << u8"Cell for ";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       Cell::cast(this)->value()->ShortPrint(&accumulator);
@@ -2274,7 +2274,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case PROPERTY_CELL_TYPE: {
-      os << "PropertyCell for ";
+      os << u8"PropertyCell for ";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       PropertyCell* cell = PropertyCell::cast(this);
@@ -2283,7 +2283,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case WEAK_CELL_TYPE: {
-      os << "WeakCell for ";
+      os << u8"WeakCell for ";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       WeakCell::cast(this)->value()->ShortPrint(&accumulator);
@@ -2291,7 +2291,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     default:
-      os << "<Other heap object (" << map()->instance_type() << ")>";
+      os << u8"<Other heap object (" << map()->instance_type() << u8")>";
       break;
   }
 }
@@ -2380,12 +2380,12 @@ Handle<String> Float32x4::ToString(Handle<Float32x4> input) {
   Handle<String> Type::ToString(Handle<Type> input) {                       \
     Isolate* const isolate = input->GetIsolate();                           \
     std::ostringstream os;                                                  \
-    os << "SIMD." #Type "(";                                                \
-    os << (input->get_lane(0) ? "true" : "false");                          \
+    os << u8"SIMD." USTR(#Type) u8"(";                                                \
+    os << (input->get_lane(0) ? u8"true" : u8"false");                          \
     for (int i = 1; i < lane_count; i++) {                                  \
-      os << ", " << (input->get_lane(i) ? "true" : "false");                \
+      os << u8", " << (input->get_lane(i) ? u8"true" : u8"false");                \
     }                                                                       \
-    os << ")";                                                              \
+    os << u8")";                                                              \
     return isolate->factory()->NewStringFromAsciiChecked(os.str().c_str()); \
   }
 SIMD128_BOOL_TO_STRING(Bool32x4, 4)
@@ -2400,12 +2400,12 @@ SIMD128_BOOL_TO_STRING(Bool8x16, 16)
     char arr[100];                                                          \
     Vector<char> buffer(arr, arraysize(arr));                               \
     std::ostringstream os;                                                  \
-    os << "SIMD." #Type "(";                                                \
+    os << u8"SIMD." USTR(#Type) u8"(";                                                \
     os << IntToCString(input->get_lane(0), buffer);                         \
     for (int i = 1; i < lane_count; i++) {                                  \
-      os << ", " << IntToCString(input->get_lane(i), buffer);               \
+      os << u8", " << IntToCString(input->get_lane(i), buffer);               \
     }                                                                       \
-    os << ")";                                                              \
+    os << u8")";                                                              \
     return isolate->factory()->NewStringFromAsciiChecked(os.str().c_str()); \
   }
 SIMD128_INT_TO_STRING(Int32x4, 4)
@@ -2664,13 +2664,13 @@ MaybeHandle<Object> JSObject::EnqueueChangeRecord(Handle<JSObject> object,
 
 const char* Representation::Mnemonic() const {
   switch (kind_) {
-    case kNone: return "v";
-    case kTagged: return "t";
-    case kSmi: return "s";
-    case kDouble: return "d";
-    case kInteger32: return "i";
-    case kHeapObject: return "h";
-    case kExternal: return "x";
+    case kNone: return u8"v";
+    case kTagged: return u8"t";
+    case kSmi: return u8"s";
+    case kDouble: return u8"d";
+    case kInteger32: return u8"i";
+    case kHeapObject: return u8"h";
+    case kExternal: return u8"x";
     default:
       UNREACHABLE();
       return NULL;
@@ -3079,7 +3079,7 @@ void MigrateFastToSlow(Handle<JSObject> object, Handle<Map> new_map,
 #ifdef DEBUG
   if (FLAG_trace_normalization) {
     OFStream os(stdout);
-    os << "Object properties have been normalized:\n";
+    os << u8"Object properties have been normalized:\n";
     object->Print(os);
   }
 #endif
@@ -5850,7 +5850,7 @@ Handle<SeededNumberDictionary> JSObject::NormalizeElements(
 #ifdef DEBUG
   if (FLAG_trace_normalization) {
     OFStream os(stdout);
-    os << "Object elements have been normalized:\n";
+    os << u8"Object elements have been normalized:\n";
     object->Print(os);
   }
 #endif
@@ -8546,8 +8546,8 @@ static Maybe<bool> GetKeysFromInterceptor(Isolate* isolate,
   Handle<JSObject> result;
   if (!interceptor->enumerator()->IsUndefined()) {
     Callback enum_fun = v8::ToCData<Callback>(interceptor->enumerator());
-    const char* log_tag = type == kIndexed ? "interceptor-indexed-enum"
-                                           : "interceptor-named-enum";
+    const char* log_tag = type == kIndexed ? u8"interceptor-indexed-enum"
+                                           : u8"interceptor-named-enum";
     LOG(isolate, ApiObjectAccess(log_tag, *object));
     result = args.Call(enum_fun);
   }
@@ -9067,7 +9067,7 @@ MaybeHandle<Object> JSObject::DefineAccessor(LookupIterator* it,
   if (is_observed) {
     // Make sure the top context isn't changed.
     AssertNoContextChange ncc(isolate);
-    const char* type = preexists ? "reconfigure" : "add";
+    const char* type = preexists ? u8"reconfigure" : u8"add";
     RETURN_ON_EXCEPTION(
         isolate, EnqueueChangeRecord(object, type, it->GetName(), old_value),
         Object);
@@ -9421,10 +9421,10 @@ Handle<Map> Map::ShareDescriptor(Handle<Map> map,
 // static
 void Map::TraceTransition(const char* what, Map* from, Map* to, Name* name) {
   if (FLAG_trace_maps) {
-    PrintF("[TraceMaps: %s from= %p to= %p name= ", what,
+    PrintF(u8"[TraceMaps: %s from= %p to= %p name= ", what,
            reinterpret_cast<void*>(from), reinterpret_cast<void*>(to));
     name->NameShortPrint();
-    PrintF(" ]\n");
+    PrintF(u8" ]\n");
   }
 }
 
@@ -9436,7 +9436,7 @@ void Map::TraceAllTransitions(Map* map) {
   for (int i = -0; i < num_transitions; ++i) {
     Map* target = TransitionArray::GetTarget(transitions, i);
     Name* key = TransitionArray::GetKey(transitions, i);
-    Map::TraceTransition("Transition", map, target, key);
+    Map::TraceTransition(u8"Transition", map, target, key);
     Map::TraceAllTransitions(target);
   }
 }
@@ -10666,7 +10666,7 @@ void WeakFixedArray::Set(Handle<WeakFixedArray> array, int index,
                      : array->GetIsolate()->factory()->NewWeakCell(value);
   Handle<FixedArray>::cast(array)->set(index + kFirstIndex, *cell);
   if (FLAG_trace_weak_arrays) {
-    PrintF("[WeakFixedArray: storing at index %d ]\n", index);
+    PrintF(u8"[WeakFixedArray: storing at index %d ]\n", index);
   }
   array->set_last_used_index(index);
 }
@@ -10692,7 +10692,7 @@ Handle<WeakFixedArray> WeakFixedArray::Add(Handle<Object> maybe_array,
         return array;
       }
       if (FLAG_trace_weak_arrays) {
-        PrintF("[WeakFixedArray: searching for free slot]\n");
+        PrintF(u8"[WeakFixedArray: searching for free slot]\n");
       }
       i = (i + 1) % length;
       if (i == first_index) break;
@@ -10704,7 +10704,7 @@ Handle<WeakFixedArray> WeakFixedArray::Add(Handle<Object> maybe_array,
   Handle<WeakFixedArray> new_array =
       Allocate(array->GetIsolate(), new_length, array);
   if (FLAG_trace_weak_arrays) {
-    PrintF("[WeakFixedArray: growing to size %d ]\n", new_length);
+    PrintF(u8"[WeakFixedArray: growing to size %d ]\n", new_length);
   }
   WeakFixedArray::Set(new_array, length, value);
   if (assigned_index != NULL) *assigned_index = length;
@@ -11099,9 +11099,9 @@ MaybeHandle<String> Name::ToFunctionName(Handle<Name> name) {
   Handle<Object> description(Handle<Symbol>::cast(name)->name(), isolate);
   if (description->IsUndefined()) return isolate->factory()->empty_string();
   IncrementalStringBuilder builder(isolate);
-  builder.AppendCharacter('[');
+  builder.AppendCharacter('\x5b');
   builder.AppendString(Handle<String>::cast(description));
-  builder.AppendCharacter(']');
+  builder.AppendCharacter('\x5d');
   return builder.Finish();
 }
 
@@ -11110,7 +11110,7 @@ namespace {
 
 bool AreDigits(const uint8_t* s, int from, int to) {
   for (int i = from; i < to; i++) {
-    if (s[i] < '0' || s[i] > '9') return false;
+    if (s[i] < '\x30' || s[i] > '\x39') return false;
   }
 
   return true;
@@ -11120,10 +11120,10 @@ bool AreDigits(const uint8_t* s, int from, int to) {
 int ParseDecimalInteger(const uint8_t* s, int from, int to) {
   DCHECK(to - from < 10);  // Overflow is not possible.
   DCHECK(from < to);
-  int d = s[from] - '0';
+  int d = s[from] - '\x30';
 
   for (int i = from + 1; i < to; i++) {
-    d = 10 * d + (s[i] - '0');
+    d = 10 * d + (s[i] - '\x30');
   }
 
   return d;
@@ -11152,17 +11152,17 @@ Handle<Object> String::ToNumber(Handle<String> subject) {
 
     DisallowHeapAllocation no_gc;
     uint8_t const* data = Handle<SeqOneByteString>::cast(subject)->GetChars();
-    bool minus = (data[0] == '-');
+    bool minus = (data[0] == '\x2d');
     int start_pos = (minus ? 1 : 0);
 
     if (start_pos == len) {
       return isolate->factory()->nan_value();
-    } else if (data[start_pos] > '9') {
+    } else if (data[start_pos] > '\x39') {
       // Fast check for a junk value. A valid string may start from a
       // whitespace, a sign ('+' or '-'), the decimal point, a decimal digit
       // or the 'I' character ('Infinity'). All of that have codes not greater
       // than '9' except 'I' and &nbsp;.
-      if (data[start_pos] != 'I' && data[start_pos] != 0xa0) {
+      if (data[start_pos] != '\x49' && data[start_pos] != 0xa0) {
         return isolate->factory()->nan_value();
       }
     } else if (len - start_pos < 10 && AreDigits(data, start_pos, len)) {
@@ -11273,7 +11273,7 @@ base::SmartArrayPointer<char> String::ToCString(AllowNullsFlag allow_nulls,
   while (stream.HasMore() && character_position++ < offset + length) {
     uint16_t character = stream.GetNext();
     if (allow_nulls == DISALLOW_NULLS && character == 0) {
-      character = ' ';
+      character = '\x20';
     }
     utf8_byte_position +=
         unibrow::Utf8::Encode(result + utf8_byte_position, character, last);
@@ -12299,7 +12299,7 @@ void IteratingStringHasher::VisitConsString(ConsString* cons_string) {
 void String::PrintOn(FILE* file) {
   int length = this->length();
   for (int i = 0; i < length; i++) {
-    PrintF(file, "%c", Get(i));
+    PrintF(file, u8"%c", Get(i));
   }
 }
 
@@ -12404,9 +12404,9 @@ void JSFunction::AttemptConcurrentOptimization() {
          !shared()->optimization_disabled());
   DCHECK(isolate->concurrent_recompilation_enabled());
   if (FLAG_trace_concurrent_recompilation) {
-    PrintF("  ** Marking ");
+    PrintF(u8"  ** Marking ");
     ShortPrint();
-    PrintF(" for concurrent recompilation.\n");
+    PrintF(u8" for concurrent recompilation.\n");
   }
   set_code_no_write_barrier(
       isolate->builtins()->builtin(Builtins::kCompileOptimizedConcurrent));
@@ -12543,12 +12543,12 @@ void SharedFunctionInfo::EvictFromOptimizedCodeMap(Code* optimized_code,
         optimized_code) {
       BailoutId osr(Smi::cast(code_map->get(src + kOsrAstIdOffset))->value());
       if (FLAG_trace_opt) {
-        PrintF("[evicting entry from optimizing code map (%s) for ", reason);
+        PrintF(u8"[evicting entry from optimizing code map (%s) for ", reason);
         ShortPrint();
         if (osr.IsNone()) {
-          PrintF("]\n");
+          PrintF(u8"]\n");
         } else {
-          PrintF(" (osr ast id %d)]\n", osr.ToInt());
+          PrintF(u8" (osr ast id %d)]\n", osr.ToInt());
         }
       }
       if (!osr.IsNone()) {
@@ -12579,9 +12579,9 @@ void SharedFunctionInfo::EvictFromOptimizedCodeMap(Code* optimized_code,
     code_map->set(kSharedCodeIndex, heap->empty_weak_cell(),
                   SKIP_WRITE_BARRIER);
     if (FLAG_trace_opt) {
-      PrintF("[evicting entry from optimizing code map (%s) for ", reason);
+      PrintF(u8"[evicting entry from optimizing code map (%s) for ", reason);
       ShortPrint();
-      PrintF(" (context-independent code)]\n");
+      PrintF(u8" (context-independent code)]\n");
     }
   }
   if (dst != length) {
@@ -12795,7 +12795,7 @@ bool JSObject::UnregisterPrototypeUser(Handle<Map> user, Isolate* isolate) {
 static void InvalidatePrototypeChainsInternal(Map* map) {
   if (!map->is_prototype_map()) return;
   if (FLAG_trace_prototype_users) {
-    PrintF("Invalidating prototype map %p 's cell\n",
+    PrintF(u8"Invalidating prototype map %p 's cell\n",
            reinterpret_cast<void*>(map));
   }
   Object* maybe_proto_info = map->prototype_info();
@@ -13303,7 +13303,7 @@ void JSFunction::SetName(Handle<JSFunction> function, Handle<Name> name,
   if (prefix->length() > 0) {
     IncrementalStringBuilder builder(isolate);
     builder.AppendString(prefix);
-    builder.AppendCharacter(' ');
+    builder.AppendCharacter('\x20');
     builder.AppendString(function_name);
     function_name = builder.Finish().ToHandleChecked();
   }
@@ -13315,7 +13315,7 @@ void JSFunction::SetName(Handle<JSFunction> function, Handle<Name> name,
 
 namespace {
 
-char const kNativeCodeSource[] = "function () { [native code] }";
+char const kNativeCodeSource[] = u8"function () { [native code] }";
 
 
 Handle<String> NativeCodeFunctionSourceString(
@@ -13323,9 +13323,9 @@ Handle<String> NativeCodeFunctionSourceString(
   Isolate* const isolate = shared_info->GetIsolate();
   if (shared_info->name()->IsString()) {
     IncrementalStringBuilder builder(isolate);
-    builder.AppendCString("function ");
+    builder.AppendCString(u8"function ");
     builder.AppendString(handle(String::cast(shared_info->name()), isolate));
-    builder.AppendCString("() { [native code] }");
+    builder.AppendCString(u8"() { [native code] }");
     return builder.Finish().ToHandleChecked();
   }
   return isolate->factory()->NewStringFromAsciiChecked(kNativeCodeSource);
@@ -13385,16 +13385,16 @@ Handle<String> JSFunction::ToString(Handle<JSFunction> function) {
   IncrementalStringBuilder builder(isolate);
   if (!shared_info->is_arrow()) {
     if (shared_info->is_concise_method()) {
-      if (shared_info->is_generator()) builder.AppendCharacter('*');
+      if (shared_info->is_generator()) builder.AppendCharacter('\x2a');
     } else {
       if (shared_info->is_generator()) {
-        builder.AppendCString("function* ");
+        builder.AppendCString(u8"function* ");
       } else {
-        builder.AppendCString("function ");
+        builder.AppendCString(u8"function ");
       }
     }
     if (shared_info->name_should_print_as_anonymous()) {
-      builder.AppendCString("anonymous");
+      builder.AppendCString(u8"anonymous");
     } else if (!shared_info->is_anonymous_expression()) {
       builder.AppendString(handle(String::cast(shared_info->name()), isolate));
     }
@@ -13500,7 +13500,7 @@ int Script::GetLineNumber(int code_pos) {
   int len = source_string->length();
   for (int pos = 0; pos < len; pos++) {
     if (pos == code_pos) break;
-    if (source_string->Get(pos) == '\n') line++;
+    if (source_string->Get(pos) == '\xa') line++;
   }
   return line;
 }
@@ -13665,7 +13665,7 @@ String* SharedFunctionInfo::DebugName() {
 //   "name*"  only functions starting with "name"
 //   "~"      none; the tilde is not an identifier
 bool SharedFunctionInfo::PassesFilter(const char* raw_filter) {
-  if (*raw_filter == '*') return true;
+  if (*raw_filter == '\x2a') return true;
   String* name = DebugName();
   Vector<const char> filter = CStrVector(raw_filter);
   if (filter.length() == 0) return name->length() == 0;
@@ -13772,7 +13772,7 @@ void JSFunction::CalculateInstanceSizeForDerivedClass(
 std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v) {
   const SharedFunctionInfo* s = v.value;
   // For some native functions there is no source.
-  if (!s->HasSourceCode()) return os << "<No Source>";
+  if (!s->HasSourceCode()) return os << u8"<No Source>";
 
   // Get the source for the script which this function came from.
   // Don't use String::cast because we don't want more assertion errors while
@@ -13780,10 +13780,10 @@ std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v) {
   String* script_source =
       reinterpret_cast<String*>(Script::cast(s->script())->source());
 
-  if (!script_source->LooksValid()) return os << "<Invalid Source>";
+  if (!script_source->LooksValid()) return os << u8"<Invalid Source>";
 
   if (!s->is_toplevel()) {
-    os << "function ";
+    os << u8"function ";
     Object* name = s->name();
     if (name->IsString() && String::cast(name)->length() > 0) {
       String::cast(name)->PrintUC16(os);
@@ -13797,7 +13797,7 @@ std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v) {
   } else {
     script_source->PrintUC16(os, s->start_position(),
                              s->start_position() + v.max_length);
-    return os << "...\n";
+    return os << u8"...\n";
   }
 }
 
@@ -13851,9 +13851,9 @@ void SharedFunctionInfo::DisableOptimization(BailoutReason reason) {
          abstract_code()->kind() == AbstractCode::BUILTIN);
   PROFILE(GetIsolate(), CodeDisableOptEvent(abstract_code(), this));
   if (FLAG_trace_opt) {
-    PrintF("[disabled optimization for ");
+    PrintF(u8"[disabled optimization for ");
     ShortPrint();
-    PrintF(", reason: %s]\n", GetBailoutReason(reason));
+    PrintF(u8", reason: %s]\n", GetBailoutReason(reason));
   }
 }
 
@@ -13987,9 +13987,9 @@ CodeAndLiterals SharedFunctionInfo::SearchOptimizedCodeMap(
   }
   if (FLAG_trace_opt && !OptimizedCodeMapIsCleared() &&
       result.code == nullptr) {
-    PrintF("[didn't find optimized code in optimized code map for ");
+    PrintF(u8"[didn't find optimized code in optimized code map for ");
     ShortPrint();
-    PrintF("]\n");
+    PrintF(u8"]\n");
   }
   return result;
 }
@@ -14615,11 +14615,11 @@ void Code::PrintDeoptLocation(FILE* out, Address pc) {
   class SourcePosition pos = info.position;
   if (info.deopt_reason != Deoptimizer::kNoReason || !pos.IsUnknown()) {
     if (FLAG_hydrogen_track_positions) {
-      PrintF(out, "            ;;; deoptimize at %d_%d: %s\n",
+      PrintF(out, u8"            ;;; deoptimize at %d_%d: %s\n",
              pos.inlining_id(), pos.position(),
              Deoptimizer::GetDeoptReason(info.deopt_reason));
     } else {
-      PrintF(out, "            ;;; deoptimize at %d: %s\n", pos.raw(),
+      PrintF(out, u8"            ;;; deoptimize at %d: %s\n", pos.raw(),
              Deoptimizer::GetDeoptReason(info.deopt_reason));
     }
   }
@@ -14644,7 +14644,7 @@ bool Code::CanDeoptAt(Address pc) {
 // Identify kind of code.
 const char* Code::Kind2String(Kind kind) {
   switch (kind) {
-#define CASE(name) case name: return #name;
+#define CASE(name) case name: return USTR(#name);
     CODE_KIND_LIST(CASE)
 #undef CASE
     case NUMBER_OF_KINDS: break;
@@ -14683,18 +14683,18 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
     std::ostream& os) {  // NOLINT
   disasm::NameConverter converter;
   int const inlined_function_count = InlinedFunctionCount()->value();
-  os << "Inlined functions (count = " << inlined_function_count << ")\n";
+  os << u8"Inlined functions (count = " << inlined_function_count << u8")\n";
   for (int id = 0; id < inlined_function_count; ++id) {
     Object* info = LiteralArray()->get(id);
-    os << " " << Brief(SharedFunctionInfo::cast(info)) << "\n";
+    os << u8" " << Brief(SharedFunctionInfo::cast(info)) << u8"\n";
   }
-  os << "\n";
+  os << u8"\n";
   int deopt_count = DeoptCount();
-  os << "Deoptimization Input Data (deopt points = " << deopt_count << ")\n";
+  os << u8"Deoptimization Input Data (deopt points = " << deopt_count << u8")\n";
   if (0 != deopt_count) {
-    os << " index  ast id    argc     pc";
-    if (FLAG_print_code_verbose) os << "  commands";
-    os << "\n";
+    os << u8" index  ast id    argc     pc";
+    if (FLAG_print_code_verbose) os << u8"  commands";
+    os << u8"\n";
   }
   for (int i = 0; i < deopt_count; i++) {
     os << std::setw(6) << i << "  " << std::setw(6) << AstId(i).ToInt() << "  "
@@ -14702,7 +14702,7 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
        << std::setw(6) << Pc(i)->value();
 
     if (!FLAG_print_code_verbose) {
-      os << "\n";
+      os << u8"\n";
       continue;
     }
     // Print details of the frame translation.
@@ -14713,9 +14713,9 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
     DCHECK(Translation::BEGIN == opcode);
     int frame_count = iterator.Next();
     int jsframe_count = iterator.Next();
-    os << "  " << Translation::StringFor(opcode)
-       << " {frame count=" << frame_count
-       << ", js frame count=" << jsframe_count << "}\n";
+    os << u8"  " << Translation::StringFor(opcode)
+       << u8" {frame count=" << frame_count
+       << u8", js frame count=" << jsframe_count << u8"}\n";
 
     while (iterator.HasNext() &&
            Translation::BEGIN !=
@@ -14732,9 +14732,9 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           int shared_info_id = iterator.Next();
           unsigned height = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
-          os << "{ast_id=" << ast_id << ", function="
+          os << u8"{ast_id=" << ast_id << u8", function="
              << Brief(SharedFunctionInfo::cast(shared_info)->DebugName())
-             << ", height=" << height << "}";
+             << u8", height=" << height << u8"}";
           break;
         }
 
@@ -14743,15 +14743,15 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           int shared_info_id = iterator.Next();
           unsigned height = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
-          os << "{bytecode_offset=" << bytecode_offset << ", function="
+          os << u8"{bytecode_offset=" << bytecode_offset << u8", function="
              << Brief(SharedFunctionInfo::cast(shared_info)->DebugName())
-             << ", height=" << height << "}";
+             << u8", height=" << height << u8"}";
           break;
         }
 
         case Translation::COMPILED_STUB_FRAME: {
           Code::Kind stub_kind = static_cast<Code::Kind>(iterator.Next());
-          os << "{kind=" << stub_kind << "}";
+          os << u8"{kind=" << stub_kind << u8"}";
           break;
         }
 
@@ -14760,18 +14760,18 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           int shared_info_id = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
           unsigned height = iterator.Next();
-          os << "{function="
+          os << u8"{function="
              << Brief(SharedFunctionInfo::cast(shared_info)->DebugName())
-             << ", height=" << height << "}";
+             << u8", height=" << height << u8"}";
           break;
         }
 
         case Translation::TAIL_CALLER_FRAME: {
           int shared_info_id = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
-          os << "{function="
+          os << u8"{function="
              << Brief(SharedFunctionInfo::cast(shared_info)->DebugName())
-             << "}";
+             << u8"}";
           break;
         }
 
@@ -14779,96 +14779,96 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
         case Translation::SETTER_STUB_FRAME: {
           int shared_info_id = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
-          os << "{function=" << Brief(SharedFunctionInfo::cast(shared_info)
-                                          ->DebugName()) << "}";
+          os << u8"{function=" << Brief(SharedFunctionInfo::cast(shared_info)
+                                          ->DebugName()) << u8"}";
           break;
         }
 
         case Translation::REGISTER: {
           int reg_code = iterator.Next();
-          os << "{input=" << converter.NameOfCPURegister(reg_code) << "}";
+          os << u8"{input=" << converter.NameOfCPURegister(reg_code) << u8"}";
           break;
         }
 
         case Translation::INT32_REGISTER: {
           int reg_code = iterator.Next();
-          os << "{input=" << converter.NameOfCPURegister(reg_code) << "}";
+          os << u8"{input=" << converter.NameOfCPURegister(reg_code) << u8"}";
           break;
         }
 
         case Translation::UINT32_REGISTER: {
           int reg_code = iterator.Next();
-          os << "{input=" << converter.NameOfCPURegister(reg_code)
-             << " (unsigned)}";
+          os << u8"{input=" << converter.NameOfCPURegister(reg_code)
+             << u8" (unsigned)}";
           break;
         }
 
         case Translation::BOOL_REGISTER: {
           int reg_code = iterator.Next();
-          os << "{input=" << converter.NameOfCPURegister(reg_code)
-             << " (bool)}";
+          os << u8"{input=" << converter.NameOfCPURegister(reg_code)
+             << u8" (bool)}";
           break;
         }
 
         case Translation::DOUBLE_REGISTER: {
           int reg_code = iterator.Next();
-          os << "{input=" << DoubleRegister::from_code(reg_code).ToString()
-             << "}";
+          os << u8"{input=" << DoubleRegister::from_code(reg_code).ToString()
+             << u8"}";
           break;
         }
 
         case Translation::STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << "{input=" << input_slot_index << "}";
+          os << u8"{input=" << input_slot_index << u8"}";
           break;
         }
 
         case Translation::INT32_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << "{input=" << input_slot_index << "}";
+          os << u8"{input=" << input_slot_index << u8"}";
           break;
         }
 
         case Translation::UINT32_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << "{input=" << input_slot_index << " (unsigned)}";
+          os << u8"{input=" << input_slot_index << u8" (unsigned)}";
           break;
         }
 
         case Translation::BOOL_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << "{input=" << input_slot_index << " (bool)}";
+          os << u8"{input=" << input_slot_index << u8" (bool)}";
           break;
         }
 
         case Translation::DOUBLE_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << "{input=" << input_slot_index << "}";
+          os << u8"{input=" << input_slot_index << u8"}";
           break;
         }
 
         case Translation::LITERAL: {
           int literal_index = iterator.Next();
           Object* literal_value = LiteralArray()->get(literal_index);
-          os << "{literal_id=" << literal_index << " (" << Brief(literal_value)
-             << ")}";
+          os << u8"{literal_id=" << literal_index << u8" (" << Brief(literal_value)
+             << u8")}";
           break;
         }
 
         case Translation::DUPLICATED_OBJECT: {
           int object_index = iterator.Next();
-          os << "{object_index=" << object_index << "}";
+          os << u8"{object_index=" << object_index << u8"}";
           break;
         }
 
         case Translation::ARGUMENTS_OBJECT:
         case Translation::CAPTURED_OBJECT: {
           int args_length = iterator.Next();
-          os << "{length=" << args_length << "}";
+          os << u8"{length=" << args_length << u8"}";
           break;
         }
       }
-      os << "\n";
+      os << u8"\n";
     }
   }
 }
@@ -14876,11 +14876,11 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
 
 void DeoptimizationOutputData::DeoptimizationOutputDataPrint(
     std::ostream& os) {  // NOLINT
-  os << "Deoptimization Output Data (deopt points = " << this->DeoptPoints()
-     << ")\n";
+  os << u8"Deoptimization Output Data (deopt points = " << this->DeoptPoints()
+     << u8")\n";
   if (this->DeoptPoints() == 0) return;
 
-  os << "ast id        pc  state\n";
+  os << u8"ast id        pc  state\n";
   for (int i = 0; i < this->DeoptPoints(); i++) {
     int pc_and_state = this->PcAndState(i)->value();
     os << std::setw(6) << this->AstId(i).ToInt() << "  " << std::setw(8)
@@ -14892,7 +14892,7 @@ void DeoptimizationOutputData::DeoptimizationOutputDataPrint(
 
 
 void HandlerTable::HandlerTableRangePrint(std::ostream& os) {
-  os << "   from   to       hdlr\n";
+  os << u8"   from   to       hdlr\n";
   for (int i = 0; i < length(); i += kRangeEntrySize) {
     int pc_start = Smi::cast(get(i + kRangeStartIndex))->value();
     int pc_end = Smi::cast(get(i + kRangeEndIndex))->value();
@@ -14908,7 +14908,7 @@ void HandlerTable::HandlerTableRangePrint(std::ostream& os) {
 
 
 void HandlerTable::HandlerTableReturnPrint(std::ostream& os) {
-  os << "   off      hdlr (c)\n";
+  os << u8"   off      hdlr (c)\n";
   for (int i = 0; i < length(); i += kReturnEntrySize) {
     int pc_offset = Smi::cast(get(i + kReturnOffsetIndex))->value();
     int handler_field = Smi::cast(get(i + kReturnHandlerIndex))->value();
@@ -14922,15 +14922,15 @@ void HandlerTable::HandlerTableReturnPrint(std::ostream& os) {
 
 const char* Code::ICState2String(InlineCacheState state) {
   switch (state) {
-    case UNINITIALIZED: return "UNINITIALIZED";
-    case PREMONOMORPHIC: return "PREMONOMORPHIC";
-    case MONOMORPHIC: return "MONOMORPHIC";
+    case UNINITIALIZED: return u8"UNINITIALIZED";
+    case PREMONOMORPHIC: return u8"PREMONOMORPHIC";
+    case MONOMORPHIC: return u8"MONOMORPHIC";
     case PROTOTYPE_FAILURE:
-      return "PROTOTYPE_FAILURE";
-    case POLYMORPHIC: return "POLYMORPHIC";
-    case MEGAMORPHIC: return "MEGAMORPHIC";
-    case GENERIC: return "GENERIC";
-    case DEBUG_STUB: return "DEBUG_STUB";
+      return u8"PROTOTYPE_FAILURE";
+    case POLYMORPHIC: return u8"POLYMORPHIC";
+    case MEGAMORPHIC: return u8"MEGAMORPHIC";
+    case GENERIC: return u8"GENERIC";
+    case DEBUG_STUB: return u8"DEBUG_STUB";
   }
   UNREACHABLE();
   return NULL;
@@ -14939,8 +14939,8 @@ const char* Code::ICState2String(InlineCacheState state) {
 
 const char* Code::StubType2String(StubType type) {
   switch (type) {
-    case NORMAL: return "NORMAL";
-    case FAST: return "FAST";
+    case NORMAL: return u8"NORMAL";
+    case FAST: return u8"FAST";
   }
   UNREACHABLE();  // keep the compiler happy
   return NULL;
@@ -14949,61 +14949,61 @@ const char* Code::StubType2String(StubType type) {
 
 void Code::PrintExtraICState(std::ostream& os,  // NOLINT
                              Kind kind, ExtraICState extra) {
-  os << "extra_ic_state = ";
+  os << u8"extra_ic_state = ";
   if ((kind == STORE_IC || kind == KEYED_STORE_IC) &&
       is_strict(static_cast<LanguageMode>(extra))) {
-    os << "STRICT\n";
+    os << u8"STRICT\n";
   } else {
-    os << extra << "\n";
+    os << extra << u8"\n";
   }
 }
 
 
 void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
-  os << "kind = " << Kind2String(kind()) << "\n";
+  os << u8"kind = " << Kind2String(kind()) << u8"\n";
   if (IsCodeStubOrIC()) {
     const char* n = CodeStub::MajorName(CodeStub::GetMajorKey(this));
-    os << "major_key = " << (n == NULL ? "null" : n) << "\n";
+    os << u8"major_key = " << (n == NULL ? u8"null" : n) << u8"\n";
   }
   if (is_inline_cache_stub()) {
-    os << "ic_state = " << ICState2String(ic_state()) << "\n";
+    os << u8"ic_state = " << ICState2String(ic_state()) << u8"\n";
     PrintExtraICState(os, kind(), extra_ic_state());
     if (ic_state() == MONOMORPHIC) {
-      os << "type = " << StubType2String(type()) << "\n";
+      os << u8"type = " << StubType2String(type()) << u8"\n";
     }
     if (is_compare_ic_stub()) {
       DCHECK(CodeStub::GetMajorKey(this) == CodeStub::CompareIC);
       CompareICStub stub(stub_key(), GetIsolate());
-      os << "compare_state = " << CompareICState::GetStateName(stub.left())
-         << "*" << CompareICState::GetStateName(stub.right()) << " -> "
-         << CompareICState::GetStateName(stub.state()) << "\n";
-      os << "compare_operation = " << Token::Name(stub.op()) << "\n";
+      os << u8"compare_state = " << CompareICState::GetStateName(stub.left())
+         << u8"*" << CompareICState::GetStateName(stub.right()) << u8" -> "
+         << CompareICState::GetStateName(stub.state()) << u8"\n";
+      os << u8"compare_operation = " << Token::Name(stub.op()) << u8"\n";
     }
   }
-  if ((name != nullptr) && (name[0] != '\0')) {
-    os << "name = " << name << "\n";
+  if ((name != nullptr) && (name[0] != '\x0')) {
+    os << u8"name = " << name << u8"\n";
   } else if (kind() == BUILTIN) {
     name = GetIsolate()->builtins()->Lookup(instruction_start());
     if (name != nullptr) {
-      os << "name = " << name << "\n";
+      os << u8"name = " << name << u8"\n";
     }
   } else if (kind() == BYTECODE_HANDLER) {
     name = GetIsolate()->interpreter()->LookupNameOfBytecodeHandler(this);
     if (name != nullptr) {
-      os << "name = " << name << "\n";
+      os << u8"name = " << name << u8"\n";
     }
   }
   if (kind() == OPTIMIZED_FUNCTION) {
-    os << "stack_slots = " << stack_slots() << "\n";
+    os << u8"stack_slots = " << stack_slots() << u8"\n";
   }
-  os << "compiler = " << (is_turbofanned()
-                              ? "turbofan"
-                              : is_crankshafted() ? "crankshaft"
+  os << u8"compiler = " << (is_turbofanned()
+                              ? u8"turbofan"
+                              : is_crankshafted() ? u8"crankshaft"
                                                   : kind() == Code::FUNCTION
-                                                        ? "full-codegen"
-                                                        : "unknown") << "\n";
+                                                        ? u8"full-codegen"
+                                                        : u8"unknown") << u8"\n";
 
-  os << "Instructions (size = " << instruction_size() << ")\n";
+  os << u8"Instructions (size = " << instruction_size() << u8")\n";
   {
     Isolate* isolate = GetIsolate();
     int size = instruction_size();
@@ -15026,7 +15026,7 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
     if (constant_pool_offset < size) {
       int constant_pool_size = size - constant_pool_offset;
       DCHECK((constant_pool_size & kPointerAlignmentMask) == 0);
-      os << "\nConstant Pool (size = " << constant_pool_size << ")\n";
+      os << u8"\nConstant Pool (size = " << constant_pool_size << u8")\n";
       Vector<char> buf = Vector<char>::New(50);
       intptr_t* ptr = reinterpret_cast<intptr_t*>(begin + constant_pool_offset);
       for (int i = 0; i < constant_pool_size; i += kPointerSize, ptr++) {
@@ -15035,7 +15035,7 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
       }
     }
   }
-  os << "\n";
+  os << u8"\n";
 
   if (kind() == FUNCTION) {
     DeoptimizationOutputData* data =
@@ -15046,29 +15046,29 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
         DeoptimizationInputData::cast(this->deoptimization_data());
     data->DeoptimizationInputDataPrint(os);
   }
-  os << "\n";
+  os << u8"\n";
 
   if (is_crankshafted()) {
     SafepointTable table(this);
-    os << "Safepoints (size = " << table.size() << ")\n";
+    os << u8"Safepoints (size = " << table.size() << u8")\n";
     for (unsigned i = 0; i < table.length(); i++) {
       unsigned pc_offset = table.GetPcOffset(i);
-      os << static_cast<const void*>(instruction_start() + pc_offset) << "  ";
+      os << static_cast<const void*>(instruction_start() + pc_offset) << u8"  ";
       os << std::setw(4) << pc_offset << "  ";
       table.PrintEntry(i, os);
-      os << " (sp -> fp)  ";
+      os << u8" (sp -> fp)  ";
       SafepointEntry entry = table.GetEntry(i);
       if (entry.deoptimization_index() != Safepoint::kNoDeoptimizationIndex) {
         os << std::setw(6) << entry.deoptimization_index();
       } else {
-        os << "<none>";
+        os << u8"<none>";
       }
       if (entry.argument_count() > 0) {
-        os << " argc: " << entry.argument_count();
+        os << u8" argc: " << entry.argument_count();
       }
-      os << "\n";
+      os << u8"\n";
     }
-    os << "\n";
+    os << u8"\n";
   } else if (kind() == FUNCTION) {
     unsigned offset = back_edge_table_offset();
     // If there is no back edge table, the "table start" will be at or after
@@ -15077,8 +15077,8 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
       DisallowHeapAllocation no_gc;
       BackEdgeTable back_edges(this, &no_gc);
 
-      os << "Back edges (size = " << back_edges.length() << ")\n";
-      os << "ast_id  pc_offset  loop_depth\n";
+      os << u8"Back edges (size = " << back_edges.length() << u8")\n";
+      os << u8"ast_id  pc_offset  loop_depth\n";
 
       for (uint32_t i = 0; i < back_edges.length(); i++) {
         os << std::setw(6) << back_edges.ast_id(i).ToInt() << "  "
@@ -15086,7 +15086,7 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
            << back_edges.loop_depth(i) << "\n";
       }
 
-      os << "\n";
+      os << u8"\n";
     }
 #ifdef OBJECT_PRINT
     if (!type_feedback_info()->IsUndefined()) {
@@ -15097,20 +15097,20 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
   }
 
   if (handler_table()->length() > 0) {
-    os << "Handler Table (size = " << handler_table()->Size() << ")\n";
+    os << u8"Handler Table (size = " << handler_table()->Size() << u8")\n";
     if (kind() == FUNCTION) {
       HandlerTable::cast(handler_table())->HandlerTableRangePrint(os);
     } else if (kind() == OPTIMIZED_FUNCTION) {
       HandlerTable::cast(handler_table())->HandlerTableReturnPrint(os);
     }
-    os << "\n";
+    os << u8"\n";
   }
 
-  os << "RelocInfo (size = " << relocation_size() << ")\n";
+  os << u8"RelocInfo (size = " << relocation_size() << u8")\n";
   for (RelocIterator it(this); !it.done(); it.next()) {
     it.rinfo()->Print(GetIsolate(), os);
   }
-  os << "\n";
+  os << u8"\n";
 }
 #endif  // ENABLE_DISASSEMBLER
 
@@ -15145,8 +15145,8 @@ int BytecodeArray::SourceStatementPosition(int offset) {
 }
 
 void BytecodeArray::Disassemble(std::ostream& os) {
-  os << "Parameter count " << parameter_count() << "\n";
-  os << "Frame size " << frame_size() << "\n";
+  os << u8"Parameter count " << parameter_count() << u8"\n";
+  os << u8"Frame size " << frame_size() << u8"\n";
   Vector<char> buf = Vector<char>::New(50);
 
   const uint8_t* base_address = GetFirstBytecodeAddress();
@@ -15158,10 +15158,10 @@ void BytecodeArray::Disassemble(std::ostream& os) {
     if (!source_positions.done() &&
         iterator.current_offset() == source_positions.bytecode_offset()) {
       os << std::setw(5) << source_positions.source_position();
-      os << (source_positions.is_statement() ? " S> " : " E> ");
+      os << (source_positions.is_statement() ? u8" S> " : u8" E> ");
       source_positions.Advance();
     } else {
-      os << "         ";
+      os << u8"         ";
     }
     const uint8_t* current_address = base_address + iterator.current_offset();
     SNPrintF(buf, "%p", current_address);
@@ -15176,13 +15176,13 @@ void BytecodeArray::Disassemble(std::ostream& os) {
   }
 
   if (constant_pool()->length() > 0) {
-    os << "Constant pool (size = " << constant_pool()->length() << ")\n";
+    os << u8"Constant pool (size = " << constant_pool()->length() << u8")\n";
     constant_pool()->Print();
   }
 
 #ifdef ENABLE_DISASSEMBLER
   if (handler_table()->length() > 0) {
-    os << "Handler Table (size = " << handler_table()->Size() << ")\n";
+    os << u8"Handler Table (size = " << handler_table()->Size() << u8")\n";
     HandlerTable::cast(handler_table())->HandlerTableRangePrint(os);
   }
 #endif
@@ -15584,7 +15584,7 @@ void DependentCode::SetMarkedForDeoptimization(Code* code,
     DeoptimizationInputData* deopt_data =
         DeoptimizationInputData::cast(code->deoptimization_data());
     CodeTracer::Scope scope(code->GetHeap()->isolate()->GetCodeTracer());
-    PrintF(scope.file(), "[marking dependent code 0x%08" V8PRIxPTR
+    PrintF(scope.file(), u8"[marking dependent code 0x%08" V8PRIxPTR
                          " (opt #%d) for deoptimization, reason: %s]\n",
            reinterpret_cast<intptr_t>(code),
            deopt_data->OptimizationId()->value(), DependencyGroupName(group));
@@ -15595,24 +15595,24 @@ void DependentCode::SetMarkedForDeoptimization(Code* code,
 const char* DependentCode::DependencyGroupName(DependencyGroup group) {
   switch (group) {
     case kWeakCodeGroup:
-      return "weak-code";
+      return u8"weak-code";
     case kTransitionGroup:
-      return "transition";
+      return u8"transition";
     case kPrototypeCheckGroup:
-      return "prototype-check";
+      return u8"prototype-check";
     case kPropertyCellChangedGroup:
-      return "property-cell-changed";
+      return u8"property-cell-changed";
     case kFieldTypeGroup:
-      return "field-type";
+      return u8"field-type";
     case kInitialMapChangedGroup:
-      return "initial-map-changed";
+      return u8"initial-map-changed";
     case kAllocationSiteTenuringChangedGroup:
-      return "allocation-site-tenuring-changed";
+      return u8"allocation-site-tenuring-changed";
     case kAllocationSiteTransitionChangedGroup:
-      return "allocation-site-transition-changed";
+      return u8"allocation-site-transition-changed";
   }
   UNREACHABLE();
-  return "?";
+  return u8"?";
 }
 
 
@@ -16174,11 +16174,11 @@ void AllocationSite::DigestTransitionFeedback(Handle<AllocationSite> site,
 
 const char* AllocationSite::PretenureDecisionName(PretenureDecision decision) {
   switch (decision) {
-    case kUndecided: return "undecided";
-    case kDontTenure: return "don't tenure";
-    case kMaybeTenure: return "maybe tenure";
-    case kTenure: return "tenure";
-    case kZombie: return "zombie";
+    case kUndecided: return u8"undecided";
+    case kDontTenure: return u8"don't tenure";
+    case kMaybeTenure: return u8"maybe tenure";
+    case kTenure: return u8"tenure";
+    case kZombie: return u8"zombie";
     default: UNREACHABLE();
   }
   return NULL;
@@ -16771,9 +16771,9 @@ MaybeHandle<String> Object::ObjectProtoToString(Isolate* isolate,
   }
 
   IncrementalStringBuilder builder(isolate);
-  builder.AppendCString("[object ");
+  builder.AppendCString(u8"[object ");
   builder.AppendString(tag);
-  builder.AppendCharacter(']');
+  builder.AppendCharacter('\x5d');
   return builder.Finish();
 }
 
@@ -16781,25 +16781,25 @@ MaybeHandle<String> Object::ObjectProtoToString(Isolate* isolate,
 const char* Symbol::PrivateSymbolToName() const {
   Heap* heap = GetIsolate()->heap();
 #define SYMBOL_CHECK_AND_PRINT(name) \
-  if (this == heap->name()) return #name;
+  if (this == heap->name()) return USTR(#name);
   PRIVATE_SYMBOL_LIST(SYMBOL_CHECK_AND_PRINT)
 #undef SYMBOL_CHECK_AND_PRINT
-  return "UNKNOWN";
+  return u8"UNKNOWN";
 }
 
 
 void Symbol::SymbolShortPrint(std::ostream& os) {
-  os << "<Symbol: " << Hash();
+  os << u8"<Symbol: " << Hash();
   if (!name()->IsUndefined()) {
-    os << " ";
+    os << u8" ";
     HeapStringAllocator allocator;
     StringStream accumulator(&allocator);
     String::cast(name())->StringShortPrint(&accumulator);
     os << accumulator.ToCString().get();
   } else {
-    os << " (" << PrivateSymbolToName() << ")";
+    os << u8" (" << PrivateSymbolToName() << u8")";
   }
-  os << ">";
+  os << u8">";
 }
 
 
@@ -16972,7 +16972,7 @@ inline int CountRequiredEscapes(Handle<String> source) {
   int escapes = 0;
   Vector<const Char> src = source->GetCharVector<Char>();
   for (int i = 0; i < src.length(); i++) {
-    if (src[i] == '/' && (i == 0 || src[i - 1] != '\\')) escapes++;
+    if (src[i] == '\x2f' && (i == 0 || src[i - 1] != '\x5c')) escapes++;
   }
   return escapes;
 }
@@ -16987,7 +16987,7 @@ inline Handle<StringType> WriteEscapedRegExpSource(Handle<String> source,
   int s = 0;
   int d = 0;
   while (s < src.length()) {
-    if (src[s] == '/' && (s == 0 || src[s - 1] != '\\')) dst[d++] = '\\';
+    if (src[s] == '\x2f' && (s == 0 || src[s - 1] != '\x5c')) dst[d++] = '\x5c';
     dst[d++] = src[s++];
   }
   DCHECK_EQ(result->length(), d);
@@ -17207,7 +17207,7 @@ Handle<Derived> HashTable<Derived, Shape, Key>::New(
                      ? at_least_space_for
                      : ComputeCapacity(at_least_space_for);
   if (capacity > HashTable::kMaxCapacity) {
-    v8::internal::Heap::FatalProcessOutOfMemory("invalid table size", true);
+    v8::internal::Heap::FatalProcessOutOfMemory(u8"invalid table size", true);
   }
 
   Factory* factory = isolate->factory();
@@ -18843,7 +18843,7 @@ Handle<Derived> OrderedHashTable<Derived, Iterator, entrysize>::Allocate(
   // field of this object.
   capacity = base::bits::RoundUpToPowerOfTwo32(Max(kMinCapacity, capacity));
   if (capacity > kMaxCapacity) {
-    v8::internal::Heap::FatalProcessOutOfMemory("invalid table size", true);
+    v8::internal::Heap::FatalProcessOutOfMemory(u8"invalid table size", true);
   }
   int num_buckets = capacity / kLoadFactor;
   Handle<FixedArray> backing_store = isolate->factory()->NewFixedArray(

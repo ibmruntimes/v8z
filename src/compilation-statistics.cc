@@ -67,7 +67,7 @@ static void WriteLine(std::ostream& os, const char* name,
       static_cast<double>(stats.total_allocated_bytes_ * 100) /
       static_cast<double>(total_stats.total_allocated_bytes_);
   base::OS::SNPrintF(buffer, kBufferSize,
-                     "%28s %10.3f (%5.1f%%)  "
+                     u8"%28s %10.3f (%5.1f%%)  "
                      "%10u (%5.1f%%) %10u %10u",
                      name, ms, percent, stats.total_allocated_bytes_,
                      size_percent, stats.max_allocated_bytes_,
@@ -75,30 +75,30 @@ static void WriteLine(std::ostream& os, const char* name,
 
   os << buffer;
   if (stats.function_name_.size() > 0) {
-    os << "   " << stats.function_name_.c_str();
+    os << u8"   " << stats.function_name_.c_str();
   }
   os << std::endl;
 }
 
 
 static void WriteFullLine(std::ostream& os) {
-  os << "--------------------------------------------------------"
+  os << u8"--------------------------------------------------------"
         "--------------------------------------------------------\n";
 }
 
 
 static void WriteHeader(std::ostream& os) {
   WriteFullLine(os);
-  os << "             Turbonfan phase        Time (ms)             "
-     << "          Space (bytes)             Function\n"
-     << "                                                         "
-     << "  Total          Max.     Abs. max.\n";
+  os << u8"             Turbonfan phase        Time (ms)             "
+     << u8"          Space (bytes)             Function\n"
+     << u8"                                                         "
+     << u8"  Total          Max.     Abs. max.\n";
   WriteFullLine(os);
 }
 
 
 static void WritePhaseKindBreak(std::ostream& os) {
-  os << "                             ---------------------------"
+  os << u8"                             ---------------------------"
         "--------------------------------------------------------\n";
 }
 
@@ -137,7 +137,7 @@ std::ostream& operator<<(std::ostream& os, const CompilationStatistics& s) {
     os << std::endl;
   }
   WriteFullLine(os);
-  WriteLine(os, "totals", s.total_stats_, s.total_stats_);
+  WriteLine(os, u8"totals", s.total_stats_, s.total_stats_);
 
   return os;
 }

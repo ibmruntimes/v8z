@@ -36,41 +36,41 @@ inline bool IsInRange(int value, int lower_limit, int higher_limit) {
 }
 
 inline bool IsAsciiIdentifier(uc32 c) {
-  return IsAlphaNumeric(c) || c == '$' || c == '_';
+  return IsAlphaNumeric(c) || c == '\x24' || c == '\x5f';
 }
 
 inline bool IsAlphaNumeric(uc32 c) {
-  return IsInRange(AsciiAlphaToLower(c), 'a', 'z') || IsDecimalDigit(c);
+  return IsInRange(AsciiAlphaToLower(c), '\x61', '\x7a') || IsDecimalDigit(c);
 }
 
 inline bool IsDecimalDigit(uc32 c) {
   // ECMA-262, 3rd, 7.8.3 (p 16)
-  return IsInRange(c, '0', '9');
+  return IsInRange(c, '\x30', '\x39');
 }
 
 
 inline bool IsHexDigit(uc32 c) {
   // ECMA-262, 3rd, 7.6 (p 15)
-  return IsDecimalDigit(c) || IsInRange(AsciiAlphaToLower(c), 'a', 'f');
+  return IsDecimalDigit(c) || IsInRange(AsciiAlphaToLower(c), '\x61', '\x66');
 }
 
 
 inline bool IsOctalDigit(uc32 c) {
   // ECMA-262, 6th, 7.8.3
-  return IsInRange(c, '0', '7');
+  return IsInRange(c, '\x30', '\x37');
 }
 
 
 inline bool IsBinaryDigit(uc32 c) {
   // ECMA-262, 6th, 7.8.3
-  return c == '0' || c == '1';
+  return c == '\x30' || c == '\x31';
 }
 
 
 inline bool IsRegExpWord(uc16 c) {
-  return IsInRange(AsciiAlphaToLower(c), 'a', 'z')
+  return IsInRange(AsciiAlphaToLower(c), '\x61', '\x7a')
       || IsDecimalDigit(c)
-      || (c == '_');
+      || (c == '\x5f');
 }
 
 

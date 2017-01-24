@@ -101,9 +101,9 @@ void Bignum::AssignDecimalString(Vector<const char> value) {
 
 
 static int HexCharValue(char c) {
-  if ('0' <= c && c <= '9') return c - '0';
-  if ('a' <= c && c <= 'f') return 10 + c - 'a';
-  if ('A' <= c && c <= 'F') return 10 + c - 'A';
+  if ('\x30' <= c && c <= '\x39') return c - '\x30';
+  if ('\x61' <= c && c <= '\x66') return 10 + c - '\x61';
+  if ('\x41' <= c && c <= '\x46') return 10 + c - '\x41';
   UNREACHABLE();
   return 0;  // To make compiler happy.
 }
@@ -541,8 +541,8 @@ static int SizeInHexChars(S number) {
 
 static char HexCharOfValue(int value) {
   DCHECK(0 <= value && value <= 16);
-  if (value < 10) return value + '0';
-  return value - 10 + 'A';
+  if (value < 10) return value + '\x30';
+  return value - 10 + '\x41';
 }
 
 
@@ -554,8 +554,8 @@ bool Bignum::ToHexString(char* buffer, int buffer_size) const {
 
   if (used_digits_ == 0) {
     if (buffer_size < 2) return false;
-    buffer[0] = '0';
-    buffer[1] = '\0';
+    buffer[0] = '\x30';
+    buffer[1] = '\x0';
     return true;
   }
   // We add 1 for the terminating '\0' character.
@@ -563,10 +563,10 @@ bool Bignum::ToHexString(char* buffer, int buffer_size) const {
       SizeInHexChars(bigits_[used_digits_ - 1]) + 1;
   if (needed_chars > buffer_size) return false;
   int string_index = needed_chars - 1;
-  buffer[string_index--] = '\0';
+  buffer[string_index--] = '\x0';
   for (int i = 0; i < exponent_; ++i) {
     for (int j = 0; j < kHexCharsPerBigit; ++j) {
-      buffer[string_index--] = '0';
+      buffer[string_index--] = '\x30';
     }
   }
   for (int i = 0; i < used_digits_ - 1; ++i) {

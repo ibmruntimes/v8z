@@ -140,8 +140,8 @@ bool CodeStubGraphBuilderBase::BuildGraph() {
 
   if (FLAG_trace_hydrogen_stubs) {
     const char* name = CodeStub::MajorName(stub()->MajorKey());
-    PrintF("-----------------------------------------------------------\n");
-    PrintF("Compiling stub %s using hydrogen\n", name);
+    PrintF(u8"-----------------------------------------------------------\n");
+    PrintF(u8"Compiling stub %s using hydrogen\n", name);
     isolate()->GetHTracer()->TraceCompilation(info());
   }
 
@@ -311,8 +311,8 @@ static Handle<Code> DoGenerateCode(Stub* stub) {
   Handle<Code> code = chunk->Codegen();
   if (FLAG_profile_hydrogen_code_stub_compilation) {
     OFStream os(stdout);
-    os << "[Lazy compilation of " << stub << " took "
-       << timer.Elapsed().InMillisecondsF() << " ms]" << std::endl;
+    os << u8"[Lazy compilation of " << stub << u8" took "
+       << timer.Elapsed().InMillisecondsF() << u8" ms]" << std::endl;
   }
   return code;
 }

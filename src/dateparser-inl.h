@@ -82,8 +82,8 @@ bool DateParser::Parse(Vector<Char> str,
     if (token.IsNumber()) {
       has_read_number = true;
       int n = token.number();
-      if (scanner.SkipSymbol(':')) {
-        if (scanner.SkipSymbol(':')) {
+      if (scanner.SkipSymbol('\x3a')) {
+        if (scanner.SkipSymbol('\x3a')) {
           // n + "::"
           if (!time.IsEmpty()) return false;
           time.Add(n);
@@ -91,9 +91,9 @@ bool DateParser::Parse(Vector<Char> str,
         } else {
           // n + ":"
           if (!time.Add(n)) return false;
-          if (scanner.Peek().IsSymbol('.')) scanner.Next();
+          if (scanner.Peek().IsSymbol('\x2e')) scanner.Next();
         }
-      } else if (scanner.SkipSymbol('.') && time.IsExpecting(n)) {
+      } else if (scanner.SkipSymbol('\x2e') && time.IsExpecting(n)) {
         time.Add(n);
         if (!scanner.Peek().IsNumber()) return false;
         int n = ReadMilliseconds(scanner.Next());
@@ -112,7 +112,7 @@ bool DateParser::Parse(Vector<Char> str,
             !peek.IsAsciiSign()) return false;
       } else {
         if (!day.Add(n)) return false;
-        scanner.SkipSymbol('-');
+        scanner.SkipSymbol('\x2d');
       }
     } else if (token.IsKeyword()) {
       // Parse a "word" (sequence of chars. >= 'A').
@@ -122,7 +122,7 @@ bool DateParser::Parse(Vector<Char> str,
         time.SetHourOffset(value);
       } else if (type == MONTH_NAME) {
         day.SetNamedMonth(value);
-        scanner.SkipSymbol('-');
+        scanner.SkipSymbol('\x2d');
       } else if (type == TIME_ZONE_NAME && has_read_number) {
         tz.Set(value);
       } else {
@@ -145,7 +145,7 @@ bool DateParser::Parse(Vector<Char> str,
       }
       has_read_number = true;
 
-      if (scanner.Peek().IsSymbol(':')) {
+      if (scanner.Peek().IsSymbol('\x3a')) {
         tz.SetAbsoluteHour(n);
         // TODO(littledan): Use minutes as part of timezone?
         tz.SetAbsoluteMinute(kNone);
@@ -161,7 +161,7 @@ bool DateParser::Parse(Vector<Char> str,
         // No need to accept time zones like GMT-12345
         return false;
       }
-    } else if ((token.IsAsciiSign() || token.IsSymbol(')')) &&
+    } else if ((token.IsAsciiSign() || token.IsSymbol('\x29')) &&
                has_read_number) {
       // Extra sign or ')' is illegal if a number has been read.
       return false;
@@ -183,11 +183,11 @@ DateParser::DateToken DateParser::DateStringTokenizer<CharType>::Scan() {
     int length = in_->position() - pre_pos;
     return DateToken::Number(n, length);
   }
-  if (in_->Skip(':')) return DateToken::Symbol(':');
-  if (in_->Skip('-')) return DateToken::Symbol('-');
-  if (in_->Skip('+')) return DateToken::Symbol('+');
-  if (in_->Skip('.')) return DateToken::Symbol('.');
-  if (in_->Skip(')')) return DateToken::Symbol(')');
+  if (in_->Skip('\x3a')) return DateToken::Symbol('\x3a');
+  if (in_->Skip('\x2d')) return DateToken::Symbol('\x2d');
+  if (in_->Skip('\x2b')) return DateToken::Symbol('\x2b');
+  if (in_->Skip('\x2e')) return DateToken::Symbol('\x2e');
+  if (in_->Skip('\x29')) return DateToken::Symbol('\x29');
   if (in_->IsAsciiAlphaOrAbove()) {
     DCHECK(KeywordTable::kPrefixLength == 3);
     uint32_t buffer[3] = {0, 0, 0};
@@ -220,11 +220,11 @@ bool DateParser::InputReader<Char>::SkipWhiteSpace() {
 
 template <typename Char>
 bool DateParser::InputReader<Char>::SkipParentheses() {
-  if (ch_ != '(') return false;
+  if (ch_ != '\x28') return false;
   int balance = 0;
   do {
-    if (ch_ == ')') --balance;
-    else if (ch_ == '(') ++balance;
+    if (ch_ == '\x29') --balance;
+    else if (ch_ == '\x28') ++balance;
     Next();
   } while (balance > 0 && ch_);
   return true;
@@ -254,11 +254,11 @@ DateParser::DateToken DateParser::ParseES5DateTime(
   } else {
     return scanner->Next();
   }
-  if (scanner->SkipSymbol('-')) {
+  if (scanner->SkipSymbol('\x2d')) {
     if (!scanner->Peek().IsFixedLengthNumber(2) ||
         !DayComposer::IsMonth(scanner->Peek().number())) return scanner->Next();
     day->Add(scanner->Next().number());
-    if (scanner->SkipSymbol('-')) {
+    if (scanner->SkipSymbol('\x2d')) {
       if (!scanner->Peek().IsFixedLengthNumber(2) ||
           !DayComposer::IsDay(scanner->Peek().number())) return scanner->Next();
       day->Add(scanner->Next().number());
@@ -277,21 +277,21 @@ DateParser::DateToken DateParser::ParseES5DateTime(
     // Allow 24:00[:00[.000]], but no other time starting with 24.
     bool hour_is_24 = (scanner->Peek().number() == 24);
     time->Add(scanner->Next().number());
-    if (!scanner->SkipSymbol(':')) return DateToken::Invalid();
+    if (!scanner->SkipSymbol('\x3a')) return DateToken::Invalid();
     if (!scanner->Peek().IsFixedLengthNumber(2) ||
         !TimeComposer::IsMinute(scanner->Peek().number()) ||
         (hour_is_24 && scanner->Peek().number() > 0)) {
       return DateToken::Invalid();
     }
     time->Add(scanner->Next().number());
-    if (scanner->SkipSymbol(':')) {
+    if (scanner->SkipSymbol('\x3a')) {
       if (!scanner->Peek().IsFixedLengthNumber(2) ||
           !TimeComposer::IsSecond(scanner->Peek().number()) ||
           (hour_is_24 && scanner->Peek().number() > 0)) {
         return DateToken::Invalid();
       }
       time->Add(scanner->Next().number());
-      if (scanner->SkipSymbol('.')) {
+      if (scanner->SkipSymbol('\x2e')) {
         if (!scanner->Peek().IsNumber() ||
             (hour_is_24 && scanner->Peek().number() > 0)) {
           return DateToken::Invalid();
@@ -304,9 +304,9 @@ DateParser::DateToken DateParser::ParseES5DateTime(
     if (scanner->Peek().IsKeywordZ()) {
       scanner->Next();
       tz->Set(0);
-    } else if (scanner->Peek().IsSymbol('+') ||
-               scanner->Peek().IsSymbol('-')) {
-      tz->SetSign(scanner->Next().symbol() == '+' ? 1 : -1);
+    } else if (scanner->Peek().IsSymbol('\x2b') ||
+               scanner->Peek().IsSymbol('\x2d')) {
+      tz->SetSign(scanner->Next().symbol() == '\x2b' ? 1 : -1);
       if (scanner->Peek().IsFixedLengthNumber(4)) {
         // hhmm extension syntax.
         int hourmin = scanner->Next().number();
@@ -324,7 +324,7 @@ DateParser::DateToken DateParser::ParseES5DateTime(
           return DateToken::Invalid();
         }
         tz->SetAbsoluteHour(scanner->Next().number());
-        if (!scanner->SkipSymbol(':')) return DateToken::Invalid();
+        if (!scanner->SkipSymbol('\x3a')) return DateToken::Invalid();
         if (!scanner->Peek().IsFixedLengthNumber(2) ||
             !TimeComposer::IsMinute(scanner->Peek().number())) {
           return DateToken::Invalid();

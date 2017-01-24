@@ -285,9 +285,9 @@ Handle<String> Isolate::StackTraceString() {
   } else if (stack_trace_nesting_level_ == 1) {
     stack_trace_nesting_level_++;
     base::OS::PrintError(
-      "\n\nAttempt to print stack while printing stack (double fault)\n");
+      u8"\n\nAttempt to print stack while printing stack (double fault)\n");
     base::OS::PrintError(
-      "If you are lucky you may find a partial stack dump on stdout.\n\n");
+      u8"If you are lucky you may find a partial stack dump on stdout.\n\n");
     incomplete_message_->OutputToStdOut();
     return factory()->empty_string();
   } else {
@@ -305,9 +305,9 @@ void Isolate::PushStackTraceAndDie(unsigned int magic, void* ptr1, void* ptr2,
   uint8_t buffer[kMaxStackTraceSize];
   int length = Min(kMaxStackTraceSize - 1, trace->length());
   String::WriteToFlat(*trace, buffer, 0, length);
-  buffer[length] = '\0';
+  buffer[length] = '\x0';
   // TODO(dcarney): convert buffer to utf8?
-  base::OS::PrintError("Stacktrace (%x-%x) %p %p: %s\n", magic, magic2, ptr1,
+  base::OS::PrintError(u8"Stacktrace (%x-%x) %p %p: %s\n", magic, magic2, ptr1,
                        ptr2, reinterpret_cast<char*>(buffer));
   base::OS::Abort();
 }
@@ -729,9 +729,9 @@ void Isolate::PrintStack(FILE* out, PrintStackMode mode) {
   } else if (stack_trace_nesting_level_ == 1) {
     stack_trace_nesting_level_++;
     base::OS::PrintError(
-      "\n\nAttempt to print stack while printing stack (double fault)\n");
+      u8"\n\nAttempt to print stack while printing stack (double fault)\n");
     base::OS::PrintError(
-      "If you are lucky you may find a partial stack dump on stdout.\n\n");
+      u8"If you are lucky you may find a partial stack dump on stdout.\n\n");
     incomplete_message_->OutputToFile(out);
   }
 }
@@ -756,15 +756,15 @@ void Isolate::PrintStack(StringStream* accumulator, PrintStackMode mode) {
   if (c_entry_fp(thread_local_top()) == 0) return;
 
   accumulator->Add(
-      "\n==== JS stack trace =========================================\n\n");
+      u8"\n==== JS stack trace =========================================\n\n");
   PrintFrames(this, accumulator, StackFrame::OVERVIEW);
   if (mode == kPrintStackVerbose) {
     accumulator->Add(
-        "\n==== Details ================================================\n\n");
+        u8"\n==== Details ================================================\n\n");
     PrintFrames(this, accumulator, StackFrame::DETAILS);
     accumulator->PrintMentionedObjectCache(this);
   }
-  accumulator->Add("=====================\n\n");
+  accumulator->Add(u8"=====================\n\n");
 }
 
 
@@ -880,7 +880,7 @@ bool Isolate::MayAccess(Handle<Context> accessing_context,
 
 
 const char* const Isolate::kStackOverflowMessage =
-  "Uncaught RangeError: Maximum call stack size exceeded";
+  u8"Uncaught RangeError: Maximum call stack size exceeded";
 
 
 Object* Isolate::StackOverflow() {
@@ -959,7 +959,7 @@ void Isolate::InvokeApiInterruptCallbacks() {
 
 void ReportBootstrappingException(Handle<Object> exception,
                                   MessageLocation* location) {
-  base::OS::PrintError("Exception thrown during bootstrapping\n");
+  base::OS::PrintError(u8"Exception thrown during bootstrapping\n");
   if (location == NULL || location->script().is_null()) return;
   // We are bootstrapping and caught an error where the location is set
   // and we have a script for the location.
@@ -983,7 +983,7 @@ void ReportBootstrappingException(Handle<Object> exception,
     base::OS::PrintError("Extension or internal compilation error: %s.\n",
                          String::cast(*exception)->ToCString().get());
   } else {
-    base::OS::PrintError("Extension or internal compilation error.\n");
+    base::OS::PrintError(u8"Extension or internal compilation error.\n");
   }
 #ifdef OBJECT_PRINT
   // Since comments and empty lines have been stripped from the source of
@@ -1335,7 +1335,7 @@ void Isolate::PrintCurrentStackTrace(FILE* out) {
         Execution::GetStackTraceLine(recv, fun, pos_obj, is_top_level);
     if (line->length() > 0) {
       line->PrintOn(out);
-      PrintF(out, "\n");
+      PrintF(out, u8"\n");
     }
   }
 }
@@ -1781,7 +1781,7 @@ void Isolate::ThreadDataTable::RemoveAllThreads(Isolate* isolate) {
 #define TRACE_ISOLATE(tag)                                              \
   do {                                                                  \
     if (FLAG_trace_isolates) {                                          \
-      PrintF("Isolate %p (id %d)" #tag "\n",                            \
+      PrintF(u8"Isolate %p (id %d)" USTR(#tag) u8"\n",                            \
              reinterpret_cast<void*>(this), id());                      \
     }                                                                   \
   } while (false)
@@ -1952,7 +1952,7 @@ void Isolate::Deinit() {
   DumpAndResetCompilationStats();
 
   if (FLAG_print_deopt_stress) {
-    PrintF(stdout, "=== Stress deopt counter: %u\n", stress_deopt_count_);
+    PrintF(stdout, u8"=== Stress deopt counter: %u\n", stress_deopt_count_);
   }
 
   if (cpu_profiler_) {
@@ -2221,7 +2221,7 @@ bool Isolate::Init(Deserializer* des) {
   // SetUp the object heap.
   DCHECK(!heap_.HasBeenSetUp());
   if (!heap_.SetUp()) {
-    V8::FatalProcessOutOfMemory("heap setup");
+    V8::FatalProcessOutOfMemory(u8"heap setup");
     return false;
   }
 
@@ -2229,7 +2229,7 @@ bool Isolate::Init(Deserializer* des) {
 
   const bool create_heap_objects = (des == NULL);
   if (create_heap_objects && !heap_.CreateHeapObjects()) {
-    V8::FatalProcessOutOfMemory("heap object creation");
+    V8::FatalProcessOutOfMemory(u8"heap object creation");
     return false;
   }
 
@@ -2248,7 +2248,7 @@ bool Isolate::Init(Deserializer* des) {
   }
 
   if (FLAG_trace_hydrogen || FLAG_trace_hydrogen_stubs) {
-    PrintF("Concurrent recompilation has been disabled for tracing.\n");
+    PrintF(u8"Concurrent recompilation has been disabled for tracing.\n");
   } else if (OptimizingCompileDispatcher::Enabled()) {
     optimizing_compile_dispatcher_ = new OptimizingCompileDispatcher(this);
   }
@@ -2910,14 +2910,14 @@ void Isolate::CheckDetachedContextsAfterGC() {
     counters()->detached_context_age_in_gc()->AddSample(mark_sweeps + 1);
   }
   if (FLAG_trace_detached_contexts) {
-    PrintF("%d detached contexts are collected out of %d\n",
+    PrintF(u8"%d detached contexts are collected out of %d\n",
            length - new_length, length);
     for (int i = 0; i < new_length; i += 2) {
       int mark_sweeps = Smi::cast(detached_contexts->get(i))->value();
       DCHECK(detached_contexts->get(i + 1)->IsWeakCell());
       WeakCell* cell = WeakCell::cast(detached_contexts->get(i + 1));
       if (mark_sweeps > 3) {
-        PrintF("detached context 0x%p\n survived %d GCs (leak?)\n",
+        PrintF(u8"detached context 0x%p\n survived %d GCs (leak?)\n",
                static_cast<void*>(cell->value()), mark_sweeps);
       }
     }

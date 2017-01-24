@@ -56,7 +56,7 @@ const char* V8NameConverter::NameOfAddress(byte* pc) const {
 const char* V8NameConverter::NameInCode(byte* addr) const {
   // The V8NameConverter is used for well known code, so we can "safely"
   // dereference pointers in generated code.
-  return (code_ != NULL) ? reinterpret_cast<const char*>(addr) : "";
+  return (code_ != NULL) ? reinterpret_cast<const char*>(addr) : u8"";
 }
 
 
@@ -152,7 +152,7 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
     }
 
     // Instruction address and instruction offset.
-    out.AddFormatted("%p  %4d  ", prev_pc, prev_pc - begin);
+    out.AddFormatted(u8"%p  %4d  ", prev_pc, prev_pc - begin);
 
     // Instruction.
     out.AddFormatted("%s", decode_buffer.start());
@@ -269,7 +269,7 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
   if (it != NULL) {
     for ( ; !it->done(); it->next()) {
       if (RelocInfo::IsComment(it->rinfo()->rmode())) {
-        out.AddFormatted("                  %s",
+        out.AddFormatted(u8"                  %s",
                          reinterpret_cast<const char*>(it->rinfo()->data()));
         DumpBuffer(os, &out);
       }

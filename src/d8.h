@@ -247,7 +247,7 @@ class Worker {
   class WorkerThread : public base::Thread {
    public:
     explicit WorkerThread(Worker* worker)
-        : base::Thread(base::Thread::Options("WorkerThread")),
+        : base::Thread(base::Thread::Options(u8"WorkerThread")),
           worker_(worker) {}
 
     virtual void Run() { worker_->ExecuteInThread(); }

@@ -297,13 +297,13 @@ void i::V8::FatalProcessOutOfMemory(const char* location, bool take_snapshot) {
     // BUG(1718): Don't use the take_snapshot since we don't support
     // HeapIterator here without doing a special GC.
     isolate->heap()->RecordStats(&heap_stats, false);
-    char* first_newline = strchr(last_few_messages, '\n');
-    if (first_newline == NULL || first_newline[1] == '\0')
+    char* first_newline = strchr(last_few_messages, '\xa');
+    if (first_newline == NULL || first_newline[1] == '\x0')
       first_newline = last_few_messages;
-    PrintF("\n<--- Last few GCs --->\n%s\n", first_newline);
-    PrintF("\n<--- JS stacktrace --->\n%s\n", js_stacktrace);
+    PrintF(u8"\n<--- Last few GCs --->\n%s\n", first_newline);
+    PrintF(u8"\n<--- JS stacktrace --->\n%s\n", js_stacktrace);
   }
-  Utils::ApiCheck(false, location, "Allocation failed - process out of memory");
+  Utils::ApiCheck(false, location, u8"Allocation failed - process out of memory");
   // If the fatal error handler returns, we stop execution.
   FATAL("API fatal error handler returned after process out of memory");
 }
@@ -313,7 +313,7 @@ void Utils::ReportApiFailure(const char* location, const char* message) {
   i::Isolate* isolate = i::Isolate::Current();
   FatalErrorCallback callback = isolate->exception_behavior();
   if (callback == NULL) {
-    base::OS::PrintError("\n#\n# Fatal error in %s\n# %s\n#\n\n", location,
+    base::OS::PrintError(u8"\n#\n# Fatal error in %s\n# %s\n#\n\n", location,
                          message);
     base::OS::Abort();
   } else {
@@ -373,7 +373,7 @@ bool RunExtraCode(Isolate* isolate, Local<Context> context,
   if (!ScriptCompiler::Compile(context, &source).ToLocal(&script)) return false;
   if (script->Run(context).IsEmpty()) return false;
   if (i::FLAG_profile_deserialization) {
-    i::PrintF("Executing custom snapshot script %s took %0.3f ms\n", name,
+    i::PrintF(u8"Executing custom snapshot script %s took %0.3f ms\n", name,
               timer.Elapsed().InMillisecondsF());
   }
   timer.Stop();
@@ -391,7 +391,7 @@ StartupData SerializeIsolateAndContext(
 
   // If we don't do this then we end up with a stray root pointing at the
   // context even after we have disposed of the context.
-  internal_isolate->heap()->CollectAllAvailableGarbage("mksnapshot");
+  internal_isolate->heap()->CollectAllAvailableGarbage(u8"mksnapshot");
 
   // GC may have cleared weak cells, so compact any WeakFixedArrays
   // found on the heap.
@@ -881,14 +881,14 @@ void Context::Exit() {
 
 
 static void* DecodeSmiToAligned(i::Object* value, const char* location) {
-  Utils::ApiCheck(value->IsSmi(), location, "Not a Smi");
+  Utils::ApiCheck(value->IsSmi(), location, u8"Not a Smi");
   return reinterpret_cast<void*>(value);
 }
 
 
 static i::Smi* EncodeAlignedAsSmi(void* value, const char* location) {
   i::Smi* smi = reinterpret_cast<i::Smi*>(value);
-  Utils::ApiCheck(smi->IsSmi(), location, "Pointer is not aligned");
+  Utils::ApiCheck(smi->IsSmi(), location, u8"Pointer is not aligned");
   return smi;
 }
 
@@ -907,7 +907,7 @@ static i::Handle<i::FixedArray> EmbedderDataFor(Context* context,
   if (!ok) return i::Handle<i::FixedArray>();
   i::Handle<i::FixedArray> data(env->embedder_data());
   if (index < data->length()) return data;
-  if (!Utils::ApiCheck(can_grow, location, "Index too large")) {
+  if (!Utils::ApiCheck(can_grow, location, u8"Index too large")) {
     return i::Handle<i::FixedArray>();
   }
   int new_size = i::Max(index, data->length() << 1) + 1;
@@ -3128,8 +3128,8 @@ void i::Internals::CheckInitializedImpl(v8::Isolate* external_isolate) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(external_isolate);
   Utils::ApiCheck(isolate != NULL &&
                   !isolate->IsDead(),
-                  "v8::internal::Internals::CheckInitialized()",
-                  "Isolate is not initialized or V8 has died");
+                  u8"v8::internal::Internals::CheckInitialized()",
+                  u8"Isolate is not initialized or V8 has died");
 }
 
 
@@ -3286,7 +3286,7 @@ void v8::TypedArray::CheckCast(Value* that) {
     Utils::ApiCheck(                                                          \
         obj->IsJSTypedArray() &&                                              \
             i::JSTypedArray::cast(*obj)->type() == i::kExternal##Type##Array, \
-        "v8::" #Type "Array::Cast()", "Could not convert to " #Type "Array"); \
+        u8"v8::" USTR(#Type) u8"Array::Cast()", u8"Could not convert to " USTR(#Type) u8"Array"); \
   }
 
 
@@ -5179,7 +5179,7 @@ class Utf8WriterVisitor {
     if (write_null &&
         !early_termination_ &&
         (capacity_ == -1 || (buffer_ - start_) < capacity_)) {
-      *buffer_++ = '\0';
+      *buffer_++ = '\x0';
     }
     return static_cast<int>(buffer_ - start_);
   }
@@ -5291,7 +5291,7 @@ static inline int WriteHelper(const String* string,
   i::String::WriteToFlat(*str, buffer, start, end);
   if (!(options & String::NO_NULL_TERMINATION) &&
       (length == -1 || end - start < length)) {
-    buffer[end - start] = '\0';
+    buffer[end - start] = '\x0';
   }
   return end - start;
 }
@@ -5823,7 +5823,7 @@ inline int StringLength(const uint8_t* string) {
 
 inline int StringLength(const uint16_t* string) {
   int length = 0;
-  while (string[length] != '\0')
+  while (string[length] != '\x0')
     length++;
   return length;
 }
@@ -6827,12 +6827,12 @@ size_t v8::TypedArray::Length() {
                                       size_t byte_offset, size_t length) {    \
     i::Isolate* isolate = Utils::OpenHandle(*array_buffer)->GetIsolate();     \
     LOG_API(isolate,                                                          \
-            "v8::" #Type "Array::New(Local<ArrayBuffer>, size_t, size_t)");   \
+            u8"v8::" USTR(#Type) u8"Array::New(Local<ArrayBuffer>, size_t, size_t)");   \
     ENTER_V8(isolate);                                                        \
     if (!Utils::ApiCheck(length <= static_cast<size_t>(i::Smi::kMaxValue),    \
-                         "v8::" #Type                                         \
-                         "Array::New(Local<ArrayBuffer>, size_t, size_t)",    \
-                         "length exceeds max allowed value")) {               \
+                         u8"v8::" USTR(#Type)                                         \
+                         u8"Array::New(Local<ArrayBuffer>, size_t, size_t)",    \
+                         u8"length exceeds max allowed value")) {               \
       return Local<Type##Array>();                                            \
     }                                                                         \
     i::Handle<i::JSArrayBuffer> buffer = Utils::OpenHandle(*array_buffer);    \
@@ -6846,14 +6846,14 @@ size_t v8::TypedArray::Length() {
     CHECK(i::FLAG_harmony_sharedarraybuffer);                                 \
     i::Isolate* isolate =                                                     \
         Utils::OpenHandle(*shared_array_buffer)->GetIsolate();                \
-    LOG_API(isolate, "v8::" #Type                                             \
-                     "Array::New(Local<SharedArrayBuffer>, size_t, size_t)"); \
+    LOG_API(isolate, u8"v8::" USTR(#Type)                                             \
+                     u8"Array::New(Local<SharedArrayBuffer>, size_t, size_t)"); \
     ENTER_V8(isolate);                                                        \
     if (!Utils::ApiCheck(                                                     \
             length <= static_cast<size_t>(i::Smi::kMaxValue),                 \
-            "v8::" #Type                                                      \
-            "Array::New(Local<SharedArrayBuffer>, size_t, size_t)",           \
-            "length exceeds max allowed value")) {                            \
+            u8"v8::" USTR(#Type)                                                      \
+            u8"Array::New(Local<SharedArrayBuffer>, size_t, size_t)",           \
+            u8"length exceeds max allowed value")) {                            \
       return Local<Type##Array>();                                            \
     }                                                                         \
     i::Handle<i::JSArrayBuffer> buffer =                                      \
@@ -7949,7 +7949,7 @@ String::Value::~Value() {
 #define DEFINE_ERROR(NAME, name)                                         \
   Local<Value> Exception::NAME(v8::Local<v8::String> raw_message) {      \
     i::Isolate* isolate = i::Isolate::Current();                         \
-    LOG_API(isolate, #NAME);                                             \
+    LOG_API(isolate, USTR(#NAME));                                             \
     ENTER_V8(isolate);                                                   \
     i::Object* error;                                                    \
     {                                                                    \
@@ -8478,11 +8478,11 @@ SnapshotObjectId HeapSnapshot::GetMaxSnapshotJSObjectId() const {
 void HeapSnapshot::Serialize(OutputStream* stream,
                              HeapSnapshot::SerializationFormat format) const {
   Utils::ApiCheck(format == kJSON,
-                  "v8::HeapSnapshot::Serialize",
-                  "Unknown serialization format");
+                  u8"v8::HeapSnapshot::Serialize",
+                  u8"Unknown serialization format");
   Utils::ApiCheck(stream->GetChunkSize() > 0,
-                  "v8::HeapSnapshot::Serialize",
-                  "Invalid stream chunk size");
+                  u8"v8::HeapSnapshot::Serialize",
+                  u8"Invalid stream chunk size");
   i::HeapSnapshotJSONSerializer serializer(ToInternal(this));
   serializer.Serialize(stream);
 }
@@ -8618,16 +8618,16 @@ static void SetFlagsFromString(const char* flags) {
 
 void Testing::PrepareStressRun(int run) {
   static const char* kLazyOptimizations =
-      "--prepare-always-opt "
+      u8"--prepare-always-opt "
       "--max-inlined-source-size=999999 "
       "--max-inlined-nodes=999999 "
       "--max-inlined-nodes-cumulative=999999 "
       "--noalways-opt";
-  static const char* kForcedOptimizations = "--always-opt";
+  static const char* kForcedOptimizations = u8"--always-opt";
 
   // If deoptimization stressed turn on frequent deoptimization. If no value
   // is spefified through --deopt-every-n-times use a default default value.
-  static const char* kDeoptEvery13Times = "--deopt-every-n-times=13";
+  static const char* kDeoptEvery13Times = u8"--deopt-every-n-times=13";
   if (internal::Testing::stress_type() == Testing::kStressTypeDeopt &&
       internal::FLAG_deopt_every_n_times == 0) {
     SetFlagsFromString(kDeoptEvery13Times);

@@ -12,15 +12,15 @@ namespace internal {
 #ifdef DEBUG
 void BitVector::Print() {
   bool first = true;
-  PrintF("{");
+  PrintF(u8"{");
   for (int i = 0; i < length(); i++) {
     if (Contains(i)) {
-      if (!first) PrintF(",");
+      if (!first) PrintF(u8",");
       first = false;
-      PrintF("%d", i);
+      PrintF(u8"%d", i);
     }
   }
-  PrintF("}\n");
+  PrintF(u8"}\n");
 }
 #endif
 

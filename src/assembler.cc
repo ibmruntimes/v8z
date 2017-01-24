@@ -160,7 +160,7 @@ double uint32_bias;
 
 static DoubleConstant double_constants;
 
-const char* const RelocInfo::kFillerCommentString = "DEOPTIMIZATION PADDING";
+const char* const RelocInfo::kFillerCommentString = u8"DEOPTIMIZATION PADDING";
 
 static bool math_exp_data_initialized = false;
 static base::Mutex* math_exp_data_mutex = NULL;
@@ -799,99 +799,99 @@ bool RelocInfo::RequiresRelocation(const CodeDesc& desc) {
 const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
   switch (rmode) {
     case NONE32:
-      return "no reloc 32";
+      return u8"no reloc 32";
     case NONE64:
-      return "no reloc 64";
+      return u8"no reloc 64";
     case EMBEDDED_OBJECT:
-      return "embedded object";
+      return u8"embedded object";
     case DEBUGGER_STATEMENT:
-      return "debugger statement";
+      return u8"debugger statement";
     case CODE_TARGET:
-      return "code target";
+      return u8"code target";
     case CODE_TARGET_WITH_ID:
-      return "code target with id";
+      return u8"code target with id";
     case CELL:
-      return "property cell";
+      return u8"property cell";
     case RUNTIME_ENTRY:
-      return "runtime entry";
+      return u8"runtime entry";
     case COMMENT:
-      return "comment";
+      return u8"comment";
     case POSITION:
-      return "position";
+      return u8"position";
     case STATEMENT_POSITION:
-      return "statement position";
+      return u8"statement position";
     case EXTERNAL_REFERENCE:
-      return "external reference";
+      return u8"external reference";
     case INTERNAL_REFERENCE:
-      return "internal reference";
+      return u8"internal reference";
     case INTERNAL_REFERENCE_ENCODED:
-      return "encoded internal reference";
+      return u8"encoded internal reference";
     case DEOPT_REASON:
-      return "deopt reason";
+      return u8"deopt reason";
     case CONST_POOL:
-      return "constant pool";
+      return u8"constant pool";
     case VENEER_POOL:
-      return "veneer pool";
+      return u8"veneer pool";
     case DEBUG_BREAK_SLOT_AT_POSITION:
-      return "debug break slot at position";
+      return u8"debug break slot at position";
     case DEBUG_BREAK_SLOT_AT_RETURN:
-      return "debug break slot at return";
+      return u8"debug break slot at return";
     case DEBUG_BREAK_SLOT_AT_CALL:
-      return "debug break slot at call";
+      return u8"debug break slot at call";
     case DEBUG_BREAK_SLOT_AT_TAIL_CALL:
-      return "debug break slot at tail call";
+      return u8"debug break slot at tail call";
     case CODE_AGE_SEQUENCE:
-      return "code age sequence";
+      return u8"code age sequence";
     case GENERATOR_CONTINUATION:
-      return "generator continuation";
+      return u8"generator continuation";
     case WASM_MEMORY_REFERENCE:
-      return "wasm memory reference";
+      return u8"wasm memory reference";
     case NUMBER_OF_MODES:
     case PC_JUMP:
       UNREACHABLE();
-      return "number_of_modes";
+      return u8"number_of_modes";
   }
-  return "unknown relocation type";
+  return u8"unknown relocation type";
 }
 
 
 void RelocInfo::Print(Isolate* isolate, std::ostream& os) {  // NOLINT
-  os << static_cast<const void*>(pc_) << "  " << RelocModeName(rmode_);
+  os << static_cast<const void*>(pc_) << u8"  " << RelocModeName(rmode_);
   if (IsComment(rmode_)) {
-    os << "  (" << reinterpret_cast<char*>(data_) << ")";
+    os << u8"  (" << reinterpret_cast<char*>(data_) << u8")";
   } else if (rmode_ == DEOPT_REASON) {
-    os << "  (" << Deoptimizer::GetDeoptReason(
-                       static_cast<Deoptimizer::DeoptReason>(data_)) << ")";
+    os << u8"  (" << Deoptimizer::GetDeoptReason(
+                       static_cast<Deoptimizer::DeoptReason>(data_)) << u8")";
   } else if (rmode_ == EMBEDDED_OBJECT) {
-    os << "  (" << Brief(target_object()) << ")";
+    os << u8"  (" << Brief(target_object()) << u8")";
   } else if (rmode_ == EXTERNAL_REFERENCE) {
     ExternalReferenceEncoder ref_encoder(isolate);
-    os << " ("
+    os << u8" ("
        << ref_encoder.NameOfAddress(isolate, target_external_reference())
-       << ")  (" << static_cast<const void*>(target_external_reference())
-       << ")";
+       << u8")  (" << static_cast<const void*>(target_external_reference())
+       << u8")";
   } else if (IsCodeTarget(rmode_)) {
     Code* code = Code::GetCodeFromTargetAddress(target_address());
-    os << " (" << Code::Kind2String(code->kind()) << ")  ("
-       << static_cast<const void*>(target_address()) << ")";
+    os << u8" (" << Code::Kind2String(code->kind()) << u8")  ("
+       << static_cast<const void*>(target_address()) << u8")";
     if (rmode_ == CODE_TARGET_WITH_ID) {
-      os << " (id=" << static_cast<int>(data_) << ")";
+      os << u8" (id=" << static_cast<int>(data_) << u8")";
     }
   } else if (IsPosition(rmode_)) {
-    os << "  (" << data() << ")";
+    os << u8"  (" << data() << u8")";
   } else if (IsRuntimeEntry(rmode_) &&
              isolate->deoptimizer_data() != NULL) {
     // Depotimization bailouts are stored as runtime entries.
     int id = Deoptimizer::GetDeoptimizationId(
         isolate, target_address(), Deoptimizer::EAGER);
     if (id != Deoptimizer::kNotDeoptimizationEntry) {
-      os << "  (deoptimization bailout " << id << ")";
+      os << u8"  (deoptimization bailout " << id << u8")";
     }
   } else if (IsConstPool(rmode_)) {
-    os << " (size " << static_cast<int>(data_) << ")";
+    os << u8" (size " << static_cast<int>(data_) << u8")";
   }
 
-  os << "\n";
+  os << u8"\n";
 }
 #endif  // ENABLE_DISASSEMBLER
 
@@ -1766,7 +1766,7 @@ size_t hash_value(ExternalReference reference) {
 std::ostream& operator<<(std::ostream& os, ExternalReference reference) {
   os << static_cast<const void*>(reference.address());
   const Runtime::Function* fn = Runtime::FunctionForEntry(reference.address());
-  if (fn) os << "<" << fn->name << ".entry>";
+  if (fn) os << u8"<" << fn->name << u8".entry>";
   return os;
 }
 

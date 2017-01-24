@@ -146,13 +146,13 @@ static MaybeHandle<JSArray> GetIteratorInternalProperties(
   const char* kind = NULL;
   switch (Smi::cast(iterator->kind())->value()) {
     case IteratorType::kKindKeys:
-      kind = "keys";
+      kind = u8"keys";
       break;
     case IteratorType::kKindValues:
-      kind = "values";
+      kind = u8"values";
       break;
     case IteratorType::kKindEntries:
-      kind = "entries";
+      kind = u8"entries";
       break;
     default:
       RUNTIME_ASSERT_HANDLIFIED(false, JSArray);
@@ -214,11 +214,11 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
     Handle<JSGeneratorObject> generator =
         Handle<JSGeneratorObject>::cast(object);
 
-    const char* status = "suspended";
+    const char* status = u8"suspended";
     if (generator->is_closed()) {
-      status = "closed";
+      status = u8"closed";
     } else if (generator->is_executing()) {
-      status = "running";
+      status = u8"running";
     } else {
       DCHECK(generator->is_suspended());
     }
@@ -246,14 +246,14 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
     Handle<Object> status_obj =
         DebugGetProperty(promise, isolate->factory()->promise_status_symbol());
     RUNTIME_ASSERT_HANDLIFIED(status_obj->IsSmi(), JSArray);
-    const char* status = "rejected";
+    const char* status = u8"rejected";
     int status_val = Handle<Smi>::cast(status_obj)->value();
     switch (status_val) {
       case +1:
-        status = "resolved";
+        status = u8"resolved";
         break;
       case 0:
-        status = "pending";
+        status = u8"pending";
         break;
       default:
         DCHECK_EQ(-1, status_val);

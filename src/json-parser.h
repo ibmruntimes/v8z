@@ -71,11 +71,11 @@ class JsonParser BASE_EMBEDDED {
   inline void AdvanceSkipWhitespace() {
     do {
       Advance();
-    } while (c0_ == ' ' || c0_ == '\t' || c0_ == '\n' || c0_ == '\r');
+    } while (c0_ == '\x20' || c0_ == '\x9' || c0_ == '\xa' || c0_ == '\xd');
   }
 
   inline void SkipWhitespace() {
-    while (c0_ == ' ' || c0_ == '\t' || c0_ == '\n' || c0_ == '\r') {
+    while (c0_ == '\x20' || c0_ == '\x9' || c0_ == '\xa' || c0_ == '\xd') {
       Advance();
     }
   }
@@ -114,11 +114,11 @@ class JsonParser BASE_EMBEDDED {
         const uint8_t* expected_chars = content.ToOneByteVector().start();
         for (int i = 0; i < length; i++) {
           uint8_t c0 = input_chars[i];
-          if (c0 != expected_chars[i] || c0 == '"' || c0 < 0x20 || c0 == '\\') {
+          if (c0 != expected_chars[i] || c0 == '\x22' || c0 < 0x20 || c0 == '\x5c') {
             return false;
           }
         }
-        if (input_chars[length] == '"') {
+        if (input_chars[length] == '\x22') {
           position_ = position_ + length + 1;
           AdvanceSkipWhitespace();
           return true;
@@ -227,20 +227,20 @@ MaybeHandle<Object> JsonParser<seq_one_byte>::ParseJson() {
       case kEndOfString:
         message = MessageTemplate::kJsonParseUnexpectedEOS;
         break;
-      case '-':
-      case '0':
-      case '1':
-      case '2':
-      case '3':
-      case '4':
-      case '5':
-      case '6':
-      case '7':
-      case '8':
-      case '9':
+      case '\x2d':
+      case '\x30':
+      case '\x31':
+      case '\x32':
+      case '\x33':
+      case '\x34':
+      case '\x35':
+      case '\x36':
+      case '\x37':
+      case '\x38':
+      case '\x39':
         message = MessageTemplate::kJsonParseUnexpectedTokenNumber;
         break;
-      case '"':
+      case '\x22':
         message = MessageTemplate::kJsonParseUnexpectedTokenString;
         break;
       default:
@@ -277,29 +277,29 @@ Handle<Object> JsonParser<seq_one_byte>::ParseJsonValue() {
     isolate_->stack_guard()->HandleGCInterrupt();
   }
 
-  if (c0_ == '"') return ParseJsonString();
-  if ((c0_ >= '0' && c0_ <= '9') || c0_ == '-') return ParseJsonNumber();
-  if (c0_ == '{') return ParseJsonObject();
-  if (c0_ == '[') return ParseJsonArray();
-  if (c0_ == 'f') {
-    if (AdvanceGetChar() == 'a' && AdvanceGetChar() == 'l' &&
-        AdvanceGetChar() == 's' && AdvanceGetChar() == 'e') {
+  if (c0_ == '\x22') return ParseJsonString();
+  if ((c0_ >= '\x30' && c0_ <= '\x39') || c0_ == '\x2d') return ParseJsonNumber();
+  if (c0_ == '\x7b') return ParseJsonObject();
+  if (c0_ == '\x5b') return ParseJsonArray();
+  if (c0_ == '\x66') {
+    if (AdvanceGetChar() == '\x61' && AdvanceGetChar() == '\x6c' &&
+        AdvanceGetChar() == '\x73' && AdvanceGetChar() == '\x65') {
       AdvanceSkipWhitespace();
       return factory()->false_value();
     }
     return ReportUnexpectedCharacter();
   }
-  if (c0_ == 't') {
-    if (AdvanceGetChar() == 'r' && AdvanceGetChar() == 'u' &&
-        AdvanceGetChar() == 'e') {
+  if (c0_ == '\x74') {
+    if (AdvanceGetChar() == '\x72' && AdvanceGetChar() == '\x75' &&
+        AdvanceGetChar() == '\x65') {
       AdvanceSkipWhitespace();
       return factory()->true_value();
     }
     return ReportUnexpectedCharacter();
   }
-  if (c0_ == 'n') {
-    if (AdvanceGetChar() == 'u' && AdvanceGetChar() == 'l' &&
-        AdvanceGetChar() == 'l') {
+  if (c0_ == '\x6e') {
+    if (AdvanceGetChar() == '\x75' && AdvanceGetChar() == '\x6c' &&
+        AdvanceGetChar() == '\x6c') {
       AdvanceSkipWhitespace();
       return factory()->null_value();
     }
@@ -314,23 +314,23 @@ ParseElementResult JsonParser<seq_one_byte>::ParseElement(
     Handle<JSObject> json_object) {
   uint32_t index = 0;
   // Maybe an array index, try to parse it.
-  if (c0_ == '0') {
+  if (c0_ == '\x30') {
     // With a leading zero, the string has to be "0" only to be an index.
     Advance();
   } else {
     do {
-      int d = c0_ - '0';
+      int d = c0_ - '\x30';
       if (index > 429496729U - ((d + 3) >> 3)) break;
       index = (index * 10) + d;
       Advance();
     } while (IsDecimalDigit(c0_));
   }
 
-  if (c0_ == '"') {
+  if (c0_ == '\x22') {
     // Successfully parsed index, parse and store element.
     AdvanceSkipWhitespace();
 
-    if (c0_ == ':') {
+    if (c0_ == '\x3a') {
       AdvanceSkipWhitespace();
       Handle<Object> value = ParseJsonValue();
       if (!value.is_null()) {
@@ -359,7 +359,7 @@ Handle<Object> JsonParser<seq_one_byte>::ParseJsonObject() {
   bool transitioning = true;
 
   AdvanceSkipWhitespace();
-  if (c0_ != '}') {
+  if (c0_ != '\x7d') {
     do {
       if (c0_ != '"') return ReportUnexpectedCharacter();
 
@@ -375,7 +375,7 @@ Handle<Object> JsonParser<seq_one_byte>::ParseJsonObject() {
 
       position_ = start_position;
 #ifdef DEBUG
-      c0_ = '"';
+      c0_ = '\x22';
 #endif
 
       Handle<String> key;
@@ -445,13 +445,13 @@ Handle<Object> JsonParser<seq_one_byte>::ParseJsonObject() {
 
       JSObject::DefinePropertyOrElementIgnoreAttributes(json_object, key, value)
           .Check();
-    } while (transitioning && MatchSkipWhiteSpace(','));
+    } while (transitioning && MatchSkipWhiteSpace('\x2c'));
 
     // If we transitioned until the very end, transition the map now.
     if (transitioning) {
       CommitStateToJsonObject(json_object, map, &properties);
     } else {
-      while (MatchSkipWhiteSpace(',')) {
+      while (MatchSkipWhiteSpace('\x2c')) {
         HandleScope local_scope(isolate());
         if (c0_ != '"') return ReportUnexpectedCharacter();
 
@@ -467,7 +467,7 @@ Handle<Object> JsonParser<seq_one_byte>::ParseJsonObject() {
 
         position_ = start_position;
 #ifdef DEBUG
-        c0_ = '"';
+        c0_ = '\x22';
 #endif
 
         Handle<String> key;
@@ -485,7 +485,7 @@ Handle<Object> JsonParser<seq_one_byte>::ParseJsonObject() {
       }
     }
 
-    if (c0_ != '}') {
+    if (c0_ != '\x7d') {
       return ReportUnexpectedCharacter();
     }
   }
@@ -519,13 +519,13 @@ Handle<Object> JsonParser<seq_one_byte>::ParseJsonArray() {
   DCHECK_EQ(c0_, '[');
 
   AdvanceSkipWhitespace();
-  if (c0_ != ']') {
+  if (c0_ != '\x5d') {
     do {
       Handle<Object> element = ParseJsonValue();
       if (element.is_null()) return ReportUnexpectedCharacter();
       elements.Add(element, zone());
-    } while (MatchSkipWhiteSpace(','));
-    if (c0_ != ']') {
+    } while (MatchSkipWhiteSpace('\x2c'));
+    if (c0_ != '\x5d') {
       return ReportUnexpectedCharacter();
     }
   }
@@ -546,11 +546,11 @@ template <bool seq_one_byte>
 Handle<Object> JsonParser<seq_one_byte>::ParseJsonNumber() {
   bool negative = false;
   int beg_pos = position_;
-  if (c0_ == '-') {
+  if (c0_ == '\x2d') {
     Advance();
     negative = true;
   }
-  if (c0_ == '0') {
+  if (c0_ == '\x30') {
     Advance();
     // Prefix zero is only allowed if it's the only digit before
     // a decimal point or exponent.
@@ -560,25 +560,25 @@ Handle<Object> JsonParser<seq_one_byte>::ParseJsonNumber() {
     int digits = 0;
     if (c0_ < '1' || c0_ > '9') return ReportUnexpectedCharacter();
     do {
-      i = i * 10 + c0_ - '0';
+      i = i * 10 + c0_ - '\x30';
       digits++;
       Advance();
     } while (IsDecimalDigit(c0_));
-    if (c0_ != '.' && c0_ != 'e' && c0_ != 'E' && digits < 10) {
+    if (c0_ != '\x2e' && c0_ != '\x65' && c0_ != '\x45' && digits < 10) {
       SkipWhitespace();
       return Handle<Smi>(Smi::FromInt((negative ? -i : i)), isolate());
     }
   }
-  if (c0_ == '.') {
+  if (c0_ == '\x2e') {
     Advance();
     if (!IsDecimalDigit(c0_)) return ReportUnexpectedCharacter();
     do {
       Advance();
     } while (IsDecimalDigit(c0_));
   }
-  if (AsciiAlphaToLower(c0_) == 'e') {
+  if (AsciiAlphaToLower(c0_) == '\x65') {
     Advance();
-    if (c0_ == '-' || c0_ == '+') Advance();
+    if (c0_ == '\x2d' || c0_ == '\x2b') Advance();
     if (!IsDecimalDigit(c0_)) return ReportUnexpectedCharacter();
     do {
       Advance();
@@ -656,14 +656,14 @@ Handle<String> JsonParser<seq_one_byte>::SlowScanJsonString(
   SinkChar* dest = seq_string->GetChars();
   String::WriteToFlat(*prefix, dest, start, end);
 
-  while (c0_ != '"') {
+  while (c0_ != '\x22') {
     // Check for control character (0x00-0x1f) or unterminated string (<0).
     if (c0_ < 0x20) return Handle<String>::null();
     if (count >= length) {
       // We need to create a longer sequential string for the result.
       return SlowScanJsonString<StringType, SinkChar>(seq_string, 0, count);
     }
-    if (c0_ != '\\') {
+    if (c0_ != '\x5c') {
       // If the sink can contain UC16 characters, or source_ contains only
       // Latin1 characters, there's no need to test whether we can store the
       // character. Otherwise check whether the UC16 source character can fit
@@ -679,27 +679,27 @@ Handle<String> JsonParser<seq_one_byte>::SlowScanJsonString(
     } else {
       Advance();  // Advance past the \.
       switch (c0_) {
-        case '"':
-        case '\\':
-        case '/':
+        case '\x22':
+        case '\x5c':
+        case '\x2f':
           SeqStringSet(seq_string, count++, c0_);
           break;
-        case 'b':
-          SeqStringSet(seq_string, count++, '\x08');
+        case '\x62':
+          SeqStringSet(seq_string, count++, '\x8');
           break;
-        case 'f':
-          SeqStringSet(seq_string, count++, '\x0c');
+        case '\x66':
+          SeqStringSet(seq_string, count++, '\xc');
           break;
-        case 'n':
-          SeqStringSet(seq_string, count++, '\x0a');
+        case '\x6e':
+          SeqStringSet(seq_string, count++, '\xa');
           break;
-        case 'r':
-          SeqStringSet(seq_string, count++, '\x0d');
+        case '\x72':
+          SeqStringSet(seq_string, count++, '\xd');
           break;
-        case 't':
-          SeqStringSet(seq_string, count++, '\x09');
+        case '\x74':
+          SeqStringSet(seq_string, count++, '\x9');
           break;
-        case 'u': {
+        case '\x75': {
           uc32 value = 0;
           for (int i = 0; i < 4; i++) {
             Advance();
@@ -744,7 +744,7 @@ template <bool is_internalized>
 Handle<String> JsonParser<seq_one_byte>::ScanJsonString() {
   DCHECK_EQ('"', c0_);
   Advance();
-  if (c0_ == '"') {
+  if (c0_ == '\x22') {
     AdvanceSkipWhitespace();
     return factory()->empty_string();
   }
@@ -757,7 +757,7 @@ Handle<String> JsonParser<seq_one_byte>::ScanJsonString() {
     int position = position_;
     uc32 c0 = c0_;
     do {
-      if (c0 == '\\') {
+      if (c0 == '\x5c') {
         c0_ = c0;
         int beg_pos = position_;
         position_ = position;
@@ -771,7 +771,7 @@ Handle<String> JsonParser<seq_one_byte>::ScanJsonString() {
       position++;
       if (position >= source_length_) return Handle<String>::null();
       c0 = seq_source_->SeqOneByteStringGet(position);
-    } while (c0 != '"');
+    } while (c0 != '\x22');
     int length = position - position_;
     uint32_t hash = (length <= String::kMaxHashCalcLength)
                         ? StringHasher::GetHashCore(running_hash)
@@ -815,7 +815,7 @@ Handle<String> JsonParser<seq_one_byte>::ScanJsonString() {
   do {
     // Check for control character (0x00-0x1f) or unterminated string (<0).
     if (c0_ < 0x20) return Handle<String>::null();
-    if (c0_ != '\\') {
+    if (c0_ != '\x5c') {
       if (seq_one_byte || c0_ <= String::kMaxOneByteCharCode) {
         Advance();
       } else {
@@ -828,7 +828,7 @@ Handle<String> JsonParser<seq_one_byte>::ScanJsonString() {
                                                            beg_pos,
                                                            position_);
     }
-  } while (c0_ != '"');
+  } while (c0_ != '\x22');
   int length = position_ - beg_pos;
   Handle<String> result =
       factory()->NewRawOneByteString(length, pretenure_).ToHandleChecked();

@@ -525,16 +525,16 @@ class RuntimeCallTimer {
 struct RuntimeCallStats {
   // Dummy counter for the unexpected stub miss.
   RuntimeCallCounter UnexpectedStubMiss =
-      RuntimeCallCounter("UnexpectedStubMiss");
+      RuntimeCallCounter(u8"UnexpectedStubMiss");
   // Counter for runtime callbacks into JavaScript.
-  RuntimeCallCounter ExternalCallback = RuntimeCallCounter("ExternalCallback");
-  RuntimeCallCounter GC = RuntimeCallCounter("GC");
+  RuntimeCallCounter ExternalCallback = RuntimeCallCounter(u8"ExternalCallback");
+  RuntimeCallCounter GC = RuntimeCallCounter(u8"GC");
 #define CALL_RUNTIME_COUNTER(name, nargs, ressize) \
-  RuntimeCallCounter Runtime_##name = RuntimeCallCounter(#name);
+  RuntimeCallCounter Runtime_##name = RuntimeCallCounter(USTR(#name));
   FOR_EACH_INTRINSIC(CALL_RUNTIME_COUNTER)
 #undef CALL_RUNTIME_COUNTER
 #define CALL_BUILTIN_COUNTER(name, type) \
-  RuntimeCallCounter Builtin_##name = RuntimeCallCounter(#name);
+  RuntimeCallCounter Builtin_##name = RuntimeCallCounter(USTR(#name));
   BUILTIN_LIST_C(CALL_BUILTIN_COUNTER)
 #undef CALL_BUILTIN_COUNTER
 

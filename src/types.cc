@@ -1120,14 +1120,14 @@ void Type::Iterator<T>::Advance() {
 
 const char* BitsetType::Name(bitset bits) {
   switch (bits) {
-    case REPRESENTATION(kAny): return "Any";
+    case REPRESENTATION(kAny): return u8"Any";
     #define RETURN_NAMED_REPRESENTATION_TYPE(type, value) \
-    case REPRESENTATION(k##type): return #type;
+    case REPRESENTATION(k##type): return USTR(#type);
     REPRESENTATION_BITSET_TYPE_LIST(RETURN_NAMED_REPRESENTATION_TYPE)
     #undef RETURN_NAMED_REPRESENTATION_TYPE
 
     #define RETURN_NAMED_SEMANTIC_TYPE(type, value) \
-    case SEMANTIC(k##type): return #type;
+    case SEMANTIC(k##type): return USTR(#type);
     SEMANTIC_BITSET_TYPE_LIST(RETURN_NAMED_SEMANTIC_TYPE)
     INTERNAL_BITSET_TYPE_LIST(RETURN_NAMED_SEMANTIC_TYPE)
     #undef RETURN_NAMED_SEMANTIC_TYPE
@@ -1160,18 +1160,18 @@ void BitsetType::Print(std::ostream& os,  // NOLINT
   // clang-format on
 
   bool is_first = true;
-  os << "(";
+  os << u8"(";
   for (int i(arraysize(named_bitsets) - 1); bits != 0 && i >= 0; --i) {
     bitset subset = named_bitsets[i];
     if ((bits & subset) == subset) {
-      if (!is_first) os << " | ";
+      if (!is_first) os << u8" | ";
       is_first = false;
       os << Name(subset);
       bits -= subset;
     }
   }
   DCHECK(bits == 0);
-  os << ")";
+  os << u8")";
 }
 
 void Type::PrintTo(std::ostream& os, PrintDimension dim) {
@@ -1182,57 +1182,57 @@ void Type::PrintTo(std::ostream& os, PrintDimension dim) {
     } else if (this->IsClass()) {
       os << "Class(" << static_cast<void*>(*this->AsClass()->Map()) << " < ";
       BitsetType::New(BitsetType::Lub(this))->PrintTo(os, dim);
-      os << ")";
+      os << u8")";
     } else if (this->IsConstant()) {
       os << "Constant(" << Brief(*this->AsConstant()->Value()) << ")";
     } else if (this->IsRange()) {
       std::ostream::fmtflags saved_flags = os.setf(std::ios::fixed);
       std::streamsize saved_precision = os.precision(0);
-      os << "Range(" << this->AsRange()->Min() << ", " << this->AsRange()->Max()
-         << ")";
+      os << u8"Range(" << this->AsRange()->Min() << u8", " << this->AsRange()->Max()
+         << u8")";
       os.flags(saved_flags);
       os.precision(saved_precision);
     } else if (this->IsContext()) {
-      os << "Context(";
+      os << u8"Context(";
       this->AsContext()->Outer()->PrintTo(os, dim);
-      os << ")";
+      os << u8")";
     } else if (this->IsUnion()) {
-      os << "(";
+      os << u8"(";
       for (int i = 0, n = this->AsUnion()->Length(); i < n; ++i) {
         Type* type_i = this->AsUnion()->Get(i);
-        if (i > 0) os << " | ";
+        if (i > 0) os << u8" | ";
         type_i->PrintTo(os, dim);
       }
-      os << ")";
+      os << u8")";
     } else if (this->IsArray()) {
-      os << "Array(";
+      os << u8"Array(";
       AsArray()->Element()->PrintTo(os, dim);
-      os << ")";
+      os << u8")";
     } else if (this->IsFunction()) {
       if (!this->AsFunction()->Receiver()->IsAny()) {
         this->AsFunction()->Receiver()->PrintTo(os, dim);
-        os << ".";
+        os << u8".";
       }
-      os << "(";
+      os << u8"(";
       for (int i = 0; i < this->AsFunction()->Arity(); ++i) {
-        if (i > 0) os << ", ";
+        if (i > 0) os << u8", ";
         this->AsFunction()->Parameter(i)->PrintTo(os, dim);
       }
-      os << ")->";
+      os << u8")->";
       this->AsFunction()->Result()->PrintTo(os, dim);
     } else if (this->IsTuple()) {
-      os << "<";
+      os << u8"<";
       for (int i = 0, n = this->AsTuple()->Arity(); i < n; ++i) {
         Type* type_i = this->AsTuple()->Element(i);
-        if (i > 0) os << ", ";
+        if (i > 0) os << u8", ";
         type_i->PrintTo(os, dim);
       }
-      os << ">";
+      os << u8">";
     } else {
       UNREACHABLE();
     }
   }
-  if (dim == BOTH_DIMS) os << "/";
+  if (dim == BOTH_DIMS) os << u8"/";
   if (dim != SEMANTIC_DIM) {
     BitsetType::Print(os, REPRESENTATION(this->BitsetLub()));
   }

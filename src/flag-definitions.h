@@ -194,38 +194,38 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
 
 // Features that are still work in progress (behind individual flags).
 #define HARMONY_INPROGRESS(V)                                           \
-  V(harmony_array_prototype_values, "harmony Array.prototype.values")   \
-  V(harmony_object_observe, "harmony Object.observe")                   \
-  V(harmony_function_sent, "harmony function.sent")                     \
-  V(harmony_sharedarraybuffer, "harmony sharedarraybuffer")             \
-  V(harmony_simd, "harmony simd")                                       \
-  V(harmony_do_expressions, "harmony do-expressions")                   \
-  V(harmony_regexp_property, "harmony unicode regexp property classes") \
-  V(harmony_string_padding, "harmony String-padding methods")
+  V(harmony_array_prototype_values, u8"harmony Array.prototype.values")   \
+  V(harmony_object_observe, u8"harmony Object.observe")                   \
+  V(harmony_function_sent, u8"harmony function.sent")                     \
+  V(harmony_sharedarraybuffer, u8"harmony sharedarraybuffer")             \
+  V(harmony_simd, u8"harmony simd")                                       \
+  V(harmony_do_expressions, u8"harmony do-expressions")                   \
+  V(harmony_regexp_property, u8"harmony unicode regexp property classes") \
+  V(harmony_string_padding, u8"harmony String-padding methods")
 
 // Features that are complete (but still behind --harmony/es-staging flag).
 #define HARMONY_STAGED(V)                                                    \
-  V(harmony_regexp_lookbehind, "harmony regexp lookbehind")                  \
-  V(harmony_tailcalls, "harmony tail calls")                                 \
-  V(harmony_object_values_entries, "harmony Object.values / Object.entries") \
+  V(harmony_regexp_lookbehind, u8"harmony regexp lookbehind")                  \
+  V(harmony_tailcalls, u8"harmony tail calls")                                 \
+  V(harmony_object_values_entries, u8"harmony Object.values / Object.entries") \
   V(harmony_object_own_property_descriptors,                                 \
-    "harmony Object.getOwnPropertyDescriptors()")                            \
-  V(harmony_exponentiation_operator, "harmony exponentiation operator `**`")
+    u8"harmony Object.getOwnPropertyDescriptors()")                            \
+  V(harmony_exponentiation_operator, u8"harmony exponentiation operator `**`")
 
 // Features that are shipping (turned on by default, but internal flag remains).
 #define HARMONY_SHIPPING(V)                                           \
-  V(harmony_function_name, "harmony Function name inference")         \
-  V(harmony_instanceof, "harmony instanceof support")                 \
-  V(harmony_iterator_close, "harmony iterator finalization")          \
-  V(harmony_unicode_regexps, "harmony unicode regexps")               \
-  V(harmony_regexp_exec, "harmony RegExp exec override behavior")     \
-  V(harmony_sloppy, "harmony features in sloppy mode")                \
-  V(harmony_sloppy_let, "harmony let in sloppy mode")                 \
-  V(harmony_sloppy_function, "harmony sloppy function block scoping") \
-  V(harmony_regexp_subclass, "harmony regexp subclassing")            \
+  V(harmony_function_name, u8"harmony Function name inference")         \
+  V(harmony_instanceof, u8"harmony instanceof support")                 \
+  V(harmony_iterator_close, u8"harmony iterator finalization")          \
+  V(harmony_unicode_regexps, u8"harmony unicode regexps")               \
+  V(harmony_regexp_exec, u8"harmony RegExp exec override behavior")     \
+  V(harmony_sloppy, u8"harmony features in sloppy mode")                \
+  V(harmony_sloppy_let, u8"harmony let in sloppy mode")                 \
+  V(harmony_sloppy_function, u8"harmony sloppy function block scoping") \
+  V(harmony_regexp_subclass, u8"harmony regexp subclassing")            \
   V(harmony_restrictive_declarations,                                 \
-    "harmony limitations on sloppy mode function declarations")       \
-  V(harmony_species, "harmony Symbol.species")
+    u8"harmony limitations on sloppy mode function declarations")       \
+  V(harmony_species, u8"harmony Symbol.species")
 
 // Once a shipping feature has proved stable in the wild, it will be dropped
 // from HARMONY_SHIPPING, all occurrences of the FLAG_ variable are removed,
@@ -234,18 +234,18 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
 
 
 #define FLAG_INPROGRESS_FEATURES(id, description) \
-  DEFINE_BOOL(id, false, "enable " #description " (in progress)")
+  DEFINE_BOOL(id, false, u8"enable " USTR(#description) u8" (in progress)")
 HARMONY_INPROGRESS(FLAG_INPROGRESS_FEATURES)
 #undef FLAG_INPROGRESS_FEATURES
 
 #define FLAG_STAGED_FEATURES(id, description) \
-  DEFINE_BOOL(id, false, "enable " #description) \
+  DEFINE_BOOL(id, false, u8"enable " USTR(#description)) \
   DEFINE_IMPLICATION(harmony, id)
 HARMONY_STAGED(FLAG_STAGED_FEATURES)
 #undef FLAG_STAGED_FEATURES
 
 #define FLAG_SHIPPING_FEATURES(id, description) \
-  DEFINE_BOOL(id, true, "enable " #description) \
+  DEFINE_BOOL(id, true, u8"enable " USTR(#description)) \
   DEFINE_NEG_NEG_IMPLICATION(harmony_shipping, id)
 HARMONY_SHIPPING(FLAG_SHIPPING_FEATURES)
 #undef FLAG_SHIPPING_FEATURES

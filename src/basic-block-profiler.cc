@@ -80,28 +80,28 @@ void BasicBlockProfiler::ResetCounts() {
 
 
 std::ostream& operator<<(std::ostream& os, const BasicBlockProfiler& p) {
-  os << "---- Start Profiling Data ----" << std::endl;
+  os << u8"---- Start Profiling Data ----" << std::endl;
   typedef BasicBlockProfiler::DataList::const_iterator iterator;
   for (iterator i = p.data_list_.begin(); i != p.data_list_.end(); ++i) {
     os << **i;
   }
-  os << "---- End Profiling Data ----" << std::endl;
+  os << u8"---- End Profiling Data ----" << std::endl;
   return os;
 }
 
 
 std::ostream& operator<<(std::ostream& os, const BasicBlockProfiler::Data& d) {
-  const char* name = "unknown function";
+  const char* name = u8"unknown function";
   if (!d.function_name_.empty()) {
     name = d.function_name_.c_str();
   }
   if (!d.schedule_.empty()) {
-    os << "schedule for " << name << std::endl;
+    os << u8"schedule for " << name << std::endl;
     os << d.schedule_.c_str() << std::endl;
   }
-  os << "block counts for " << name << ":" << std::endl;
+  os << u8"block counts for " << name << u8":" << std::endl;
   for (size_t i = 0; i < d.n_blocks_; ++i) {
-    os << "block " << d.block_ids_[i] << " : " << d.counts_[i] << std::endl;
+    os << u8"block " << d.block_ids_[i] << u8" : " << d.counts_[i] << std::endl;
   }
   os << std::endl;
   if (!d.code_.empty()) {

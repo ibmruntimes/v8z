@@ -109,9 +109,9 @@ class PropertyCallbackArguments
   Handle<JSObject> Call(IndexedPropertyEnumeratorCallback f);
 
 #define FOR_EACH_CALLBACK_TABLE_MAPPING_1_NAME(F)                  \
-  F(AccessorNameGetterCallback, "get", v8::Value, Object)          \
-  F(GenericNamedPropertyQueryCallback, "has", v8::Integer, Object) \
-  F(GenericNamedPropertyDeleterCallback, "delete", v8::Boolean, Object)
+  F(AccessorNameGetterCallback, u8"get", v8::Value, Object)          \
+  F(GenericNamedPropertyQueryCallback, u8"has", v8::Integer, Object) \
+  F(GenericNamedPropertyDeleterCallback, u8"delete", v8::Boolean, Object)
 
 #define WRITE_CALL_1_NAME(Function, type, ApiReturn, InternalReturn)         \
   Handle<InternalReturn> Call(Function f, Handle<Name> name) {               \
@@ -120,7 +120,7 @@ class PropertyCallbackArguments
     ExternalCallbackScope call_scope(isolate, FUNCTION_ADDR(f));             \
     PropertyCallbackInfo<ApiReturn> info(begin());                           \
     LOG(isolate,                                                             \
-        ApiNamedPropertyAccess("interceptor-named-" type, holder(), *name)); \
+        ApiNamedPropertyAccess(u8"interceptor-named-" type, holder(), *name)); \
     f(v8::Utils::ToLocal(name), info);                                       \
     return GetReturnValue<InternalReturn>(isolate);                          \
   }
@@ -131,9 +131,9 @@ class PropertyCallbackArguments
 #undef WRITE_CALL_1_NAME
 
 #define FOR_EACH_CALLBACK_TABLE_MAPPING_1_INDEX(F)            \
-  F(IndexedPropertyGetterCallback, "get", v8::Value, Object)  \
-  F(IndexedPropertyQueryCallback, "has", v8::Integer, Object) \
-  F(IndexedPropertyDeleterCallback, "delete", v8::Boolean, Object)
+  F(IndexedPropertyGetterCallback, u8"get", v8::Value, Object)  \
+  F(IndexedPropertyQueryCallback, u8"has", v8::Integer, Object) \
+  F(IndexedPropertyDeleterCallback, u8"delete", v8::Boolean, Object)
 
 #define WRITE_CALL_1_INDEX(Function, type, ApiReturn, InternalReturn)  \
   Handle<InternalReturn> Call(Function f, uint32_t index) {            \
@@ -141,7 +141,7 @@ class PropertyCallbackArguments
     VMState<EXTERNAL> state(isolate);                                  \
     ExternalCallbackScope call_scope(isolate, FUNCTION_ADDR(f));       \
     PropertyCallbackInfo<ApiReturn> info(begin());                     \
-    LOG(isolate, ApiIndexedPropertyAccess("interceptor-indexed-" type, \
+    LOG(isolate, ApiIndexedPropertyAccess(u8"interceptor-indexed-" type, \
                                           holder(), index));           \
     f(index, info);                                                    \
     return GetReturnValue<InternalReturn>(isolate);                    \

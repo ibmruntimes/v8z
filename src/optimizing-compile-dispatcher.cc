@@ -152,7 +152,7 @@ void OptimizingCompileDispatcher::Flush() {
   }
   FlushOutputQueue(true);
   if (FLAG_trace_concurrent_recompilation) {
-    PrintF("  ** Flushed concurrent recompilation queues.\n");
+    PrintF(u8"  ** Flushed concurrent recompilation queues.\n");
   }
 }
 
@@ -192,9 +192,9 @@ void OptimizingCompileDispatcher::InstallOptimizedFunctions() {
     Handle<JSFunction> function(*info->closure());
     if (function->IsOptimized()) {
       if (FLAG_trace_concurrent_recompilation) {
-        PrintF("  ** Aborting compilation for ");
+        PrintF(u8"  ** Aborting compilation for ");
         function->ShortPrint();
-        PrintF(" as it has already been optimized.\n");
+        PrintF(u8" as it has already been optimized.\n");
       }
       DisposeOptimizedCompileJob(job, false);
     } else {

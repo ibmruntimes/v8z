@@ -396,12 +396,12 @@ MaybeHandle<String> MessageTemplate::FormatMessage(int template_index,
 
   unsigned int i = 0;
   Handle<String> args[] = {arg0, arg1, arg2};
-  for (const char* c = template_string; *c != '\0'; c++) {
-    if (*c == '%') {
+  for (const char* c = template_string; *c != '\x0'; c++) {
+    if (*c == '\x25') {
       // %% results in verbatim %.
-      if (*(c + 1) == '%') {
+      if (*(c + 1) == '\x25') {
         c++;
-        builder.AppendCharacter('%');
+        builder.AppendCharacter('\x25');
       } else {
         DCHECK(i < arraysize(args));
         Handle<String> arg = args[i++];

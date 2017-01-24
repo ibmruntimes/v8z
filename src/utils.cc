@@ -44,7 +44,7 @@ void SimpleStringBuilder::AddPadding(char c, int count) {
 void SimpleStringBuilder::AddDecimalInteger(int32_t value) {
   uint32_t number = static_cast<uint32_t>(value);
   if (value < 0) {
-    AddCharacter('-');
+    AddCharacter('\x2d');
     number = static_cast<uint32_t>(-value);
   }
   int digits = 1;
@@ -110,7 +110,7 @@ void PrintF(FILE* out, const char* format, ...) {
 
 
 void PrintPID(const char* format, ...) {
-  base::OS::Print("[%d] ", base::OS::GetCurrentProcessId());
+  base::OS::Print(u8"[%d] ", base::OS::GetCurrentProcessId());
   va_list arguments;
   va_start(arguments, format);
   base::OS::VPrint(format, arguments);
@@ -119,7 +119,7 @@ void PrintPID(const char* format, ...) {
 
 
 void PrintIsolate(void* isolate, const char* format, ...) {
-  base::OS::Print("[%d:%p] ", base::OS::GetCurrentProcessId(), isolate);
+  base::OS::Print(u8"[%d:%p] ", base::OS::GetCurrentProcessId(), isolate);
   va_list arguments;
   va_start(arguments, format);
   base::OS::VPrint(format, arguments);
@@ -156,7 +156,7 @@ char* ReadLine(const char* prompt) {
   char line_buf[256];
   int offset = 0;
   bool keep_going = true;
-  fprintf(stdout, "%s", prompt);
+  fprintf(stdout, u8"%s", prompt);
   fflush(stdout);
   while (keep_going) {
     if (fgets(line_buf, sizeof(line_buf), stdin) == NULL) {
@@ -168,14 +168,14 @@ char* ReadLine(const char* prompt) {
     }
     int len = StrLength(line_buf);
     if (len > 1 &&
-        line_buf[len - 2] == '\\' &&
-        line_buf[len - 1] == '\n') {
+        line_buf[len - 2] == '\x5c' &&
+        line_buf[len - 1] == '\xa') {
       // When we read a line that ends with a "\" we remove the escape and
       // append the remainder.
-      line_buf[len - 2] = '\n';
+      line_buf[len - 2] = '\xa';
       line_buf[len - 1] = 0;
       len -= 1;
-    } else if ((len > 0) && (line_buf[len - 1] == '\n')) {
+    } else if ((len > 0) && (line_buf[len - 1] == '\xa')) {
       // Since we read a new line we are done reading the line. This
       // will exit the loop after copying this buffer into the result.
       keep_going = false;
@@ -198,7 +198,7 @@ char* ReadLine(const char* prompt) {
     offset += len;
   }
   DCHECK(result != NULL);
-  result[offset] = '\0';
+  result[offset] = '\x0';
   return result;
 }
 
@@ -210,7 +210,7 @@ char* ReadCharsFromFile(FILE* file,
                         const char* filename) {
   if (file == NULL || fseek(file, 0, SEEK_END) != 0) {
     if (verbose) {
-      base::OS::PrintError("Cannot read from file %s.\n", filename);
+      base::OS::PrintError(u8"Cannot read from file %s.\n", filename);
     }
     return NULL;
   }
@@ -237,7 +237,7 @@ char* ReadCharsFromFile(const char* filename,
                         int* size,
                         int extra_space,
                         bool verbose) {
-  FILE* file = base::OS::FOpen(filename, "rb");
+  FILE* file = base::OS::FOpen(filename, u8"rb");
   char* result = ReadCharsFromFile(file, size, extra_space, verbose, filename);
   if (file != NULL) fclose(file);
   return result;
@@ -257,7 +257,7 @@ static Vector<const char> SetVectorContents(char* chars,
     *exists = false;
     return Vector<const char>::empty();
   }
-  chars[size] = '\0';
+  chars[size] = '\x0';
   *exists = true;
   return Vector<const char>(chars, size);
 }
@@ -276,7 +276,7 @@ Vector<const char> ReadFile(FILE* file,
                             bool* exists,
                             bool verbose) {
   int size;
-  char* result = ReadCharsFromFile(file, &size, 1, verbose, "");
+  char* result = ReadCharsFromFile(file, &size, 1, verbose, u8"");
   return SetVectorContents(result, size, exists);
 }
 
@@ -299,10 +299,10 @@ int AppendChars(const char* filename,
                 const char* str,
                 int size,
                 bool verbose) {
-  FILE* f = base::OS::FOpen(filename, "ab");
+  FILE* f = base::OS::FOpen(filename, u8"ab");
   if (f == NULL) {
     if (verbose) {
-      base::OS::PrintError("Cannot open file %s for writing.\n", filename);
+      base::OS::PrintError(u8"Cannot open file %s for writing.\n", filename);
     }
     return 0;
   }
@@ -316,10 +316,10 @@ int WriteChars(const char* filename,
                const char* str,
                int size,
                bool verbose) {
-  FILE* f = base::OS::FOpen(filename, "wb");
+  FILE* f = base::OS::FOpen(filename, u8"wb");
   if (f == NULL) {
     if (verbose) {
-      base::OS::PrintError("Cannot open file %s for writing.\n", filename);
+      base::OS::PrintError(u8"Cannot open file %s for writing.\n", filename);
     }
     return 0;
   }

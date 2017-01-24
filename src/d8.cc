@@ -150,7 +150,7 @@ class PredictablePlatform : public Platform {
 
   const char* GetCategoryGroupName(
       const uint8_t* categoryEnabledFlag) override {
-    static const char* dummy = "dummy";
+    static const char* dummy = u8"dummy";
     return dummy;
   }
 
@@ -185,14 +185,14 @@ bool FindInObjectList(Local<Object> object, const Shell::ObjectList& list) {
 
 Worker* GetWorkerFromInternalField(Isolate* isolate, Local<Object> object) {
   if (object->InternalFieldCount() != 1) {
-    Throw(isolate, "this is not a Worker");
+    Throw(isolate, u8"this is not a Worker");
     return NULL;
   }
 
   Worker* worker =
       static_cast<Worker*>(object->GetAlignedPointerFromInternalField(0));
   if (worker == NULL) {
-    Throw(isolate, "Worker is defunct because main thread is terminating");
+    Throw(isolate, u8"Worker is defunct because main thread is terminating");
     return NULL;
   }
 
@@ -408,13 +408,13 @@ bool Shell::ExecuteString(Isolate* isolate, Local<String> source,
         // the returned value.
         v8::String::Utf8Value str(result);
         fwrite(*str, sizeof(**str), str.length(), stdout);
-        printf("\n");
+        printf(u8"\n");
       }
 #if !defined(V8_SHARED)
     } else {
       v8::String::Utf8Value str(Stringify(isolate, result));
       fwrite(*str, sizeof(**str), str.length(), stdout);
-      printf("\n");
+      printf(u8"\n");
     }
 #endif
   }
@@ -623,7 +623,7 @@ void Shell::RealmSharedSet(Local<String> property,
 
 void Shell::Print(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Write(args);
-  printf("\n");
+  printf(u8"\n");
   fflush(stdout);
 }
 
@@ -690,13 +690,13 @@ Local<String> Shell::ReadFromStdin(Isolate* isolate) {
     length = static_cast<int>(strlen(buffer));
     if (length == 0) {
       return accumulator;
-    } else if (buffer[length-1] != '\n') {
+    } else if (buffer[length-1] != '\xa') {
       accumulator = String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal, length)
               .ToLocalChecked());
-    } else if (length > 1 && buffer[length-2] == '\\') {
-      buffer[length-2] = '\n';
+    } else if (length > 1 && buffer[length-2] == '\x5c') {
+      buffer[length-2] = '\xa';
       accumulator = String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal,
@@ -784,7 +784,7 @@ void Shell::WorkerPostMessage(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Local<Context> context = isolate->GetCurrentContext();
 
   if (args.Length() < 1) {
-    Throw(isolate, "Invalid argument");
+    Throw(isolate, u8"Invalid argument");
     return;
   }
 
@@ -797,7 +797,7 @@ void Shell::WorkerPostMessage(const v8::FunctionCallbackInfo<v8::Value>& args) {
   ObjectList to_transfer;
   if (args.Length() >= 2) {
     if (!args[1]->IsArray()) {
-      Throw(isolate, "Transfer list must be an Array");
+      Throw(isolate, u8"Transfer list must be an Array");
       return;
     }
 
@@ -808,7 +808,7 @@ void Shell::WorkerPostMessage(const v8::FunctionCallbackInfo<v8::Value>& args) {
       if (transfer->Get(context, i).ToLocal(&element)) {
         if (!element->IsArrayBuffer() && !element->IsSharedArrayBuffer()) {
           Throw(isolate,
-                "Transfer array elements must be an ArrayBuffer or "
+                u8"Transfer array elements must be an ArrayBuffer or "
                 "SharedArrayBuffer.");
           break;
         }
@@ -902,30 +902,30 @@ void Shell::ReportException(Isolate* isolate, v8::TryCatch* try_catch) {
   if (message.IsEmpty()) {
     // V8 didn't provide any extra information about this error; just
     // print the exception.
-    printf("%s\n", exception_string);
+    printf(u8"%s\n", exception_string);
   } else {
     // Print (filename):(line number): (message).
     v8::String::Utf8Value filename(message->GetScriptOrigin().ResourceName());
     const char* filename_string = ToCString(filename);
     int linenum =
         message->GetLineNumber(isolate->GetCurrentContext()).FromJust();
-    printf("%s:%i: %s\n", filename_string, linenum, exception_string);
+    printf(u8"%s:%i: %s\n", filename_string, linenum, exception_string);
     // Print line of source code.
     v8::String::Utf8Value sourceline(
         message->GetSourceLine(isolate->GetCurrentContext()).ToLocalChecked());
     const char* sourceline_string = ToCString(sourceline);
-    printf("%s\n", sourceline_string);
+    printf(u8"%s\n", sourceline_string);
     // Print wavy underline (GetUnderline is deprecated).
     int start =
         message->GetStartColumn(isolate->GetCurrentContext()).FromJust();
     for (int i = 0; i < start; i++) {
-      printf(" ");
+      printf(u8" ");
     }
     int end = message->GetEndColumn(isolate->GetCurrentContext()).FromJust();
     for (int i = start; i < end; i++) {
-      printf("^");
+      printf(u8"^");
     }
-    printf("\n");
+    printf(u8"\n");
     Local<Value> stack_trace_string;
     if (try_catch->StackTrace(isolate->GetCurrentContext())
             .ToLocal(&stack_trace_string) &&
@@ -935,7 +935,7 @@ void Shell::ReportException(Isolate* isolate, v8::TryCatch* try_catch) {
       printf("%s\n", ToCString(stack_trace));
     }
   }
-  printf("\n");
+  printf(u8"\n");
 #ifndef V8_SHARED
   if (enter_context) context->Exit();
 #endif  // !V8_SHARED
@@ -947,7 +947,7 @@ int32_t* Counter::Bind(const char* name, bool is_histogram) {
   int i;
   for (i = 0; i < kMaxNameSize - 1 && name[i]; i++)
     name_[i] = static_cast<char>(name[i]);
-  name_[i] = '\0';
+  name_[i] = '\x0';
   is_histogram_ = is_histogram;
   return ptr();
 }
@@ -979,7 +979,7 @@ void Shell::MapCounters(v8::Isolate* isolate, const char* name) {
   void* memory = (counters_file_ == NULL) ?
       NULL : counters_file_->memory();
   if (memory == NULL) {
-    printf("Could not map counters file %s\n", name);
+    printf(u8"Could not map counters file %s\n", name);
     Exit(1);
   }
   counters_ = static_cast<CounterCollection*>(memory);
@@ -1292,23 +1292,23 @@ void Shell::OnExit(v8::Isolate* isolate) {
       counters[j].key = i.CurrentKey();
     }
     std::sort(counters, counters + number_of_counters);
-    printf("+----------------------------------------------------------------+"
+    printf(u8"+----------------------------------------------------------------+"
            "-------------+\n");
-    printf("| Name                                                           |"
+    printf(u8"| Name                                                           |"
            " Value       |\n");
-    printf("+----------------------------------------------------------------+"
+    printf(u8"+----------------------------------------------------------------+"
            "-------------+\n");
     for (j = 0; j < number_of_counters; j++) {
       Counter* counter = counters[j].counter;
       const char* key = counters[j].key;
       if (counter->is_histogram()) {
-        printf("| c:%-60s | %11i |\n", key, counter->count());
-        printf("| t:%-60s | %11i |\n", key, counter->sample_total());
+        printf(u8"| c:%-60s | %11i |\n", key, counter->count());
+        printf(u8"| t:%-60s | %11i |\n", key, counter->sample_total());
       } else {
-        printf("| %-62s | %11i |\n", key, counter->count());
+        printf(u8"| %-62s | %11i |\n", key, counter->count());
       }
     }
-    printf("+----------------------------------------------------------------+"
+    printf(u8"+----------------------------------------------------------------+"
            "-------------+\n");
     delete [] counters;
   }
@@ -1341,7 +1341,7 @@ static FILE* FOpen(const char* path, const char* mode) {
 
 
 static char* ReadChars(Isolate* isolate, const char* name, int* size_out) {
-  FILE* file = FOpen(name, "rb");
+  FILE* file = FOpen(name, u8"rb");
   if (file == NULL) return NULL;
 
   fseek(file, 0, SEEK_END);
@@ -1349,7 +1349,7 @@ static char* ReadChars(Isolate* isolate, const char* name, int* size_out) {
   rewind(file);
 
   char* chars = new char[size + 1];
-  chars[size] = '\0';
+  chars[size] = '\x0';
   for (size_t i = 0; i < size;) {
     i += fread(&chars[i], 1, size - i, file);
     if (ferror(file)) {
@@ -1438,7 +1438,7 @@ void Shell::RunShell(Isolate* isolate) {
   printf("V8 version %s\n", V8::GetVersion());
   while (true) {
     HandleScope inner_scope(isolate);
-    printf("d8> ");
+    printf(u8"d8> ");
 #if defined(__native_client__)
     // Native Client libc is used to being embedded in Chrome and
     // has trouble recognizing when to flush.
@@ -1448,7 +1448,7 @@ void Shell::RunShell(Isolate* isolate) {
     if (input.IsEmpty()) break;
     ExecuteString(isolate, input, name, true, true);
   }
-  printf("\n");
+  printf(u8"\n");
 }
 
 
@@ -1465,7 +1465,7 @@ void SourceGroup::Execute(Isolate* isolate) {
   for (int i = begin_offset_; i < end_offset_; ++i) {
     const char* arg = argv_[i];
     Shell::SourceType source_type = Shell::SCRIPT;
-    if (strcmp(arg, "-e") == 0 && i + 1 < end_offset_) {
+    if (strcmp(arg, u8"-e") == 0 && i + 1 < end_offset_) {
       // Execute argument given to -e option directly.
       HandleScope handle_scope(isolate);
       Local<String> file_name =
@@ -1481,11 +1481,11 @@ void SourceGroup::Execute(Isolate* isolate) {
       }
       ++i;
       continue;
-    } else if (strcmp(arg, "--module") == 0 && i + 1 < end_offset_) {
+    } else if (strcmp(arg, u8"--module") == 0 && i + 1 < end_offset_) {
       // Treat the next file as a module.
       source_type = Shell::MODULE;
       arg = argv_[++i];
-    } else if (arg[0] == '-') {
+    } else if (arg[0] == '\x2d') {
       // Ignore other options. They have been parsed already.
       continue;
     }
@@ -1497,7 +1497,7 @@ void SourceGroup::Execute(Isolate* isolate) {
             .ToLocalChecked();
     Local<String> source = ReadFile(isolate, arg);
     if (source.IsEmpty()) {
-      printf("Error reading '%s'\n", arg);
+      printf(u8"Error reading '%s'\n", arg);
       Shell::Exit(1);
     }
     Shell::options.script_executed = true;
@@ -1531,7 +1531,7 @@ base::Thread::Options SourceGroup::GetThreadOptions() {
   // which is not enough to parse the big literal expressions used in tests.
   // The stack size should be at least StackGuard::kLimitSize + some
   // OS-specific padding for thread startup code.  2Mbytes seems to be enough.
-  return base::Thread::Options("IsolateThread", 2 * MB);
+  return base::Thread::Options(u8"IsolateThread", 2 * MB);
 }
 
 
@@ -1827,7 +1827,7 @@ void Worker::PostMessageOut(const v8::FunctionCallbackInfo<v8::Value>& args) {
   HandleScope handle_scope(isolate);
 
   if (args.Length() < 1) {
-    Throw(isolate, "Invalid argument");
+    Throw(isolate, u8"Invalid argument");
     return;
   }
 
@@ -1860,57 +1860,57 @@ void SetFlagsFromString(const char* flags) {
 bool Shell::SetOptions(int argc, char* argv[]) {
   bool logfile_per_isolate = false;
   for (int i = 0; i < argc; i++) {
-    if (strcmp(argv[i], "--stress-opt") == 0) {
+    if (strcmp(argv[i], u8"--stress-opt") == 0) {
       options.stress_opt = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--nostress-opt") == 0) {
+    } else if (strcmp(argv[i], u8"--nostress-opt") == 0) {
       options.stress_opt = false;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--stress-deopt") == 0) {
+    } else if (strcmp(argv[i], u8"--stress-deopt") == 0) {
       options.stress_deopt = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--mock-arraybuffer-allocator") == 0) {
+    } else if (strcmp(argv[i], u8"--mock-arraybuffer-allocator") == 0) {
       options.mock_arraybuffer_allocator = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--noalways-opt") == 0) {
+    } else if (strcmp(argv[i], u8"--noalways-opt") == 0) {
       // No support for stressing if we can't use --always-opt.
       options.stress_opt = false;
       options.stress_deopt = false;
-    } else if (strcmp(argv[i], "--logfile-per-isolate") == 0) {
+    } else if (strcmp(argv[i], u8"--logfile-per-isolate") == 0) {
       logfile_per_isolate = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--shell") == 0) {
+    } else if (strcmp(argv[i], u8"--shell") == 0) {
       options.interactive_shell = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--test") == 0) {
+    } else if (strcmp(argv[i], u8"--test") == 0) {
       options.test_shell = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--notest") == 0 ||
-               strcmp(argv[i], "--no-test") == 0) {
+    } else if (strcmp(argv[i], u8"--notest") == 0 ||
+               strcmp(argv[i], u8"--no-test") == 0) {
       options.test_shell = false;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--send-idle-notification") == 0) {
+    } else if (strcmp(argv[i], u8"--send-idle-notification") == 0) {
       options.send_idle_notification = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--invoke-weak-callbacks") == 0) {
+    } else if (strcmp(argv[i], u8"--invoke-weak-callbacks") == 0) {
       options.invoke_weak_callbacks = true;
       // TODO(jochen) See issue 3351
       options.send_idle_notification = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "--omit-quit") == 0) {
+    } else if (strcmp(argv[i], u8"--omit-quit") == 0) {
       options.omit_quit = true;
       argv[i] = NULL;
-    } else if (strcmp(argv[i], "-f") == 0) {
+    } else if (strcmp(argv[i], u8"-f") == 0) {
       // Ignore any -f flags for compatibility with other stand-alone
       // JavaScript engines.
       continue;
-    } else if (strcmp(argv[i], "--isolate") == 0) {
+    } else if (strcmp(argv[i], u8"--isolate") == 0) {
 #ifdef V8_SHARED
       printf("D8 with shared library does not support multi-threading\n");
       return false;
 #endif  // V8_SHARED
       options.num_isolates++;
-    } else if (strcmp(argv[i], "--dump-heap-constants") == 0) {
+    } else if (strcmp(argv[i], u8"--dump-heap-constants") == 0) {
 #ifdef V8_SHARED
       printf("D8 with shared library does not support constant dumping\n");
       return false;
@@ -1918,10 +1918,10 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       options.dump_heap_constants = true;
       argv[i] = NULL;
 #endif  // V8_SHARED
-    } else if (strcmp(argv[i], "--throws") == 0) {
+    } else if (strcmp(argv[i], u8"--throws") == 0) {
       options.expected_to_throw = true;
       argv[i] = NULL;
-    } else if (strncmp(argv[i], "--icu-data-file=", 16) == 0) {
+    } else if (strncmp(argv[i], u8"--icu-data-file=", 16) == 0) {
       options.icu_data_file = argv[i] + 16;
       argv[i] = NULL;
 #ifdef V8_SHARED
@@ -1937,17 +1937,17 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       options.snapshot_blob = argv[i] + 16;
       argv[i] = NULL;
 #endif  // V8_USE_EXTERNAL_STARTUP_DATA
-    } else if (strcmp(argv[i], "--cache") == 0 ||
-               strncmp(argv[i], "--cache=", 8) == 0) {
+    } else if (strcmp(argv[i], u8"--cache") == 0 ||
+               strncmp(argv[i], u8"--cache=", 8) == 0) {
       const char* value = argv[i] + 7;
-      if (!*value || strncmp(value, "=code", 6) == 0) {
+      if (!*value || strncmp(value, u8"=code", 6) == 0) {
         options.compile_options = v8::ScriptCompiler::kProduceCodeCache;
-      } else if (strncmp(value, "=parse", 7) == 0) {
+      } else if (strncmp(value, u8"=parse", 7) == 0) {
         options.compile_options = v8::ScriptCompiler::kProduceParserCache;
-      } else if (strncmp(value, "=none", 6) == 0) {
+      } else if (strncmp(value, u8"=none", 6) == 0) {
         options.compile_options = v8::ScriptCompiler::kNoCompileOptions;
       } else {
-        printf("Unknown option to --cache.\n");
+        printf(u8"Unknown option to --cache.\n");
         return false;
       }
       argv[i] = NULL;
@@ -1962,17 +1962,17 @@ bool Shell::SetOptions(int argc, char* argv[]) {
   current->Begin(argv, 1);
   for (int i = 1; i < argc; i++) {
     const char* str = argv[i];
-    if (strcmp(str, "--isolate") == 0) {
+    if (strcmp(str, u8"--isolate") == 0) {
       current->End(i);
       current++;
       current->Begin(argv, i + 1);
-    } else if (strcmp(str, "--module") == 0) {
+    } else if (strcmp(str, u8"--module") == 0) {
       // Pass on to SourceGroup, which understands this option.
-    } else if (strncmp(argv[i], "--", 2) == 0) {
-      printf("Warning: unknown flag %s.\nTry --help for options\n", argv[i]);
-    } else if (strcmp(str, "-e") == 0 && i + 1 < argc) {
+    } else if (strncmp(argv[i], u8"--", 2) == 0) {
+      printf(u8"Warning: unknown flag %s.\nTry --help for options\n", argv[i]);
+    } else if (strcmp(str, u8"-e") == 0 && i + 1 < argc) {
       options.script_executed = true;
-    } else if (strncmp(str, "-", 1) != 0) {
+    } else if (strncmp(str, u8"-", 1) != 0) {
       // Not a flag, so it must be a script to execute.
       options.script_executed = true;
     }
@@ -1980,7 +1980,7 @@ bool Shell::SetOptions(int argc, char* argv[]) {
   current->End(argc);
 
   if (!logfile_per_isolate && options.num_isolates) {
-    SetFlagsFromString("--nologfile_per_isolate");
+    SetFlagsFromString(u8"--nologfile_per_isolate");
   }
 
   return true;
@@ -2077,7 +2077,7 @@ bool Shell::SerializeValue(Isolate* isolate, Local<Value> value,
   } else if (value->IsArray()) {
     Local<Array> array = Local<Array>::Cast(value);
     if (FindInObjectList(array, *seen_objects)) {
-      Throw(isolate, "Duplicated arrays not supported");
+      Throw(isolate, u8"Duplicated arrays not supported");
       return false;
     }
     seen_objects->Add(array);
@@ -2091,21 +2091,21 @@ bool Shell::SerializeValue(Isolate* isolate, Local<Value> value,
                             out_data))
           return false;
       } else {
-        Throw(isolate, "Failed to serialize array element.");
+        Throw(isolate, u8"Failed to serialize array element.");
         return false;
       }
     }
   } else if (value->IsArrayBuffer()) {
     Local<ArrayBuffer> array_buffer = Local<ArrayBuffer>::Cast(value);
     if (FindInObjectList(array_buffer, *seen_objects)) {
-      Throw(isolate, "Duplicated array buffers not supported");
+      Throw(isolate, u8"Duplicated array buffers not supported");
       return false;
     }
     seen_objects->Add(array_buffer);
     if (FindInObjectList(array_buffer, to_transfer)) {
       // Transfer ArrayBuffer
       if (!array_buffer->IsNeuterable()) {
-        Throw(isolate, "Attempting to transfer an un-neuterable ArrayBuffer");
+        Throw(isolate, u8"Attempting to transfer an un-neuterable ArrayBuffer");
         return false;
       }
 
@@ -2118,7 +2118,7 @@ bool Shell::SerializeValue(Isolate* isolate, Local<Value> value,
       ArrayBuffer::Contents contents = array_buffer->GetContents();
       // Clone ArrayBuffer
       if (contents.ByteLength() > i::kMaxInt) {
-        Throw(isolate, "ArrayBuffer is too big to clone");
+        Throw(isolate, u8"ArrayBuffer is too big to clone");
         return false;
       }
 
@@ -2130,12 +2130,12 @@ bool Shell::SerializeValue(Isolate* isolate, Local<Value> value,
   } else if (value->IsSharedArrayBuffer()) {
     Local<SharedArrayBuffer> sab = Local<SharedArrayBuffer>::Cast(value);
     if (FindInObjectList(sab, *seen_objects)) {
-      Throw(isolate, "Duplicated shared array buffers not supported");
+      Throw(isolate, u8"Duplicated shared array buffers not supported");
       return false;
     }
     seen_objects->Add(sab);
     if (!FindInObjectList(sab, to_transfer)) {
-      Throw(isolate, "SharedArrayBuffer must be transferred");
+      Throw(isolate, u8"SharedArrayBuffer must be transferred");
       return false;
     }
 
@@ -2151,13 +2151,13 @@ bool Shell::SerializeValue(Isolate* isolate, Local<Value> value,
   } else if (value->IsObject()) {
     Local<Object> object = Local<Object>::Cast(value);
     if (FindInObjectList(object, *seen_objects)) {
-      Throw(isolate, "Duplicated objects not supported");
+      Throw(isolate, u8"Duplicated objects not supported");
       return false;
     }
     seen_objects->Add(object);
     Local<Array> property_names;
     if (!object->GetOwnPropertyNames(context).ToLocal(&property_names)) {
-      Throw(isolate, "Unable to get property names");
+      Throw(isolate, u8"Unable to get property names");
       return false;
     }
 
@@ -2175,12 +2175,12 @@ bool Shell::SerializeValue(Isolate* isolate, Local<Value> value,
                             out_data))
           return false;
       } else {
-        Throw(isolate, "Failed to serialize property.");
+        Throw(isolate, u8"Failed to serialize property.");
         return false;
       }
     }
   } else {
-    Throw(isolate, "Don't know how to serialize object");
+    Throw(isolate, u8"Don't know how to serialize object");
     return false;
   }
 
@@ -2314,21 +2314,21 @@ static void DumpHeapConstants(i::Isolate* isolate) {
   i::Heap* heap = isolate->heap();
 
   // Dump the INSTANCE_TYPES table to the console.
-  printf("# List of known V8 instance types.\n");
-#define DUMP_TYPE(T) printf("  %d: \"%s\",\n", i::T, #T);
-  printf("INSTANCE_TYPES = {\n");
+  printf(u8"# List of known V8 instance types.\n");
+#define DUMP_TYPE(T) printf(u8"  %d: \"%s\",\n", i::T, USTR(#T));
+  printf(u8"INSTANCE_TYPES = {\n");
   INSTANCE_TYPE_LIST(DUMP_TYPE)
-  printf("}\n");
+  printf(u8"}\n");
 #undef DUMP_TYPE
 
   // Dump the KNOWN_MAP table to the console.
-  printf("\n# List of known V8 maps.\n");
+  printf(u8"\n# List of known V8 maps.\n");
 #define ROOT_LIST_CASE(type, name, camel_name) \
-  if (n == NULL && o == heap->name()) n = #camel_name;
+  if (n == NULL && o == heap->name()) n = USTR(#camel_name);
 #define STRUCT_LIST_CASE(upper_name, camel_name, name) \
-  if (n == NULL && o == heap->name##_map()) n = #camel_name "Map";
+  if (n == NULL && o == heap->name##_map()) n = USTR(#camel_name) u8"Map";
   i::HeapObjectIterator it(heap->map_space());
-  printf("KNOWN_MAPS = {\n");
+  printf(u8"KNOWN_MAPS = {\n");
   for (i::Object* o = it.Next(); o != NULL; o = it.Next()) {
     i::Map* m = i::Map::cast(o);
     const char* n = NULL;
@@ -2337,18 +2337,18 @@ static void DumpHeapConstants(i::Isolate* isolate) {
     ROOT_LIST(ROOT_LIST_CASE)
     STRUCT_LIST(STRUCT_LIST_CASE)
     if (n == NULL) continue;
-    printf("  0x%05" V8PRIxPTR ": (%d, \"%s\"),\n", p, t, n);
+    printf(u8"  0x%05" V8PRIxPTR ": (%d, \"%s\"),\n", p, t, n);
   }
-  printf("}\n");
+  printf(u8"}\n");
 #undef STRUCT_LIST_CASE
 #undef ROOT_LIST_CASE
 
   // Dump the KNOWN_OBJECTS table to the console.
-  printf("\n# List of known V8 objects.\n");
+  printf(u8"\n# List of known V8 objects.\n");
 #define ROOT_LIST_CASE(type, name, camel_name) \
-  if (n == NULL && o == heap->name()) n = #camel_name;
+  if (n == NULL && o == heap->name()) n = USTR(#camel_name);
   i::OldSpaces spit(heap);
-  printf("KNOWN_OBJECTS = {\n");
+  printf(u8"KNOWN_OBJECTS = {\n");
   for (i::PagedSpace* s = spit.next(); s != NULL; s = spit.next()) {
     i::HeapObjectIterator it(s);
     const char* sname = AllocationSpaceName(s->identity());
@@ -2360,7 +2360,7 @@ static void DumpHeapConstants(i::Isolate* isolate) {
       printf("  (\"%s\", 0x%05" V8PRIxPTR "): \"%s\",\n", sname, p, n);
     }
   }
-  printf("}\n");
+  printf(u8"}\n");
 #undef ROOT_LIST_CASE
 }
 #endif  // !V8_SHARED
@@ -2400,9 +2400,9 @@ int Shell::Main(int argc, char* argv[]) {
   } else {
     v8::V8::InitializeExternalStartupData(argv[0]);
   }
-  SetFlagsFromString("--trace-hydrogen-file=hydrogen.cfg");
-  SetFlagsFromString("--trace-turbo-cfg-file=turbo.cfg");
-  SetFlagsFromString("--redirect-code-traces-to=code.asm");
+  SetFlagsFromString(u8"--trace-hydrogen-file=hydrogen.cfg");
+  SetFlagsFromString(u8"--trace-turbo-cfg-file=turbo.cfg");
+  SetFlagsFromString(u8"--redirect-code-traces-to=code.asm");
   int result = 0;
   Isolate::CreateParams create_params;
   ShellArrayBufferAllocator shell_array_buffer_allocator;
@@ -2447,19 +2447,19 @@ int Shell::Main(int argc, char* argv[]) {
                                 : Testing::kStressTypeDeopt);
       options.stress_runs = Testing::GetStressRuns();
       for (int i = 0; i < options.stress_runs && result == 0; i++) {
-        printf("============ Stress %d/%d ============\n", i + 1,
+        printf(u8"============ Stress %d/%d ============\n", i + 1,
                options.stress_runs);
         Testing::PrepareStressRun(i);
         bool last_run = i == options.stress_runs - 1;
         result = RunMain(isolate, argc, argv, last_run);
       }
-      printf("======== Full Deoptimization =======\n");
+      printf(u8"======== Full Deoptimization =======\n");
       Testing::DeoptimizeAll(isolate);
 #if !defined(V8_SHARED)
     } else if (i::FLAG_stress_runs > 0) {
       options.stress_runs = i::FLAG_stress_runs;
       for (int i = 0; i < options.stress_runs && result == 0; i++) {
-        printf("============ Run %d/%d ============\n", i + 1,
+        printf(u8"============ Run %d/%d ============\n", i + 1,
                options.stress_runs);
         bool last_run = i == options.stress_runs - 1;
         result = RunMain(isolate, argc, argv, last_run);

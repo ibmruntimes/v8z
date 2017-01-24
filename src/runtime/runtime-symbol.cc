@@ -47,11 +47,11 @@ RUNTIME_FUNCTION(Runtime_SymbolDescriptiveString) {
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Symbol, symbol, 0);
   IncrementalStringBuilder builder(isolate);
-  builder.AppendCString("Symbol(");
+  builder.AppendCString(u8"Symbol(");
   if (symbol->name()->IsString()) {
     builder.AppendString(handle(String::cast(symbol->name()), isolate));
   }
-  builder.AppendCharacter(')');
+  builder.AppendCharacter('\x29');
   Handle<String> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result, builder.Finish());
   return *result;

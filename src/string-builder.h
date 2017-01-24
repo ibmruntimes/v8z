@@ -327,7 +327,7 @@ class IncrementalStringBuilder {
     INLINE(void Append(DestChar c)) { *(cursor_++) = c; }
     INLINE(void AppendCString(const char* s)) {
       const uint8_t* u = reinterpret_cast<const uint8_t*>(s);
-      while (*u != '\0') Append(*(u++));
+      while (*u != '\x0') Append(*(u++));
     }
 
     int written() { return static_cast<int>(cursor_ - start_); }

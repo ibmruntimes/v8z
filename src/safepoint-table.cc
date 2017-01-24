@@ -78,7 +78,7 @@ void SafepointTable::PrintEntry(unsigned index,
     if (!entry.HasRegisters()) return;
     for (int j = 0; j < kNumSafepointRegisters; j++) {
       if (entry.HasRegisterAt(j)) {
-        os << " | " << converter.NameOfCPURegister(j);
+        os << u8" | " << converter.NameOfCPURegister(j);
       }
     }
   }
@@ -89,7 +89,7 @@ void SafepointTable::PrintBits(std::ostream& os,  // NOLINT
                                uint8_t byte, int digits) {
   DCHECK(digits >= 0 && digits <= kBitsPerByte);
   for (int i = 0; i < digits; i++) {
-    os << (((byte & (1 << i)) == 0) ? "0" : "1");
+    os << (((byte & (1 << i)) == 0) ? u8"0" : u8"1");
   }
 }
 
@@ -138,7 +138,7 @@ unsigned SafepointTableBuilder::GetCodeOffset() const {
 void SafepointTableBuilder::Emit(Assembler* assembler, int bits_per_entry) {
   // Make sure the safepoint table is properly aligned. Pad with nops.
   assembler->Align(kIntSize);
-  assembler->RecordComment(";;; Safepoint table.");
+  assembler->RecordComment(u8";;; Safepoint table.");
   offset_ = assembler->pc_offset();
 
   // Take the register bits into account.

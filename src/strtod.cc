@@ -101,7 +101,7 @@ static void TrimToMaxSignificantDigits(Vector<const char> buffer,
   DCHECK(buffer[buffer.length() - 1] != '0');
   // Set the last digit to be non-zero. This is sufficient to guarantee
   // correct rounding.
-  significant_buffer[kMaxSignificantDecimalDigits - 1] = '1';
+  significant_buffer[kMaxSignificantDecimalDigits - 1] = '\x31';
   *significant_exponent =
       exponent + (buffer.length() - kMaxSignificantDecimalDigits);
 }

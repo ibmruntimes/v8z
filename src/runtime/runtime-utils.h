@@ -16,7 +16,7 @@ namespace internal {
 #define RUNTIME_ASSERT(value)                      \
   do {                                             \
     if (!(value)) {                                \
-      V8_RuntimeError(__FILE__, __LINE__, #value); \
+      V8_RuntimeError(__FILE__, __LINE__, USTR(#value)); \
       return isolate->ThrowIllegalOperation();     \
     }                                              \
   } while (0)
@@ -24,7 +24,7 @@ namespace internal {
 #define RUNTIME_ASSERT_HANDLIFIED(value, T)        \
   do {                                             \
     if (!(value)) {                                \
-      V8_RuntimeError(__FILE__, __LINE__, #value); \
+      V8_RuntimeError(__FILE__, __LINE__, USTR(#value)); \
       isolate->ThrowIllegalOperation();            \
       return MaybeHandle<T>();                     \
     }                                              \

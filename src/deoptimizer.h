@@ -318,85 +318,85 @@ class OptimizedFunctionVisitor BASE_EMBEDDED {
 };
 
 #define DEOPT_MESSAGES_LIST(V)                                                 \
-  V(kAccessCheck, "Access check needed")                                       \
-  V(kNoReason, "no reason")                                                    \
-  V(kConstantGlobalVariableAssignment, "Constant global variable assignment")  \
-  V(kConversionOverflow, "conversion overflow")                                \
-  V(kDivisionByZero, "division by zero")                                       \
+  V(kAccessCheck, u8"Access check needed")                                       \
+  V(kNoReason, u8"no reason")                                                    \
+  V(kConstantGlobalVariableAssignment, u8"Constant global variable assignment")  \
+  V(kConversionOverflow, u8"conversion overflow")                                \
+  V(kDivisionByZero, u8"division by zero")                                       \
   V(kElementsKindUnhandledInKeyedLoadGenericStub,                              \
-    "ElementsKind unhandled in KeyedLoadGenericStub")                          \
-  V(kExpectedHeapNumber, "Expected heap number")                               \
-  V(kExpectedSmi, "Expected smi")                                              \
-  V(kForcedDeoptToRuntime, "Forced deopt to runtime")                          \
-  V(kHole, "hole")                                                             \
+    u8"ElementsKind unhandled in KeyedLoadGenericStub")                          \
+  V(kExpectedHeapNumber, u8"Expected heap number")                               \
+  V(kExpectedSmi, u8"Expected smi")                                              \
+  V(kForcedDeoptToRuntime, u8"Forced deopt to runtime")                          \
+  V(kHole, u8"hole")                                                             \
   V(kHoleyArrayDespitePackedElements_kindFeedback,                             \
-    "Holey array despite packed elements_kind feedback")                       \
-  V(kInstanceMigrationFailed, "instance migration failed")                     \
+    u8"Holey array despite packed elements_kind feedback")                       \
+  V(kInstanceMigrationFailed, u8"instance migration failed")                     \
   V(kInsufficientTypeFeedbackForCallWithArguments,                             \
-    "Insufficient type feedback for call with arguments")                      \
-  V(kFastArrayPushFailed, "Falling off the fast path for FastArrayPush")       \
+    u8"Insufficient type feedback for call with arguments")                      \
+  V(kFastArrayPushFailed, u8"Falling off the fast path for FastArrayPush")       \
   V(kInsufficientTypeFeedbackForCombinedTypeOfBinaryOperation,                 \
-    "Insufficient type feedback for combined type of binary operation")        \
+    u8"Insufficient type feedback for combined type of binary operation")        \
   V(kInsufficientTypeFeedbackForGenericNamedAccess,                            \
-    "Insufficient type feedback for generic named access")                     \
+    u8"Insufficient type feedback for generic named access")                     \
   V(kInsufficientTypeFeedbackForKeyedLoad,                                     \
-    "Insufficient type feedback for keyed load")                               \
+    u8"Insufficient type feedback for keyed load")                               \
   V(kInsufficientTypeFeedbackForKeyedStore,                                    \
-    "Insufficient type feedback for keyed store")                              \
+    u8"Insufficient type feedback for keyed store")                              \
   V(kInsufficientTypeFeedbackForLHSOfBinaryOperation,                          \
-    "Insufficient type feedback for LHS of binary operation")                  \
+    u8"Insufficient type feedback for LHS of binary operation")                  \
   V(kInsufficientTypeFeedbackForRHSOfBinaryOperation,                          \
-    "Insufficient type feedback for RHS of binary operation")                  \
-  V(kKeyIsNegative, "key is negative")                                         \
-  V(kLiteralsWereDisposed, "literals have been disposed")                      \
-  V(kLostPrecision, "lost precision")                                          \
-  V(kLostPrecisionOrNaN, "lost precision or NaN")                              \
-  V(kMementoFound, "memento found")                                            \
-  V(kMinusZero, "minus zero")                                                  \
-  V(kNaN, "NaN")                                                               \
-  V(kNegativeKeyEncountered, "Negative key encountered")                       \
-  V(kNegativeValue, "negative value")                                          \
-  V(kNoCache, "no cache")                                                      \
+    u8"Insufficient type feedback for RHS of binary operation")                  \
+  V(kKeyIsNegative, u8"key is negative")                                         \
+  V(kLiteralsWereDisposed, u8"literals have been disposed")                      \
+  V(kLostPrecision, u8"lost precision")                                          \
+  V(kLostPrecisionOrNaN, u8"lost precision or NaN")                              \
+  V(kMementoFound, u8"memento found")                                            \
+  V(kMinusZero, u8"minus zero")                                                  \
+  V(kNaN, u8"NaN")                                                               \
+  V(kNegativeKeyEncountered, u8"Negative key encountered")                       \
+  V(kNegativeValue, u8"negative value")                                          \
+  V(kNoCache, u8"no cache")                                                      \
   V(kNonStrictElementsInKeyedLoadGenericStub,                                  \
-    "non-strict elements in KeyedLoadGenericStub")                             \
-  V(kNotADateObject, "not a date object")                                      \
-  V(kNotAHeapNumber, "not a heap number")                                      \
-  V(kNotAHeapNumberUndefinedBoolean, "not a heap number/undefined/true/false") \
-  V(kNotAHeapNumberUndefined, "not a heap number/undefined")                   \
-  V(kNotAJavaScriptObject, "not a JavaScript object")                          \
-  V(kNotASmi, "not a Smi")                                                     \
-  V(kNull, "null")                                                             \
-  V(kOutOfBounds, "out of bounds")                                             \
-  V(kOutsideOfRange, "Outside of range")                                       \
-  V(kOverflow, "overflow")                                                     \
-  V(kProxy, "proxy")                                                           \
-  V(kReceiverWasAGlobalObject, "receiver was a global object")                 \
-  V(kSmi, "Smi")                                                               \
-  V(kTooManyArguments, "too many arguments")                                   \
-  V(kTooManyUndetectableTypes, "Too many undetectable types")                  \
-  V(kTracingElementsTransitions, "Tracing elements transitions")               \
+    u8"non-strict elements in KeyedLoadGenericStub")                             \
+  V(kNotADateObject, u8"not a date object")                                      \
+  V(kNotAHeapNumber, u8"not a heap number")                                      \
+  V(kNotAHeapNumberUndefinedBoolean, u8"not a heap number/undefined/true/false") \
+  V(kNotAHeapNumberUndefined, u8"not a heap number/undefined")                   \
+  V(kNotAJavaScriptObject, u8"not a JavaScript object")                          \
+  V(kNotASmi, u8"not a Smi")                                                     \
+  V(kNull, u8"null")                                                             \
+  V(kOutOfBounds, u8"out of bounds")                                             \
+  V(kOutsideOfRange, u8"Outside of range")                                       \
+  V(kOverflow, u8"overflow")                                                     \
+  V(kProxy, u8"proxy")                                                           \
+  V(kReceiverWasAGlobalObject, u8"receiver was a global object")                 \
+  V(kSmi, u8"Smi")                                                               \
+  V(kTooManyArguments, u8"too many arguments")                                   \
+  V(kTooManyUndetectableTypes, u8"Too many undetectable types")                  \
+  V(kTracingElementsTransitions, u8"Tracing elements transitions")               \
   V(kTypeMismatchBetweenFeedbackAndConstant,                                   \
-    "Type mismatch between feedback and constant")                             \
-  V(kUndefined, "undefined")                                                   \
+    u8"Type mismatch between feedback and constant")                             \
+  V(kUndefined, u8"undefined")                                                   \
   V(kUnexpectedCellContentsInConstantGlobalStore,                              \
-    "Unexpected cell contents in constant global store")                       \
+    u8"Unexpected cell contents in constant global store")                       \
   V(kUnexpectedCellContentsInGlobalStore,                                      \
-    "Unexpected cell contents in global store")                                \
-  V(kUnexpectedObject, "unexpected object")                                    \
-  V(kUnexpectedRHSOfBinaryOperation, "Unexpected RHS of binary operation")     \
+    u8"Unexpected cell contents in global store")                                \
+  V(kUnexpectedObject, u8"unexpected object")                                    \
+  V(kUnexpectedRHSOfBinaryOperation, u8"Unexpected RHS of binary operation")     \
   V(kUninitializedBoilerplateInFastClone,                                      \
-    "Uninitialized boilerplate in fast clone")                                 \
-  V(kUninitializedBoilerplateLiterals, "Uninitialized boilerplate literals")   \
-  V(kUnknownMapInPolymorphicAccess, "Unknown map in polymorphic access")       \
-  V(kUnknownMapInPolymorphicCall, "Unknown map in polymorphic call")           \
+    u8"Uninitialized boilerplate in fast clone")                                 \
+  V(kUninitializedBoilerplateLiterals, u8"Uninitialized boilerplate literals")   \
+  V(kUnknownMapInPolymorphicAccess, u8"Unknown map in polymorphic access")       \
+  V(kUnknownMapInPolymorphicCall, u8"Unknown map in polymorphic call")           \
   V(kUnknownMapInPolymorphicElementAccess,                                     \
-    "Unknown map in polymorphic element access")                               \
-  V(kUnknownMap, "Unknown map")                                                \
-  V(kValueMismatch, "value mismatch")                                          \
-  V(kWrongInstanceType, "wrong instance type")                                 \
-  V(kWrongMap, "wrong map")                                                    \
-  V(kUndefinedOrNullInForIn, "null or undefined in for-in")                    \
-  V(kUndefinedOrNullInToObject, "null or undefined in ToObject")
+    u8"Unknown map in polymorphic element access")                               \
+  V(kUnknownMap, u8"Unknown map")                                                \
+  V(kValueMismatch, u8"value mismatch")                                          \
+  V(kWrongInstanceType, u8"wrong instance type")                                 \
+  V(kWrongMap, u8"wrong map")                                                    \
+  V(kUndefinedOrNullInForIn, u8"null or undefined in for-in")                    \
+  V(kUndefinedOrNullInToObject, u8"null or undefined in ToObject")
 
 class Deoptimizer : public Malloced {
  public:

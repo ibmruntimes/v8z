@@ -5,6 +5,7 @@
 #ifndef V8_BASE_MACROS_H_
 #define V8_BASE_MACROS_H_
 
+#define USTR(x) u8##x
 #include <stddef.h>
 #include <stdint.h>
 

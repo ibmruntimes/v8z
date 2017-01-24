@@ -83,60 +83,60 @@ struct TickSample;
   } while (false)
 
 #define LOG_EVENTS_AND_TAGS_LIST(V)                                      \
-  V(CODE_CREATION_EVENT, "code-creation")                                \
-  V(CODE_DISABLE_OPT_EVENT, "code-disable-optimization")                 \
-  V(CODE_MOVE_EVENT, "code-move")                                        \
-  V(CODE_DELETE_EVENT, "code-delete")                                    \
-  V(CODE_MOVING_GC, "code-moving-gc")                                    \
-  V(SHARED_FUNC_MOVE_EVENT, "sfi-move")                                  \
-  V(SNAPSHOT_CODE_NAME_EVENT, "snapshot-code-name")                      \
-  V(TICK_EVENT, "tick")                                                  \
-  V(REPEAT_META_EVENT, "repeat")                                         \
-  V(BUILTIN_TAG, "Builtin")                                              \
-  V(CALL_DEBUG_BREAK_TAG, "CallDebugBreak")                              \
-  V(CALL_DEBUG_PREPARE_STEP_IN_TAG, "CallDebugPrepareStepIn")            \
-  V(CALL_INITIALIZE_TAG, "CallInitialize")                               \
-  V(CALL_MEGAMORPHIC_TAG, "CallMegamorphic")                             \
-  V(CALL_MISS_TAG, "CallMiss")                                           \
-  V(CALL_NORMAL_TAG, "CallNormal")                                       \
-  V(CALL_PRE_MONOMORPHIC_TAG, "CallPreMonomorphic")                      \
-  V(LOAD_INITIALIZE_TAG, "LoadInitialize")                               \
-  V(LOAD_PREMONOMORPHIC_TAG, "LoadPreMonomorphic")                       \
-  V(LOAD_MEGAMORPHIC_TAG, "LoadMegamorphic")                             \
-  V(STORE_INITIALIZE_TAG, "StoreInitialize")                             \
-  V(STORE_PREMONOMORPHIC_TAG, "StorePreMonomorphic")                     \
-  V(STORE_GENERIC_TAG, "StoreGeneric")                                   \
-  V(STORE_MEGAMORPHIC_TAG, "StoreMegamorphic")                           \
-  V(KEYED_CALL_DEBUG_BREAK_TAG, "KeyedCallDebugBreak")                   \
-  V(KEYED_CALL_DEBUG_PREPARE_STEP_IN_TAG, "KeyedCallDebugPrepareStepIn") \
-  V(KEYED_CALL_INITIALIZE_TAG, "KeyedCallInitialize")                    \
-  V(KEYED_CALL_MEGAMORPHIC_TAG, "KeyedCallMegamorphic")                  \
-  V(KEYED_CALL_MISS_TAG, "KeyedCallMiss")                                \
-  V(KEYED_CALL_NORMAL_TAG, "KeyedCallNormal")                            \
-  V(KEYED_CALL_PRE_MONOMORPHIC_TAG, "KeyedCallPreMonomorphic")           \
-  V(CALLBACK_TAG, "Callback")                                            \
-  V(EVAL_TAG, "Eval")                                                    \
-  V(FUNCTION_TAG, "Function")                                            \
-  V(HANDLER_TAG, "Handler")                                              \
-  V(BYTECODE_HANDLER_TAG, "BytecodeHandler")                             \
-  V(KEYED_LOAD_IC_TAG, "KeyedLoadIC")                                    \
-  V(KEYED_LOAD_POLYMORPHIC_IC_TAG, "KeyedLoadPolymorphicIC")             \
-  V(KEYED_EXTERNAL_ARRAY_LOAD_IC_TAG, "KeyedExternalArrayLoadIC")        \
-  V(KEYED_STORE_IC_TAG, "KeyedStoreIC")                                  \
-  V(KEYED_STORE_POLYMORPHIC_IC_TAG, "KeyedStorePolymorphicIC")           \
-  V(KEYED_EXTERNAL_ARRAY_STORE_IC_TAG, "KeyedExternalArrayStoreIC")      \
-  V(LAZY_COMPILE_TAG, "LazyCompile")                                     \
-  V(CALL_IC_TAG, "CallIC")                                               \
-  V(LOAD_IC_TAG, "LoadIC")                                               \
-  V(LOAD_POLYMORPHIC_IC_TAG, "LoadPolymorphicIC")                        \
-  V(REG_EXP_TAG, "RegExp")                                               \
-  V(SCRIPT_TAG, "Script")                                                \
-  V(STORE_IC_TAG, "StoreIC")                                             \
-  V(STORE_POLYMORPHIC_IC_TAG, "StorePolymorphicIC")                      \
-  V(STUB_TAG, "Stub")                                                    \
-  V(NATIVE_FUNCTION_TAG, "Function")                                     \
-  V(NATIVE_LAZY_COMPILE_TAG, "LazyCompile")                              \
-  V(NATIVE_SCRIPT_TAG, "Script")
+  V(CODE_CREATION_EVENT, u8"code-creation")                                \
+  V(CODE_DISABLE_OPT_EVENT, u8"code-disable-optimization")                 \
+  V(CODE_MOVE_EVENT, u8"code-move")                                        \
+  V(CODE_DELETE_EVENT, u8"code-delete")                                    \
+  V(CODE_MOVING_GC, u8"code-moving-gc")                                    \
+  V(SHARED_FUNC_MOVE_EVENT, u8"sfi-move")                                  \
+  V(SNAPSHOT_CODE_NAME_EVENT, u8"snapshot-code-name")                      \
+  V(TICK_EVENT, u8"tick")                                                  \
+  V(REPEAT_META_EVENT, u8"repeat")                                         \
+  V(BUILTIN_TAG, u8"Builtin")                                              \
+  V(CALL_DEBUG_BREAK_TAG, u8"CallDebugBreak")                              \
+  V(CALL_DEBUG_PREPARE_STEP_IN_TAG, u8"CallDebugPrepareStepIn")            \
+  V(CALL_INITIALIZE_TAG, u8"CallInitialize")                               \
+  V(CALL_MEGAMORPHIC_TAG, u8"CallMegamorphic")                             \
+  V(CALL_MISS_TAG, u8"CallMiss")                                           \
+  V(CALL_NORMAL_TAG, u8"CallNormal")                                       \
+  V(CALL_PRE_MONOMORPHIC_TAG, u8"CallPreMonomorphic")                      \
+  V(LOAD_INITIALIZE_TAG, u8"LoadInitialize")                               \
+  V(LOAD_PREMONOMORPHIC_TAG, u8"LoadPreMonomorphic")                       \
+  V(LOAD_MEGAMORPHIC_TAG, u8"LoadMegamorphic")                             \
+  V(STORE_INITIALIZE_TAG, u8"StoreInitialize")                             \
+  V(STORE_PREMONOMORPHIC_TAG, u8"StorePreMonomorphic")                     \
+  V(STORE_GENERIC_TAG, u8"StoreGeneric")                                   \
+  V(STORE_MEGAMORPHIC_TAG, u8"StoreMegamorphic")                           \
+  V(KEYED_CALL_DEBUG_BREAK_TAG, u8"KeyedCallDebugBreak")                   \
+  V(KEYED_CALL_DEBUG_PREPARE_STEP_IN_TAG, u8"KeyedCallDebugPrepareStepIn") \
+  V(KEYED_CALL_INITIALIZE_TAG, u8"KeyedCallInitialize")                    \
+  V(KEYED_CALL_MEGAMORPHIC_TAG, u8"KeyedCallMegamorphic")                  \
+  V(KEYED_CALL_MISS_TAG, u8"KeyedCallMiss")                                \
+  V(KEYED_CALL_NORMAL_TAG, u8"KeyedCallNormal")                            \
+  V(KEYED_CALL_PRE_MONOMORPHIC_TAG, u8"KeyedCallPreMonomorphic")           \
+  V(CALLBACK_TAG, u8"Callback")                                            \
+  V(EVAL_TAG, u8"Eval")                                                    \
+  V(FUNCTION_TAG, u8"Function")                                            \
+  V(HANDLER_TAG, u8"Handler")                                              \
+  V(BYTECODE_HANDLER_TAG, u8"BytecodeHandler")                             \
+  V(KEYED_LOAD_IC_TAG, u8"KeyedLoadIC")                                    \
+  V(KEYED_LOAD_POLYMORPHIC_IC_TAG, u8"KeyedLoadPolymorphicIC")             \
+  V(KEYED_EXTERNAL_ARRAY_LOAD_IC_TAG, u8"KeyedExternalArrayLoadIC")        \
+  V(KEYED_STORE_IC_TAG, u8"KeyedStoreIC")                                  \
+  V(KEYED_STORE_POLYMORPHIC_IC_TAG, u8"KeyedStorePolymorphicIC")           \
+  V(KEYED_EXTERNAL_ARRAY_STORE_IC_TAG, u8"KeyedExternalArrayStoreIC")      \
+  V(LAZY_COMPILE_TAG, u8"LazyCompile")                                     \
+  V(CALL_IC_TAG, u8"CallIC")                                               \
+  V(LOAD_IC_TAG, u8"LoadIC")                                               \
+  V(LOAD_POLYMORPHIC_IC_TAG, u8"LoadPolymorphicIC")                        \
+  V(REG_EXP_TAG, u8"RegExp")                                               \
+  V(SCRIPT_TAG, u8"Script")                                                \
+  V(STORE_IC_TAG, u8"StoreIC")                                             \
+  V(STORE_POLYMORPHIC_IC_TAG, u8"StorePolymorphicIC")                      \
+  V(STUB_TAG, u8"Stub")                                                    \
+  V(NATIVE_FUNCTION_TAG, u8"Function")                                     \
+  V(NATIVE_LAZY_COMPILE_TAG, u8"LazyCompile")                              \
+  V(NATIVE_SCRIPT_TAG, u8"Script")
 // Note that 'NATIVE_' cases for functions and scripts are mapped onto
 // original tags when writing to the log.
 
@@ -421,7 +421,7 @@ class Logger {
 #define V(TimerName, expose)                                                  \
   class TimerEvent##TimerName : public AllStatic {                            \
    public:                                                                    \
-    static const char* name(void* unused = NULL) { return "V8." #TimerName; } \
+    static const char* name(void* unused = NULL) { return u8"V8." USTR(#TimerName); } \
     static bool expose_to_api() { return expose; }                            \
   };
 TIMER_EVENTS_LIST(V)

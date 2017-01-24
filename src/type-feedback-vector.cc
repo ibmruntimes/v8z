@@ -111,24 +111,24 @@ bool TypeFeedbackMetadata::SpecDiffersFrom(
 const char* TypeFeedbackMetadata::Kind2String(FeedbackVectorSlotKind kind) {
   switch (kind) {
     case FeedbackVectorSlotKind::INVALID:
-      return "INVALID";
+      return u8"INVALID";
     case FeedbackVectorSlotKind::CALL_IC:
-      return "CALL_IC";
+      return u8"CALL_IC";
     case FeedbackVectorSlotKind::LOAD_IC:
-      return "LOAD_IC";
+      return u8"LOAD_IC";
     case FeedbackVectorSlotKind::KEYED_LOAD_IC:
-      return "KEYED_LOAD_IC";
+      return u8"KEYED_LOAD_IC";
     case FeedbackVectorSlotKind::STORE_IC:
-      return "STORE_IC";
+      return u8"STORE_IC";
     case FeedbackVectorSlotKind::KEYED_STORE_IC:
-      return "KEYED_STORE_IC";
+      return u8"KEYED_STORE_IC";
     case FeedbackVectorSlotKind::GENERAL:
-      return "STUB";
+      return u8"STUB";
     case FeedbackVectorSlotKind::KINDS_NUMBER:
       break;
   }
   UNREACHABLE();
-  return "?";
+  return u8"?";
 }
 
 

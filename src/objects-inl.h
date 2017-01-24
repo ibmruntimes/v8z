@@ -1739,7 +1739,7 @@ inline bool AllocationSite::DigestPretenuringFeedback(
 
   if (FLAG_trace_pretenuring_statistics) {
     PrintIsolate(GetIsolate(),
-                 "pretenuring: AllocationSite(%p): (created, found, ratio) "
+                 u8"pretenuring: AllocationSite(%p): (created, found, ratio) "
                  "(%d, %d, %f) %s => %s\n",
                  this, create_count, found_count, ratio,
                  PretenureDecisionName(current_decision),
@@ -6184,7 +6184,7 @@ void JSFunction::ReplaceCode(Code* code) {
 
   if (was_optimized && is_optimized) {
     shared()->EvictFromOptimizedCodeMap(this->code(),
-        "Replacing with another optimized code");
+        u8"Replacing with another optimized code");
   }
 
   set_code(code);
@@ -6902,10 +6902,10 @@ bool StringHasher::UpdateIndex(Char c) {
     is_array_index_ = false;
     return false;
   }
-  int d = c - '0';
+  int d = c - '\x30';
   if (is_first_char_) {
     is_first_char_ = false;
-    if (c == '0' && length_ > 1) {
+    if (c == '\x30' && length_ > 1) {
       is_array_index_ = false;
       return false;
     }

@@ -1965,8 +1965,8 @@ class JSEntryStub : public PlatformCodeStub {
   void FinishCode(Handle<Code> code) override;
 
   void PrintName(std::ostream& os) const override {  // NOLINT
-    os << (type() == StackFrame::ENTRY ? "JSEntryStub"
-                                       : "JSConstructEntryStub");
+    os << (type() == StackFrame::ENTRY ? u8"JSEntryStub"
+                                       : u8"JSConstructEntryStub");
   }
 
   StackFrame::Type type() const {
@@ -2734,7 +2734,7 @@ class ArrayNoArgumentConstructorStub : public ArrayConstructorStubBase {
 
  private:
   void PrintName(std::ostream& os) const override {  // NOLINT
-    BasePrintName(os, "ArrayNoArgumentConstructorStub");
+    BasePrintName(os, u8"ArrayNoArgumentConstructorStub");
   }
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(ArrayConstructorConstantArgCount);
@@ -2754,7 +2754,7 @@ class ArraySingleArgumentConstructorStub : public ArrayConstructorStubBase {
 
  private:
   void PrintName(std::ostream& os) const override {  // NOLINT
-    BasePrintName(os, "ArraySingleArgumentConstructorStub");
+    BasePrintName(os, u8"ArraySingleArgumentConstructorStub");
   }
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(ArrayConstructor);
@@ -2774,7 +2774,7 @@ class ArrayNArgumentsConstructorStub : public ArrayConstructorStubBase {
 
  private:
   void PrintName(std::ostream& os) const override {  // NOLINT
-    BasePrintName(os, "ArrayNArgumentsConstructorStub");
+    BasePrintName(os, u8"ArrayNArgumentsConstructorStub");
   }
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(ArrayConstructor);

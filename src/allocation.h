@@ -58,7 +58,7 @@ class AllStatic {
 template <typename T>
 T* NewArray(size_t size) {
   T* result = new T[size];
-  if (result == NULL) FatalProcessOutOfMemory("NewArray");
+  if (result == NULL) FatalProcessOutOfMemory(u8"NewArray");
   return result;
 }
 

@@ -249,7 +249,7 @@ int CompilationInfo::TraceInlinedFunction(Handle<SharedFunctionInfo> shared,
         }
       }
 
-      os << "\n--- END ---\n";
+      os << u8"\n--- END ---\n";
     }
   }
 
@@ -282,7 +282,7 @@ base::SmartArrayPointer<char> CompilationInfo::GetDebugName() const {
   if (parse_info() && !parse_info()->shared_info().is_null()) {
     return parse_info()->shared_info()->DebugName()->ToCString();
   }
-  const char* str = debug_name_ ? debug_name_ : "unknown";
+  const char* str = debug_name_ ? debug_name_ : u8"unknown";
   size_t len = strlen(str) + 1;
   base::SmartArrayPointer<char> name(new char[len]);
   memcpy(name.get(), str, len);
@@ -428,7 +428,7 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
 
   // 2. Fallback for features unsupported by Crankshaft.
   bool is_unsupported_by_crankshaft_but_turbofanable =
-      dont_crankshaft && strcmp(FLAG_turbo_filter, "~~") == 0 &&
+      dont_crankshaft && strcmp(FLAG_turbo_filter, u8"~~") == 0 &&
       !optimization_disabled;
 
   // 3. Explicitly enabled by the command-line filter.
@@ -446,7 +446,7 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
       OFStream os(stdout);
       os << "[compiling method " << Brief(*info()->closure())
          << " using TurboFan";
-      if (info()->is_osr()) os << " OSR";
+      if (info()->is_osr()) os << u8" OSR";
       os << "]" << std::endl;
     }
 
@@ -497,7 +497,7 @@ OptimizedCompileJob::Status OptimizedCompileJob::CreateGraph() {
     OFStream os(stdout);
     os << "[compiling method " << Brief(*info()->closure())
        << " using Crankshaft";
-    if (info()->is_osr()) os << " OSR";
+    if (info()->is_osr()) os << u8" OSR";
     os << "]" << std::endl;
   }
 

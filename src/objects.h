@@ -4667,7 +4667,7 @@ class FixedTypedArray: public FixedTypedArrayBase {
    public:   /* NOLINT */                                                     \
     typedef elementType ElementType;                                          \
     static const InstanceType kInstanceType = FIXED_##TYPE##_ARRAY_TYPE;      \
-    static const char* Designator() { return #type " array"; }                \
+    static const char* Designator() { return USTR(#type) u8" array"; }                \
     static inline Handle<Object> ToHandle(Isolate* isolate,                   \
                                           elementType scalar);                \
     static inline elementType defaultValue();                                 \
@@ -10843,23 +10843,23 @@ class BreakPointInfo: public Struct {
 #undef DECLARE_VERIFIER
 
 #define VISITOR_SYNCHRONIZATION_TAGS_LIST(V)                               \
-  V(kStringTable, "string_table", "(Internalized strings)")                \
-  V(kExternalStringsTable, "external_strings_table", "(External strings)") \
-  V(kStrongRootList, "strong_root_list", "(Strong roots)")                 \
-  V(kSmiRootList, "smi_root_list", "(Smi roots)")                          \
-  V(kBootstrapper, "bootstrapper", "(Bootstrapper)")                       \
-  V(kTop, "top", "(Isolate)")                                              \
-  V(kRelocatable, "relocatable", "(Relocatable)")                          \
-  V(kDebug, "debug", "(Debugger)")                                         \
-  V(kCompilationCache, "compilationcache", "(Compilation cache)")          \
-  V(kHandleScope, "handlescope", "(Handle scope)")                         \
-  V(kDispatchTable, "dispatchtable", "(Dispatch table)")                   \
-  V(kBuiltins, "builtins", "(Builtins)")                                   \
-  V(kGlobalHandles, "globalhandles", "(Global handles)")                   \
-  V(kEternalHandles, "eternalhandles", "(Eternal handles)")                \
-  V(kThreadManager, "threadmanager", "(Thread manager)")                   \
-  V(kStrongRoots, "strong roots", "(Strong roots)")                        \
-  V(kExtensions, "Extensions", "(Extensions)")
+  V(kStringTable, u8"string_table", u8"(Internalized strings)")                \
+  V(kExternalStringsTable, u8"external_strings_table", u8"(External strings)") \
+  V(kStrongRootList, u8"strong_root_list", u8"(Strong roots)")                 \
+  V(kSmiRootList, u8"smi_root_list", u8"(Smi roots)")                          \
+  V(kBootstrapper, u8"bootstrapper", u8"(Bootstrapper)")                       \
+  V(kTop, u8"top", u8"(Isolate)")                                              \
+  V(kRelocatable, u8"relocatable", u8"(Relocatable)")                          \
+  V(kDebug, u8"debug", u8"(Debugger)")                                         \
+  V(kCompilationCache, u8"compilationcache", u8"(Compilation cache)")          \
+  V(kHandleScope, u8"handlescope", u8"(Handle scope)")                         \
+  V(kDispatchTable, u8"dispatchtable", u8"(Dispatch table)")                   \
+  V(kBuiltins, u8"builtins", u8"(Builtins)")                                   \
+  V(kGlobalHandles, u8"globalhandles", u8"(Global handles)")                   \
+  V(kEternalHandles, u8"eternalhandles", u8"(Eternal handles)")                \
+  V(kThreadManager, u8"threadmanager", u8"(Thread manager)")                   \
+  V(kStrongRoots, u8"strong roots", u8"(Strong roots)")                        \
+  V(kExtensions, u8"Extensions", u8"(Extensions)")
 
 class VisitorSynchronization : public AllStatic {
  public:

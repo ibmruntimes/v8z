@@ -58,8 +58,8 @@ Object** HandleScope::Extend(Isolate* isolate) {
   // Make sure there's at least one scope on the stack and that the
   // top of the scope stack isn't a barrier.
   if (!Utils::ApiCheck(current->level != current->sealed_level,
-                       "v8::HandleScope::CreateHandle()",
-                       "Cannot create a handle without a HandleScope")) {
+                       u8"v8::HandleScope::CreateHandle()",
+                       u8"Cannot create a handle without a HandleScope")) {
     return NULL;
   }
   HandleScopeImplementer* impl = isolate->handle_scope_implementer();

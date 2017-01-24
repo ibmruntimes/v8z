@@ -29,9 +29,9 @@ namespace internal {
 // Returns the value (0 .. 15) of a hexadecimal character c.
 // If c is not a legal hexadecimal character, returns a value < 0.
 inline int HexValue(uc32 c) {
-  c -= '0';
+  c -= '\x30';
   if (static_cast<unsigned>(c) <= 9) return c;
-  c = (c | 0x20) - ('a' - '0');  // detect 0x11..0x16 and 0x31..0x36.
+  c = (c | 0x20) - ('\x61' - '\x30');  // detect 0x11..0x16 and 0x31..0x36.
   if (static_cast<unsigned>(c) <= 5) return c + 10;
   return -1;
 }
@@ -1111,7 +1111,7 @@ inline void MemsetPointer(T** dest, U* value, int counter) {
 #if V8_HOST_ARCH_32_BIT
 #define STOS "addr32 stosl"
 #else
-#define STOS "stosq"
+#define STOS u8"stosq"
 #endif
 #endif
 #if defined(__native_client__)
@@ -1129,11 +1129,11 @@ inline void MemsetPointer(T** dest, U* value, int counter) {
 
 #if defined(__GNUC__) && defined(STOS)
   asm volatile(
-      "cld;"
+      u8"cld;"
       "rep ; " STOS
-      : "+&c" (counter), "+&D" (dest)
-      : "a" (value)
-      : "memory", "cc");
+      : u8"+&c" (counter), u8"+&D" (dest)
+      : u8"a" (value)
+      : u8"memory", u8"cc");
 #else
   for (int i = 0; i < counter; i++) {
     dest[i] = value;
@@ -1487,17 +1487,17 @@ bool StringToArrayIndex(Stream* stream, uint32_t* index) {
 
   // If the string begins with a '0' character, it must only consist
   // of it to be a legal array index.
-  if (ch == '0') {
+  if (ch == '\x30') {
     *index = 0;
     return !stream->HasMore();
   }
 
   // Convert string to uint32 array index; character by character.
-  int d = ch - '0';
+  int d = ch - '\x30';
   if (d < 0 || d > 9) return false;
   uint32_t result = d;
   while (stream->HasMore()) {
-    d = stream->GetNext() - '0';
+    d = stream->GetNext() - '\x30';
     if (d < 0 || d > 9) return false;
     // Check that the new result is below the 32 bit limit.
     if (result > 429496729U - ((d + 3) >> 3)) return false;

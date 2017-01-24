@@ -27,14 +27,14 @@ const int kMaxSignificantDigits = 772;
 
 
 inline bool isDigit(int x, int radix) {
-  return (x >= '0' && x <= '9' && x < '0' + radix)
-      || (radix > 10 && x >= 'a' && x < 'a' + radix - 10)
-      || (radix > 10 && x >= 'A' && x < 'A' + radix - 10);
+  return (x >= '\x30' && x <= '\x39' && x < '\x30' + radix)
+      || (radix > 10 && x >= '\x61' && x < '\x61' + radix - 10)
+      || (radix > 10 && x >= '\x41' && x < '\x41' + radix - 10);
 }
 
 
 inline bool isBinaryDigit(int x) {
-  return x == '0' || x == '1';
+  return x == '\x30' || x == '\x31';
 }
 
 

@@ -170,7 +170,7 @@ Handle<Code> CodeStub::GetCode() {
       std::ostringstream name;
       name << *this;
       new_object->Disassemble(name.str().c_str(), os);
-      os << "\n";
+      os << u8"\n";
     }
 #endif
 
@@ -202,7 +202,7 @@ const char* CodeStub::MajorName(CodeStub::Major major_key) {
     CODE_STUB_LIST(DEF_CASE)
 #undef DEF_CASE
     case NoCache:
-      return "<NoCache>Stub";
+      return u8"<NoCache>Stub";
     case NUMBER_OF_IDS:
       UNREACHABLE();
       return NULL;
@@ -326,17 +326,17 @@ void BinaryOpICWithAllocationSiteStub::GenerateAheadOfTime(
 std::ostream& operator<<(std::ostream& os, const StringAddFlags& flags) {
   switch (flags) {
     case STRING_ADD_CHECK_NONE:
-      return os << "CheckNone";
+      return os << u8"CheckNone";
     case STRING_ADD_CHECK_LEFT:
-      return os << "CheckLeft";
+      return os << u8"CheckLeft";
     case STRING_ADD_CHECK_RIGHT:
-      return os << "CheckRight";
+      return os << u8"CheckRight";
     case STRING_ADD_CHECK_BOTH:
-      return os << "CheckBoth";
+      return os << u8"CheckBoth";
     case STRING_ADD_CONVERT_LEFT:
-      return os << "ConvertLeft";
+      return os << u8"ConvertLeft";
     case STRING_ADD_CONVERT_RIGHT:
-      return os << "ConvertRight";
+      return os << u8"ConvertRight";
     case STRING_ADD_CONVERT:
       break;
   }
@@ -346,7 +346,7 @@ std::ostream& operator<<(std::ostream& os, const StringAddFlags& flags) {
 
 
 void StringAddStub::PrintBaseName(std::ostream& os) const {  // NOLINT
-  os << "StringAddStub_" << flags() << "_" << pretenure_flag();
+  os << u8"StringAddStub_" << flags() << u8"_" << pretenure_flag();
 }
 
 
@@ -3085,9 +3085,9 @@ void HydrogenCodeStub::TraceTransition(StateType from, StateType to) {
   DCHECK(from != to);
   if (!FLAG_trace_ic) return;
   OFStream os(stdout);
-  os << "[";
+  os << u8"[";
   PrintBaseName(os);
-  os << ": " << from << "=>" << to << "]" << std::endl;
+  os << u8": " << from << u8"=>" << to << u8"]" << std::endl;
 }
 
 
@@ -3100,7 +3100,7 @@ class SimpleListPrinter {
     if (first_) {
       first_ = false;
     } else {
-      os_ << ",";
+      os_ << u8",";
     }
     os_ << s;
   }
@@ -3351,19 +3351,19 @@ void StoreFastElementStub::GenerateAheadOfTime(Isolate* isolate) {
 
 
 void ArrayConstructorStub::PrintName(std::ostream& os) const {  // NOLINT
-  os << "ArrayConstructorStub";
+  os << u8"ArrayConstructorStub";
   switch (argument_count()) {
     case ANY:
-      os << "_Any";
+      os << u8"_Any";
       break;
     case NONE:
-      os << "_None";
+      os << u8"_None";
       break;
     case ONE:
-      os << "_One";
+      os << u8"_One";
       break;
     case MORE_THAN_ONE:
-      os << "_More_Than_One";
+      os << u8"_More_Than_One";
       break;
   }
   return;
@@ -3373,9 +3373,9 @@ void ArrayConstructorStub::PrintName(std::ostream& os) const {  // NOLINT
 std::ostream& ArrayConstructorStubBase::BasePrintName(
     std::ostream& os,  // NOLINT
     const char* name) const {
-  os << name << "_" << ElementsKindToString(elements_kind());
+  os << name << u8"_" << ElementsKindToString(elements_kind());
   if (override_mode() == DISABLE_ALLOCATION_SITES) {
-    os << "_DISABLE_ALLOCATION_SITES";
+    os << u8"_DISABLE_ALLOCATION_SITES";
   }
   return os;
 }
@@ -3394,19 +3394,19 @@ void ToBooleanICStub::PrintState(std::ostream& os) const {  // NOLINT
 }
 
 std::ostream& operator<<(std::ostream& os, const ToBooleanICStub::Types& s) {
-  os << "(";
+  os << u8"(";
   SimpleListPrinter p(os);
-  if (s.IsEmpty()) p.Add("None");
-  if (s.Contains(ToBooleanICStub::UNDEFINED)) p.Add("Undefined");
-  if (s.Contains(ToBooleanICStub::BOOLEAN)) p.Add("Bool");
-  if (s.Contains(ToBooleanICStub::NULL_TYPE)) p.Add("Null");
-  if (s.Contains(ToBooleanICStub::SMI)) p.Add("Smi");
-  if (s.Contains(ToBooleanICStub::SPEC_OBJECT)) p.Add("SpecObject");
-  if (s.Contains(ToBooleanICStub::STRING)) p.Add("String");
-  if (s.Contains(ToBooleanICStub::SYMBOL)) p.Add("Symbol");
-  if (s.Contains(ToBooleanICStub::HEAP_NUMBER)) p.Add("HeapNumber");
-  if (s.Contains(ToBooleanICStub::SIMD_VALUE)) p.Add("SimdValue");
-  return os << ")";
+  if (s.IsEmpty()) p.Add(u8"None");
+  if (s.Contains(ToBooleanICStub::UNDEFINED)) p.Add(u8"Undefined");
+  if (s.Contains(ToBooleanICStub::BOOLEAN)) p.Add(u8"Bool");
+  if (s.Contains(ToBooleanICStub::NULL_TYPE)) p.Add(u8"Null");
+  if (s.Contains(ToBooleanICStub::SMI)) p.Add(u8"Smi");
+  if (s.Contains(ToBooleanICStub::SPEC_OBJECT)) p.Add(u8"SpecObject");
+  if (s.Contains(ToBooleanICStub::STRING)) p.Add(u8"String");
+  if (s.Contains(ToBooleanICStub::SYMBOL)) p.Add(u8"Symbol");
+  if (s.Contains(ToBooleanICStub::HEAP_NUMBER)) p.Add(u8"HeapNumber");
+  if (s.Contains(ToBooleanICStub::SIMD_VALUE)) p.Add(u8"SimdValue");
+  return os << u8")";
 }
 
 bool ToBooleanICStub::Types::UpdateStatus(Handle<Object> object) {

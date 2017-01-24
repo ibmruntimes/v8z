@@ -97,14 +97,14 @@ class CompiledReplacement {
     int last = 0;
     for (int i = 0; i < length; i++) {
       Char c = characters[i];
-      if (c == '$') {
+      if (c == '\x24') {
         int next_index = i + 1;
         if (next_index == length) {  // No next character!
           break;
         }
         Char c2 = characters[next_index];
         switch (c2) {
-          case '$':
+          case '\x24':
             if (i > last) {
               // There is a substring before. Include the first "$".
               parts->Add(
@@ -117,7 +117,7 @@ class CompiledReplacement {
             }
             i = next_index;
             break;
-          case '`':
+          case '\x60':
             if (i > last) {
               parts->Add(ReplacementPart::ReplacementSubString(last, i), zone);
             }
@@ -125,7 +125,7 @@ class CompiledReplacement {
             i = next_index;
             last = i + 1;
             break;
-          case '\'':
+          case '\x27':
             if (i > last) {
               parts->Add(ReplacementPart::ReplacementSubString(last, i), zone);
             }
@@ -133,7 +133,7 @@ class CompiledReplacement {
             i = next_index;
             last = i + 1;
             break;
-          case '&':
+          case '\x26':
             if (i > last) {
               parts->Add(ReplacementPart::ReplacementSubString(last, i), zone);
             }
@@ -141,17 +141,17 @@ class CompiledReplacement {
             i = next_index;
             last = i + 1;
             break;
-          case '0':
-          case '1':
-          case '2':
-          case '3':
-          case '4':
-          case '5':
-          case '6':
-          case '7':
-          case '8':
-          case '9': {
-            int capture_ref = c2 - '0';
+          case '\x30':
+          case '\x31':
+          case '\x32':
+          case '\x33':
+          case '\x34':
+          case '\x35':
+          case '\x36':
+          case '\x37':
+          case '\x38':
+          case '\x39': {
+            int capture_ref = c2 - '\x30';
             if (capture_ref > capture_count) {
               i = next_index;
               continue;
@@ -160,8 +160,8 @@ class CompiledReplacement {
             if (second_digit_index < length) {
               // Peek ahead to see if we have two digits.
               Char c3 = characters[second_digit_index];
-              if ('0' <= c3 && c3 <= '9') {  // Double digits.
-                int double_digit_ref = capture_ref * 10 + c3 - '0';
+              if ('\x30' <= c3 && c3 <= '\x39') {  // Double digits.
+                int double_digit_ref = capture_ref * 10 + c3 - '\x30';
                 if (double_digit_ref <= capture_count) {
                   next_index = second_digit_index;
                   capture_ref = double_digit_ref;

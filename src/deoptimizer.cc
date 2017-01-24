@@ -283,7 +283,7 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
           static_cast<OptimizedFrame*>(it.frame())->function();
       if (FLAG_trace_deopt) {
         CodeTracer::Scope scope(isolate->GetCodeTracer());
-        PrintF(scope.file(), "[deoptimizer found activation of function: ");
+        PrintF(scope.file(),"[deoptimizer found activation of function: ");
         function->PrintName(scope.file());
         PrintF(scope.file(),
                " / %" V8PRIxPTR "]\n", reinterpret_cast<intptr_t>(function));
@@ -2535,7 +2535,7 @@ int Translation::NumberOfOperandsFor(Opcode opcode) {
 #if defined(OBJECT_PRINT) || defined(ENABLE_DISASSEMBLER)
 
 const char* Translation::StringFor(Opcode opcode) {
-#define TRANSLATION_OPCODE_CASE(item)   case item: return #item;
+#define TRANSLATION_OPCODE_CASE(item)   case item: return USTR(#item);
   switch (opcode) {
     TRANSLATION_OPCODE_LIST(TRANSLATION_OPCODE_CASE)
   }
@@ -3410,7 +3410,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       intptr_t value = *(reinterpret_cast<intptr_t*>(fp + slot_offset));
       if (trace_file != nullptr) {
         PrintF(trace_file, "0x%08" V8PRIxPTR " ; [fp %c %d] ", value,
-               slot_offset < 0 ? '-' : '+', std::abs(slot_offset));
+               slot_offset < 0 ? '\x2d' : '\x2b', std::abs(slot_offset));
         reinterpret_cast<Object*>(value)->ShortPrint(trace_file);
       }
       return TranslatedValue::NewTagged(this, reinterpret_cast<Object*>(value));
@@ -3422,7 +3422,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       uint32_t value = GetUInt32Slot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%d ; (int) [fp %c %d] ",
-               static_cast<int32_t>(value), slot_offset < 0 ? '-' : '+',
+               static_cast<int32_t>(value), slot_offset < 0 ? '\x2d' : '\x2b',
                std::abs(slot_offset));
       }
       return TranslatedValue::NewInt32(this, value);
@@ -3434,7 +3434,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       uint32_t value = GetUInt32Slot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%u ; (uint) [fp %c %d] ", value,
-               slot_offset < 0 ? '-' : '+', std::abs(slot_offset));
+               slot_offset < 0 ? '\x2d' : '\x2b', std::abs(slot_offset));
       }
       return TranslatedValue::NewUInt32(this, value);
     }
@@ -3445,7 +3445,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       uint32_t value = GetUInt32Slot(fp, slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%u ; (bool) [fp %c %d] ", value,
-               slot_offset < 0 ? '-' : '+', std::abs(slot_offset));
+               slot_offset < 0 ? '\x2d' : '\x2b', std::abs(slot_offset));
       }
       return TranslatedValue::NewBool(this, value);
     }
@@ -3456,7 +3456,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       double value = ReadDoubleValue(fp + slot_offset);
       if (trace_file != nullptr) {
         PrintF(trace_file, "%e ; (double) [fp %c %d] ", value,
-               slot_offset < 0 ? '-' : '+', std::abs(slot_offset));
+               slot_offset < 0 ? '\x2d' : '\x2b', std::abs(slot_offset));
       }
       return TranslatedValue::NewDouble(this, value);
     }

@@ -263,8 +263,8 @@ enum LanguageMode { SLOPPY, STRICT, LANGUAGE_END = 3 };
 
 inline std::ostream& operator<<(std::ostream& os, const LanguageMode& mode) {
   switch (mode) {
-    case SLOPPY: return os << "sloppy";
-    case STRICT: return os << "strict";
+    case SLOPPY: return os << u8"sloppy";
+    case STRICT: return os << u8"strict";
     default: UNREACHABLE();
   }
   return os;
@@ -466,9 +466,9 @@ enum PretenureFlag { NOT_TENURED, TENURED };
 inline std::ostream& operator<<(std::ostream& os, const PretenureFlag& flag) {
   switch (flag) {
     case NOT_TENURED:
-      return os << "NotTenured";
+      return os << u8"NotTenured";
     case TENURED:
-      return os << "Tenured";
+      return os << u8"Tenured";
   }
   UNREACHABLE();
   return os;
@@ -711,11 +711,11 @@ inline size_t hash_value(ConvertReceiverMode mode) {
 inline std::ostream& operator<<(std::ostream& os, ConvertReceiverMode mode) {
   switch (mode) {
     case ConvertReceiverMode::kNullOrUndefined:
-      return os << "NULL_OR_UNDEFINED";
+      return os << u8"NULL_OR_UNDEFINED";
     case ConvertReceiverMode::kNotNullOrUndefined:
-      return os << "NOT_NULL_OR_UNDEFINED";
+      return os << u8"NOT_NULL_OR_UNDEFINED";
     case ConvertReceiverMode::kAny:
-      return os << "ANY";
+      return os << u8"ANY";
   }
   UNREACHABLE();
   return os;
@@ -729,9 +729,9 @@ inline size_t hash_value(TailCallMode mode) { return bit_cast<unsigned>(mode); }
 inline std::ostream& operator<<(std::ostream& os, TailCallMode mode) {
   switch (mode) {
     case TailCallMode::kAllow:
-      return os << "ALLOW_TAIL_CALLS";
+      return os << u8"ALLOW_TAIL_CALLS";
     case TailCallMode::kDisallow:
-      return os << "DISALLOW_TAIL_CALLS";
+      return os << u8"DISALLOW_TAIL_CALLS";
   }
   UNREACHABLE();
   return os;
@@ -751,11 +751,11 @@ inline size_t hash_value(CreateArgumentsType type) {
 inline std::ostream& operator<<(std::ostream& os, CreateArgumentsType type) {
   switch (type) {
     case CreateArgumentsType::kMappedArguments:
-      return os << "MAPPED_ARGUMENTS";
+      return os << u8"MAPPED_ARGUMENTS";
     case CreateArgumentsType::kUnmappedArguments:
-      return os << "UNMAPPED_ARGUMENTS";
+      return os << u8"UNMAPPED_ARGUMENTS";
     case CreateArgumentsType::kRestParameter:
-      return os << "REST_PARAMETER";
+      return os << u8"REST_PARAMETER";
   }
   UNREACHABLE();
   return os;

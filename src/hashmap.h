@@ -268,7 +268,7 @@ void TemplateHashMapImpl<AllocationPolicy>::Initialize(
   DCHECK(base::bits::IsPowerOfTwo32(capacity));
   map_ = reinterpret_cast<Entry*>(allocator.New(capacity * sizeof(Entry)));
   if (map_ == NULL) {
-    v8::internal::FatalProcessOutOfMemory("HashMap::Initialize");
+    v8::internal::FatalProcessOutOfMemory(u8"HashMap::Initialize");
     return;
   }
   capacity_ = capacity;

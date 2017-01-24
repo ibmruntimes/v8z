@@ -878,10 +878,10 @@ int JavaScriptFrame::LookupExceptionHandlerInTable(
 void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
                                              Address pc, FILE* file,
                                              bool print_line_number) {
-  PrintF(file, "%s", function->IsOptimized() ? "*" : "~");
+  PrintF(file, u8"%s", function->IsOptimized() ? u8"*" : u8"~");
   function->PrintName(file);
   int code_offset = static_cast<int>(pc - code->instruction_start());
-  PrintF(file, "+%d", code_offset);
+  PrintF(file, u8"+%d", code_offset);
   if (print_line_number) {
     SharedFunctionInfo* shared = function->shared();
     int source_pos = code->SourcePosition(code_offset);
@@ -896,10 +896,10 @@ void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
             script_name->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
         PrintF(file, " at %s:%d", c_script_name.get(), line);
       } else {
-        PrintF(file, " at <unknown>:%d", line);
+        PrintF(file, u8" at <unknown>:%d", line);
       }
     } else {
-      PrintF(file, " at <unknown>:<unknown>");
+      PrintF(file, u8" at <unknown>:<unknown>");
     }
   }
 }
@@ -913,21 +913,21 @@ void JavaScriptFrame::PrintTop(Isolate* isolate, FILE* file, bool print_args,
   while (!it.done()) {
     if (it.frame()->is_java_script()) {
       JavaScriptFrame* frame = it.frame();
-      if (frame->IsConstructor()) PrintF(file, "new ");
+      if (frame->IsConstructor()) PrintF(file, u8"new ");
       PrintFunctionAndOffset(frame->function(), frame->unchecked_code(),
                              frame->pc(), file, print_line_number);
       if (print_args) {
         // function arguments
         // (we are intentionally only printing the actually
         // supplied parameters, not all parameters required)
-        PrintF(file, "(this=");
+        PrintF(file, u8"(this=");
         frame->receiver()->ShortPrint(file);
         const int length = frame->ComputeParametersCount();
         for (int i = 0; i < length; i++) {
-          PrintF(file, ", ");
+          PrintF(file, u8", ");
           frame->GetParameter(i)->ShortPrint(file);
         }
-        PrintF(file, ")");
+        PrintF(file, u8")");
       }
       break;
     }
@@ -977,23 +977,23 @@ FrameSummary::FrameSummary(Object* receiver, JSFunction* function,
 }
 
 void FrameSummary::Print() {
-  PrintF("receiver: ");
+  PrintF(u8"receiver: ");
   receiver_->ShortPrint();
-  PrintF("\nfunction: ");
+  PrintF(u8"\nfunction: ");
   function_->shared()->DebugName()->ShortPrint();
-  PrintF("\ncode: ");
+  PrintF(u8"\ncode: ");
   abstract_code_->ShortPrint();
   if (abstract_code_->IsCode()) {
     Code* code = abstract_code_->GetCode();
-    if (code->kind() == Code::FUNCTION) PrintF(" UNOPT ");
+    if (code->kind() == Code::FUNCTION) PrintF(u8" UNOPT ");
     if (code->kind() == Code::OPTIMIZED_FUNCTION) {
       DCHECK(CannotDeoptFromAsmCode(code, *function()));
-      PrintF(" ASM ");
+      PrintF(u8" ASM ");
     }
   } else {
-    PrintF(" BYTECODE ");
+    PrintF(u8" BYTECODE ");
   }
-  PrintF("\npc: %d\n", code_offset_);
+  PrintF(u8"\npc: %d\n", code_offset_);
 }
 
 
@@ -1297,12 +1297,12 @@ Code* InternalFrame::unchecked_code() const {
 void StackFrame::PrintIndex(StringStream* accumulator,
                             PrintMode mode,
                             int index) {
-  accumulator->Add((mode == OVERVIEW) ? "%5d: " : "[%d]: ", index);
+  accumulator->Add((mode == OVERVIEW) ? u8"%5d: " : u8"[%d]: ", index);
 }
 
 void WasmFrame::Print(StringStream* accumulator, PrintMode mode,
                       int index) const {
-  accumulator->Add("wasm frame");
+  accumulator->Add(u8"wasm frame");
 }
 
 Code* WasmFrame::unchecked_code() const {
@@ -1322,9 +1322,9 @@ void PrintFunctionSource(StringStream* accumulator, SharedFunctionInfo* shared,
                          Code* code) {
   if (FLAG_max_stack_trace_source_length != 0 && code != NULL) {
     std::ostringstream os;
-    os << "--------- s o u r c e   c o d e ---------\n"
+    os << u8"--------- s o u r c e   c o d e ---------\n"
        << SourceCodeOf(shared, FLAG_max_stack_trace_source_length)
-       << "\n-----------------------------------------\n";
+       << u8"\n-----------------------------------------\n";
     accumulator->Add(os.str().c_str());
   }
 }
@@ -1343,7 +1343,7 @@ void JavaScriptFrame::Print(StringStream* accumulator,
   accumulator->PrintSecurityTokenIfChanged(function);
   PrintIndex(accumulator, mode, index);
   Code* code = NULL;
-  if (IsConstructor()) accumulator->Add("new ");
+  if (IsConstructor()) accumulator->Add(u8"new ");
   accumulator->PrintFunction(function, receiver, &code);
 
   // Get scope information for nicer output, if possible. If code is NULL, or
@@ -1355,7 +1355,7 @@ void JavaScriptFrame::Print(StringStream* accumulator,
   Object* script_obj = shared->script();
   if (script_obj->IsScript()) {
     Script* script = Script::cast(script_obj);
-    accumulator->Add(" [");
+    accumulator->Add(u8" [");
     accumulator->PrintName(script->name());
 
     Address pc = this->pc();
@@ -1364,44 +1364,44 @@ void JavaScriptFrame::Print(StringStream* accumulator,
       int offset = static_cast<int>(pc - code->instruction_start());
       int source_pos = code->SourcePosition(offset);
       int line = script->GetLineNumber(source_pos) + 1;
-      accumulator->Add(":%d", line);
+      accumulator->Add(u8":%d", line);
     } else {
       int function_start_pos = shared->start_position();
       int line = script->GetLineNumber(function_start_pos) + 1;
-      accumulator->Add(":~%d", line);
+      accumulator->Add(u8":~%d", line);
     }
 
-    accumulator->Add("] [pc=%p] ", pc);
+    accumulator->Add(u8"] [pc=%p] ", pc);
   }
 
-  accumulator->Add("(this=%o", receiver);
+  accumulator->Add(u8"(this=%o", receiver);
 
   // Print the parameters.
   int parameters_count = ComputeParametersCount();
   for (int i = 0; i < parameters_count; i++) {
-    accumulator->Add(",");
+    accumulator->Add(u8",");
     // If we have a name for the parameter we print it. Nameless
     // parameters are either because we have more actual parameters
     // than formal parameters or because we have no scope information.
     if (i < scope_info->ParameterCount()) {
       accumulator->PrintName(scope_info->ParameterName(i));
-      accumulator->Add("=");
+      accumulator->Add(u8"=");
     }
-    accumulator->Add("%o", GetParameter(i));
+    accumulator->Add(u8"%o", GetParameter(i));
   }
 
-  accumulator->Add(")");
+  accumulator->Add(u8")");
   if (mode == OVERVIEW) {
-    accumulator->Add("\n");
+    accumulator->Add(u8"\n");
     return;
   }
   if (is_optimized()) {
-    accumulator->Add(" {\n// optimized frame\n");
+    accumulator->Add(u8" {\n// optimized frame\n");
     PrintFunctionSource(accumulator, shared, code);
-    accumulator->Add("}\n");
+    accumulator->Add(u8"}\n");
     return;
   }
-  accumulator->Add(" {\n");
+  accumulator->Add(u8" {\n");
 
   // Compute the number of locals and expression stack elements.
   int stack_locals_count = scope_info->StackLocalCount();
@@ -1410,18 +1410,18 @@ void JavaScriptFrame::Print(StringStream* accumulator,
 
   // Print stack-allocated local variables.
   if (stack_locals_count > 0) {
-    accumulator->Add("  // stack-allocated locals\n");
+    accumulator->Add(u8"  // stack-allocated locals\n");
   }
   for (int i = 0; i < stack_locals_count; i++) {
-    accumulator->Add("  var ");
+    accumulator->Add(u8"  var ");
     accumulator->PrintName(scope_info->StackLocalName(i));
-    accumulator->Add(" = ");
+    accumulator->Add(u8" = ");
     if (i < expressions_count) {
-      accumulator->Add("%o", GetExpression(i));
+      accumulator->Add(u8"%o", GetExpression(i));
     } else {
-      accumulator->Add("// no expression found - inconsistent frame?");
+      accumulator->Add(u8"// no expression found - inconsistent frame?");
     }
-    accumulator->Add("\n");
+    accumulator->Add(u8"\n");
   }
 
   // Try to get hold of the context of this frame.
@@ -1436,38 +1436,38 @@ void JavaScriptFrame::Print(StringStream* accumulator,
 
   // Print heap-allocated local variables.
   if (heap_locals_count > 0) {
-    accumulator->Add("  // heap-allocated locals\n");
+    accumulator->Add(u8"  // heap-allocated locals\n");
   }
   for (int i = 0; i < heap_locals_count; i++) {
-    accumulator->Add("  var ");
+    accumulator->Add(u8"  var ");
     accumulator->PrintName(scope_info->ContextLocalName(i));
-    accumulator->Add(" = ");
+    accumulator->Add(u8" = ");
     if (context != NULL) {
       int index = Context::MIN_CONTEXT_SLOTS + i;
       if (index < context->length()) {
-        accumulator->Add("%o", context->get(index));
+        accumulator->Add(u8"%o", context->get(index));
       } else {
         accumulator->Add(
-            "// warning: missing context slot - inconsistent frame?");
+            u8"// warning: missing context slot - inconsistent frame?");
       }
     } else {
-      accumulator->Add("// warning: no context found - inconsistent frame?");
+      accumulator->Add(u8"// warning: no context found - inconsistent frame?");
     }
-    accumulator->Add("\n");
+    accumulator->Add(u8"\n");
   }
 
   // Print the expression stack.
   int expressions_start = stack_locals_count;
   if (expressions_start < expressions_count) {
-    accumulator->Add("  // expression stack (top to bottom)\n");
+    accumulator->Add(u8"  // expression stack (top to bottom)\n");
   }
   for (int i = expressions_count - 1; i >= expressions_start; i--) {
-    accumulator->Add("  [%02d] : %o\n", i, GetExpression(i));
+    accumulator->Add(u8"  [%02d] : %o\n", i, GetExpression(i));
   }
 
   PrintFunctionSource(accumulator, shared, code);
 
-  accumulator->Add("}\n\n");
+  accumulator->Add(u8"}\n\n");
 }
 
 
@@ -1480,24 +1480,24 @@ void ArgumentsAdaptorFrame::Print(StringStream* accumulator,
   expected = function->shared()->internal_formal_parameter_count();
 
   PrintIndex(accumulator, mode, index);
-  accumulator->Add("arguments adaptor frame: %d->%d", actual, expected);
+  accumulator->Add(u8"arguments adaptor frame: %d->%d", actual, expected);
   if (mode == OVERVIEW) {
-    accumulator->Add("\n");
+    accumulator->Add(u8"\n");
     return;
   }
-  accumulator->Add(" {\n");
+  accumulator->Add(u8" {\n");
 
   // Print actual arguments.
-  if (actual > 0) accumulator->Add("  // actual arguments\n");
+  if (actual > 0) accumulator->Add(u8"  // actual arguments\n");
   for (int i = 0; i < actual; i++) {
-    accumulator->Add("  [%02d] : %o", i, GetParameter(i));
+    accumulator->Add(u8"  [%02d] : %o", i, GetParameter(i));
     if (expected != -1 && i >= expected) {
-      accumulator->Add("  // not passed to callee");
+      accumulator->Add(u8"  // not passed to callee");
     }
-    accumulator->Add("\n");
+    accumulator->Add(u8"\n");
   }
 
-  accumulator->Add("}\n\n");
+  accumulator->Add(u8"}\n\n");
 }
 
 
