@@ -1528,23 +1528,6 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
-#if V8_OS_ZOS
-  // TODO(mcornac): combine these if correct.
-  __ lay(sp, MemOperand(sp, kStackPointerBias - 12 * kPointerSize));
-  __ StoreMultipleP(sp, r4, MemOperand(sp, -kStackPointerBias));
-  __ lay(sp, MemOperand(sp, -kStackPointerBias));
-
-  // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
-  // parameters and also places them starting at r4+2112 on the biased stack.
-  // Explicitly load argc and argv from stack back into r5/r6 respectively.
-  __ LoadP(r5, MemOperand(sp, (19 + 12) * kPointerSize));
-  __ LoadP(r6, MemOperand(sp, (20 + 12) * kPointerSize));
-
-  __ LoadRR(r4, r3);
-  __ LoadRR(r3, r2);
-  __ LoadRR(r2, r1);
-#endif  // V8_OS_ZOS
-
   // saving floating point registers
 #if V8_HOST_ARCH_S390X
   // 64bit ABI requires f8 to f15 be saved
@@ -1565,7 +1548,20 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   __ std(d6, MemOperand(sp, kDoubleSize));
 #endif
 
-#if !V8_OS_ZOS
+#if V8_OS_ZOS
+  __ lay(sp, MemOperand(sp, -12 * kPointerSize));
+  __ StoreMultipleP(sp, r4, MemOperand(sp));
+
+  // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
+  // parameters and also places them starting at r4+2112 on the biased stack.
+  // Explicitly load argc and argv from stack back into r5/r6 respectively.
+  __ LoadP(r5, MemOperand(sp, (19 + 12) * kPointerSize + 2 * kDoubleSize));
+  __ LoadP(r6, MemOperand(sp, (20 + 12) * kPointerSize + 2 * kDoubleSize));
+
+  __ LoadRR(r4, r3);
+  __ LoadRR(r3, r2);
+  __ LoadRR(r2, r1);
+#else
   // zLinux ABI
   //    Incoming parameters:
   //          r2: code entry
@@ -1578,7 +1574,7 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
   //    sp/r15 as well in a single STM/STMG
   __ lay(sp, MemOperand(sp, -10 * kPointerSize));
   __ StoreMultipleP(r6, sp, MemOperand(sp));
-#endif
+#endif  // V8_OS_ZOS
 
 //  int offset_to_argv = kPointerSize * 22; // matches (22*4) above
 //  __ LoadlW(r7, MemOperand(sp, offset_to_argv));
@@ -1718,7 +1714,11 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #endif
 
   // Reload callee-saved preserved regs, return address reg (r14) and sp
-#ifndef V8_OS_ZOS
+#ifdef V8_OS_ZOS
+  __ LoadRR(r3, r2);
+  __ LoadMultipleP(sp, r4, MemOperand(sp));
+  __ lay(sp, MemOperand(sp, 12 * kPointerSize));
+#else
   __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
 #endif
@@ -1744,11 +1744,6 @@ void JSEntryStub::GenerateBody(MacroAssembler* masm, bool is_construct) {
 #endif
 
 #ifdef V8_OS_ZOS
-  __ LoadRR(r3, r2);
-  __ LoadMultipleP(sp, r4, MemOperand(sp));
-  //TODO(mcornac): combine these if correct.
-  __ lay(sp, MemOperand(sp, 12 * kPointerSize));
-  __ lay(sp, MemOperand(sp, -kStackPointerBias));
   __ b(r7);
 #else
   __ b(r14);
