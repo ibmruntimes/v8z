@@ -835,7 +835,7 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
 #if V8_TARGET_ARCH_S390X
   size_t stack_size = 2 * 1024*1024;  // allocate 2MB for stack
 #else
-  size_t stack_size = 1 * 1024*1024 + 2048;  // allocate 1MB for stack
+  size_t stack_size = 1 * 1024*1024 + kStackPointerBias;  // allocate 1MB for stack
 #endif
   stack_ = reinterpret_cast<char*>(malloc(stack_size));
   pc_modified_ = false;
@@ -868,7 +868,8 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
 // The sp is initialized to point to the bottom (high address) of the
 // allocated stack area. To be safe in potential stack underflows we leave
 // some buffer below.
-  registers_[sp] = reinterpret_cast<intptr_t>(stack_) + stack_size - 64;
+  registers_[sp] = reinterpret_cast<intptr_t>(stack_) + stack_size -
+                   kStackPointerBias - 64;
 
   InitializeCoverage();
 
@@ -1329,14 +1330,14 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       for (int i = 0; i < regArgCount; i++) {
         arg[i] = get_register(arg0_regnum + i);
       }
-      intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
 #ifdef V8_OS_ZOS
       intptr_t* argument_area = reinterpret_cast<intptr_t*>(get_register(sp)
-         + 2048 + 16 * kPointerSize);
+         + kStackPointerBias + 16 * kPointerSize);
       arg[3] = argument_area[3];
       arg[4] = argument_area[4];
       arg[5] = argument_area[5];
 #else
+      intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
       arg[5] = stack_pointer[kCalleeRegisterSaveAreaSize / kPointerSize];
 #endif
       bool fp_call =
@@ -1350,7 +1351,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       // Pushing to slot 0 overwrites important data on stack.
 #ifdef V8_OS_ZOS
       intptr_t* ra_slot = reinterpret_cast<intptr_t*>(get_register(sp)
-         + 2048 + 3 * kPointerSize);
+         + kStackPointerBias + 3 * kPointerSize);
       *ra_slot = get_register(r7);
 #else
       *reinterpret_cast<intptr_t*>(get_register(sp)
@@ -4725,16 +4726,18 @@ double Simulator::CallFPReturnsDouble(byte* entry, double d0, double d1) {
 
 uintptr_t Simulator::PushAddress(uintptr_t address) {
   uintptr_t new_sp = get_register(sp) - sizeof(uintptr_t);
-  uintptr_t* stack_slot = reinterpret_cast<uintptr_t*>(new_sp);
+  uintptr_t* stack_slot = reinterpret_cast<uintptr_t*>(new_sp +
+                                                       kStackPointerBias);
   *stack_slot = address;
   set_register(sp, new_sp);
-  return new_sp;
+  return new_sp + kStackPointerBias;
 }
 
 
 uintptr_t Simulator::PopAddress() {
   uintptr_t current_sp = get_register(sp);
-  uintptr_t* stack_slot = reinterpret_cast<uintptr_t*>(current_sp);
+  uintptr_t* stack_slot = reinterpret_cast<uintptr_t*>(current_sp +
+                                                       kStackPointerBias);
   uintptr_t address = *stack_slot;
   set_register(sp, current_sp + sizeof(uintptr_t));
   return address;
