@@ -4312,8 +4312,7 @@ void DirectCEntryStub::Generate(MacroAssembler* masm) {
   __ CleanseP(r14);
 #else
   __ CleanseP(r7);
-  // TODO(mcornac): missed?!
-  __ StoreP(r7, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+  __ StoreP(r7, MemOperand(sp, 18 * kPointerSize));
 #endif
   // Statement positions are expected to be recorded when the target
   // address is loaded.
