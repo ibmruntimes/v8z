@@ -792,7 +792,7 @@ class ForEachStatement : public IterationStatement {
   void set_subject(Expression* e) { subject_ = e; }
 
   static const char* VisitModeString(VisitMode mode) {
-    return mode == ITERATE ? "for-of" : "for-in";
+    return mode == ITERATE ? u8"for-of" : u8"for-in";
   }
 
  protected:
@@ -2078,7 +2078,7 @@ class CallRuntime final : public Expression {
   BailoutId CallId() { return BailoutId(local_id(0)); }
 
   const char* debug_name() {
-    return is_jsruntime() ? "(context function)" : function_->name;
+    return is_jsruntime() ? u8"(context function)" : function_->name;
   }
 
  protected:

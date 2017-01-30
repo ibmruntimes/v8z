@@ -169,10 +169,10 @@ void AstValue::Internalize(Isolate* isolate) {
       DCHECK(!string_->string().is_null());
       break;
     case SYMBOL:
-      if (symbol_name_[0] == 'i') {
-        DCHECK_EQ(0, strcmp(symbol_name_, "iterator_symbol"));
+      if (symbol_name_[0] == '\x69') {
+        DCHECK_EQ(0, strcmp(symbol_name_, u8"iterator_symbol"));
         value_ = isolate->factory()->iterator_symbol();
-      } else if (strcmp(symbol_name_, "hasInstance_symbol") == 0) {
+      } else if (strcmp(symbol_name_, u8"hasInstance_symbol") == 0) {
         value_ = isolate->factory()->has_instance_symbol();
       } else {
         DCHECK_EQ(0, strcmp(symbol_name_, "home_object_symbol"));

@@ -50,19 +50,19 @@ PreParserIdentifier PreParserTraits::GetSymbol(Scanner* scanner) {
   } else if (scanner->current_token() == Token::YIELD) {
     return PreParserIdentifier::Yield();
   }
-  if (scanner->UnescapedLiteralMatches("eval", 4)) {
+  if (scanner->UnescapedLiteralMatches(u8"eval", 4)) {
     return PreParserIdentifier::Eval();
   }
-  if (scanner->UnescapedLiteralMatches("arguments", 9)) {
+  if (scanner->UnescapedLiteralMatches(u8"arguments", 9)) {
     return PreParserIdentifier::Arguments();
   }
-  if (scanner->UnescapedLiteralMatches("undefined", 9)) {
+  if (scanner->UnescapedLiteralMatches(u8"undefined", 9)) {
     return PreParserIdentifier::Undefined();
   }
-  if (scanner->LiteralMatches("prototype", 9)) {
+  if (scanner->LiteralMatches(u8"prototype", 9)) {
     return PreParserIdentifier::Prototype();
   }
-  if (scanner->LiteralMatches("constructor", 11)) {
+  if (scanner->LiteralMatches(u8"constructor", 11)) {
     return PreParserIdentifier::Constructor();
   }
   return PreParserIdentifier::Default();
@@ -76,7 +76,7 @@ PreParserIdentifier PreParserTraits::GetNumberAsSymbol(Scanner* scanner) {
 
 PreParserExpression PreParserTraits::ExpressionFromString(
     int pos, Scanner* scanner, PreParserFactory* factory) {
-  if (scanner->UnescapedLiteralMatches("use strict", 10)) {
+  if (scanner->UnescapedLiteralMatches(u8"use strict", 10)) {
     return PreParserExpression::UseStrictStringLiteral();
   }
   return PreParserExpression::StringLiteral();

@@ -73,7 +73,7 @@ bool Expression::IsUndefinedLiteral() const {
   // The global identifier "undefined" is immutable. Everything
   // else could be reassigned.
   return var != NULL && var->IsUnallocatedOrGlobalSlot() &&
-         var_proxy->raw_name()->IsOneByteEqualTo("undefined");
+         var_proxy->raw_name()->IsOneByteEqualTo(u8"undefined");
 }
 
 

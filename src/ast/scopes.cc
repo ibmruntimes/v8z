@@ -827,15 +827,15 @@ void Scope::ReportMessage(int start_position, int end_position,
 static const char* Header(ScopeType scope_type, FunctionKind function_kind,
                           bool is_declaration_scope) {
   switch (scope_type) {
-    case EVAL_SCOPE: return "eval";
+    case EVAL_SCOPE: return u8"eval";
     // TODO(adamk): Should we print concise method scopes specially?
     case FUNCTION_SCOPE:
-      return IsArrowFunction(function_kind) ? "arrow" : "function";
-    case MODULE_SCOPE: return "module";
-    case SCRIPT_SCOPE: return "global";
-    case CATCH_SCOPE: return "catch";
-    case BLOCK_SCOPE: return is_declaration_scope ? "varblock" : "block";
-    case WITH_SCOPE: return "with";
+      return IsArrowFunction(function_kind) ? u8"arrow" : u8"function";
+    case MODULE_SCOPE: return u8"module";
+    case SCRIPT_SCOPE: return u8"global";
+    case CATCH_SCOPE: return u8"catch";
+    case BLOCK_SCOPE: return is_declaration_scope ? u8"varblock" : u8"block";
+    case WITH_SCOPE: return u8"with";
   }
   UNREACHABLE();
   return NULL;
@@ -843,12 +843,12 @@ static const char* Header(ScopeType scope_type, FunctionKind function_kind,
 
 
 static void Indent(int n, const char* str) {
-  PrintF("%*s%s", n, "", str);
+  PrintF(u8"%*s%s", n, u8"", str);
 }
 
 
 static void PrintName(const AstRawString* name) {
-  PrintF("%.*s", name->length(), name->raw_data());
+  PrintF(u8"%.*s", name->length(), name->raw_data());
 }
 
 
@@ -857,19 +857,19 @@ static void PrintLocation(Variable* var) {
     case VariableLocation::UNALLOCATED:
       break;
     case VariableLocation::PARAMETER:
-      PrintF("parameter[%d]", var->index());
+      PrintF(u8"parameter[%d]", var->index());
       break;
     case VariableLocation::LOCAL:
-      PrintF("local[%d]", var->index());
+      PrintF(u8"local[%d]", var->index());
       break;
     case VariableLocation::CONTEXT:
-      PrintF("context[%d]", var->index());
+      PrintF(u8"context[%d]", var->index());
       break;
     case VariableLocation::GLOBAL:
-      PrintF("global[%d]", var->index());
+      PrintF(u8"global[%d]", var->index());
       break;
     case VariableLocation::LOOKUP:
-      PrintF("lookup");
+      PrintF(u8"lookup");
       break;
   }
 }
@@ -878,24 +878,24 @@ static void PrintLocation(Variable* var) {
 static void PrintVar(int indent, Variable* var) {
   if (var->is_used() || !var->IsUnallocated()) {
     Indent(indent, Variable::Mode2String(var->mode()));
-    PrintF(" ");
+    PrintF(u8" ");
     if (var->raw_name()->IsEmpty())
-      PrintF(".%p", reinterpret_cast<void*>(var));
+      PrintF(u8".%p", reinterpret_cast<void*>(var));
     else
       PrintName(var->raw_name());
-    PrintF(";  // ");
+    PrintF(u8";  // ");
     PrintLocation(var);
     bool comma = !var->IsUnallocated();
     if (var->has_forced_context_allocation()) {
-      if (comma) PrintF(", ");
-      PrintF("forced context allocation");
+      if (comma) PrintF(u8", ");
+      PrintF(u8"forced context allocation");
       comma = true;
     }
     if (var->maybe_assigned() == kMaybeAssigned) {
-      if (comma) PrintF(", ");
-      PrintF("maybe assigned");
+      if (comma) PrintF(u8", ");
+      PrintF(u8"maybe assigned");
     }
-    PrintF("\n");
+    PrintF(u8"\n");
   }
 }
 
@@ -919,13 +919,13 @@ void Scope::Print(int n) {
   // Print header.
   Indent(n0, Header(scope_type_, function_kind_, is_declaration_scope()));
   if (scope_name_ != nullptr && !scope_name_->IsEmpty()) {
-    PrintF(" ");
+    PrintF(u8" ");
     PrintName(scope_name_);
   }
 
   // Print parameters, if any.
   if (is_function_scope()) {
-    PrintF(" (");
+    PrintF(u8" (");
     for (int i = 0; i < params_.length(); i++) {
       if (i > 0) PrintF(", ");
       const AstRawString* name = params_[i]->raw_name();
@@ -934,64 +934,64 @@ void Scope::Print(int n) {
       else
         PrintName(name);
     }
-    PrintF(")");
+    PrintF(u8")");
   }
 
-  PrintF(" { // (%d, %d)\n", start_position(), end_position());
+  PrintF(u8" { // (%d, %d)\n", start_position(), end_position());
 
   // Function name, if any (named function literals, only).
   if (function_ != NULL) {
-    Indent(n1, "// (local) function name: ");
+    Indent(n1, u8"// (local) function name: ");
     PrintName(function_->proxy()->raw_name());
-    PrintF("\n");
+    PrintF(u8"\n");
   }
 
   // Scope info.
   if (HasTrivialOuterContext()) {
-    Indent(n1, "// scope has trivial outer context\n");
+    Indent(n1, u8"// scope has trivial outer context\n");
   }
   if (is_strict(language_mode())) {
-    Indent(n1, "// strict mode scope\n");
+    Indent(n1, u8"// strict mode scope\n");
   }
-  if (scope_inside_with_) Indent(n1, "// scope inside 'with'\n");
-  if (scope_calls_eval_) Indent(n1, "// scope calls 'eval'\n");
-  if (scope_uses_arguments_) Indent(n1, "// scope uses 'arguments'\n");
+  if (scope_inside_with_) Indent(n1, u8"// scope inside 'with'\n");
+  if (scope_calls_eval_) Indent(n1, u8"// scope calls 'eval'\n");
+  if (scope_uses_arguments_) Indent(n1, u8"// scope uses 'arguments'\n");
   if (scope_uses_super_property_)
-    Indent(n1, "// scope uses 'super' property\n");
+    Indent(n1, u8"// scope uses 'super' property\n");
   if (outer_scope_calls_sloppy_eval_) {
-    Indent(n1, "// outer scope calls 'eval' in sloppy context\n");
+    Indent(n1, u8"// outer scope calls 'eval' in sloppy context\n");
   }
-  if (inner_scope_calls_eval_) Indent(n1, "// inner scope calls 'eval'\n");
+  if (inner_scope_calls_eval_) Indent(n1, u8"// inner scope calls 'eval'\n");
   if (num_stack_slots_ > 0) {
-    Indent(n1, "// ");
-    PrintF("%d stack slots\n", num_stack_slots_);
+    Indent(n1, u8"// ");
+    PrintF(u8"%d stack slots\n", num_stack_slots_);
   }
   if (num_heap_slots_ > 0) {
-    Indent(n1, "// ");
-    PrintF("%d heap slots (including %d global slots)\n", num_heap_slots_,
+    Indent(n1, u8"// ");
+    PrintF(u8"%d heap slots (including %d global slots)\n", num_heap_slots_,
            num_global_slots_);
   }
 
   // Print locals.
   if (function_ != NULL) {
-    Indent(n1, "// function var:\n");
+    Indent(n1, u8"// function var:\n");
     PrintVar(n1, function_->proxy()->var());
   }
 
   if (temps_.length() > 0) {
-    Indent(n1, "// temporary vars:\n");
+    Indent(n1, u8"// temporary vars:\n");
     for (int i = 0; i < temps_.length(); i++) {
       PrintVar(n1, temps_[i]);
     }
   }
 
   if (variables_.Start() != NULL) {
-    Indent(n1, "// local vars:\n");
+    Indent(n1, u8"// local vars:\n");
     PrintMap(n1, &variables_);
   }
 
   if (dynamics_ != NULL) {
-    Indent(n1, "// dynamic vars:\n");
+    Indent(n1, u8"// dynamic vars:\n");
     PrintMap(n1, dynamics_->GetMap(DYNAMIC));
     PrintMap(n1, dynamics_->GetMap(DYNAMIC_LOCAL));
     PrintMap(n1, dynamics_->GetMap(DYNAMIC_GLOBAL));
@@ -1005,7 +1005,7 @@ void Scope::Print(int n) {
     }
   }
 
-  Indent(n0, "}\n");
+  Indent(n0, u8"}\n");
 }
 #endif  // DEBUG
 

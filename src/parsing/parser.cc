@@ -631,7 +631,7 @@ Expression* ParserTraits::SuperPropertyReference(Scope* scope,
       factory, parser_->ast_value_factory()->this_function_string(),
       Variable::NORMAL, pos);
   Expression* home_object_symbol_literal =
-      factory->NewSymbolLiteral("home_object_symbol", RelocInfo::kNoPosition);
+      factory->NewSymbolLiteral(u8"home_object_symbol", RelocInfo::kNoPosition);
   Expression* home_object = factory->NewProperty(
       this_function_proxy, home_object_symbol_literal, pos);
   return factory->NewSuperPropertyReference(
@@ -726,7 +726,7 @@ Expression* ParserTraits::ExpressionFromString(int pos, Scanner* scanner,
 Expression* ParserTraits::GetIterator(Expression* iterable,
                                       AstNodeFactory* factory, int pos) {
   Expression* iterator_symbol_literal =
-      factory->NewSymbolLiteral("iterator_symbol", RelocInfo::kNoPosition);
+      factory->NewSymbolLiteral(u8"iterator_symbol", RelocInfo::kNoPosition);
   Expression* prop =
       factory->NewProperty(iterable, iterator_symbol_literal, pos);
   Zone* zone = parser_->zone();
@@ -863,15 +863,15 @@ FunctionLiteral* Parser::ParseProgram(Isolate* isolate, ParseInfo* info) {
   if (FLAG_trace_parse && result != NULL) {
     double ms = timer.Elapsed().InMillisecondsF();
     if (info->is_eval()) {
-      PrintF("[parsing eval");
+      PrintF(u8"[parsing eval");
     } else if (info->script()->name()->IsString()) {
       String* name = String::cast(info->script()->name());
       base::SmartArrayPointer<char> name_chars = name->ToCString();
       PrintF("[parsing script: %s", name_chars.get());
     } else {
-      PrintF("[parsing script");
+      PrintF(u8"[parsing script");
     }
-    PrintF(" - took %0.3f ms]\n", ms);
+    PrintF(u8" - took %0.3f ms]\n", ms);
   }
   if (produce_cached_parse_data()) {
     if (result != NULL) *info->cached_data() = recorder.GetScriptData();
@@ -1372,7 +1372,7 @@ void* Parser::ParseExportClause(ZoneList<const AstRawString*>* export_names,
     }
     const AstRawString* local_name = ParseIdentifierName(CHECK_OK);
     const AstRawString* export_name = NULL;
-    if (CheckContextualKeyword(CStrVector("as"))) {
+    if (CheckContextualKeyword(CStrVector(u8"as"))) {
       export_name = ParseIdentifierName(CHECK_OK);
     }
     if (export_name == NULL) {
@@ -1415,7 +1415,7 @@ ZoneList<ImportDeclaration*>* Parser::ParseNamedImports(int pos, bool* ok) {
     // In the presence of 'as', the left-side of the 'as' can
     // be any IdentifierName. But without 'as', it must be a valid
     // BindingIdentifier.
-    if (CheckContextualKeyword(CStrVector("as"))) {
+    if (CheckContextualKeyword(CStrVector(u8"as"))) {
       local_name = ParseIdentifierName(CHECK_OK);
     }
     if (!Token::IsIdentifier(scanner()->current_token(), STRICT, false)) {
@@ -1488,7 +1488,7 @@ Statement* Parser::ParseImportDeclaration(bool* ok) {
     switch (peek()) {
       case Token::MUL: {
         Consume(Token::MUL);
-        ExpectContextualKeyword(CStrVector("as"), CHECK_OK);
+        ExpectContextualKeyword(CStrVector(u8"as"), CHECK_OK);
         module_instance_binding =
             ParseIdentifier(kDontAllowRestrictedIdentifiers, CHECK_OK);
         // TODO(ES6): Add an appropriate declaration.
@@ -1506,7 +1506,7 @@ Statement* Parser::ParseImportDeclaration(bool* ok) {
     }
   }
 
-  ExpectContextualKeyword(CStrVector("from"), CHECK_OK);
+  ExpectContextualKeyword(CStrVector(u8"from"), CHECK_OK);
   const AstRawString* module_specifier = ParseModuleSpecifier(CHECK_OK);
   scope_->module()->AddModuleRequest(module_specifier, zone());
 
@@ -1629,7 +1629,7 @@ Statement* Parser::ParseExportDeclaration(bool* ok) {
 
     case Token::MUL: {
       Consume(Token::MUL);
-      ExpectContextualKeyword(CStrVector("from"), CHECK_OK);
+      ExpectContextualKeyword(CStrVector(u8"from"), CHECK_OK);
       const AstRawString* module_specifier = ParseModuleSpecifier(CHECK_OK);
       scope_->module()->AddModuleRequest(module_specifier, zone());
       // TODO(ES6): scope_->module()->AddStarExport(...)
@@ -1656,7 +1656,7 @@ Statement* Parser::ParseExportDeclaration(bool* ok) {
       ParseExportClause(&export_names, &export_locations, &local_names,
                         &reserved_loc, CHECK_OK);
       const AstRawString* indirect_export_module_specifier = NULL;
-      if (CheckContextualKeyword(CStrVector("from"))) {
+      if (CheckContextualKeyword(CStrVector(u8"from"))) {
         indirect_export_module_specifier = ParseModuleSpecifier(CHECK_OK);
       } else if (reserved_loc.IsValid()) {
         // No FromClause, so reserved words are invalid in ExportClause.
@@ -2365,7 +2365,7 @@ Block* Parser::ParseVariableDeclarations(
           ParserTraits::ReportMessageAt(
               Scanner::Location(decl_pos, scanner()->location().end_pos),
               MessageTemplate::kDeclarationMissingInitializer,
-              !pattern->IsVariableProxy() ? "destructuring" : "const");
+              !pattern->IsVariableProxy() ? u8"destructuring" : u8"const");
           *ok = false;
           return nullptr;
         }
@@ -5221,7 +5221,7 @@ uint32_t Parser::ComputeTemplateLiteralHash(const TemplateLiteral* lit) {
   for (int index = 0; index < total; ++index) {
     if (index) {
       running_hash = StringHasher::ComputeRunningHashOneByte(
-          running_hash, "${}", 3);
+          running_hash, u8"${}", 3);
     }
 
     const AstRawString* raw_string =

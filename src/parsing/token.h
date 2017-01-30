@@ -28,118 +28,118 @@ namespace internal {
 
 #define TOKEN_LIST(T, K)                                             \
   /* End of source indicator. */                                     \
-  T(EOS, "EOS", 0)                                                   \
+  T(EOS, u8"EOS", 0)                                                   \
                                                                      \
   /* Punctuators (ECMA-262, section 7.7, page 15). */                \
-  T(LPAREN, "(", 0)                                                  \
-  T(RPAREN, ")", 0)                                                  \
-  T(LBRACK, "[", 0)                                                  \
-  T(RBRACK, "]", 0)                                                  \
-  T(LBRACE, "{", 0)                                                  \
-  T(RBRACE, "}", 0)                                                  \
-  T(COLON, ":", 0)                                                   \
-  T(SEMICOLON, ";", 0)                                               \
-  T(PERIOD, ".", 0)                                                  \
-  T(ELLIPSIS, "...", 0)                                              \
-  T(CONDITIONAL, "?", 3)                                             \
-  T(INC, "++", 0)                                                    \
-  T(DEC, "--", 0)                                                    \
-  T(ARROW, "=>", 0)                                                  \
+  T(LPAREN, u8"(", 0)                                                  \
+  T(RPAREN, u8")", 0)                                                  \
+  T(LBRACK, u8"[", 0)                                                  \
+  T(RBRACK, u8"]", 0)                                                  \
+  T(LBRACE, u8"{", 0)                                                  \
+  T(RBRACE, u8"}", 0)                                                  \
+  T(COLON, u8":", 0)                                                   \
+  T(SEMICOLON, u8";", 0)                                               \
+  T(PERIOD, u8".", 0)                                                  \
+  T(ELLIPSIS, u8"...", 0)                                              \
+  T(CONDITIONAL, u8"?", 3)                                             \
+  T(INC, u8"++", 0)                                                    \
+  T(DEC, u8"--", 0)                                                    \
+  T(ARROW, u8"=>", 0)                                                  \
                                                                      \
   /* Assignment operators. */                                        \
   /* IsAssignmentOp() and Assignment::is_compound() relies on */     \
   /* this block of enum values being contiguous and sorted in the */ \
   /* same order! */                                                  \
-  T(INIT, "=init", 2) /* AST-use only. */                            \
-  T(ASSIGN, "=", 2)                                                  \
-  T(ASSIGN_BIT_OR, "|=", 2)                                          \
-  T(ASSIGN_BIT_XOR, "^=", 2)                                         \
-  T(ASSIGN_BIT_AND, "&=", 2)                                         \
-  T(ASSIGN_SHL, "<<=", 2)                                            \
-  T(ASSIGN_SAR, ">>=", 2)                                            \
-  T(ASSIGN_SHR, ">>>=", 2)                                           \
-  T(ASSIGN_ADD, "+=", 2)                                             \
-  T(ASSIGN_SUB, "-=", 2)                                             \
-  T(ASSIGN_MUL, "*=", 2)                                             \
-  T(ASSIGN_DIV, "/=", 2)                                             \
-  T(ASSIGN_MOD, "%=", 2)                                             \
-  T(ASSIGN_EXP, "**=", 2)                                            \
+  T(INIT, u8"=init", 2) /* AST-use only. */                            \
+  T(ASSIGN, u8"=", 2)                                                  \
+  T(ASSIGN_BIT_OR, u8"|=", 2)                                          \
+  T(ASSIGN_BIT_XOR, u8"^=", 2)                                         \
+  T(ASSIGN_BIT_AND, u8"&=", 2)                                         \
+  T(ASSIGN_SHL, u8"<<=", 2)                                            \
+  T(ASSIGN_SAR, u8">>=", 2)                                            \
+  T(ASSIGN_SHR, u8">>>=", 2)                                           \
+  T(ASSIGN_ADD, u8"+=", 2)                                             \
+  T(ASSIGN_SUB, u8"-=", 2)                                             \
+  T(ASSIGN_MUL, u8"*=", 2)                                             \
+  T(ASSIGN_DIV, u8"/=", 2)                                             \
+  T(ASSIGN_MOD, u8"%=", 2)                                             \
+  T(ASSIGN_EXP, u8"**=", 2)                                            \
                                                                      \
   /* Binary operators sorted by precedence. */                       \
   /* IsBinaryOp() relies on this block of enum values */             \
   /* being contiguous and sorted in the same order! */               \
-  T(COMMA, ",", 1)                                                   \
-  T(OR, "||", 4)                                                     \
-  T(AND, "&&", 5)                                                    \
-  T(BIT_OR, "|", 6)                                                  \
-  T(BIT_XOR, "^", 7)                                                 \
-  T(BIT_AND, "&", 8)                                                 \
-  T(SHL, "<<", 11)                                                   \
-  T(SAR, ">>", 11)                                                   \
-  T(SHR, ">>>", 11)                                                  \
-  T(ROR, "rotate right", 11) /* only used by Crankshaft */           \
-  T(ADD, "+", 12)                                                    \
-  T(SUB, "-", 12)                                                    \
-  T(MUL, "*", 13)                                                    \
-  T(DIV, "/", 13)                                                    \
-  T(MOD, "%", 13)                                                    \
-  T(EXP, "**", 14)                                                   \
+  T(COMMA, u8",", 1)                                                   \
+  T(OR, u8"||", 4)                                                     \
+  T(AND, u8"&&", 5)                                                    \
+  T(BIT_OR, u8"|", 6)                                                  \
+  T(BIT_XOR, u8"^", 7)                                                 \
+  T(BIT_AND, u8"&", 8)                                                 \
+  T(SHL, u8"<<", 11)                                                   \
+  T(SAR, u8">>", 11)                                                   \
+  T(SHR, u8">>>", 11)                                                  \
+  T(ROR, u8"rotate right", 11) /* only used by Crankshaft */           \
+  T(ADD, u8"+", 12)                                                    \
+  T(SUB, u8"-", 12)                                                    \
+  T(MUL, u8"*", 13)                                                    \
+  T(DIV, u8"/", 13)                                                    \
+  T(MOD, u8"%", 13)                                                    \
+  T(EXP, u8"**", 14)                                                   \
                                                                      \
   /* Compare operators sorted by precedence. */                      \
   /* IsCompareOp() relies on this block of enum values */            \
   /* being contiguous and sorted in the same order! */               \
-  T(EQ, "==", 9)                                                     \
-  T(NE, "!=", 9)                                                     \
-  T(EQ_STRICT, "===", 9)                                             \
-  T(NE_STRICT, "!==", 9)                                             \
-  T(LT, "<", 10)                                                     \
-  T(GT, ">", 10)                                                     \
-  T(LTE, "<=", 10)                                                   \
-  T(GTE, ">=", 10)                                                   \
-  K(INSTANCEOF, "instanceof", 10)                                    \
-  K(IN, "in", 10)                                                    \
+  T(EQ, u8"==", 9)                                                     \
+  T(NE, u8"!=", 9)                                                     \
+  T(EQ_STRICT, u8"===", 9)                                             \
+  T(NE_STRICT, u8"!==", 9)                                             \
+  T(LT, u8"<", 10)                                                     \
+  T(GT, u8">", 10)                                                     \
+  T(LTE, u8"<=", 10)                                                   \
+  T(GTE, u8">=", 10)                                                   \
+  K(INSTANCEOF, u8"instanceof", 10)                                    \
+  K(IN, u8"in", 10)                                                    \
                                                                      \
   /* Unary operators. */                                             \
   /* IsUnaryOp() relies on this block of enum values */              \
   /* being contiguous and sorted in the same order! */               \
-  T(NOT, "!", 0)                                                     \
-  T(BIT_NOT, "~", 0)                                                 \
-  K(DELETE, "delete", 0)                                             \
-  K(TYPEOF, "typeof", 0)                                             \
-  K(VOID, "void", 0)                                                 \
+  T(NOT, u8"!", 0)                                                     \
+  T(BIT_NOT, u8"~", 0)                                                 \
+  K(DELETE, u8"delete", 0)                                             \
+  K(TYPEOF, u8"typeof", 0)                                             \
+  K(VOID, u8"void", 0)                                                 \
                                                                      \
   /* Keywords (ECMA-262, section 7.5.2, page 13). */                 \
-  K(BREAK, "break", 0)                                               \
-  K(CASE, "case", 0)                                                 \
-  K(CATCH, "catch", 0)                                               \
-  K(CONTINUE, "continue", 0)                                         \
-  K(DEBUGGER, "debugger", 0)                                         \
-  K(DEFAULT, "default", 0)                                           \
+  K(BREAK, u8"break", 0)                                               \
+  K(CASE, u8"case", 0)                                                 \
+  K(CATCH, u8"catch", 0)                                               \
+  K(CONTINUE, u8"continue", 0)                                         \
+  K(DEBUGGER, u8"debugger", 0)                                         \
+  K(DEFAULT, u8"default", 0)                                           \
   /* DELETE */                                                       \
-  K(DO, "do", 0)                                                     \
-  K(ELSE, "else", 0)                                                 \
-  K(FINALLY, "finally", 0)                                           \
-  K(FOR, "for", 0)                                                   \
-  K(FUNCTION, "function", 0)                                         \
-  K(IF, "if", 0)                                                     \
+  K(DO, u8"do", 0)                                                     \
+  K(ELSE, u8"else", 0)                                                 \
+  K(FINALLY, u8"finally", 0)                                           \
+  K(FOR, u8"for", 0)                                                   \
+  K(FUNCTION, u8"function", 0)                                         \
+  K(IF, u8"if", 0)                                                     \
   /* IN */                                                           \
   /* INSTANCEOF */                                                   \
-  K(NEW, "new", 0)                                                   \
-  K(RETURN, "return", 0)                                             \
-  K(SWITCH, "switch", 0)                                             \
-  K(THIS, "this", 0)                                                 \
-  K(THROW, "throw", 0)                                               \
-  K(TRY, "try", 0)                                                   \
+  K(NEW, u8"new", 0)                                                   \
+  K(RETURN, u8"return", 0)                                             \
+  K(SWITCH, u8"switch", 0)                                             \
+  K(THIS, u8"this", 0)                                                 \
+  K(THROW, u8"throw", 0)                                               \
+  K(TRY, u8"try", 0)                                                   \
   /* TYPEOF */                                                       \
-  K(VAR, "var", 0)                                                   \
+  K(VAR, u8"var", 0)                                                   \
   /* VOID */                                                         \
-  K(WHILE, "while", 0)                                               \
-  K(WITH, "with", 0)                                                 \
+  K(WHILE, u8"while", 0)                                               \
+  K(WITH, u8"with", 0)                                                 \
                                                                      \
   /* Literals (ECMA-262, section 7.8, page 16). */                   \
-  K(NULL_LITERAL, "null", 0)                                         \
-  K(TRUE_LITERAL, "true", 0)                                         \
-  K(FALSE_LITERAL, "false", 0)                                       \
+  K(NULL_LITERAL, u8"null", 0)                                         \
+  K(TRUE_LITERAL, u8"true", 0)                                         \
+  K(FALSE_LITERAL, u8"false", 0)                                       \
   T(NUMBER, NULL, 0)                                                 \
   T(SMI, NULL, 0)                                                    \
   T(STRING, NULL, 0)                                                 \
@@ -150,18 +150,18 @@ namespace internal {
   /* Future reserved words (ECMA-262, section 7.6.1.2). */           \
   T(FUTURE_RESERVED_WORD, NULL, 0)                                   \
   T(FUTURE_STRICT_RESERVED_WORD, NULL, 0)                            \
-  K(CLASS, "class", 0)                                               \
-  K(CONST, "const", 0)                                               \
-  K(EXPORT, "export", 0)                                             \
-  K(EXTENDS, "extends", 0)                                           \
-  K(IMPORT, "import", 0)                                             \
-  K(LET, "let", 0)                                                   \
-  K(STATIC, "static", 0)                                             \
-  K(YIELD, "yield", 0)                                               \
-  K(SUPER, "super", 0)                                               \
+  K(CLASS, u8"class", 0)                                               \
+  K(CONST, u8"const", 0)                                               \
+  K(EXPORT, u8"export", 0)                                             \
+  K(EXTENDS, u8"extends", 0)                                           \
+  K(IMPORT, u8"import", 0)                                             \
+  K(LET, u8"let", 0)                                                   \
+  K(STATIC, u8"static", 0)                                             \
+  K(YIELD, u8"yield", 0)                                               \
+  K(SUPER, u8"super", 0)                                               \
                                                                      \
   /* Illegal token - not able to scan. */                            \
-  T(ILLEGAL, "ILLEGAL", 0)                                           \
+  T(ILLEGAL, u8"ILLEGAL", 0)                                           \
   T(ESCAPED_KEYWORD, NULL, 0)                                        \
   T(ESCAPED_STRICT_RESERVED_WORD, NULL, 0)                           \
                                                                      \
@@ -193,7 +193,7 @@ class Token {
 
   // Predicates
   static bool IsKeyword(Value tok) {
-    return token_type[tok] == 'K';
+    return token_type[tok] == '\x4b';
   }
 
   static bool IsIdentifier(Value tok, LanguageMode language_mode,

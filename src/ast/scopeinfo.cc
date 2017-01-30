@@ -724,39 +724,39 @@ static void PrintList(const char* list_name,
                       int end,
                       ScopeInfo* scope_info) {
   if (start < end) {
-    PrintF("\n  // %s\n", list_name);
+    PrintF(u8"\n  // %s\n", list_name);
     if (nof_internal_slots > 0) {
-      PrintF("  %2d - %2d [internal slots]\n", 0 , nof_internal_slots - 1);
+      PrintF(u8"  %2d - %2d [internal slots]\n", 0 , nof_internal_slots - 1);
     }
     for (int i = nof_internal_slots; start < end; ++i, ++start) {
-      PrintF("  %2d ", i);
+      PrintF(u8"  %2d ", i);
       String::cast(scope_info->get(start))->ShortPrint();
-      PrintF("\n");
+      PrintF(u8"\n");
     }
   }
 }
 
 
 void ScopeInfo::Print() {
-  PrintF("ScopeInfo ");
+  PrintF(u8"ScopeInfo ");
   if (HasFunctionName()) {
     FunctionName()->ShortPrint();
   } else {
-    PrintF("/* no function name */");
+    PrintF(u8"/* no function name */");
   }
-  PrintF("{");
+  PrintF(u8"{");
 
   if (length() > 0) {
-    PrintList("parameters", 0, ParameterEntriesIndex(),
+    PrintList(u8"parameters", 0, ParameterEntriesIndex(),
               ParameterEntriesIndex() + ParameterCount(), this);
-    PrintList("stack slots", 0, StackLocalEntriesIndex(),
+    PrintList(u8"stack slots", 0, StackLocalEntriesIndex(),
               StackLocalEntriesIndex() + StackLocalCount(), this);
-    PrintList("context slots", Context::MIN_CONTEXT_SLOTS,
+    PrintList(u8"context slots", Context::MIN_CONTEXT_SLOTS,
               ContextLocalNameEntriesIndex(),
               ContextLocalNameEntriesIndex() + ContextLocalCount(), this);
   }
 
-  PrintF("}\n");
+  PrintF(u8"}\n");
 }
 #endif  // DEBUG
 

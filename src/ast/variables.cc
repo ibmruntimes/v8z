@@ -15,15 +15,15 @@ namespace internal {
 
 const char* Variable::Mode2String(VariableMode mode) {
   switch (mode) {
-    case VAR: return "VAR";
-    case CONST_LEGACY: return "CONST_LEGACY";
-    case LET: return "LET";
-    case CONST: return "CONST";
-    case IMPORT: return "IMPORT";
-    case DYNAMIC: return "DYNAMIC";
-    case DYNAMIC_GLOBAL: return "DYNAMIC_GLOBAL";
-    case DYNAMIC_LOCAL: return "DYNAMIC_LOCAL";
-    case TEMPORARY: return "TEMPORARY";
+    case VAR: return u8"VAR";
+    case CONST_LEGACY: return u8"CONST_LEGACY";
+    case LET: return u8"LET";
+    case CONST: return u8"CONST";
+    case IMPORT: return u8"IMPORT";
+    case DYNAMIC: return u8"DYNAMIC";
+    case DYNAMIC_GLOBAL: return u8"DYNAMIC_GLOBAL";
+    case DYNAMIC_LOCAL: return u8"DYNAMIC_LOCAL";
+    case TEMPORARY: return u8"TEMPORARY";
   }
   UNREACHABLE();
   return NULL;

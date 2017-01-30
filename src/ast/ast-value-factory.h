@@ -240,39 +240,39 @@ class AstValue : public ZoneObject {
 
 // For generating constants.
 #define STRING_CONSTANTS(F)                     \
-  F(anonymous_function, "(anonymous function)") \
-  F(arguments, "arguments")                     \
-  F(constructor, "constructor")                 \
-  F(default, "default")                         \
-  F(done, "done")                               \
-  F(dot, ".")                                   \
-  F(dot_for, ".for")                            \
-  F(dot_generator, ".generator")                \
-  F(dot_generator_object, ".generator_object")  \
-  F(dot_iterator, ".iterator")                  \
-  F(dot_result, ".result")                      \
-  F(dot_switch_tag, ".switch_tag")              \
-  F(dot_catch, ".catch")                        \
-  F(empty, "")                                  \
-  F(eval, "eval")                               \
-  F(function, "function")                       \
-  F(get_space, "get ")                          \
-  F(let, "let")                                 \
-  F(native, "native")                           \
-  F(new_target, ".new.target")                  \
-  F(next, "next")                               \
-  F(proto, "__proto__")                         \
-  F(prototype, "prototype")                     \
-  F(rest_parameter, ".rest_parameter")          \
-  F(return, "return")                           \
-  F(set_space, "set ")                          \
-  F(this, "this")                               \
-  F(this_function, ".this_function")            \
-  F(throw, "throw")                             \
-  F(undefined, "undefined")                     \
-  F(use_asm, "use asm")                         \
-  F(use_strict, "use strict")                   \
-  F(value, "value")
+  F(anonymous_function, u8"(anonymous function)") \
+  F(arguments, u8"arguments")                     \
+  F(constructor, u8"constructor")                 \
+  F(default, u8"default")                         \
+  F(done, u8"done")                               \
+  F(dot, u8".")                                   \
+  F(dot_for, u8".for")                            \
+  F(dot_generator, u8".generator")                \
+  F(dot_generator_object, u8".generator_object")  \
+  F(dot_iterator, u8".iterator")                  \
+  F(dot_result, u8".result")                      \
+  F(dot_switch_tag, u8".switch_tag")              \
+  F(dot_catch, u8".catch")                        \
+  F(empty, u8"")                                  \
+  F(eval, u8"eval")                               \
+  F(function, u8"function")                       \
+  F(get_space, u8"get ")                          \
+  F(let, u8"let")                                 \
+  F(native, u8"native")                           \
+  F(new_target, u8".new.target")                  \
+  F(next, u8"next")                               \
+  F(proto, u8"__proto__")                         \
+  F(prototype, u8"prototype")                     \
+  F(rest_parameter, u8".rest_parameter")          \
+  F(return, u8"return")                           \
+  F(set_space, u8"set ")                          \
+  F(this, u8"this")                               \
+  F(this_function, u8".this_function")            \
+  F(throw, u8"throw")                             \
+  F(undefined, u8"undefined")                     \
+  F(use_asm, u8"use asm")                         \
+  F(use_strict, u8"use strict")                   \
+  F(value, u8"value")
 
 #define OTHER_CONSTANTS(F) \
   F(true_value)            \

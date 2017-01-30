@@ -407,8 +407,8 @@ class Scanner {
         !literal_contains_escapes()) {
       const char* token =
           reinterpret_cast<const char*>(literal_one_byte_string().start());
-      *is_get = strncmp(token, "get", 3) == 0;
-      *is_set = !*is_get && strncmp(token, "set", 3) == 0;
+      *is_get = strncmp(token, u8"get", 3) == 0;
+      *is_set = !*is_get && strncmp(token, u8"set", 3) == 0;
     }
   }
 

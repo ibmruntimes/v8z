@@ -9,7 +9,7 @@
 namespace v8 {
 namespace internal {
 
-#define T(name, string, precedence) #name,
+#define T(name, string, precedence) USTR(#name),
 const char* const Token::name_[NUM_TOKENS] = {
   TOKEN_LIST(T, T)
 };
@@ -30,8 +30,8 @@ const int8_t Token::precedence_[NUM_TOKENS] = {
 #undef T
 
 
-#define KT(a, b, c) 'T',
-#define KK(a, b, c) 'K',
+#define KT(a, b, c) '\x54',
+#define KK(a, b, c) '\x4b',
 const char Token::token_type[] = {
   TOKEN_LIST(KT, KK)
 };

@@ -489,7 +489,7 @@ class ParserBase : public Traits {
     if (Check(Token::IN)) {
       *visit_mode = ForEachStatement::ENUMERATE;
       return true;
-    } else if (CheckContextualKeyword(CStrVector("of"))) {
+    } else if (CheckContextualKeyword(CStrVector(u8"of"))) {
       *visit_mode = ForEachStatement::ITERATE;
       return true;
     }
@@ -497,7 +497,7 @@ class ParserBase : public Traits {
   }
 
   bool PeekInOrOf() {
-    return peek() == Token::IN || PeekContextualKeyword(CStrVector("of"));
+    return peek() == Token::IN || PeekContextualKeyword(CStrVector(u8"of"));
   }
 
   // Checks whether an octal literal was last seen between beg_pos and end_pos.
@@ -872,7 +872,7 @@ class ParserBase : public Traits {
                        bool is_generator, bool* ok) override;
 
    private:
-    bool IsProto() { return this->scanner()->LiteralMatches("__proto__", 9); }
+    bool IsProto() { return this->scanner()->LiteralMatches(u8"__proto__", 9); }
 
     bool has_seen_proto_;
   };
@@ -888,10 +888,10 @@ class ParserBase : public Traits {
 
    private:
     bool IsConstructor() {
-      return this->scanner()->LiteralMatches("constructor", 11);
+      return this->scanner()->LiteralMatches(u8"constructor", 11);
     }
     bool IsPrototype() {
-      return this->scanner()->LiteralMatches("prototype", 9);
+      return this->scanner()->LiteralMatches(u8"prototype", 9);
     }
 
     bool has_seen_constructor_;
@@ -1062,6 +1062,13 @@ ParserBase<Traits>::ParseAndClassifyIdentifier(ExpressionClassifier* classifier,
     // is actually a formal parameter.  Therefore besides the errors that we
     // must detect because we know we're in strict mode, we also record any
     // error that we might make in the future once we know the language mode.
+    //printf(u8"Identifier:%s\n", name.raw_name());
+    /*
+    const unsigned char * bytes = ((AstRawString *)name)->raw_data();
+    for (int idx = 0 ; idx < name->length(); idx++) {
+         printf("%c",bytes[idx]);
+         }
+    printf(u8"\n");*/
     if (this->IsEval(name)) {
       classifier->RecordStrictModeFormalParameterError(
           scanner()->location(), MessageTemplate::kStrictEvalArguments);
@@ -1100,7 +1107,7 @@ ParserBase<Traits>::ParseAndClassifyIdentifier(ExpressionClassifier* classifier,
     }
     if (next == Token::LET ||
         (next == Token::ESCAPED_STRICT_RESERVED_WORD &&
-         scanner()->is_literal_contextual_keyword(CStrVector("let")))) {
+         scanner()->is_literal_contextual_keyword(CStrVector(u8"let")))) {
       classifier->RecordLetPatternError(scanner()->location(),
                                         MessageTemplate::kLetInLexicalBinding);
     }
@@ -2489,7 +2496,7 @@ ParserBase<Traits>::ParseMemberExpression(ExpressionClassifier* classifier,
     if (allow_harmony_function_sent() && peek() == Token::PERIOD) {
       // function.sent
       int pos = position();
-      ExpectMetaProperty(CStrVector("sent"), "function.sent", pos, CHECK_OK);
+      ExpectMetaProperty(CStrVector(u8"sent"), u8"function.sent", pos, CHECK_OK);
 
       if (!is_generator()) {
         // TODO(neis): allow escaping into closures?
@@ -2583,7 +2590,7 @@ template <class Traits>
 typename ParserBase<Traits>::ExpressionT
 ParserBase<Traits>::ParseNewTargetExpression(bool* ok) {
   int pos = position();
-  ExpectMetaProperty(CStrVector("target"), "new.target", pos, CHECK_OK);
+  ExpectMetaProperty(CStrVector(u8"target"), u8"new.target", pos, CHECK_OK);
 
   if (!scope_->ReceiverScope()->is_function_scope()) {
     ReportMessageAt(scanner()->location(),
@@ -2972,7 +2979,7 @@ ParserBase<Traits>::ParseTemplateLiteral(ExpressionT tag, int start,
     } else if (next == Token::ILLEGAL) {
       Traits::ReportMessageAt(
           Scanner::Location(position() + 1, peek_position()),
-          MessageTemplate::kUnexpectedToken, "ILLEGAL", kSyntaxError);
+          MessageTemplate::kUnexpectedToken, u8"ILLEGAL", kSyntaxError);
       *ok = false;
       return Traits::EmptyExpression();
     }
@@ -3003,7 +3010,7 @@ ParserBase<Traits>::ParseTemplateLiteral(ExpressionT tag, int start,
     } else if (next == Token::ILLEGAL) {
       Traits::ReportMessageAt(
           Scanner::Location(position() + 1, peek_position()),
-          MessageTemplate::kUnexpectedToken, "ILLEGAL", kSyntaxError);
+          MessageTemplate::kUnexpectedToken, u8"ILLEGAL", kSyntaxError);
       *ok = false;
       return Traits::EmptyExpression();
     }
