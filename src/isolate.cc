@@ -1040,6 +1040,7 @@ void Isolate::DoThrow(Object* exception, MessageLocation* location) {
     // It's not safe to try to make message objects or collect stack traces
     // while the bootstrapper is active since the infrastructure may not have
     // been properly initialized.
+#pragma convert("ISO8859-1")
     if (!bootstrapping) {
       Handle<JSArray> stack_trace_object;
       if (capture_stack_trace_for_uncaught_exceptions_) {
@@ -1066,9 +1067,9 @@ void Isolate::DoThrow(Object* exception, MessageLocation* location) {
       }
 
       Handle<Object> exception_arg = exception_handle;
-      // If the exception argument is a custom object, turn it into a string
-      // before throwing as uncaught exception.  Note that the pending
-      // exception object to be set later must not be turned into a string.
+      // If the abort-on-uncaught-exception flag is specified, and if the
+      // exception is not caught by JavaScript (even when an external handler is
+      // present).
       if (exception_arg->IsJSObject() && !IsErrorObject(exception_arg)) {
         MaybeHandle<Object> maybe_exception =
             Execution::ToDetailString(this, exception_arg);
@@ -1097,12 +1098,24 @@ void Isolate::DoThrow(Object* exception, MessageLocation* location) {
       if (fatal_exception_depth == 0 &&
           FLAG_abort_on_uncaught_exception &&
           (report_exception || can_be_caught_externally)) {
-        fatal_exception_depth++;
-        PrintF(stderr,
-               "\x6c\xa2\xa\xaF\x52\x4f\x4d\xa",
-               MessageHandler::GetLocalizedMessage(this, message_obj).get());
-        PrintCurrentStackTrace(stderr);
-        base::OS::Abort();
+        // If the embedder didn't specify a custom uncaught exception callback,
+        // or if the custom callback determined that V8 should abort, then
+        // abort
+        bool should_abort = !abort_on_uncaught_exception_callback_ ||
+                             abort_on_uncaught_exception_callback_(
+                                 reinterpret_cast<v8::Isolate*>(this)
+                             );
+
+        if (should_abort) {
+          fatal_exception_depth++;
+          // This flag is intended for use by JavaScript developers, so
+          // print a user-friendly stack trace (not an internal one).
+          FPrintASCII(stderr,
+                 "%s\n\nFROM\n",
+                 MessageHandler::GetLocalizedMessage(this, message_obj).get());
+          PrintCurrentStackTrace(stderr);
+          base::OS::Abort();
+        }
       }
     } else if (location != NULL && !location->script().is_null()) {
       // We are bootstrapping and caught an error where the location is set
@@ -1145,6 +1158,7 @@ void Isolate::DoThrow(Object* exception, MessageLocation* location) {
       }
 #endif
     }
+#pragma convert(pop)
   }
 
   // Save the message for reporting if the the exception remains uncaught.
@@ -1296,6 +1310,12 @@ void Isolate::SetCaptureStackTraceForUncaughtExceptions(
   capture_stack_trace_for_uncaught_exceptions_ = capture;
   stack_trace_for_uncaught_exceptions_frame_limit_ = frame_limit;
   stack_trace_for_uncaught_exceptions_options_ = options;
+}
+
+
+void Isolate::SetAbortOnUncaughtException(
+      v8::Isolate::abort_on_uncaught_exception_t callback) {
+  abort_on_uncaught_exception_callback_ = callback;
 }
 
 
@@ -1474,7 +1494,8 @@ Isolate::Isolate()
       num_sweeper_threads_(0),
       stress_deopt_count_(0),
       next_optimization_id_(0),
-      use_counter_callback_(NULL) {
+      use_counter_callback_(NULL),
+      abort_on_uncaught_exception_callback_(NULL) {
   id_ = base::NoBarrier_AtomicIncrement(&isolate_counter_, 1);
   TRACE_ISOLATE(constructor);
 
