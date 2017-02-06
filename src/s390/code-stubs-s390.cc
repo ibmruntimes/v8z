@@ -1254,6 +1254,8 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
 
   Label invoke, handler_entry, exit;
 
+  __ function_descriptor();
+
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
 #if V8_OS_ZOS

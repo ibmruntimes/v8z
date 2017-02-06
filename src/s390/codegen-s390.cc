@@ -42,6 +42,7 @@ UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
     Register temp2 = r7;
     Register temp3 = r8;
 
+    __ function_descriptor();
     __ Push(temp3, temp2, temp1);
     MathExpGenerator::EmitMathExp(&masm, input, result, double_scratch1,
                                   double_scratch2, temp1, temp2, temp3);
@@ -76,6 +77,7 @@ UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
 
   MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
                       CodeObjectRequired::kNo);
+  __ function_descriptor();
 
   __ MovFromFloatParameter(d0);
   __ sqdbr(d0, d0);

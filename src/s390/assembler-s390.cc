@@ -2986,14 +2986,12 @@ void Assembler::GrowBuffer(int needed) {
                                reloc_info_writer.last_pc() + pc_delta);
 
 
-#ifdef V8_OS_ZOS
   for (RelocIterator it(desc); !it.done(); it.next()) {
 	RelocInfo::Mode rmode = it.rinfo()->rmode();
     if (rmode == RelocInfo::INTERNAL_REFERENCE) {
 	  RelocateInternalReference(it.rinfo()->pc(), pc_delta, 0);  
 	}
   }
-#endif
   // On s390 Linux None of our relocation types are pc relative pointing outside the code
   // buffer nor pc absolute pointing inside the code buffer, so there is no need
   // to relocate any emitted relocation entries.
@@ -3024,6 +3022,7 @@ void Assembler::dp(uintptr_t data) {
 }
 
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
+  RelocInfo rinfo(isolate(), pc_, rmode, data,  NULL);
   if (RelocInfo::IsNone(rmode) ||
       // Don't record external references unless the heap will be serialized.
       (rmode == RelocInfo::EXTERNAL_REFERENCE && !serializer_enabled() &&
@@ -3032,10 +3031,19 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
   }
   if (rmode == RelocInfo::CODE_TARGET_WITH_ID) {
     data = RecordedAstId().ToInt();
+    RelocInfo reloc_info_with_ast_id(isolate(),
+                                     rinfo.pc(),
+                                     rinfo.rmode(),
+                                     RecordedAstId().ToInt(),
+                                     NULL);
     ClearRecordedAstId();
+    reloc_info_writer.Write(&reloc_info_with_ast_id);
+  } else {
+    reloc_info_writer.Write(&rinfo);
   }
-  DeferredRelocInfo rinfo(pc_offset(), rmode, data);
-  relocations_.push_back(rinfo);
+
+ /* DeferredRelocInfo rinfo(pc_offset(), rmode, data);
+  relocations_.push_back(rinfo);*/
 }
 
 void Assembler::emit_label_addr(Label* label) {
@@ -3075,12 +3083,13 @@ void Assembler::EmitRelocations() {
   reloc_info_writer.Finish();
 }
 
-#ifdef V8_OS_ZOS
 void Assembler::function_descriptor() {
+#ifdef ABI_USES_FUNCTION_DESCRIPTORS  
   DCHECK(pc_offset() == 0);
   RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
   dp(0);
   dp(reinterpret_cast<uintptr_t>(pc_) + kPointerSize);
+#endif
 }
 
 void Assembler::RelocateInternalReference(Address pc,
@@ -3124,7 +3133,6 @@ int Assembler::DecodeInternalReference(Vector<char> buffer, Address pc) {
 #endif
   return 0;
 }
-#endif //V8_OS_ZOS
 
 
 }  // namespace internal

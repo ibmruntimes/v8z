@@ -51,8 +51,7 @@ void RelocInfo::apply(intptr_t delta) {
   // Absolute code pointer inside code object moves with the code object.
   if (IsInternalReference(rmode_)) {
     // Jump table entry
-    Address target = Memory::Address_at(pc_);
-    Memory::Address_at(pc_) = target + delta;
+     Assembler::RelocateInternalReference(pc_, delta, 0);  
   } else if (IsCodeTarget(rmode_)) {
     SixByteInstr instr =
         Instruction::InstructionBits(reinterpret_cast<const byte*>(pc_));

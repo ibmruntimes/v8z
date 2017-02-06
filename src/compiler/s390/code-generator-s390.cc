@@ -1779,9 +1779,10 @@ void CodeGenerator::AssembleDeoptimizerCall(
 
 void CodeGenerator::AssemblePrologue() {
   CallDescriptor* descriptor = linkage()->GetIncomingDescriptor();
-
+ 
   if (frame_access_state()->has_frame()) {
     if (descriptor->IsCFunctionCall()) {
+      __ function_descriptor();
       __ Push(r14, fp);
       __ LoadRR(fp, sp);
     } else if (descriptor->IsJSFunctionCall()) {
