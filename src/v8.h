@@ -93,7 +93,6 @@ class V8 : public AllStatic {
 
   static void InitializePlatform(v8::Platform* platform);
   static void ShutdownPlatform();
-  static void ReleaseSystemResources();
   static v8::Platform* GetCurrentPlatform();
 
  private:

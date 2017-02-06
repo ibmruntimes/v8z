@@ -49,7 +49,6 @@
 #include "src/base/platform/platform.h"
 #if V8_OS_ZOS
 #include "src/base/platform/platform-zos.h"
-#include "src/utils.h"
 #endif
 #include "src/base/platform/time.h"
 #include "src/base/utils/random-number-generator.h"
@@ -339,7 +338,7 @@ void OS::Sleep(int milliseconds) {
 
 
 void OS::Abort() {
-  v8::V8::ReleaseSystemResources();
+  v8::base::Semaphore::ReleaseSystemResources();
   if (g_hard_abort) {
     V8_IMMEDIATE_CRASH();
   }
@@ -550,6 +549,54 @@ void OS::VFPrint(FILE* out, const char* format, va_list args) {
 }
 
 
+#pragma convert("IBM-1047")
+inline int GetFirstFlagFrom(const char* format_e, int start = 0) {
+  int flag_pos = start;
+  for (; format_e[flag_pos] != '\0' && format_e[flag_pos] != '%'; flag_pos++); // find the first flag
+  return flag_pos;
+}
+
+
+void OS::VFPrintASCII(FILE* out, const char* format_a, va_list args) {
+  size_t format_len = strlen(format_a);
+  char buffer_e[format_len + 1];
+  char * format_e = buffer_e;
+  memcpy(format_e, format_a, format_len + 1);
+  __a2e_s(format_e);
+  int first_flag = GetFirstFlagFrom(format_e);
+  if (first_flag > 0)
+    OS::FPrint(out, "%.*s", first_flag, format_e);
+  format_e += first_flag;
+  if (format_e[0] == '\0') return;
+
+  do {
+    int next_flag = GetFirstFlagFrom(format_e, 1);
+    char tmp = format_e[next_flag];
+    format_e[next_flag] = '\0';
+    char flag = format_e[1];
+    if (flag == 's') {
+      // convert arg
+      char * str = va_arg(args, char *);
+      size_t str_len = strlen(str);
+      char str_e[str_len + 1];
+      memcpy(str_e, str, str_len + 1);
+      __a2e_s(str_e);
+      OS::FPrint(out, format_e, str_e);
+    } else if (flag == 'd') {
+      int num = va_arg(args, int);
+      OS::FPrint(out, format_e, num);
+    } else if (flag == 'c') {
+      OS::FPrint(out, format_e, Ascii2Ebcdic(va_arg(args, char)));
+    } else {
+      OS::VFPrint(out, format_e, args);
+    }
+    format_e[next_flag] = tmp;
+    format_e += next_flag;
+  } while (format_e[0] != '\0');
+}
+#pragma convert(pop)
+
+
 void OS::PrintError(const char* format, ...) {
   va_list args;
   va_start(args, format);
@@ -562,7 +609,7 @@ void OS::VPrintError(const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_ERROR, LOG_TAG, format, args);
 #elif defined(V8_OS_ZOS)
-  v8::internal::VFPrintASCII(stderr, format, args);
+  OS::VFPrintASCII(stderr, format, args);
 #else
   vfprintf(stderr, format, args);
 #endif
