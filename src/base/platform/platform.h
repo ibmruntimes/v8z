@@ -159,10 +159,17 @@ class OS {
   // should go to stdout.
   static void Print(const char* format, ...);
   static void VPrint(const char* format, va_list args);
+#ifdef V8_OS_ZOS
+  static void PrintASCII(const char* format_a, ...);
+#endif
 
   // Print output to a file. This is mostly used for debugging output.
   static void FPrint(FILE* out, const char* format, ...);
   static void VFPrint(FILE* out, const char* format, va_list args);
+#ifdef V8_OS_ZOS
+  static void FPrintASCII(FILE* out, const char* format_a, ...);
+  static void VFPrintASCII(FILE* out, const char* format_a, va_list args);
+#endif
 
   // Print error output to console. This is mostly used for error message
   // output. On platforms that has standard terminal output, the output
@@ -233,9 +240,9 @@ class OS {
 #ifdef V8_OS_ZOS
   static int SNPrintFASCII(char* str, int length, const char* format, ...);
   static int VSNPrintFASCII(char* str,
-                       int length,
-                       const char* format,
-                       va_list args);
+                            int length,
+                            const char* format,
+                            va_list args);
 #endif
 
   static char* StrChr(char* str, int c);

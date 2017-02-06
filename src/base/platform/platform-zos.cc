@@ -422,6 +422,74 @@ bool VirtualMemory::HasLazyCommits() {
   return true;
 }
 
+
+inline int GetFirstFlagFrom(const char* format_e, int start = 0) {
+  int flag_pos = start;
+  // find the first flag
+  for (; format_e[flag_pos] != '\0' && format_e[flag_pos] != '%'; flag_pos++);
+  return flag_pos;
+}
+
+
+FILE* OS::FOpenASCII(const char* path_a, const char* mode_a) {
+  int path_len = strlen(path_a);
+  int mode_len = strlen(mode_a);
+  char path[path_len + 1];
+  char mode[mode_len + 1];
+  memmove(path, path_a, path_len + 1);
+  memmove(mode, mode_a, mode_len + 1);
+  __a2e_s(path);
+  __a2e_s(mode);
+  FILE* file = fopen(path, mode);
+  if (file == NULL) return NULL;
+  struct stat file_stat;
+  if (fstat(fileno(file), &file_stat) != 0) return NULL;
+  bool is_regular_file = ((file_stat.st_mode & S_IFREG) != 0);
+  if (is_regular_file) return file;
+  fclose(file);
+  return NULL;
+}
+
+
+void OS::VFPrintASCII(FILE* out, const char* format_a, va_list args) {
+  size_t format_len = strlen(format_a);
+  char buffer_e[format_len + 1];
+  char * format_e = buffer_e;
+  memcpy(format_e, format_a, format_len + 1);
+  __a2e_s(format_e);
+  int first_flag = GetFirstFlagFrom(format_e);
+  if (first_flag > 0)
+    OS::FPrint(out, "%.*s", first_flag, format_e);
+  format_e += first_flag;
+  if (format_e[0] == '\0') return;
+
+  do {
+    int next_flag = GetFirstFlagFrom(format_e, 1);
+    char tmp = format_e[next_flag];
+    format_e[next_flag] = '\0';
+    char flag = format_e[1];
+    if (flag == 's') {
+      // convert arg
+      char * str = va_arg(args, char *);
+      size_t str_len = strlen(str);
+      char str_e[str_len + 1];
+      memcpy(str_e, str, str_len + 1);
+      __a2e_s(str_e);
+      OS::FPrint(out, format_e, str_e);
+    } else if (flag == 'd') {
+      int num = va_arg(args, int);
+      OS::FPrint(out, format_e, num);
+    } else if (flag == 'c') {
+      OS::FPrint(out, format_e, Ascii2Ebcdic(va_arg(args, char)));
+    } else {
+      OS::VFPrint(out, format_e, args);
+    }
+    format_e[next_flag] = tmp;
+    format_e += next_flag;
+  } while (format_e[0] != '\0');
+}
+
+
 int OS::SNPrintFASCII(char* str, int length, const char* format, ...) {
   va_list args;
   va_start(args, format);
@@ -446,4 +514,33 @@ int OS::VSNPrintFASCII(char* str,
   }
 }
 
+/*
+int OS::SNPrintFASCII(Vector<char> str, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  int result = VSNPrintFASCII(str, format, args);
+  va_end(args);
+  return result;
+}
+
+
+int OS::VSNPrintFASCII(Vector<char> str, const char* format, va_list args) {
+  return OS::VSNPrintFASCII(str.start(), str.length(), format, args);
+}
+*/
+
+void OS::FPrintASCII(FILE* out, const char* format_a, ...) {
+  va_list args;
+  va_start(args, format_a);
+  OS::VFPrintASCII(out, format_a, args);
+  va_end(args);
+}
+
+
+void OS::PrintASCII(const char* format_a, ...) {
+  va_list args;
+  va_start(args, format_a);
+  OS::VFPrintASCII(stdout, format_a, args);
+  va_end(args);
+}
 } }  // namespace v8::base
