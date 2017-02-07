@@ -317,6 +317,15 @@ class SignalHandler : public AllStatic {
 #endif
     signal_handler_installed_ =
         (sigaction(SIGPROF, &sa, &old_signal_handler_) == 0);
+
+#if V8_OS_ZOS
+    sigset_t set;
+    sigemptyset(&set);
+    sigprocmask(SIG_UNBLOCK, NULL, &set);
+    sigaddset(&set, SIGPROF);
+    sigprocmask(SIG_UNBLOCK, &set, NULL);
+#endif
+
   }
 
   static void Restore() {

@@ -337,6 +337,8 @@ class Logger {
   // Phones and tablets have processors that are much slower than desktop
   // and laptop computers for which current heuristics are tuned.
   static const int kSamplingIntervalMs = 5;
+#elif defined(__MVS__)
+  static const int kSamplingIntervalMs = 250;
 #else
   static const int kSamplingIntervalMs = 1;
 #endif

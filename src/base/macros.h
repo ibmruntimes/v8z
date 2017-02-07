@@ -126,6 +126,7 @@ inline bool IsPowerOf2(T x) {
 // Define our own macros for writing 64-bit constants.  This is less fragile
 // than defining __STDC_CONSTANT_MACROS before including <stdint.h>, and it
 // works on compilers that don't have it (like MSVC).
+#pragma convert("ISO8859-1")
 #if V8_CC_MSVC
 # define V8_UINT64_C(x)   (x ## UI64)
 # define V8_INT64_C(x)    (x ## I64)
@@ -171,6 +172,7 @@ inline bool IsPowerOf2(T x) {
 #undef V8PRIxPTR
 #define V8PRIxPTR "lx"
 #endif
+#pragma convert(pop)
 
 // The following macro works on both 32 and 64-bit platforms.
 // Usage: instead of writing 0x1234567890123456

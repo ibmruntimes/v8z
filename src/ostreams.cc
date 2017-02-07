@@ -2,6 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifdef __MVS__
+#define _AE_BIMODAL 1
+#pragma convert("ISO8859-1")
+#define snprintf __snprintf_a
+#endif
+
 #include <algorithm>
 #include <cmath>
 
@@ -19,7 +25,7 @@ namespace internal {
 template<class T>
 OStream& OStream::print(const char* format, T x) {
   char buf[32];
-  int n = snprintf(buf, sizeof(buf), format, x);
+  int n = __snprintf_a(buf, sizeof(buf), format, x);
   return (n < 0) ? *this : write(buf, n);
 }
 

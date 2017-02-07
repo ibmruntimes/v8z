@@ -6,6 +6,9 @@
 
 #include "src/log-utils.h"
 #include "src/string-stream.h"
+#if V8_OS_ZOS
+#include <unistd.h>
+#endif
 
 namespace v8 {
 namespace internal {
@@ -67,7 +70,11 @@ void Log::OpenTemporaryFile() {
 
 void Log::OpenFile(const char* name) {
   DCHECK(!IsEnabled());
+#ifdef __MVS__
+  output_handle_ = base::OS::FOpenASCII(name, base::OS::LogFileOpenMode);
+#else
   output_handle_ = base::OS::FOpen(name, base::OS::LogFileOpenMode);
+#endif
 }
 
 
@@ -112,7 +119,7 @@ void Log::MessageBuilder::Append(const char* format, ...) {
 void Log::MessageBuilder::AppendVA(const char* format, va_list args) {
   Vector<char> buf(log_->message_buffer_ + pos_,
                    Log::kMessageBufferSize - pos_);
-  int result = v8::internal::VSNPrintF(buf, format, args);
+  int result = v8::internal::VSNPrintFASCII(buf, format, args);
 
   // Result is -1 if output was truncated.
   if (result >= 0) {
@@ -154,7 +161,9 @@ void Log::MessageBuilder::Append(String* str) {
 
 
 void Log::MessageBuilder::AppendAddress(Address addr) {
-  Append("\x30\x78\x25" V8PRIxPTR, addr);
+#pragma convert("ISO8859-1")
+  Append("0x%" V8PRIxPTR, addr);
+#pragma convert(pop)
 }
 
 
@@ -166,7 +175,9 @@ void Log::MessageBuilder::AppendSymbolName(Symbol* symbol) {
     AppendDetailed(String::cast(symbol->name()), false);
     Append("\x22\x20");
   }
-  Append("\x68\x61\x73\x68\x20\x6c\xa7\x29", symbol->Hash());
+#pragma convert("ISO8859-1")
+  Append("hash %x)", symbol->Hash());
+#pragma convert(pop)
 }
 
 
@@ -182,14 +193,20 @@ void Log::MessageBuilder::AppendDetailed(String* str, bool show_impl_info) {
       Append('\x65');
     if (StringShape(str).IsInternalized())
       Append('\x23');
-    Append("\x3a\x6c\x89\x3a", str->length());
+#pragma convert("ISO8859-1")
+    Append(":%i:", str->length());
+#pragma convert(pop)
   }
   for (int i = 0; i < len; i++) {
     uc32 c = str->Get(i);
     if (GET_ASCII_CODE(c) > 0xff) {
-      Append("\x5c\x75\x6c\xf0\xf4\xa7", c);
+#pragma convert("ISO8859-1")
+      Append("\\u%04x", c);
+#pragma convert(pop)
     } else if (GET_ASCII_CODE(c) < 32 || GET_ASCII_CODE(c) > 126) {
-      Append("\x5c\x78\x6c\xf0\xf2\xa7", c);
+#pragma convert("ISO8859-1")
+      Append("\\x%02x", c);
+#pragma convert(pop)
     } else if (c == '\x2c') {
       Append("\x5c\x2c");
     } else if (c == '\x5c') {
@@ -197,7 +214,9 @@ void Log::MessageBuilder::AppendDetailed(String* str, bool show_impl_info) {
     } else if (c == '\x22') {
       Append("\x22\x22");
     } else {
-      Append("\x6c\x93\x83", c);
+#pragma convert("ISO8859-1")
+      Append("%lc", c);
+#pragma convert(pop)
     }
   }
 }
@@ -223,6 +242,9 @@ void Log::MessageBuilder::WriteToLogFile() {
   DCHECK(pos_ == 0 || log_->message_buffer_[pos_ - 1] != '\xa');
   if (pos_ == Log::kMessageBufferSize) pos_--;
   log_->message_buffer_[pos_++] = '\xa';
+#if V8_OS_ZOS
+  __a2e_l(log_->message_buffer_, pos_);
+#endif
   const int written = log_->WriteToFile(log_->message_buffer_, pos_);
   if (written != pos_) {
     log_->stop();

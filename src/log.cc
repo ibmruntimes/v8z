@@ -819,7 +819,9 @@ void Logger::StringEvent(const char* name, const char* value) {
 void Logger::UncheckedStringEvent(const char* name, const char* value) {
   if (!log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c\x22\x6c\xa2\x22", name, value);
+#pragma convert("ISO8859-1")
+  msg.Append("%s,\"%s\"", name, value);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -837,7 +839,9 @@ void Logger::IntPtrTEvent(const char* name, intptr_t value) {
 void Logger::UncheckedIntEvent(const char* name, int value) {
   if (!log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c\x6c\x84", name, value);
+#pragma convert("ISO8859-1")
+  msg.Append("%s,%d", name, value);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -845,7 +849,9 @@ void Logger::UncheckedIntEvent(const char* name, int value) {
 void Logger::UncheckedIntPtrTEvent(const char* name, intptr_t value) {
   if (!log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c\x25" V8_PTR_PREFIX "\x64", name, value);
+#pragma convert("ISO8859-1")
+  msg.Append("%s,%" V8_PTR_PREFIX "d", name, value);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -853,7 +859,9 @@ void Logger::UncheckedIntPtrTEvent(const char* name, intptr_t value) {
 void Logger::HandleEvent(const char* name, Object** location) {
   if (!log_->IsEnabled() || !FLAG_log_handles) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c\x30\x78\x25" V8PRIxPTR, name, location);
+#pragma convert("ISO8859-1")
+  msg.Append("%s,0x%" V8PRIxPTR, name, location);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -901,8 +909,10 @@ void Logger::SharedLibraryEvent(const std::string& library_path,
                                 uintptr_t end) {
   if (!log_->IsEnabled() || !FLAG_prof) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x73\x68\x61\x72\x65\x64\x2d\x6c\x69\x62\x72\x61\x72\x79\x2c\x22\x6c\xa2\x22\x2c\x30\x78\x25\x30\x38" V8PRIxPTR "\x2c\x30\x78\x25\x30\x38" V8PRIxPTR,
+#pragma convert("ISO8859-1")
+  msg.Append("shared-library,\"%s\",0x%08" V8PRIxPTR ",0x%08" V8PRIxPTR,
              library_path.c_str(), start, end);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -912,7 +922,9 @@ void Logger::CodeDeoptEvent(Code* code) {
   DCHECK(FLAG_log_internal_timer_events);
   Log::MessageBuilder msg(log_);
   int since_epoch = static_cast<int>(timer_.Elapsed().InMicroseconds());
-  msg.Append("\x63\x6f\x64\x65\x2d\x64\x65\x6f\x70\x74\x2c\x6c\x93\x84\x2c\x6c\x84", since_epoch, code->CodeSize());
+#pragma convert("ISO8859-1")
+  msg.Append("code-deopt,%ld,%d", since_epoch, code->CodeSize());
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -922,7 +934,9 @@ void Logger::CurrentTimeEvent() {
   DCHECK(FLAG_log_internal_timer_events);
   Log::MessageBuilder msg(log_);
   int since_epoch = static_cast<int>(timer_.Elapsed().InMicroseconds());
-  msg.Append("\x63\x75\x72\x72\x65\x6e\x74\x2d\x74\x69\x6d\x65\x2c\x6c\x93\x84", since_epoch);
+#pragma convert("ISO8859-1")
+  msg.Append("current-time,%ld", since_epoch);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -932,8 +946,10 @@ void Logger::TimerEvent(Logger::StartEnd se, const char* name) {
   DCHECK(FLAG_log_internal_timer_events);
   Log::MessageBuilder msg(log_);
   int since_epoch = static_cast<int>(timer_.Elapsed().InMicroseconds());
-  const char* format = (se == START) ? "\x74\x69\x6d\x65\x72\x2d\x65\x76\x65\x6e\x74\x2d\x73\x74\x61\x72\x74\x2c\x22\x6c\xa2\x22\x2c\x6c\x93\x84"
-                                     : "\x74\x69\x6d\x65\x72\x2d\x65\x76\x65\x6e\x74\x2d\x65\x6e\x64\x2c\x22\x6c\xa2\x22\x2c\x6c\x93\x84";
+#pragma convert("ISO8859-1")
+  const char* format = (se == START) ? "timer-event-start,\"%s\",%ld"
+                                     : "timer-event-end,\"%s\",%ld";
+#pragma convert(pop)
   msg.Append(format, name, since_epoch);
   msg.WriteToLogFile();
 }
@@ -1094,8 +1110,10 @@ void Logger::ApiEntryCall(const char* name) {
 void Logger::NewEvent(const char* name, void* object, size_t size) {
   if (!log_->IsEnabled() || !FLAG_log) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6e\x65\x77\x2c\x6c\xa2\x2c\x30\x78\x25" V8PRIxPTR "\x2c\x6c\xa4", name, object,
+#pragma convert("ISO8859-1")
+  msg.Append("new,%s,0x%" V8PRIxPTR ",%u", name, object,
              static_cast<unsigned int>(size));
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1103,7 +1121,9 @@ void Logger::NewEvent(const char* name, void* object, size_t size) {
 void Logger::DeleteEvent(const char* name, void* object) {
   if (!log_->IsEnabled() || !FLAG_log) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x64\x65\x6c\x65\x74\x65\x2c\x6c\xa2\x2c\x30\x78\x25" V8PRIxPTR, name, object);
+#pragma convert("ISO8859-1")
+  msg.Append("delete,%s,0x%" V8PRIxPTR, name, object);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1122,23 +1142,31 @@ void Logger::CallbackEventInternal(const char* prefix, Name* name,
                                    Address entry_point) {
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c\x6c\xa2\x2c\x2d\x32\x2c",
+#pragma convert("ISO8859-1")
+  msg.Append("%s,%s,-2,",
              kLogEventsNames[CODE_CREATION_EVENT],
              kLogEventsNames[CALLBACK_TAG]);
+#pragma convert(pop)
   msg.AppendAddress(entry_point);
   if (name->IsString()) {
     SmartArrayPointer<char> str =
         String::cast(name)->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-    msg.Append("\x2c\x31\x2c\x22\x6c\xa2\x6c\xa2\x22", prefix, str.get());
+#pragma convert("ISO8859-1")
+    msg.Append(",1,\"%s%s\"", prefix, str.get());
+#pragma convert(pop)
   } else {
     Symbol* symbol = Symbol::cast(name);
     if (symbol->name()->IsUndefined()) {
-      msg.Append("\x2c\x31\x2c\x73\x79\x6d\x62\x6f\x6c\x28\x68\x61\x73\x68\x20\x6c\xa7\x29", prefix, symbol->Hash());
+#pragma convert("ISO8859-1")
+      msg.Append(",1,symbol(hash %x)", prefix, symbol->Hash());
+#pragma convert(pop)
     } else {
       SmartArrayPointer<char> str = String::cast(symbol->name())->ToCString(
           DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-      msg.Append("\x2c\x31\x2c\x73\x79\x6d\x62\x6f\x6c\x28\x22\x6c\xa2\x22\x20\x68\x61\x73\x68\x20\x6c\xa7\x29", prefix, str.get(),
+#pragma convert("ISO8859-1")
+      msg.Append(",1,symbol(\"%s\" hash %x)", prefix, str.get(),
                  symbol->Hash());
+#pragma convert(pop)
     }
   }
   msg.WriteToLogFile();
@@ -1167,12 +1195,14 @@ static void AppendCodeCreateHeader(Log::MessageBuilder* msg,
                                    Logger::LogEventsAndTags tag,
                                    Code* code) {
   DCHECK(msg);
-  msg->Append("\x6c\xa2\x2c\x6c\xa2\x2c\x6c\x84\x2c",
+#pragma convert("ISO8859-1")
+  msg->Append("%s,%s,%d,",
               kLogEventsNames[Logger::CODE_CREATION_EVENT],
               kLogEventsNames[tag],
               code->kind());
   msg->AppendAddress(code->address());
-  msg->Append("\x2c\x6c\x84\x2c", code->ExecutableSize());
+  msg->Append(",%d,", code->ExecutableSize());
+#pragma convert(pop)
 }
 
 
@@ -1233,13 +1263,15 @@ void Logger::CodeCreateEvent(LogEventsAndTags tag,
   if (name->IsString()) {
     SmartArrayPointer<char> str =
         String::cast(name)->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-    msg.Append("\x22\x6c\xa2\x22", str.get());
+#pragma convert("ISO8859-1")
+    msg.Append("\"%s\"", str.get());
   } else {
     msg.AppendSymbolName(Symbol::cast(name));
   }
   msg.Append('\x2c');
   msg.AppendAddress(shared->address());
   msg.Append("\x2c\x6c\xa2", ComputeMarker(code));
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1263,17 +1295,19 @@ void Logger::CodeCreateEvent(LogEventsAndTags tag,
   AppendCodeCreateHeader(&msg, tag, code);
   SmartArrayPointer<char> name =
       shared->DebugName()->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-  msg.Append("\x22\x6c\xa2\x20", name.get());
+#pragma convert("ISO8859-1")
+  msg.Append("\"%s ", name.get());
   if (source->IsString()) {
     SmartArrayPointer<char> sourcestr =
        String::cast(source)->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-    msg.Append("\x6c\xa2", sourcestr.get());
+    msg.Append("%s", sourcestr.get());
   } else {
     msg.AppendSymbolName(Symbol::cast(source));
   }
-  msg.Append("\x3a\x6c\x84\x3a\x6c\x84\x22\x2c", line, column);
+  msg.Append(":%d:%d\",", line, column);
   msg.AppendAddress(shared->address());
-  msg.Append("\x2c\x6c\xa2", ComputeMarker(code));
+  msg.Append(",%s", ComputeMarker(code));
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1289,7 +1323,9 @@ void Logger::CodeCreateEvent(LogEventsAndTags tag,
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
   AppendCodeCreateHeader(&msg, tag, code);
-  msg.Append("\x22\x61\x72\x67\x73\x5f\x63\x6f\x75\x6e\x74\x3a\x20\x6c\x84\x22", args_count);
+#pragma convert("ISO8859-1")
+  msg.Append("\"args_count: %d\"", args_count);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1303,11 +1339,13 @@ void Logger::CodeDisableOptEvent(Code* code,
 
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c", kLogEventsNames[CODE_DISABLE_OPT_EVENT]);
+#pragma convert("ISO8859-1")
+  msg.Append("%s,", kLogEventsNames[CODE_DISABLE_OPT_EVENT]);
   SmartArrayPointer<char> name =
       shared->DebugName()->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-  msg.Append("\x22\x6c\xa2\x22\x2c", name.get());
-  msg.Append("\x22\x6c\xa2\x22", GetBailoutReason(shared->DisableOptimizationReason()));
+  msg.Append("\"%s\",", name.get());
+  msg.Append("\"%s\"", GetBailoutReason(shared->DisableOptimizationReason()));
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1355,7 +1393,9 @@ void Logger::CodeDeleteEvent(Address from) {
 
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c", kLogEventsNames[CODE_DELETE_EVENT]);
+#pragma convert("ISO8859-1")
+  msg.Append("%s,", kLogEventsNames[CODE_DELETE_EVENT]);
+#pragma convert(pop)
   msg.AppendAddress(from);
   msg.WriteToLogFile();
 }
@@ -1397,7 +1437,9 @@ void Logger::CodeEndLinePosInfoRecordEvent(Code* code,
 void Logger::CodeNameEvent(Address addr, int pos, const char* code_name) {
   if (code_name == NULL) return;  // Not a code object.
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c\x6c\x84\x2c", kLogEventsNames[SNAPSHOT_CODE_NAME_EVENT], pos);
+#pragma convert("ISO8859-1")
+  msg.Append("%s,%d,", kLogEventsNames[SNAPSHOT_CODE_NAME_EVENT], pos);
+#pragma convert(pop)
   msg.AppendDoubleQuotedString(code_name);
   msg.WriteToLogFile();
 }
@@ -1408,9 +1450,11 @@ void Logger::SnapshotPositionEvent(Address addr, int pos) {
   LL_LOG(SnapshotPositionEvent(addr, pos));
   if (!FLAG_log_snapshot_positions) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c", kLogEventsNames[SNAPSHOT_POSITION_EVENT]);
+#pragma convert("ISO8859-1")
+  msg.Append("%s,", kLogEventsNames[SNAPSHOT_POSITION_EVENT]);
   msg.AppendAddress(addr);
-  msg.Append("\x2c\x6c\x84", pos);
+  msg.Append(",%d", pos);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1428,7 +1472,9 @@ void Logger::MoveEventInternal(LogEventsAndTags event,
                                Address to) {
   if (!FLAG_log_code || !log_->IsEnabled()) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c", kLogEventsNames[event]);
+#pragma convert("ISO8859-1")
+  msg.Append("%s,", kLogEventsNames[event]);
+#pragma convert(pop)
   msg.AppendAddress(from);
   msg.Append('\x2c');
   msg.AppendAddress(to);
@@ -1439,13 +1485,17 @@ void Logger::MoveEventInternal(LogEventsAndTags event,
 void Logger::ResourceEvent(const char* name, const char* tag) {
   if (!log_->IsEnabled() || !FLAG_log) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c\x6c\xa2\x2c", name, tag);
+#pragma convert("ISO8859-1")
+  msg.Append("%s,%s,", name, tag);
+#pragma convert(pop)
 
   uint32_t sec, usec;
+#pragma convert("ISO8859-1")
   if (base::OS::GetUserTime(&sec, &usec) != -1) {
-    msg.Append("\x6c\x84\x2c\x6c\x84\x2c", sec, usec);
+    msg.Append("%d,%d,", sec, usec);
   }
-  msg.Append("\x6c\x4b\xf0\x86", base::OS::TimeCurrentMillis());
+  msg.Append("%.0f", base::OS::TimeCurrentMillis());
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1475,8 +1525,10 @@ void Logger::HeapSampleBeginEvent(const char* space, const char* kind) {
   Log::MessageBuilder msg(log_);
   // Using non-relative system time in order to be able to synchronize with
   // external memory profiling events (e.g. DOM memory size).
-  msg.Append("\x68\x65\x61\x70\x2d\x73\x61\x6d\x70\x6c\x65\x2d\x62\x65\x67\x69\x6e\x2c\x22\x6c\xa2\x22\x2c\x22\x6c\xa2\x22\x2c\x6c\x4b\xf0\x86", space, kind,
+#pragma convert("ISO8859-1")
+  msg.Append("heap-sample-begin,\"%s\",\"%s\",%.0f", space, kind,
              base::OS::TimeCurrentMillis());
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1484,7 +1536,9 @@ void Logger::HeapSampleBeginEvent(const char* space, const char* kind) {
 void Logger::HeapSampleEndEvent(const char* space, const char* kind) {
   if (!log_->IsEnabled() || !FLAG_log_gc) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x68\x65\x61\x70\x2d\x73\x61\x6d\x70\x6c\x65\x2d\x65\x6e\x64\x2c\x22\x6c\xa2\x22\x2c\x22\x6c\xa2\x22", space, kind);
+#pragma convert("ISO8859-1")
+  msg.Append("heap-sample-end,\"%s\",\"%s\"", space, kind);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1492,7 +1546,9 @@ void Logger::HeapSampleEndEvent(const char* space, const char* kind) {
 void Logger::HeapSampleItemEvent(const char* type, int number, int bytes) {
   if (!log_->IsEnabled() || !FLAG_log_gc) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x68\x65\x61\x70\x2d\x73\x61\x6d\x70\x6c\x65\x2d\x69\x74\x65\x6d\x2c\x6c\xa2\x2c\x6c\x84\x2c\x6c\x84", type, number, bytes);
+#pragma convert("ISO8859-1")
+  msg.Append("heap-sample-item,%s,%d,%d", type, number, bytes);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1500,7 +1556,9 @@ void Logger::HeapSampleItemEvent(const char* type, int number, int bytes) {
 void Logger::DebugTag(const char* call_site_tag) {
   if (!log_->IsEnabled() || !FLAG_log) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x64\x65\x62\x75\x67\x2d\x74\x61\x67\x2c\x6c\xa2", call_site_tag);
+#pragma convert("ISO8859-1")
+  msg.Append("debug-tag,%s", call_site_tag);
+#pragma convert(pop)
   msg.WriteToLogFile();
 }
 
@@ -1513,19 +1571,22 @@ void Logger::DebugEvent(const char* event_type, Vector<uint16_t> parameter) {
   }
   char* parameter_string = s.Finalize();
   Log::MessageBuilder msg(log_);
-  msg.Append("\x64\x65\x62\x75\x67\x2d\x71\x75\x65\x75\x65\x2d\x65\x76\x65\x6e\x74\x2c\x6c\xa2\x2c\x6c\xf1\xf5\x4b\xf3\x86\x2c\x6c\xa2", event_type,
+#pragma convert("ISO8859-1")
+  msg.Append("debug-queue-event,%s,%15.3f,%s", event_type,
              base::OS::TimeCurrentMillis(), parameter_string);
+#pragma convert(pop)
   DeleteArray(parameter_string);
   msg.WriteToLogFile();
 }
 
 
+#pragma convert("ISO8859-1")
 void Logger::TickEvent(TickSample* sample, bool overflow) {
   if (!log_->IsEnabled() || !FLAG_prof) return;
   Log::MessageBuilder msg(log_);
-  msg.Append("\x6c\xa2\x2c", kLogEventsNames[TICK_EVENT]);
+  msg.Append("%s,", kLogEventsNames[TICK_EVENT]);
   msg.AppendAddress(sample->pc);
-  msg.Append("\x2c\x6c\x93\x84", static_cast<int>(timer_.Elapsed().InMicroseconds()));
+  msg.Append(",%ld", static_cast<int>(timer_.Elapsed().InMicroseconds()));
   if (sample->has_external_callback) {
     msg.Append("\x2c\x31\x2c");
     msg.AppendAddress(sample->external_callback);
@@ -1533,7 +1594,7 @@ void Logger::TickEvent(TickSample* sample, bool overflow) {
     msg.Append("\x2c\x30\x2c");
     msg.AppendAddress(sample->tos);
   }
-  msg.Append("\x2c\x6c\x84", static_cast<int>(sample->state));
+  msg.Append(",%d", static_cast<int>(sample->state));
   if (overflow) {
     msg.Append("\x2c\x6f\x76\x65\x72\x66\x6c\x6f\x77");
   }
@@ -1543,6 +1604,7 @@ void Logger::TickEvent(TickSample* sample, bool overflow) {
   }
   msg.WriteToLogFile();
 }
+#pragma convert(pop)
 
 
 void Logger::StopProfiler() {
@@ -1631,7 +1693,7 @@ static int EnumerateCompiledFunctions(Heap* heap,
 void Logger::LogCodeObject(Object* object) {
   Code* code_object = Code::cast(object);
   LogEventsAndTags tag = Logger::STUB_TAG;
-  const char* description = "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x63\x6f\x64\x65\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
+  const char* description = "Unknown code from the snapshot";
   switch (code_object->kind()) {
     case Code::FUNCTION:
     case Code::OPTIMIZED_FUNCTION:
@@ -1644,39 +1706,39 @@ void Logger::LogCodeObject(Object* object) {
       description =
           CodeStub::MajorName(CodeStub::GetMajorKey(code_object), true);
       if (description == NULL)
-        description = "\x41\x20\x73\x74\x75\x62\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
+        description = "A stub from the snapshot";
       tag = Logger::STUB_TAG;
       break;
     case Code::REGEXP:
-      description = "\x52\x65\x67\x75\x6c\x61\x72\x20\x65\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x20\x63\x6f\x64\x65";
+      description = "Regular expression code";
       tag = Logger::REG_EXP_TAG;
       break;
     case Code::BUILTIN:
-      description = "\x41\x20\x62\x75\x69\x6c\x74\x69\x6e\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
+      description = "A builtin from the snapshot";
       tag = Logger::BUILTIN_TAG;
       break;
     case Code::HANDLER:
-      description = "\x41\x6e\x20\x49\x43\x20\x68\x61\x6e\x64\x6c\x65\x72\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
+      description = "An IC handler from the snapshot";
       tag = Logger::HANDLER_TAG;
       break;
     case Code::KEYED_LOAD_IC:
-      description = "\x41\x20\x6b\x65\x79\x65\x64\x20\x6c\x6f\x61\x64\x20\x49\x43\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
+      description = "A keyed load IC from the snapshot";
       tag = Logger::KEYED_LOAD_IC_TAG;
       break;
     case Code::LOAD_IC:
-      description = "\x41\x20\x6c\x6f\x61\x64\x20\x49\x43\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
+      description = "A load IC from the snapshot";
       tag = Logger::LOAD_IC_TAG;
       break;
     case Code::CALL_IC:
-      description = "\x41\x20\x63\x61\x6c\x6c\x20\x49\x43\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
+      description = "A call IC from the snapshot";
       tag = Logger::CALL_IC_TAG;
       break;
     case Code::STORE_IC:
-      description = "\x41\x20\x73\x74\x6f\x72\x65\x20\x49\x43\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
+      description = "A store IC from the snapshot";
       tag = Logger::STORE_IC_TAG;
       break;
     case Code::KEYED_STORE_IC:
-      description = "\x41\x20\x6b\x65\x79\x65\x64\x20\x73\x74\x6f\x72\x65\x20\x49\x43\x20\x66\x72\x6f\x6d\x20\x74\x68\x65\x20\x73\x6e\x61\x70\x73\x68\x6f\x74";
+      description = "A keyed store IC from the snapshot";
       tag = Logger::KEYED_STORE_IC_TAG;
       break;
     case Code::NUMBER_OF_KINDS:

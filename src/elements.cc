@@ -1785,9 +1785,11 @@ ElementsAccessor* ElementsAccessor::ForArray(Handle<FixedArrayBase> array) {
 
 void ElementsAccessor::InitializeOncePerProcess() {
   static ElementsAccessor* accessor_array[] = {
+#pragma convert("ISO8859-1")
 #define ACCESSOR_ARRAY(Class, Kind, Store) new Class(#Kind),
     ELEMENTS_LIST(ACCESSOR_ARRAY)
 #undef ACCESSOR_ARRAY
+#pragma convert(pop)
   };
 
   STATIC_ASSERT((sizeof(accessor_array) / sizeof(*accessor_array)) ==

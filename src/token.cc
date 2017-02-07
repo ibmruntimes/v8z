@@ -8,11 +8,13 @@
 namespace v8 {
 namespace internal {
 
+#pragma convert("ISO8859-1")
 #define T(name, string, precedence) #name,
 const char* const Token::name_[NUM_TOKENS] = {
   TOKEN_LIST(T, T)
 };
 #undef T
+#pragma convert(pop)
 
 
 #define T(name, string, precedence) string,
