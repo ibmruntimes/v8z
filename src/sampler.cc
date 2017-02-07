@@ -24,6 +24,9 @@
 #elif(!V8_OS_ANDROID || defined(__BIONIC_HAVE_UCONTEXT_T)) \
     && !V8_OS_OPENBSD
 #include <ucontext.h>
+#if V8_OS_ZOS
+#include "//'CEE.SCEESAMP(EDCWCCWI)'"
+#endif
 #endif
 
 #include <unistd.h>
@@ -390,7 +393,9 @@ void SignalHandler::HandleProfilerSignal(int signal, siginfo_t* info,
 #else
   // Extracting the sample from the context is extremely machine dependent.
   ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-#if !(V8_OS_OPENBSD || (V8_OS_LINUX && (V8_HOST_ARCH_PPC || V8_HOST_ARCH_S390)))
+#if V8_OS_ZOS
+  __mcontext_t_ *mcontext = reinterpret_cast<__mcontext_t_*>(&ucontext->uc_mcontext[0]);
+#elif !(V8_OS_OPENBSD || (V8_OS_LINUX && (V8_HOST_ARCH_PPC || V8_HOST_ARCH_S390)))
   mcontext_t& mcontext = ucontext->uc_mcontext;
 #endif
 #if V8_OS_LINUX
@@ -519,7 +524,11 @@ void SignalHandler::HandleProfilerSignal(int signal, siginfo_t* info,
   state.pc = reinterpret_cast<Address>(mcontext.jmp_context.iar);
   state.sp = reinterpret_cast<Address>(mcontext.jmp_context.gpr[1]);
   state.fp = reinterpret_cast<Address>(mcontext.jmp_context.gpr[31]);
-#endif  // V8_OS_AIX
+#elif V8_OS_ZOS
+  state.pc = reinterpret_cast<Address>(mcontext->__mc_psw[1]);
+  state.sp = reinterpret_cast<Address>(mcontext->__mc_int_dsa);
+  state.fp = reinterpret_cast<Address>(mcontext->__mc_gr[7]);
+#endif  // V8_OS_ZOS
 #endif  // USE_SIMULATOR
   sampler->SampleStack(state);
 #endif  // V8_OS_NACL
