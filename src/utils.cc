@@ -115,7 +115,10 @@ int VSNPrintFASCII(char* out, int length, const char* format_a, va_list args) {
     bytes_remain = length - bytes_written;
   }
   format_e += first_flag;
-  if (format_e[0] == '\0') return bytes_written;
+  if (format_e[0] == '\0') {
+    __e2a_s(out);
+    return bytes_written;
+  }
 
   do {
     int next_flag = GetFirstFlagFrom(format_e, 2);
