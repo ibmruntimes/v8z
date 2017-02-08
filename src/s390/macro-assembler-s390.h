@@ -184,6 +184,7 @@ class MacroAssembler : public Assembler {
             CRegister cr = cr7);
   void Jump(Handle<Code> code, RelocInfo::Mode rmode, Condition cond = al);
   void Call(Register target);
+  void CallC(Register target);
   void CallJSEntry(Register target);
   void Call(Address target, RelocInfo::Mode rmode, Condition cond = al);
   int CallSize(Handle<Code> code,

@@ -758,6 +758,7 @@ static void Generate_JSEntryTrampolineHelper(MacroAssembler* masm,
     // Check if we have enough stack space to push all arguments.
     // Clobbers r4.
     Generate_CheckStackOverflow(masm, r5, kArgcIsUntaggedInt);
+   
 
     // Copy arguments to the stack in a loop from argv to sp.
     // The arguments are actually placed in reverse order on sp

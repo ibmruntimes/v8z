@@ -17,7 +17,6 @@
 
 #include "src/s390/macro-assembler-s390.h"
 
-#pragma convert("ISO8859-1")
 namespace v8 {
 namespace internal {
 
@@ -79,6 +78,25 @@ void MacroAssembler::Call(Register target) {
   basr(r14, target);
 
   DCHECK_EQ(CallSize(target), SizeOfCodeGeneratedSince(&start));
+}
+
+void MacroAssembler::CallC(Register target) {
+  Label start;
+  bind(&start);
+
+  // Statement positions are expected to be recorded when the target
+  // address is loaded.
+  positions_recorder()->WriteRecordedPositions();
+#ifdef V8_OS_ZOS
+  // Branch to target via indirect branch
+  basr(r7, target);
+  nop(BASR_CALL_TYPE_NOP);
+  DCHECK_EQ(CallSize(target) + 2, SizeOfCodeGeneratedSince(&start));
+#else
+  // Branch to target via indirect branch
+  basr(r14, target);
+  DCHECK_EQ(CallSize(target), SizeOfCodeGeneratedSince(&start));
+#endif
 }
 
 void MacroAssembler::CallJSEntry(Register target) {
@@ -3221,21 +3239,48 @@ void MacroAssembler::CallCFunctionHelper(Register function,
                                          int num_reg_arguments,
                                          int num_double_arguments) {
   DCHECK(has_frame());
-
+  int stack_space;
+#if V8_OS_ZOS
+  LoadRR(r1, r2);
+  LoadRR(r2, r3);
+  LoadRR(r3, r4);
+ 
+   // Set up stack.
+  stack_space = 16;  // Save area + debug area + reserved space.
+  stack_space += 5;  // Stack passed arguments.
+  lay(r4, MemOperand(sp, -((stack_space * kPointerSize) + kStackPointerBias)));
+   // XPLINK linkage requires args in r5-r7 to be passed on the stack.
+  StoreMultipleP(r5, r7,
+                 MemOperand(r4, kStackPointerBias + 19 * kPointerSize));
+#endif 
   // Just call directly. The function called cannot cause a GC, or
   // allow preemption, so the return address in the link register
   // stays correct.
+#if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
+  LoadMultipleP(r5, r6, MemOperand(function, 0));
+  Register dest = r6;
+#else
   Register dest = function;
   if (ABI_CALL_VIA_IP) {
     Move(ip, function);
     dest = ip;
   }
+#endif  
 
+#ifdef V8_OS_ZOS
+  CallC(dest);
+  // Restore r5-r7.                                                      
+  LoadMultipleP(r5, r7,                                                  
+                MemOperand(r4, kStackPointerBias + 19 * kPointerSize));  
+  // Shuffle result.                                                     
+  LoadRR(r2, r3);
+#else
   Call(dest);
+#endif
 
   int stack_passed_arguments =
       CalculateStackPassedWords(num_reg_arguments, num_double_arguments);
-  int stack_space = kNumRequiredStackFrameSlots + stack_passed_arguments;
+  stack_space = kNumRequiredStackFrameSlots + stack_passed_arguments;
   if (ActivationFrameAlignment() > kPointerSize) {
     // Load the original stack pointer (pre-alignment) from the stack
     LoadP(sp, MemOperand(sp, stack_space * kPointerSize));

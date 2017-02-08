@@ -1062,6 +1062,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Result returned in registers or stack, depending on result size and ABI.
 
   Register isolate_reg = r4;
+#ifndef V8_OS_ZOS 
   if (needs_return_buffer) {
     // The return value is 16-byte non-scalar value.
     // Use frame storage reserved by calling function to pass return
@@ -1072,6 +1073,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
     isolate_reg = r5;
   }
+#endif
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
 
@@ -1126,7 +1128,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     // Stack Pointer Bias = Xplink Bias(2048) + SaveArea(12 ptrs +
     // Reserved(2ptrs) + Debug Area(1ptr) +
     // Arg Area Prefix(1ptr) + Argument Area(3 ptrs).
-    __ lay(sp, MemOperand(sp, -(kStackPointerBias + 19 * kPointerSize)));
+    __ lay(r4, MemOperand(sp, -(kStackPointerBias + 19 * kPointerSize)));
 #endif
 	
     __ b(target);
@@ -1149,13 +1151,15 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ LoadRR(r2, r1);
   }
 #endif
-  
+ 
+#ifndef V8_OS_ZOS
   // If return value is on the stack, pop it to registers.
   if (needs_return_buffer) {
     if (result_size() > 2) __ LoadP(r4, MemOperand(r2, 2 * kPointerSize));
     __ LoadP(r3, MemOperand(r2, kPointerSize));
     __ LoadP(r2, MemOperand(r2));
   }
+#endif
 
   // Check result for exception sentinel.
   Label exception_returned;
@@ -1259,13 +1263,14 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
 #if V8_OS_ZOS
+  __ LoadRR(sp, r4);
   __ lay(sp, MemOperand(sp, -12 * kPointerSize));
   __ StoreMultipleP(sp, r4, MemOperand(sp, 0));
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
   // parameters and also places them starting at r4+2112 on the biased stack.
   // Explicitly load argc and argv from stack back into r5/r6 respectively.
-  __ LoadP(r5, MemOperand(sp, 2048 + ((19 + 12) * kPointerSize)));
-  __ LoadP(r6, MemOperand(sp, 2048 + ((20 + 12) * kPointerSize)));
+  __ LoadP(r5, MemOperand(sp, 2048 + (19  * kPointerSize)));
+  __ LoadP(r6, MemOperand(sp, 2048 + (20  * kPointerSize)));
 
   __ LoadRR(r4, r3);
   __ LoadRR(r3, r2);
@@ -3387,8 +3392,12 @@ void CompareICStub::GenerateMiss(MacroAssembler* masm) {
 
 // This stub is paired with DirectCEntryStub::GenerateCall
 void DirectCEntryStub::Generate(MacroAssembler* masm) {
-  __ CleanseP(r14);
-
+#ifndef V8_OS_ZOS
+   __ CleanseP(r14);
+#else
+   __ CleanseP(r7);
+   __ StoreP(r7, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+#endif
   // Statement positions are expected to be recorded when the target
   // address is loaded.
   __ positions_recorder()->WriteRecordedPositions();
@@ -3408,7 +3417,13 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm, Register target) {
   __ Move(ip, target);
 #endif
 
-  __ call(GetCode(), RelocInfo::CODE_TARGET);  // Call the stub.
+#ifdef V8_OS_ZOS
+  intptr_t code = reinterpret_cast<intptr_t>(GetCode().location());
+  __ mov (r7, Operand(code, RelocInfo::CODE_TARGET));
+  __ CallC(r7);
+#else
+  __ call(GetCode(), RelocInfo::CODE_TARGET);
+#endif
 }
 
 void NameDictionaryLookupStub::GenerateNegativeLookup(
@@ -5503,8 +5518,13 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   // r6 - next_address->kNextOffset
   // r7 - next_address->kLimitOffset
   // r8 - next_address->kLevelOffset
+#ifdef V8_OS_ZOS
+  Register prev_next_ = r14;
+#else
+  Register prev_next_ = r6;
+#endif
   __ mov(r9, Operand(next_address));
-  __ LoadP(r6, MemOperand(r9, kNextOffset));
+  __ LoadP(prev_next_, MemOperand(r9, kNextOffset));
   __ LoadP(r7, MemOperand(r9, kLimitOffset));
   __ LoadlW(r8, MemOperand(r9, kLevelOffset));
   __ AddP(r8, Operand(1));
@@ -5523,9 +5543,25 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   // Native call returns to the DirectCEntry stub which redirects to the
   // return address pushed on stack (could have moved after GC).
   // DirectCEntry stub itself is generated early and never moves.
+#ifdef V8_OS_ZOS
+  //Shuffle the arguments from Linux arg register to XPLINK arg regs
+  __ LoadRR(r1 , r2);
+  if (function_address.is(r3)) {
+   __ LoadRR(r2, r3);
+  } else {
+   __ LoadRR(r2, r3);
+   __ LoadRR(r3, r4);
+  }
+  __ lay(r4, MemOperand(sp, -(kStackPointerBias + 18 * kPointerSize)));
+  __ LoadRR(r10, r7);
+#endif
+  
   DirectCEntryStub stub(isolate);
   stub.GenerateCall(masm, scratch);
-
+#ifdef V8_OS_ZOS
+  __ LoadRR(r7, r10);
+  __ InitializeRootRegister();
+#endif
   if (FLAG_log_timer_events) {
     FrameScope frame(masm, StackFrame::MANUAL);
     __ PushSafepointRegisters();
