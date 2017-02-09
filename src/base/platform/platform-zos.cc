@@ -5,6 +5,7 @@
 // Platform-specific code for zOS/Unix goes here. For the POSIX-compatible
 // parts, the implementation is in platform-posix.cc.
 
+#define _AE_BIMODAL 1
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -500,6 +501,7 @@ int OS::VSNPrintFASCII(char* str,
                   int length,
                   const char* format,
                   va_list args) {
+  return __vsnprintf_a(str, length, format, args);
   int n = VSNPrintFASCII(str, length, format, args);
   if (n < 0 || n >= length) {
     // If the length is zero, the assignment fails.
