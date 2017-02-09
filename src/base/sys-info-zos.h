@@ -4,8 +4,8 @@
 
 // Contains z/OS Control Block Structures for retreiving system information.
 
-#ifndef V8_BASE_PLATFORM_PLATFORM_ZOS_H_
-#define V8_BASE_PLATFORM_PLATFORM_ZOS_H_
+#ifndef V8_BASE_SYS_INFO_ZOS_H_
+#define V8_BASE_SYS_INFO_ZOS_H_
 
 namespace v8 {
 namespace base {
@@ -49,4 +49,4 @@ typedef struct ZOSPSA {
 
 } }  // namespace v8::base
 
-#endif  // V8_BASE_PLATFORM_PLATFORM_ZOS_H_
+#endif  // V8_BASE_SYS_INFO_ZOS_H_

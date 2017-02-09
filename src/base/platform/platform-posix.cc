@@ -40,9 +40,6 @@
 #include "src/base/lazy-instance.h"
 #include "src/base/macros.h"
 #include "src/base/platform/platform.h"
-#if V8_OS_ZOS
-#include "src/base/platform/platform-zos.h"
-#endif
 #include "src/base/platform/time.h"
 #include "src/base/utils/random-number-generator.h"
 
