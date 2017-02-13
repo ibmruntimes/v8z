@@ -147,8 +147,8 @@ BUILTIN_LIST_C(DEF_ARG_TYPE)
       int args_length, Object** args_object, Isolate* isolate) {               \
     Object* value;                                                             \
     isolate->counters()->runtime_calls()->Increment();                         \
-    TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.runtime"),                      \
-                 "V8.Builtin_" #name);                                         \
+    TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("\x76\x38\x2e\x72\x75\x6e\x74\x69\x6d\x65"),                      \
+                 "\x56\x38\x2e\x42\x75\x69\x6c\x74\x69\x6e\x5f" USTR(#name));                                         \
     name##ArgumentsType args(args_length, args_object);                        \
     if (FLAG_runtime_call_stats) {                                             \
       RuntimeCallStats* stats = isolate->counters()->runtime_call_stats();     \
@@ -1585,7 +1585,7 @@ BUILTIN(ArrayConcat) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNullOrUndefined,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Array.prototype.concat")));
+                                  "\x41\x72\x72\x61\x79\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x63\x6f\x6e\x63\x61\x74")));
   }
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
       isolate, receiver, Object::ToObject(isolate, args.receiver()));
@@ -2339,7 +2339,7 @@ BUILTIN(ReflectDefineProperty) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.defineProperty")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x64\x65\x66\x69\x6e\x65\x50\x72\x6f\x70\x65\x72\x74\x79")));
   }
 
   Handle<Name> name;
@@ -2370,7 +2370,7 @@ BUILTIN(ReflectDeleteProperty) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.deleteProperty")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x64\x65\x6c\x65\x74\x65\x50\x72\x6f\x70\x65\x72\x74\x79")));
   }
 
   Handle<Name> name;
@@ -2395,7 +2395,7 @@ BUILTIN(ReflectGet) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.get")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x67\x65\x74")));
   }
 
   Handle<Name> name;
@@ -2422,7 +2422,7 @@ BUILTIN(ReflectGetOwnPropertyDescriptor) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.getOwnPropertyDescriptor")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x67\x65\x74\x4f\x77\x6e\x50\x72\x6f\x70\x65\x72\x74\x79\x44\x65\x73\x63\x72\x69\x70\x74\x6f\x72")));
   }
 
   Handle<Name> name;
@@ -2448,7 +2448,7 @@ BUILTIN(ReflectGetPrototypeOf) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.getPrototypeOf")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x67\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66")));
   }
   Handle<Object> prototype;
   Handle<JSReceiver> receiver = Handle<JSReceiver>::cast(target);
@@ -2469,7 +2469,7 @@ BUILTIN(ReflectHas) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.has")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x68\x61\x73")));
   }
 
   Handle<Name> name;
@@ -2493,7 +2493,7 @@ BUILTIN(ReflectIsExtensible) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.isExtensible")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x69\x73\x45\x78\x74\x65\x6e\x73\x69\x62\x6c\x65")));
   }
 
   Maybe<bool> result =
@@ -2513,7 +2513,7 @@ BUILTIN(ReflectOwnKeys) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.ownKeys")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x6f\x77\x6e\x4b\x65\x79\x73")));
   }
 
   Handle<FixedArray> keys;
@@ -2535,7 +2535,7 @@ BUILTIN(ReflectPreventExtensions) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.preventExtensions")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x70\x72\x65\x76\x65\x6e\x74\x45\x78\x74\x65\x6e\x73\x69\x6f\x6e\x73")));
   }
 
   Maybe<bool> result = JSReceiver::PreventExtensions(
@@ -2557,7 +2557,7 @@ BUILTIN(ReflectSet) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.set")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x73\x65\x74")));
   }
 
   Handle<Name> name;
@@ -2584,7 +2584,7 @@ BUILTIN(ReflectSetPrototypeOf) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kCalledOnNonObject,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Reflect.setPrototypeOf")));
+                                  "\x52\x65\x66\x6c\x65\x63\x74\x2e\x73\x65\x74\x50\x72\x6f\x74\x6f\x74\x79\x70\x65\x4f\x66")));
   }
 
   if (!proto->IsJSReceiver() && !proto->IsNull()) {
@@ -2638,7 +2638,7 @@ BUILTIN(BooleanPrototypeToString) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kNotGeneric,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Boolean.prototype.toString")));
+                                  "\x42\x6f\x6f\x6c\x65\x61\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67")));
   }
   return Handle<Oddball>::cast(receiver)->to_string();
 }
@@ -2655,7 +2655,7 @@ BUILTIN(BooleanPrototypeValueOf) {
     THROW_NEW_ERROR_RETURN_FAILURE(
         isolate, NewTypeError(MessageTemplate::kNotGeneric,
                               isolate->factory()->NewStringFromAsciiChecked(
-                                  "Boolean.prototype.valueOf")));
+                                  "\x42\x6f\x6f\x6c\x65\x61\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x76\x61\x6c\x75\x65\x4f\x66")));
   }
   return *receiver;
 }
@@ -2671,7 +2671,7 @@ BUILTIN(DataViewConstructor) {
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate,
       NewTypeError(MessageTemplate::kConstructorNotFunction,
-                   isolate->factory()->NewStringFromAsciiChecked("DataView")));
+                   isolate->factory()->NewStringFromAsciiChecked("\x44\x61\x74\x61\x56\x69\x65\x77")));
 }
 
 
@@ -2873,10 +2873,10 @@ double TimeClip(double time) {
 }
 
 
-const char* kShortWeekDays[] = {u8"Sun", u8"Mon", u8"Tue", u8"Wed",
-                                u8"Thu", u8"Fri", u8"Sat"};
-const char* kShortMonths[] = {u8"Jan", u8"Feb", u8"Mar", u8"Apr", u8"May", u8"Jun",
-                              u8"Jul", u8"Aug", u8"Sep", u8"Oct", u8"Nov", u8"Dec"};
+const char* kShortWeekDays[] = {"\x53\x75\x6e", "\x4d\x6f\x6e", "\x54\x75\x65", "\x57\x65\x64",
+                                "\x54\x68\x75", "\x46\x72\x69", "\x53\x61\x74"};
+const char* kShortMonths[] = {"\x4a\x61\x6e", "\x46\x65\x62", "\x4d\x61\x72", "\x41\x70\x72", "\x4d\x61\x79", "\x4a\x75\x6e",
+                              "\x4a\x75\x6c", "\x41\x75\x67", "\x53\x65\x70", "\x4f\x63\x74", "\x4e\x6f\x76", "\x44\x65\x63"};
 
 
 // ES6 section 20.3.1.16 Date Time String Format
@@ -2920,7 +2920,7 @@ enum ToDateStringMode { kDateOnly, kTimeOnly, kDateAndTime };
 void ToDateString(double time_val, Vector<char> str, DateCache* date_cache,
                   ToDateStringMode mode = kDateAndTime) {
   if (std::isnan(time_val)) {
-    SNPrintF(str, "Invalid Date");
+    SNPrintF(str, "\x49\x6e\x76\x61\x6c\x69\x64\x20\x44\x61\x74\x65");
     return;
   }
   int64_t time_ms = static_cast<int64_t>(time_val);
@@ -2934,18 +2934,18 @@ void ToDateString(double time_val, Vector<char> str, DateCache* date_cache,
   const char* local_timezone = date_cache->LocalTimezone(time_ms);
   switch (mode) {
     case kDateOnly:
-      SNPrintF(str, "%s %s %02d %4d", kShortWeekDays[weekday],
+      SNPrintF(str, "\x6c\xa2\x20\x6c\xa2\x20\x6c\xf0\xf2\x84\x20\x6c\xf4\x84", kShortWeekDays[weekday],
                kShortMonths[month], day, year);
       return;
     case kTimeOnly:
-      SNPrintF(str, "%02d:%02d:%02d GMT%c%02d%02d (%s)", hour, min, sec,
-               (timezone_offset < 0) ? '-' : '+', timezone_hour, timezone_min,
+      SNPrintF(str, "\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x20\x47\x4d\x54\x6c\x83\x6c\xf0\xf2\x84\x6c\xf0\xf2\x84\x20\x28\x6c\xa2\x29", hour, min, sec,
+               (timezone_offset < 0) ? '\x2d' : '\x2b', timezone_hour, timezone_min,
                local_timezone);
       return;
     case kDateAndTime:
-      SNPrintF(str, "%s %s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
+      SNPrintF(str, "\x6c\xa2\x20\x6c\xa2\x20\x6c\xf0\xf2\x84\x20\x6c\xf4\x84\x20\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x20\x47\x4d\x54\x6c\x83\x6c\xf0\xf2\x84\x6c\xf0\xf2\x84\x20\x28\x6c\xa2\x29",
                kShortWeekDays[weekday], kShortMonths[month], day, year, hour,
-               min, sec, (timezone_offset < 0) ? '-' : '+', timezone_hour,
+               min, sec, (timezone_offset < 0) ? '\x2d' : '\x2b', timezone_hour,
                timezone_min, local_timezone);
       return;
   }
@@ -3148,7 +3148,7 @@ BUILTIN(DateUTC) {
 // ES6 section 20.3.4.20 Date.prototype.setDate ( date )
 BUILTIN(DatePrototypeSetDate) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setDate");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x44\x61\x74\x65");
   Handle<Object> value = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, value, Object::ToNumber(value));
   double time_val = date->value()->Number();
@@ -3168,7 +3168,7 @@ BUILTIN(DatePrototypeSetDate) {
 // ES6 section 20.3.4.21 Date.prototype.setFullYear (year, month, date)
 BUILTIN(DatePrototypeSetFullYear) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setFullYear");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x46\x75\x6c\x6c\x59\x65\x61\x72");
   int const argc = args.length() - 1;
   Handle<Object> year = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, year, Object::ToNumber(year));
@@ -3202,7 +3202,7 @@ BUILTIN(DatePrototypeSetFullYear) {
 // ES6 section 20.3.4.22 Date.prototype.setHours(hour, min, sec, ms)
 BUILTIN(DatePrototypeSetHours) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setHours");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x48\x6f\x75\x72\x73");
   int const argc = args.length() - 1;
   Handle<Object> hour = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, hour, Object::ToNumber(hour));
@@ -3240,7 +3240,7 @@ BUILTIN(DatePrototypeSetHours) {
 // ES6 section 20.3.4.23 Date.prototype.setMilliseconds(ms)
 BUILTIN(DatePrototypeSetMilliseconds) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setMilliseconds");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x4d\x69\x6c\x6c\x69\x73\x65\x63\x6f\x6e\x64\x73");
   Handle<Object> ms = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, ms, Object::ToNumber(ms));
   double time_val = date->value()->Number();
@@ -3261,7 +3261,7 @@ BUILTIN(DatePrototypeSetMilliseconds) {
 // ES6 section 20.3.4.24 Date.prototype.setMinutes ( min, sec, ms )
 BUILTIN(DatePrototypeSetMinutes) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setMinutes");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x4d\x69\x6e\x75\x74\x65\x73");
   int const argc = args.length() - 1;
   Handle<Object> min = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, min, Object::ToNumber(min));
@@ -3294,7 +3294,7 @@ BUILTIN(DatePrototypeSetMinutes) {
 // ES6 section 20.3.4.25 Date.prototype.setMonth ( month, date )
 BUILTIN(DatePrototypeSetMonth) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setMonth");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x4d\x6f\x6e\x74\x68");
   int const argc = args.length() - 1;
   Handle<Object> month = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, month, Object::ToNumber(month));
@@ -3322,7 +3322,7 @@ BUILTIN(DatePrototypeSetMonth) {
 // ES6 section 20.3.4.26 Date.prototype.setSeconds ( sec, ms )
 BUILTIN(DatePrototypeSetSeconds) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setSeconds");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x53\x65\x63\x6f\x6e\x64\x73");
   int const argc = args.length() - 1;
   Handle<Object> sec = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, sec, Object::ToNumber(sec));
@@ -3350,7 +3350,7 @@ BUILTIN(DatePrototypeSetSeconds) {
 // ES6 section 20.3.4.27 Date.prototype.setTime ( time )
 BUILTIN(DatePrototypeSetTime) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setTime");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x54\x69\x6d\x65");
   Handle<Object> value = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, value, Object::ToNumber(value));
   return *JSDate::SetValue(date, TimeClip(value->Number()));
@@ -3360,7 +3360,7 @@ BUILTIN(DatePrototypeSetTime) {
 // ES6 section 20.3.4.28 Date.prototype.setUTCDate ( date )
 BUILTIN(DatePrototypeSetUTCDate) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setUTCDate");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x55\x54\x43\x44\x61\x74\x65");
   Handle<Object> value = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, value, Object::ToNumber(value));
   if (std::isnan(date->value()->Number())) return date->value();
@@ -3378,7 +3378,7 @@ BUILTIN(DatePrototypeSetUTCDate) {
 // ES6 section 20.3.4.29 Date.prototype.setUTCFullYear (year, month, date)
 BUILTIN(DatePrototypeSetUTCFullYear) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setUTCFullYear");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x55\x54\x43\x46\x75\x6c\x6c\x59\x65\x61\x72");
   int const argc = args.length() - 1;
   Handle<Object> year = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, year, Object::ToNumber(year));
@@ -3411,7 +3411,7 @@ BUILTIN(DatePrototypeSetUTCFullYear) {
 // ES6 section 20.3.4.30 Date.prototype.setUTCHours(hour, min, sec, ms)
 BUILTIN(DatePrototypeSetUTCHours) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setUTCHours");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x55\x54\x43\x48\x6f\x75\x72\x73");
   int const argc = args.length() - 1;
   Handle<Object> hour = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, hour, Object::ToNumber(hour));
@@ -3448,7 +3448,7 @@ BUILTIN(DatePrototypeSetUTCHours) {
 // ES6 section 20.3.4.31 Date.prototype.setUTCMilliseconds(ms)
 BUILTIN(DatePrototypeSetUTCMilliseconds) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setUTCMilliseconds");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x55\x54\x43\x4d\x69\x6c\x6c\x69\x73\x65\x63\x6f\x6e\x64\x73");
   Handle<Object> ms = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, ms, Object::ToNumber(ms));
   double time_val = date->value()->Number();
@@ -3468,7 +3468,7 @@ BUILTIN(DatePrototypeSetUTCMilliseconds) {
 // ES6 section 20.3.4.32 Date.prototype.setUTCMinutes ( min, sec, ms )
 BUILTIN(DatePrototypeSetUTCMinutes) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setUTCMinutes");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x55\x54\x43\x4d\x69\x6e\x75\x74\x65\x73");
   int const argc = args.length() - 1;
   Handle<Object> min = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, min, Object::ToNumber(min));
@@ -3500,7 +3500,7 @@ BUILTIN(DatePrototypeSetUTCMinutes) {
 // ES6 section 20.3.4.31 Date.prototype.setUTCMonth ( month, date )
 BUILTIN(DatePrototypeSetUTCMonth) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setUTCMonth");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x55\x54\x43\x4d\x6f\x6e\x74\x68");
   int const argc = args.length() - 1;
   Handle<Object> month = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, month, Object::ToNumber(month));
@@ -3527,7 +3527,7 @@ BUILTIN(DatePrototypeSetUTCMonth) {
 // ES6 section 20.3.4.34 Date.prototype.setUTCSeconds ( sec, ms )
 BUILTIN(DatePrototypeSetUTCSeconds) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setUTCSeconds");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x55\x54\x43\x53\x65\x63\x6f\x6e\x64\x73");
   int const argc = args.length() - 1;
   Handle<Object> sec = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, sec, Object::ToNumber(sec));
@@ -3554,7 +3554,7 @@ BUILTIN(DatePrototypeSetUTCSeconds) {
 // ES6 section 20.3.4.35 Date.prototype.toDateString ( )
 BUILTIN(DatePrototypeToDateString) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.toDateString");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x44\x61\x74\x65\x53\x74\x72\x69\x6e\x67");
   char buffer[128];
   Vector<char> str(buffer, arraysize(buffer));
   ToDateString(date->value()->Number(), str, isolate->date_cache(), kDateOnly);
@@ -3569,7 +3569,7 @@ BUILTIN(DatePrototypeToDateString) {
 // ES6 section 20.3.4.36 Date.prototype.toISOString ( )
 BUILTIN(DatePrototypeToISOString) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.toISOString");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x49\x53\x4f\x53\x74\x72\x69\x6e\x67");
   double const time_val = date->value()->Number();
   if (std::isnan(time_val)) {
     THROW_NEW_ERROR_RETURN_FAILURE(
@@ -3582,13 +3582,13 @@ BUILTIN(DatePrototypeToISOString) {
   char buffer[128];
   Vector<char> str(buffer, arraysize(buffer));
   if (year >= 0 && year <= 9999) {
-    SNPrintF(str, "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", year, month + 1, day,
+    SNPrintF(str, "\x6c\xf0\xf4\x84\x2d\x6c\xf0\xf2\x84\x2d\x6c\xf0\xf2\x84\x54\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x2e\x6c\xf0\xf3\x84\x5a", year, month + 1, day,
              hour, min, sec, ms);
   } else if (year < 0) {
-    SNPrintF(str, "-%06d-%02d-%02dT%02d:%02d:%02d.%03dZ", -year, month + 1, day,
+    SNPrintF(str, "\x2d\x6c\xf0\xf6\x84\x2d\x6c\xf0\xf2\x84\x2d\x6c\xf0\xf2\x84\x54\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x2e\x6c\xf0\xf3\x84\x5a", -year, month + 1, day,
              hour, min, sec, ms);
   } else {
-    SNPrintF(str, "+%06d-%02d-%02dT%02d:%02d:%02d.%03dZ", year, month + 1, day,
+    SNPrintF(str, "\x2b\x6c\xf0\xf6\x84\x2d\x6c\xf0\xf2\x84\x2d\x6c\xf0\xf2\x84\x54\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x2e\x6c\xf0\xf3\x84\x5a", year, month + 1, day,
              hour, min, sec, ms);
   }
   return *isolate->factory()->NewStringFromAsciiChecked(str.start());
@@ -3598,7 +3598,7 @@ BUILTIN(DatePrototypeToISOString) {
 // ES6 section 20.3.4.41 Date.prototype.toString ( )
 BUILTIN(DatePrototypeToString) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.toString");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67");
   char buffer[128];
   Vector<char> str(buffer, arraysize(buffer));
   ToDateString(date->value()->Number(), str, isolate->date_cache());
@@ -3613,7 +3613,7 @@ BUILTIN(DatePrototypeToString) {
 // ES6 section 20.3.4.42 Date.prototype.toTimeString ( )
 BUILTIN(DatePrototypeToTimeString) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.toTimeString");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x54\x69\x6d\x65\x53\x74\x72\x69\x6e\x67");
   char buffer[128];
   Vector<char> str(buffer, arraysize(buffer));
   ToDateString(date->value()->Number(), str, isolate->date_cache(), kTimeOnly);
@@ -3628,10 +3628,10 @@ BUILTIN(DatePrototypeToTimeString) {
 // ES6 section 20.3.4.43 Date.prototype.toUTCString ( )
 BUILTIN(DatePrototypeToUTCString) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.toUTCString");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x55\x54\x43\x53\x74\x72\x69\x6e\x67");
   double const time_val = date->value()->Number();
   if (std::isnan(time_val)) {
-    return *isolate->factory()->NewStringFromAsciiChecked("Invalid Date");
+    return *isolate->factory()->NewStringFromAsciiChecked("\x49\x6e\x76\x61\x6c\x69\x64\x20\x44\x61\x74\x65");
   }
   char buffer[128];
   Vector<char> str(buffer, arraysize(buffer));
@@ -3639,7 +3639,7 @@ BUILTIN(DatePrototypeToUTCString) {
   int year, month, day, weekday, hour, min, sec, ms;
   isolate->date_cache()->BreakDownTime(time_ms, &year, &month, &day, &weekday,
                                        &hour, &min, &sec, &ms);
-  SNPrintF(str, "%s, %02d %s %4d %02d:%02d:%02d GMT", kShortWeekDays[weekday],
+  SNPrintF(str, "\x6c\xa2\x2c\x20\x6c\xf0\xf2\x84\x20\x6c\xa2\x20\x6c\xf4\x84\x20\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x20\x47\x4d\x54", kShortWeekDays[weekday],
            day, kShortMonths[month], year, hour, min, sec);
   return *isolate->factory()->NewStringFromAsciiChecked(str.start());
 }
@@ -3648,7 +3648,7 @@ BUILTIN(DatePrototypeToUTCString) {
 // ES6 section 20.3.4.44 Date.prototype.valueOf ( )
 BUILTIN(DatePrototypeValueOf) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.valueOf");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x76\x61\x6c\x75\x65\x4f\x66");
   return date->value();
 }
 
@@ -3657,7 +3657,7 @@ BUILTIN(DatePrototypeValueOf) {
 BUILTIN(DatePrototypeToPrimitive) {
   HandleScope scope(isolate);
   DCHECK_EQ(2, args.length());
-  CHECK_RECEIVER(JSReceiver, receiver, "Date.prototype [ @@toPrimitive ]");
+  CHECK_RECEIVER(JSReceiver, receiver, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x20\x5b\x20\x40\x40\x74\x6f\x50\x72\x69\x6d\x69\x74\x69\x76\x65\x20\x5d");
   Handle<Object> hint = args.at<Object>(1);
   Handle<Object> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, result,
@@ -3669,7 +3669,7 @@ BUILTIN(DatePrototypeToPrimitive) {
 // ES6 section B.2.4.1 Date.prototype.getYear ( )
 BUILTIN(DatePrototypeGetYear) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.getYear");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x67\x65\x74\x59\x65\x61\x72");
   double time_val = date->value()->Number();
   if (std::isnan(time_val)) return date->value();
   int64_t time_ms = static_cast<int64_t>(time_val);
@@ -3684,7 +3684,7 @@ BUILTIN(DatePrototypeGetYear) {
 // ES6 section B.2.4.2 Date.prototype.setYear ( year )
 BUILTIN(DatePrototypeSetYear) {
   HandleScope scope(isolate);
-  CHECK_RECEIVER(JSDate, date, "Date.prototype.setYear");
+  CHECK_RECEIVER(JSDate, date, "\x44\x61\x74\x65\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x73\x65\x74\x59\x65\x61\x72");
   Handle<Object> year = args.atOrUndefined(isolate, 1);
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(isolate, year, Object::ToNumber(year));
   double m = 0.0, dt = 1.0, y = year->Number();
@@ -3858,9 +3858,9 @@ MaybeHandle<JSFunction> CreateDynamicFunction(
       // If the formal parameters include an unbalanced block comment, the
       // function must be rejected. Since JavaScript does not allow nested
       // comments we can include a trailing block comment to catch this.
-      builder.AppendCString(u8"\n/**/");
+      builder.AppendCString("\xa\x2f\x2a\x2a\x2f");
     }
-    builder.AppendCString(u8") {\n");
+    builder.AppendCString("\x29\x20\x7b\xa");
     if (argc > 0) {
       Handle<String> body;
       ASSIGN_RETURN_ON_EXCEPTION(
@@ -3868,7 +3868,7 @@ MaybeHandle<JSFunction> CreateDynamicFunction(
           JSFunction);
       builder.AppendString(body);
     }
-    builder.AppendCString(u8"\n})");
+    builder.AppendCString("\xa\x7d\x29");
     ASSIGN_RETURN_ON_EXCEPTION(isolate, source, builder.Finish(), JSFunction);
 
     // The SyntaxError must be thrown after all the (observable) ToString
@@ -3935,7 +3935,7 @@ BUILTIN(FunctionConstructor) {
   HandleScope scope(isolate);
   Handle<JSFunction> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result, CreateDynamicFunction(isolate, args, "function"));
+      isolate, result, CreateDynamicFunction(isolate, args, "\x66\x75\x6e\x63\x74\x69\x6f\x6e"));
   return *result;
 }
 
@@ -4016,7 +4016,7 @@ BUILTIN(FunctionPrototypeToString) {
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate, NewTypeError(MessageTemplate::kNotGeneric,
                             isolate->factory()->NewStringFromAsciiChecked(
-                                "Function.prototype.toString")));
+                                "\x46\x75\x6e\x63\x74\x69\x6f\x6e\x2e\x70\x72\x6f\x74\x6f\x74\x79\x70\x65\x2e\x74\x6f\x53\x74\x72\x69\x6e\x67")));
 }
 
 
@@ -4025,7 +4025,7 @@ BUILTIN(GeneratorFunctionConstructor) {
   HandleScope scope(isolate);
   Handle<JSFunction> result;
   ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
-      isolate, result, CreateDynamicFunction(isolate, args, "function*"));
+      isolate, result, CreateDynamicFunction(isolate, args, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x2a"));
   return *result;
 }
 
@@ -4196,7 +4196,7 @@ BUILTIN(ProxyConstructor) {
   THROW_NEW_ERROR_RETURN_FAILURE(
       isolate,
       NewTypeError(MessageTemplate::kConstructorNotFunction,
-                   isolate->factory()->NewStringFromAsciiChecked("Proxy")));
+                   isolate->factory()->NewStringFromAsciiChecked("\x50\x72\x6f\x78\x79")));
 }
 
 
@@ -4299,7 +4299,7 @@ MUST_USE_RESULT MaybeHandle<Object> HandleApiCallHelper(
         v8::ToCData<v8::FunctionCallback>(callback_obj);
     Object* data_obj = call_data->data();
 
-    LOG(isolate, ApiObjectAccess("call", JSObject::cast(*args.receiver())));
+    LOG(isolate, ApiObjectAccess("\x63\x61\x6c\x6c", JSObject::cast(*args.receiver())));
     DCHECK(raw_holder->IsJSObject());
 
     FunctionCallbackArguments custom(isolate,
@@ -4516,7 +4516,7 @@ MUST_USE_RESULT static Object* HandleApiCallAsFunctionOrConstructor(
   Object* result;
   {
     HandleScope scope(isolate);
-    LOG(isolate, ApiObjectAccess("call non-function", obj));
+    LOG(isolate, ApiObjectAccess("\x63\x61\x6c\x6c\x20\x6e\x6f\x6e\x2d\x66\x75\x6e\x63\x74\x69\x6f\x6e", obj));
 
     FunctionCallbackArguments custom(isolate,
                                      call_data->data(),
@@ -4781,7 +4781,7 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->builder = &MacroAssemblerBuilder;                \
   functions->generator = FUNCTION_ADDR(Generate_Adaptor);     \
   functions->c_code = FUNCTION_ADDR(Builtin_##aname);         \
-  functions->s_name = USTR(#aname);                                 \
+  functions->s_name = USTR(#aname);                           \
   functions->name = c_##aname;                                \
   functions->flags = Code::ComputeFlags(Code::BUILTIN);       \
   functions->extra_args = BuiltinExtraArguments::aextra_args; \
@@ -4792,7 +4792,7 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->builder = &MacroAssemblerBuilder;                     \
   functions->generator = FUNCTION_ADDR(Generate_##aname);          \
   functions->c_code = NULL;                                        \
-  functions->s_name = USTR(#aname);                                      \
+  functions->s_name = USTR(#aname);                                \
   functions->name = k##aname;                                      \
   functions->flags = Code::ComputeFlags(Code::kind, state, extra); \
   functions->extra_args = BuiltinExtraArguments::kNone;            \
@@ -4803,7 +4803,7 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->builder = &CodeStubAssemblerBuilder;                        \
   functions->generator = FUNCTION_ADDR(Generate_##aname);                \
   functions->c_code = NULL;                                              \
-  functions->s_name = USTR(#aname);                                            \
+  functions->s_name = USTR(#aname);                                      \
   functions->name = k##aname;                                            \
   functions->flags =                                                     \
       Code::ComputeFlags(Code::BUILTIN, UNINITIALIZED, kNoExtraICState); \
@@ -4815,7 +4815,7 @@ void Builtins::InitBuiltinFunctionTable() {
   functions->builder = &MacroAssemblerBuilder;              \
   functions->generator = FUNCTION_ADDR(Generate_##aname);   \
   functions->c_code = NULL;                                 \
-  functions->s_name = USTR(#aname);                               \
+  functions->s_name = USTR(#aname);                         \
   functions->name = k##aname;                               \
   functions->flags = Code::ComputeHandlerFlags(Code::kind); \
   functions->extra_args = BuiltinExtraArguments::kNone;     \
@@ -4860,7 +4860,7 @@ void Builtins::SetUp(Isolate* isolate, bool create_heap_objects) {
         CodeTracer::Scope trace_scope(isolate->GetCodeTracer());
         OFStream os(trace_scope.file());
         os << "Builtin: ";
-		for (int n = 0; functions[i].s_name[n] != '\x0'; n++) {
+		for (int n = 0; functions[i].s_name[n] != '\0'; n++) {
           os << Ascii2Ebcdic(functions[i].s_name[n]);
         }
         os << "\n";
