@@ -227,6 +227,9 @@ ifeq ($(no_omit_framepointer), on)
   GYPFLAGS += -Drelease_extra_cflags=-fno-omit-frame-pointer
 endif
 
+ifeq ($(nativesim), true)
+  GYPFLAGS += -Dv8_native_sim=true
+endif
 # ----------------- available targets: --------------------
 # - "grokdump": rebuilds heap constants lists used by grokdump
 # - any arch listed in ARCHES (see below)
