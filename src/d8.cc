@@ -678,7 +678,7 @@ Local<String> Shell::ReadFromStdin(Isolate* isolate) {
   static const int kBufferSize = 256;
   char buffer[kBufferSize];
   Local<String> accumulator =
-      String::NewFromUtf8(isolate, "", NewStringType::kNormal).ToLocalChecked();
+      String::NewFromUtf8(isolate, u8"", NewStringType::kNormal).ToLocalChecked();
   int length;
   while (true) {
     // Continue reading if the line ends with an escape '\\' or the line has
@@ -690,18 +690,21 @@ Local<String> Shell::ReadFromStdin(Isolate* isolate) {
     length = static_cast<int>(strlen(buffer));
     if (length == 0) {
       return accumulator;
-    } else if (buffer[length-1] != '\xa') {
+    } else if (buffer[length-1] != '\n') {
+      __e2a_l(buffer, length);
       accumulator = String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal, length)
               .ToLocalChecked());
-    } else if (length > 1 && buffer[length-2] == '\x5c') {
-      buffer[length-2] = '\xa';
+    } else if (length > 1 && buffer[length-2] == '\\') {
+      buffer[length-2] = '\n';
+      __e2a_l(buffer, length);
       accumulator = String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal,
                               length - 1).ToLocalChecked());
     } else {
+      __e2a_l(buffer, length);
       return String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal,
@@ -1352,6 +1355,7 @@ static char* ReadChars(Isolate* isolate, const char* name, int* size_out) {
   chars[size] = '\x0';
   for (size_t i = 0; i < size;) {
     i += fread(&chars[i], 1, size - i, file);
+    __e2a_s(chars);
     if (ferror(file)) {
       fclose(file);
       delete[] chars;
@@ -2505,6 +2509,10 @@ int Shell::Main(int argc, char* argv[]) {
 
 #ifndef GOOGLE3
 int main(int argc, char* argv[]) {
+#ifdef V8_OS_ZOS
+  for (int i = 0 ; i < argc ; i++)
+     __e2a_s(argv[i]);
+#endif
   return v8::Shell::Main(argc, argv);
 }
 #endif

@@ -43,11 +43,11 @@
 // printing / etc in the flag parser code.  We only do this for writable flags.
 #elif defined(FLAG_MODE_META)
 #define FLAG_FULL(ftype, ctype, nam, def, cmt)                              \
-  { Flag::TYPE_##ftype, #nam, &FLAG_##nam, &FLAGDEFAULT_##nam, cmt, false } \
+  { Flag::TYPE_##ftype, USTR(#nam), &FLAG_##nam, &FLAGDEFAULT_##nam, cmt, false } \
   ,
 #define FLAG_ALIAS(ftype, ctype, alias, nam)                     \
   {                                                              \
-    Flag::TYPE_##ftype, #alias, &FLAG_##nam, &FLAGDEFAULT_##nam, \
+    Flag::TYPE_##ftype, USTR(#alias), &FLAG_##nam, &FLAGDEFAULT_##nam, \
         "\x61\x6c\x69\x61\x73\x20\x66\x6f\x72\x20\x2d\x2d" #nam, false                               \
   }                                                              \
   ,

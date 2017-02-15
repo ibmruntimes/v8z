@@ -493,6 +493,7 @@ int FlagList::SetFlagsFromString(const char* str, int len) {
   ScopedVector<char> copy0(len + 1);
   MemCopy(copy0.start(), str, len);
   copy0[len] = '\x0';
+  __a2e_s(copy0.start());
 
   // strip leading white space
   char* copy = SkipWhiteSpace(copy0.start());
@@ -514,6 +515,7 @@ int FlagList::SetFlagsFromString(const char* str, int len) {
     p = SkipBlackSpace(p);
     if (*p != '\x0') *p++ = '\x0';  // 0-terminate argument
     p = SkipWhiteSpace(p);
+    __e2a_s(argv[argc]);
   }
 
   // set the flags
