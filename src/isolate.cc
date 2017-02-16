@@ -928,7 +928,9 @@ void Isolate::PrintCurrentStackTrace(FILE* out) {
         Execution::GetStackTraceLine(recv, fun, pos_obj, is_top_level);
     if (line->length() > 0) {
       line->PrintOn(out);
-      PrintF(out, "\xa");
+#pragma convert("ISO8859-1")
+      FPrintASCII(out, "\n");
+#pragma convert(pop)
     }
   }
 }
