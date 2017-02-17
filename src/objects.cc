@@ -67,12 +67,12 @@ std::ostream& operator<<(std::ostream& os, InstanceType instance_type) {
   switch (instance_type) {
 #define WRITE_TYPE(TYPE) \
   case TYPE:             \
-    return os << USTR(#TYPE);
+    return os << #TYPE;
     INSTANCE_TYPE_LIST(WRITE_TYPE)
 #undef WRITE_TYPE
   }
   UNREACHABLE();
-  return os << u8"UNKNOWN";  // Keep the compiler happy.
+  return os << "UNKNOWN";  // Keep the compiler happy.
 }
 
 Handle<FieldType> Object::OptimalType(Isolate* isolate,
@@ -577,7 +577,7 @@ Maybe<bool> Object::IsArray(Handle<Object> object) {
     if (proxy->IsRevoked()) {
       isolate->Throw(*isolate->factory()->NewTypeError(
           MessageTemplate::kProxyRevoked,
-          isolate->factory()->NewStringFromAsciiChecked("IsArray")));
+          isolate->factory()->NewStringFromAsciiChecked(u8"IsArray")));
       return Nothing<bool>();
     }
     return Object::IsArray(handle(proxy->target(), isolate));
@@ -629,7 +629,7 @@ MaybeHandle<FixedArray> Object::CreateListFromArrayLike(
     THROW_NEW_ERROR(isolate,
                     NewTypeError(MessageTemplate::kCalledOnNonObject,
                                  isolate->factory()->NewStringFromAsciiChecked(
-                                     "CreateListFromArrayLike")),
+                                     u8"CreateListFromArrayLike")),
                     FixedArray);
   }
   // 4. Let len be ? ToLength(? Get(obj, "length")).
@@ -1825,12 +1825,12 @@ bool String::MakeExternal(v8::String::ExternalOneByteStringResource* resource) {
 void String::StringShortPrint(StringStream* accumulator) {
   int len = length();
   if (len > kMaxShortPrintLength) {
-    accumulator->Add(u8"<Very long string[%u]>", len);
+    accumulator->Add("<Very long string[%u]>", len);
     return;
   }
 
   if (!LooksValid()) {
-    accumulator->Add(u8"<Invalid String>");
+    accumulator->Add("<Invalid String>");
     return;
   }
 
@@ -1851,7 +1851,7 @@ void String::StringShortPrint(StringStream* accumulator) {
   }
   stream.Reset(this);
   if (one_byte) {
-    accumulator->Add(u8"<String[%u]: ", length());
+    accumulator->Add("<String[%u]: ", length());
     for (int i = 0; i < len; i++) {
       accumulator->Put(static_cast<char>(stream.GetNext()));
     }
@@ -1859,17 +1859,17 @@ void String::StringShortPrint(StringStream* accumulator) {
   } else {
     // Backslash indicates that the string contains control
     // characters and that backslashes are therefore escaped.
-    accumulator->Add(u8"<String[%u]\\: ", length());
+    accumulator->Add("<String[%u]\\: ", length());
     for (int i = 0; i < len; i++) {
       uint16_t c = stream.GetNext();
       if (c == '\xa') {
-        accumulator->Add(u8"\\n");
+        accumulator->Add("\\n");
       } else if (c == '\xd') {
-        accumulator->Add(u8"\\r");
+        accumulator->Add("\\r");
       } else if (c == '\x5c') {
-        accumulator->Add(u8"\\\\");
+        accumulator->Add("\\\\");
       } else if (c < 32 || c > 126) {
-        accumulator->Add(u8"\\x%02x", c);
+        accumulator->Add("\\x%02x", c);
       } else {
         accumulator->Put(static_cast<char>(c));
       }
@@ -1900,17 +1900,17 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       double length = JSArray::cast(this)->length()->IsUndefined()
           ? 0
           : JSArray::cast(this)->length()->Number();
-      accumulator->Add(u8"<JS Array[%u]>", static_cast<uint32_t>(length));
+      accumulator->Add("<JS Array[%u]>", static_cast<uint32_t>(length));
       break;
     }
     case JS_BOUND_FUNCTION_TYPE: {
       JSBoundFunction* bound_function = JSBoundFunction::cast(this);
       Object* name = bound_function->name();
-      accumulator->Add(u8"<JS BoundFunction");
+      accumulator->Add("<JS BoundFunction");
       if (name->IsString()) {
         String* str = String::cast(name);
         if (str->length() > 0) {
-          accumulator->Add(u8" ");
+          accumulator->Add(" ");
           accumulator->Put(str);
         }
       }
@@ -1920,15 +1920,15 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       break;
     }
     case JS_WEAK_MAP_TYPE: {
-      accumulator->Add(u8"<JS WeakMap>");
+      accumulator->Add("<JS WeakMap>");
       break;
     }
     case JS_WEAK_SET_TYPE: {
-      accumulator->Add(u8"<JS WeakSet>");
+      accumulator->Add("<JS WeakSet>");
       break;
     }
     case JS_REGEXP_TYPE: {
-      accumulator->Add(u8"<JS RegExp>");
+      accumulator->Add("<JS RegExp>");
       break;
     }
     case JS_FUNCTION_TYPE: {
@@ -1938,25 +1938,25 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       if (fun_name->IsString()) {
         String* str = String::cast(fun_name);
         if (str->length() > 0) {
-          accumulator->Add(u8"<JS Function ");
+          accumulator->Add("<JS Function ");
           accumulator->Put(str);
           printed = true;
         }
       }
       if (!printed) {
-        accumulator->Add(u8"<JS Function");
+        accumulator->Add("<JS Function");
       }
-      accumulator->Add(u8" (SharedFunctionInfo %p)",
+      accumulator->Add(" (SharedFunctionInfo %p)",
                        reinterpret_cast<void*>(function->shared()));
       accumulator->Put('\x3e');
       break;
     }
     case JS_GENERATOR_OBJECT_TYPE: {
-      accumulator->Add(u8"<JS Generator>");
+      accumulator->Add("<JS Generator>");
       break;
     }
     case JS_MODULE_TYPE: {
-      accumulator->Add(u8"<JS Module>");
+      accumulator->Add("<JS Module>");
       break;
     }
     // All other JSObjects are rather similar to each other (JSObject,
@@ -1968,12 +1968,12 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       bool printed = false;
       if (constructor->IsHeapObject() &&
           !heap->Contains(HeapObject::cast(constructor))) {
-        accumulator->Add(u8"!!!INVALID CONSTRUCTOR!!!");
+        accumulator->Add("!!!INVALID CONSTRUCTOR!!!");
       } else {
         bool global_object = IsJSGlobalProxy();
         if (constructor->IsJSFunction()) {
           if (!heap->Contains(JSFunction::cast(constructor)->shared())) {
-            accumulator->Add(u8"!!!INVALID SHARED ON CONSTRUCTOR!!!");
+            accumulator->Add("!!!INVALID SHARED ON CONSTRUCTOR!!!");
           } else {
             Object* constructor_name =
                 JSFunction::cast(constructor)->shared()->name();
@@ -1981,12 +1981,12 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
               String* str = String::cast(constructor_name);
               if (str->length() > 0) {
                 bool vowel = AnWord(str);
-                accumulator->Add(u8"<%sa%s ",
-                       global_object ? u8"Global Object: " : u8"",
-                       vowel ? u8"n" : u8"");
+                accumulator->Add("<%sa%s ",
+                       global_object ? "Global Object: " : "",
+                       vowel ? "n" : "");
                 accumulator->Put(str);
-                accumulator->Add(u8" with %smap %p",
-                    map_of_this->is_deprecated() ? u8"deprecated " : u8"",
+                accumulator->Add(" with %smap %p",
+                    map_of_this->is_deprecated() ? "deprecated " : "",
                     map_of_this);
                 printed = true;
               }
@@ -1994,11 +1994,11 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
           }
         }
         if (!printed) {
-          accumulator->Add(u8"<JS %sObject", global_object ? u8"Global " : u8"");
+          accumulator->Add("<JS %sObject", global_object ? "Global " : "");
         }
       }
       if (IsJSValue()) {
-        accumulator->Add(u8" value = ");
+        accumulator->Add(" value = ");
         JSValue::cast(this)->value()->ShortPrint(accumulator);
       }
       accumulator->Put('\x3e');
@@ -2014,16 +2014,16 @@ void JSObject::PrintElementsTransition(
     ElementsKind to_kind, Handle<FixedArrayBase> to_elements) {
   if (from_kind != to_kind) {
     OFStream os(file);
-    os << u8"elements transition [" << ElementsKindToString(from_kind) << u8" -> "
-       << ElementsKindToString(to_kind) << u8"] in ";
+    os << "elements transition [" << ElementsKindToString(from_kind) << " -> "
+       << ElementsKindToString(to_kind) << "] in ";
     JavaScriptFrame::PrintTop(object->GetIsolate(), file, false, true);
-    PrintF(file, u8" for ");
+    PrintF(file, " for ");
     object->ShortPrint(file);
-    PrintF(file, u8" from ");
+    PrintF(file, " from ");
     from_elements->ShortPrint(file);
-    PrintF(file, u8" to ");
+    PrintF(file, " to ");
     to_elements->ShortPrint(file);
-    PrintF(file, u8"\n");
+    PrintF(file, "\n");
   }
 }
 
@@ -2045,17 +2045,17 @@ MaybeHandle<JSFunction> Map::GetConstructorFunction(
 void Map::PrintReconfiguration(FILE* file, int modify_index, PropertyKind kind,
                                PropertyAttributes attributes) {
   OFStream os(file);
-  os << u8"[reconfiguring]";
+  os << "[reconfiguring]";
   Name* name = instance_descriptors()->GetKey(modify_index);
   if (name->IsString()) {
     String::cast(name)->PrintOn(file);
   } else {
-    os << u8"{symbol " << static_cast<void*>(name) << u8"}";
+    os << "{symbol " << static_cast<void*>(name) << "}";
   }
-  os << u8": " << (kind == kData ? u8"kData" : u8"ACCESSORS") << u8", attrs: ";
-  os << attributes << u8" [";
+  os << ": " << (kind == kData ? "kData" : "ACCESSORS") << ", attrs: ";
+  os << attributes << " [";
   JavaScriptFrame::PrintTop(GetIsolate(), file, false, true);
-  os << u8"]\n";
+  os << "]\n";
 }
 
 void Map::PrintGeneralization(
@@ -2065,47 +2065,47 @@ void Map::PrintGeneralization(
     MaybeHandle<Object> old_value, MaybeHandle<FieldType> new_field_type,
     MaybeHandle<Object> new_value) {
   OFStream os(file);
-  os << u8"[generalizing]";
+  os << "[generalizing]";
   Name* name = instance_descriptors()->GetKey(modify_index);
   if (name->IsString()) {
     String::cast(name)->PrintOn(file);
   } else {
-    os << u8"{symbol " << static_cast<void*>(name) << u8"}";
+    os << "{symbol " << static_cast<void*>(name) << "}";
   }
-  os << u8":";
+  os << ":";
   if (constant_to_field) {
-    os << u8"c";
+    os << "c";
   } else {
-    os << old_representation.Mnemonic() << u8"{";
+    os << old_representation.Mnemonic() << "{";
     if (old_field_type.is_null()) {
       os << Brief(*(old_value.ToHandleChecked()));
     } else {
       old_field_type.ToHandleChecked()->PrintTo(os);
     }
-    os << u8"}";
+    os << "}";
   }
-  os << u8"->" << new_representation.Mnemonic() << u8"{";
+  os << "->" << new_representation.Mnemonic() << "{";
   if (new_field_type.is_null()) {
     os << Brief(*(new_value.ToHandleChecked()));
   } else {
     new_field_type.ToHandleChecked()->PrintTo(os);
   }
-  os << u8"} (";
+  os << "} (";
   if (strlen(reason) > 0) {
     os << reason;
   } else {
-    os << u8"+" << (descriptors - split) << u8" maps";
+    os << "+" << (descriptors - split) << " maps";
   }
-  os << u8") [";
+  os << ") [";
   JavaScriptFrame::PrintTop(GetIsolate(), file, false, true);
-  os << u8"]\n";
+  os << "]\n";
 }
 
 
 void JSObject::PrintInstanceMigration(FILE* file,
                                       Map* original_map,
                                       Map* new_map) {
-  PrintF(file, u8"[migrating]");
+  PrintF(file, "[migrating]");
   DescriptorArray* o = original_map->instance_descriptors();
   DescriptorArray* n = new_map->instance_descriptors();
   for (int i = 0; i < original_map->NumberOfOwnDescriptors(); i++) {
@@ -2113,34 +2113,34 @@ void JSObject::PrintInstanceMigration(FILE* file,
     Representation n_r = n->GetDetails(i).representation();
     if (!o_r.Equals(n_r)) {
       String::cast(o->GetKey(i))->PrintOn(file);
-      PrintF(file, u8":%s->%s ", o_r.Mnemonic(), n_r.Mnemonic());
+      PrintF(file, ":%s->%s ", o_r.Mnemonic(), n_r.Mnemonic());
     } else if (o->GetDetails(i).type() == DATA_CONSTANT &&
                n->GetDetails(i).type() == DATA) {
       Name* name = o->GetKey(i);
       if (name->IsString()) {
         String::cast(name)->PrintOn(file);
       } else {
-        PrintF(file, u8"{symbol %p}", static_cast<void*>(name));
+        PrintF(file, "{symbol %p}", static_cast<void*>(name));
       }
-      PrintF(file, u8" ");
+      PrintF(file, " ");
     }
   }
-  PrintF(file, u8"\n");
+  PrintF(file, "\n");
 }
 
 
 void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
   Heap* heap = GetHeap();
   if (!heap->Contains(this)) {
-    os << u8"!!!INVALID POINTER!!!";
+    os << "!!!INVALID POINTER!!!";
     return;
   }
   if (!heap->Contains(map())) {
-    os << u8"!!!INVALID MAP!!!";
+    os << "!!!INVALID MAP!!!";
     return;
   }
 
-  os << this << u8" ";
+  os << this << " ";
 
   if (IsString()) {
     HeapStringAllocator allocator;
@@ -2158,33 +2158,33 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
   }
   switch (map()->instance_type()) {
     case MAP_TYPE:
-      os << u8"<Map(" << ElementsKindToString(Map::cast(this)->elements_kind())
-         << u8")>";
+      os << "<Map(" << ElementsKindToString(Map::cast(this)->elements_kind())
+         << ")>";
       break;
     case FIXED_ARRAY_TYPE:
-      os << u8"<FixedArray[" << FixedArray::cast(this)->length() << u8"]>";
+      os << "<FixedArray[" << FixedArray::cast(this)->length() << "]>";
       break;
     case FIXED_DOUBLE_ARRAY_TYPE:
-      os << u8"<FixedDoubleArray[" << FixedDoubleArray::cast(this)->length()
-         << u8"]>";
+      os << "<FixedDoubleArray[" << FixedDoubleArray::cast(this)->length()
+         << "]>";
       break;
     case BYTE_ARRAY_TYPE:
-      os << u8"<ByteArray[" << ByteArray::cast(this)->length() << u8"]>";
+      os << "<ByteArray[" << ByteArray::cast(this)->length() << "]>";
       break;
     case BYTECODE_ARRAY_TYPE:
-      os << u8"<BytecodeArray[" << BytecodeArray::cast(this)->length() << u8"]>";
+      os << "<BytecodeArray[" << BytecodeArray::cast(this)->length() << "]>";
       break;
     case TRANSITION_ARRAY_TYPE:
-      os << u8"<TransitionArray[" << TransitionArray::cast(this)->length()
-         << u8"]>";
+      os << "<TransitionArray[" << TransitionArray::cast(this)->length()
+         << "]>";
       break;
     case FREE_SPACE_TYPE:
-      os << u8"<FreeSpace[" << FreeSpace::cast(this)->size() << u8"]>";
+      os << "<FreeSpace[" << FreeSpace::cast(this)->size() << "]>";
       break;
 #define TYPED_ARRAY_SHORT_PRINT(Type, type, TYPE, ctype, size)                \
   case FIXED_##TYPE##_ARRAY_TYPE:                                             \
-    os << u8"<Fixed" USTR(#Type) u8"Array[" << Fixed##Type##Array::cast(this)->length() \
-       << u8"]>";                                                               \
+    os << "<Fixed" USTR(#Type) "Array[" << Fixed##Type##Array::cast(this)->length() \
+       << "]>";                                                               \
     break;
 
     TYPED_ARRAYS(TYPED_ARRAY_SHORT_PRINT)
@@ -2197,37 +2197,37 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       if (debug_name[0] != 0) {
         os << "<SharedFunctionInfo " << debug_name.get() << ">";
       } else {
-        os << u8"<SharedFunctionInfo>";
+        os << "<SharedFunctionInfo>";
       }
       break;
     }
     case JS_MESSAGE_OBJECT_TYPE:
-      os << u8"<JSMessageObject>";
+      os << "<JSMessageObject>";
       break;
 #define MAKE_STRUCT_CASE(NAME, Name, name) \
   case NAME##_TYPE:                        \
-    os << u8"<" USTR(#Name) u8">";                   \
+    os << "<" USTR(#Name) ">";                   \
     break;
   STRUCT_LIST(MAKE_STRUCT_CASE)
 #undef MAKE_STRUCT_CASE
     case CODE_TYPE: {
       Code* code = Code::cast(this);
-      os << u8"<Code: " << Code::Kind2String(code->kind()) << u8">";
+      os << "<Code: " << Code::Kind2String(code->kind()) << ">";
       break;
     }
     case ODDBALL_TYPE: {
       if (IsUndefined()) {
-        os << u8"<undefined>";
+        os << "<undefined>";
       } else if (IsTheHole()) {
-        os << u8"<the hole>";
+        os << "<the hole>";
       } else if (IsNull()) {
-        os << u8"<null>";
+        os << "<null>";
       } else if (IsTrue()) {
-        os << u8"<true>";
+        os << "<true>";
       } else if (IsFalse()) {
-        os << u8"<false>";
+        os << "<false>";
       } else {
-        os << u8"<Odd Oddball>";
+        os << "<Odd Oddball>";
       }
       break;
     }
@@ -2237,13 +2237,13 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case HEAP_NUMBER_TYPE: {
-      os << u8"<Number: ";
+      os << "<Number: ";
       HeapNumber::cast(this)->HeapNumberPrint(os);
-      os << u8">";
+      os << ">";
       break;
     }
     case MUTABLE_HEAP_NUMBER_TYPE: {
-      os << u8"<MutableNumber: ";
+      os << "<MutableNumber: ";
       HeapNumber::cast(this)->HeapNumberPrint(os);
       os << '\x3e';
       break;
@@ -2251,7 +2251,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
     case SIMD128_VALUE_TYPE: {
 #define SIMD128_TYPE(TYPE, Type, type, lane_count, lane_type) \
   if (Is##Type()) {                                           \
-    os << u8"<" USTR(#Type) u8">";                                      \
+    os << "<" USTR(#Type) ">";                                      \
     break;                                                    \
   }
       SIMD128_TYPES(SIMD128_TYPE)
@@ -2260,13 +2260,13 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case JS_PROXY_TYPE:
-      os << u8"<JSProxy>";
+      os << "<JSProxy>";
       break;
     case FOREIGN_TYPE:
-      os << u8"<Foreign>";
+      os << "<Foreign>";
       break;
     case CELL_TYPE: {
-      os << u8"Cell for ";
+      os << "Cell for ";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       Cell::cast(this)->value()->ShortPrint(&accumulator);
@@ -2274,7 +2274,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case PROPERTY_CELL_TYPE: {
-      os << u8"PropertyCell for ";
+      os << "PropertyCell for ";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       PropertyCell* cell = PropertyCell::cast(this);
@@ -2283,7 +2283,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case WEAK_CELL_TYPE: {
-      os << u8"WeakCell for ";
+      os << "WeakCell for ";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       WeakCell::cast(this)->value()->ShortPrint(&accumulator);
@@ -2291,7 +2291,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     default:
-      os << u8"<Other heap object (" << map()->instance_type() << u8")>";
+      os << "<Other heap object (" << map()->instance_type() << ")>";
       break;
   }
 }
@@ -2380,12 +2380,12 @@ Handle<String> Float32x4::ToString(Handle<Float32x4> input) {
   Handle<String> Type::ToString(Handle<Type> input) {                       \
     Isolate* const isolate = input->GetIsolate();                           \
     std::ostringstream os;                                                  \
-    os << u8"SIMD." USTR(#Type) u8"(";                                                \
-    os << (input->get_lane(0) ? u8"true" : u8"false");                          \
+    os << "SIMD." #Type "(";                                                \
+    os << (input->get_lane(0) ? "true" : "false");                          \
     for (int i = 1; i < lane_count; i++) {                                  \
-      os << u8", " << (input->get_lane(i) ? u8"true" : u8"false");                \
+      os << ", " << (input->get_lane(i) ? "true" : "false");                \
     }                                                                       \
-    os << u8")";                                                              \
+    os << ")";                                                              \
     return isolate->factory()->NewStringFromAsciiChecked(os.str().c_str()); \
   }
 SIMD128_BOOL_TO_STRING(Bool32x4, 4)
@@ -2400,12 +2400,12 @@ SIMD128_BOOL_TO_STRING(Bool8x16, 16)
     char arr[100];                                                          \
     Vector<char> buffer(arr, arraysize(arr));                               \
     std::ostringstream os;                                                  \
-    os << u8"SIMD." USTR(#Type) u8"(";                                                \
+    os << "SIMD."#Type "(";                                                \
     os << IntToCString(input->get_lane(0), buffer);                         \
     for (int i = 1; i < lane_count; i++) {                                  \
-      os << u8", " << IntToCString(input->get_lane(i), buffer);               \
+      os << ", " << IntToCString(input->get_lane(i), buffer);               \
     }                                                                       \
-    os << u8")";                                                              \
+    os << ")";                                                              \
     return isolate->factory()->NewStringFromAsciiChecked(os.str().c_str()); \
   }
 SIMD128_INT_TO_STRING(Int32x4, 4)
@@ -3079,7 +3079,7 @@ void MigrateFastToSlow(Handle<JSObject> object, Handle<Map> new_map,
 #ifdef DEBUG
   if (FLAG_trace_normalization) {
     OFStream os(stdout);
-    os << u8"Object properties have been normalized:\n";
+    os << "Object properties have been normalized:\n";
     object->Print(os);
   }
 #endif
@@ -4477,7 +4477,7 @@ Maybe<bool> Object::SetDataProperty(LookupIterator* it, Handle<Object> value) {
   if (is_observed && !value->SameValue(*maybe_old.ToHandleChecked())) {
     RETURN_ON_EXCEPTION_VALUE(
         it->isolate(),
-        JSObject::EnqueueChangeRecord(receiver, "update", it->GetName(),
+        JSObject::EnqueueChangeRecord(receiver, u8"update", it->GetName(),
                                       maybe_old.ToHandleChecked()),
         Nothing<bool>());
   }
@@ -4605,7 +4605,7 @@ Maybe<bool> Object::AddDataProperty(LookupIterator* it, Handle<Object> value,
     // Send the change record if there are observers.
     if (receiver->map()->is_observed() && !it->name()->IsPrivate()) {
       RETURN_ON_EXCEPTION_VALUE(isolate, JSObject::EnqueueChangeRecord(
-                                             receiver, "add", it->name(),
+                                             receiver, u8"add", it->name(),
                                              it->factory()->the_hole_value()),
                                 Nothing<bool>());
     }
@@ -5406,7 +5406,7 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
         if (is_observed) {
           RETURN_ON_EXCEPTION_VALUE(
               it->isolate(),
-              EnqueueChangeRecord(object, "reconfigure", it->GetName(),
+              EnqueueChangeRecord(object, u8"reconfigure", it->GetName(),
                                   it->factory()->the_hole_value()),
               Nothing<bool>());
         }
@@ -5441,7 +5441,7 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
             old_value = it->factory()->the_hole_value();
           }
           RETURN_ON_EXCEPTION_VALUE(
-              it->isolate(), EnqueueChangeRecord(object, "reconfigure",
+              it->isolate(), EnqueueChangeRecord(object, u8"reconfigure",
                                                  it->GetName(), old_value),
               Nothing<bool>());
         }
@@ -5850,7 +5850,7 @@ Handle<SeededNumberDictionary> JSObject::NormalizeElements(
 #ifdef DEBUG
   if (FLAG_trace_normalization) {
     OFStream os(stdout);
-    os << u8"Object elements have been normalized:\n";
+    os << "Object elements have been normalized:\n";
     object->Print(os);
   }
 #endif
@@ -6237,7 +6237,7 @@ Maybe<bool> JSReceiver::DeleteProperty(LookupIterator* it,
 
         if (is_observed) {
           RETURN_ON_EXCEPTION_VALUE(
-              isolate, JSObject::EnqueueChangeRecord(receiver, "delete",
+              isolate, JSObject::EnqueueChangeRecord(receiver, u8"delete",
                                                      it->GetName(), old_value),
               Nothing<bool>());
         }
@@ -7687,7 +7687,7 @@ Maybe<bool> JSObject::PreventExtensions(Handle<JSObject> object,
   // Do a map transition, other objects with this map may still
   // be extensible.
   // TODO(adamk): Extend the NormalizedMapCache to handle non-extensible maps.
-  Handle<Map> new_map = Map::Copy(handle(object->map()), "PreventExtensions");
+  Handle<Map> new_map = Map::Copy(handle(object->map()), u8"PreventExtensions");
 
   new_map->set_is_extensible(false);
   JSObject::MigrateToMap(object, new_map);
@@ -7696,7 +7696,7 @@ Maybe<bool> JSObject::PreventExtensions(Handle<JSObject> object,
   if (object->map()->is_observed()) {
     RETURN_ON_EXCEPTION_VALUE(
         isolate,
-        EnqueueChangeRecord(object, "preventExtensions", Handle<Name>(),
+        EnqueueChangeRecord(object, u8"preventExtensions", Handle<Name>(),
                             isolate->factory()->the_hole_value()),
         Nothing<bool>());
   }
@@ -7857,18 +7857,18 @@ Maybe<bool> JSObject::PreventExtensionsWithTransition(
   } else if (TransitionArray::CanHaveMoreTransitions(old_map)) {
     // Create a new descriptor array with the appropriate property attributes
     Handle<Map> new_map = Map::CopyForPreventExtensions(
-        old_map, attrs, transition_marker, "CopyForPreventExtensions");
+        old_map, attrs, transition_marker, u8"CopyForPreventExtensions");
     JSObject::MigrateToMap(object, new_map);
   } else {
     DCHECK(old_map->is_dictionary_map() || !old_map->is_prototype_map());
     // Slow path: need to normalize properties for safety
     NormalizeProperties(object, CLEAR_INOBJECT_PROPERTIES, 0,
-                        "SlowPreventExtensions");
+                        u8"SlowPreventExtensions");
 
     // Create a new map, since other objects with this map may be extensible.
     // TODO(adamk): Extend the NormalizedMapCache to handle non-extensible maps.
     Handle<Map> new_map =
-        Map::Copy(handle(object->map()), "SlowCopyForPreventExtensions");
+        Map::Copy(handle(object->map()), u8"SlowCopyForPreventExtensions");
     new_map->set_is_extensible(false);
     if (!new_element_dictionary.is_null()) {
       ElementsKind new_kind =
@@ -7934,7 +7934,7 @@ void JSObject::SetObserved(Handle<JSObject> object) {
   } else if (TransitionArray::CanHaveMoreTransitions(old_map)) {
     new_map = Map::CopyForObserved(old_map);
   } else {
-    new_map = Map::Copy(old_map, "SlowObserved");
+    new_map = Map::Copy(old_map, u8"SlowObserved");
     new_map->set_is_observed();
   }
   JSObject::MigrateToMap(object, new_map);
@@ -9621,7 +9621,7 @@ Handle<Map> Map::CopyAsElementsKind(Handle<Map> map, ElementsKind kind,
                            maybe_elements_transition_map == NULL;
 
   if (insert_transition) {
-    Handle<Map> new_map = CopyForTransition(map, "CopyAsElementsKind");
+    Handle<Map> new_map = CopyForTransition(map, u8"CopyAsElementsKind");
     new_map->set_elements_kind(kind);
 
     Isolate* isolate = map->GetIsolate();
@@ -9631,7 +9631,7 @@ Handle<Map> Map::CopyAsElementsKind(Handle<Map> map, ElementsKind kind,
   }
 
   // Create a new free-floating map only if we are not allowed to store it.
-  Handle<Map> new_map = Copy(map, "CopyAsElementsKind");
+  Handle<Map> new_map = Copy(map, u8"CopyAsElementsKind");
   new_map->set_elements_kind(kind);
   return new_map;
 }
@@ -9694,7 +9694,7 @@ Handle<Map> Map::CopyForObserved(Handle<Map> map) {
       TransitionArray::CanHaveMoreTransitions(map) && !map->is_prototype_map();
 
   if (insert_transition) {
-    Handle<Map> new_map = CopyForTransition(map, "CopyForObserved");
+    Handle<Map> new_map = CopyForTransition(map, u8"CopyForObserved");
     new_map->set_is_observed();
 
     Handle<Name> name = isolate->factory()->observed_symbol();
@@ -9703,7 +9703,7 @@ Handle<Map> Map::CopyForObserved(Handle<Map> map) {
   }
 
   // Create a new free-floating map only if we are not allowed to store it.
-  Handle<Map> new_map = Map::Copy(map, "CopyForObserved");
+  Handle<Map> new_map = Map::Copy(map, u8"CopyForObserved");
   new_map->set_is_observed();
   return new_map;
 }
@@ -10051,7 +10051,7 @@ Handle<Map> Map::CopyAddDescriptor(Handle<Map> map,
           : handle(LayoutDescriptor::FastPointerLayout(), map->GetIsolate());
 
   return CopyReplaceDescriptors(map, new_descriptors, new_layout_descriptor,
-                                flag, descriptor->GetKey(), "CopyAddDescriptor",
+                                flag, descriptor->GetKey(), u8"CopyAddDescriptor",
                                 SIMPLE_PROPERTY_TRANSITION);
 }
 
@@ -10161,7 +10161,7 @@ Handle<Map> Map::CopyReplaceDescriptor(Handle<Map> map,
           ? SIMPLE_PROPERTY_TRANSITION
           : PROPERTY_TRANSITION;
   return CopyReplaceDescriptors(map, new_descriptors, new_layout_descriptor,
-                                flag, key, "CopyReplaceDescriptor",
+                                flag, key, u8"CopyReplaceDescriptor",
                                 simple_flag);
 }
 
@@ -12674,15 +12674,15 @@ void JSObject::OptimizeAsPrototype(Handle<JSObject> object,
   if (mode == FAST_PROTOTYPE && PrototypeBenefitsFromNormalization(object)) {
     // First normalize to ensure all JSFunctions are DATA_CONSTANT.
     JSObject::NormalizeProperties(object, KEEP_INOBJECT_PROPERTIES, 0,
-                                  "NormalizeAsPrototype");
+                                  u8"NormalizeAsPrototype");
   }
   Handle<Map> previous_map(object->map());
   if (!object->HasFastProperties()) {
-    JSObject::MigrateSlowToFast(object, 0, "OptimizeAsPrototype");
+    JSObject::MigrateSlowToFast(object, 0, u8"OptimizeAsPrototype");
   }
   if (!object->map()->is_prototype_map()) {
     if (object->map() == *previous_map) {
-      Handle<Map> new_map = Map::Copy(handle(object->map()), "CopyAsPrototype");
+      Handle<Map> new_map = Map::Copy(handle(object->map()), u8"CopyAsPrototype");
       JSObject::MigrateToMap(object, new_map);
     }
     object->map()->set_is_prototype_map(true);
@@ -12955,7 +12955,7 @@ void JSFunction::SetInstancePrototype(Handle<JSFunction> function,
       // into the initial map where it belongs.
       function->set_prototype_or_initial_map(*value);
     } else {
-      Handle<Map> new_map = Map::Copy(initial_map, "SetInstancePrototype");
+      Handle<Map> new_map = Map::Copy(initial_map, u8"SetInstancePrototype");
       JSFunction::SetInitialMap(function, new_map, value);
 
       // If the function is used as the global Array function, cache the
@@ -13002,7 +13002,7 @@ void JSFunction::SetPrototype(Handle<JSFunction> function,
     // Copy the map so this does not affect unrelated functions.
     // Remove map transitions because they point to maps with a
     // different prototype.
-    Handle<Map> new_map = Map::Copy(handle(function->map()), "SetPrototype");
+    Handle<Map> new_map = Map::Copy(handle(function->map()), u8"SetPrototype");
 
     JSObject::MigrateToMap(function, new_map);
     new_map->SetConstructor(*value);
@@ -13772,7 +13772,7 @@ void JSFunction::CalculateInstanceSizeForDerivedClass(
 std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v) {
   const SharedFunctionInfo* s = v.value;
   // For some native functions there is no source.
-  if (!s->HasSourceCode()) return os << u8"<No Source>";
+  if (!s->HasSourceCode()) return os << "<No Source>";
 
   // Get the source for the script which this function came from.
   // Don't use String::cast because we don't want more assertion errors while
@@ -13780,10 +13780,10 @@ std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v) {
   String* script_source =
       reinterpret_cast<String*>(Script::cast(s->script())->source());
 
-  if (!script_source->LooksValid()) return os << u8"<Invalid Source>";
+  if (!script_source->LooksValid()) return os << "<Invalid Source>";
 
   if (!s->is_toplevel()) {
-    os << u8"function ";
+    os << "function ";
     Object* name = s->name();
     if (name->IsString() && String::cast(name)->length() > 0) {
       String::cast(name)->PrintUC16(os);
@@ -13797,7 +13797,7 @@ std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v) {
   } else {
     script_source->PrintUC16(os, s->start_position(),
                              s->start_position() + v.max_length);
-    return os << u8"...\n";
+    return os << "...\n";
   }
 }
 
@@ -14615,11 +14615,11 @@ void Code::PrintDeoptLocation(FILE* out, Address pc) {
   class SourcePosition pos = info.position;
   if (info.deopt_reason != Deoptimizer::kNoReason || !pos.IsUnknown()) {
     if (FLAG_hydrogen_track_positions) {
-      PrintF(out, u8"            ;;; deoptimize at %d_%d: %s\n",
+      PrintF(out, "            ;;; deoptimize at %d_%d: %s\n",
              pos.inlining_id(), pos.position(),
              Deoptimizer::GetDeoptReason(info.deopt_reason));
     } else {
-      PrintF(out, u8"            ;;; deoptimize at %d: %s\n", pos.raw(),
+      PrintF(out, "            ;;; deoptimize at %d: %s\n", pos.raw(),
              Deoptimizer::GetDeoptReason(info.deopt_reason));
     }
   }
@@ -14644,7 +14644,7 @@ bool Code::CanDeoptAt(Address pc) {
 // Identify kind of code.
 const char* Code::Kind2String(Kind kind) {
   switch (kind) {
-#define CASE(name) case name: return USTR(#name);
+#define CASE(name) case name: return #name;
     CODE_KIND_LIST(CASE)
 #undef CASE
     case NUMBER_OF_KINDS: break;
@@ -14683,18 +14683,18 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
     std::ostream& os) {  // NOLINT
   disasm::NameConverter converter;
   int const inlined_function_count = InlinedFunctionCount()->value();
-  os << u8"Inlined functions (count = " << inlined_function_count << u8")\n";
+  os << "Inlined functions (count = " << inlined_function_count << ")\n";
   for (int id = 0; id < inlined_function_count; ++id) {
     Object* info = LiteralArray()->get(id);
-    os << u8" " << Brief(SharedFunctionInfo::cast(info)) << u8"\n";
+    os << " " << Brief(SharedFunctionInfo::cast(info)) << "\n";
   }
-  os << u8"\n";
+  os << "\n";
   int deopt_count = DeoptCount();
-  os << u8"Deoptimization Input Data (deopt points = " << deopt_count << u8")\n";
+  os << "Deoptimization Input Data (deopt points = " << deopt_count << ")\n";
   if (0 != deopt_count) {
-    os << u8" index  ast id    argc     pc";
-    if (FLAG_print_code_verbose) os << u8"  commands";
-    os << u8"\n";
+    os << " index  ast id    argc     pc";
+    if (FLAG_print_code_verbose) os << "  commands";
+    os << "\n";
   }
   for (int i = 0; i < deopt_count; i++) {
     os << std::setw(6) << i << "  " << std::setw(6) << AstId(i).ToInt() << "  "
@@ -14702,7 +14702,7 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
        << std::setw(6) << Pc(i)->value();
 
     if (!FLAG_print_code_verbose) {
-      os << u8"\n";
+      os << "\n";
       continue;
     }
     // Print details of the frame translation.
@@ -14713,9 +14713,9 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
     DCHECK(Translation::BEGIN == opcode);
     int frame_count = iterator.Next();
     int jsframe_count = iterator.Next();
-    os << u8"  " << Translation::StringFor(opcode)
-       << u8" {frame count=" << frame_count
-       << u8", js frame count=" << jsframe_count << u8"}\n";
+    os << "  " << Translation::StringFor(opcode)
+       << " {frame count=" << frame_count
+       << u8", js frame count=" << jsframe_count << "}\n";
 
     while (iterator.HasNext() &&
            Translation::BEGIN !=
@@ -14732,9 +14732,9 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           int shared_info_id = iterator.Next();
           unsigned height = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
-          os << u8"{ast_id=" << ast_id << u8", function="
+          os << "{ast_id=" << ast_id << ", function="
              << Brief(SharedFunctionInfo::cast(shared_info)->DebugName())
-             << u8", height=" << height << u8"}";
+             << u8", height=" << height << "}";
           break;
         }
 
@@ -14743,15 +14743,15 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           int shared_info_id = iterator.Next();
           unsigned height = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
-          os << u8"{bytecode_offset=" << bytecode_offset << u8", function="
+          os << "{bytecode_offset=" << bytecode_offset << ", function="
              << Brief(SharedFunctionInfo::cast(shared_info)->DebugName())
-             << u8", height=" << height << u8"}";
+             << u8", height=" << height << "}";
           break;
         }
 
         case Translation::COMPILED_STUB_FRAME: {
           Code::Kind stub_kind = static_cast<Code::Kind>(iterator.Next());
-          os << u8"{kind=" << stub_kind << u8"}";
+          os << "{kind=" << stub_kind << "}";
           break;
         }
 
@@ -14760,18 +14760,18 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
           int shared_info_id = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
           unsigned height = iterator.Next();
-          os << u8"{function="
+          os << "{function="
              << Brief(SharedFunctionInfo::cast(shared_info)->DebugName())
-             << u8", height=" << height << u8"}";
+             << u8", height=" << height << "}";
           break;
         }
 
         case Translation::TAIL_CALLER_FRAME: {
           int shared_info_id = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
-          os << u8"{function="
+          os << "{function="
              << Brief(SharedFunctionInfo::cast(shared_info)->DebugName())
-             << u8"}";
+             << "}";
           break;
         }
 
@@ -14779,96 +14779,96 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
         case Translation::SETTER_STUB_FRAME: {
           int shared_info_id = iterator.Next();
           Object* shared_info = LiteralArray()->get(shared_info_id);
-          os << u8"{function=" << Brief(SharedFunctionInfo::cast(shared_info)
-                                          ->DebugName()) << u8"}";
+          os << "{function=" << Brief(SharedFunctionInfo::cast(shared_info)
+                                          ->DebugName()) << "}";
           break;
         }
 
         case Translation::REGISTER: {
           int reg_code = iterator.Next();
-          os << u8"{input=" << converter.NameOfCPURegister(reg_code) << u8"}";
+          os << "{input=" << converter.NameOfCPURegister(reg_code) << "}";
           break;
         }
 
         case Translation::INT32_REGISTER: {
           int reg_code = iterator.Next();
-          os << u8"{input=" << converter.NameOfCPURegister(reg_code) << u8"}";
+          os << "{input=" << converter.NameOfCPURegister(reg_code) << "}";
           break;
         }
 
         case Translation::UINT32_REGISTER: {
           int reg_code = iterator.Next();
-          os << u8"{input=" << converter.NameOfCPURegister(reg_code)
-             << u8" (unsigned)}";
+          os << "{input=" << converter.NameOfCPURegister(reg_code)
+             << " (unsigned)}";
           break;
         }
 
         case Translation::BOOL_REGISTER: {
           int reg_code = iterator.Next();
-          os << u8"{input=" << converter.NameOfCPURegister(reg_code)
-             << u8" (bool)}";
+          os << "{input=" << converter.NameOfCPURegister(reg_code)
+             << " (bool)}";
           break;
         }
 
         case Translation::DOUBLE_REGISTER: {
           int reg_code = iterator.Next();
-          os << u8"{input=" << DoubleRegister::from_code(reg_code).ToString()
-             << u8"}";
+          os << "{input=" << DoubleRegister::from_code(reg_code).ToString()
+             << "}";
           break;
         }
 
         case Translation::STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << u8"{input=" << input_slot_index << u8"}";
+          os << "{input=" << input_slot_index << "}";
           break;
         }
 
         case Translation::INT32_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << u8"{input=" << input_slot_index << u8"}";
+          os << "{input=" << input_slot_index << "}";
           break;
         }
 
         case Translation::UINT32_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << u8"{input=" << input_slot_index << u8" (unsigned)}";
+          os << "{input=" << input_slot_index << " (unsigned)}";
           break;
         }
 
         case Translation::BOOL_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << u8"{input=" << input_slot_index << u8" (bool)}";
+          os << "{input=" << input_slot_index << " (bool)}";
           break;
         }
 
         case Translation::DOUBLE_STACK_SLOT: {
           int input_slot_index = iterator.Next();
-          os << u8"{input=" << input_slot_index << u8"}";
+          os << "{input=" << input_slot_index << "}";
           break;
         }
 
         case Translation::LITERAL: {
           int literal_index = iterator.Next();
           Object* literal_value = LiteralArray()->get(literal_index);
-          os << u8"{literal_id=" << literal_index << u8" (" << Brief(literal_value)
-             << u8")}";
+          os << "{literal_id=" << literal_index << " (" << Brief(literal_value)
+             << ")}";
           break;
         }
 
         case Translation::DUPLICATED_OBJECT: {
           int object_index = iterator.Next();
-          os << u8"{object_index=" << object_index << u8"}";
+          os << "{object_index=" << object_index << "}";
           break;
         }
 
         case Translation::ARGUMENTS_OBJECT:
         case Translation::CAPTURED_OBJECT: {
           int args_length = iterator.Next();
-          os << u8"{length=" << args_length << u8"}";
+          os << "{length=" << args_length << "}";
           break;
         }
       }
-      os << u8"\n";
+      os << "\n";
     }
   }
 }
@@ -14876,11 +14876,11 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
 
 void DeoptimizationOutputData::DeoptimizationOutputDataPrint(
     std::ostream& os) {  // NOLINT
-  os << u8"Deoptimization Output Data (deopt points = " << this->DeoptPoints()
-     << u8")\n";
+  os << "Deoptimization Output Data (deopt points = " << this->DeoptPoints()
+     << ")\n";
   if (this->DeoptPoints() == 0) return;
 
-  os << u8"ast id        pc  state\n";
+  os << "ast id        pc  state\n";
   for (int i = 0; i < this->DeoptPoints(); i++) {
     int pc_and_state = this->PcAndState(i)->value();
     os << std::setw(6) << this->AstId(i).ToInt() << "  " << std::setw(8)
@@ -14892,7 +14892,7 @@ void DeoptimizationOutputData::DeoptimizationOutputDataPrint(
 
 
 void HandlerTable::HandlerTableRangePrint(std::ostream& os) {
-  os << u8"   from   to       hdlr\n";
+  os << "   from   to       hdlr\n";
   for (int i = 0; i < length(); i += kRangeEntrySize) {
     int pc_start = Smi::cast(get(i + kRangeStartIndex))->value();
     int pc_end = Smi::cast(get(i + kRangeEndIndex))->value();
@@ -14908,7 +14908,7 @@ void HandlerTable::HandlerTableRangePrint(std::ostream& os) {
 
 
 void HandlerTable::HandlerTableReturnPrint(std::ostream& os) {
-  os << u8"   off      hdlr (c)\n";
+  os << "   off      hdlr (c)\n";
   for (int i = 0; i < length(); i += kReturnEntrySize) {
     int pc_offset = Smi::cast(get(i + kReturnOffsetIndex))->value();
     int handler_field = Smi::cast(get(i + kReturnHandlerIndex))->value();
@@ -14949,61 +14949,61 @@ const char* Code::StubType2String(StubType type) {
 
 void Code::PrintExtraICState(std::ostream& os,  // NOLINT
                              Kind kind, ExtraICState extra) {
-  os << u8"extra_ic_state = ";
+  os << "extra_ic_state = ";
   if ((kind == STORE_IC || kind == KEYED_STORE_IC) &&
       is_strict(static_cast<LanguageMode>(extra))) {
-    os << u8"STRICT\n";
+    os << "STRICT\n";
   } else {
-    os << extra << u8"\n";
+    os << extra << "\n";
   }
 }
 
 
 void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
-  os << u8"kind = " << Kind2String(kind()) << u8"\n";
+  os << "kind = " << Kind2String(kind()) << "\n";
   if (IsCodeStubOrIC()) {
     const char* n = CodeStub::MajorName(CodeStub::GetMajorKey(this));
-    os << u8"major_key = " << (n == NULL ? u8"null" : n) << u8"\n";
+    os << "major_key = " << (n == NULL ? "null" : n) << "\n";
   }
   if (is_inline_cache_stub()) {
-    os << u8"ic_state = " << ICState2String(ic_state()) << u8"\n";
+    os << "ic_state = " << ICState2String(ic_state()) << "\n";
     PrintExtraICState(os, kind(), extra_ic_state());
     if (ic_state() == MONOMORPHIC) {
-      os << u8"type = " << StubType2String(type()) << u8"\n";
+      os << "type = " << StubType2String(type()) << "\n";
     }
     if (is_compare_ic_stub()) {
       DCHECK(CodeStub::GetMajorKey(this) == CodeStub::CompareIC);
       CompareICStub stub(stub_key(), GetIsolate());
-      os << u8"compare_state = " << CompareICState::GetStateName(stub.left())
-         << u8"*" << CompareICState::GetStateName(stub.right()) << u8" -> "
-         << CompareICState::GetStateName(stub.state()) << u8"\n";
-      os << u8"compare_operation = " << Token::Name(stub.op()) << u8"\n";
+      os << "compare_state = " << CompareICState::GetStateName(stub.left())
+         << "*" << CompareICState::GetStateName(stub.right()) << " -> "
+         << CompareICState::GetStateName(stub.state()) << "\n";
+      os << "compare_operation = " << Token::Name(stub.op()) << "\n";
     }
   }
   if ((name != nullptr) && (name[0] != '\x0')) {
-    os << u8"name = " << name << u8"\n";
+    os << "name = " << name << "\n";
   } else if (kind() == BUILTIN) {
     name = GetIsolate()->builtins()->Lookup(instruction_start());
     if (name != nullptr) {
-      os << u8"name = " << name << u8"\n";
+      os << "name = " << name << "\n";
     }
   } else if (kind() == BYTECODE_HANDLER) {
     name = GetIsolate()->interpreter()->LookupNameOfBytecodeHandler(this);
     if (name != nullptr) {
-      os << u8"name = " << name << u8"\n";
+      os << "name = " << name << "\n";
     }
   }
   if (kind() == OPTIMIZED_FUNCTION) {
-    os << u8"stack_slots = " << stack_slots() << u8"\n";
+    os << "stack_slots = " << stack_slots() << "\n";
   }
-  os << u8"compiler = " << (is_turbofanned()
-                              ? u8"turbofan"
-                              : is_crankshafted() ? u8"crankshaft"
+  os << "compiler = " << (is_turbofanned()
+                              ? "turbofan"
+                              : is_crankshafted() ? "crankshaft"
                                                   : kind() == Code::FUNCTION
-                                                        ? u8"full-codegen"
-                                                        : u8"unknown") << u8"\n";
+                                                        ? "full-codegen"
+                                                        : "unknown") << "\n";
 
-  os << u8"Instructions (size = " << instruction_size() << u8")\n";
+  os << "Instructions (size = " << instruction_size() << ")\n";
   {
     Isolate* isolate = GetIsolate();
     int size = instruction_size();
@@ -15026,7 +15026,7 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
     if (constant_pool_offset < size) {
       int constant_pool_size = size - constant_pool_offset;
       DCHECK((constant_pool_size & kPointerAlignmentMask) == 0);
-      os << u8"\nConstant Pool (size = " << constant_pool_size << u8")\n";
+      os << "\nConstant Pool (size = " << constant_pool_size << ")\n";
       Vector<char> buf = Vector<char>::New(50);
       intptr_t* ptr = reinterpret_cast<intptr_t*>(begin + constant_pool_offset);
       for (int i = 0; i < constant_pool_size; i += kPointerSize, ptr++) {
@@ -15035,7 +15035,7 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
       }
     }
   }
-  os << u8"\n";
+  os << "\n";
 
   if (kind() == FUNCTION) {
     DeoptimizationOutputData* data =
@@ -15046,29 +15046,29 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
         DeoptimizationInputData::cast(this->deoptimization_data());
     data->DeoptimizationInputDataPrint(os);
   }
-  os << u8"\n";
+  os << "\n";
 
   if (is_crankshafted()) {
     SafepointTable table(this);
-    os << u8"Safepoints (size = " << table.size() << u8")\n";
+    os << "Safepoints (size = " << table.size() << ")\n";
     for (unsigned i = 0; i < table.length(); i++) {
       unsigned pc_offset = table.GetPcOffset(i);
-      os << static_cast<const void*>(instruction_start() + pc_offset) << u8"  ";
+      os << static_cast<const void*>(instruction_start() + pc_offset) << "  ";
       os << std::setw(4) << pc_offset << "  ";
       table.PrintEntry(i, os);
-      os << u8" (sp -> fp)  ";
+      os << " (sp -> fp)  ";
       SafepointEntry entry = table.GetEntry(i);
       if (entry.deoptimization_index() != Safepoint::kNoDeoptimizationIndex) {
         os << std::setw(6) << entry.deoptimization_index();
       } else {
-        os << u8"<none>";
+        os << "<none>";
       }
       if (entry.argument_count() > 0) {
-        os << u8" argc: " << entry.argument_count();
+        os << " argc: " << entry.argument_count();
       }
-      os << u8"\n";
+      os << "\n";
     }
-    os << u8"\n";
+    os << "\n";
   } else if (kind() == FUNCTION) {
     unsigned offset = back_edge_table_offset();
     // If there is no back edge table, the "table start" will be at or after
@@ -15077,8 +15077,8 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
       DisallowHeapAllocation no_gc;
       BackEdgeTable back_edges(this, &no_gc);
 
-      os << u8"Back edges (size = " << back_edges.length() << u8")\n";
-      os << u8"ast_id  pc_offset  loop_depth\n";
+      os << "Back edges (size = " << back_edges.length() << ")\n";
+      os << "ast_id  pc_offset  loop_depth\n";
 
       for (uint32_t i = 0; i < back_edges.length(); i++) {
         os << std::setw(6) << back_edges.ast_id(i).ToInt() << "  "
@@ -15086,7 +15086,7 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
            << back_edges.loop_depth(i) << "\n";
       }
 
-      os << u8"\n";
+      os << "\n";
     }
 #ifdef OBJECT_PRINT
     if (!type_feedback_info()->IsUndefined()) {
@@ -15097,20 +15097,20 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
   }
 
   if (handler_table()->length() > 0) {
-    os << u8"Handler Table (size = " << handler_table()->Size() << u8")\n";
+    os << "Handler Table (size = " << handler_table()->Size() << ")\n";
     if (kind() == FUNCTION) {
       HandlerTable::cast(handler_table())->HandlerTableRangePrint(os);
     } else if (kind() == OPTIMIZED_FUNCTION) {
       HandlerTable::cast(handler_table())->HandlerTableReturnPrint(os);
     }
-    os << u8"\n";
+    os << "\n";
   }
 
-  os << u8"RelocInfo (size = " << relocation_size() << u8")\n";
+  os << "RelocInfo (size = " << relocation_size() << ")\n";
   for (RelocIterator it(this); !it.done(); it.next()) {
     it.rinfo()->Print(GetIsolate(), os);
   }
-  os << u8"\n";
+  os << "\n";
 }
 #endif  // ENABLE_DISASSEMBLER
 
@@ -15145,8 +15145,8 @@ int BytecodeArray::SourceStatementPosition(int offset) {
 }
 
 void BytecodeArray::Disassemble(std::ostream& os) {
-  os << u8"Parameter count " << parameter_count() << u8"\n";
-  os << u8"Frame size " << frame_size() << u8"\n";
+  os << "Parameter count " << parameter_count() << "\n";
+  os << "Frame size " << frame_size() << "\n";
   Vector<char> buf = Vector<char>::New(50);
 
   const uint8_t* base_address = GetFirstBytecodeAddress();
@@ -15158,10 +15158,10 @@ void BytecodeArray::Disassemble(std::ostream& os) {
     if (!source_positions.done() &&
         iterator.current_offset() == source_positions.bytecode_offset()) {
       os << std::setw(5) << source_positions.source_position();
-      os << (source_positions.is_statement() ? u8" S> " : u8" E> ");
+      os << (source_positions.is_statement() ? " S> " : " E> ");
       source_positions.Advance();
     } else {
-      os << u8"         ";
+      os << "         ";
     }
     const uint8_t* current_address = base_address + iterator.current_offset();
     SNPrintF(buf, "%p", current_address);
@@ -15176,13 +15176,13 @@ void BytecodeArray::Disassemble(std::ostream& os) {
   }
 
   if (constant_pool()->length() > 0) {
-    os << u8"Constant pool (size = " << constant_pool()->length() << u8")\n";
+    os << "Constant pool (size = " << constant_pool()->length() << ")\n";
     constant_pool()->Print();
   }
 
 #ifdef ENABLE_DISASSEMBLER
   if (handler_table()->length() > 0) {
-    os << u8"Handler Table (size = " << handler_table()->Size() << u8")\n";
+    os << "Handler Table (size = " << handler_table()->Size() << ")\n";
     HandlerTable::cast(handler_table())->HandlerTableRangePrint(os);
   }
 #endif
@@ -15284,14 +15284,14 @@ MaybeHandle<Object> JSArray::ObservableSetLength(Handle<JSArray> array,
     RETURN_ON_EXCEPTION(
         isolate,
         JSObject::EnqueueChangeRecord(
-            array, "delete", isolate->factory()->Uint32ToString(indices[i]),
+            array, u8"delete", isolate->factory()->Uint32ToString(indices[i]),
             old_values[i]),
         Object);
   }
 
   RETURN_ON_EXCEPTION(isolate,
                       JSObject::EnqueueChangeRecord(
-                          array, "update", isolate->factory()->length_string(),
+                          array, u8"update", isolate->factory()->length_string(),
                           old_length_handle),
                       Object);
 
@@ -15584,7 +15584,7 @@ void DependentCode::SetMarkedForDeoptimization(Code* code,
     DeoptimizationInputData* deopt_data =
         DeoptimizationInputData::cast(code->deoptimization_data());
     CodeTracer::Scope scope(code->GetHeap()->isolate()->GetCodeTracer());
-    PrintF(scope.file(), u8"[marking dependent code 0x%08" V8PRIxPTR
+    PrintF(scope.file(), "[marking dependent code 0x%08" V8PRIxPTR
                          " (opt #%d) for deoptimization, reason: %s]\n",
            reinterpret_cast<intptr_t>(code),
            deopt_data->OptimizationId()->value(), DependencyGroupName(group));
@@ -15595,24 +15595,24 @@ void DependentCode::SetMarkedForDeoptimization(Code* code,
 const char* DependentCode::DependencyGroupName(DependencyGroup group) {
   switch (group) {
     case kWeakCodeGroup:
-      return u8"weak-code";
+      return "weak-code";
     case kTransitionGroup:
-      return u8"transition";
+      return "transition";
     case kPrototypeCheckGroup:
-      return u8"prototype-check";
+      return "prototype-check";
     case kPropertyCellChangedGroup:
-      return u8"property-cell-changed";
+      return "property-cell-changed";
     case kFieldTypeGroup:
-      return u8"field-type";
+      return "field-type";
     case kInitialMapChangedGroup:
-      return u8"initial-map-changed";
+      return "initial-map-changed";
     case kAllocationSiteTenuringChangedGroup:
-      return u8"allocation-site-tenuring-changed";
+      return "allocation-site-tenuring-changed";
     case kAllocationSiteTransitionChangedGroup:
-      return u8"allocation-site-transition-changed";
+      return "allocation-site-transition-changed";
   }
   UNREACHABLE();
-  return u8"?";
+  return "?";
 }
 
 
@@ -15621,7 +15621,7 @@ Handle<Map> Map::TransitionToPrototype(Handle<Map> map,
                                        PrototypeOptimizationMode mode) {
   Handle<Map> new_map = TransitionArray::GetPrototypeTransition(map, prototype);
   if (new_map.is_null()) {
-    new_map = Copy(map, "TransitionToPrototype");
+    new_map = Copy(map, u8"TransitionToPrototype");
     TransitionArray::PutPrototypeTransition(map, prototype, new_map);
     Map::SetPrototype(new_map, prototype, mode);
   }
@@ -15738,7 +15738,7 @@ Maybe<bool> JSObject::SetPrototype(Handle<JSObject> object,
     if (!new_value->SameValue(*old_value)) {
       RETURN_ON_EXCEPTION_VALUE(
           isolate, JSObject::EnqueueChangeRecord(
-                       object, "setPrototype",
+                       object, u8"setPrototype",
                        isolate->factory()->proto_string(), old_value),
           Nothing<bool>());
     }
@@ -16051,11 +16051,11 @@ Maybe<bool> JSObject::AddDataElement(Handle<JSObject> object, uint32_t index,
     RETURN_ON_EXCEPTION_VALUE(isolate, BeginPerformSplice(array),
                               Nothing<bool>());
     RETURN_ON_EXCEPTION_VALUE(
-        isolate, EnqueueChangeRecord(array, "add", name,
+        isolate, EnqueueChangeRecord(array, u8"add", name,
                                      isolate->factory()->the_hole_value()),
         Nothing<bool>());
     RETURN_ON_EXCEPTION_VALUE(
-        isolate, EnqueueChangeRecord(array, "update",
+        isolate, EnqueueChangeRecord(array, u8"update",
                                      isolate->factory()->length_string(),
                                      old_length_handle),
         Nothing<bool>());
@@ -16069,7 +16069,7 @@ Maybe<bool> JSObject::AddDataElement(Handle<JSObject> object, uint32_t index,
   } else if (object->map()->is_observed()) {
     Handle<String> name = isolate->factory()->Uint32ToString(index);
     RETURN_ON_EXCEPTION_VALUE(
-        isolate, EnqueueChangeRecord(object, "add", name,
+        isolate, EnqueueChangeRecord(object, u8"add", name,
                                      isolate->factory()->the_hole_value()),
         Nothing<bool>());
   }
@@ -16789,17 +16789,17 @@ const char* Symbol::PrivateSymbolToName() const {
 
 
 void Symbol::SymbolShortPrint(std::ostream& os) {
-  os << u8"<Symbol: " << Hash();
+  os << "<Symbol: " << Hash();
   if (!name()->IsUndefined()) {
-    os << u8" ";
+    os << " ";
     HeapStringAllocator allocator;
     StringStream accumulator(&allocator);
     String::cast(name())->StringShortPrint(&accumulator);
     os << accumulator.ToCString().get();
   } else {
-    os << u8" (" << PrivateSymbolToName() << u8")";
+    os << " (" << PrivateSymbolToName() << ")";
   }
-  os << u8">";
+  os << ">";
 }
 
 

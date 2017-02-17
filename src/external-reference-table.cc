@@ -264,7 +264,7 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
       STATS_COUNTER_LIST_1(COUNTER_ENTRY) STATS_COUNTER_LIST_2(COUNTER_ENTRY)
 #undef COUNTER_ENTRY
   };
-
+/*
   Counters* counters = isolate->counters();
   for (unsigned i = 0; i < arraysize(stats_ref_table); ++i) {
     // To make sure the indices are not dependent on whether counters are
@@ -276,7 +276,7 @@ ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
     }
     Add(address, stats_ref_table[i].name);
   }
-
+*/
   // Top addresses
   static const char* address_names[] = {
 #define BUILD_NAME_LITERAL(Name, name) "\x49\x73\x6f\x6c\x61\x74\x65\x3a\x3a" USTR(#name) "\x5f\x61\x64\x64\x72\x65\x73\x73",

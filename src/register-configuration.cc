@@ -28,13 +28,13 @@ static const int kAllocatableDoubleCodes[] = {
 #undef REGISTER_CODE
 
 static const char* const kGeneralRegisterNames[] = {
-#define REGISTER_NAME(R) USTR(#R),
+#define REGISTER_NAME(R) #R,
     GENERAL_REGISTERS(REGISTER_NAME)
 #undef REGISTER_NAME
 };
 
 static const char* const kDoubleRegisterNames[] = {
-#define REGISTER_NAME(R) USTR(#R),
+#define REGISTER_NAME(R) #R,
     DOUBLE_REGISTERS(REGISTER_NAME)
 #undef REGISTER_NAME
 };

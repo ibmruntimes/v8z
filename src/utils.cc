@@ -156,7 +156,7 @@ char* ReadLine(const char* prompt) {
   char line_buf[256];
   int offset = 0;
   bool keep_going = true;
-  fprintf(stdout, u8"%s", prompt);
+  fprintf(stdout, "%s", prompt);
   fflush(stdout);
   while (keep_going) {
     if (fgets(line_buf, sizeof(line_buf), stdin) == NULL) {
@@ -168,14 +168,14 @@ char* ReadLine(const char* prompt) {
     }
     int len = StrLength(line_buf);
     if (len > 1 &&
-        line_buf[len - 2] == '\x5c' &&
-        line_buf[len - 1] == '\xa') {
+        line_buf[len - 2] == '\\' &&
+        line_buf[len - 1] == '\n') {
       // When we read a line that ends with a "\" we remove the escape and
       // append the remainder.
-      line_buf[len - 2] = '\xa';
+      line_buf[len - 2] = '\n';
       line_buf[len - 1] = 0;
       len -= 1;
-    } else if ((len > 0) && (line_buf[len - 1] == '\xa')) {
+    } else if ((len > 0) && (line_buf[len - 1] == '\n')) {
       // Since we read a new line we are done reading the line. This
       // will exit the loop after copying this buffer into the result.
       keep_going = false;
@@ -198,7 +198,7 @@ char* ReadLine(const char* prompt) {
     offset += len;
   }
   DCHECK(result != NULL);
-  result[offset] = '\x0';
+  result[offset] = '\0';
   return result;
 }
 

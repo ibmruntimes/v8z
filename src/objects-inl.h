@@ -1739,7 +1739,7 @@ inline bool AllocationSite::DigestPretenuringFeedback(
 
   if (FLAG_trace_pretenuring_statistics) {
     PrintIsolate(GetIsolate(),
-                 u8"pretenuring: AllocationSite(%p): (created, found, ratio) "
+                 "pretenuring: AllocationSite(%p): (created, found, ratio) "
                  "(%d, %d, %f) %s => %s\n",
                  this, create_count, found_count, ratio,
                  PretenureDecisionName(current_decision),
@@ -6184,7 +6184,7 @@ void JSFunction::ReplaceCode(Code* code) {
 
   if (was_optimized && is_optimized) {
     shared()->EvictFromOptimizedCodeMap(this->code(),
-        u8"Replacing with another optimized code");
+        "Replacing with another optimized code");
   }
 
   set_code(code);

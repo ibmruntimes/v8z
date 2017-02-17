@@ -56,7 +56,7 @@ const char* V8NameConverter::NameOfAddress(byte* pc) const {
 const char* V8NameConverter::NameInCode(byte* addr) const {
   // The V8NameConverter is used for well known code, so we can "safely"
   // dereference pointers in generated code.
-  return (code_ != NULL) ? reinterpret_cast<const char*>(addr) : u8"";
+  return (code_ != NULL) ? reinterpret_cast<const char*>(addr) : "";
 }
 
 
@@ -152,7 +152,7 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
     }
 
     // Instruction address and instruction offset.
-    out.AddFormatted(u8"%p  %4d  ", prev_pc, prev_pc - begin);
+    out.AddFormatted("%p  %4d  ", prev_pc, prev_pc - begin);
 
     // Instruction.
     out.AddFormatted("%s", decode_buffer.start());
@@ -192,9 +192,9 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
         base::SmartArrayPointer<const char> obj_name = accumulator.ToCString();
         out.AddFormatted("    ;; object: %s", obj_name.get());
       } else if (rmode == RelocInfo::EXTERNAL_REFERENCE) {
-        const char* reference_name = ref_encoder.NameOfAddress(
-            isolate, relocinfo.target_external_reference());
-        out.AddFormatted("    ;; external reference (%s)", reference_name);
+    //    const char* reference_name = ref_encoder.NameOfAddress(
+    //        isolate, relocinfo.target_external_reference());
+    //    out.AddFormatted("    ;; external reference (%s)", reference_name);
       } else if (RelocInfo::IsCodeTarget(rmode)) {
         out.AddFormatted("    ;; code:");
         Code* code = Code::GetCodeFromTargetAddress(relocinfo.target_address());
@@ -269,7 +269,7 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
   if (it != NULL) {
     for ( ; !it->done(); it->next()) {
       if (RelocInfo::IsComment(it->rinfo()->rmode())) {
-        out.AddFormatted(u8"                  %s",
+        out.AddFormatted("                  %s",
                          reinterpret_cast<const char*>(it->rinfo()->data()));
         DumpBuffer(os, &out);
       }

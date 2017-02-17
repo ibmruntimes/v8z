@@ -839,11 +839,11 @@ class Redirection {
   }
 
   void* address() {
-    if (ABI_USES_FUNCTION_DESCRIPTORS) {
-      return reinterpret_cast<void*>(function_descriptor_);
-    } else {
+ //   if (ABI_USES_FUNCTION_DESCRIPTORS) {
+ //     return reinterpret_cast<void*>(function_descriptor_);
+ //   } else {
       return reinterpret_cast<void*>(&swi_instruction_);
-    }
+ //   }
   }
 
   void* external_function() { return external_function_; }

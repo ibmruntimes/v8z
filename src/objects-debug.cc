@@ -1124,25 +1124,25 @@ void JSObject::SpillInformation::Clear() {
 
 
 void JSObject::SpillInformation::Print() {
-  PrintF(u8"\n  JSObject Spill Statistics (#%d):\n", number_of_objects_);
+  PrintF("\n  JSObject Spill Statistics (#%d):\n", number_of_objects_);
 
-  PrintF(u8"    - fast properties (#%d): %d (used) %d (unused)\n",
+  PrintF("    - fast properties (#%d): %d (used) %d (unused)\n",
          number_of_objects_with_fast_properties_,
          number_of_fast_used_fields_, number_of_fast_unused_fields_);
 
-  PrintF(u8"    - slow properties (#%d): %d (used) %d (unused)\n",
+  PrintF("    - slow properties (#%d): %d (used) %d (unused)\n",
          number_of_objects_ - number_of_objects_with_fast_properties_,
          number_of_slow_used_properties_, number_of_slow_unused_properties_);
 
-  PrintF(u8"    - fast elements (#%d): %d (used) %d (unused)\n",
+  PrintF("    - fast elements (#%d): %d (used) %d (unused)\n",
          number_of_objects_with_fast_elements_,
          number_of_fast_used_elements_, number_of_fast_unused_elements_);
 
-  PrintF(u8"    - slow elements (#%d): %d (used) %d (unused)\n",
+  PrintF("    - slow elements (#%d): %d (used) %d (unused)\n",
          number_of_objects_ - number_of_objects_with_fast_elements_,
          number_of_slow_used_elements_, number_of_slow_unused_elements_);
 
-  PrintF(u8"\n");
+  PrintF("\n");
 }
 
 

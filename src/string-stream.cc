@@ -46,16 +46,16 @@ bool StringStream::Put(char c) {
       // Reached the end of the available buffer.
       DCHECK(capacity_ >= 5);
       length_ = capacity_ - 1;  // Indicate fullness of the stream.
-      buffer_[length_ - 4] = '\x2e';
-      buffer_[length_ - 3] = '\x2e';
-      buffer_[length_ - 2] = '\x2e';
-      buffer_[length_ - 1] = '\xa';
-      buffer_[length_] = '\x0';
+      buffer_[length_ - 4] = '.';
+      buffer_[length_ - 3] = '.';
+      buffer_[length_ - 2] = '.';
+      buffer_[length_ - 1] = '\n';
+      buffer_[length_] = '\0';
       return false;
     }
   }
   buffer_[length_] = c;
-  buffer_[length_ + 1] = '\x0';
+  buffer_[length_ + 1] = '\0';
   length_++;
   return true;
 }
@@ -196,7 +196,7 @@ void StringStream::PrintObject(Object* o) {
       Add("#%d#", debug_object_cache->length());
       debug_object_cache->Add(HeapObject::cast(o));
     } else {
-      Add(u8"@%p", o);
+      Add("@%p", o);
     }
   }
 }
@@ -272,10 +272,10 @@ void StringStream::OutputToFile(FILE* out) {
   for (unsigned next; (next = position + 2048) < length_; position = next) {
     char save = buffer_[next];
     buffer_[next] = '\x0';
-    internal::PrintF(out, u8"%s", &buffer_[position]);
+    internal::PrintF(out, "%s", &buffer_[position]);
     buffer_[next] = save;
   }
-  internal::PrintF(out, u8"%s", &buffer_[position]);
+  internal::PrintF(out, "%s", &buffer_[position]);
 }
 
 
@@ -328,10 +328,10 @@ void StringStream::PrintName(Object* name) {
     if (str->length() > 0) {
       Put(str);
     } else {
-      Add(u8"/* anonymous */");
+      Add("/* anonymous */");
     }
   } else {
-    Add(u8"%o", name);
+    Add("%o", name);
   }
 }
 
@@ -341,7 +341,7 @@ void StringStream::PrintUsingMap(JSObject* js_object) {
   if (!js_object->GetHeap()->Contains(map) ||
       !map->IsHeapObject() ||
       !map->IsMap()) {
-    Add(u8"<Invalid map>\n");
+    Add("<Invalid map>\n");
     return;
   }
   int real_size = map->NumberOfOwnDescriptors();
@@ -356,20 +356,20 @@ void StringStream::PrintUsingMap(JSObject* js_object) {
           len = String::cast(key)->length();
         }
         for (; len < 18; len++)
-          Put('\x20');
+          Put(' ');
         if (key->IsString()) {
           Put(String::cast(key));
         } else {
           key->ShortPrint();
         }
-        Add(u8": ");
+        Add(": ");
         FieldIndex index = FieldIndex::ForDescriptor(map, i);
         if (js_object->IsUnboxedDoubleField(index)) {
           double value = js_object->RawFastDoublePropertyAt(index);
-          Add(u8"<unboxed double> %.16g\n", FmtElm(value));
+          Add("<unboxed double> %.16g\n", FmtElm(value));
         } else {
           Object* value = js_object->RawFastPropertyAt(index);
-          Add(u8"%o\n", value);
+          Add("%o\n", value);
         }
       }
     }
@@ -384,11 +384,11 @@ void StringStream::PrintFixedArray(FixedArray* array, unsigned int limit) {
     if (element != heap->the_hole_value()) {
       for (int len = 1; len < 18; len++)
         Put('\x20');
-      Add(u8"%d: %o\n", i, array->get(i));
+      Add("%d: %o\n", i, array->get(i));
     }
   }
   if (limit >= 10) {
-    Add(u8"                  ...\n");
+    Add("                  ...\n");
   }
 }
 
@@ -397,20 +397,20 @@ void StringStream::PrintByteArray(ByteArray* byte_array) {
   unsigned int limit = byte_array->length();
   for (unsigned int i = 0; i < 10 && i < limit; i++) {
     byte b = byte_array->get(i);
-    Add(u8"             %d: %3d 0x%02x", i, b, b);
+    Add("             %d: %3d 0x%02x", i, b, b);
     if (b >= '\x20' && b <= '\x7e') {
-      Add(u8" '%c'", b);
+      Add(" '%c'", b);
     } else if (b == '\xa') {
-      Add(u8" '\n'");
+      Add(" '\n'");
     } else if (b == '\xd') {
-      Add(u8" '\r'");
+      Add(" '\r'");
     } else if (b >= 1 && b <= 26) {
-      Add(u8" ^%c", b + '\x41' - 1);
+      Add(" ^%c", b + '\x41' - 1);
     }
-    Add(u8"\n");
+    Add("\n");
   }
   if (limit >= 10) {
-    Add(u8"                  ...\n");
+    Add("                  ...\n");
   }
 }
 
@@ -419,7 +419,7 @@ void StringStream::PrintMentionedObjectCache(Isolate* isolate) {
   if (object_print_mode_ == kPrintObjectConcise) return;
   DebugObjectCache* debug_object_cache =
       isolate->string_stream_debug_object_cache();
-  Add(u8"==== Key         ============================================\n\n");
+  Add("==== Key         ============================================\n\n");
   for (int i = 0; i < debug_object_cache->length(); i++) {
     HeapObject* printee = (*debug_object_cache)[i];
     Add(" #%d# %p: ", i, printee);
@@ -471,36 +471,36 @@ void StringStream::PrintSecurityTokenIfChanged(Object* f) {
       perhaps_context->IsContext()) {
     Context* context = fun->context();
     if (!heap->Contains(context)) {
-      Add(u8"(Function context is outside heap)\n");
+      Add("(Function context is outside heap)\n");
       return;
     }
     Object* token = context->native_context()->security_token();
     if (token != isolate->string_stream_current_security_token()) {
-      Add(u8"Security context: %o\n", token);
+      Add("Security context: %o\n", token);
       isolate->set_string_stream_current_security_token(token);
     }
   } else {
-    Add(u8"(Function context is corrupt)\n");
+    Add("(Function context is corrupt)\n");
   }
 }
 
 
 void StringStream::PrintFunction(Object* f, Object* receiver, Code** code) {
   if (!f->IsHeapObject()) {
-    Add(u8"/* warning: 'function' was not a heap object */ ");
+    Add("/* warning: 'function' was not a heap object */ ");
     return;
   }
   Heap* heap = HeapObject::cast(f)->GetHeap();
   if (!heap->Contains(HeapObject::cast(f))) {
-    Add(u8"/* warning: 'function' was not on the heap */ ");
+    Add("/* warning: 'function' was not on the heap */ ");
     return;
   }
   if (!heap->Contains(HeapObject::cast(f)->map())) {
-    Add(u8"/* warning: function's map was not on the heap */ ");
+    Add("/* warning: function's map was not on the heap */ ");
     return;
   }
   if (!HeapObject::cast(f)->map()->IsMap()) {
-    Add(u8"/* warning: function's map was not a valid map */ ");
+    Add("/* warning: function's map was not a valid map */ ");
     return;
   }
   if (f->IsJSFunction()) {
@@ -512,13 +512,13 @@ void StringStream::PrintFunction(Object* f, Object* receiver, Code** code) {
     // Unresolved and megamorphic calls: Instead of the function
     // we have the function name on the stack.
     PrintName(f);
-    Add(u8"/* unresolved */ ");
+    Add("/* unresolved */ ");
   } else {
     // Unless this is the frame of a built-in function, we should always have
     // the callee function or name on the stack. If we don't, we have a
     // problem or a change of the stack frame layout.
-    Add(u8"%o", f);
-    Add(u8"/* warning: no JSFunction object or function name found */ ");
+    Add("%o", f);
+    Add("/* warning: no JSFunction object or function name found */ ");
   }
 }
 
@@ -557,7 +557,7 @@ void StringStream::PrintPrototype(JSFunction* fun, Object* receiver) {
   // Also known as - if the name in the function doesn't match the name under
   // which it was looked up.
   if (print_name) {
-    Add(u8"(aka ");
+    Add("(aka ");
     PrintName(fun->shared()->name());
     Put('\x29');
   }

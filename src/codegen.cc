@@ -93,11 +93,11 @@ void CodeGenerator::MakeCodePrologue(CompilationInfo* info, const char* kind) {
   if (info->isolate()->bootstrapper()->IsActive()) {
     print_source = FLAG_print_builtin_source;
     print_ast = FLAG_print_builtin_ast;
-    ftype = u8"builtin";
+    ftype = "builtin";
   } else {
     print_source = FLAG_print_source;
     print_ast = FLAG_print_ast;
-    ftype = u8"user-defined";
+    ftype = "user-defined";
   }
 
   if (FLAG_trace_codegen || print_source || print_ast) {
@@ -108,12 +108,12 @@ void CodeGenerator::MakeCodePrologue(CompilationInfo* info, const char* kind) {
 
 #ifdef DEBUG
   if (info->parse_info() && print_source && false) {
-    PrintF(u8"--- Source from AST ---\n%s\n",
+    PrintF("--- Source from AST ---\n%s\n",
            PrettyPrinter(info->isolate()).PrintProgram(info->literal()));
   }
 
   if (info->parse_info() && print_ast && false) {
-    PrintF(u8"--- AST ---\n%s\n",
+    PrintF("--- AST ---\n%s\n",
            AstPrinter(info->isolate()).PrintProgram(info->literal()));
   }
 #endif  // DEBUG
@@ -165,7 +165,7 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
       FunctionLiteral* literal = info->literal();
       Handle<Script> script = info->script();
       if (!script->IsUndefined() && !script->source()->IsUndefined()) {
-        os << u8"--- Raw source ---\n";
+        os << "--- Raw source ---\n";
         StringCharacterStream stream(String::cast(script->source()),
                                      literal->start_position());
         // fun->end_position() points to the last character in the stream. We
@@ -177,25 +177,25 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
             os << AsReversiblyEscapedUC16(stream.GetNext());
           }
         }
-        os << u8"\n\n";
+        os << "\n\n";
       }
     }
     if (info->IsOptimizing()) {
       if (FLAG_print_unopt_code && info->parse_info()) {
-        os << u8"--- Unoptimized code ---\n";
+        os << "--- Unoptimized code ---\n";
         info->closure()->shared()->code()->Disassemble(debug_name.get(), os);
       }
-      os << u8"--- Optimized code ---\n"
-         << u8"optimization_id = " << info->optimization_id() << u8"\n";
+      os << "--- Optimized code ---\n"
+         << "optimization_id = " << info->optimization_id() << "\n";
     } else {
-      os << u8"--- Code ---\n";
+      os << "--- Code ---\n";
     }
     if (print_source) {
       FunctionLiteral* literal = info->literal();
-      os << u8"source_position = " << literal->start_position() << u8"\n";
+      os << "source_position = " << literal->start_position() << "\n";
     }
     code->Disassemble(debug_name.get(), os);
-    os << u8"--- End code ---\n";
+    os << "--- End code ---\n";
   }
 #endif  // ENABLE_DISASSEMBLER
 }
