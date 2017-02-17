@@ -691,20 +691,26 @@ Local<String> Shell::ReadFromStdin(Isolate* isolate) {
     if (length == 0) {
       return accumulator;
     } else if (buffer[length-1] != '\n') {
+#ifdef V8_OS_ZOS
       __e2a_l(buffer, length);
+#endif
       accumulator = String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal, length)
               .ToLocalChecked());
     } else if (length > 1 && buffer[length-2] == '\\') {
       buffer[length-2] = '\n';
+#ifdef V8_OS_ZOS
       __e2a_l(buffer, length);
+#endif
       accumulator = String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal,
                               length - 1).ToLocalChecked());
     } else {
+#ifdef V8_OS_ZOS
       __e2a_l(buffer, length);
+#endif
       return String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal,
@@ -1355,7 +1361,9 @@ static char* ReadChars(Isolate* isolate, const char* name, int* size_out) {
   chars[size] = '\x0';
   for (size_t i = 0; i < size;) {
     i += fread(&chars[i], 1, size - i, file);
+#ifdef V8_OS_ZOS
     __e2a_s(chars);
+#endif
     if (ferror(file)) {
       fclose(file);
       delete[] chars;

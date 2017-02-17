@@ -18,7 +18,9 @@
 #include "src/snapshot/snapshot.h"
 #include "src/wasm/wasm-js.h"
 
+#ifdef V8_OS_ZOS
 #pragma convert("ISO8859-1")
+#endif
 namespace v8 {
 namespace internal {
 
@@ -3542,7 +3544,11 @@ Genesis::Genesis(Isolate* isolate,
 #if TRACE_MAPS
     if (FLAG_trace_maps) {
       Handle<JSFunction> object_fun = isolate->object_function();
+#ifdef V8_OS_ZOS
       PrintF("\x5b\x54\x72\x61\x63\x65\x4d\x61\x70\x3a\x20\x49\x6e\x69\x74\x69\x61\x6c\x4d\x61\x70\x20\x6d\x61\x70\x3d\x20\x6c\x97\x20\x53\x46\x49\x3d\x20\x6c\x84\x5f\x4f\x62\x6a\x65\x63\x74\x20\x5d\xa",
+#else
+      PrintF("[TraceMap: InitialMap map= %p SFI= %d_Object ]\n",
+#endif
              reinterpret_cast<void*>(object_fun->initial_map()),
              object_fun->shared()->unique_id());
       Map::TraceAllTransitions(object_fun->initial_map());
@@ -3640,6 +3646,8 @@ char* Bootstrapper::RestoreState(char* from) {
 void Bootstrapper::FreeThreadResources() {
   DCHECK(!IsActive());
 }
+#ifdef V8_OS_ZOS
 #pragma convert(pop)
+#endif
 }  // namespace internal
 }  // namespace v8

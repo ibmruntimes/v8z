@@ -42,7 +42,9 @@ UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
     Register temp2 = r7;
     Register temp3 = r8;
 
+#ifdef V8_OS_ZOS
     __ function_descriptor();
+#endif
     __ Push(temp3, temp2, temp1);
     MathExpGenerator::EmitMathExp(&masm, input, result, double_scratch1,
                                   double_scratch2, temp1, temp2, temp3);
@@ -53,7 +55,9 @@ UnaryMathFunctionWithIsolate CreateExpFunction(Isolate* isolate) {
 
   CodeDesc desc;
   masm.GetCode(&desc);
-  DCHECK(ABI_USES_FUNCTION_DESCRIPTORS || !RelocInfo::RequiresRelocation(desc));
+#if !ABI_USES_FUNCTION_DESCRIPTORS
+  DCHECK(!RelocInfo::RequiresRelocation(desc));
+#endif
 
   Assembler::FlushICache(isolate, buffer, actual_size);
   base::OS::ProtectCode(buffer, actual_size);

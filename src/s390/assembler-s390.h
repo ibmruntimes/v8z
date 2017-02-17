@@ -55,15 +55,20 @@
 #include "src/assembler.h"
 #include "src/s390/constants-s390.h"
 
-#define ABI_USES_FUNCTION_DESCRIPTORS V8_OS_ZOS
-
-#define ABI_PASSES_HANDLES_IN_REGS \
-  (!V8_HOST_ARCH_S390 || V8_OS_ZOS )
-//  (!V8_HOST_ARCH_S#() || V8_OS_ZOS || (V8_TARGET_LITTLE_ENDIAN))
-
-#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS \
-  (!V8_HOST_ARCH_S390 || V8_OS_ZOS )
-//  (!V8_HOST_ARCH_S#() || V8_OS_ZOS || (V8_TARGET_LITTLE_ENDIAN))
+#ifdef V8_OS_ZOS
+#define ABI_USES_FUNCTION_DESCRIPTORS 1
+#define ABI_PASSES_HANDLES_IN_REGS 1
+#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 1 
+#else
+#define ABI_USES_FUNCTION_DESCRIPTORS 0
+#ifndef V8_HOST_ARCH_S390
+#define ABI_PASSES_HANDLES_IN_REGS 1
+#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 1
+#else
+#define ABI_PASSES_HANDLES_IN_REGS 0
+#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 0
+#endif
+#endif
 
 // ObjectPair is defined under runtime/runtime-util.h.
 // On 31-bit, ObjectPair == uint64_t.  ABI dictates long long
@@ -612,7 +617,7 @@ class Assembler : public AssemblerBase {
 
   void breakpoint(bool do_print) {
     if (do_print) {
-      printf("DebugBreak is inserted to %p\n", pc_);
+      printf("DebugBreak is inserted to %p\n", (void*)pc_);
     }
 #if V8_HOST_ARCH_64_BIT
     int64_t value = reinterpret_cast<uint64_t>(&v8::base::OS::DebugBreak);

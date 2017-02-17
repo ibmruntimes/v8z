@@ -1111,7 +1111,7 @@ inline void MemsetPointer(T** dest, U* value, int counter) {
 #if V8_HOST_ARCH_32_BIT
 #define STOS "addr32 stosl"
 #else
-#define STOS u8"stosq"
+#define STOS "stosq"
 #endif
 #endif
 #if defined(__native_client__)
@@ -1129,11 +1129,11 @@ inline void MemsetPointer(T** dest, U* value, int counter) {
 
 #if defined(__GNUC__) && defined(STOS)
   asm volatile(
-      u8"cld;"
+      "cld;"
       "rep ; " STOS
-      : u8"+&c" (counter), u8"+&D" (dest)
-      : u8"a" (value)
-      : u8"memory", u8"cc");
+      : "+&c" (counter), "+&D" (dest)
+      : "a" (value)
+      : "memory", "cc");
 #else
   for (int i = 0; i < counter; i++) {
     dest[i] = value;

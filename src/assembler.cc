@@ -1770,6 +1770,7 @@ std::ostream& operator<<(std::ostream& os, ExternalReference reference) {
   return os;
 }
 
+#ifdef V8_OS_ZOS
 static const byte tr_ebcdic_ascii[256] = {
   0,1,2,3,156,9,134,127,151,141,142,11,12,13,14,15,
   16,17,18,19,157,10,8,135,24,25,146,143,28,29,30,31,
@@ -1792,6 +1793,7 @@ static const byte tr_ebcdic_ascii[256] = {
 ExternalReference ExternalReference::ebcdic_to_ascii_table(){
   return ExternalReference(reinterpret_cast<void *>(reinterpret_cast<intptr_t>(tr_ebcdic_ascii)));
 }
+
 static const byte tr_ascii_ebcdic[256] = {
   0,1,2,3,55,45,46,47,22,5,21,11,12,13,14,15,
   16,17,18,19,60,61,50,38,24,25,63,39,28,29,30,31,
@@ -1810,9 +1812,11 @@ static const byte tr_ascii_ebcdic[256] = {
   184,185,186,187,188,189,190,191,202,203,204,205,206,207,218,219,
   220,221,222,223,234,235,236,237,238,239,250,251,252,253,254,255
 };
+
 ExternalReference ExternalReference::ascii_to_ebcdic_table() {
   return ExternalReference(reinterpret_cast<void *>(reinterpret_cast<intptr_t>(tr_ebcdic_ascii)));
 }
+#endif
 
 void AssemblerPositionsRecorder::RecordPosition(int pos) {
   DCHECK(pos != RelocInfo::kNoPosition);

@@ -344,9 +344,9 @@ int OS::GetCurrentProcessId() {
 }
 
 #if defined(V8_OS_ZOS)
-pthread_t OS::GetCurrentThreadID() {
+pthread_t OS::GetCurrentThreadId() {
 #else
-int OS::GetCurrentThreadID() {
+int OS::GetCurrentThreadId() {
 #endif
 
 #if V8_OS_MACOSX || (V8_OS_ANDROID && defined(__APPLE__))
@@ -439,6 +439,7 @@ FILE* OS::FOpen(const char* path, const char* mode) {
   return NULL;
 }
 
+#ifdef V8_OS_ZOS
 FILE* OS::FOpenASCII(const char* path_a, const char* mode_a) {
   int path_len = strlen(path_a);
   int mode_len = strlen(mode_a);
@@ -457,7 +458,7 @@ FILE* OS::FOpenASCII(const char* path_a, const char* mode_a) {
   fclose(file);
   return NULL;
 }
-
+#endif
 
 bool OS::Remove(const char* path) {
   return (remove(path) == 0);

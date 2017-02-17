@@ -993,12 +993,18 @@ class V8_EXPORT SealHandleScope {
   SealHandleScope(const SealHandleScope&);
   void operator=(const SealHandleScope&);
   void* operator new(size_t size);
+#ifdef V8_OS_ZOS
   void operator delete(void*, size_t) {
 	  assert(0 && "should not reach this part of the code");
   };
+#else
+  void operator delete(void*, size_t);
+#endif
 
   internal::Isolate* isolate_;
+#ifdef V8_OS_ZOS
   int prev_level_;
+#endif
   internal::Object** prev_limit_;
   int prev_sealed_level_;
 };

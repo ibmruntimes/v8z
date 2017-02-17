@@ -403,18 +403,26 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
           *flag->maybe_bool_variable() = MaybeBoolFlag::Create(true, !is_bool);
           break;
         case Flag::TYPE_INT: {
+#ifdef V8_OS_ZOS
           int value_len = strlen(value);
           char value_e[value_len + 1];
           MemCopy(value_e, value, value_len + 1);
           __a2e_s(value_e);
           *flag->int_variable() = strtol(value_e, &endp, 10);  // NOLINT
+#else
+          *flag->int_variable() = strtol(value, &endp, 10);  // NOLINT
+#endif
           break;
        }case Flag::TYPE_FLOAT: {
+#ifdef V8_OS_ZOS
           int value_len = strlen(value);
           char value_e[value_len + 1];
           MemCopy(value_e, value, value_len + 1);
           __a2e_s(value_e);
           *flag->float_variable() = strtod(value_e, &endp);
+#else
+          *flag->float_variable() = strtod(value, &endp);
+#endif
           break;
 	   }case Flag::TYPE_STRING:
           flag->set_string_value(value ? StrDup(value) : NULL, true);
@@ -493,7 +501,9 @@ int FlagList::SetFlagsFromString(const char* str, int len) {
   ScopedVector<char> copy0(len + 1);
   MemCopy(copy0.start(), str, len);
   copy0[len] = '\x0';
+#ifdef V8_OS_ZOS
   __a2e_s(copy0.start());
+#endif
 
   // strip leading white space
   char* copy = SkipWhiteSpace(copy0.start());
@@ -515,7 +525,9 @@ int FlagList::SetFlagsFromString(const char* str, int len) {
     p = SkipBlackSpace(p);
     if (*p != '\x0') *p++ = '\x0';  // 0-terminate argument
     p = SkipWhiteSpace(p);
+#ifdef V8_OS_ZOS
     __e2a_s(argv[argc]);
+#endif
   }
 
   // set the flags

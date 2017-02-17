@@ -1258,7 +1258,9 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
 
   Label invoke, handler_entry, exit;
 
+#ifdef V8_OS_ZOS
   __ function_descriptor();
+#endif
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
@@ -5780,23 +5782,23 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   //    [0] space for DirectCEntryStub's LR save
   //    [1] copy of Handle (first arg)
   //    [2] AccessorInfo&
-  if (ABI_PASSES_HANDLES_IN_REGS) {
+#if ABI_PASSES_HANDLES_IN_REGS
     accessorInfoSlot = kStackFrameExtraParamSlot + 1;
     apiStackSpace = 2;
-  } else {
+#else
     arg0Slot = kStackFrameExtraParamSlot + 1;
     accessorInfoSlot = arg0Slot + 1;
     apiStackSpace = 3;
-  }
+#endif
 
   FrameScope frame_scope(masm, StackFrame::MANUAL);
   __ EnterExitFrame(false, apiStackSpace);
 
-  if (!ABI_PASSES_HANDLES_IN_REGS) {
+#if !ABI_PASSES_HANDLES_IN_REGS
     // pass 1st arg by reference
     __ StoreP(r2, MemOperand(sp, arg0Slot * kPointerSize));
     __ AddP(r2, sp, Operand(arg0Slot * kPointerSize));
-  }
+#endif
 
   // Create v8::PropertyCallbackInfo object on the stack and initialize
   // it's args_ field.

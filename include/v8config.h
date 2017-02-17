@@ -205,9 +205,9 @@
 
 #if defined(__clang__)
 
+#if defined(__MVS__)
 # define V8_CC_CLANG 1
-
-#if !defined(__MVS__)
+#else
 #if defined(__GNUC__)  // Clang in gcc mode.
 # define V8_CC_GNU 1
 #endif

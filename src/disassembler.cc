@@ -219,11 +219,15 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
           CodeStub::Major major_key = CodeStub::GetMajorKey(code);
           DCHECK(major_key == CodeStub::MajorKeyFromKey(key));
           const char * name = CodeStub::MajorName(major_key);
+#ifdef V8_OS_ZOS
           char name_e[name != NULL ? strlen(name) : 1];
           name_e[0] = '\0';
           strcpy(name_e, name);
           __a2e_s(name_e);
           out.AddFormatted(" %s, %s, ", Code::Kind2String(kind), name_e);
+#else
+          out.AddFormatted(" %s, %s, ", Code::Kind2String(kind), name);
+#endif
 		  
           out.AddFormatted("minor: %d", minor_key);
         } else {

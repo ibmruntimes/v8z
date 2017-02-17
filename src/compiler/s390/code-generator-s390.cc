@@ -1782,7 +1782,9 @@ void CodeGenerator::AssemblePrologue() {
  
   if (frame_access_state()->has_frame()) {
     if (descriptor->IsCFunctionCall()) {
+#ifdef V8_OS_ZOS
       __ function_descriptor();
+#endif
       __ Push(r14, fp);
       __ LoadRR(fp, sp);
     } else if (descriptor->IsJSFunctionCall()) {
