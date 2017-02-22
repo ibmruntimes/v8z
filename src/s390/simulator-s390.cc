@@ -759,10 +759,12 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
   Initialize(isolate);
 // Set up simulator support first. Some of this information is needed to
 // setup the architecture state.
-#if V8_TARGET_ARCH_S390X
+#if V8_OS_ZOS
+  size_t stack_size = MB + 2048;
+#elif V8_TARGET_ARCH_S390X
   size_t stack_size = FLAG_sim_stack_size * KB;
 #else
-  size_t stack_size = MB + 2048;  // allocate 1MB for stack
+  size_t stack_size = MB;  // allocate 1MB for stack
 #endif
   stack_size += 2 * stack_protection_size_;
   stack_ = reinterpret_cast<char*>(malloc(stack_size));
@@ -4959,9 +4961,8 @@ void Simulator::CallInternal(byte* entry, int reg_arg_count) {
 #ifdef V8_OS_ZOS
   set_register(r14, callee_saved_value);
 #else
-  set_register(r7, callee_saved_value);
-#endif
   set_register(r7, callee_saved_value + 7);
+#endif
   set_register(r8, callee_saved_value + 8);
   set_register(r9, callee_saved_value + 9);
   set_register(r10, callee_saved_value + 10);

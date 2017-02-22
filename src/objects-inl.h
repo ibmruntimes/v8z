@@ -6882,30 +6882,54 @@ uint32_t StringHasher::ComputeRunningHashOneByte(uint32_t running_hash,
   return running_hash;
 }
 
+
+#ifdef V8_OS_ZOS
 template <typename Char>
 void StringHasher::AddCharacter(Char c) {
+#else
+void StringHasher::AddCharacter(uint16_t c) {
+#endif
   // Use the Jenkins one-at-a-time hash function to update the hash
   // for the given character.
+#ifdef V8_OS_ZOS
   if (sizeof(Char) == 1) {
 	  c = GET_ASCII_CODE(c);
   }
+#endif
   raw_running_hash_ = AddCharacterCore(raw_running_hash_, c);
 }
 
+
+#ifdef V8_OS_ZOS
 template <typename Char>
 bool StringHasher::UpdateIndex(Char c) {
+#else
+bool StringHasher::UpdateIndex(uint16_t c) {
+#endif
   DCHECK(is_array_index_);
+#ifdef V8_OS_ZOS
   if (sizeof(Char) == 1) {
 	  c = GET_ASCII_CODE(c);
   }
   if (c < GET_ASCII_CODE('\x30') || c > GET_ASCII_CODE('\x39')) {
+#else
+  if (c < '0' || c > '9') {
+#endif
     is_array_index_ = false;
     return false;
   }
+#ifdef V8_OS_ZOS
   int d = c - '\x30';
+#else
+  int d = c - '0';
+#endif
   if (is_first_char_) {
     is_first_char_ = false;
+#ifdef V8_OS_ZOS
     if (c == '\x30' && length_ > 1) {
+#else
+    if (c == '0' && length_ > 1) {
+#endif
       is_array_index_ = false;
       return false;
     }

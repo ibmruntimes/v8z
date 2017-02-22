@@ -865,11 +865,13 @@ void RelocInfo::Print(Isolate* isolate, std::ostream& os) {  // NOLINT
   } else if (rmode_ == EMBEDDED_OBJECT) {
     os << "  (" << Brief(target_object()) << ")";
   } else if (rmode_ == EXTERNAL_REFERENCE) {
-  /*  ExternalReferenceEncoder ref_encoder(isolate);
+#ifndef V8_OS_ZOS
+    ExternalReferenceEncoder ref_encoder(isolate);
     os << " ("
        << ref_encoder.NameOfAddress(isolate, target_external_reference())
        << ")  (" << static_cast<const void*>(target_external_reference())
-       << ")";*/
+       << ")";
+#endif
   } else if (IsCodeTarget(rmode_)) {
     Code* code = Code::GetCodeFromTargetAddress(target_address());
     os << " (" << Code::Kind2String(code->kind()) << ")  ("

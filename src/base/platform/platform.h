@@ -140,7 +140,9 @@ class OS {
   static int GetLastError();
 
   static FILE* FOpen(const char* path, const char* mode);
+#ifdef V8_OS_ZOS
   static FILE* FOpenASCII(const char* path_a, const char* mode_a);
+#endif
   static bool Remove(const char* path);
 
   static char DirectorySeparator();
@@ -228,11 +230,14 @@ class OS {
                        int length,
                        const char* format,
                        va_list args);
+#ifdef V8_OS_ZOS
   static int SNPrintFASCII(char* str, int length, const char* format, ...);
   static int VSNPrintFASCII(char* str,
                        int length,
                        const char* format,
                        va_list args);
+#endif
+
   static char* StrChr(char* str, int c);
   static void StrNCpy(char* dest, int length, const char* src, size_t n);
 
@@ -266,7 +271,7 @@ class OS {
 
   static int GetCurrentProcessId();
   
-#if defined(V8_OS_ZOS)
+#ifdef V8_OS_ZOS
   static pthread_t GetCurrentThreadId();
 
   // On zOS the default character encoding is in EBCDIC, this utility funciton
@@ -408,6 +413,7 @@ class Thread {
 #else
   typedef int32_t LocalStorageKey;
 #endif
+
   class Options {
    public:
     Options() : name_("v8:<unknown>"), stack_size_(0) {}

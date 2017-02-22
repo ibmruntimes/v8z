@@ -192,9 +192,11 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
         base::SmartArrayPointer<const char> obj_name = accumulator.ToCString();
         out.AddFormatted("    ;; object: %s", obj_name.get());
       } else if (rmode == RelocInfo::EXTERNAL_REFERENCE) {
-    //    const char* reference_name = ref_encoder.NameOfAddress(
-    //        isolate, relocinfo.target_external_reference());
-    //    out.AddFormatted("    ;; external reference (%s)", reference_name);
+#ifndef V8_OS_ZOS
+        const char* reference_name = ref_encoder.NameOfAddress(
+            isolate, relocinfo.target_external_reference());
+        out.AddFormatted("    ;; external reference (%s)", reference_name);
+#endif
       } else if (RelocInfo::IsCodeTarget(rmode)) {
         out.AddFormatted("    ;; code:");
         Code* code = Code::GetCodeFromTargetAddress(relocinfo.target_address());

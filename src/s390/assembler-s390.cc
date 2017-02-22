@@ -38,8 +38,8 @@
 
 #if V8_TARGET_ARCH_S390
 
-#if V8_HOST_ARCH_S390
-//#include <elf.h>  // Required for auxv checks for STFLE support
+#if V8_HOST_ARCH_S390 && !V8_OS_ZOS
+#include <elf.h>  // Required for auxv checks for STFLE support
 #endif
 
 #include "src/base/bits.h"
@@ -552,12 +552,14 @@ void Assembler::nop(int type) {
       // TODO(john.yan): Use a better NOP break
       oill(r3, Operand::Zero());
       break;
+#ifdef V8_OS_ZOS
     case BASR_CALL_TYPE_NOP:
       emit2bytes(0x0000);
       break;
     case BRAS_CALL_TYPE_NOP:
       emit2bytes(0x0001);
       break;
+#endif
     default:
       UNIMPLEMENTED();
   }
@@ -3023,7 +3025,9 @@ void Assembler::dp(uintptr_t data) {
 }
 
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
+#ifdef V8_OS_ZOS
   RelocInfo rinfo(isolate(), pc_, rmode, data,  NULL);
+#endif
   if (RelocInfo::IsNone(rmode) ||
       // Don't record external references unless the heap will be serialized.
       (rmode == RelocInfo::EXTERNAL_REFERENCE && !serializer_enabled() &&
@@ -3032,6 +3036,7 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
   }
   if (rmode == RelocInfo::CODE_TARGET_WITH_ID) {
     data = RecordedAstId().ToInt();
+#ifdef V8_OS_ZOS
     RelocInfo reloc_info_with_ast_id(isolate(),
                                      rinfo.pc(),
                                      rinfo.rmode(),
@@ -3042,9 +3047,13 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
   } else {
     reloc_info_writer.Write(&rinfo);
   }
+#else
+    ClearRecordedAstId();
+  }
 
- /* DeferredRelocInfo rinfo(pc_offset(), rmode, data);
-  relocations_.push_back(rinfo);*/
+  DeferredRelocInfo rinfo(pc_offset(), rmode, data);
+  relocations_.push_back(rinfo);
+#endif
 }
 
 void Assembler::emit_label_addr(Label* label) {

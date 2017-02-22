@@ -1062,13 +1062,6 @@ ParserBase<Traits>::ParseAndClassifyIdentifier(ExpressionClassifier* classifier,
     // is actually a formal parameter.  Therefore besides the errors that we
     // must detect because we know we're in strict mode, we also record any
     // error that we might make in the future once we know the language mode.
-    //printf(u8"Identifier:%s\n", name.raw_name());
-    /*
-    const unsigned char * bytes = ((AstRawString *)name)->raw_data();
-    for (int idx = 0 ; idx < name->length(); idx++) {
-         printf("%c",bytes[idx]);
-         }
-    printf(u8"\n");*/
     if (this->IsEval(name)) {
       classifier->RecordStrictModeFormalParameterError(
           scanner()->location(), MessageTemplate::kStrictEvalArguments);

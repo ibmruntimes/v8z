@@ -35,43 +35,59 @@ inline T CompareExchangeSeqCst(T* p, T oldval, T newval) {
 template <typename T>
 inline T LoadSeqCst(T* p) {
   T result;
-  //__atomic_load(p, &result, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+  __atomic_load(p, &result, __ATOMIC_SEQ_CST);
+#endif
   return result;
 }
 
 template <typename T>
 inline void StoreSeqCst(T* p, T value) {
-  //__atomic_store_n(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+  __atomic_store_n(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T AddSeqCst(T* p, T value) {
-  //return __atomic_fetch_add(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+  return __atomic_fetch_add(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T SubSeqCst(T* p, T value) {
-  //return __atomic_fetch_sub(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+  return __atomic_fetch_sub(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T AndSeqCst(T* p, T value) {
-  //return __atomic_fetch_and(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+  return __atomic_fetch_and(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T OrSeqCst(T* p, T value) {
-  //return __atomic_fetch_or(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+  return __atomic_fetch_or(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T XorSeqCst(T* p, T value) {
-  //return __atomic_fetch_xor(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+  return __atomic_fetch_xor(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T ExchangeSeqCst(T* p, T value) {
-  //return __atomic_exchange_n(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+  return __atomic_exchange_n(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 #elif V8_CC_MSVC

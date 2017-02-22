@@ -8581,11 +8581,19 @@ class StringHasher {
 
  private:
   // Add a character to the hash.
+#ifdef V8_OS_ZOS
   template<typename Char>
   inline void AddCharacter(Char c);
+#else
+  inline void AddCharacter(uint16_t c);
+#endif
   // Update index. Returns true if string is still an index.
+#ifdef V8_OS_ZOS
   template<typename Char>
   inline bool UpdateIndex(Char c);
+#else
+  inline bool UpdateIndex(uint16_t c);
+#endif
 
   int length_;
   uint32_t raw_running_hash_;

@@ -304,9 +304,10 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
         void* const memory =
             mmap(OS::GetRandomMmapAddr(), size, PROT_READ | PROT_WRITE,
                  MAP_SHARED, fileno(file), 0);
-        //if (memory != MAP_FAILED) {
+#ifndef V8_OS_ZOS
+        if (memory != MAP_FAILED)
+#endif
           return new PosixMemoryMappedFile(file, memory, size);
-        //}
       }
     }
     fclose(file);
@@ -323,9 +324,10 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name,
     if (result == size && !ferror(file)) {
       void* memory = mmap(OS::GetRandomMmapAddr(), result,
                           PROT_READ | PROT_WRITE, MAP_SHARED, fileno(file), 0);
-      //if (memory != MAP_FAILED) {
-      return new PosixMemoryMappedFile(file, memory, result);
-      //}
+#ifndef V8_OS_ZOS
+      if (memory != MAP_FAILED)
+#endif
+        return new PosixMemoryMappedFile(file, memory, result);
     }
     fclose(file);
   }
