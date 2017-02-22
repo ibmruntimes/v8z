@@ -1145,8 +1145,11 @@ void CEntryStub::Generate(MacroAssembler* masm) {
 
   if (result_size() == 1) {
     __ LoadRR(r2, r3);
-  }
-  else {
+  } else if (result_size() == 2){
+    __ LoadRR(r3, r2);
+    __ LoadRR(r2, r1);
+  } else {
+    __ LoadRR(r4, r3);
     __ LoadRR(r3, r2);
     __ LoadRR(r2, r1);
   }
@@ -1258,16 +1261,14 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
 
   Label invoke, handler_entry, exit;
 
-#ifdef V8_OS_ZOS
   __ function_descriptor();
-#endif
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
 #if V8_OS_ZOS
   __ LoadRR(sp, r4);
   __ lay(sp, MemOperand(sp, -12 * kPointerSize));
-  __ StoreMultipleP(sp, r4, MemOperand(sp, 0));
+  __ StoreMultipleP(r4, sp, MemOperand(sp, 0));
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
   // parameters and also places them starting at r4+2112 on the biased stack.
   // Explicitly load argc and argv from stack back into r5/r6 respectively.
@@ -1466,7 +1467,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
 
 #ifdef V8_OS_ZOS
   __ LoadRR(r3, r2);
-  __ LoadMultipleP(sp, r4, MemOperand(sp, 0));
+  __ LoadMultipleP(r4, sp, MemOperand(sp, 0));
   __ lay(sp, MemOperand(sp, 12 * kPointerSize));
   __ b(r7);
 #else
@@ -5782,23 +5783,23 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   //    [0] space for DirectCEntryStub's LR save
   //    [1] copy of Handle (first arg)
   //    [2] AccessorInfo&
-#if ABI_PASSES_HANDLES_IN_REGS
+  if (ABI_PASSES_HANDLES_IN_REGS) {
     accessorInfoSlot = kStackFrameExtraParamSlot + 1;
     apiStackSpace = 2;
-#else
+  } else {
     arg0Slot = kStackFrameExtraParamSlot + 1;
     accessorInfoSlot = arg0Slot + 1;
     apiStackSpace = 3;
-#endif
+  }
 
   FrameScope frame_scope(masm, StackFrame::MANUAL);
   __ EnterExitFrame(false, apiStackSpace);
 
-#if !ABI_PASSES_HANDLES_IN_REGS
+  if (!ABI_PASSES_HANDLES_IN_REGS) {
     // pass 1st arg by reference
     __ StoreP(r2, MemOperand(sp, arg0Slot * kPointerSize));
     __ AddP(r2, sp, Operand(arg0Slot * kPointerSize));
-#endif
+  }
 
   // Create v8::PropertyCallbackInfo object on the stack and initialize
   // it's args_ field.

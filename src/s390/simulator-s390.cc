@@ -831,19 +831,10 @@ class Redirection {
         isolate->simulator_i_cache(),
         reinterpret_cast<void*>(&swi_instruction_), sizeof(FourByteInstr));
     isolate->set_simulator_redirection(this);
-    if (ABI_USES_FUNCTION_DESCRIPTORS) {
-      function_descriptor_[0] = reinterpret_cast<intptr_t>(&swi_instruction_);
-      function_descriptor_[1] = 0;
-      function_descriptor_[2] = 0;
-    }
   }
 
   void* address() {
- //   if (ABI_USES_FUNCTION_DESCRIPTORS) {
- //     return reinterpret_cast<void*>(function_descriptor_);
- //   } else {
-      return reinterpret_cast<void*>(&swi_instruction_);
- //   }
+    return reinterpret_cast<void*>(&swi_instruction_);
   }
 
   void* external_function() { return external_function_; }
@@ -877,7 +868,8 @@ class Redirection {
   }
 
   static void* ReverseRedirection(intptr_t reg) {
-    Redirection* redirection = FromAddress(reinterpret_cast<void*>(reg));
+    Redirection* redirection = FromSwiInstruction(
+            reinterpret_cast<Instruction *>(reinterpret_cast<void*>(reg)));
     return redirection->external_function();
   }
 
@@ -4923,10 +4915,10 @@ void Simulator::Execute() {
 }
 
 void Simulator::CallInternal(byte* entry, int reg_arg_count) {
-  // Prepare to execute the code at entry
+ // Prepare to execute the code at entry
   if (ABI_USES_FUNCTION_DESCRIPTORS) {
     // entry is the function descriptor
-    set_pc(*(reinterpret_cast<intptr_t*>(entry)));
+    set_pc(*(reinterpret_cast<intptr_t*>(entry+kPointerSize)));
   } else {
     // entry is the instruction address
     set_pc(reinterpret_cast<intptr_t>(entry));
@@ -5144,7 +5136,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
 #ifndef V8_OS_ZOS
   DCHECK_EQ(callee_saved_value + 7, get_low_register<int32_t>(r7));
 #else
-  DCHECK_EQ(callee_saved_value + 7, get_low_register<int32_t>(r14));
+  DCHECK_EQ(callee_saved_value + 14, get_low_register<int32_t>(r14));
 #endif
   DCHECK_EQ(callee_saved_value + 8, get_low_register<int32_t>(r8));
   DCHECK_EQ(callee_saved_value + 9, get_low_register<int32_t>(r9));
@@ -5156,7 +5148,11 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   if (reg_arg_count < 5) {
     DCHECK_EQ(callee_saved_value + 6, get_register(r6));
   }
+#ifndef V8_OS_ZOS
   DCHECK_EQ(callee_saved_value + 7, get_register(r7));
+#else
+  DCHECK_EQ(callee_saved_value + 14, get_register(r14));
+#endif
   DCHECK_EQ(callee_saved_value + 8, get_register(r8));
   DCHECK_EQ(callee_saved_value + 9, get_register(r9));
   DCHECK_EQ(callee_saved_value + 10, get_register(r10));
