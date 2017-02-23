@@ -200,8 +200,8 @@ void CpuFeatures::PrintFeatures() {
 
 Register ToRegister(int num) {
   DCHECK(num >= 0 && num < kNumRegisters);
-  const Register kRegisters[] = {r0, r1, r2,  r3, sp, r5,  r6,  r7,
-                                 r8, r9, r10, fp, ip, r13, r14, r4};
+  const Register kRegisters[] = {r0, r1, r2,  r3, r4, r5,  r6,  r7,
+                                 r8, r9, r10, fp, ip, r13, r14, sp};
   return kRegisters[num];
 }
 
