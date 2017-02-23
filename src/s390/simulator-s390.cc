@@ -1253,7 +1253,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       intptr_t* argument_area = reinterpret_cast<intptr_t*>(get_register(r4)
         + 2048 + 16 * kPointerSize);
       arg[3] = argument_area[3];
-      arg[3] = argument_area[4];
+      arg[4] = argument_area[4];
       arg[5] = argument_area[5];
 #else
       arg[5] = stack_pointer[kCalleeRegisterSaveAreaSize / kPointerSize];
