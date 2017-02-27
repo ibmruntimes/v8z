@@ -1829,7 +1829,6 @@ var unscopables = {
   find: true,
   findIndex: true,
   keys: true,
-  values: true,
 };
 
 %AddNamedProperty(GlobalArray.prototype, unscopablesSymbol, unscopables,

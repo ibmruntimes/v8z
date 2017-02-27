@@ -870,8 +870,12 @@ class Redirection {
   }
 
   static void* ReverseRedirection(intptr_t reg) {
+#ifdef V8_OS_ZOS
     Redirection* redirection = FromSwiInstruction(
             reinterpret_cast<Instruction *>(reinterpret_cast<void*>(reg)));
+#else
+    Redirection* redirection = FromAddress(reinterpret_cast<void*>(reg));
+#endif
     return redirection->external_function();
   }
 

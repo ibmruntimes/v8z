@@ -1154,9 +1154,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ LoadRR(r3, r2);
     __ LoadRR(r2, r1);
   }
-#endif
- 
-#ifndef V8_OS_ZOS
+#else
   // If return value is on the stack, pop it to registers.
   if (needs_return_buffer) {
     if (result_size() > 2) __ LoadP(r4, MemOperand(r2, 2 * kPointerSize));
