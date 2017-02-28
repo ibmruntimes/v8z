@@ -275,10 +275,9 @@ void S390Debugger::Debug() {
         }
 
         if (argc == 2 && last_pc != sim_->get_pc() && GetValue(arg1, &value)) {
-           sim_->stop_instr_num_ = sim_->icount_ + value;
-           break;
-         }
-       }
+          sim_->stop_instr_num_ = sim_->icount_ + value;
+          break;
+        }
       } else if ((strcmp(cmd, "c") == 0) || (strcmp(cmd, "cont") == 0)) {
         // If at a breakpoint, proceed past it.
         if ((reinterpret_cast<Instruction*>(sim_->get_pc()))
