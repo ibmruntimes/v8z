@@ -65,8 +65,8 @@ bool StringStream::Put(char c) {
 // instance, in %.5s, .5 are control characters.
 static bool IsControlChar(char c) {
   switch (c) {
-  case '\x30': case '\x31': case '\x32': case '\x33': case '\x34': case '\x35':
-  case '\x36': case '\x37': case '\x38': case '\x39': case '\x2e': case '\x2d':
+  case '0': case '1': case '2': case '3': case '4': case '5':
+  case '6': case '7': case '8': case '9': case '.': case '-':
     return true;
   default:
     return false;
