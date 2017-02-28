@@ -478,6 +478,9 @@ class Simulator {
   bool pc_modified_;
   int64_t icount_;
 
+  //Instruction number to stop sim at
+  int64_t stop_instr_num_;
+
   // Debugger input.
   char* last_debugger_input_;
 

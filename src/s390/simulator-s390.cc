@@ -275,19 +275,10 @@ void S390Debugger::Debug() {
         }
 
         if (argc == 2 && last_pc != sim_->get_pc() && GetValue(arg1, &value)) {
-          for (int i = 1; (!sim_->has_bad_pc()) && i < value; i++) {
-            disasm::NameConverter converter;
-            disasm::Disassembler dasm(converter);
-            // use a reasonably large buffer
-            v8::internal::EmbeddedVector<char, 256> buffer;
-            dasm.InstructionDecode(buffer,
-                                   reinterpret_cast<byte*>(sim_->get_pc()));
-            PrintF("  0x%08" V8PRIxPTR "  %s\n", sim_->get_pc(),
-                   buffer.start());
-            sim_->ExecuteInstruction(
-                reinterpret_cast<Instruction*>(sim_->get_pc()));
-          }
-        }
+           sim_->stop_instr_num_ = sim_->icount_ + value;
+           break;
+         }
+       }
       } else if ((strcmp(cmd, "c") == 0) || (strcmp(cmd, "cont") == 0)) {
         // If at a breakpoint, proceed past it.
         if ((reinterpret_cast<Instruction*>(sim_->get_pc()))
@@ -4909,7 +4900,7 @@ void Simulator::Execute() {
     while (program_counter != end_sim_pc) {
       Instruction* instr = reinterpret_cast<Instruction*>(program_counter);
       icount_++;
-      if (icount_ == ::v8::internal::FLAG_stop_sim_at) {
+      if ((icount_ == stop_instr_num_) || (icount_ == ::v8::internal::FLAG_stop_sim_at)) {
         S390Debugger dbg(this);
         dbg.Debug();
       } else {
