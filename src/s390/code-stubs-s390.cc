@@ -1273,8 +1273,8 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
   // parameters and also places them starting at r4+2112 on the biased stack.
   // Explicitly load argc and argv from stack back into r5/r6 respectively.
-  __ LoadP(r5, MemOperand(sp, 2048 + (19  * kPointerSize)));
-  __ LoadP(r6, MemOperand(sp, 2048 + (20  * kPointerSize)));
+  __ LoadP(r5, MemOperand(r4, 2048 + (19  * kPointerSize)));
+  __ LoadP(r6, MemOperand(r4, 2048 + (20  * kPointerSize)));
 
   __ LoadRR(r4, r3);
   __ LoadRR(r3, r2);
