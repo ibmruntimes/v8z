@@ -3572,9 +3572,9 @@ Handle<Map> Map::Reconfigure(Handle<Map> old_map,
         (old_details.type() == DATA &&
          (!new_field_type->NowIs(old_descriptors->GetFieldType(modify_index)) ||
           !new_representation.fits_into(old_details.representation())))) {
-      return CopyGeneralizeAllRepresentations(
-          old_map, to_kind, modify_index, store_mode, new_kind, new_attributes,
-          u8"GenAll_RootModification2");
+      return CopyGeneralizeAllRepresentations(old_map, modify_index, store_mode,
+                                              new_kind, new_attributes,
+                                              u8"GenAll_RootModification2");
     }
   }
 
@@ -9929,7 +9929,7 @@ Handle<Map> Map::ReconfigureExistingProperty(Handle<Map> map, int descriptor,
     // There is no benefit from reconstructing transition tree for maps without
     // back pointers.
     return CopyGeneralizeAllRepresentations(
-        map, map->elements_kind(), descriptor, FORCE_FIELD, kind, attributes,
+        map, descriptor, FORCE_FIELD, kind, attributes,
         u8"GenAll_AttributesMismatchProtoMap");
   }
 
