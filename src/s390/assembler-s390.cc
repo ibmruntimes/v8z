@@ -2476,13 +2476,16 @@ void Assembler::srdl(Register r1, const Operand& opnd) {
   rs_form(SRDL, r1, r0, r0, opnd.immediate());
 }
 
-void Assembler::call(Handle<Code> target, RelocInfo::Mode rmode,
+void Assembler::call(Handle<Code> target, RelocInfo::Mode rmode, Register link,
                      TypeFeedbackId ast_id) {
   positions_recorder()->WriteRecordedPositions();
   EnsureSpace ensure_space(this);
 
   int32_t target_index = emit_code_target(target, rmode, ast_id);
-  brasl(r14, Operand(target_index));
+  brasl(link, Operand(target_index));
+  if (link.code() == 7) {
+     nop(BRAS_CALL_TYPE_NOP);
+  }
 }
 
 void Assembler::jump(Handle<Code> target, RelocInfo::Mode rmode,

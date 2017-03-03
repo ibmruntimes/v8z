@@ -631,7 +631,7 @@ class Assembler : public AssemblerBase {
     basr(r14, r1);
   }
 
-  void call(Handle<Code> target, RelocInfo::Mode rmode,
+  void call(Handle<Code> target, RelocInfo::Mode rmode, Register link = r14,
             TypeFeedbackId ast_id = TypeFeedbackId::None());
   void jump(Handle<Code> target, RelocInfo::Mode rmode, Condition cond);
 

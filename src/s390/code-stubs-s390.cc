@@ -1028,17 +1028,15 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Need at least one extra slot for return address location.
   int arg_stack_space = 1;
 
+#ifndef V8_OS_ZOS
   // Pass buffer for return value on stack if necessary
   bool needs_return_buffer =
       result_size() > 2 ||
-#ifdef V8_OS_ZOS
-      (result_size() == 2);
-#else
       (result_size() == 2 && !ABI_RETURNS_OBJECT_PAIRS_IN_REGS);
-#endif
   if (needs_return_buffer) {
     arg_stack_space += result_size();
   }
+#endif
 
 #if V8_TARGET_ARCH_S390X
   // 64-bit linux pass Argument object by reference not value
@@ -3424,11 +3422,8 @@ void DirectCEntryStub::GenerateCall(MacroAssembler* masm, Register target) {
   // for ABI_CALL_VIA_IP.
   __ Move(ip, target);
 #endif
-
 #ifdef V8_OS_ZOS
-  intptr_t code = reinterpret_cast<intptr_t>(GetCode().location());
-  __ mov (r7, Operand(code, RelocInfo::CODE_TARGET));
-  __ CallC(r7);
+  __ call(GetCode(), RelocInfo::CODE_TARGET, r7); 
 #else
   __ call(GetCode(), RelocInfo::CODE_TARGET);  // Call the stub.
 #endif
@@ -5589,7 +5584,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ bind(&return_value_loaded);
   // No more valid handles (the result handle was the last one). Restore
   // previous handle scope.
-  __ StoreP(r6, MemOperand(r9, kNextOffset));
+  __ StoreP(prev_next_, MemOperand(r9, kNextOffset));
   if (__ emit_debug_code()) {
     __ LoadlW(r3, MemOperand(r9, kLevelOffset));
     __ CmpP(r3, r8);

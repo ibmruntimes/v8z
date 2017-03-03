@@ -167,7 +167,7 @@ void MacroAssembler::Call(Handle<Code> code, RelocInfo::Mode rmode,
   Label start;
   bind(&start);
 #endif
-  call(code, rmode, ast_id);
+  call(code, rmode, r14,  ast_id);
   DCHECK_EQ(expected_size, SizeOfCodeGeneratedSince(&start));
 }
 
