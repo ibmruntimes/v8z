@@ -104,11 +104,19 @@ static void * anon_mmap(void * addr, size_t len) {
   __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
         " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
         "LOC=(31,64)\n"
+# if defined(__clang__)
+        :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
+# else
         :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
+# endif
 #else
   __asm(" SYSSTATE ARCHLVL=2\n"
         " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\n"
+# if defined(__clang__)
+        :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
+# else
         :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
+# endif
 #endif
 #pragma convert(pop)
    return (retcode == 0) ? p : MAP_FAILED;
@@ -121,11 +129,19 @@ static int anon_munmap(void * addr, size_t len) {
 #if defined (__64BIT__)
   __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
           " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\n"
+# if defined(__clang__)
+          :"=NR:r15"(retcode): "NR:r1"(addr), "NR:r0"(len) : "r0","r1","r14","r15");
+# else
           :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
+# endif
 #else
   __asm(" SYSSTATE ARCHLVL=2\n"
           " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\n"
+# if defined(__clang__)
+          :"=NR:r15"(retcode): "NR:r1"(addr), "NR:r0"(len) : "r0","r1","r14","r15");
+# else
           :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
+# endif
 #endif
 #pragma convert(pop)
    return retcode;
