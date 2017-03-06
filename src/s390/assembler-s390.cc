@@ -2483,9 +2483,11 @@ void Assembler::call(Handle<Code> target, RelocInfo::Mode rmode, Register link,
 
   int32_t target_index = emit_code_target(target, rmode, ast_id);
   brasl(link, Operand(target_index));
+#ifdef V8_OS_ZOS
   if (link.code() == 7) {
      nop(BRAS_CALL_TYPE_NOP);
   }
+#endif
 }
 
 void Assembler::jump(Handle<Code> target, RelocInfo::Mode rmode,
