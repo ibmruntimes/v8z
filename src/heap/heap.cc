@@ -2157,7 +2157,7 @@ const Heap::StringTypeTable Heap::string_type_table[] = {
 
 
 const Heap::ConstantStringTable Heap::constant_string_table[] = {
-    {"", kempty_stringRootIndex},
+    {u8"", kempty_stringRootIndex},
 #define CONSTANT_STRING_ELEMENT(name, contents) \
   { contents, k##name##RootIndex }              \
   ,
@@ -2654,57 +2654,57 @@ void Heap::CreateInitialObjects() {
   // Allocate
 
   // Finish initializing oddballs after creating the string table.
-  Oddball::Initialize(isolate(), factory->undefined_value(), "undefined",
-                      factory->nan_value(), false, "undefined",
+  Oddball::Initialize(isolate(), factory->undefined_value(), u8"undefined",
+                      factory->nan_value(), false, u8"undefined",
                       Oddball::kUndefined);
 
   // Initialize the null_value.
-  Oddball::Initialize(isolate(), factory->null_value(), "null",
-                      handle(Smi::FromInt(0), isolate()), false, "object",
+  Oddball::Initialize(isolate(), factory->null_value(), u8"null",
+                      handle(Smi::FromInt(0), isolate()), false, u8"object",
                       Oddball::kNull);
 
   // Initialize the true_value.
-  Oddball::Initialize(isolate(), factory->true_value(), "true",
-                      handle(Smi::FromInt(1), isolate()), true, "boolean",
+  Oddball::Initialize(isolate(), factory->true_value(), u8"true",
+                      handle(Smi::FromInt(1), isolate()), true, u8"boolean",
                       Oddball::kTrue);
 
   // Initialize the false_value.
-  Oddball::Initialize(isolate(), factory->false_value(), "false",
-                      handle(Smi::FromInt(0), isolate()), false, "boolean",
+  Oddball::Initialize(isolate(), factory->false_value(), u8"false",
+                      handle(Smi::FromInt(0), isolate()), false, u8"boolean",
                       Oddball::kFalse);
 
   set_the_hole_value(*factory->NewOddball(
-      factory->the_hole_map(), "hole", handle(Smi::FromInt(-1), isolate()),
-      false, "undefined", Oddball::kTheHole));
+      factory->the_hole_map(), u8"hole", handle(Smi::FromInt(-1), isolate()),
+      false, u8"undefined", Oddball::kTheHole));
 
   set_uninitialized_value(
-      *factory->NewOddball(factory->uninitialized_map(), "uninitialized",
+      *factory->NewOddball(factory->uninitialized_map(), u8"uninitialized",
                            handle(Smi::FromInt(-1), isolate()), false,
-                           "undefined", Oddball::kUninitialized));
+                           u8"undefined", Oddball::kUninitialized));
 
   set_arguments_marker(
-      *factory->NewOddball(factory->arguments_marker_map(), "arguments_marker",
+      *factory->NewOddball(factory->arguments_marker_map(), u8"arguments_marker",
                            handle(Smi::FromInt(-4), isolate()), false,
-                           "undefined", Oddball::kArgumentsMarker));
+                           u8"undefined", Oddball::kArgumentsMarker));
 
   set_no_interceptor_result_sentinel(*factory->NewOddball(
       factory->no_interceptor_result_sentinel_map(),
-      "no_interceptor_result_sentinel", handle(Smi::FromInt(-2), isolate()),
-      false, "undefined", Oddball::kOther));
+      u8"no_interceptor_result_sentinel", handle(Smi::FromInt(-2), isolate()),
+      false, u8"undefined", Oddball::kOther));
 
   set_termination_exception(*factory->NewOddball(
-      factory->termination_exception_map(), "termination_exception",
-      handle(Smi::FromInt(-3), isolate()), false, "undefined",
+      factory->termination_exception_map(), u8"termination_exception",
+      handle(Smi::FromInt(-3), isolate()), false, u8"undefined",
       Oddball::kOther));
 
-  set_exception(*factory->NewOddball(factory->exception_map(), "exception",
+  set_exception(*factory->NewOddball(factory->exception_map(), u8"exception",
                                      handle(Smi::FromInt(-5), isolate()), false,
-                                     "undefined", Oddball::kException));
+                                     u8"undefined", Oddball::kException));
 
   set_optimized_out(
-      *factory->NewOddball(factory->optimized_out_map(), "optimized_out",
+      *factory->NewOddball(factory->optimized_out_map(), u8"optimized_out",
                            handle(Smi::FromInt(-6), isolate()), false,
-                           "undefined", Oddball::kOptimizedOut));
+                           u8"undefined", Oddball::kOptimizedOut));
 
   for (unsigned i = 0; i < arraysize(constant_string_table); i++) {
     Handle<String> str =
@@ -2731,7 +2731,7 @@ void Heap::CreateInitialObjects() {
     HandleScope scope(isolate());
 #define SYMBOL_INIT(name)                                              \
   {                                                                    \
-    Handle<String> name##d = factory->NewStringFromStaticChars(#name); \
+    Handle<String> name##d = factory->NewStringFromStaticChars(USTR(#name)); \
     Handle<Symbol> symbol(isolate()->factory()->NewPrivateSymbol());   \
     symbol->set_name(*name##d);                                        \
     roots_[k##name##RootIndex] = *symbol;                              \
@@ -2752,7 +2752,7 @@ void Heap::CreateInitialObjects() {
     HandleScope scope(isolate());
 #define SYMBOL_INIT(name, description)                                      \
   Handle<Symbol> name = factory->NewSymbol();                               \
-  Handle<String> name##d = factory->NewStringFromStaticChars(#description); \
+  Handle<String> name##d = factory->NewStringFromStaticChars(USTR(#description)); \
   name->set_name(*name##d);                                                 \
   roots_[k##name##RootIndex] = *name;
     PUBLIC_SYMBOL_LIST(SYMBOL_INIT)
@@ -2760,7 +2760,7 @@ void Heap::CreateInitialObjects() {
 
 #define SYMBOL_INIT(name, description)                                      \
   Handle<Symbol> name = factory->NewSymbol();                               \
-  Handle<String> name##d = factory->NewStringFromStaticChars(#description); \
+  Handle<String> name##d = factory->NewStringFromStaticChars(USTR(#description)); \
   name->set_is_well_known_symbol(true);                                     \
   name->set_name(*name##d);                                                 \
   roots_[k##name##RootIndex] = *name;

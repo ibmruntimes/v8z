@@ -765,25 +765,25 @@ void Shell::UnsetEnvironment(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 
 void Shell::AddOSMethods(Isolate* isolate, Local<ObjectTemplate> os_templ) {
-  os_templ->Set(String::NewFromUtf8(isolate, "system", NewStringType::kNormal)
+  os_templ->Set(String::NewFromUtf8(isolate, u8"system", NewStringType::kNormal)
                     .ToLocalChecked(),
                 FunctionTemplate::New(isolate, System));
-  os_templ->Set(String::NewFromUtf8(isolate, "chdir", NewStringType::kNormal)
+  os_templ->Set(String::NewFromUtf8(isolate, u8"chdir", NewStringType::kNormal)
                     .ToLocalChecked(),
                 FunctionTemplate::New(isolate, ChangeDirectory));
-  os_templ->Set(String::NewFromUtf8(isolate, "setenv", NewStringType::kNormal)
+  os_templ->Set(String::NewFromUtf8(isolate, u8"setenv", NewStringType::kNormal)
                     .ToLocalChecked(),
                 FunctionTemplate::New(isolate, SetEnvironment));
-  os_templ->Set(String::NewFromUtf8(isolate, "unsetenv", NewStringType::kNormal)
+  os_templ->Set(String::NewFromUtf8(isolate, u8"unsetenv", NewStringType::kNormal)
                     .ToLocalChecked(),
                 FunctionTemplate::New(isolate, UnsetEnvironment));
-  os_templ->Set(String::NewFromUtf8(isolate, "umask", NewStringType::kNormal)
+  os_templ->Set(String::NewFromUtf8(isolate, u8"umask", NewStringType::kNormal)
                     .ToLocalChecked(),
                 FunctionTemplate::New(isolate, SetUMask));
-  os_templ->Set(String::NewFromUtf8(isolate, "mkdirp", NewStringType::kNormal)
+  os_templ->Set(String::NewFromUtf8(isolate, u8"mkdirp", NewStringType::kNormal)
                     .ToLocalChecked(),
                 FunctionTemplate::New(isolate, MakeDirectory));
-  os_templ->Set(String::NewFromUtf8(isolate, "rmdir", NewStringType::kNormal)
+  os_templ->Set(String::NewFromUtf8(isolate, u8"rmdir", NewStringType::kNormal)
                     .ToLocalChecked(),
                 FunctionTemplate::New(isolate, RemoveDirectory));
 }

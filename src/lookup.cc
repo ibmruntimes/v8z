@@ -358,7 +358,7 @@ void LookupIterator::Delete() {
 
     if (holder->HasFastProperties()) {
       JSObject::NormalizeProperties(Handle<JSObject>::cast(holder), mode, 0,
-                                    "DeletingProperty");
+                                    u8"DeletingProperty");
       ReloadPropertyInformation<false>();
     }
     // TODO(verwaest): Get rid of the name_ argument.
@@ -472,7 +472,7 @@ void LookupIterator::TransitionToAccessorPair(Handle<Object> pair,
                                          : CLEAR_INOBJECT_PROPERTIES;
     // Normalize object to make this operation simple.
     JSObject::NormalizeProperties(receiver, mode, 0,
-                                  "TransitionToAccessorPair");
+                                  u8"TransitionToAccessorPair");
 
     JSObject::SetNormalizedProperty(receiver, name_, pair, details);
     JSObject::ReoptimizeIfPrototype(receiver);

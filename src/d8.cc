@@ -436,7 +436,8 @@ PerIsolateData::RealmScope::~RealmScope() {
   // Drop realms to avoid keeping them alive.
   for (int i = 0; i < data_->realm_count_; ++i)
     data_->realms_[i].Reset();
-  delete[] data_->realms_;
+ // TODO(muntasir) Investigate why this causes a crash
+ // delete[] data_->realms_;
   if (!data_->realm_shared_.IsEmpty())
     data_->realm_shared_.Reset();
 }
@@ -1054,7 +1055,7 @@ Local<String> Shell::Stringify(Isolate* isolate, Local<Value> value) {
   v8::Local<v8::Context> context =
       v8::Local<v8::Context>::New(isolate, evaluation_context_);
   if (stringify_function_.IsEmpty()) {
-    int source_index = i::NativesCollection<i::D8>::GetIndex("d8");
+    int source_index = i::NativesCollection<i::D8>::GetIndex(u8"d8");
     i::Vector<const char> source_string =
         i::NativesCollection<i::D8>::GetScriptSource(source_index);
     i::Vector<const char> source_name =
@@ -1445,7 +1446,7 @@ void Shell::RunShell(Isolate* isolate) {
   v8::Context::Scope context_scope(context);
   PerIsolateData::RealmScope realm_scope(PerIsolateData::Get(isolate));
   Local<String> name =
-      String::NewFromUtf8(isolate, "(d8)", NewStringType::kNormal)
+      String::NewFromUtf8(isolate, u8"(d8)", NewStringType::kNormal)
           .ToLocalChecked();
   printf("V8 version %s\n", V8::GetVersion());
   while (true) {

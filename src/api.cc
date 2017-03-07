@@ -2000,7 +2000,7 @@ MaybeLocal<Function> ScriptCompiler::CompileFunctionInContext(
   i::Handle<i::String> source_string;
   auto factory = isolate->factory();
   if (arguments_count) {
-    source_string = factory->NewStringFromStaticChars("(function(");
+    source_string = factory->NewStringFromStaticChars(u8"(function(");
     for (size_t i = 0; i < arguments_count; ++i) {
       IsIdentifierHelper helper;
       if (!helper.Check(*Utils::OpenHandle(*arguments[i]))) {
@@ -2015,15 +2015,15 @@ MaybeLocal<Function> ScriptCompiler::CompileFunctionInContext(
       has_pending_exception =
           !factory->NewConsString(source_string,
                                   factory->LookupSingleCharacterStringFromCode(
-                                      ',')).ToHandle(&source_string);
+                                      '\x54')).ToHandle(&source_string);
       RETURN_ON_FAILED_EXECUTION(Function);
     }
-    auto brackets = factory->NewStringFromStaticChars("){");
+    auto brackets = factory->NewStringFromStaticChars(u8"){");
     has_pending_exception = !factory->NewConsString(source_string, brackets)
                                  .ToHandle(&source_string);
     RETURN_ON_FAILED_EXECUTION(Function);
   } else {
-    source_string = factory->NewStringFromStaticChars("(function(){");
+    source_string = factory->NewStringFromStaticChars(u8"(function(){");
   }
 
   int scope_position = source_string->length();
@@ -2033,7 +2033,7 @@ MaybeLocal<Function> ScriptCompiler::CompileFunctionInContext(
            .ToHandle(&source_string);
   RETURN_ON_FAILED_EXECUTION(Function);
   // Include \n in case the source contains a line end comment.
-  auto brackets = factory->NewStringFromStaticChars("\n})");
+  auto brackets = factory->NewStringFromStaticChars(u8"\n})");
   has_pending_exception =
       !factory->NewConsString(source_string, brackets).ToHandle(&source_string);
   RETURN_ON_FAILED_EXECUTION(Function);
@@ -2592,17 +2592,17 @@ static int getIntProperty(const StackFrame* f, const char* propertyName,
 
 
 int StackFrame::GetLineNumber() const {
-  return getIntProperty(this, "lineNumber", Message::kNoLineNumberInfo);
+  return getIntProperty(this, u8"lineNumber", Message::kNoLineNumberInfo);
 }
 
 
 int StackFrame::GetColumn() const {
-  return getIntProperty(this, "column", Message::kNoColumnInfo);
+  return getIntProperty(this, u8"column", Message::kNoColumnInfo);
 }
 
 
 int StackFrame::GetScriptId() const {
-  return getIntProperty(this, "scriptId", Message::kNoScriptIdInfo);
+  return getIntProperty(this, u8"scriptId", Message::kNoScriptIdInfo);
 }
 
 
@@ -2621,17 +2621,17 @@ static Local<String> getStringProperty(const StackFrame* f,
 
 
 Local<String> StackFrame::GetScriptName() const {
-  return getStringProperty(this, "scriptName");
+  return getStringProperty(this, u8"scriptName");
 }
 
 
 Local<String> StackFrame::GetScriptNameOrSourceURL() const {
-  return getStringProperty(this, "scriptNameOrSourceURL");
+  return getStringProperty(this, u8"scriptNameOrSourceURL");
 }
 
 
 Local<String> StackFrame::GetFunctionName() const {
-  return getStringProperty(this, "functionName");
+  return getStringProperty(this, u8"functionName");
 }
 
 
@@ -2645,11 +2645,11 @@ static bool getBoolProperty(const StackFrame* f, const char* propertyName) {
   return obj->IsTrue();
 }
 
-bool StackFrame::IsEval() const { return getBoolProperty(this, "isEval"); }
+bool StackFrame::IsEval() const { return getBoolProperty(this, u8"isEval"); }
 
 
 bool StackFrame::IsConstructor() const {
-  return getBoolProperty(this, "isConstructor");
+  return getBoolProperty(this, u8"isConstructor");
 }
 
 
@@ -3135,46 +3135,46 @@ void i::Internals::CheckInitializedImpl(v8::Isolate* external_isolate) {
 
 void External::CheckCast(v8::Value* that) {
   Utils::ApiCheck(Utils::OpenHandle(that)->IsExternal(),
-                  "v8::External::Cast()",
-                  "Could not convert to external");
+                  u8"v8::External::Cast()",
+                  u8"Could not convert to external");
 }
 
 
 void v8::Object::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
-  Utils::ApiCheck(obj->IsJSReceiver(), "v8::Object::Cast()",
-                  "Could not convert to object");
+  Utils::ApiCheck(obj->IsJSReceiver(), u8"v8::Object::Cast()",
+                  u8"Could not convert to object");
 }
 
 
 void v8::Function::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
-  Utils::ApiCheck(obj->IsCallable(), "v8::Function::Cast()",
-                  "Could not convert to function");
+  Utils::ApiCheck(obj->IsCallable(), u8"v8::Function::Cast()",
+                  u8"Could not convert to function");
 }
 
 
 void v8::Boolean::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsBoolean(),
-                  "v8::Boolean::Cast()",
-                  "Could not convert to boolean");
+                  u8"v8::Boolean::Cast()",
+                  u8"Could not convert to boolean");
 }
 
 
 void v8::Name::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsName(),
-                  "v8::Name::Cast()",
-                  "Could not convert to name");
+                  u8"v8::Name::Cast()",
+                  u8"Could not convert to name");
 }
 
 
 void v8::String::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsString(),
-                  "v8::String::Cast()",
-                  "Could not convert to string");
+                  u8"v8::String::Cast()",
+                  u8"Could not convert to string");
 }
 
 
@@ -4056,7 +4056,7 @@ static Maybe<bool> ObjectSetAccessor(Local<Context> context, Object* self,
   RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
   if (result->IsUndefined()) return Nothing<bool>();
   if (fast) {
-    i::JSObject::MigrateSlowToFast(obj, 0, "APISetAccessor");
+    i::JSObject::MigrateSlowToFast(obj, 0, u8"APISetAccessor");
   }
   return Just(true);
 }
@@ -4591,7 +4591,7 @@ Local<Value> Function::GetDisplayName() const {
   }
   auto func = i::Handle<i::JSFunction>::cast(self);
   i::Handle<i::String> property_name =
-      isolate->factory()->NewStringFromStaticChars("displayName");
+      isolate->factory()->NewStringFromStaticChars(u8"displayName");
   i::Handle<i::Object> value =
       i::JSReceiver::GetDataProperty(func, property_name);
   if (value->IsString()) {
@@ -5585,7 +5585,6 @@ void v8::V8::ReleaseSystemResources() {
 #endif
 }
 
-
 static i::Handle<i::Context> CreateEnvironment(
     i::Isolate* isolate, v8::ExtensionConfiguration* extensions,
     v8::Local<ObjectTemplate> global_template,
@@ -5897,7 +5896,7 @@ Local<String> String::NewFromUtf8(Isolate* isolate,
                                   NewStringType type,
                                   int length) {
   RETURN_TO_LOCAL_UNCHECKED(
-      NewString(isolate, "v8::String::NewFromUtf8()", "String::NewFromUtf8",
+      NewString(isolate, u8"v8::String::NewFromUtf8()", u8"String::NewFromUtf8",
                 data, static_cast<v8::NewStringType>(type), length),
       String);
 }
@@ -5905,7 +5904,7 @@ Local<String> String::NewFromUtf8(Isolate* isolate,
 
 MaybeLocal<String> String::NewFromUtf8(Isolate* isolate, const char* data,
                                        v8::NewStringType type, int length) {
-  return NewString(isolate, "v8::String::NewFromUtf8()", "String::NewFromUtf8",
+  return NewString(isolate, u8"v8::String::NewFromUtf8()", u8"String::NewFromUtf8",
                    data, type, length);
 }
 
@@ -5915,8 +5914,8 @@ Local<String> String::NewFromOneByte(Isolate* isolate,
                                      NewStringType type,
                                      int length) {
   RETURN_TO_LOCAL_UNCHECKED(
-      NewString(isolate, "v8::String::NewFromOneByte()",
-                "String::NewFromOneByte", data,
+      NewString(isolate, u8"v8::String::NewFromOneByte()",
+                u8"String::NewFromOneByte", data,
                 static_cast<v8::NewStringType>(type), length),
       String);
 }
@@ -5924,8 +5923,8 @@ Local<String> String::NewFromOneByte(Isolate* isolate,
 
 MaybeLocal<String> String::NewFromOneByte(Isolate* isolate, const uint8_t* data,
                                           v8::NewStringType type, int length) {
-  return NewString(isolate, "v8::String::NewFromOneByte()",
-                   "String::NewFromOneByte", data, type, length);
+  return NewString(isolate, u8"v8::String::NewFromOneByte()",
+                   u8"String::NewFromOneByte", data, type, length);
 }
 
 
@@ -5934,8 +5933,8 @@ Local<String> String::NewFromTwoByte(Isolate* isolate,
                                      NewStringType type,
                                      int length) {
   RETURN_TO_LOCAL_UNCHECKED(
-      NewString(isolate, "v8::String::NewFromTwoByte()",
-                "String::NewFromTwoByte", data,
+      NewString(isolate, u8"v8::String::NewFromTwoByte()",
+                u8"String::NewFromTwoByte", data,
                 static_cast<v8::NewStringType>(type), length),
       String);
 }
@@ -5944,8 +5943,8 @@ Local<String> String::NewFromTwoByte(Isolate* isolate,
 MaybeLocal<String> String::NewFromTwoByte(Isolate* isolate,
                                           const uint16_t* data,
                                           v8::NewStringType type, int length) {
-  return NewString(isolate, "v8::String::NewFromTwoByte()",
-                   "String::NewFromTwoByte", data, type, length);
+  return NewString(isolate, u8"v8::String::NewFromTwoByte()",
+                   u8"String::NewFromTwoByte", data, type, length);
 }
 
 
@@ -8102,7 +8101,7 @@ MaybeLocal<Value> Debug::GetMirror(Local<Context> context,
   has_pending_exception = !isolate_debug->Load();
   RETURN_ON_FAILED_EXECUTION(Value);
   i::Handle<i::JSObject> debug(isolate_debug->debug_context()->global_object());
-  auto name = isolate->factory()->NewStringFromStaticChars("MakeMirror");
+  auto name = isolate->factory()->NewStringFromStaticChars(u8"MakeMirror");
   auto fun_obj = i::JSReceiver::GetProperty(debug, name).ToHandleChecked();
   auto v8_fun = Utils::CallableToLocal(i::Handle<i::JSFunction>::cast(fun_obj));
   const int kArgc = 1;

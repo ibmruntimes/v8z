@@ -101,7 +101,7 @@ MaybeHandle<Object> DefineDataProperty(Isolate* isolate,
 void DisableAccessChecks(Isolate* isolate, Handle<JSObject> object) {
   Handle<Map> old_map(object->map());
   // Copy map so it won't interfere constructor's initial map.
-  Handle<Map> new_map = Map::Copy(old_map, "DisableAccessChecks");
+  Handle<Map> new_map = Map::Copy(old_map, u8"DisableAccessChecks");
   new_map->set_is_access_check_needed(false);
   JSObject::MigrateToMap(Handle<JSObject>::cast(object), new_map);
 }
@@ -110,7 +110,7 @@ void DisableAccessChecks(Isolate* isolate, Handle<JSObject> object) {
 void EnableAccessChecks(Isolate* isolate, Handle<JSObject> object) {
   Handle<Map> old_map(object->map());
   // Copy map so it won't interfere constructor's initial map.
-  Handle<Map> new_map = Map::Copy(old_map, "EnableAccessChecks");
+  Handle<Map> new_map = Map::Copy(old_map, u8"EnableAccessChecks");
   new_map->set_is_access_check_needed(true);
   JSObject::MigrateToMap(object, new_map);
 }
@@ -320,7 +320,7 @@ MaybeHandle<JSObject> InstantiateObject(Isolate* isolate,
       ConfigureInstance(isolate, object, info, is_hidden_prototype),
       JSFunction);
   // TODO(dcarney): is this necessary?
-  JSObject::MigrateSlowToFast(result, 0, "ApiNatives::InstantiateObject");
+  JSObject::MigrateSlowToFast(result, 0, u8"ApiNatives::InstantiateObject");
 
   if (serial_number) {
     CacheTemplateInstantiation(isolate, serial_number, result);

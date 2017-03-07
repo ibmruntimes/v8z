@@ -100,7 +100,7 @@ void MessageHandler::ReportMessage(Isolate* isolate, MessageLocation* loc,
     }
 
     if (!maybe_stringified.ToHandle(&stringified)) {
-      stringified = isolate->factory()->NewStringFromAsciiChecked("exception");
+      stringified = isolate->factory()->NewStringFromAsciiChecked(u8"exception");
     }
     message->set_argument(*stringified);
   }
@@ -240,8 +240,8 @@ Handle<Object> CallSite::GetMethodName() {
     // be stripped to find the property name.
     if (name->IsString() && FLAG_harmony_function_name) {
       Handle<String> name_string = Handle<String>::cast(name);
-      if (name_string->IsUtf8EqualTo(CStrVector("get "), true) ||
-          name_string->IsUtf8EqualTo(CStrVector("set "), true)) {
+      if (name_string->IsUtf8EqualTo(CStrVector(u8"get "), true) ||
+          name_string->IsUtf8EqualTo(CStrVector(u8"set "), true)) {
         name = isolate_->factory()->NewProperSubString(name_string, 4,
                                                        name_string->length());
       }
@@ -348,7 +348,7 @@ Handle<String> MessageTemplate::FormatMessage(Isolate* isolate,
         Execution::TryCall(isolate, fun, factory->undefined_value(), 1, &arg);
     Handle<Object> result;
     if (!maybe_result.ToHandle(&result) || !result->IsString()) {
-      return factory->InternalizeOneByteString(STATIC_CHAR_VECTOR("<error>"));
+      return factory->InternalizeOneByteString(STATIC_CHAR_VECTOR(u8"<error>"));
     }
     result_string = Handle<String>::cast(result);
   }
@@ -356,7 +356,7 @@ Handle<String> MessageTemplate::FormatMessage(Isolate* isolate,
       template_index, result_string, factory->empty_string(),
       factory->empty_string());
   if (!maybe_result_string.ToHandle(&result_string)) {
-    return factory->InternalizeOneByteString(STATIC_CHAR_VECTOR("<error>"));
+    return factory->InternalizeOneByteString(STATIC_CHAR_VECTOR(u8"<error>"));
   }
   // A string that has been obtained from JS code in this way is
   // likely to be a complicated ConsString of some sort.  We flatten it
