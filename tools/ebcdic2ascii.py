@@ -5,6 +5,9 @@ import re, sys, optparse
 # This is a utility for converting literals in V8 source code from
 # EBCDIC encoding to ASCII.  
 
+DEFINE    = re.compile(r'define')
+STRINGIFY = re.compile(r'([^#]#[^# \t\n\r\f\v]+)')
+
 EBCDIC_PRAGMA_START     = re.compile(r'\s*#pragma\s+convert\s*\(\s*\"IBM-1047\"\s*\)|\s*#pragma\s+convert\s*\(\s*\"ibm-1047\"\s*\)')
 EBCDIC_PRAGMA_END       = re.compile(r"\s*#pragma\s+convert\s*\(\s*pop\s*\)")
 
@@ -65,6 +68,14 @@ def EncodeInASCII(literal):
           convert = convert + '\\x' + ascii_lit[2:4]
    return convert 
 
+def ConvertMacroArgs(token):
+   if DEFINE.search(token):
+      return token
+   if STRINGIFY.search(token): 
+      token = token.strip()
+      return " USTR("+token+")"
+   return token
+
 def ConvertTokens(tokens):
     if not HEX_RE.search(tokens):
        return EncodeInASCII(tokens)
@@ -82,14 +93,15 @@ def EncodePrintF(literal):
 
 def main():
   parser = optparse.OptionParser()
-  parser.set_usage("""find_string_literal.py input.cc list.txt ...
+  parser.set_usage("""ebcdic2ascii.py [options] input.cc output.cc 
    input.cc: C file to be scanned
    output.cc: String literals found.""")
+  parser.add_option("-u", action="store_true", dest="unicode_support", default = False)
   (options, args) = parser.parse_args()
-  
-  Source = open(args[0], "rt")
-  Target = open(args[1], "at+")
-  
+                    
+  Source          = open(args[0], "rt")
+  Target          = open(args[1], "at+")
+  unicode_encode  = options.unicode_support;
   ebcdic_encoding = False
   convert_start = False
   convert_end = False
@@ -112,17 +124,26 @@ def main():
                 or multiline_comment or ebcdic_encoding 
     
     if not skip_line:
+       token_list = STRINGIFY.split(line)
+       converted_macro = reduce(lambda x,y: x+y, map(ConvertMacroArgs, token_list))
+       line = line.replace(line, converted_macro)
+      
        string_literal     = STRING_RE.findall(line)
        char_literal       = CHAR_RE.findall(line) 
-       
+
        for literal in string_literal: 
-           encoded_literal = re.sub(ESCAPE_RE, EncodeEscapeSeq, literal)
-           encoded_literal = re.sub(PRINTF_RE, EncodePrintF, encoded_literal) 
-           token_list = re.split(HEX_RE, encoded_literal)
-           encoded_literal = reduce(lambda x,y: x+y, map(ConvertTokens, token_list))           
-           literal = "\"" + literal + "\""
-           encoded_literal = "\"" + encoded_literal + "\""
-           line = line.replace(literal, encoded_literal)
+           if unicode_encode:
+              literal = "\"" + literal + "\""
+              unicode_literal = "u8" + literal
+              line = line.replace(literal, unicode_literal)
+           else:
+              encoded_literal = re.sub(ESCAPE_RE, EncodeEscapeSeq, literal)
+              encoded_literal = re.sub(PRINTF_RE, EncodePrintF, encoded_literal) 
+              token_list = re.split(HEX_RE, encoded_literal)
+              encoded_literal = reduce(lambda x,y: x+y, map(ConvertTokens, token_list))           
+              literal = "\"" + literal + "\""
+              encoded_literal = "\"" + encoded_literal + "\""
+              line = line.replace(literal, encoded_literal)
             
        for char in char_literal:
            encoded_char = ''
