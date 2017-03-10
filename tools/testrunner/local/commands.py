@@ -28,6 +28,7 @@
 
 import subprocess
 import sys
+import time
 from threading import Timer
 
 from ..local import utils
@@ -76,8 +77,7 @@ def RunProcess(verbose, timeout, args, **rest):
   if (utils.IsWindows() and prev_error_mode != SEM_INVALID_VALUE):
     Win32SetErrorMode(prev_error_mode)
 
-  def kill_process(process, timeout_result):
-    timeout_result[0] = True
+  def kill_process(process):
     try:
       if utils.IsWindows():
         if verbose:
@@ -100,17 +100,39 @@ def RunProcess(verbose, timeout, args, **rest):
     except OSError:
       sys.stderr.write('Error: Process %s already ended.\n' % process.pid)
 
-  # Pseudo object to communicate with timer thread.
-  timeout_result = [False]
+  MAX_SLEEP_TIME = 0.1
+  INITIAL_SLEEP_TIME = 0.0001
+  SLEEP_TIME_FACTOR = 1.25
 
-  timer = Timer(timeout, kill_process, [process, timeout_result])
-  timer.start()
-  stdout, stderr = process.communicate()
-  timer.cancel()
+  try:
+    if timeout is None: end_time = None
+    else: end_time = time.time() + timeout
+    timed_out = False
+
+    (stdout, stderr) = process.communicate()
+
+    # Repeatedly check the exit code from the process in a
+    # loop and keep track of whether or not it times out.
+    exit_code = None
+    sleep_time = INITIAL_SLEEP_TIME
+    while exit_code is None:
+      if (not end_time is None) and (time.time() >= end_time):
+        # Kill the process and wait for it to exit.
+        kill_process(process)
+        exit_code = process.wait()
+        timed_out = True
+      else:
+        exit_code = process.poll()
+        time.sleep(sleep_time)
+        sleep_time = sleep_time * SLEEP_TIME_FACTOR
+        if sleep_time > MAX_SLEEP_TIME:
+          sleep_time = MAX_SLEEP_TIME
+  except Exception as e:
+    print "Exception: " + str(e)
 
   return output.Output(
       process.returncode,
-      timeout_result[0],
+      timed_out,
       stdout,
       stderr,
       process.pid,

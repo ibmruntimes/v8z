@@ -75,11 +75,11 @@ TEST_MAP = {
   "default": [
     "mjsunit",
     "cctest",
-    "fuzzer",
-    "message",
-    "preparser",
+#    "fuzzer",
+#    "message",
+#    "preparser",
     "intl",
-    "unittests",
+#    "unittests",
   ],
   # This needs to stay in sync with test/ignition.isolate.
   "ignition": [
