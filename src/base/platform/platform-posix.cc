@@ -506,8 +506,6 @@ void OS::PrintError(const char* format, ...) {
 void OS::VPrintError(const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_ERROR, LOG_TAG, format, args);
-#elif defined(V8_OS_ZOS)
-  OS::VFPrintASCII(stderr, format, args);
 #else
   vfprintf(stderr, format, args);
 #endif
