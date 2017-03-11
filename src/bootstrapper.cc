@@ -1253,7 +1253,7 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
     }
 
     // Install the String.fromCharCode function.
-    SimpleInstallFunction(string_fun, "fromCharCode",
+    SimpleInstallFunction(string_fun, u8"fromCharCode",
                           Builtins::kStringFromCharCode, 1, false);
   }
 
