@@ -434,13 +434,14 @@ inline int GetFirstFlagFrom(const char* format_e, int start = 0) {
 FILE* OS::FOpenASCII(const char* path_a, const char* mode_a) {
   int path_len = strlen(path_a);
   int mode_len = strlen(mode_a);
-  char path[path_len + 1];
-  char mode[mode_len + 1];
+  char *path = new char[path_len + 1];
+  char *mode = new char[mode_len + 1];
   memmove(path, path_a, path_len + 1);
   memmove(mode, mode_a, mode_len + 1);
   __a2e_s(path);
   __a2e_s(mode);
   FILE* file = fopen(path, mode);
+  delete[] path, mode;
   if (file == NULL) return NULL;
   struct stat file_stat;
   if (fstat(fileno(file), &file_stat) != 0) return NULL;

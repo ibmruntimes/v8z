@@ -1351,7 +1351,11 @@ static FILE* FOpen(const char* path, const char* mode) {
 
 
 static char* ReadChars(Isolate* isolate, const char* name, int* size_out) {
+#ifdef V8_OS_ZOS
+  FILE* file = base::OS::FOpenASCII(name, u8"rb");
+#else
   FILE* file = FOpen(name, "rb");
+#endif
   if (file == NULL) return NULL;
 
   fseek(file, 0, SEEK_END);
