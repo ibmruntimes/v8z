@@ -1510,7 +1510,11 @@ void SourceGroup::Execute(Isolate* isolate) {
             .ToLocalChecked();
     Local<String> source = ReadFile(isolate, arg);
     if (source.IsEmpty()) {
-      printf(u8"Error reading '%s'\n", arg);
+#ifdef V8_OS_ZOS
+      base::OS::PrintASCII(u8"Error reading '%s'\n", arg);
+#else
+      printf("Error reading '%s'\n", arg);
+#endif
       Shell::Exit(1);
     }
     Shell::options.script_executed = true;

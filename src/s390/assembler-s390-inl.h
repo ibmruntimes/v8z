@@ -79,7 +79,11 @@ void RelocInfo::apply(intptr_t delta) {
 Address RelocInfo::target_internal_reference() {
   if (IsInternalReference(rmode_)) {
     // Jump table entry
+#ifdef V8_OS_ZOS
+    return Memory::Address_at(pc_ + kPointerSize);
+#else
     return Memory::Address_at(pc_);
+#endif
   } else {
     // mov sequence
     DCHECK(IsInternalReferenceEncoded(rmode_));
