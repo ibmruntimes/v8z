@@ -6242,8 +6242,8 @@ Expression* ParserTraits::RewriteInstanceof(Expression* lhs, Expression* rhs,
   Variable* var_handler_result = scope->NewTemporary(avfactory->empty_string());
   Statement* initialize_handler;
   {
-    Expression* hasInstance_symbol_literal =
-        factory->NewSymbolLiteral("hasInstance_symbol", RelocInfo::kNoPosition);
+    Expression* hasInstance_symbol_literal = factory->NewSymbolLiteral(
+        u8"hasInstance_symbol", RelocInfo::kNoPosition);
     Expression* prop = factory->NewProperty(factory->NewVariableProxy(var_C),
                                             hasInstance_symbol_literal, pos);
     Expression* handler_proxy = factory->NewVariableProxy(var_handler_result);
