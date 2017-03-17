@@ -65,9 +65,9 @@ class BasicJsonStringifier BASE_EMBEDDED {
   Result Serialize_(Handle<Object> object, bool comma, Handle<Object> key);
 
   void SerializeDeferredKey(bool deferred_comma, Handle<Object> deferred_key) {
-    if (deferred_comma) builder_.AppendCharacter(',');
+    if (deferred_comma) builder_.AppendCharacter('\x2c');
     SerializeString(Handle<String>::cast(deferred_key));
-    builder_.AppendCharacter(':');
+    builder_.AppendCharacter('\x3a');
   }
 
   Result SerializeSmi(Smi* object);
@@ -116,70 +116,70 @@ class BasicJsonStringifier BASE_EMBEDDED {
 // Translation table to escape Latin1 characters.
 // Table entries start at a multiple of 8 and are null-terminated.
 const char* const BasicJsonStringifier::JsonEscapeTable =
-    u8"\\u0000\0 \\u0001\0 \\u0002\0 \\u0003\0 "
-    "\\u0004\0 \\u0005\0 \\u0006\0 \\u0007\0 "
-    "\\b\0     \\t\0     \\n\0     \\u000b\0 "
-    "\\f\0     \\r\0     \\u000e\0 \\u000f\0 "
-    "\\u0010\0 \\u0011\0 \\u0012\0 \\u0013\0 "
-    "\\u0014\0 \\u0015\0 \\u0016\0 \\u0017\0 "
-    "\\u0018\0 \\u0019\0 \\u001a\0 \\u001b\0 "
-    "\\u001c\0 \\u001d\0 \\u001e\0 \\u001f\0 "
-    " \0      !\0      \\\"\0     #\0      "
-    "$\0      %\0      &\0      '\0      "
-    "(\0      )\0      *\0      +\0      "
-    ",\0      -\0      .\0      /\0      "
-    "0\0      1\0      2\0      3\0      "
-    "4\0      5\0      6\0      7\0      "
-    "8\0      9\0      :\0      ;\0      "
-    "<\0      =\0      >\0      ?\0      "
-    "@\0      A\0      B\0      C\0      "
-    "D\0      E\0      F\0      G\0      "
-    "H\0      I\0      J\0      K\0      "
-    "L\0      M\0      N\0      O\0      "
-    "P\0      Q\0      R\0      S\0      "
-    "T\0      U\0      V\0      W\0      "
-    "X\0      Y\0      Z\0      [\0      "
-    "\\\\\0     ]\0      ^\0      _\0      "
-    "`\0      a\0      b\0      c\0      "
-    "d\0      e\0      f\0      g\0      "
-    "h\0      i\0      j\0      k\0      "
-    "l\0      m\0      n\0      o\0      "
-    "p\0      q\0      r\0      s\0      "
-    "t\0      u\0      v\0      w\0      "
-    "x\0      y\0      z\0      {\0      "
-    "|\0      }\0      ~\0      \177\0      "
-    "\200\0      \201\0      \202\0      \203\0      "
-    "\204\0      \205\0      \206\0      \207\0      "
-    "\210\0      \211\0      \212\0      \213\0      "
-    "\214\0      \215\0      \216\0      \217\0      "
-    "\220\0      \221\0      \222\0      \223\0      "
-    "\224\0      \225\0      \226\0      \227\0      "
-    "\230\0      \231\0      \232\0      \233\0      "
-    "\234\0      \235\0      \236\0      \237\0      "
-    "\240\0      \241\0      \242\0      \243\0      "
-    "\244\0      \245\0      \246\0      \247\0      "
-    "\250\0      \251\0      \252\0      \253\0      "
-    "\254\0      \255\0      \256\0      \257\0      "
-    "\260\0      \261\0      \262\0      \263\0      "
-    "\264\0      \265\0      \266\0      \267\0      "
-    "\270\0      \271\0      \272\0      \273\0      "
-    "\274\0      \275\0      \276\0      \277\0      "
-    "\300\0      \301\0      \302\0      \303\0      "
-    "\304\0      \305\0      \306\0      \307\0      "
-    "\310\0      \311\0      \312\0      \313\0      "
-    "\314\0      \315\0      \316\0      \317\0      "
-    "\320\0      \321\0      \322\0      \323\0      "
-    "\324\0      \325\0      \326\0      \327\0      "
-    "\330\0      \331\0      \332\0      \333\0      "
-    "\334\0      \335\0      \336\0      \337\0      "
-    "\340\0      \341\0      \342\0      \343\0      "
-    "\344\0      \345\0      \346\0      \347\0      "
-    "\350\0      \351\0      \352\0      \353\0      "
-    "\354\0      \355\0      \356\0      \357\0      "
-    "\360\0      \361\0      \362\0      \363\0      "
-    "\364\0      \365\0      \366\0      \367\0      "
-    "\370\0      \371\0      \372\0      \373\0      "
-    "\374\0      \375\0      \376\0      \377\0      ";
+    "\x5c\x75\x30\x30\x30\x30\x0\x20\x5c\x75\x30\x30\x30\x31\x0\x20\x5c\x75\x30\x30\x30\x32\x0\x20\x5c\x75\x30\x30\x30\x33\x0\x20"
+    "\x5c\x75\x30\x30\x30\x34\x0\x20\x5c\x75\x30\x30\x30\x35\x0\x20\x5c\x75\x30\x30\x30\x36\x0\x20\x5c\x75\x30\x30\x30\x37\x0\x20"
+    "\x5c\x62\x0\x20\x20\x20\x20\x20\x5c\x74\x0\x20\x20\x20\x20\x20\x5c\x6e\x0\x20\x20\x20\x20\x20\x5c\x75\x30\x30\x30\x62\x0\x20"
+    "\x5c\x66\x0\x20\x20\x20\x20\x20\x5c\x72\x0\x20\x20\x20\x20\x20\x5c\x75\x30\x30\x30\x65\x0\x20\x5c\x75\x30\x30\x30\x66\x0\x20"
+    "\x5c\x75\x30\x30\x31\x30\x0\x20\x5c\x75\x30\x30\x31\x31\x0\x20\x5c\x75\x30\x30\x31\x32\x0\x20\x5c\x75\x30\x30\x31\x33\x0\x20"
+    "\x5c\x75\x30\x30\x31\x34\x0\x20\x5c\x75\x30\x30\x31\x35\x0\x20\x5c\x75\x30\x30\x31\x36\x0\x20\x5c\x75\x30\x30\x31\x37\x0\x20"
+    "\x5c\x75\x30\x30\x31\x38\x0\x20\x5c\x75\x30\x30\x31\x39\x0\x20\x5c\x75\x30\x30\x31\x61\x0\x20\x5c\x75\x30\x30\x31\x62\x0\x20"
+    "\x5c\x75\x30\x30\x31\x63\x0\x20\x5c\x75\x30\x30\x31\x64\x0\x20\x5c\x75\x30\x30\x31\x65\x0\x20\x5c\x75\x30\x30\x31\x66\x0\x20"
+    "\x20\x0\x20\x20\x20\x20\x20\x20\x21\x0\x20\x20\x20\x20\x20\x20\x5c\x22\x0\x20\x20\x20\x20\x20\x23\x0\x20\x20\x20\x20\x20\x20"
+    "\x24\x0\x20\x20\x20\x20\x20\x20\x25\x0\x20\x20\x20\x20\x20\x20\x26\x0\x20\x20\x20\x20\x20\x20\x27\x0\x20\x20\x20\x20\x20\x20"
+    "\x28\x0\x20\x20\x20\x20\x20\x20\x29\x0\x20\x20\x20\x20\x20\x20\x2a\x0\x20\x20\x20\x20\x20\x20\x2b\x0\x20\x20\x20\x20\x20\x20"
+    "\x2c\x0\x20\x20\x20\x20\x20\x20\x2d\x0\x20\x20\x20\x20\x20\x20\x2e\x0\x20\x20\x20\x20\x20\x20\x2f\x0\x20\x20\x20\x20\x20\x20"
+    "\x30\x0\x20\x20\x20\x20\x20\x20\x31\x0\x20\x20\x20\x20\x20\x20\x32\x0\x20\x20\x20\x20\x20\x20\x33\x0\x20\x20\x20\x20\x20\x20"
+    "\x34\x0\x20\x20\x20\x20\x20\x20\x35\x0\x20\x20\x20\x20\x20\x20\x36\x0\x20\x20\x20\x20\x20\x20\x37\x0\x20\x20\x20\x20\x20\x20"
+    "\x38\x0\x20\x20\x20\x20\x20\x20\x39\x0\x20\x20\x20\x20\x20\x20\x3a\x0\x20\x20\x20\x20\x20\x20\x3b\x0\x20\x20\x20\x20\x20\x20"
+    "\x3c\x0\x20\x20\x20\x20\x20\x20\x3d\x0\x20\x20\x20\x20\x20\x20\x3e\x0\x20\x20\x20\x20\x20\x20\x3f\x0\x20\x20\x20\x20\x20\x20"
+    "\x40\x0\x20\x20\x20\x20\x20\x20\x41\x0\x20\x20\x20\x20\x20\x20\x42\x0\x20\x20\x20\x20\x20\x20\x43\x0\x20\x20\x20\x20\x20\x20"
+    "\x44\x0\x20\x20\x20\x20\x20\x20\x45\x0\x20\x20\x20\x20\x20\x20\x46\x0\x20\x20\x20\x20\x20\x20\x47\x0\x20\x20\x20\x20\x20\x20"
+    "\x48\x0\x20\x20\x20\x20\x20\x20\x49\x0\x20\x20\x20\x20\x20\x20\x4a\x0\x20\x20\x20\x20\x20\x20\x4b\x0\x20\x20\x20\x20\x20\x20"
+    "\x4c\x0\x20\x20\x20\x20\x20\x20\x4d\x0\x20\x20\x20\x20\x20\x20\x4e\x0\x20\x20\x20\x20\x20\x20\x4f\x0\x20\x20\x20\x20\x20\x20"
+    "\x50\x0\x20\x20\x20\x20\x20\x20\x51\x0\x20\x20\x20\x20\x20\x20\x52\x0\x20\x20\x20\x20\x20\x20\x53\x0\x20\x20\x20\x20\x20\x20"
+    "\x54\x0\x20\x20\x20\x20\x20\x20\x55\x0\x20\x20\x20\x20\x20\x20\x56\x0\x20\x20\x20\x20\x20\x20\x57\x0\x20\x20\x20\x20\x20\x20"
+    "\x58\x0\x20\x20\x20\x20\x20\x20\x59\x0\x20\x20\x20\x20\x20\x20\x5a\x0\x20\x20\x20\x20\x20\x20\x5b\x0\x20\x20\x20\x20\x20\x20"
+    "\x5c\x5c\x0\x20\x20\x20\x20\x20\x5d\x0\x20\x20\x20\x20\x20\x20\x5e\x0\x20\x20\x20\x20\x20\x20\x5f\x0\x20\x20\x20\x20\x20\x20"
+    "\x60\x0\x20\x20\x20\x20\x20\x20\x61\x0\x20\x20\x20\x20\x20\x20\x62\x0\x20\x20\x20\x20\x20\x20\x63\x0\x20\x20\x20\x20\x20\x20"
+    "\x64\x0\x20\x20\x20\x20\x20\x20\x65\x0\x20\x20\x20\x20\x20\x20\x66\x0\x20\x20\x20\x20\x20\x20\x67\x0\x20\x20\x20\x20\x20\x20"
+    "\x68\x0\x20\x20\x20\x20\x20\x20\x69\x0\x20\x20\x20\x20\x20\x20\x6a\x0\x20\x20\x20\x20\x20\x20\x6b\x0\x20\x20\x20\x20\x20\x20"
+    "\x6c\x0\x20\x20\x20\x20\x20\x20\x6d\x0\x20\x20\x20\x20\x20\x20\x6e\x0\x20\x20\x20\x20\x20\x20\x6f\x0\x20\x20\x20\x20\x20\x20"
+    "\x70\x0\x20\x20\x20\x20\x20\x20\x71\x0\x20\x20\x20\x20\x20\x20\x72\x0\x20\x20\x20\x20\x20\x20\x73\x0\x20\x20\x20\x20\x20\x20"
+    "\x74\x0\x20\x20\x20\x20\x20\x20\x75\x0\x20\x20\x20\x20\x20\x20\x76\x0\x20\x20\x20\x20\x20\x20\x77\x0\x20\x20\x20\x20\x20\x20"
+    "\x78\x0\x20\x20\x20\x20\x20\x20\x79\x0\x20\x20\x20\x20\x20\x20\x7a\x0\x20\x20\x20\x20\x20\x20\x7b\x0\x20\x20\x20\x20\x20\x20"
+    "\x7c\x0\x20\x20\x20\x20\x20\x20\x7d\x0\x20\x20\x20\x20\x20\x20\x7e\x0\x20\x20\x20\x20\x20\x20\177\x0\x20\x20\x20\x20\x20\x20"
+    "\200\0\x20\x20\x20\x20\x20\x20\201\0\x20\x20\x20\x20\x20\x20\202\0\x20\x20\x20\x20\x20\x20\203\0\x20\x20\x20\x20\x20\x20"
+    "\204\0\x20\x20\x20\x20\x20\x20\205\0\x20\x20\x20\x20\x20\x20\206\0\x20\x20\x20\x20\x20\x20\207\0\x20\x20\x20\x20\x20\x20"
+    "\210\0\x20\x20\x20\x20\x20\x20\211\0\x20\x20\x20\x20\x20\x20\212\0\x20\x20\x20\x20\x20\x20\213\0\x20\x20\x20\x20\x20\x20"
+    "\214\0\x20\x20\x20\x20\x20\x20\215\0\x20\x20\x20\x20\x20\x20\216\0\x20\x20\x20\x20\x20\x20\217\0\x20\x20\x20\x20\x20\x20"
+    "\220\0\x20\x20\x20\x20\x20\x20\221\0\x20\x20\x20\x20\x20\x20\222\0\x20\x20\x20\x20\x20\x20\223\0\x20\x20\x20\x20\x20\x20"
+    "\224\0\x20\x20\x20\x20\x20\x20\225\0\x20\x20\x20\x20\x20\x20\226\0\x20\x20\x20\x20\x20\x20\227\0\x20\x20\x20\x20\x20\x20"
+    "\230\0\x20\x20\x20\x20\x20\x20\231\0\x20\x20\x20\x20\x20\x20\232\0\x20\x20\x20\x20\x20\x20\233\0\x20\x20\x20\x20\x20\x20"
+    "\234\0\x20\x20\x20\x20\x20\x20\235\0\x20\x20\x20\x20\x20\x20\236\0\x20\x20\x20\x20\x20\x20\237\0\x20\x20\x20\x20\x20\x20"
+    "\240\0\x20\x20\x20\x20\x20\x20\241\0\x20\x20\x20\x20\x20\x20\242\0\x20\x20\x20\x20\x20\x20\243\0\x20\x20\x20\x20\x20\x20"
+    "\244\0\x20\x20\x20\x20\x20\x20\245\0\x20\x20\x20\x20\x20\x20\246\0\x20\x20\x20\x20\x20\x20\247\0\x20\x20\x20\x20\x20\x20"
+    "\250\0\x20\x20\x20\x20\x20\x20\251\0\x20\x20\x20\x20\x20\x20\252\0\x20\x20\x20\x20\x20\x20\253\0\x20\x20\x20\x20\x20\x20"
+    "\254\0\x20\x20\x20\x20\x20\x20\255\0\x20\x20\x20\x20\x20\x20\256\0\x20\x20\x20\x20\x20\x20\257\0\x20\x20\x20\x20\x20\x20"
+    "\260\0\x20\x20\x20\x20\x20\x20\261\0\x20\x20\x20\x20\x20\x20\262\0\x20\x20\x20\x20\x20\x20\263\0\x20\x20\x20\x20\x20\x20"
+    "\264\0\x20\x20\x20\x20\x20\x20\265\0\x20\x20\x20\x20\x20\x20\266\0\x20\x20\x20\x20\x20\x20\267\0\x20\x20\x20\x20\x20\x20"
+    "\270\0\x20\x20\x20\x20\x20\x20\271\0\x20\x20\x20\x20\x20\x20\272\0\x20\x20\x20\x20\x20\x20\273\0\x20\x20\x20\x20\x20\x20"
+    "\274\0\x20\x20\x20\x20\x20\x20\275\0\x20\x20\x20\x20\x20\x20\276\0\x20\x20\x20\x20\x20\x20\277\0\x20\x20\x20\x20\x20\x20"
+    "\300\0\x20\x20\x20\x20\x20\x20\301\0\x20\x20\x20\x20\x20\x20\302\0\x20\x20\x20\x20\x20\x20\303\0\x20\x20\x20\x20\x20\x20"
+    "\304\0\x20\x20\x20\x20\x20\x20\305\0\x20\x20\x20\x20\x20\x20\306\0\x20\x20\x20\x20\x20\x20\307\0\x20\x20\x20\x20\x20\x20"
+    "\310\0\x20\x20\x20\x20\x20\x20\311\0\x20\x20\x20\x20\x20\x20\312\0\x20\x20\x20\x20\x20\x20\313\0\x20\x20\x20\x20\x20\x20"
+    "\314\0\x20\x20\x20\x20\x20\x20\315\0\x20\x20\x20\x20\x20\x20\316\0\x20\x20\x20\x20\x20\x20\317\0\x20\x20\x20\x20\x20\x20"
+    "\320\0\x20\x20\x20\x20\x20\x20\321\0\x20\x20\x20\x20\x20\x20\322\0\x20\x20\x20\x20\x20\x20\323\0\x20\x20\x20\x20\x20\x20"
+    "\324\0\x20\x20\x20\x20\x20\x20\325\0\x20\x20\x20\x20\x20\x20\326\0\x20\x20\x20\x20\x20\x20\327\0\x20\x20\x20\x20\x20\x20"
+    "\330\0\x20\x20\x20\x20\x20\x20\331\0\x20\x20\x20\x20\x20\x20\332\0\x20\x20\x20\x20\x20\x20\333\0\x20\x20\x20\x20\x20\x20"
+    "\334\0\x20\x20\x20\x20\x20\x20\335\0\x20\x20\x20\x20\x20\x20\336\0\x20\x20\x20\x20\x20\x20\337\0\x20\x20\x20\x20\x20\x20"
+    "\340\0\x20\x20\x20\x20\x20\x20\341\0\x20\x20\x20\x20\x20\x20\342\0\x20\x20\x20\x20\x20\x20\343\0\x20\x20\x20\x20\x20\x20"
+    "\344\0\x20\x20\x20\x20\x20\x20\345\0\x20\x20\x20\x20\x20\x20\346\0\x20\x20\x20\x20\x20\x20\347\0\x20\x20\x20\x20\x20\x20"
+    "\350\0\x20\x20\x20\x20\x20\x20\351\0\x20\x20\x20\x20\x20\x20\352\0\x20\x20\x20\x20\x20\x20\353\0\x20\x20\x20\x20\x20\x20"
+    "\354\0\x20\x20\x20\x20\x20\x20\355\0\x20\x20\x20\x20\x20\x20\356\0\x20\x20\x20\x20\x20\x20\357\0\x20\x20\x20\x20\x20\x20"
+    "\360\0\x20\x20\x20\x20\x20\x20\361\0\x20\x20\x20\x20\x20\x20\362\0\x20\x20\x20\x20\x20\x20\363\0\x20\x20\x20\x20\x20\x20"
+    "\364\0\x20\x20\x20\x20\x20\x20\365\0\x20\x20\x20\x20\x20\x20\366\0\x20\x20\x20\x20\x20\x20\367\0\x20\x20\x20\x20\x20\x20"
+    "\370\0\x20\x20\x20\x20\x20\x20\371\0\x20\x20\x20\x20\x20\x20\372\0\x20\x20\x20\x20\x20\x20\373\0\x20\x20\x20\x20\x20\x20"
+    "\374\0\x20\x20\x20\x20\x20\x20\375\0\x20\x20\x20\x20\x20\x20\376\0\x20\x20\x20\x20\x20\x20\377\0\x20\x20\x20\x20\x20\x20";
 
 
 BasicJsonStringifier::BasicJsonStringifier(Isolate* isolate)
@@ -219,10 +219,10 @@ MaybeHandle<Object> BasicJsonStringifier::StringifyString(
                  .ToHandleChecked();
     IncrementalStringBuilder::NoExtendString<uint8_t> no_extend(
         result, worst_case_length);
-    no_extend.Append('\"');
+    no_extend.Append('\x22');
     SerializeStringUnchecked_(object->GetFlatContent().ToOneByteVector(),
                               &no_extend);
-    no_extend.Append('\"');
+    no_extend.Append('\x22');
     return no_extend.Finalize();
   } else {
     result = isolate->factory()
@@ -230,10 +230,10 @@ MaybeHandle<Object> BasicJsonStringifier::StringifyString(
                  .ToHandleChecked();
     IncrementalStringBuilder::NoExtendString<uc16> no_extend(result,
                                                              worst_case_length);
-    no_extend.Append('\"');
+    no_extend.Append('\x22');
     SerializeStringUnchecked_(object->GetFlatContent().ToUC16Vector(),
                               &no_extend);
-    no_extend.Append('\"');
+    no_extend.Append('\x22');
     return no_extend.Finalize();
   }
 }
@@ -317,15 +317,15 @@ BasicJsonStringifier::Result BasicJsonStringifier::Serialize_(
       switch (Oddball::cast(*object)->kind()) {
         case Oddball::kFalse:
           if (deferred_string_key) SerializeDeferredKey(comma, key);
-          builder_.AppendCString("false");
+          builder_.AppendCString("\x66\x61\x6c\x73\x65");
           return SUCCESS;
         case Oddball::kTrue:
           if (deferred_string_key) SerializeDeferredKey(comma, key);
-          builder_.AppendCString("true");
+          builder_.AppendCString("\x74\x72\x75\x65");
           return SUCCESS;
         case Oddball::kNull:
           if (deferred_string_key) SerializeDeferredKey(comma, key);
-          builder_.AppendCString("null");
+          builder_.AppendCString("\x6e\x75\x6c\x6c");
           return SUCCESS;
         default:
           return UNCHANGED;
@@ -394,7 +394,7 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSValue(
   } else if (class_name == isolate_->heap()->Boolean_string()) {
     Object* value = JSValue::cast(*object)->value();
     DCHECK(value->IsBoolean());
-    builder_.AppendCString(value->IsTrue() ? "true" : "false");
+    builder_.AppendCString(value->IsTrue() ? "\x74\x72\x75\x65" : "\x66\x61\x6c\x73\x65");
   } else {
     // ES6 24.3.2.1 step 10.c, serialize as an ordinary JSObject.
     CHECK(!object->IsAccessCheckNeeded());
@@ -417,7 +417,7 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeSmi(Smi* object) {
 BasicJsonStringifier::Result BasicJsonStringifier::SerializeDouble(
     double number) {
   if (std::isinf(number) || std::isnan(number)) {
-    builder_.AppendCString("null");
+    builder_.AppendCString("\x6e\x75\x6c\x6c");
     return SUCCESS;
   }
   static const int kBufferSize = 100;
@@ -435,13 +435,13 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArray(
   if (stack_push != SUCCESS) return stack_push;
   uint32_t length = 0;
   CHECK(object->length()->ToArrayLength(&length));
-  builder_.AppendCharacter('[');
+  builder_.AppendCharacter('\x5b');
   switch (object->GetElementsKind()) {
     case FAST_SMI_ELEMENTS: {
       Handle<FixedArray> elements(FixedArray::cast(object->elements()),
                                   isolate_);
       for (uint32_t i = 0; i < length; i++) {
-        if (i > 0) builder_.AppendCharacter(',');
+        if (i > 0) builder_.AppendCharacter('\x2c');
         SerializeSmi(Smi::cast(elements->get(i)));
       }
       break;
@@ -452,7 +452,7 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArray(
       Handle<FixedDoubleArray> elements(
           FixedDoubleArray::cast(object->elements()), isolate_);
       for (uint32_t i = 0; i < length; i++) {
-        if (i > 0) builder_.AppendCharacter(',');
+        if (i > 0) builder_.AppendCharacter('\x2c');
         SerializeDouble(elements->get_scalar(i));
       }
       break;
@@ -466,7 +466,7 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArray(
           if (result != SUCCESS) return result;
           break;
         }
-        if (i > 0) builder_.AppendCharacter(',');
+        if (i > 0) builder_.AppendCharacter('\x2c');
         Result result = SerializeElement(
             isolate_,
             Handle<Object>(FixedArray::cast(object->elements())->get(i),
@@ -474,7 +474,7 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArray(
             i);
         if (result == SUCCESS) continue;
         if (result == UNCHANGED) {
-          builder_.AppendCString("null");
+          builder_.AppendCString("\x6e\x75\x6c\x6c");
         } else {
           return result;
         }
@@ -489,7 +489,7 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArray(
       break;
     }
   }
-  builder_.AppendCharacter(']');
+  builder_.AppendCharacter('\x5d');
   StackPop();
   return SUCCESS;
 }
@@ -498,18 +498,18 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArray(
 BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSArraySlow(
     Handle<JSArray> object, uint32_t start, uint32_t length) {
   for (uint32_t i = start; i < length; i++) {
-    if (i > 0) builder_.AppendCharacter(',');
+    if (i > 0) builder_.AppendCharacter('\x2c');
     Handle<Object> element;
     ASSIGN_RETURN_ON_EXCEPTION_VALUE(
         isolate_, element, JSReceiver::GetElement(isolate_, object, i),
         EXCEPTION);
     if (element->IsUndefined()) {
-      builder_.AppendCString("null");
+      builder_.AppendCString("\x6e\x75\x6c\x6c");
     } else {
       Result result = SerializeElement(isolate_, element, i);
       if (result == SUCCESS) continue;
       if (result == UNCHANGED) {
-        builder_.AppendCString("null");
+        builder_.AppendCString("\x6e\x75\x6c\x6c");
       } else {
         return result;
       }
@@ -526,7 +526,7 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSObject(
   if (stack_push != SUCCESS) return stack_push;
   DCHECK(!object->IsJSGlobalProxy() && !object->IsJSGlobalObject());
 
-  builder_.AppendCharacter('{');
+  builder_.AppendCharacter('\x7b');
   bool comma = false;
 
   if (object->HasFastProperties() &&
@@ -594,7 +594,7 @@ BasicJsonStringifier::Result BasicJsonStringifier::SerializeJSObject(
     }
   }
 
-  builder_.AppendCharacter('}');
+  builder_.AppendCharacter('\x7d');
   StackPop();
   return SUCCESS;
 }
@@ -622,7 +622,7 @@ void BasicJsonStringifier::SerializeStringUnchecked_(
 template <typename SrcChar, typename DestChar>
 void BasicJsonStringifier::SerializeString_(Handle<String> string) {
   int length = string->length();
-  builder_.Append<uint8_t, DestChar>('"');
+  builder_.Append<uint8_t, DestChar>('\x22');
   // We make a rough estimate to find out if the current string can be
   // serialized without allocating a new string part. The worst case length of
   // an escaped character is 6.  Shifting the remainin string length right by 3
@@ -646,7 +646,7 @@ void BasicJsonStringifier::SerializeString_(Handle<String> string) {
     }
   }
 
-  builder_.Append<uint8_t, DestChar>('"');
+  builder_.Append<uint8_t, DestChar>('\x22');
 }
 
 
