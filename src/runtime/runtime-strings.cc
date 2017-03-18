@@ -938,11 +938,11 @@ static bool CheckFastAsciiConvert(char* dst, const char* src, int length,
     if (dst[i] == src[i]) continue;
     expected_changed = true;
     if (is_to_lower) {
-      DCHECK('A' <= src[i] && src[i] <= 'Z');
-      DCHECK(dst[i] == src[i] + ('a' - 'A'));
+      DCHECK('\x41' <= src[i] && src[i] <= '\x5a');
+      DCHECK(dst[i] == src[i] + ('\x61' - '\x41'));
     } else {
-      DCHECK('a' <= src[i] && src[i] <= 'z');
-      DCHECK(dst[i] == src[i] - ('a' - 'A'));
+      DCHECK('\x61' <= src[i] && src[i] <= '\x7a');
+      DCHECK(dst[i] == src[i] - ('\x61' - '\x41'));
     }
   }
   return (expected_changed == changed);
@@ -960,7 +960,7 @@ static bool FastAsciiConvert(char* dst, const char* src, int length,
   DisallowHeapAllocation no_gc;
   // We rely on the distance between upper and lower case letters
   // being a known power of 2.
-  DCHECK('a' - 'A' == (1 << 5));
+  DCHECK('\x61' - '\x41' == (1 << 5));
   // Boundaries for the range of input characters than require conversion.
   static const char lo = Converter::kIsToLower ? '\x41' - 1 : '\x61' - 1;
   static const char hi = Converter::kIsToLower ? '\x5a' + 1 : '\x7a' + 1;

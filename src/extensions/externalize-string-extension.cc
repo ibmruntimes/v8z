@@ -37,18 +37,18 @@ typedef SimpleStringResource<uc16, v8::String::ExternalStringResource>
     SimpleTwoByteStringResource;
 
 const char* const ExternalizeStringExtension::kSource =
-    "native function externalizeString();"
-    "native function isOneByteString();"
-    "function x() { return 1; }";
+    u8"native function externalizeString();"
+    u8"native function isOneByteString();"
+    u8"function x() { return 1; }";
 
 v8::Local<v8::FunctionTemplate>
 ExternalizeStringExtension::GetNativeFunctionTemplate(
     v8::Isolate* isolate, v8::Local<v8::String> str) {
-  if (strcmp(*v8::String::Utf8Value(str), "externalizeString") == 0) {
+  if (strcmp(*v8::String::Utf8Value(str), u8"externalizeString") == 0) {
     return v8::FunctionTemplate::New(isolate,
                                      ExternalizeStringExtension::Externalize);
   } else {
-    DCHECK(strcmp(*v8::String::Utf8Value(str), "isOneByteString") == 0);
+    DCHECK(strcmp(*v8::String::Utf8Value(str), u8"isOneByteString") == 0);
     return v8::FunctionTemplate::New(isolate,
                                      ExternalizeStringExtension::IsOneByte);
   }
@@ -61,7 +61,7 @@ void ExternalizeStringExtension::Externalize(
     args.GetIsolate()->ThrowException(
         v8::String::NewFromUtf8(
             args.GetIsolate(),
-            "First parameter to externalizeString() must be a string.",
+            u8"First parameter to externalizeString() must be a string.",
             NewStringType::kNormal).ToLocalChecked());
     return;
   }
@@ -76,7 +76,7 @@ void ExternalizeStringExtension::Externalize(
       args.GetIsolate()->ThrowException(
           v8::String::NewFromUtf8(
               args.GetIsolate(),
-              "Second parameter to externalizeString() must be a boolean.",
+              u8"Second parameter to externalizeString() must be a boolean.",
               NewStringType::kNormal).ToLocalChecked());
       return;
     }
@@ -86,7 +86,7 @@ void ExternalizeStringExtension::Externalize(
   if (string->IsExternalString()) {
     args.GetIsolate()->ThrowException(
         v8::String::NewFromUtf8(args.GetIsolate(),
-                                "externalizeString() can't externalize twice.",
+                                u8"externalizeString() can't externalize twice.",
                                 NewStringType::kNormal).ToLocalChecked());
     return;
   }
@@ -116,7 +116,7 @@ void ExternalizeStringExtension::Externalize(
   if (!result) {
     args.GetIsolate()->ThrowException(
         v8::String::NewFromUtf8(args.GetIsolate(),
-                                "externalizeString() failed.",
+                                u8"externalizeString() failed.",
                                 NewStringType::kNormal).ToLocalChecked());
     return;
   }
@@ -129,7 +129,7 @@ void ExternalizeStringExtension::IsOneByte(
     args.GetIsolate()->ThrowException(
         v8::String::NewFromUtf8(
             args.GetIsolate(),
-            "isOneByteString() requires a single string argument.",
+            u8"isOneByteString() requires a single string argument.",
             NewStringType::kNormal).ToLocalChecked());
     return;
   }

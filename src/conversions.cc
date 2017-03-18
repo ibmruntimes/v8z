@@ -121,9 +121,9 @@ double StringToInt(UnicodeCache* unicode_cache,
 
 const char* DoubleToCString(double v, Vector<char> buffer) {
   switch (fpclassify(v)) {
-    case FP_NAN: return "NaN";
-    case FP_INFINITE: return (v < 0.0 ? "-Infinity" : "Infinity");
-    case FP_ZERO: return "0";
+    case FP_NAN: return u8"NaN";
+    case FP_INFINITE: return (v < 0.0 ? u8"-Infinity" : u8"Infinity");
+    case FP_ZERO: return u8"0";
     default: {
       SimpleStringBuilder builder(buffer.start(), buffer.length());
       int decimal_point;
@@ -136,34 +136,34 @@ const char* DoubleToCString(double v, Vector<char> buffer) {
                     Vector<char>(decimal_rep, kV8DtoaBufferCapacity),
                     &sign, &length, &decimal_point);
 
-      if (sign) builder.AddCharacter('-');
+      if (sign) builder.AddCharacter('\x2d');
 
       if (length <= decimal_point && decimal_point <= 21) {
         // ECMA-262 section 9.8.1 step 6.
         builder.AddString(decimal_rep);
-        builder.AddPadding('0', decimal_point - length);
+        builder.AddPadding('\x30', decimal_point - length);
 
       } else if (0 < decimal_point && decimal_point <= 21) {
         // ECMA-262 section 9.8.1 step 7.
         builder.AddSubstring(decimal_rep, decimal_point);
-        builder.AddCharacter('.');
+        builder.AddCharacter('\x2e');
         builder.AddString(decimal_rep + decimal_point);
 
       } else if (decimal_point <= 0 && decimal_point > -6) {
         // ECMA-262 section 9.8.1 step 8.
-        builder.AddString("0.");
-        builder.AddPadding('0', -decimal_point);
+        builder.AddString(u8"0.");
+        builder.AddPadding('\x30', -decimal_point);
         builder.AddString(decimal_rep);
 
       } else {
         // ECMA-262 section 9.8.1 step 9 and 10 combined.
         builder.AddCharacter(decimal_rep[0]);
         if (length != 1) {
-          builder.AddCharacter('.');
+          builder.AddCharacter('\x2e');
           builder.AddString(decimal_rep + 1);
         }
-        builder.AddCharacter('e');
-        builder.AddCharacter((decimal_point >= 0) ? '+' : '-');
+        builder.AddCharacter('\x65');
+        builder.AddCharacter((decimal_point >= 0) ? '\x2b' : '\x2d');
         int exponent = decimal_point - 1;
         if (exponent < 0) exponent = -exponent;
         builder.AddDecimalInteger(exponent);
@@ -184,12 +184,12 @@ const char* IntToCString(int n, Vector<char> buffer) {
   }
   // Build the string backwards from the least significant digit.
   int i = buffer.length();
-  buffer[--i] = '\0';
+  buffer[--i] = '\x0';
   do {
-    buffer[--i] = '0' + (n % 10);
+    buffer[--i] = '\x30' + (n % 10);
     n /= 10;
   } while (n);
-  if (negative) buffer[--i] = '-';
+  if (negative) buffer[--i] = '\x2d';
   return buffer.start() + i;
 }
 
@@ -515,7 +515,7 @@ bool IsSpecialIndex(UnicodeCache* unicode_cache, String* string) {
   int offset = 0;
   if (!IsDecimalDigit(buffer[0])) {
     if (buffer[0] == '\x2d') {
-      if (length == 1) return false;  // Just '-' is bad.
+      if (length == 1) return false;  // Just '\x2d' is bad.
       if (!IsDecimalDigit(buffer[1])) {
         if (buffer[1] == '\x49' && length == 9) {
           // Allow matching of '-Infinity' below.

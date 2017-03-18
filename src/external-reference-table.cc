@@ -24,6 +24,7 @@ ExternalReferenceTable* ExternalReferenceTable::instance(Isolate* isolate) {
 }
 
 ExternalReferenceTable::ExternalReferenceTable(Isolate* isolate) {
+  const char * start = "Hello World \x25";
   // Miscellaneous
   Add(ExternalReference::roots_array_start(isolate).address(),
       "\x48\x65\x61\x70\x3a\x3a\x72\x6f\x6f\x74\x73\x5f\x61\x72\x72\x61\x79\x5f\x73\x74\x61\x72\x74\x28\x29");

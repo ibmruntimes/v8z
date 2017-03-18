@@ -210,7 +210,7 @@ char* ReadCharsFromFile(FILE* file,
                         const char* filename) {
   if (file == NULL || fseek(file, 0, SEEK_END) != 0) {
     if (verbose) {
-      base::OS::PrintError(u8"Cannot read from file %s.\n", filename);
+      base::OS::PrintError("Cannot read from file %s.\n", filename);
     }
     return NULL;
   }
@@ -237,7 +237,7 @@ char* ReadCharsFromFile(const char* filename,
                         int* size,
                         int extra_space,
                         bool verbose) {
-  FILE* file = base::OS::FOpen(filename, u8"rb");
+  FILE* file = base::OS::FOpen(filename, "rb");
   char* result = ReadCharsFromFile(file, size, extra_space, verbose, filename);
   if (file != NULL) fclose(file);
   return result;
