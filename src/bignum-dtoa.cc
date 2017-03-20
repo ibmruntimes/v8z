@@ -80,7 +80,7 @@ void BignumDtoa(double v, BignumDtoaMode mode, int requested_digits,
   // number is much too small, then there is no need in trying to get any
   // digits.
   if (mode == BIGNUM_DTOA_FIXED && -estimated_power - 1 > requested_digits) {
-    buffer[0] = '\0';
+    buffer[0] = '\x0';
     *length = 0;
     // Set decimal-point to -requested_digits. This is what Gay does.
     // Note that it should not have any effect anyways since the string is
@@ -127,7 +127,7 @@ void BignumDtoa(double v, BignumDtoaMode mode, int requested_digits,
     default:
       UNREACHABLE();
   }
-  buffer[*length] = '\0';
+  buffer[*length] = '\x0';
 }
 
 
@@ -160,7 +160,7 @@ static void GenerateShortestDigits(Bignum* numerator, Bignum* denominator,
     DCHECK(digit <= 9);  // digit is a uint16_t and therefore always positive.
     // digit = numerator / denominator (integer division).
     // numerator = numerator % denominator.
-    buffer[(*length)++] = digit + '0';
+    buffer[(*length)++] = digit + '\x30';
 
     // Can we stop already?
     // If the remainder of the division is less than the distance to the lower
@@ -203,7 +203,7 @@ static void GenerateShortestDigits(Bignum* numerator, Bignum* denominator,
         // loop would have stopped earlier.
         // We still have an assert here in case the preconditions were not
         // satisfied.
-        DCHECK(buffer[(*length) - 1] != '9');
+        DCHECK(buffer[(*length) - 1] != '\x39');
         buffer[(*length) - 1]++;
       } else {
         // Halfway case.
@@ -211,10 +211,10 @@ static void GenerateShortestDigits(Bignum* numerator, Bignum* denominator,
         //   For now let's round towards even (since this is what Gay seems to
         //   do).
 
-        if ((buffer[(*length) - 1] - '0') % 2 == 0) {
+        if ((buffer[(*length) - 1] - '\x30') % 2 == 0) {
           // Round down => Do nothing.
         } else {
-          DCHECK(buffer[(*length) - 1] != '9');
+          DCHECK(buffer[(*length) - 1] != '\x39');
           buffer[(*length) - 1]++;
         }
       }
@@ -228,7 +228,7 @@ static void GenerateShortestDigits(Bignum* numerator, Bignum* denominator,
       // stopped the loop earlier.
       // We still have an DCHECK here, in case the preconditions were not
       // satisfied.
-      DCHECK(buffer[(*length) -1] != '9');
+      DCHECK(buffer[(*length) -1] != '\x39');
       buffer[(*length) - 1]++;
       return;
     }
@@ -252,7 +252,7 @@ static void GenerateCountedDigits(int count, int* decimal_point,
     DCHECK(digit <= 9);  // digit is a uint16_t and therefore always positive.
     // digit = numerator / denominator (integer division).
     // numerator = numerator % denominator.
-    buffer[i] = digit + '0';
+    buffer[i] = digit + '\x30';
     // Prepare for next iteration.
     numerator->Times10();
   }
@@ -262,17 +262,17 @@ static void GenerateCountedDigits(int count, int* decimal_point,
   if (Bignum::PlusCompare(*numerator, *numerator, *denominator) >= 0) {
     digit++;
   }
-  buffer[count - 1] = digit + '0';
+  buffer[count - 1] = digit + '\x30';
   // Correct bad digits (in case we had a sequence of '9's). Propagate the
   // carry until we hat a non-'9' or til we reach the first digit.
   for (int i = count - 1; i > 0; --i) {
-    if (buffer[i] != '0' + 10) break;
-    buffer[i] = '0';
+    if (buffer[i] != '\x30' + 10) break;
+    buffer[i] = '\x30';
     buffer[i - 1]++;
   }
-  if (buffer[0] == '0' + 10) {
+  if (buffer[0] == '\x30' + 10) {
     // Propagate a carry past the top place.
-    buffer[0] = '1';
+    buffer[0] = '\x31';
     (*decimal_point)++;
   }
   *length = count;
@@ -309,7 +309,7 @@ static void BignumToFixed(int requested_digits, int* decimal_point,
     if (Bignum::PlusCompare(*numerator, *numerator, *denominator) >= 0) {
       // If the fraction is >= 0.5 then we have to include the rounded
       // digit.
-      buffer[0] = '1';
+      buffer[0] = '\x31';
       *length = 1;
       (*decimal_point)++;
     } else {

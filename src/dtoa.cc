@@ -42,15 +42,15 @@ void DoubleToAscii(double v, DtoaMode mode, int requested_digits,
   }
 
   if (v == 0) {
-    buffer[0] = '0';
-    buffer[1] = '\0';
+    buffer[0] = '\x30';
+    buffer[1] = '\x0';
     *length = 1;
     *point = 1;
     return;
   }
 
   if (mode == DTOA_PRECISION && requested_digits == 0) {
-    buffer[0] = '\0';
+    buffer[0] = '\x0';
     *length = 0;
     return;
   }
@@ -76,7 +76,7 @@ void DoubleToAscii(double v, DtoaMode mode, int requested_digits,
   // If the fast dtoa didn't succeed use the slower bignum version.
   BignumDtoaMode bignum_mode = DtoaToBignumDtoaMode(mode);
   BignumDtoa(v, bignum_mode, requested_digits, buffer, length, point);
-  buffer[*length] = '\0';
+  buffer[*length] = '\x0';
 }
 
 }  // namespace internal

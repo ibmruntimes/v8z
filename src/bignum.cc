@@ -71,7 +71,7 @@ static uint64_t ReadUInt64(Vector<const char> buffer,
   int to = from + digits_to_read;
 
   for (int i = from; i < to; ++i) {
-    int digit = buffer[i] - '0';
+    int digit = buffer[i] - '\x30';
     DCHECK(0 <= digit && digit <= 9);
     result = result * 10 + digit;
   }

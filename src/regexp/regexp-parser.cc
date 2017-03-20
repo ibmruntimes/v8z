@@ -75,7 +75,7 @@ void RegExpParser::Advance() {
     if (check.HasOverflowed()) {
       ReportError(CStrVector(Isolate::kStackOverflowMessage));
     } else if (zone()->excess_allocation()) {
-      ReportError(CStrVector("Regular expression too large"));
+      ReportError(CStrVector(u8"Regular expression too large"));
     } else {
       current_ = ReadNext<true>();
     }
@@ -106,21 +106,21 @@ bool RegExpParser::simple() { return simple_; }
 
 bool RegExpParser::IsSyntaxCharacterOrSlash(uc32 c) {
   switch (c) {
-    case '^':
-    case '$':
-    case '\\':
-    case '.':
-    case '*':
-    case '+':
-    case '?':
-    case '(':
-    case ')':
-    case '[':
-    case ']':
-    case '{':
-    case '}':
-    case '|':
-    case '/':
+    case '\x5e':
+    case '\x24':
+    case '\x5c':
+    case '\x2e':
+    case '\x2a':
+    case '\x2b':
+    case '\x3f':
+    case '\x28':
+    case '\x29':
+    case '\x5b':
+    case '\x5d':
+    case '\x7b':
+    case '\x7d':
+    case '\x7c':
+    case '\x2f':
       return true;
     default:
       break;
@@ -180,14 +180,14 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       case kEndMarker:
         if (state->IsSubexpression()) {
           // Inside a parenthesized group when hitting end of input.
-          return ReportError(CStrVector("Unterminated group"));
+          return ReportError(CStrVector(u8"Unterminated group"));
         }
         DCHECK_EQ(INITIAL, state->group_type());
         // Parsing completed successfully.
         return builder->ToRegExp();
-      case ')': {
+      case '\x29': {
         if (!state->IsSubexpression()) {
-          return ReportError(CStrVector("Unmatched ')'"));
+          return ReportError(CStrVector(u8"Unmatched '\x29'"));
         }
         DCHECK_NE(INITIAL, state->group_type());
 
@@ -224,16 +224,16 @@ RegExpTree* RegExpParser::ParseDisjunction() {
         // lookaheads, and break in all cases.
         break;
       }
-      case '|': {
+      case '\x7c': {
         Advance();
         builder->NewAlternative();
         continue;
       }
-      case '*':
-      case '+':
-      case '?':
-        return ReportError(CStrVector("Nothing to repeat"));
-      case '^': {
+      case '\x2a':
+      case '\x2b':
+      case '\x3f':
+        return ReportError(CStrVector(u8"Nothing to repeat"));
+      case '\x5e': {
         Advance();
         if (multiline()) {
           builder->AddAssertion(
@@ -245,7 +245,7 @@ RegExpTree* RegExpParser::ParseDisjunction() {
         }
         continue;
       }
-      case '$': {
+      case '\x24': {
         Advance();
         RegExpAssertion::AssertionType assertion_type =
             multiline() ? RegExpAssertion::END_OF_LINE
@@ -253,54 +253,54 @@ RegExpTree* RegExpParser::ParseDisjunction() {
         builder->AddAssertion(new (zone()) RegExpAssertion(assertion_type));
         continue;
       }
-      case '.': {
+      case '\x2e': {
         Advance();
         // everything except \x0a, \x0d, \u2028 and \u2029
         ZoneList<CharacterRange>* ranges =
             new (zone()) ZoneList<CharacterRange>(2, zone());
-        CharacterRange::AddClassEscape('.', ranges, zone());
+        CharacterRange::AddClassEscape('\x2e', ranges, zone());
         RegExpCharacterClass* cc =
             new (zone()) RegExpCharacterClass(ranges, false);
         builder->AddCharacterClass(cc);
         break;
       }
-      case '(': {
+      case '\x28': {
         SubexpressionType subexpr_type = CAPTURE;
         RegExpLookaround::Type lookaround_type = state->lookaround_type();
         Advance();
-        if (current() == '?') {
+        if (current() == '\x3f') {
           switch (Next()) {
-            case ':':
+            case '\x3a':
               subexpr_type = GROUPING;
               break;
-            case '=':
+            case '\x3d':
               lookaround_type = RegExpLookaround::LOOKAHEAD;
               subexpr_type = POSITIVE_LOOKAROUND;
               break;
-            case '!':
+            case '\x21':
               lookaround_type = RegExpLookaround::LOOKAHEAD;
               subexpr_type = NEGATIVE_LOOKAROUND;
               break;
-            case '<':
+            case '\x3c':
               if (FLAG_harmony_regexp_lookbehind) {
                 Advance();
                 lookaround_type = RegExpLookaround::LOOKBEHIND;
-                if (Next() == '=') {
+                if (Next() == '\x3d') {
                   subexpr_type = POSITIVE_LOOKAROUND;
                   break;
-                } else if (Next() == '!') {
+                } else if (Next() == '\x21') {
                   subexpr_type = NEGATIVE_LOOKAROUND;
                   break;
                 }
               }
             // Fall through.
             default:
-              return ReportError(CStrVector("Invalid group"));
+              return ReportError(CStrVector(u8"Invalid group"));
           }
           Advance(2);
         } else {
           if (captures_started_ >= kMaxCaptures) {
-            return ReportError(CStrVector("Too many captures"));
+            return ReportError(CStrVector(u8"Too many captures"));
           }
           captures_started_++;
         }
@@ -311,23 +311,23 @@ RegExpTree* RegExpParser::ParseDisjunction() {
         builder = state->builder();
         continue;
       }
-      case '[': {
+      case '\x5b': {
         RegExpTree* cc = ParseCharacterClass(CHECK_FAILED);
         builder->AddCharacterClass(cc->AsCharacterClass());
         break;
       }
       // Atom ::
       //   \ AtomEscape
-      case '\\':
+      case '\x5c':
         switch (Next()) {
           case kEndMarker:
-            return ReportError(CStrVector("\\ at end of pattern"));
-          case 'b':
+            return ReportError(CStrVector(u8"\\ at end of pattern"));
+          case '\x62':
             Advance(2);
             builder->AddAssertion(
                 new (zone()) RegExpAssertion(RegExpAssertion::BOUNDARY));
             continue;
-          case 'B':
+          case '\x42':
             Advance(2);
             builder->AddAssertion(
                 new (zone()) RegExpAssertion(RegExpAssertion::NON_BOUNDARY));
@@ -337,12 +337,12 @@ RegExpTree* RegExpParser::ParseDisjunction() {
           //
           // CharacterClassEscape :: one of
           //   d D s S w W
-          case 'd':
-          case 'D':
-          case 's':
-          case 'S':
-          case 'w':
-          case 'W': {
+          case '\x64':
+          case '\x44':
+          case '\x73':
+          case '\x53':
+          case '\x77':
+          case '\x57': {
             uc32 c = Next();
             Advance(2);
             ZoneList<CharacterRange>* ranges =
@@ -353,8 +353,8 @@ RegExpTree* RegExpParser::ParseDisjunction() {
             builder->AddCharacterClass(cc);
             break;
           }
-          case 'p':
-          case 'P': {
+          case '\x70':
+          case '\x50': {
             uc32 p = Next();
             Advance(2);
             if (unicode()) {
@@ -362,30 +362,30 @@ RegExpTree* RegExpParser::ParseDisjunction() {
                 ZoneList<CharacterRange>* ranges =
                     new (zone()) ZoneList<CharacterRange>(2, zone());
                 if (!ParsePropertyClass(ranges)) {
-                  return ReportError(CStrVector("Invalid property name"));
+                  return ReportError(CStrVector(u8"Invalid property name"));
                 }
                 RegExpCharacterClass* cc =
-                    new (zone()) RegExpCharacterClass(ranges, p == 'P');
+                    new (zone()) RegExpCharacterClass(ranges, p == '\x50');
                 builder->AddCharacterClass(cc);
               } else {
                 // With /u, no identity escapes except for syntax characters
                 // are allowed. Otherwise, all identity escapes are allowed.
-                return ReportError(CStrVector("Invalid escape"));
+                return ReportError(CStrVector(u8"Invalid escape"));
               }
             } else {
               builder->AddCharacter(p);
             }
             break;
           }
-          case '1':
-          case '2':
-          case '3':
-          case '4':
-          case '5':
-          case '6':
-          case '7':
-          case '8':
-          case '9': {
+          case '\x31':
+          case '\x32':
+          case '\x33':
+          case '\x34':
+          case '\x35':
+          case '\x36':
+          case '\x37':
+          case '\x38':
+          case '\x39': {
             int index = 0;
             bool is_backref = ParseBackReferenceIndex(&index CHECK_FAILED);
             if (is_backref) {
@@ -406,21 +406,21 @@ RegExpTree* RegExpParser::ParseDisjunction() {
             // With /u, no identity escapes except for syntax characters
             // are allowed. Otherwise, all identity escapes are allowed.
             if (unicode()) {
-              return ReportError(CStrVector("Invalid escape"));
+              return ReportError(CStrVector(u8"Invalid escape"));
             }
             uc32 first_digit = Next();
-            if (first_digit == '8' || first_digit == '9') {
+            if (first_digit == '\x38' || first_digit == '\x39') {
               builder->AddCharacter(first_digit);
               Advance(2);
               break;
             }
           }
           // FALLTHROUGH
-          case '0': {
+          case '\x30': {
             Advance();
-            if (unicode() && Next() >= '0' && Next() <= '9') {
+            if (unicode() && Next() >= '\x30' && Next() <= '\x39') {
               // With /u, decimal escape with leading 0 are not parsed as octal.
-              return ReportError(CStrVector("Invalid decimal escape"));
+              return ReportError(CStrVector(u8"Invalid decimal escape"));
             }
             uc32 octal = ParseOctalLiteral();
             builder->AddCharacter(octal);
@@ -428,71 +428,71 @@ RegExpTree* RegExpParser::ParseDisjunction() {
           }
           // ControlEscape :: one of
           //   f n r t v
-          case 'f':
+          case '\x66':
             Advance(2);
-            builder->AddCharacter('\f');
+            builder->AddCharacter('\xc');
             break;
-          case 'n':
+          case '\x6e':
             Advance(2);
-            builder->AddCharacter('\n');
+            builder->AddCharacter('\xa');
             break;
-          case 'r':
+          case '\x72':
             Advance(2);
-            builder->AddCharacter('\r');
+            builder->AddCharacter('\xd');
             break;
-          case 't':
+          case '\x74':
             Advance(2);
-            builder->AddCharacter('\t');
+            builder->AddCharacter('\x9');
             break;
-          case 'v':
+          case '\x76':
             Advance(2);
-            builder->AddCharacter('\v');
+            builder->AddCharacter('\xb');
             break;
-          case 'c': {
+          case '\x63': {
             Advance();
             uc32 controlLetter = Next();
             // Special case if it is an ASCII letter.
             // Convert lower case letters to uppercase.
-            uc32 letter = controlLetter & ~('a' ^ 'A');
-            if (letter < 'A' || 'Z' < letter) {
+            uc32 letter = controlLetter & ~('\x61' ^ '\x41');
+            if (letter < '\x41' || '\x5a' < letter) {
               // controlLetter is not in range 'A'-'Z' or 'a'-'z'.
               // This is outside the specification. We match JSC in
               // reading the backslash as a literal character instead
               // of as starting an escape.
               if (unicode()) {
                 // With /u, invalid escapes are not treated as identity escapes.
-                return ReportError(CStrVector("Invalid unicode escape"));
+                return ReportError(CStrVector(u8"Invalid unicode escape"));
               }
-              builder->AddCharacter('\\');
+              builder->AddCharacter('\x5c');
             } else {
               Advance(2);
               builder->AddCharacter(controlLetter & 0x1f);
             }
             break;
           }
-          case 'x': {
+          case '\x78': {
             Advance(2);
             uc32 value;
             if (ParseHexEscape(2, &value)) {
               builder->AddCharacter(value);
             } else if (!unicode()) {
-              builder->AddCharacter('x');
+              builder->AddCharacter('\x78');
             } else {
               // With /u, invalid escapes are not treated as identity escapes.
-              return ReportError(CStrVector("Invalid escape"));
+              return ReportError(CStrVector(u8"Invalid escape"));
             }
             break;
           }
-          case 'u': {
+          case '\x75': {
             Advance(2);
             uc32 value;
             if (ParseUnicodeEscape(&value)) {
               builder->AddEscapedUnicodeCharacter(value);
             } else if (!unicode()) {
-              builder->AddCharacter('u');
+              builder->AddCharacter('\x75');
             } else {
               // With /u, invalid escapes are not treated as identity escapes.
-              return ReportError(CStrVector("Invalid unicode escape"));
+              return ReportError(CStrVector(u8"Invalid unicode escape"));
             }
             break;
           }
@@ -504,22 +504,22 @@ RegExpTree* RegExpParser::ParseDisjunction() {
               builder->AddCharacter(current());
               Advance();
             } else {
-              return ReportError(CStrVector("Invalid escape"));
+              return ReportError(CStrVector(u8"Invalid escape"));
             }
             break;
         }
         break;
-      case '{': {
+      case '\x7b': {
         int dummy;
         if (ParseIntervalQuantifier(&dummy, &dummy)) {
-          return ReportError(CStrVector("Nothing to repeat"));
+          return ReportError(CStrVector(u8"Nothing to repeat"));
         }
         // fallthrough
       }
-      case '}':
-      case ']':
+      case '\x7d':
+      case '\x5d':
         if (unicode()) {
-          return ReportError(CStrVector("Lone quantifier brackets"));
+          return ReportError(CStrVector(u8"Lone quantifier brackets"));
         }
       // fallthrough
       default:
@@ -536,47 +536,47 @@ RegExpTree* RegExpParser::ParseDisjunction() {
       //   +
       //   ?
       //   {
-      case '*':
+      case '\x2a':
         min = 0;
         max = RegExpTree::kInfinity;
         Advance();
         break;
-      case '+':
+      case '\x2b':
         min = 1;
         max = RegExpTree::kInfinity;
         Advance();
         break;
-      case '?':
+      case '\x3f':
         min = 0;
         max = 1;
         Advance();
         break;
-      case '{':
+      case '\x7b':
         if (ParseIntervalQuantifier(&min, &max)) {
           if (max < min) {
             return ReportError(
-                CStrVector("numbers out of order in {} quantifier"));
+                CStrVector(u8"numbers out of order in {} quantifier"));
           }
           break;
         } else if (unicode()) {
           // With /u, incomplete quantifiers are not allowed.
-          return ReportError(CStrVector("Incomplete quantifier"));
+          return ReportError(CStrVector(u8"Incomplete quantifier"));
         }
         continue;
       default:
         continue;
     }
     RegExpQuantifier::QuantifierType quantifier_type = RegExpQuantifier::GREEDY;
-    if (current() == '?') {
+    if (current() == '\x3f') {
       quantifier_type = RegExpQuantifier::NON_GREEDY;
       Advance();
-    } else if (FLAG_regexp_possessive_quantifier && current() == '+') {
+    } else if (FLAG_regexp_possessive_quantifier && current() == '\x2b') {
       // FLAG_regexp_possessive_quantifier is a debug-only flag.
       quantifier_type = RegExpQuantifier::POSSESSIVE;
       Advance();
     }
     if (!builder->AddQuantifierToAtom(min, max, quantifier_type)) {
-      return ReportError(CStrVector("Invalid quantifier"));
+      return ReportError(CStrVector(u8"Invalid quantifier"));
     }
   }
 }
@@ -586,12 +586,12 @@ RegExpTree* RegExpParser::ParseDisjunction() {
 // Currently only used in an DCHECK.
 static bool IsSpecialClassEscape(uc32 c) {
   switch (c) {
-    case 'd':
-    case 'D':
-    case 's':
-    case 'S':
-    case 'w':
-    case 'W':
+    case '\x64':
+    case '\x44':
+    case '\x73':
+    case '\x53':
+    case '\x77':
+    case '\x57':
       return true;
     default:
       return false;
@@ -614,23 +614,23 @@ void RegExpParser::ScanForCaptures() {
   while ((n = current()) != kEndMarker) {
     Advance();
     switch (n) {
-      case '\\':
+      case '\x5c':
         Advance();
         break;
-      case '[': {
+      case '\x5b': {
         int c;
         while ((c = current()) != kEndMarker) {
           Advance();
-          if (c == '\\') {
+          if (c == '\x5c') {
             Advance();
           } else {
-            if (c == ']') break;
+            if (c == '\x5d') break;
           }
         }
         break;
       }
-      case '(':
-        if (current() != '?') capture_count++;
+      case '\x28':
+        if (current() != '\x3f') capture_count++;
         break;
     }
   }
@@ -640,17 +640,17 @@ void RegExpParser::ScanForCaptures() {
 
 
 bool RegExpParser::ParseBackReferenceIndex(int* index_out) {
-  DCHECK_EQ('\\', current());
-  DCHECK('1' <= Next() && Next() <= '9');
+  DCHECK_EQ('\x5c', current());
+  DCHECK('\x31' <= Next() && Next() <= '\x39');
   // Try to parse a decimal literal that is no greater than the total number
   // of left capturing parentheses in the input.
   int start = position();
-  int value = Next() - '0';
+  int value = Next() - '\x30';
   Advance(2);
   while (true) {
     uc32 c = current();
     if (IsDecimalDigit(c)) {
-      value = 10 * value + (c - '0');
+      value = 10 * value + (c - '\x30');
       if (value > kMaxCaptures) {
         Reset(start);
         return false;
@@ -712,7 +712,7 @@ bool RegExpParser::RegExpParserState::IsInsideCaptureGroup(int index) {
 // Returns true if parsing succeeds, and set the min_out and max_out
 // values. Values are truncated to RegExpTree::kInfinity if they overflow.
 bool RegExpParser::ParseIntervalQuantifier(int* min_out, int* max_out) {
-  DCHECK_EQ(current(), '{');
+  DCHECK_EQ(current(), '\x7b');
   int start = position();
   Advance();
   int min = 0;
@@ -721,7 +721,7 @@ bool RegExpParser::ParseIntervalQuantifier(int* min_out, int* max_out) {
     return false;
   }
   while (IsDecimalDigit(current())) {
-    int next = current() - '0';
+    int next = current() - '\x30';
     if (min > (RegExpTree::kInfinity - next) / 10) {
       // Overflow. Skip past remaining decimal digits and return -1.
       do {
@@ -734,17 +734,17 @@ bool RegExpParser::ParseIntervalQuantifier(int* min_out, int* max_out) {
     Advance();
   }
   int max = 0;
-  if (current() == '}') {
+  if (current() == '\x7d') {
     max = min;
     Advance();
-  } else if (current() == ',') {
+  } else if (current() == '\x2c') {
     Advance();
-    if (current() == '}') {
+    if (current() == '\x7d') {
       max = RegExpTree::kInfinity;
       Advance();
     } else {
       while (IsDecimalDigit(current())) {
-        int next = current() - '0';
+        int next = current() - '\x30';
         if (max > (RegExpTree::kInfinity - next) / 10) {
           do {
             Advance();
@@ -755,7 +755,7 @@ bool RegExpParser::ParseIntervalQuantifier(int* min_out, int* max_out) {
         max = 10 * max + next;
         Advance();
       }
-      if (current() != '}') {
+      if (current() != '\x7d') {
         Reset(start);
         return false;
       }
@@ -772,16 +772,16 @@ bool RegExpParser::ParseIntervalQuantifier(int* min_out, int* max_out) {
 
 
 uc32 RegExpParser::ParseOctalLiteral() {
-  DCHECK(('0' <= current() && current() <= '7') || current() == kEndMarker);
+  DCHECK(('\x30' <= current() && current() <= '\x37') || current() == kEndMarker);
   // For compatibility with some other browsers (not all), we parse
   // up to three octal digits with a value below 256.
-  uc32 value = current() - '0';
+  uc32 value = current() - '\x30';
   Advance();
-  if ('0' <= current() && current() <= '7') {
-    value = value * 8 + current() - '0';
+  if ('\x30' <= current() && current() <= '\x37') {
+    value = value * 8 + current() - '\x30';
     Advance();
-    if (value < 32 && '0' <= current() && current() <= '7') {
-      value = value * 8 + current() - '0';
+    if (value < 32 && '\x30' <= current() && current() <= '\x37') {
+      value = value * 8 + current() - '\x30';
       Advance();
     }
   }
@@ -811,11 +811,11 @@ bool RegExpParser::ParseUnicodeEscape(uc32* value) {
   // Accept both \uxxxx and \u{xxxxxx} (if harmony unicode escapes are
   // allowed). In the latter case, the number of hex digits between { } is
   // arbitrary. \ and u have already been read.
-  if (current() == '{' && unicode()) {
+  if (current() == '\x7b' && unicode()) {
     int start = position();
     Advance();
     if (ParseUnlimitedLengthHexNumber(0x10ffff, value)) {
-      if (current() == '}') {
+      if (current() == '\x7d') {
         Advance();
         return true;
       }
@@ -826,10 +826,10 @@ bool RegExpParser::ParseUnicodeEscape(uc32* value) {
   // \u but no {, or \u{...} escapes not allowed.
   bool result = ParseHexEscape(4, value);
   if (result && unicode() && unibrow::Utf16::IsLeadSurrogate(*value) &&
-      current() == '\\') {
+      current() == '\x5c') {
     // Attempt to read trail surrogate.
     int start = position();
-    if (Next() == 'u') {
+    if (Next() == '\x75') {
       Advance(2);
       uc32 trail;
       if (ParseHexEscape(4, &trail) &&
@@ -897,8 +897,8 @@ bool LookupPropertyClass(UProperty property, const char* property_name,
 bool RegExpParser::ParsePropertyClass(ZoneList<CharacterRange>* result) {
 #ifdef V8_I18N_SUPPORT
   List<char> property_name_list;
-  if (current() == '{') {
-    for (Advance(); current() != '}'; Advance()) {
+  if (current() == '\x7b') {
+    for (Advance(); current() != '\x7d'; Advance()) {
       if (!has_next()) return false;
       property_name_list.Add(static_cast<char>(current()));
     }
@@ -924,8 +924,8 @@ bool RegExpParser::ParsePropertyClass(ZoneList<CharacterRange>* result) {
   // Script (sc) found in Scripts.txt
   PROPERTY_NAME_LOOKUP(UCHAR_SCRIPT);
   // To disambiguate from script names, block names have an "In"-prefix.
-  if (property_name_list.length() > 3 && property_name[0] == 'I' &&
-      property_name[1] == 'n') {
+  if (property_name_list.length() > 3 && property_name[0] == '\x49' &&
+      property_name[1] == '\x6e') {
     // Block (blk) found in Blocks.txt
     property_name += 2;
     PROPERTY_NAME_LOOKUP(UCHAR_BLOCK);
@@ -955,36 +955,36 @@ bool RegExpParser::ParseUnlimitedLengthHexNumber(int max_value, uc32* value) {
 
 
 uc32 RegExpParser::ParseClassCharacterEscape() {
-  DCHECK(current() == '\\');
+  DCHECK(current() == '\x5c');
   DCHECK(has_next() && !IsSpecialClassEscape(Next()));
   Advance();
   switch (current()) {
-    case 'b':
+    case '\x62':
       Advance();
-      return '\b';
+      return '\x8';
     // ControlEscape :: one of
     //   f n r t v
-    case 'f':
+    case '\x66':
       Advance();
-      return '\f';
-    case 'n':
+      return '\xc';
+    case '\x6e':
       Advance();
-      return '\n';
-    case 'r':
+      return '\xa';
+    case '\x72':
       Advance();
-      return '\r';
-    case 't':
+      return '\xd';
+    case '\x74':
       Advance();
-      return '\t';
-    case 'v':
+      return '\x9';
+    case '\x76':
       Advance();
-      return '\v';
-    case 'c': {
+      return '\xb';
+    case '\x63': {
       uc32 controlLetter = Next();
-      uc32 letter = controlLetter & ~('A' ^ 'a');
+      uc32 letter = controlLetter & ~('\x41' ^ '\x61');
       // For compatibility with JSC, inside a character class. We also accept
       // digits and underscore as control characters, unless with /u.
-      if (letter >= 'A' && letter <= 'Z') {
+      if (letter >= '\x41' && letter <= '\x5a') {
         Advance(2);
         // Control letters mapped to ASCII control characters in the range
         // 0x00-0x1f.
@@ -992,76 +992,76 @@ uc32 RegExpParser::ParseClassCharacterEscape() {
       }
       if (unicode()) {
         // With /u, invalid escapes are not treated as identity escapes.
-        ReportError(CStrVector("Invalid class escape"));
+        ReportError(CStrVector(u8"Invalid class escape"));
         return 0;
       }
-      if ((controlLetter >= '0' && controlLetter <= '9') ||
-          controlLetter == '_') {
+      if ((controlLetter >= '\x30' && controlLetter <= '\x39') ||
+          controlLetter == '\x5f') {
         Advance(2);
         return controlLetter & 0x1f;
       }
       // We match JSC in reading the backslash as a literal
       // character instead of as starting an escape.
-      return '\\';
+      return '\x5c';
     }
-    case '0':
+    case '\x30':
       // With /u, \0 is interpreted as NUL if not followed by another digit.
-      if (unicode() && !(Next() >= '0' && Next() <= '9')) {
+      if (unicode() && !(Next() >= '\x30' && Next() <= '\x39')) {
         Advance();
         return 0;
       }
     // Fall through.
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
+    case '\x31':
+    case '\x32':
+    case '\x33':
+    case '\x34':
+    case '\x35':
+    case '\x36':
+    case '\x37':
       // For compatibility, we interpret a decimal escape that isn't
       // a back reference (and therefore either \0 or not valid according
       // to the specification) as a 1..3 digit octal character code.
       if (unicode()) {
         // With /u, decimal escape is not interpreted as octal character code.
-        ReportError(CStrVector("Invalid class escape"));
+        ReportError(CStrVector(u8"Invalid class escape"));
         return 0;
       }
       return ParseOctalLiteral();
-    case 'x': {
+    case '\x78': {
       Advance();
       uc32 value;
       if (ParseHexEscape(2, &value)) return value;
       if (unicode()) {
         // With /u, invalid escapes are not treated as identity escapes.
-        ReportError(CStrVector("Invalid escape"));
+        ReportError(CStrVector(u8"Invalid escape"));
         return 0;
       }
       // If \x is not followed by a two-digit hexadecimal, treat it
       // as an identity escape.
-      return 'x';
+      return '\x78';
     }
-    case 'u': {
+    case '\x75': {
       Advance();
       uc32 value;
       if (ParseUnicodeEscape(&value)) return value;
       if (unicode()) {
         // With /u, invalid escapes are not treated as identity escapes.
-        ReportError(CStrVector("Invalid unicode escape"));
+        ReportError(CStrVector(u8"Invalid unicode escape"));
         return 0;
       }
       // If \u is not followed by a two-digit hexadecimal, treat it
       // as an identity escape.
-      return 'u';
+      return '\x75';
     }
     default: {
       uc32 result = current();
       // With /u, no identity escapes except for syntax characters and '-' are
       // allowed. Otherwise, all identity escapes are allowed.
-      if (!unicode() || IsSyntaxCharacterOrSlash(result) || result == '-') {
+      if (!unicode() || IsSyntaxCharacterOrSlash(result) || result == '\x2d') {
         Advance();
         return result;
       }
-      ReportError(CStrVector("Invalid escape"));
+      ReportError(CStrVector(u8"Invalid escape"));
       return 0;
     }
   }
@@ -1072,20 +1072,20 @@ uc32 RegExpParser::ParseClassCharacterEscape() {
 CharacterRange RegExpParser::ParseClassAtom(uc16* char_class) {
   DCHECK_EQ(0, *char_class);
   uc32 first = current();
-  if (first == '\\') {
+  if (first == '\x5c') {
     switch (Next()) {
-      case 'w':
-      case 'W':
-      case 'd':
-      case 'D':
-      case 's':
-      case 'S': {
+      case '\x77':
+      case '\x57':
+      case '\x64':
+      case '\x44':
+      case '\x73':
+      case '\x53': {
         *char_class = Next();
         Advance(2);
         return CharacterRange::Singleton(0);  // Return dummy value.
       }
       case kEndMarker:
-        return ReportError(CStrVector("\\ at end of pattern"));
+        return ReportError(CStrVector(u8"\\ at end of pattern"));
       default:
         first = ParseClassCharacterEscape(CHECK_FAILED);
     }
@@ -1115,13 +1115,13 @@ static inline void AddRangeOrEscape(ZoneList<CharacterRange>* ranges,
 bool RegExpParser::ParseClassProperty(ZoneList<CharacterRange>* ranges) {
   if (!FLAG_harmony_regexp_property) return false;
   if (!unicode()) return false;
-  if (current() != '\\') return false;
+  if (current() != '\x5c') return false;
   uc32 next = Next();
   bool parse_success = false;
-  if (next == 'p') {
+  if (next == '\x70') {
     Advance(2);
     parse_success = ParsePropertyClass(ranges);
-  } else if (next == 'P') {
+  } else if (next == '\x50') {
     Advance(2);
     ZoneList<CharacterRange>* property_class =
         new (zone()) ZoneList<CharacterRange>(2, zone());
@@ -1137,38 +1137,38 @@ bool RegExpParser::ParseClassProperty(ZoneList<CharacterRange>* ranges) {
     return false;
   }
   if (!parse_success)
-    ReportError(CStrVector("Invalid property name in character class"));
+    ReportError(CStrVector(u8"Invalid property name in character class"));
   return parse_success;
 }
 
 RegExpTree* RegExpParser::ParseCharacterClass() {
-  static const char* kUnterminated = "Unterminated character class";
-  static const char* kRangeInvalid = "Invalid character class";
-  static const char* kRangeOutOfOrder = "Range out of order in character class";
+  static const char* kUnterminated = u8"Unterminated character class";
+  static const char* kRangeInvalid = u8"Invalid character class";
+  static const char* kRangeOutOfOrder = u8"Range out of order in character class";
 
-  DCHECK_EQ(current(), '[');
+  DCHECK_EQ(current(), '\x5b');
   Advance();
   bool is_negated = false;
-  if (current() == '^') {
+  if (current() == '\x5e') {
     is_negated = true;
     Advance();
   }
   ZoneList<CharacterRange>* ranges =
       new (zone()) ZoneList<CharacterRange>(2, zone());
-  while (has_more() && current() != ']') {
+  while (has_more() && current() != '\x5d') {
     bool parsed_property = ParseClassProperty(ranges CHECK_FAILED);
     if (parsed_property) continue;
     uc16 char_class = kNoCharClass;
     CharacterRange first = ParseClassAtom(&char_class CHECK_FAILED);
-    if (current() == '-') {
+    if (current() == '\x2d') {
       Advance();
       if (current() == kEndMarker) {
         // If we reach the end we break out of the loop and let the
         // following code report an error.
         break;
-      } else if (current() == ']') {
+      } else if (current() == '\x5d') {
         AddRangeOrEscape(ranges, char_class, first, zone());
-        ranges->Add(CharacterRange::Singleton('-'), zone());
+        ranges->Add(CharacterRange::Singleton('\x2d'), zone());
         break;
       }
       uc16 char_class_2 = kNoCharClass;
@@ -1180,7 +1180,7 @@ RegExpTree* RegExpParser::ParseCharacterClass() {
           return ReportError(CStrVector(kRangeInvalid));
         }
         AddRangeOrEscape(ranges, char_class, first, zone());
-        ranges->Add(CharacterRange::Singleton('-'), zone());
+        ranges->Add(CharacterRange::Singleton('\x2d'), zone());
         AddRangeOrEscape(ranges, char_class_2, next, zone());
         continue;
       }
@@ -1223,7 +1223,7 @@ bool RegExpParser::ParseRegExp(Isolate* isolate, Zone* zone,
     if (FLAG_trace_regexp_parser) {
       OFStream os(stdout);
       tree->Print(os, zone);
-      os << "\n";
+      os << u8"\n";
     }
     result->tree = tree;
     int capture_count = parser.captures_started();

@@ -187,13 +187,13 @@ class PrintablePrinter {
   explicit PrintablePrinter(uc16 character) : character_(character) { }
 
   const char* operator*() {
-    if (character_ >= ' ' && character_ <= '~') {
-      buffer_[0] = '(';
+    if (character_ >= '\x20' && character_ <= '\x7e') {
+      buffer_[0] = '\x28';
       buffer_[1] = static_cast<char>(character_);
-      buffer_[2] = ')';
-      buffer_[3] = '\0';
+      buffer_[2] = '\x29';
+      buffer_[3] = '\x0';
     } else {
-      buffer_[0] = '\0';
+      buffer_[0] = '\x0';
     }
     return &buffer_[0];
   }
@@ -340,7 +340,7 @@ void RegExpMacroAssemblerTracer::CheckBitInTable(
     Handle<ByteArray> table, Label* on_bit_set) {
   PrintF(" CheckBitInTable(label[%08x] ", LabelToInt(on_bit_set));
   for (int i = 0; i < kTableSize; i++) {
-    PrintF("%c", table->get(i) != 0 ? 'X' : '.');
+    PrintF("%c", table->get(i) != 0 ? '\x58' : '\x2e');
     if (i % 32 == 31 && i != kTableMask) {
       PrintF("\n                                 ");
     }
@@ -382,7 +382,7 @@ bool RegExpMacroAssemblerTracer::CheckSpecialCharacterClass(
     Label* on_no_match) {
   bool supported = assembler_->CheckSpecialCharacterClass(type,
                                                           on_no_match);
-  PrintF(" CheckSpecialCharacterClass(type='%c', label[%08x]): %s;\n",
+  PrintF(" CheckSpecialCharacterClass(type='\x25\x63', label[%08x]): %s;\n",
          type,
          LabelToInt(on_no_match),
          supported ? "true" : "false");

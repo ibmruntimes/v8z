@@ -103,7 +103,7 @@ static const int kDoubleSignificandSize = 53;  // Includes the hidden bit.
 static void FillDigits32FixedLength(uint32_t number, int requested_length,
                                     Vector<char> buffer, int* length) {
   for (int i = requested_length - 1; i >= 0; --i) {
-    buffer[(*length) + i] = '0' + number % 10;
+    buffer[(*length) + i] = '\x30' + number % 10;
     number /= 10;
   }
   *length += requested_length;
@@ -116,7 +116,7 @@ static void FillDigits32(uint32_t number, Vector<char> buffer, int* length) {
   while (number != 0) {
     int digit = number % 10;
     number /= 10;
-    buffer[(*length) + number_length] = '0' + digit;
+    buffer[(*length) + number_length] = '\x30' + digit;
     number_length++;
   }
   // Exchange the digits.
@@ -172,7 +172,7 @@ static void FillDigits64(uint64_t number, Vector<char> buffer, int* length) {
 static void RoundUp(Vector<char> buffer, int* length, int* decimal_point) {
   // An empty buffer represents 0.
   if (*length == 0) {
-    buffer[0] = '1';
+    buffer[0] = '\x31';
     *decimal_point = 1;
     *length = 1;
     return;
@@ -181,10 +181,10 @@ static void RoundUp(Vector<char> buffer, int* length, int* decimal_point) {
   // we reached the first digit.
   buffer[(*length) - 1]++;
   for (int i = (*length) - 1; i > 0; --i) {
-    if (buffer[i] != '0' + 10) {
+    if (buffer[i] != '\x30' + 10) {
       return;
     }
-    buffer[i] = '0';
+    buffer[i] = '\x30';
     buffer[i - 1]++;
   }
   // If the first digit is now '0' + 10, we would need to set it to '0' and add
@@ -192,8 +192,8 @@ static void RoundUp(Vector<char> buffer, int* length, int* decimal_point) {
   // digits had been '9' before rounding up. Now all trailing digits are '0' and
   // we simply switch the first digit to '1' and update the decimal-point
   // (indicating that the point is now one digit to the right).
-  if (buffer[0] == '0' + 10) {
-    buffer[0] = '1';
+  if (buffer[0] == '\x30' + 10) {
+    buffer[0] = '\x31';
     (*decimal_point)++;
   }
 }
@@ -236,7 +236,7 @@ static void FillFractionals(uint64_t fractionals, int exponent,
       fractionals *= 5;
       point--;
       int digit = static_cast<int>(fractionals >> point);
-      buffer[*length] = '0' + digit;
+      buffer[*length] = '\x30' + digit;
       (*length)++;
       fractionals -= static_cast<uint64_t>(digit) << point;
     }
@@ -257,7 +257,7 @@ static void FillFractionals(uint64_t fractionals, int exponent,
       fractionals128.Multiply(5);
       point--;
       int digit = fractionals128.DivModPowerOf2(point);
-      buffer[*length] = '0' + digit;
+      buffer[*length] = '\x30' + digit;
       (*length)++;
     }
     if (fractionals128.BitAt(point - 1) == 1) {
@@ -270,11 +270,11 @@ static void FillFractionals(uint64_t fractionals, int exponent,
 // Removes leading and trailing zeros.
 // If leading zeros are removed then the decimal point position is adjusted.
 static void TrimZeros(Vector<char> buffer, int* length, int* decimal_point) {
-  while (*length > 0 && buffer[(*length) - 1] == '0') {
+  while (*length > 0 && buffer[(*length) - 1] == '\x30') {
     (*length)--;
   }
   int first_non_zero = 0;
-  while (first_non_zero < *length && buffer[first_non_zero] == '0') {
+  while (first_non_zero < *length && buffer[first_non_zero] == '\x30') {
     first_non_zero++;
   }
   if (first_non_zero != 0) {
@@ -364,7 +364,7 @@ bool FastFixedDtoa(double v,
     // This configuration (with at most 20 digits) means that all digits must be
     // 0.
     DCHECK(fractional_count <= 20);
-    buffer[0] = '\0';
+    buffer[0] = '\x0';
     *length = 0;
     *decimal_point = -fractional_count;
   } else {
@@ -373,7 +373,7 @@ bool FastFixedDtoa(double v,
                     buffer, length, decimal_point);
   }
   TrimZeros(buffer, length, decimal_point);
-  buffer[*length] = '\0';
+  buffer[*length] = '\x0';
   if ((*length) == 0) {
     // The string is empty and the decimal_point thus has no importance. Mimick
     // Gay's dtoa and and set it to -fractional_count.

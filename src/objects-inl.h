@@ -6913,7 +6913,7 @@ bool StringHasher::UpdateIndex(uint16_t c) {
   }
   if (c < GET_ASCII_CODE('\x30') || c > GET_ASCII_CODE('\x39')) {
 #else
-  if (c < '0' || c > '9') {
+  if (c < '\x30' || c > '\x39') {
 #endif
     is_array_index_ = false;
     return false;

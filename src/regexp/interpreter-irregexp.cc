@@ -50,7 +50,7 @@ static bool BackRefMatchesNoCase(Isolate* isolate, int from, int current,
     new_char |= 0x20;
     if (old_char != new_char) return false;
     // Not letters in the ASCII range and Latin-1 range.
-    if (!(old_char - 'a' <= 'z' - 'a') &&
+    if (!(old_char - '\x61' <= '\x7a' - '\x61') &&
         !(old_char - 224 <= 254 - 224 && old_char != 247)) {
       return false;
     }
@@ -71,28 +71,28 @@ static void TraceInterpreter(const byte* code_base,
     bool printable = (current_char < 127 && current_char >= 32);
     const char* format =
         printable ?
-        "pc = %02x, sp = %d, curpos = %d, curchar = %08x (%c), bc = %s" :
-        "pc = %02x, sp = %d, curpos = %d, curchar = %08x .%c., bc = %s";
+        u8"pc = %02x, sp = %d, curpos = %d, curchar = %08x (%c), bc = %s" :
+        u8"pc = %02x, sp = %d, curpos = %d, curchar = %08x .%c., bc = %s";
     PrintF(format,
            pc - code_base,
            stack_depth,
            current_position,
            current_char,
-           printable ? current_char : '.',
+           printable ? current_char : '\x2e',
            bytecode_name);
     for (int i = 0; i < bytecode_length; i++) {
-      printf(", %02x", pc[i]);
+      printf(u8", %02x", pc[i]);
     }
-    printf(" ");
+    printf(u8" ");
     for (int i = 1; i < bytecode_length; i++) {
       unsigned char b = pc[i];
       if (b < 127 && b >= 32) {
-        printf("%c", b);
+        printf(u8"%c", b);
       } else {
-        printf(".");
+        printf(u8".");
       }
     }
-    printf("\n");
+    printf(u8"\n");
   }
 }
 
@@ -105,7 +105,7 @@ static void TraceInterpreter(const byte* code_base,
                      current,                                               \
                      current_char,                                          \
                      BC_##name##_LENGTH,                                    \
-                     #name);
+                     USTR(#name));
 #else
 #define BYTECODE(name)                                                      \
   case BC_##name:
@@ -166,7 +166,7 @@ static RegExpImpl::IrregexpResult RawMatch(Isolate* isolate,
   int backtrack_stack_space = backtrack_stack.max_size();
 #ifdef DEBUG
   if (FLAG_trace_regexp_bytecodes) {
-    PrintF("\n\nStart bytecode interpreter\n\n");
+    PrintF(u8"\n\nStart bytecode interpreter\n\n");
   }
 #endif
   while (true) {
@@ -595,7 +595,7 @@ RegExpImpl::IrregexpResult IrregexpInterpreter::Match(
 
   DisallowHeapAllocation no_gc;
   const byte* code_base = code_array->GetDataStartAddress();
-  uc16 previous_char = '\n';
+  uc16 previous_char = '\xa';
   String::FlatContent subject_content = subject->GetFlatContent();
   if (subject_content.IsOneByte()) {
     Vector<const uint8_t> subject_vector = subject_content.ToOneByteVector();

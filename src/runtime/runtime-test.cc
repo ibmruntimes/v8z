@@ -99,7 +99,7 @@ RUNTIME_FUNCTION(Runtime_OptimizeFunctionOnNextCall) {
   Code* unoptimized = function->shared()->code();
   if (args.length() == 2 && unoptimized->kind() == Code::FUNCTION) {
     CONVERT_ARG_HANDLE_CHECKED(String, type, 1);
-    if (type->IsOneByteEqualTo(STATIC_CHAR_VECTOR("concurrent")) &&
+    if (type->IsOneByteEqualTo(STATIC_CHAR_VECTOR(u8"concurrent")) &&
         isolate->concurrent_recompilation_enabled()) {
       function->AttemptConcurrentOptimization();
     }
@@ -168,7 +168,7 @@ RUNTIME_FUNCTION(Runtime_GetOptimizationStatus) {
   bool sync_with_compiler_thread = true;
   if (args.length() == 2) {
     CONVERT_ARG_HANDLE_CHECKED(String, sync, 1);
-    if (sync->IsOneByteEqualTo(STATIC_CHAR_VECTOR("no sync"))) {
+    if (sync->IsOneByteEqualTo(STATIC_CHAR_VECTOR(u8"no sync"))) {
       sync_with_compiler_thread = false;
     }
   }

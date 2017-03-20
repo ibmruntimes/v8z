@@ -150,23 +150,23 @@ class RegExpUnparser final : public RegExpVisitor {
 
 
 void* RegExpUnparser::VisitDisjunction(RegExpDisjunction* that, void* data) {
-  os_ << "(|";
+  os_ << u8"(|";
   for (int i = 0; i < that->alternatives()->length(); i++) {
-    os_ << " ";
+    os_ << u8" ";
     that->alternatives()->at(i)->Accept(this, data);
   }
-  os_ << ")";
+  os_ << u8")";
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitAlternative(RegExpAlternative* that, void* data) {
-  os_ << "(:";
+  os_ << u8"(:";
   for (int i = 0; i < that->nodes()->length(); i++) {
-    os_ << " ";
+    os_ << u8" ";
     that->nodes()->at(i)->Accept(this, data);
   }
-  os_ << ")";
+  os_ << u8")";
   return NULL;
 }
 
@@ -174,20 +174,20 @@ void* RegExpUnparser::VisitAlternative(RegExpAlternative* that, void* data) {
 void RegExpUnparser::VisitCharacterRange(CharacterRange that) {
   os_ << AsUC32(that.from());
   if (!that.IsSingleton()) {
-    os_ << "-" << AsUC32(that.to());
+    os_ << u8"-" << AsUC32(that.to());
   }
 }
 
 
 void* RegExpUnparser::VisitCharacterClass(RegExpCharacterClass* that,
                                           void* data) {
-  if (that->is_negated()) os_ << "^";
-  os_ << "[";
+  if (that->is_negated()) os_ << u8"^";
+  os_ << u8"[";
   for (int i = 0; i < that->ranges(zone_)->length(); i++) {
-    if (i > 0) os_ << " ";
+    if (i > 0) os_ << u8" ";
     VisitCharacterRange(that->ranges(zone_)->at(i));
   }
-  os_ << "]";
+  os_ << u8"]";
   return NULL;
 }
 
@@ -195,22 +195,22 @@ void* RegExpUnparser::VisitCharacterClass(RegExpCharacterClass* that,
 void* RegExpUnparser::VisitAssertion(RegExpAssertion* that, void* data) {
   switch (that->assertion_type()) {
     case RegExpAssertion::START_OF_INPUT:
-      os_ << "@^i";
+      os_ << u8"@^i";
       break;
     case RegExpAssertion::END_OF_INPUT:
-      os_ << "@$i";
+      os_ << u8"@$i";
       break;
     case RegExpAssertion::START_OF_LINE:
-      os_ << "@^l";
+      os_ << u8"@^l";
       break;
     case RegExpAssertion::END_OF_LINE:
-      os_ << "@$l";
+      os_ << u8"@$l";
       break;
     case RegExpAssertion::BOUNDARY:
-      os_ << "@b";
+      os_ << u8"@b";
       break;
     case RegExpAssertion::NON_BOUNDARY:
-      os_ << "@B";
+      os_ << u8"@B";
       break;
   }
   return NULL;
@@ -218,12 +218,12 @@ void* RegExpUnparser::VisitAssertion(RegExpAssertion* that, void* data) {
 
 
 void* RegExpUnparser::VisitAtom(RegExpAtom* that, void* data) {
-  os_ << "'";
+  os_ << u8"'";
   Vector<const uc16> chardata = that->data();
   for (int i = 0; i < chardata.length(); i++) {
     os_ << AsUC16(chardata[i]);
   }
-  os_ << "'";
+  os_ << u8"'";
   return NULL;
 }
 
@@ -232,58 +232,58 @@ void* RegExpUnparser::VisitText(RegExpText* that, void* data) {
   if (that->elements()->length() == 1) {
     that->elements()->at(0).tree()->Accept(this, data);
   } else {
-    os_ << "(!";
+    os_ << u8"(!";
     for (int i = 0; i < that->elements()->length(); i++) {
-      os_ << " ";
+      os_ << u8" ";
       that->elements()->at(i).tree()->Accept(this, data);
     }
-    os_ << ")";
+    os_ << u8")";
   }
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitQuantifier(RegExpQuantifier* that, void* data) {
-  os_ << "(# " << that->min() << " ";
+  os_ << u8"(# " << that->min() << u8" ";
   if (that->max() == RegExpTree::kInfinity) {
-    os_ << "- ";
+    os_ << u8"- ";
   } else {
-    os_ << that->max() << " ";
+    os_ << that->max() << u8" ";
   }
-  os_ << (that->is_greedy() ? "g " : that->is_possessive() ? "p " : "n ");
+  os_ << (that->is_greedy() ? u8"g " : that->is_possessive() ? u8"p " : u8"n ");
   that->body()->Accept(this, data);
-  os_ << ")";
+  os_ << u8")";
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitCapture(RegExpCapture* that, void* data) {
-  os_ << "(^ ";
+  os_ << u8"(^ ";
   that->body()->Accept(this, data);
-  os_ << ")";
+  os_ << u8")";
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitLookaround(RegExpLookaround* that, void* data) {
-  os_ << "(";
-  os_ << (that->type() == RegExpLookaround::LOOKAHEAD ? "->" : "<-");
-  os_ << (that->is_positive() ? " + " : " - ");
+  os_ << u8"(";
+  os_ << (that->type() == RegExpLookaround::LOOKAHEAD ? u8"->" : u8"<-");
+  os_ << (that->is_positive() ? u8" + " : u8" - ");
   that->body()->Accept(this, data);
-  os_ << ")";
+  os_ << u8")";
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitBackReference(RegExpBackReference* that,
                                          void* data) {
-  os_ << "(<- " << that->index() << ")";
+  os_ << u8"(<- " << that->index() << u8")";
   return NULL;
 }
 
 
 void* RegExpUnparser::VisitEmpty(RegExpEmpty* that, void* data) {
-  os_ << '%';
+  os_ << '\x25';
   return NULL;
 }
 

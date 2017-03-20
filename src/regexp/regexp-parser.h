@@ -111,7 +111,7 @@ class RegExpBuilder : public ZoneObject {
   void AddAtom(RegExpTree* tree);
   void AddTerm(RegExpTree* tree);
   void AddAssertion(RegExpTree* tree);
-  void NewAlternative();  // '|'
+  void NewAlternative();  // '\x7c'
   bool AddQuantifierToAtom(int min, int max,
                            RegExpQuantifier::QuantifierType type);
   RegExpTree* ToRegExp();

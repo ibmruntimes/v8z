@@ -16902,20 +16902,20 @@ JSRegExp::Flags RegExpFlagsFromString(Handle<String> flags, bool* success) {
   for (int i = 0; i < length; i++) {
     JSRegExp::Flag flag = JSRegExp::kNone;
     switch (flags->Get(i)) {
-      case 'g':
+      case '\x67':
         flag = JSRegExp::kGlobal;
         break;
-      case 'i':
+      case '\x69':
         flag = JSRegExp::kIgnoreCase;
         break;
-      case 'm':
+      case '\x6d':
         flag = JSRegExp::kMultiline;
         break;
-      case 'u':
+      case '\x75':
         if (!FLAG_harmony_unicode_regexps) return JSRegExp::Flags(0);
         flag = JSRegExp::kUnicode;
         break;
-      case 'y':
+      case '\x79':
         flag = JSRegExp::kSticky;
         break;
       default:
