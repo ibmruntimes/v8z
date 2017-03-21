@@ -753,7 +753,7 @@ bool Debug::CheckBreakPoint(Handle<Object> break_point_object) {
   // Call IsBreakPointTriggered.
   Handle<Object> argv[] = { break_id, break_point_object };
   Handle<Object> result;
-  if (!CallFunction("IsBreakPointTriggered", arraysize(argv), argv)
+  if (!CallFunction(u8"IsBreakPointTriggered", arraysize(argv), argv)
            .ToHandle(&result)) {
     return false;
   }
@@ -1630,7 +1630,7 @@ bool Debug::IsDebugGlobal(JSGlobalObject* global) {
 void Debug::ClearMirrorCache() {
   PostponeInterruptsScope postpone(isolate_);
   HandleScope scope(isolate_);
-  CallFunction("ClearMirrorCache", 0, NULL);
+  CallFunction(u8"ClearMirrorCache", 0, NULL);
 }
 
 
@@ -1674,7 +1674,7 @@ void Debug::RecordEvalCaller(Handle<Script> script) {
 MaybeHandle<Object> Debug::MakeExecutionState() {
   // Create the execution state object.
   Handle<Object> argv[] = { isolate_->factory()->NewNumberFromInt(break_id()) };
-  return CallFunction("MakeExecutionState", arraysize(argv), argv);
+  return CallFunction(u8"MakeExecutionState", arraysize(argv), argv);
 }
 
 
@@ -1682,7 +1682,7 @@ MaybeHandle<Object> Debug::MakeBreakEvent(Handle<Object> break_points_hit) {
   // Create the new break event object.
   Handle<Object> argv[] = { isolate_->factory()->NewNumberFromInt(break_id()),
                             break_points_hit };
-  return CallFunction("MakeBreakEvent", arraysize(argv), argv);
+  return CallFunction(u8"MakeBreakEvent", arraysize(argv), argv);
 }
 
 
@@ -1694,7 +1694,7 @@ MaybeHandle<Object> Debug::MakeExceptionEvent(Handle<Object> exception,
                             exception,
                             isolate_->factory()->ToBoolean(uncaught),
                             promise };
-  return CallFunction("MakeExceptionEvent", arraysize(argv), argv);
+  return CallFunction(u8"MakeExceptionEvent", arraysize(argv), argv);
 }
 
 
@@ -1704,14 +1704,14 @@ MaybeHandle<Object> Debug::MakeCompileEvent(Handle<Script> script,
   Handle<Object> script_wrapper = Script::GetWrapper(script);
   Handle<Object> argv[] = { script_wrapper,
                             isolate_->factory()->NewNumberFromInt(type) };
-  return CallFunction("MakeCompileEvent", arraysize(argv), argv);
+  return CallFunction(u8"MakeCompileEvent", arraysize(argv), argv);
 }
 
 
 MaybeHandle<Object> Debug::MakeAsyncTaskEvent(Handle<JSObject> task_event) {
   // Create the async task event object.
   Handle<Object> argv[] = { task_event };
-  return CallFunction("MakeAsyncTaskEvent", arraysize(argv), argv);
+  return CallFunction(u8"MakeAsyncTaskEvent", arraysize(argv), argv);
 }
 
 
@@ -1932,7 +1932,7 @@ void Debug::ProcessCompileEvent(v8::DebugEvent event, Handle<Script> script) {
     // If debugging there might be script break points registered for this
     // script. Make sure that these break points are set.
     Handle<Object> argv[] = {Script::GetWrapper(script)};
-    if (CallFunction("UpdateScriptBreakPoints", arraysize(argv), argv)
+    if (CallFunction(u8"UpdateScriptBreakPoints", arraysize(argv), argv)
             .is_null()) {
       return;
     }
@@ -2022,17 +2022,17 @@ void Debug::NotifyMessageHandler(v8::DebugEvent event,
   bool running = auto_continue;
 
   Handle<Object> cmd_processor_ctor =
-      JSReceiver::GetProperty(isolate_, exec_state, "debugCommandProcessor")
+      JSReceiver::GetProperty(isolate_, exec_state, u8"debugCommandProcessor")
           .ToHandleChecked();
   Handle<Object> ctor_args[] = { isolate_->factory()->ToBoolean(running) };
   Handle<JSReceiver> cmd_processor = Handle<JSReceiver>::cast(
       Execution::Call(isolate_, cmd_processor_ctor, exec_state, 1, ctor_args)
           .ToHandleChecked());
   Handle<JSFunction> process_debug_request = Handle<JSFunction>::cast(
-      JSReceiver::GetProperty(isolate_, cmd_processor, "processDebugRequest")
+      JSReceiver::GetProperty(isolate_, cmd_processor, u8"processDebugRequest")
           .ToHandleChecked());
   Handle<Object> is_running =
-      JSReceiver::GetProperty(isolate_, cmd_processor, "isRunning")
+      JSReceiver::GetProperty(isolate_, cmd_processor, u8"isRunning")
           .ToHandleChecked();
 
   // Process requests from the debugger.
@@ -2043,7 +2043,7 @@ void Debug::NotifyMessageHandler(v8::DebugEvent event,
     // Get the command from the queue.
     CommandMessage command = command_queue_.Get();
     isolate_->logger()->DebugTag(
-        "Got request from command queue, in interactive loop.");
+        u8"Got request from command queue, in interactive loop.");
     if (!is_active()) {
       // Delete command text and user data.
       command.Dispose();
@@ -2170,7 +2170,7 @@ void Debug::EnqueueCommandMessage(Vector<const uint16_t> command,
       Vector<uint16_t>(const_cast<uint16_t*>(command.start()),
                        command.length()),
       client_data);
-  isolate_->logger()->DebugTag("Put command on command_queue.");
+  isolate_->logger()->DebugTag(u8"Put command on command_queue.");
   command_queue_.Put(message);
   command_received_.Signal();
 
@@ -2429,7 +2429,7 @@ v8::Local<v8::String> MessageImpl::GetJSON() const {
   if (IsEvent()) {
     // Call toJSONProtocol on the debug event object.
     Handle<Object> fun =
-        JSReceiver::GetProperty(isolate, event_data_, "toJSONProtocol")
+        JSReceiver::GetProperty(isolate, event_data_, u8"toJSONProtocol")
             .ToHandleChecked();
     if (!fun->IsJSFunction()) {
       return v8::Local<v8::String>();
@@ -2585,7 +2585,7 @@ bool LockingCommandMessageQueue::IsEmpty() const {
 CommandMessage LockingCommandMessageQueue::Get() {
   base::LockGuard<base::Mutex> lock_guard(&mutex_);
   CommandMessage result = queue_.Get();
-  logger_->DebugEvent("Get", result.text());
+  logger_->DebugEvent(u8"Get", result.text());
   return result;
 }
 
@@ -2593,7 +2593,7 @@ CommandMessage LockingCommandMessageQueue::Get() {
 void LockingCommandMessageQueue::Put(const CommandMessage& message) {
   base::LockGuard<base::Mutex> lock_guard(&mutex_);
   queue_.Put(message);
-  logger_->DebugEvent("Put", message.text());
+  logger_->DebugEvent(u8"Put", message.text());
 }
 
 

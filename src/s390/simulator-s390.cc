@@ -4883,7 +4883,12 @@ void Simulator::Execute() {
   // Get the PC to simulate. Cannot use the accessor here as we need the
   // raw PC value and not the one used as input to arithmetic instructions.
   intptr_t program_counter = get_pc();
-
+  if (::v8::internal::FLAG_trace_sim == false) {
+      ::v8::internal::FLAG_trace_sim =  (getenv("TRACE_SIM") != NULL);
+  } 
+  if (::v8::internal::FLAG_stop_sim_at == 0) {
+     ::v8::internal::FLAG_stop_sim_at = atoi(getenv("STOP_SIM_AT"));
+  }
   if (::v8::internal::FLAG_stop_sim_at == 0) {
     // Fast version of the dispatch loop without checking whether the simulator
     // should be stopping at a particular executed instruction.

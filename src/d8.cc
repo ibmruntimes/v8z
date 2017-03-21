@@ -408,13 +408,13 @@ bool Shell::ExecuteString(Isolate* isolate, Local<String> source,
         // the returned value.
         v8::String::Utf8Value str(result);
         fwrite(*str, sizeof(**str), str.length(), stdout);
-        printf(u8"\n");
+        printf("\n");
       }
 #if !defined(V8_SHARED)
     } else {
       v8::String::Utf8Value str(Stringify(isolate, result));
       fwrite(*str, sizeof(**str), str.length(), stdout);
-      printf(u8"\n");
+      printf("\n");
     }
 #endif
   }
@@ -624,7 +624,7 @@ void Shell::RealmSharedSet(Local<String> property,
 
 void Shell::Print(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Write(args);
-  printf(u8"\n");
+  printf("\n");
   fflush(stdout);
 }
 
@@ -912,30 +912,30 @@ void Shell::ReportException(Isolate* isolate, v8::TryCatch* try_catch) {
   if (message.IsEmpty()) {
     // V8 didn't provide any extra information about this error; just
     // print the exception.
-    printf(u8"%s\n", exception_string);
+    printf("%s\n", exception_string);
   } else {
     // Print (filename):(line number): (message).
     v8::String::Utf8Value filename(message->GetScriptOrigin().ResourceName());
     const char* filename_string = ToCString(filename);
     int linenum =
         message->GetLineNumber(isolate->GetCurrentContext()).FromJust();
-    printf(u8"%s:%i: %s\n", filename_string, linenum, exception_string);
+    printf("%s:%i: %s\n", filename_string, linenum, exception_string);
     // Print line of source code.
     v8::String::Utf8Value sourceline(
         message->GetSourceLine(isolate->GetCurrentContext()).ToLocalChecked());
     const char* sourceline_string = ToCString(sourceline);
-    printf(u8"%s\n", sourceline_string);
+    printf("%s\n", sourceline_string);
     // Print wavy underline (GetUnderline is deprecated).
     int start =
         message->GetStartColumn(isolate->GetCurrentContext()).FromJust();
     for (int i = 0; i < start; i++) {
-      printf(u8" ");
+      printf(" ");
     }
     int end = message->GetEndColumn(isolate->GetCurrentContext()).FromJust();
     for (int i = start; i < end; i++) {
-      printf(u8"^");
+      printf("^");
     }
-    printf(u8"\n");
+    printf("\n");
     Local<Value> stack_trace_string;
     if (try_catch->StackTrace(isolate->GetCurrentContext())
             .ToLocal(&stack_trace_string) &&
@@ -945,7 +945,7 @@ void Shell::ReportException(Isolate* isolate, v8::TryCatch* try_catch) {
       printf("%s\n", ToCString(stack_trace));
     }
   }
-  printf(u8"\n");
+  printf("\n");
 #ifndef V8_SHARED
   if (enter_context) context->Exit();
 #endif  // !V8_SHARED
@@ -989,7 +989,7 @@ void Shell::MapCounters(v8::Isolate* isolate, const char* name) {
   void* memory = (counters_file_ == NULL) ?
       NULL : counters_file_->memory();
   if (memory == NULL) {
-    printf(u8"Could not map counters file %s\n", name);
+    printf("Could not map counters file %s\n", name);
     Exit(1);
   }
   counters_ = static_cast<CounterCollection*>(memory);
@@ -1302,23 +1302,23 @@ void Shell::OnExit(v8::Isolate* isolate) {
       counters[j].key = i.CurrentKey();
     }
     std::sort(counters, counters + number_of_counters);
-    printf(u8"+----------------------------------------------------------------+"
+    printf("+----------------------------------------------------------------+"
            "-------------+\n");
-    printf(u8"| Name                                                           |"
+    printf("| Name                                                           |"
            " Value       |\n");
-    printf(u8"+----------------------------------------------------------------+"
+    printf("+----------------------------------------------------------------+"
            "-------------+\n");
     for (j = 0; j < number_of_counters; j++) {
       Counter* counter = counters[j].counter;
       const char* key = counters[j].key;
       if (counter->is_histogram()) {
-        printf(u8"| c:%-60s | %11i |\n", key, counter->count());
-        printf(u8"| t:%-60s | %11i |\n", key, counter->sample_total());
+        printf("| c:%-60s | %11i |\n", key, counter->count());
+        printf("| t:%-60s | %11i |\n", key, counter->sample_total());
       } else {
-        printf(u8"| %-62s | %11i |\n", key, counter->count());
+        printf("| %-62s | %11i |\n", key, counter->count());
       }
     }
-    printf(u8"+----------------------------------------------------------------+"
+    printf("+----------------------------------------------------------------+"
            "-------------+\n");
     delete [] counters;
   }
@@ -1465,7 +1465,7 @@ void Shell::RunShell(Isolate* isolate) {
     if (input.IsEmpty()) break;
     ExecuteString(isolate, input, name, true, true);
   }
-  printf(u8"\n");
+  printf("\n");
 }
 
 
@@ -1968,7 +1968,7 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       } else if (strncmp(value, u8"=none", 6) == 0) {
         options.compile_options = v8::ScriptCompiler::kNoCompileOptions;
       } else {
-        printf(u8"Unknown option to --cache.\n");
+        printf("Unknown option to --cache.\n");
         return false;
       }
       argv[i] = NULL;
@@ -1990,7 +1990,7 @@ bool Shell::SetOptions(int argc, char* argv[]) {
     } else if (strcmp(str, u8"--module") == 0) {
       // Pass on to SourceGroup, which understands this option.
     } else if (strncmp(argv[i], u8"--", 2) == 0) {
-      printf(u8"Warning: unknown flag %s.\nTry --help for options\n", argv[i]);
+      printf("Warning: unknown flag %s.\nTry --help for options\n", argv[i]);
     } else if (strcmp(str, u8"-e") == 0 && i + 1 < argc) {
       options.script_executed = true;
     } else if (strncmp(str, u8"-", 1) != 0) {
@@ -2335,21 +2335,21 @@ static void DumpHeapConstants(i::Isolate* isolate) {
   i::Heap* heap = isolate->heap();
 
   // Dump the INSTANCE_TYPES table to the console.
-  printf(u8"# List of known V8 instance types.\n");
-#define DUMP_TYPE(T) printf(u8"  %d: \"%s\",\n", i::T, USTR(#T));
-  printf(u8"INSTANCE_TYPES = {\n");
+  printf("# List of known V8 instance types.\n");
+#define DUMP_TYPE(T) printf("  %d: \"%s\",\n", i::T, USTR(#T));
+  printf("INSTANCE_TYPES = {\n");
   INSTANCE_TYPE_LIST(DUMP_TYPE)
-  printf(u8"}\n");
+  printf("}\n");
 #undef DUMP_TYPE
 
   // Dump the KNOWN_MAP table to the console.
-  printf(u8"\n# List of known V8 maps.\n");
+  printf("\n# List of known V8 maps.\n");
 #define ROOT_LIST_CASE(type, name, camel_name) \
   if (n == NULL && o == heap->name()) n = USTR(#camel_name);
 #define STRUCT_LIST_CASE(upper_name, camel_name, name) \
   if (n == NULL && o == heap->name##_map()) n = USTR(#camel_name) u8"Map";
   i::HeapObjectIterator it(heap->map_space());
-  printf(u8"KNOWN_MAPS = {\n");
+  printf("KNOWN_MAPS = {\n");
   for (i::Object* o = it.Next(); o != NULL; o = it.Next()) {
     i::Map* m = i::Map::cast(o);
     const char* n = NULL;
@@ -2358,18 +2358,18 @@ static void DumpHeapConstants(i::Isolate* isolate) {
     ROOT_LIST(ROOT_LIST_CASE)
     STRUCT_LIST(STRUCT_LIST_CASE)
     if (n == NULL) continue;
-    printf(u8"  0x%05" V8PRIxPTR ": (%d, \"%s\"),\n", p, t, n);
+    printf("  0x%05" V8PRIxPTR ": (%d, \"%s\"),\n", p, t, n);
   }
-  printf(u8"}\n");
+  printf("}\n");
 #undef STRUCT_LIST_CASE
 #undef ROOT_LIST_CASE
 
   // Dump the KNOWN_OBJECTS table to the console.
-  printf(u8"\n# List of known V8 objects.\n");
+  printf("\n# List of known V8 objects.\n");
 #define ROOT_LIST_CASE(type, name, camel_name) \
   if (n == NULL && o == heap->name()) n = USTR(#camel_name);
   i::OldSpaces spit(heap);
-  printf(u8"KNOWN_OBJECTS = {\n");
+  printf("KNOWN_OBJECTS = {\n");
   for (i::PagedSpace* s = spit.next(); s != NULL; s = spit.next()) {
     i::HeapObjectIterator it(s);
     const char* sname = AllocationSpaceName(s->identity());
@@ -2381,7 +2381,7 @@ static void DumpHeapConstants(i::Isolate* isolate) {
       printf("  (\"%s\", 0x%05" V8PRIxPTR "): \"%s\",\n", sname, p, n);
     }
   }
-  printf(u8"}\n");
+  printf("}\n");
 #undef ROOT_LIST_CASE
 }
 #endif  // !V8_SHARED
@@ -2468,7 +2468,7 @@ int Shell::Main(int argc, char* argv[]) {
                                 : Testing::kStressTypeDeopt);
       options.stress_runs = Testing::GetStressRuns();
       for (int i = 0; i < options.stress_runs && result == 0; i++) {
-        printf(u8"============ Stress %d/%d ============\n", i + 1,
+        printf("============ Stress %d/%d ============\n", i + 1,
                options.stress_runs);
         Testing::PrepareStressRun(i);
         bool last_run = i == options.stress_runs - 1;

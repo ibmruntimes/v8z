@@ -32,7 +32,6 @@ class V8 : public AllStatic {
 
   static void SetNativesBlob(StartupData* natives_blob);
   static void SetSnapshotBlob(StartupData* snapshot_blob);
-
  private:
   static void InitializeOncePerProcessImpl();
   static void InitializeOncePerProcess();

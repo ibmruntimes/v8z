@@ -364,12 +364,12 @@ void ScopeIterator::DebugPrint() {
   DCHECK(!failed_);
   switch (Type()) {
     case ScopeIterator::ScopeTypeGlobal:
-      os << "Global:\n";
+      os << u8"Global:\n";
       CurrentContext()->Print(os);
       break;
 
     case ScopeIterator::ScopeTypeLocal: {
-      os << "Local:\n";
+      os << u8"Local:\n";
       GetFunction()->shared()->scope_info()->Print();
       if (!CurrentContext().is_null()) {
         CurrentContext()->Print(os);
@@ -384,18 +384,18 @@ void ScopeIterator::DebugPrint() {
     }
 
     case ScopeIterator::ScopeTypeWith:
-      os << "With:\n";
+      os << u8"With:\n";
       CurrentContext()->extension()->Print(os);
       break;
 
     case ScopeIterator::ScopeTypeCatch:
-      os << "Catch:\n";
+      os << u8"Catch:\n";
       CurrentContext()->extension()->Print(os);
       CurrentContext()->get(Context::THROWN_OBJECT_INDEX)->Print(os);
       break;
 
     case ScopeIterator::ScopeTypeClosure:
-      os << "Closure:\n";
+      os << u8"Closure:\n";
       CurrentContext()->Print(os);
       if (CurrentContext()->has_extension()) {
         Handle<HeapObject> extension(CurrentContext()->extension(), isolate_);
@@ -406,7 +406,7 @@ void ScopeIterator::DebugPrint() {
       break;
 
     case ScopeIterator::ScopeTypeScript:
-      os << "Script:\n";
+      os << u8"Script:\n";
       CurrentContext()
           ->global_object()
           ->native_context()

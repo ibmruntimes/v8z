@@ -863,11 +863,11 @@ MaybeHandle<JSArray> LiveEdit::GatherCompileInfo(Handle<Script> script,
 
       Factory* factory = isolate->factory();
       Handle<String> start_pos_key = factory->InternalizeOneByteString(
-          STATIC_CHAR_VECTOR("startPosition"));
+          STATIC_CHAR_VECTOR(u8"startPosition"));
       Handle<String> end_pos_key =
-          factory->InternalizeOneByteString(STATIC_CHAR_VECTOR("endPosition"));
+          factory->InternalizeOneByteString(STATIC_CHAR_VECTOR(u8"endPosition"));
       Handle<String> script_obj_key =
-          factory->InternalizeOneByteString(STATIC_CHAR_VECTOR("scriptObject"));
+          factory->InternalizeOneByteString(STATIC_CHAR_VECTOR(u8"scriptObject"));
       Handle<Smi> start_pos(
           Smi::FromInt(message_location.start_pos()), isolate);
       Handle<Smi> end_pos(Smi::FromInt(message_location.end_pos()), isolate);
@@ -1253,7 +1253,7 @@ class RelocInfoBuffer {
     // Some internal data structures overflow for very large buffers,
     // they must ensure that kMaximalBufferSize is not too large.
     if (new_buffer_size > kMaximalBufferSize) {
-      V8::FatalProcessOutOfMemory("RelocInfoBuffer::GrowBuffer");
+      V8::FatalProcessOutOfMemory(u8"RelocInfoBuffer::GrowBuffer");
     }
 
     // Set up new buffer.
@@ -1510,7 +1510,7 @@ static const char* DropFrames(Vector<StackFrame*> frames, int top_frame_index,
                               int bottom_js_frame_index,
                               LiveEdit::FrameDropMode* mode) {
   if (!LiveEdit::kFrameDropperSupported) {
-    return "Stack manipulations are not supported in this architecture.";
+    return u8"Stack manipulations are not supported in this architecture.";
   }
 
   StackFrame* pre_top_frame = frames[top_frame_index - 1];
@@ -1556,7 +1556,7 @@ static const char* DropFrames(Vector<StackFrame*> frames, int top_frame_index,
     *mode = LiveEdit::CURRENTLY_SET_MODE;
     frame_has_padding = false;
   } else {
-    return "Unknown structure of stack above changing function";
+    return u8"Unknown structure of stack above changing function";
   }
 
   Address unused_stack_top = top_frame->sp();
@@ -1586,8 +1586,8 @@ static const char* DropFrames(Vector<StackFrame*> frames, int top_frame_index,
       int padding_counter =
           Smi::cast(Memory::Object_at(padding_pointer))->value();
       if (padding_counter * kPointerSize < shortage_bytes) {
-        return "Not enough space for frame dropper frame "
-            "(even with padding frame)";
+        return u8"Not enough space for frame dropper frame "
+            u8"(even with padding frame)";
       }
       Memory::Object_at(padding_pointer) =
           Smi::FromInt(padding_counter - shortage_bytes / kPointerSize);
@@ -1605,7 +1605,7 @@ static const char* DropFrames(Vector<StackFrame*> frames, int top_frame_index,
       STATIC_ASSERT(sizeof(Address) == kPointerSize);
       top_frame_pc_address -= shortage_bytes / kPointerSize;
     } else {
-      return "Not enough space for frame dropper frame";
+      return u8"Not enough space for frame dropper frame";
     }
   }
 
@@ -1716,7 +1716,7 @@ static const char* DropActivationsInActiveThreadImpl(Isolate* isolate,
             frame, LiveEdit::FUNCTION_BLOCKED_UNDER_NATIVE_CODE)) {
       // We are still above break_frame. It is not a target frame,
       // it is a problem.
-      return "Debugger mark-up on stack is not found";
+      return u8"Debugger mark-up on stack is not found";
     }
   }
 
@@ -1963,7 +1963,7 @@ class SingleFrameTarget {
     return false;
   }
   const char* GetNotFoundMessage() const {
-    return "Failed to found requested frame";
+    return u8"Failed to found requested frame";
   }
   LiveEdit::FunctionPatchabilityStatus saved_status() {
     return m_saved_status;
@@ -1996,10 +1996,10 @@ const char* LiveEdit::RestartFrame(JavaScriptFrame* frame) {
     return result;
   }
   if (target.saved_status() == LiveEdit::FUNCTION_BLOCKED_UNDER_NATIVE_CODE) {
-    return "Function is blocked under native code";
+    return u8"Function is blocked under native code";
   }
   if (target.saved_status() == LiveEdit::FUNCTION_BLOCKED_UNDER_GENERATOR) {
-    return "Function is blocked under a generator activation";
+    return u8"Function is blocked under a generator activation";
   }
   return NULL;
 }
