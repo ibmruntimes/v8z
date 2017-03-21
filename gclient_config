@@ -1,0 +1,11 @@
+solutions = [
+  { "name"        : "v8",
+    "url"         : "https://github.com/ibmruntimes/v8z",
+    "deps_file"   : "DEPS",
+    "managed"     : False,
+    "custom_deps" : {
+      'v8/build/gyp': 'https://github.com/jBarz/gyp',
+    },
+  },
+]
+cache_dir = None
