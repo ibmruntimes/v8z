@@ -300,8 +300,8 @@ void i::V8::FatalProcessOutOfMemory(const char* location, bool take_snapshot) {
     char* first_newline = strchr(last_few_messages, '\xa');
     if (first_newline == NULL || first_newline[1] == '\x0')
       first_newline = last_few_messages;
-    PrintF(u8"\n<--- Last few GCs --->\n%s\n", first_newline);
-    PrintF(u8"\n<--- JS stacktrace --->\n%s\n", js_stacktrace);
+    PrintF("\n<--- Last few GCs --->\n%s\n", first_newline);
+    PrintF("\n<--- JS stacktrace --->\n%s\n", js_stacktrace);
   }
   Utils::ApiCheck(false, location, u8"Allocation failed - process out of memory");
   // If the fatal error handler returns, we stop execution.
@@ -313,7 +313,7 @@ void Utils::ReportApiFailure(const char* location, const char* message) {
   i::Isolate* isolate = i::Isolate::Current();
   FatalErrorCallback callback = isolate->exception_behavior();
   if (callback == NULL) {
-    base::OS::PrintError(u8"\n#\n# Fatal error in %s\n# %s\n#\n\n", location,
+    base::OS::PrintError("\n#\n# Fatal error in %s\n# %s\n#\n\n", location,
                          message);
     base::OS::Abort();
   } else {
@@ -373,7 +373,7 @@ bool RunExtraCode(Isolate* isolate, Local<Context> context,
   if (!ScriptCompiler::Compile(context, &source).ToLocal(&script)) return false;
   if (script->Run(context).IsEmpty()) return false;
   if (i::FLAG_profile_deserialization) {
-    i::PrintF(u8"Executing custom snapshot script %s took %0.3f ms\n", name,
+    i::PrintF("Executing custom snapshot script %s took %0.3f ms\n", name,
               timer.Elapsed().InMillisecondsF());
   }
   timer.Stop();
@@ -3286,7 +3286,7 @@ void v8::TypedArray::CheckCast(Value* that) {
     Utils::ApiCheck(                                                          \
         obj->IsJSTypedArray() &&                                              \
             i::JSTypedArray::cast(*obj)->type() == i::kExternal##Type##Array, \
-        u8"v8::" USTR(#Type) u8"Array::Cast()", u8"Could not convert to " USTR(#Type) u8"Array"); \
+        "v8::" #Type "Array::Cast()", "Could not convert to " #Type "Array"); \
   }
 
 
@@ -6833,12 +6833,12 @@ size_t v8::TypedArray::Length() {
                                       size_t byte_offset, size_t length) {    \
     i::Isolate* isolate = Utils::OpenHandle(*array_buffer)->GetIsolate();     \
     LOG_API(isolate,                                                          \
-            u8"v8::" USTR(#Type) u8"Array::New(Local<ArrayBuffer>, size_t, size_t)");   \
+            "v8::" #Type "Array::New(Local<ArrayBuffer>, size_t, size_t)");   \
     ENTER_V8(isolate);                                                        \
     if (!Utils::ApiCheck(length <= static_cast<size_t>(i::Smi::kMaxValue),    \
-                         u8"v8::" USTR(#Type)                                         \
-                         u8"Array::New(Local<ArrayBuffer>, size_t, size_t)",    \
-                         u8"length exceeds max allowed value")) {               \
+                         "v8::"#Type                                         \
+                         "Array::New(Local<ArrayBuffer>, size_t, size_t)",    \
+                         "length exceeds max allowed value")) {               \
       return Local<Type##Array>();                                            \
     }                                                                         \
     i::Handle<i::JSArrayBuffer> buffer = Utils::OpenHandle(*array_buffer);    \
@@ -6852,14 +6852,14 @@ size_t v8::TypedArray::Length() {
     CHECK(i::FLAG_harmony_sharedarraybuffer);                                 \
     i::Isolate* isolate =                                                     \
         Utils::OpenHandle(*shared_array_buffer)->GetIsolate();                \
-    LOG_API(isolate, u8"v8::" USTR(#Type)                                             \
-                     u8"Array::New(Local<SharedArrayBuffer>, size_t, size_t)"); \
+    LOG_API(isolate, "v8::" #Type                                             \
+                     "Array::New(Local<SharedArrayBuffer>, size_t, size_t)"); \
     ENTER_V8(isolate);                                                        \
     if (!Utils::ApiCheck(                                                     \
             length <= static_cast<size_t>(i::Smi::kMaxValue),                 \
-            u8"v8::" USTR(#Type)                                                      \
-            u8"Array::New(Local<SharedArrayBuffer>, size_t, size_t)",           \
-            u8"length exceeds max allowed value")) {                            \
+            "v8::" #Type                                                      \
+            "Array::New(Local<SharedArrayBuffer>, size_t, size_t)",           \
+            "length exceeds max allowed value")) {                            \
       return Local<Type##Array>();                                            \
     }                                                                         \
     i::Handle<i::JSArrayBuffer> buffer =                                      \

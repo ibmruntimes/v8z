@@ -84,7 +84,7 @@ double ClobberDoubleRegisters(double x1, double x2, double x3, double x4);
   Type Name(int args_length, Object** args_object, Isolate* isolate) {     \
     CLOBBER_DOUBLE_REGISTERS();                                            \
     Type value;                                                            \
-    TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT(u8"v8.runtime"), u8"V8." USTR(#Name));    \
+    TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("\x76\x38\x2e\x72\x75\x6e\x74\x69\x6d\x65"), "\x56\x38\x2e" USTR(#Name));    \
     Arguments args(args_length, args_object);                              \
     if (FLAG_runtime_call_stats) {                                         \
       RuntimeCallStats* stats = isolate->counters()->runtime_call_stats(); \

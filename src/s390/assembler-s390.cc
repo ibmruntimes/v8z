@@ -559,6 +559,9 @@ void Assembler::nop(int type) {
     case BRAS_CALL_TYPE_NOP:
       emit2bytes(0x0001);
       break;
+    case BRASL_CALL_TYPE_NOP:
+      emit2bytes(0x0011);
+      break;
 #endif
     default:
       UNIMPLEMENTED();
@@ -2485,7 +2488,7 @@ void Assembler::call(Handle<Code> target, RelocInfo::Mode rmode, Register link,
   brasl(link, Operand(target_index));
 #ifdef V8_OS_ZOS
   if (link.code() == 7) {
-     nop(BRAS_CALL_TYPE_NOP);
+     nop(BRASL_CALL_TYPE_NOP);
   }
 #endif
 }

@@ -92,18 +92,18 @@ static void GetICCounts(SharedFunctionInfo* shared,
 void RuntimeProfiler::Optimize(JSFunction* function, const char* reason) {
   if (FLAG_trace_opt &&
       function->shared()->PassesFilter(FLAG_hydrogen_filter)) {
-    PrintF(u8"[marking ");
+    PrintF("[marking ");
     function->ShortPrint();
-    PrintF(u8" for recompilation, reason: %s", reason);
+    PrintF(" for recompilation, reason: %s", reason);
     if (FLAG_type_info_threshold > 0) {
       int typeinfo, generic, total, type_percentage, generic_percentage;
       GetICCounts(function->shared(), &typeinfo, &generic, &total,
                   &type_percentage, &generic_percentage);
-      PrintF(u8", ICs with typeinfo: %d/%d (%d%%)", typeinfo, total,
+      PrintF(", ICs with typeinfo: %d/%d (%d%%)", typeinfo, total,
              type_percentage);
-      PrintF(u8", generic ICs: %d/%d (%d%%)", generic, total, generic_percentage);
+      PrintF(", generic ICs: %d/%d (%d%%)", generic, total, generic_percentage);
     }
-    PrintF(u8"]\n");
+    PrintF("]\n");
   }
 
   function->AttemptConcurrentOptimization();
@@ -129,9 +129,9 @@ void RuntimeProfiler::AttemptOnStackReplacement(JSFunction* function,
   // any back edge in any unoptimized frame will trigger on-stack
   // replacement for that frame.
   if (FLAG_trace_osr) {
-    PrintF(u8"[OSR - patching back edges in ");
+    PrintF("[OSR - patching back edges in ");
     function->PrintName();
-    PrintF(u8"]\n");
+    PrintF("]\n");
   }
 
   for (int i = 0; i < loop_nesting_levels; i++) {
@@ -211,9 +211,9 @@ void RuntimeProfiler::MaybeOptimizeFullCodegen(JSFunction* function,
     } else {
       shared_code->set_profiler_ticks(ticks + 1);
       if (FLAG_trace_opt_verbose) {
-        PrintF(u8"[not yet optimizing ");
+        PrintF("[not yet optimizing ");
         function->PrintName();
-        PrintF(u8", not enough type info: %d/%d (%d%%)]\n", typeinfo, total,
+        PrintF(", not enough type info: %d/%d (%d%%)]\n", typeinfo, total,
                type_percentage);
       }
     }
@@ -283,9 +283,9 @@ void RuntimeProfiler::MaybeOptimizeIgnition(JSFunction* function,
       Optimize(function, u8"not much type info but very hot");
     } else {
       if (FLAG_trace_opt_verbose) {
-        PrintF(u8"[not yet optimizing ");
+        PrintF("[not yet optimizing ");
         function->PrintName();
-        PrintF(u8", not enough type info: %d/%d (%d%%)]\n", typeinfo, total,
+        PrintF(", not enough type info: %d/%d (%d%%)]\n", typeinfo, total,
                type_percentage);
       }
     }

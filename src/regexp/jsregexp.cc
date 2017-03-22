@@ -3585,7 +3585,7 @@ class AlternativeGenerationList {
   }
   ~AlternativeGenerationList() {
     for (int i = kAFew; i < alt_gens_.length(); i++) {
-      delete alt_gens_[i];
+  //    delete alt_gens_[i];
       alt_gens_[i] = NULL;
     }
   }

@@ -24,9 +24,9 @@ RUNTIME_FUNCTION(Runtime_CompileLazy) {
 
 #ifdef DEBUG
   if (FLAG_trace_lazy && !function->shared()->is_compiled()) {
-    PrintF(u8"[unoptimized: ");
+    PrintF("[unoptimized: ");
     function->PrintName();
-    PrintF(u8"]\n");
+    PrintF("]\n");
   }
 #endif
 
@@ -142,9 +142,9 @@ RUNTIME_FUNCTION(Runtime_NotifyDeoptimized) {
   if (!activations_finder.has_code_activations_) {
     if (function->code() == *optimized_code) {
       if (FLAG_trace_deopt) {
-        PrintF(u8"[removing optimized code for: ");
+        PrintF("[removing optimized code for: ");
         function->PrintName();
-        PrintF(u8"]\n");
+        PrintF("]\n");
       }
       function->ReplaceCode(function->shared()->code());
     }
@@ -217,9 +217,9 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
   MaybeHandle<Code> maybe_result;
   if (IsSuitableForOnStackReplacement(isolate, function)) {
     if (FLAG_trace_osr) {
-      PrintF(u8"[OSR - Compiling: ");
+      PrintF("[OSR - Compiling: ");
       function->PrintName();
-      PrintF(u8" at AST id %d]\n", ast_id.ToInt());
+      PrintF(" at AST id %d]\n", ast_id.ToInt());
     }
     maybe_result = Compiler::GetOptimizedCodeForOSR(function, ast_id, frame);
   }
@@ -237,7 +237,7 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
     if (data->OsrPcOffset()->value() >= 0) {
       DCHECK(BailoutId(data->OsrAstId()->value()) == ast_id);
       if (FLAG_trace_osr) {
-        PrintF(u8"[OSR - Entry at AST id %d, offset %d in optimized code]\n",
+        PrintF("[OSR - Entry at AST id %d, offset %d in optimized code]\n",
                ast_id.ToInt(), data->OsrPcOffset()->value());
       }
       // TODO(titzer): this is a massive hack to make the deopt counts
@@ -259,9 +259,9 @@ RUNTIME_FUNCTION(Runtime_CompileForOnStackReplacement) {
 
   // Failed.
   if (FLAG_trace_osr) {
-    PrintF(u8"[OSR - Failed: ");
+    PrintF("[OSR - Failed: ");
     function->PrintName();
-    PrintF(u8" at AST id %d]\n", ast_id.ToInt());
+    PrintF(" at AST id %d]\n", ast_id.ToInt());
   }
 
   if (!function->IsOptimized()) {

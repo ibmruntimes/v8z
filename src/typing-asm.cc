@@ -23,7 +23,7 @@ namespace internal {
                    ? -1                                        \
                    : script_->GetLineNumber(node->position()); \
     base::OS::SNPrintF(error_message_, sizeof(error_message_), \
-                       u8"asm: line %d: %s\n", line + 1, msg);   \
+                       "asm: line %d: %s\n", line + 1, msg);   \
     return;                                                    \
   } while (false)
 

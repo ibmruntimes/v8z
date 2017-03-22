@@ -531,7 +531,7 @@ ReturnType BodyDescriptorApply(InstanceType type, T1 p1, T2 p2, T3 p3) {
         return Op::template apply<StructBodyDescriptor>(p1, p2, p3);
       }
     default:
-      PrintF(u8"Unknown type: %d\n", type);
+      PrintF("Unknown type: %d\n", type);
       UNREACHABLE();
       return ReturnType();
   }

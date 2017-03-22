@@ -878,10 +878,10 @@ int JavaScriptFrame::LookupExceptionHandlerInTable(
 void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
                                              Address pc, FILE* file,
                                              bool print_line_number) {
-  PrintF(file, u8"%s", function->IsOptimized() ? u8"*" : u8"~");
+  PrintF(file, "%s", function->IsOptimized() ? "*" : "~");
   function->PrintName(file);
   int code_offset = static_cast<int>(pc - code->instruction_start());
-  PrintF(file, u8"+%d", code_offset);
+  PrintF(file, "+%d", code_offset);
   if (print_line_number) {
     SharedFunctionInfo* shared = function->shared();
     int source_pos = code->SourcePosition(code_offset);
@@ -896,10 +896,10 @@ void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
             script_name->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
         PrintF(file, " at %s:%d", c_script_name.get(), line);
       } else {
-        PrintF(file, u8" at <unknown>:%d", line);
+        PrintF(file, " at <unknown>:%d", line);
       }
     } else {
-      PrintF(file, u8" at <unknown>:<unknown>");
+      PrintF(file, " at <unknown>:<unknown>");
     }
   }
 }
@@ -913,21 +913,21 @@ void JavaScriptFrame::PrintTop(Isolate* isolate, FILE* file, bool print_args,
   while (!it.done()) {
     if (it.frame()->is_java_script()) {
       JavaScriptFrame* frame = it.frame();
-      if (frame->IsConstructor()) PrintF(file, u8"new ");
+      if (frame->IsConstructor()) PrintF(file, "new ");
       PrintFunctionAndOffset(frame->function(), frame->unchecked_code(),
                              frame->pc(), file, print_line_number);
       if (print_args) {
         // function arguments
         // (we are intentionally only printing the actually
         // supplied parameters, not all parameters required)
-        PrintF(file, u8"(this=");
+        PrintF(file, "(this=");
         frame->receiver()->ShortPrint(file);
         const int length = frame->ComputeParametersCount();
         for (int i = 0; i < length; i++) {
-          PrintF(file, u8", ");
+          PrintF(file, ", ");
           frame->GetParameter(i)->ShortPrint(file);
         }
-        PrintF(file, u8")");
+        PrintF(file, ")");
       }
       break;
     }
@@ -977,23 +977,23 @@ FrameSummary::FrameSummary(Object* receiver, JSFunction* function,
 }
 
 void FrameSummary::Print() {
-  PrintF(u8"receiver: ");
+  PrintF("receiver: ");
   receiver_->ShortPrint();
-  PrintF(u8"\nfunction: ");
+  PrintF("\nfunction: ");
   function_->shared()->DebugName()->ShortPrint();
-  PrintF(u8"\ncode: ");
+  PrintF("\ncode: ");
   abstract_code_->ShortPrint();
   if (abstract_code_->IsCode()) {
     Code* code = abstract_code_->GetCode();
-    if (code->kind() == Code::FUNCTION) PrintF(u8" UNOPT ");
+    if (code->kind() == Code::FUNCTION) PrintF(" UNOPT ");
     if (code->kind() == Code::OPTIMIZED_FUNCTION) {
       DCHECK(CannotDeoptFromAsmCode(code, *function()));
-      PrintF(u8" ASM ");
+      PrintF(" ASM ");
     }
   } else {
-    PrintF(u8" BYTECODE ");
+    PrintF(" BYTECODE ");
   }
-  PrintF(u8"\npc: %d\n", code_offset_);
+  PrintF("\npc: %d\n", code_offset_);
 }
 
 
@@ -1322,9 +1322,9 @@ void PrintFunctionSource(StringStream* accumulator, SharedFunctionInfo* shared,
                          Code* code) {
   if (FLAG_max_stack_trace_source_length != 0 && code != NULL) {
     std::ostringstream os;
-    os << u8"--------- s o u r c e   c o d e ---------\n"
+    os <<"--------- s o u r c e   c o d e ---------\n"
        << SourceCodeOf(shared, FLAG_max_stack_trace_source_length)
-       << u8"\n-----------------------------------------\n";
+       <<"\n-----------------------------------------\n";
     accumulator->Add(os.str().c_str());
   }
 }

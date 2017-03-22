@@ -1212,6 +1212,7 @@ class Assembler : public AssemblerBase {
 #ifdef V8_OS_ZOS
     BASR_CALL_TYPE_NOP,
     BRAS_CALL_TYPE_NOP,
+    BRASL_CALL_TYPE_NOP,
 #endif
     // IC markers.
     PROPERTY_ACCESS_INLINED,

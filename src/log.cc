@@ -245,7 +245,7 @@ class PerfBasicLogger : public CodeEventLogger {
   FILE* perf_output_handle_;
 };
 
-const char PerfBasicLogger::kFilenameFormatString[] = u8"/tmp/perf-%d.map";
+const char PerfBasicLogger::kFilenameFormatString[] = "/tmp/perf-%d.map";
 // Extra space for the PID in the filename
 const int PerfBasicLogger::kFilenameBufferPadding = 16;
 
@@ -280,7 +280,7 @@ void PerfBasicLogger::LogRecordedBuffer(AbstractCode* code, SharedFunctionInfo*,
     return;
   }
 
-  base::OS::FPrint(perf_output_handle_, u8"%llx %x %.*s\n",
+  base::OS::FPrint(perf_output_handle_, "%llx %x %.*s\n",
                    reinterpret_cast<uint64_t>(code->instruction_start()),
                    code->instruction_size(), length, name);
 }
@@ -341,7 +341,7 @@ class LowLevelLogger : public CodeEventLogger {
   FILE* ll_output_handle_;
 };
 
-const char LowLevelLogger::kLogExt[] = u8".ll";
+const char LowLevelLogger::kLogExt[] = ".ll";
 
 LowLevelLogger::LowLevelLogger(const char* name)
     : ll_output_handle_(NULL) {
@@ -382,7 +382,7 @@ void LowLevelLogger::LogCodeInfo() {
 #elif V8_TARGET_ARCH_ARM64
   const char arch[] = "arm64";
 #elif V8_TARGET_ARCH_S390
-  const char arch[] = u8"s390";
+  const char arch[] = "s390";
 #else
   const char arch[] = "unknown";
 #endif
@@ -634,7 +634,7 @@ class Ticker: public Sampler {
 // Profiler implementation.
 //
 Profiler::Profiler(Isolate* isolate)
-    : base::Thread(Options(u8"v8:Profiler")),
+    : base::Thread(Options("v8:Profiler")),
       isolate_(isolate),
       head_(0),
       overflow_(false),
@@ -810,7 +810,7 @@ void Logger::ApiEvent(const char* format, ...) {
 
 void Logger::ApiSecurityCheck() {
   if (!log_->IsEnabled() || !FLAG_log_api) return;
-  ApiEvent(u8"api,check-security");
+  ApiEvent("api,check-security");
 }
 
 
@@ -850,8 +850,8 @@ void Logger::TimerEvent(Logger::StartEnd se, const char* name) {
   DCHECK(FLAG_log_internal_timer_events);
   Log::MessageBuilder msg(log_);
   int since_epoch = static_cast<int>(timer_.Elapsed().InMicroseconds());
-  const char* format = (se == START) ? u8"timer-event-start,\"%s\",%ld"
-                                     : u8"timer-event-end,\"%s\",%ld";
+  const char* format = (se == START) ? "timer-event-start,\"%s\",%ld"
+                                     : "timer-event-end,\"%s\",%ld";
   msg.Append(format, name, since_epoch);
   msg.WriteToLogFile();
 }
@@ -894,9 +894,9 @@ void LogRegExpSource(Handle<JSRegExp> regexp, Isolate* isolate,
   //      (re.global?"g":"") + (re.ignorecase?"i":"") + (re.multiline?"m":"")
 
   Handle<Object> source =
-      JSReceiver::GetProperty(isolate, regexp, "source").ToHandleChecked();
+      JSReceiver::GetProperty(isolate, regexp, u8"source").ToHandleChecked();
   if (!source->IsString()) {
-    msg->Append(u8"no source");
+    msg->Append("no source");
     return;
   }
 
@@ -913,19 +913,19 @@ void LogRegExpSource(Handle<JSRegExp> regexp, Isolate* isolate,
 
   // global flag
   Handle<Object> global =
-      JSReceiver::GetProperty(isolate, regexp, "global").ToHandleChecked();
+      JSReceiver::GetProperty(isolate, regexp, u8"global").ToHandleChecked();
   if (global->IsTrue()) {
     msg->Append('\x67');
   }
   // ignorecase flag
   Handle<Object> ignorecase =
-      JSReceiver::GetProperty(isolate, regexp, "ignoreCase").ToHandleChecked();
+      JSReceiver::GetProperty(isolate, regexp, u8"ignoreCase").ToHandleChecked();
   if (ignorecase->IsTrue()) {
     msg->Append('\x69');
   }
   // multiline flag
   Handle<Object> multiline =
-      JSReceiver::GetProperty(isolate, regexp, "multiline").ToHandleChecked();
+      JSReceiver::GetProperty(isolate, regexp, u8"multiline").ToHandleChecked();
   if (multiline->IsTrue()) {
     msg->Append('\x6d');
   }

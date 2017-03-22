@@ -282,15 +282,15 @@ RUNTIME_FUNCTION(Runtime_DebugPrint) {
     // and print some interesting cpu debugging info.
     JavaScriptFrameIterator it(isolate);
     JavaScriptFrame* frame = it.frame();
-    os << u8"fp = " << static_cast<void*>(frame->fp())
-       << u8", sp = " << static_cast<void*>(frame->sp())
-       << u8", caller_sp = " << static_cast<void*>(frame->caller_sp()) << u8": ";
+    os <<"fp = " << static_cast<void*>(frame->fp())
+       <<", sp = " << static_cast<void*>(frame->sp())
+       <<", caller_sp = " << static_cast<void*>(frame->caller_sp()) <<": ";
   } else {
-    os << u8"DebugPrint: ";
+    os <<"DebugPrint: ";
   }
   args[0]->Print(os);
   if (args[0]->IsHeapObject()) {
-    os << u8"\n";
+    os <<"\n";
     HeapObject::cast(args[0])->map()->Print(os);
   }
 #else
@@ -321,7 +321,7 @@ RUNTIME_FUNCTION(Runtime_GlobalPrint) {
   StringCharacterStream stream(string);
   while (stream.HasMore()) {
     uint16_t character = stream.GetNext();
-    PrintF(u8"%c", character);
+    PrintF("%c", character);
   }
   return string;
 }
@@ -420,9 +420,9 @@ void PrintIndentation(Isolate* isolate) {
   const int nmax = 80;
   int n = StackSize(isolate);
   if (n <= nmax) {
-    PrintF(u8"%4d:%*s", n, n, u8"");
+    PrintF("%4d:%*s", n, n, u8"");
   } else {
-    PrintF(u8"%4d:%*s", n, nmax, u8"...");
+    PrintF("%4d:%*s", n, nmax, u8"...");
   }
 }
 
@@ -433,7 +433,7 @@ RUNTIME_FUNCTION(Runtime_TraceEnter) {
   DCHECK_EQ(0, args.length());
   PrintIndentation(isolate);
   JavaScriptFrame::PrintTop(isolate, stdout, true, false);
-  PrintF(u8" {\n");
+  PrintF(" {\n");
   return isolate->heap()->undefined_value();
 }
 
@@ -443,9 +443,9 @@ RUNTIME_FUNCTION(Runtime_TraceExit) {
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_CHECKED(Object, obj, 0);
   PrintIndentation(isolate);
-  PrintF(u8"} -> ");
+  PrintF("} -> ");
   obj->ShortPrint();
-  PrintF(u8"\n");
+  PrintF("\n");
   return obj;  // return TOS
 }
 
@@ -453,7 +453,7 @@ RUNTIME_FUNCTION(Runtime_TraceTailCall) {
   SealHandleScope shs(isolate);
   DCHECK_EQ(0, args.length());
   PrintIndentation(isolate);
-  PrintF(u8"} -> tail call ->\n");
+  PrintF("} -> tail call ->\n");
   return isolate->heap()->undefined_value();
 }
 

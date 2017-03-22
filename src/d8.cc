@@ -437,7 +437,7 @@ PerIsolateData::RealmScope::~RealmScope() {
   for (int i = 0; i < data_->realm_count_; ++i)
     data_->realms_[i].Reset();
  // TODO(muntasir) Investigate why this causes a crash
- // delete[] data_->realms_;
+  delete[] data_->realms_;
   if (!data_->realm_shared_.IsEmpty())
     data_->realm_shared_.Reset();
 }
