@@ -5,7 +5,7 @@ solutions = [
     "managed"     : False,
     "custom_deps" : {
       'v8/build/gyp': 'https://github.com/jBarz/gyp',
-      'v8/testing/gtest': 'https://github.com/jBarz/googletest',
+      'v8/testing/gtest': 'https://github.com/jBarz/googletest@13226df8def4c4ab4ace94c429a9864272884b34',
     },
   },
 ]
