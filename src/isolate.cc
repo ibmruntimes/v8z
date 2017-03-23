@@ -970,17 +970,17 @@ void ReportBootstrappingException(Handle<Object> exception,
       location->script()->GetLineNumber(location->start_pos()) + 1;
   if (exception->IsString() && location->script()->name()->IsString()) {
     base::OS::PrintError(
-        "Extension or internal compilation error: %s in %s at line %d.\n",
+        u8"Extension or internal compilation error: %s in %s at line %d.\n",
         String::cast(*exception)->ToCString().get(),
         String::cast(location->script()->name())->ToCString().get(),
         line_number);
   } else if (location->script()->name()->IsString()) {
     base::OS::PrintError(
-        "Extension or internal compilation error in %s at line %d.\n",
+        u8"Extension or internal compilation error in %s at line %d.\n",
         String::cast(location->script()->name())->ToCString().get(),
         line_number);
   } else if (exception->IsString()) {
-    base::OS::PrintError("Extension or internal compilation error: %s.\n",
+    base::OS::PrintError(u8"Extension or internal compilation error: %s.\n",
                          String::cast(*exception)->ToCString().get());
   } else {
     base::OS::PrintError(u8"Extension or internal compilation error.\n");
@@ -990,22 +990,22 @@ void ReportBootstrappingException(Handle<Object> exception,
   // builtins, print the actual source here so that line numbers match.
   if (location->script()->source()->IsString()) {
     Handle<String> src(String::cast(location->script()->source()));
-    PrintF("Failing script:");
+    PrintF(u8"Failing script:");
     int len = src->length();
     if (len == 0) {
-      PrintF(" <not available>\n");
+      PrintF(u8" <not available>\n");
     } else {
-      PrintF("\n");
+      PrintF(u8"\n");
       int line_number = 1;
-      PrintF("%5d: ", line_number);
+      PrintF(u8"%5d: ", line_number);
       for (int i = 0; i < len; i++) {
         uint16_t character = src->Get(i);
-        PrintF("%c", character);
-        if (character == '\n' && i < len - 2) {
-          PrintF("%5d: ", ++line_number);
+        PrintF(u8"%c", character);
+        if (character == '\x0a' && i < len - 2) {
+          PrintF(u8"%5d: ", ++line_number);
         }
       }
-      PrintF("\n");
+      PrintF(u8"\n");
     }
   }
 #endif

@@ -2266,7 +2266,7 @@ void Object::VerifyApiCallResultType() {
   if (!(IsSmi() || IsString() || IsSymbol() || IsJSReceiver() ||
         IsHeapNumber() || IsSimd128Value() || IsUndefined() || IsTrue() ||
         IsFalse() || IsNull())) {
-    FATAL("API call returned invalid object");
+    FATAL(u8"API call returned invalid object");
   }
 #endif  // DEBUG
 }

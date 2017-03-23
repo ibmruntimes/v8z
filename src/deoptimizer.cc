@@ -448,7 +448,7 @@ bool Deoptimizer::TraceEnabledFor(BailoutType deopt_type,
           ? FLAG_trace_stub_failures
           : FLAG_trace_deopt;
   }
-  FATAL("Unsupported deopt type");
+  FATAL(u8"Unsupported deopt type");
   return false;
 }
 
@@ -459,7 +459,7 @@ const char* Deoptimizer::MessageFor(BailoutType type) {
     case SOFT: return "soft";
     case LAZY: return "lazy";
   }
-  FATAL("Unsupported deopt type");
+  FATAL(u8"Unsupported deopt type");
   return NULL;
 }
 
@@ -550,7 +550,7 @@ Code* Deoptimizer::FindOptimizedCode(JSFunction* function,
           : compiled_code;
     }
   }
-  FATAL("Could not find code for optimized function");
+  FATAL(u8"Could not find code for optimized function");
   return NULL;
 }
 
@@ -642,7 +642,7 @@ int Deoptimizer::GetOutputInfo(DeoptimizationOutputData* data,
 
   shared->GetHeap()->isolate()->PushStackTraceAndDie(0xfefefefe, data, shared,
                                                      0xfefefeff);
-  FATAL("unable to find pc offset during deoptimization");
+  FATAL(u8"unable to find pc offset during deoptimization");
   return -1;
 }
 
@@ -823,7 +823,7 @@ void Deoptimizer::DoComputeOutputFrames() {
         DoComputeCompiledStubFrame(translated_frame, frame_index);
         break;
       case TranslatedFrame::kInvalid:
-        FATAL("invalid frame");
+        FATAL(u8"invalid frame");
         break;
     }
   }
@@ -2527,7 +2527,7 @@ int Translation::NumberOfOperandsFor(Opcode opcode) {
     case INTERPRETED_FRAME:
       return 3;
   }
-  FATAL("Unexpected translation type");
+  FATAL(u8"Unexpected translation type");
   return -1;
 }
 
@@ -2956,11 +2956,11 @@ Handle<Object> TranslatedValue::GetValue() {
       return container_->MaterializeObjectAt(object_index());
 
     case TranslatedValue::kInvalid:
-      FATAL("unexpected case");
+      FATAL(u8"unexpected case");
       return Handle<Object>::null();
   }
 
-  FATAL("internal error: value missing");
+  FATAL(u8"internal error: value missing");
   return Handle<Object>::null();
 }
 
@@ -2996,7 +2996,7 @@ void TranslatedValue::MaterializeSimple() {
     case kInvalid:
     case kTagged:
     case kBoolBit:
-      FATAL("internal error: unexpected materialization.");
+      FATAL(u8"internal error: unexpected materialization.");
       break;
   }
 }
@@ -3271,7 +3271,7 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
     case Translation::LITERAL:
       break;
   }
-  FATAL("We should never get here - unexpected deopt info.");
+  FATAL(u8"We should never get here - unexpected deopt info.");
   return TranslatedFrame::InvalidFrame();
 }
 
@@ -3474,7 +3474,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
     }
   }
 
-  FATAL("We should never get here - unexpected deopt info.");
+  FATAL(u8"We should never get here - unexpected deopt info.");
   return TranslatedValue(nullptr, TranslatedValue::kInvalid);
 }
 
@@ -3730,7 +3730,7 @@ Handle<Object> TranslatedState::MaterializeAt(int frame_index,
         default:
           PrintF(stderr, "[couldn't handle instance type %d]\n",
                  map->instance_type());
-          FATAL("unreachable");
+          FATAL(u8"unreachable");
           return Handle<Object>::null();
       }
       UNREACHABLE();
@@ -3762,7 +3762,7 @@ Handle<Object> TranslatedState::MaterializeAt(int frame_index,
       break;
   }
 
-  FATAL("We should never get here - unexpected deopt slot kind.");
+  FATAL(u8"We should never get here - unexpected deopt slot kind.");
   return Handle<Object>::null();
 }
 

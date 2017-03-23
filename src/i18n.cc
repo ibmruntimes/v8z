@@ -739,7 +739,7 @@ icu::SimpleDateFormat* DateFormat::InitializeDateTimeFormat(
     date_format = CreateICUDateFormat(isolate, no_extension_locale, options);
 
     if (!date_format) {
-      FATAL("Failed to create ICU date format, are ICU data files missing?");
+      FATAL(u8"Failed to create ICU date format, are ICU data files missing?");
     }
 
     // Set resolved settings (pattern, numbering system, calendar).
@@ -819,7 +819,7 @@ icu::DecimalFormat* NumberFormat::InitializeNumberFormat(
         isolate, no_extension_locale, options);
 
     if (!number_format) {
-      FATAL("Failed to create ICU number format, are ICU data files missing?");
+      FATAL(u8"Failed to create ICU number format, are ICU data files missing?");
     }
 
     // Set resolved settings (pattern, numbering system).
@@ -882,7 +882,7 @@ icu::Collator* Collator::InitializeCollator(
     collator = CreateICUCollator(isolate, no_extension_locale, options);
 
     if (!collator) {
-      FATAL("Failed to create ICU collator, are ICU data files missing?");
+      FATAL(u8"Failed to create ICU collator, are ICU data files missing?");
     }
 
     // Set resolved settings (pattern, numbering system).
@@ -945,7 +945,7 @@ icu::BreakIterator* BreakIterator::InitializeBreakIterator(
         isolate, no_extension_locale, options);
 
     if (!break_iterator) {
-      FATAL("Failed to create ICU break iterator, are ICU data files missing?");
+      FATAL(u8"Failed to create ICU break iterator, are ICU data files missing?");
     }
 
     // Set resolved settings (locale).

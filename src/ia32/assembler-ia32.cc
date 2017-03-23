@@ -2834,7 +2834,7 @@ void Assembler::emit_vex_prefix(Register vreg, VectorLength l, SIMDPrefix pp,
 
 void Assembler::GrowBuffer() {
   DCHECK(buffer_overflow());
-  if (!own_buffer_) FATAL("external code buffer is too small");
+  if (!own_buffer_) FATAL(u8"external code buffer is too small");
 
   // Compute new buffer size.
   CodeDesc desc;  // the new buffer

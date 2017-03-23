@@ -22,7 +22,7 @@ namespace internal {
 
 
 RUNTIME_FUNCTION(UnexpectedStubMiss) {
-  FATAL("Unexpected deopt of a stub");
+  FATAL(u8"Unexpected deopt of a stub");
   return Smi::FromInt(0);
 }
 

@@ -1379,7 +1379,7 @@ class RepresentationSelector {
       case IrOpcode::kChangeFloat64ToInt32:
       case IrOpcode::kChangeFloat64ToUint32:
       case IrOpcode::kTruncateInt64ToInt32:
-        FATAL("Representation inference: unsupported opcodes.");
+        FATAL(u8"Representation inference: unsupported opcodes.");
 
       default:
         VisitInputs(node);

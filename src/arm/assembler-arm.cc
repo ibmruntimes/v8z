@@ -3703,7 +3703,7 @@ void Assembler::RecordConstPool(int size) {
 
 
 void Assembler::GrowBuffer() {
-  if (!own_buffer_) FATAL("external code buffer is too small");
+  if (!own_buffer_) FATAL(u8"external code buffer is too small");
 
   // Compute new buffer size.
   CodeDesc desc;  // the new buffer

@@ -305,7 +305,7 @@ void i::V8::FatalProcessOutOfMemory(const char* location, bool take_snapshot) {
   }
   Utils::ApiCheck(false, location, u8"Allocation failed - process out of memory");
   // If the fatal error handler returns, we stop execution.
-  FATAL("API fatal error handler returned after process out of memory");
+  FATAL(u8"API fatal error handler returned after process out of memory");
 }
 
 

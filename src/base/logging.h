@@ -11,6 +11,9 @@
 
 #include "src/base/build_config.h"
 
+extern "C" V8_NORETURN void V8_Fatal_e(const char* file, int line,
+                                     const char* format, const char* str);
+
 extern "C" V8_NORETURN void V8_Fatal(const char* file, int line,
                                      const char* format, ...);
 
@@ -21,17 +24,18 @@ extern "C" void V8_RuntimeError(const char* file, int line,
 // development, but they should not be relied on in the final product.
 #ifdef DEBUG
 #define FATAL(msg)                              \
-  V8_Fatal(__FILE__, __LINE__, "%s", (msg))
+  V8_Fatal(__FILE__, __LINE__, "\x25\x73", (msg))
 #define UNIMPLEMENTED()                         \
-  V8_Fatal(__FILE__, __LINE__, "unimplemented code")
+  V8_Fatal(__FILE__, __LINE__, "\x75\x6e\x69\x6d\x70\x6c\x65\x6d\x65\x6e\x74\x65\x64\x20\x63\x6f\x64\x65")
 #define UNREACHABLE()                           \
-  V8_Fatal(__FILE__, __LINE__, "unreachable code")
+  V8_Fatal(__FILE__, __LINE__, "\x75\x6e\x72\x65\x61\x63\x68\x61\x62\x6c\x65\x20\x63\x6f\x64\x65")
 #else
 #define FATAL(msg)                              \
-  V8_Fatal("", 0, "%s", (msg))
+  V8_Fatal("", 0, "\x25\x73", (msg))
 #define UNIMPLEMENTED()                         \
-  V8_Fatal("", 0, "unimplemented code")
-#define UNREACHABLE() V8_Fatal("", 0, "unreachable code")
+  V8_Fatal("", 0, "\x75\x6e\x69\x6d\x70\x6c\x65\x6d\x65\x6e\x74\x65\x64\x20\x63\x6f\x64\x65")
+#define UNREACHABLE()                           \
+  V8_Fatal("", 0, "\x75\x6e\x72\x65\x61\x63\x68\x61\x62\x6c\x65\x20\x63\x6f\x64\x65")
 #endif
 
 
@@ -44,10 +48,11 @@ namespace base {
 //
 // We make sure CHECK et al. always evaluates their arguments, as
 // doing CHECK(FunctionWithSideEffect()) is a common idiom.
+
 #define CHECK(condition)                                             \
   do {                                                               \
     if (V8_UNLIKELY(!(condition))) {                                 \
-      V8_Fatal(__FILE__, __LINE__, "Check failed: %s.", #condition); \
+      V8_Fatal_e(__FILE__, __LINE__, "Check failed: %s.", #condition); \
     }                                                                \
   } while (0)
 
@@ -60,7 +65,7 @@ namespace base {
   do {                                                                  \
     if (std::string* _msg = ::v8::base::Check##name##Impl(              \
             (lhs), (rhs), #lhs " " #op " " #rhs)) {                     \
-      V8_Fatal(__FILE__, __LINE__, "Check failed: %s.", _msg->c_str()); \
+      V8_Fatal(__FILE__, __LINE__, "\x43\x68\x65\x63\x6b\x20\x66\x61\x69\x6c\x65\x64\x3a\x20\x25\x73\x2e", _msg->c_str()); \
       delete _msg;                                                      \
     }                                                                   \
   } while (0)

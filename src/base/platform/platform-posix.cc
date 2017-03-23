@@ -6,6 +6,8 @@
 // own, but contains the parts which are the same across the POSIX platforms
 // Linux, MacOS, FreeBSD, OpenBSD, NetBSD and QNX.
 
+#define _AE_BIMODAL
+
 #include <errno.h>
 #include <limits.h>
 #include <pthread.h>
@@ -472,6 +474,11 @@ void OS::Print(const char* format, ...) {
 void OS::VPrint(const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_INFO, LOG_TAG, format, args);
+#elif defined (__MVS__)
+  char buf[512];
+  int len = __vsprintf_a(buf, format, args);
+  __a2e_l(buf, len);
+  printf(buf); 
 #else
   vprintf(format, args);
 #endif
@@ -506,6 +513,11 @@ void OS::PrintError(const char* format, ...) {
 void OS::VPrintError(const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_ERROR, LOG_TAG, format, args);
+#elif defined (__MVS__)
+  char buf[512];
+  int len = __vsprintf_a(buf, format, args);
+  __a2e_l(buf, len);
+  fprintf(stderr, buf); 
 #else
   vfprintf(stderr, format, args);
 #endif

@@ -692,7 +692,7 @@ LargePage* MemoryAllocator::AllocateLargePage(intptr_t object_size,
   if (chunk == NULL) return NULL;
   if (executable && chunk->size() > LargePage::kMaxCodePageSize) {
     STATIC_ASSERT(LargePage::kMaxCodePageSize <= TypedSlotSet::kMaxOffset);
-    FATAL("Code page is too large.");
+    FATAL(u8"Code page is too large.");
   }
   return LargePage::Initialize(isolate_->heap(), chunk);
 }

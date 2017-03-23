@@ -10,6 +10,8 @@
 #include <execinfo.h>
 #elif V8_OS_QNX
 #include <backtrace.h>
+#elif V8_OS_ZOS
+#include <unistd.h>
 #endif  // V8_LIBC_GLIBC || V8_OS_BSD
 
 #include <cstdio>
@@ -101,16 +103,34 @@ void DumpBacktrace() {
 
 
 // Contains protection against recursive calls (faults while handling faults).
+// TODO: Rmove this once compiler can handle u8 prefixed literals in macro definitions
+extern "C" void V8_Fatal_e(const char* file, int line, const char* format, const char* str) {
+  size_t format_size = strlen(format);
+  size_t str_size = strlen(str);
+  char format_a[format_size+1];
+  char str_a[str_size+1];
+  strcpy(format_a, format);
+  strcpy(str_a, str);
+  format_a[format_size] = '\0';
+  str_a[str_size] = '\0';
+  __e2a_s(format_a);
+  __e2a_s(str_a);
+  V8_Fatal(file, line, format_a, str_a);
+}
+
 extern "C" void V8_Fatal(const char* file, int line, const char* format, ...) {
   fflush(stdout);
   fflush(stderr);
-  v8::base::OS::PrintError("\n\n#\n# Fatal error in %s, line %d\n# ", file,
+  char filename[256];
+  strcpy(filename, file);
+  __e2a_s(filename);
+  v8::base::OS::PrintError(u8"\n\n#\n# Fatal error in %s, line %d\n# ", filename,
                            line);
   va_list arguments;
   va_start(arguments, format);
   v8::base::OS::VPrintError(format, arguments);
   va_end(arguments);
-  v8::base::OS::PrintError("\n#\n");
+  v8::base::OS::PrintError(u8"\n#\n");
   v8::base::DumpBacktrace();
   fflush(stderr);
   v8::base::OS::Abort();
@@ -120,9 +140,9 @@ extern "C" void V8_RuntimeError(const char* file, int line,
                                 const char* message) {
   fflush(stdout);
   fflush(stderr);
-  v8::base::OS::PrintError("\n\n#\n# Runtime error in %s, line %d\n# ", file,
+  v8::base::OS::PrintError(u8"\n\n#\n# Runtime error in %s, line %d\n# ", file,
                            line);
-  v8::base::OS::PrintError("\n# %s\n", message);
+  v8::base::OS::PrintError(u8"\n# %s\n", message);
   v8::base::DumpBacktrace();
   fflush(stderr);
 }
