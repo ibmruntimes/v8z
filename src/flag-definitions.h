@@ -234,18 +234,18 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
 
 
 #define FLAG_INPROGRESS_FEATURES(id, description) \
-  DEFINE_BOOL(id, false, "\x65\x6e\x61\x62\x6c\x65\x20" USTR(#description) "\x20\x28\x69\x6e\x20\x70\x72\x6f\x67\x72\x65\x73\x73\x29")
+  DEFINE_BOOL(id, false, "\x65\x6e\x61\x62\x6c\x65\x20" #description "\x20\x28\x69\x6e\x20\x70\x72\x6f\x67\x72\x65\x73\x73\x29")
 HARMONY_INPROGRESS(FLAG_INPROGRESS_FEATURES)
 #undef FLAG_INPROGRESS_FEATURES
 
 #define FLAG_STAGED_FEATURES(id, description) \
-  DEFINE_BOOL(id, false, "\x65\x6e\x61\x62\x6c\x65\x20" USTR(#description)) \
+  DEFINE_BOOL(id, false, "\x65\x6e\x61\x62\x6c\x65\x20" #description) \
   DEFINE_IMPLICATION(harmony, id)
 HARMONY_STAGED(FLAG_STAGED_FEATURES)
 #undef FLAG_STAGED_FEATURES
 
 #define FLAG_SHIPPING_FEATURES(id, description) \
-  DEFINE_BOOL(id, true, "\x65\x6e\x61\x62\x6c\x65\x20" USTR(#description)) \
+  DEFINE_BOOL(id, true, "\x65\x6e\x61\x62\x6c\x65\x20" #description) \
   DEFINE_NEG_NEG_IMPLICATION(harmony_shipping, id)
 HARMONY_SHIPPING(FLAG_SHIPPING_FEATURES)
 #undef FLAG_SHIPPING_FEATURES
