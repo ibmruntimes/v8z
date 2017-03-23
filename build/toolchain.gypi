@@ -1254,7 +1254,7 @@
         'defines': [
           'ENABLE_DISASSEMBLER',
           'V8_ENABLE_CHECKS',
-          'OBJECT_PRINT',
+          # 'OBJECT_PRINT', # debug builds on z/OS don't want this. You can enable in GYP_DEFINES v8_object_print=1
           'VERIFY_HEAP',
           'DEBUG',
           'TRACE_MAPS'
