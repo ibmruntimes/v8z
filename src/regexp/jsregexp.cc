@@ -3585,7 +3585,10 @@ class AlternativeGenerationList {
   }
   ~AlternativeGenerationList() {
     for (int i = kAFew; i < alt_gens_.length(); i++) {
-  //    delete alt_gens_[i];
+      // TODO:
+#ifndef V8_OS_ZOS
+      delete alt_gens_[i];
+#endif
       alt_gens_[i] = NULL;
     }
   }
