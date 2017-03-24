@@ -60,6 +60,11 @@
 #include "src/disassembler.h"
 #endif
 
+#ifdef __MVS__
+#include <unistd.h>
+#include <stdio.h>
+#endif
+
 namespace v8 {
 namespace internal {
 
@@ -72,7 +77,7 @@ std::ostream& operator<<(std::ostream& os, InstanceType instance_type) {
 #undef WRITE_TYPE
   }
   UNREACHABLE();
-  return os << "UNKNOWN";  // Keep the compiler happy.
+  return os << u8"UNKNOWN";  // Keep the compiler happy.
 }
 
 Handle<FieldType> Object::OptimalType(Isolate* isolate,
@@ -1615,12 +1620,49 @@ void Object::ShortPrint(FILE* out) {
 }
 
 
+template <typename T> class ToAscii {
+  public:
+  ToAscii(T t) :
+    t_(t) {}
+  T& value(){ return t_; }
+  private:
+  T t_;
+};
+  
+
 void Object::ShortPrint(StringStream* accumulator) {
   std::ostringstream os;
   os << Brief(this);
   accumulator->Add(os.str().c_str());
 }
 
+
+std::ostream& operator<<(std::ostream& os, ToAscii<uint32_t> i) {
+#if V8_OS_ZOS
+  char buf[25];
+  snprintf(buf, sizeof(buf), "%u", i.value());
+  __e2a_s(buf);
+  os << &buf[0];
+  return os;
+#else
+  return os << i.value();
+#endif
+}
+  
+  
+std::ostream& operator<<(std::ostream& os, ToAscii<void*> obj) {
+#if V8_OS_ZOS
+  char buf[25];
+
+  snprintf(buf, sizeof(buf), "%p", obj.value());
+  __e2a_s(buf);
+  os << &buf[0];
+  return os;
+#else
+  return os << i.value();
+#endif
+}
+  
 
 void Object::ShortPrint(std::ostream& os) { os << Brief(this); }
 
@@ -1825,12 +1867,12 @@ bool String::MakeExternal(v8::String::ExternalOneByteStringResource* resource) {
 void String::StringShortPrint(StringStream* accumulator) {
   int len = length();
   if (len > kMaxShortPrintLength) {
-    accumulator->Add("<Very long string[%u]>", len);
+    accumulator->Add(u8"<Very long string[%u]>", len);
     return;
   }
 
   if (!LooksValid()) {
-    accumulator->Add("<Invalid String>");
+    accumulator->Add(u8"<Invalid String>");
     return;
   }
 
@@ -1851,7 +1893,7 @@ void String::StringShortPrint(StringStream* accumulator) {
   }
   stream.Reset(this);
   if (one_byte) {
-    accumulator->Add("<String[%u]: ", length());
+    accumulator->Add(u8"<String[%u]: ", length());
     for (int i = 0; i < len; i++) {
       accumulator->Put(static_cast<char>(stream.GetNext()));
     }
@@ -1859,17 +1901,17 @@ void String::StringShortPrint(StringStream* accumulator) {
   } else {
     // Backslash indicates that the string contains control
     // characters and that backslashes are therefore escaped.
-    accumulator->Add("<String[%u]\\: ", length());
+    accumulator->Add(u8"<String[%u]\\: ", length());
     for (int i = 0; i < len; i++) {
       uint16_t c = stream.GetNext();
       if (c == '\xa') {
-        accumulator->Add("\\n");
+        accumulator->Add(u8"\\n");
       } else if (c == '\xd') {
-        accumulator->Add("\\r");
+        accumulator->Add(u8"\\r");
       } else if (c == '\x5c') {
-        accumulator->Add("\\\\");
+        accumulator->Add(u8"\\\\");
       } else if (c < 32 || c > 126) {
-        accumulator->Add("\\x%02x", c);
+        accumulator->Add(u8"\\x%02x", c);
       } else {
         accumulator->Put(static_cast<char>(c));
       }
@@ -1900,35 +1942,35 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       double length = JSArray::cast(this)->length()->IsUndefined()
           ? 0
           : JSArray::cast(this)->length()->Number();
-      accumulator->Add("<JS Array[%u]>", static_cast<uint32_t>(length));
+      accumulator->Add(u8"<JS Array[%u]>", static_cast<uint32_t>(length));
       break;
     }
     case JS_BOUND_FUNCTION_TYPE: {
       JSBoundFunction* bound_function = JSBoundFunction::cast(this);
       Object* name = bound_function->name();
-      accumulator->Add("<JS BoundFunction");
+      accumulator->Add(u8"<JS BoundFunction");
       if (name->IsString()) {
         String* str = String::cast(name);
         if (str->length() > 0) {
-          accumulator->Add(" ");
+          accumulator->Add(u8" ");
           accumulator->Put(str);
         }
       }
       accumulator->Add(
-          " (BoundTargetFunction %p)>",
+          u8" (BoundTargetFunction %p)>",
           reinterpret_cast<void*>(bound_function->bound_target_function()));
       break;
     }
     case JS_WEAK_MAP_TYPE: {
-      accumulator->Add("<JS WeakMap>");
+      accumulator->Add(u8"<JS WeakMap>");
       break;
     }
     case JS_WEAK_SET_TYPE: {
-      accumulator->Add("<JS WeakSet>");
+      accumulator->Add(u8"<JS WeakSet>");
       break;
     }
     case JS_REGEXP_TYPE: {
-      accumulator->Add("<JS RegExp>");
+      accumulator->Add(u8"<JS RegExp>");
       break;
     }
     case JS_FUNCTION_TYPE: {
@@ -1938,25 +1980,25 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       if (fun_name->IsString()) {
         String* str = String::cast(fun_name);
         if (str->length() > 0) {
-          accumulator->Add("<JS Function ");
+          accumulator->Add(u8"<JS Function ");
           accumulator->Put(str);
           printed = true;
         }
       }
       if (!printed) {
-        accumulator->Add("<JS Function");
+        accumulator->Add(u8"<JS Function");
       }
-      accumulator->Add(" (SharedFunctionInfo %p)",
+      accumulator->Add(u8" (SharedFunctionInfo %p)",
                        reinterpret_cast<void*>(function->shared()));
       accumulator->Put('\x3e');
       break;
     }
     case JS_GENERATOR_OBJECT_TYPE: {
-      accumulator->Add("<JS Generator>");
+      accumulator->Add(u8"<JS Generator>");
       break;
     }
     case JS_MODULE_TYPE: {
-      accumulator->Add("<JS Module>");
+      accumulator->Add(u8"<JS Module>");
       break;
     }
     // All other JSObjects are rather similar to each other (JSObject,
@@ -1968,12 +2010,12 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
       bool printed = false;
       if (constructor->IsHeapObject() &&
           !heap->Contains(HeapObject::cast(constructor))) {
-        accumulator->Add("!!!INVALID CONSTRUCTOR!!!");
+        accumulator->Add(u8"!!!INVALID CONSTRUCTOR!!!");
       } else {
         bool global_object = IsJSGlobalProxy();
         if (constructor->IsJSFunction()) {
           if (!heap->Contains(JSFunction::cast(constructor)->shared())) {
-            accumulator->Add("!!!INVALID SHARED ON CONSTRUCTOR!!!");
+            accumulator->Add(u8"!!!INVALID SHARED ON CONSTRUCTOR!!!");
           } else {
             Object* constructor_name =
                 JSFunction::cast(constructor)->shared()->name();
@@ -1981,12 +2023,12 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
               String* str = String::cast(constructor_name);
               if (str->length() > 0) {
                 bool vowel = AnWord(str);
-                accumulator->Add("<%sa%s ",
-                       global_object ? "Global Object: " : "",
-                       vowel ? "n" : "");
+                accumulator->Add(u8"<%sa%s ",
+                       global_object ? u8"Global Object: " : "",
+                       vowel ? u8"n" : u8"");
                 accumulator->Put(str);
-                accumulator->Add(" with %smap %p",
-                    map_of_this->is_deprecated() ? "deprecated " : "",
+                accumulator->Add(u8" with %smap %p",
+                    map_of_this->is_deprecated() ? u8"deprecated " : "",
                     map_of_this);
                 printed = true;
               }
@@ -1994,11 +2036,11 @@ void JSObject::JSObjectShortPrint(StringStream* accumulator) {
           }
         }
         if (!printed) {
-          accumulator->Add("<JS %sObject", global_object ? "Global " : "");
+          accumulator->Add(u8"<JS %sObject", global_object ? u8"Global " : u8"");
         }
       }
       if (IsJSValue()) {
-        accumulator->Add(" value = ");
+        accumulator->Add(u8" value : ");
         JSValue::cast(this)->value()->ShortPrint(accumulator);
       }
       accumulator->Put('\x3e');
@@ -2014,16 +2056,16 @@ void JSObject::PrintElementsTransition(
     ElementsKind to_kind, Handle<FixedArrayBase> to_elements) {
   if (from_kind != to_kind) {
     OFStream os(file);
-    os << "elements transition [" << ElementsKindToString(from_kind) << " -> "
-       << ElementsKindToString(to_kind) << "] in ";
+    os << u8"elements transition [" << ElementsKindToString(from_kind) << u8" -> "
+       << ElementsKindToString(to_kind) << u8"] in ";
     JavaScriptFrame::PrintTop(object->GetIsolate(), file, false, true);
-    PrintF(file, " for ");
+    PrintF(file, u8" for ");
     object->ShortPrint(file);
-    PrintF(file, " from ");
+    PrintF(file, u8" from ");
     from_elements->ShortPrint(file);
-    PrintF(file, " to ");
+    PrintF(file, u8" to ");
     to_elements->ShortPrint(file);
-    PrintF(file, "\n");
+    PrintF(file, u8"\n");
   }
 }
 
@@ -2105,7 +2147,7 @@ void Map::PrintGeneralization(
 void JSObject::PrintInstanceMigration(FILE* file,
                                       Map* original_map,
                                       Map* new_map) {
-  PrintF(file, "[migrating]");
+  PrintF(file, u8"[migrating]");
   DescriptorArray* o = original_map->instance_descriptors();
   DescriptorArray* n = new_map->instance_descriptors();
   for (int i = 0; i < original_map->NumberOfOwnDescriptors(); i++) {
@@ -2113,34 +2155,34 @@ void JSObject::PrintInstanceMigration(FILE* file,
     Representation n_r = n->GetDetails(i).representation();
     if (!o_r.Equals(n_r)) {
       String::cast(o->GetKey(i))->PrintOn(file);
-      PrintF(file, ":%s->%s ", o_r.Mnemonic(), n_r.Mnemonic());
+      PrintF(file, u8":%s->%s ", o_r.Mnemonic(), n_r.Mnemonic());
     } else if (o->GetDetails(i).type() == DATA_CONSTANT &&
                n->GetDetails(i).type() == DATA) {
       Name* name = o->GetKey(i);
       if (name->IsString()) {
         String::cast(name)->PrintOn(file);
       } else {
-        PrintF(file, "{symbol %p}", static_cast<void*>(name));
+        PrintF(file, u8"{symbol %p}", static_cast<void*>(name));
       }
-      PrintF(file, " ");
+      PrintF(file, u8" ");
     }
   }
-  PrintF(file, "\n");
+  PrintF(file, u8"\n");
 }
 
 
 void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
   Heap* heap = GetHeap();
   if (!heap->Contains(this)) {
-    os << "!!!INVALID POINTER!!!";
+    os << u8"!!!INVALID POINTER!!!";
     return;
   }
   if (!heap->Contains(map())) {
-    os << "!!!INVALID MAP!!!";
+    os << u8"!!!INVALID MAP!!!";
     return;
   }
 
-  os << this << " ";
+  os << ToAscii<void*>(this) << u8" ";
 
   if (IsString()) {
     HeapStringAllocator allocator;
@@ -2158,28 +2200,28 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
   }
   switch (map()->instance_type()) {
     case MAP_TYPE:
-      os << "<Map(" << ElementsKindToString(Map::cast(this)->elements_kind())
-         << ")>";
+      os << u8"<Map(" << ElementsKindToString(Map::cast(this)->elements_kind())
+         << u8")>";
       break;
     case FIXED_ARRAY_TYPE:
-      os << "<FixedArray[" << FixedArray::cast(this)->length() << "]>";
+      os << u8"<FixedArray[" << FixedArray::cast(this)->length() << u8"]>";
       break;
     case FIXED_DOUBLE_ARRAY_TYPE:
-      os << "<FixedDoubleArray[" << FixedDoubleArray::cast(this)->length()
-         << "]>";
+      os << u8"<FixedDoubleArray[" << FixedDoubleArray::cast(this)->length()
+         << u8"]>";
       break;
     case BYTE_ARRAY_TYPE:
-      os << "<ByteArray[" << ByteArray::cast(this)->length() << "]>";
+      os << u8"<ByteArray[" << ByteArray::cast(this)->length() << u8"]>";
       break;
     case BYTECODE_ARRAY_TYPE:
-      os << "<BytecodeArray[" << BytecodeArray::cast(this)->length() << "]>";
+      os << u8"<BytecodeArray[" << BytecodeArray::cast(this)->length() << u8"]>";
       break;
     case TRANSITION_ARRAY_TYPE:
-      os << "<TransitionArray[" << TransitionArray::cast(this)->length()
-         << "]>";
+      os << u8"<TransitionArray[" << TransitionArray::cast(this)->length()
+         << u8"]>";
       break;
     case FREE_SPACE_TYPE:
-      os << "<FreeSpace[" << FreeSpace::cast(this)->size() << "]>";
+      os << u8"<FreeSpace[" << FreeSpace::cast(this)->size() << "]>";
       break;
 #define TYPED_ARRAY_SHORT_PRINT(Type, type, TYPE, ctype, size)                \
   case FIXED_##TYPE##_ARRAY_TYPE:                                             \
@@ -2195,14 +2237,14 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       base::SmartArrayPointer<char> debug_name =
           shared->DebugName()->ToCString();
       if (debug_name[0] != 0) {
-        os << "<SharedFunctionInfo " << debug_name.get() << ">";
+        os << u8"<SharedFunctionInfo " << debug_name.get() << u8">";
       } else {
-        os << "<SharedFunctionInfo>";
+        os << u8"<SharedFunctionInfo>";
       }
       break;
     }
     case JS_MESSAGE_OBJECT_TYPE:
-      os << "<JSMessageObject>";
+      os << u8"<JSMessageObject>";
       break;
 #define MAKE_STRUCT_CASE(NAME, Name, name) \
   case NAME##_TYPE:                        \
@@ -2212,22 +2254,22 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
 #undef MAKE_STRUCT_CASE
     case CODE_TYPE: {
       Code* code = Code::cast(this);
-      os << "<Code: " << Code::Kind2String(code->kind()) << ">";
+      os << u8"<Code: " << Code::Kind2String(code->kind()) << u8">";
       break;
     }
     case ODDBALL_TYPE: {
       if (IsUndefined()) {
-        os << "<undefined>";
+        os << u8"<undefined>";
       } else if (IsTheHole()) {
-        os << "<the hole>";
+        os << u8"<the hole>";
       } else if (IsNull()) {
-        os << "<null>";
+        os << u8"<null>";
       } else if (IsTrue()) {
-        os << "<true>";
+        os << u8"<true>";
       } else if (IsFalse()) {
-        os << "<false>";
+        os << u8"<false>";
       } else {
-        os << "<Odd Oddball>";
+        os << u8"<Odd Oddball>";
       }
       break;
     }
@@ -2237,13 +2279,13 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case HEAP_NUMBER_TYPE: {
-      os << "<Number: ";
+      os << u8"<Number: ";
       HeapNumber::cast(this)->HeapNumberPrint(os);
-      os << ">";
+      os << u8">";
       break;
     }
     case MUTABLE_HEAP_NUMBER_TYPE: {
-      os << "<MutableNumber: ";
+      os << u8"<MutableNumber: ";
       HeapNumber::cast(this)->HeapNumberPrint(os);
       os << '\x3e';
       break;
@@ -2260,13 +2302,13 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case JS_PROXY_TYPE:
-      os << "<JSProxy>";
+      os << u8"<JSProxy>";
       break;
     case FOREIGN_TYPE:
-      os << "<Foreign>";
+      os << u8"<Foreign>";
       break;
     case CELL_TYPE: {
-      os << "Cell for ";
+      os << u8"Cell for ";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       Cell::cast(this)->value()->ShortPrint(&accumulator);
@@ -2274,7 +2316,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case PROPERTY_CELL_TYPE: {
-      os << "PropertyCell for ";
+      os << u8"PropertyCell for ";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       PropertyCell* cell = PropertyCell::cast(this);
@@ -2283,7 +2325,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     case WEAK_CELL_TYPE: {
-      os << "WeakCell for ";
+      os << u8"WeakCell for ";
       HeapStringAllocator allocator;
       StringStream accumulator(&allocator);
       WeakCell::cast(this)->value()->ShortPrint(&accumulator);
@@ -2291,7 +2333,7 @@ void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
       break;
     }
     default:
-      os << "<Other heap object (" << map()->instance_type() << ")>";
+      os << u8"<Other heap object (" << map()->instance_type() << ")>";
       break;
   }
 }
@@ -2734,7 +2776,7 @@ void JSObject::UpdatePrototypeUserRegistration(Handle<Map> old_map,
   new_map->set_prototype_info(old_map->prototype_info());
   old_map->set_prototype_info(Smi::FromInt(0));
   if (FLAG_trace_prototype_users) {
-    PrintF("Moving prototype_info %p from map %p to map %p.\n",
+    PrintF(u8"Moving prototype_info %p from map %p to map %p.\n",
            reinterpret_cast<void*>(new_map->prototype_info()),
            reinterpret_cast<void*>(*old_map),
            reinterpret_cast<void*>(*new_map));
@@ -5681,7 +5723,7 @@ void JSObject::MigrateSlowToFast(Handle<JSObject> object,
 
 #if TRACE_MAPS
   if (FLAG_trace_maps) {
-    PrintF("[TraceMaps: SlowToFast from= %p to= %p reason= %s ]\n",
+    PrintF(u8"[TraceMaps: SlowToFast from: %p to: %p reason: %s ]\n",
            reinterpret_cast<void*>(*old_map), reinterpret_cast<void*>(*new_map),
            reason);
   }
@@ -9283,7 +9325,7 @@ Handle<Map> Map::Normalize(Handle<Map> fast_map, PropertyNormalizationMode mode,
     }
 #if TRACE_MAPS
     if (FLAG_trace_maps) {
-      PrintF("[TraceMaps: Normalize from= %p to= %p reason= %s ]\n",
+      PrintF(u8"[TraceMaps: Normalize from: %p to: %p reason: %s ]\n",
              reinterpret_cast<void*>(*fast_map),
              reinterpret_cast<void*>(*new_map), reason);
     }
@@ -9421,10 +9463,10 @@ Handle<Map> Map::ShareDescriptor(Handle<Map> map,
 // static
 void Map::TraceTransition(const char* what, Map* from, Map* to, Name* name) {
   if (FLAG_trace_maps) {
-    PrintF("[TraceMaps: %s from= %p to= %p name= ", what,
+    PrintF(u8"[TraceMaps: %s from: %p to: %p name: ", what,
            reinterpret_cast<void*>(from), reinterpret_cast<void*>(to));
     name->NameShortPrint();
-    PrintF(" ]\n");
+    PrintF(u8" ]\n");
   }
 }
 
@@ -9506,7 +9548,7 @@ Handle<Map> Map::CopyReplaceDescriptors(
       (map->is_prototype_map() ||
        !(flag == INSERT_TRANSITION &&
          TransitionArray::CanHaveMoreTransitions(map)))) {
-    PrintF("[TraceMaps: ReplaceDescriptors from= %p to= %p reason= %s ]\n",
+    PrintF(u8"[TraceMaps: ReplaceDescriptors from: %p to: %p reason: %s ]\n",
            reinterpret_cast<void*>(*map), reinterpret_cast<void*>(*result),
            reason);
   }
@@ -9733,7 +9775,7 @@ Handle<Map> Map::CopyForTransition(Handle<Map> map, const char* reason) {
 
 #if TRACE_MAPS
   if (FLAG_trace_maps) {
-    PrintF("[TraceMaps: CopyForTransition from= %p to= %p reason= %s ]\n",
+    PrintF(u8"[TraceMaps: CopyForTransition from: %p to: %p reason: %s ]\n",
            reinterpret_cast<void*>(*map), reinterpret_cast<void*>(*new_map),
            reason);
   }
@@ -9907,7 +9949,7 @@ Handle<Map> Map::TransitionToDataProperty(Handle<Map> map, Handle<Name> name,
       Vector<char> name_buffer = Vector<char>::New(100);
       name->NameShortPrint(name_buffer);
       Vector<char> buffer = Vector<char>::New(128);
-      SNPrintF(buffer, "TooManyFastProperties %s", name_buffer.start());
+      SNPrintF(buffer, u8"TooManyFastProperties %s", name_buffer.start());
       return Map::Normalize(map, CLEAR_INOBJECT_PROPERTIES, buffer.start());
     }
 #endif
@@ -10666,7 +10708,7 @@ void WeakFixedArray::Set(Handle<WeakFixedArray> array, int index,
                      : array->GetIsolate()->factory()->NewWeakCell(value);
   Handle<FixedArray>::cast(array)->set(index + kFirstIndex, *cell);
   if (FLAG_trace_weak_arrays) {
-    PrintF("[WeakFixedArray: storing at index %d ]\n", index);
+    PrintF(u8"[WeakFixedArray: storing at index %d ]\n", index);
   }
   array->set_last_used_index(index);
 }
@@ -10692,7 +10734,7 @@ Handle<WeakFixedArray> WeakFixedArray::Add(Handle<Object> maybe_array,
         return array;
       }
       if (FLAG_trace_weak_arrays) {
-        PrintF("[WeakFixedArray: searching for free slot]\n");
+        PrintF(u8"[WeakFixedArray: searching for free slot]\n");
       }
       i = (i + 1) % length;
       if (i == first_index) break;
@@ -10704,7 +10746,7 @@ Handle<WeakFixedArray> WeakFixedArray::Add(Handle<Object> maybe_array,
   Handle<WeakFixedArray> new_array =
       Allocate(array->GetIsolate(), new_length, array);
   if (FLAG_trace_weak_arrays) {
-    PrintF("[WeakFixedArray: growing to size %d ]\n", new_length);
+    PrintF(u8"[WeakFixedArray: growing to size %d ]\n", new_length);
   }
   WeakFixedArray::Set(new_array, length, value);
   if (assigned_index != NULL) *assigned_index = length;
@@ -12299,7 +12341,7 @@ void IteratingStringHasher::VisitConsString(ConsString* cons_string) {
 void String::PrintOn(FILE* file) {
   int length = this->length();
   for (int i = 0; i < length; i++) {
-    PrintF(file, "%c", Get(i));
+    PrintF(file, u8"%c", Get(i));
   }
 }
 
@@ -12404,9 +12446,9 @@ void JSFunction::AttemptConcurrentOptimization() {
          !shared()->optimization_disabled());
   DCHECK(isolate->concurrent_recompilation_enabled());
   if (FLAG_trace_concurrent_recompilation) {
-    PrintF("  ** Marking ");
+    PrintF(u8"  ** Marking ");
     ShortPrint();
-    PrintF(" for concurrent recompilation.\n");
+    PrintF(u8" for concurrent recompilation.\n");
   }
   set_code_no_write_barrier(
       isolate->builtins()->builtin(Builtins::kCompileOptimizedConcurrent));
@@ -12543,12 +12585,12 @@ void SharedFunctionInfo::EvictFromOptimizedCodeMap(Code* optimized_code,
         optimized_code) {
       BailoutId osr(Smi::cast(code_map->get(src + kOsrAstIdOffset))->value());
       if (FLAG_trace_opt) {
-        PrintF("[evicting entry from optimizing code map (%s) for ", reason);
+        PrintF(u8"[evicting entry from optimizing code map (%s) for ", reason);
         ShortPrint();
         if (osr.IsNone()) {
-          PrintF("]\n");
+          PrintF(u8"]\n");
         } else {
-          PrintF(" (osr ast id %d)]\n", osr.ToInt());
+          PrintF(u8" (osr ast id %d)]\n", osr.ToInt());
         }
       }
       if (!osr.IsNone()) {
@@ -12579,9 +12621,9 @@ void SharedFunctionInfo::EvictFromOptimizedCodeMap(Code* optimized_code,
     code_map->set(kSharedCodeIndex, heap->empty_weak_cell(),
                   SKIP_WRITE_BARRIER);
     if (FLAG_trace_opt) {
-      PrintF("[evicting entry from optimizing code map (%s) for ", reason);
+      PrintF(u8"[evicting entry from optimizing code map (%s) for ", reason);
       ShortPrint();
-      PrintF(" (context-independent code)]\n");
+      PrintF(u8" (context-independent code)]\n");
     }
   }
   if (dst != length) {
@@ -12743,7 +12785,7 @@ void JSObject::LazyRegisterPrototypeUser(Handle<Map> user, Isolate* isolate) {
       proto_info->set_prototype_users(*new_array);
     }
     if (FLAG_trace_prototype_users) {
-      PrintF("Registering %p as a user of prototype %p (map=%p).\n",
+      PrintF(u8"Registering %p as a user of prototype %p (map:%p).\n",
              reinterpret_cast<void*>(*current_user),
              reinterpret_cast<void*>(*proto),
              reinterpret_cast<void*>(proto->map()));
@@ -12785,7 +12827,7 @@ bool JSObject::UnregisterPrototypeUser(Handle<Map> user, Isolate* isolate) {
   DCHECK(WeakFixedArray::cast(maybe_registry)->Get(slot) == *user);
   WeakFixedArray::cast(maybe_registry)->Clear(slot);
   if (FLAG_trace_prototype_users) {
-    PrintF("Unregistering %p as a user of prototype %p.\n",
+    PrintF(u8"Unregistering %p as a user of prototype %p.\n",
            reinterpret_cast<void*>(*user), reinterpret_cast<void*>(*prototype));
   }
   return true;
@@ -12795,7 +12837,7 @@ bool JSObject::UnregisterPrototypeUser(Handle<Map> user, Isolate* isolate) {
 static void InvalidatePrototypeChainsInternal(Map* map) {
   if (!map->is_prototype_map()) return;
   if (FLAG_trace_prototype_users) {
-    PrintF("Invalidating prototype map %p 's cell\n",
+    PrintF(u8"Invalidating prototype map %p 's cell\n",
            reinterpret_cast<void*>(map));
   }
   Object* maybe_proto_info = map->prototype_info();
@@ -13051,7 +13093,7 @@ void JSFunction::SetInitialMap(Handle<JSFunction> function, Handle<Map> map,
   map->SetConstructor(*function);
 #if TRACE_MAPS
   if (FLAG_trace_maps) {
-    PrintF("[TraceMaps: InitialMap map= %p SFI= %d_%s ]\n",
+    PrintF(u8"[TraceMaps: InitialMap map: %p SFI: %d_%s ]\n",
            reinterpret_cast<void*>(*map), function->shared()->unique_id(),
            function->shared()->DebugName()->ToCString().get());
   }
@@ -13275,7 +13317,7 @@ MaybeHandle<Map> JSFunction::GetDerivedMap(Isolate* isolate,
 
 void JSFunction::PrintName(FILE* out) {
   base::SmartArrayPointer<char> name = shared()->DebugName()->ToCString();
-  PrintF(out, "%s", name.get());
+  PrintF(out, u8"%s", name.get());
 }
 
 
@@ -13851,9 +13893,9 @@ void SharedFunctionInfo::DisableOptimization(BailoutReason reason) {
          abstract_code()->kind() == AbstractCode::BUILTIN);
   PROFILE(GetIsolate(), CodeDisableOptEvent(abstract_code(), this));
   if (FLAG_trace_opt) {
-    PrintF("[disabled optimization for ");
+    PrintF(u8"[disabled optimization for ");
     ShortPrint();
-    PrintF(", reason: %s]\n", GetBailoutReason(reason));
+    PrintF(u8", reason: %s]\n", GetBailoutReason(reason));
   }
 }
 
@@ -13987,9 +14029,9 @@ CodeAndLiterals SharedFunctionInfo::SearchOptimizedCodeMap(
   }
   if (FLAG_trace_opt && !OptimizedCodeMapIsCleared() &&
       result.code == nullptr) {
-    PrintF("[didn't find optimized code in optimized code map for ");
+    PrintF(u8"[didn't find optimized code in optimized code map for ");
     ShortPrint();
-    PrintF("]\n");
+    PrintF(u8"]\n");
   }
   return result;
 }
@@ -14615,11 +14657,11 @@ void Code::PrintDeoptLocation(FILE* out, Address pc) {
   class SourcePosition pos = info.position;
   if (info.deopt_reason != Deoptimizer::kNoReason || !pos.IsUnknown()) {
     if (FLAG_hydrogen_track_positions) {
-      PrintF(out, "            ;;; deoptimize at %d_%d: %s\n",
+      PrintF(out, u8"            ;;; deoptimize at %d_%d: %s\n",
              pos.inlining_id(), pos.position(),
              Deoptimizer::GetDeoptReason(info.deopt_reason));
     } else {
-      PrintF(out, "            ;;; deoptimize at %d: %s\n", pos.raw(),
+      PrintF(out, u8"            ;;; deoptimize at %d: %s\n", pos.raw(),
              Deoptimizer::GetDeoptReason(info.deopt_reason));
     }
   }
@@ -15030,7 +15072,7 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
       Vector<char> buf = Vector<char>::New(50);
       intptr_t* ptr = reinterpret_cast<intptr_t*>(begin + constant_pool_offset);
       for (int i = 0; i < constant_pool_size; i += kPointerSize, ptr++) {
-        SNPrintF(buf, "%4d %08" V8PRIxPTR, i, *ptr);
+        SNPrintF(buf, u8"%4d %08" V8PRIxPTR, i, *ptr);
         os << static_cast<const void*>(ptr) << "  " << buf.start() << "\n";
       }
     }
@@ -15145,8 +15187,8 @@ int BytecodeArray::SourceStatementPosition(int offset) {
 }
 
 void BytecodeArray::Disassemble(std::ostream& os) {
-  os << "Parameter count " << parameter_count() << "\n";
-  os << "Frame size " << frame_size() << "\n";
+  os << u8"Parameter count " << parameter_count() << u8"\n";
+  os << u8"Frame size " << frame_size() << u8"\n";
   Vector<char> buf = Vector<char>::New(50);
 
   const uint8_t* base_address = GetFirstBytecodeAddress();
@@ -15158,17 +15200,17 @@ void BytecodeArray::Disassemble(std::ostream& os) {
     if (!source_positions.done() &&
         iterator.current_offset() == source_positions.bytecode_offset()) {
       os << std::setw(5) << source_positions.source_position();
-      os << (source_positions.is_statement() ? " S> " : " E> ");
+      os << (source_positions.is_statement() ? u8" S> " : u8" E> ");
       source_positions.Advance();
     } else {
-      os << "         ";
+      os << u8"         ";
     }
     const uint8_t* current_address = base_address + iterator.current_offset();
-    SNPrintF(buf, "%p", current_address);
+    SNPrintF(buf, u8"%p", current_address);
     os << buf.start() << " : ";
     interpreter::Bytecodes::Decode(os, current_address, parameter_count());
     if (interpreter::Bytecodes::IsJump(iterator.current_bytecode())) {
-      SNPrintF(buf, " (%p)", base_address + iterator.GetJumpTargetOffset());
+      SNPrintF(buf, u8" (%p)", base_address + iterator.GetJumpTargetOffset());
       os << buf.start();
     }
     os << std::endl;
@@ -15176,13 +15218,13 @@ void BytecodeArray::Disassemble(std::ostream& os) {
   }
 
   if (constant_pool()->length() > 0) {
-    os << "Constant pool (size = " << constant_pool()->length() << ")\n";
+    os << u8"Constant pool (size = " << constant_pool()->length() << u8")\n";
     constant_pool()->Print();
   }
 
 #ifdef ENABLE_DISASSEMBLER
   if (handler_table()->length() > 0) {
-    os << "Handler Table (size = " << handler_table()->Size() << ")\n";
+    os << u8"Handler Table (size = " << handler_table()->Size() << u8")\n";
     HandlerTable::cast(handler_table())->HandlerTableRangePrint(os);
   }
 #endif
@@ -15584,8 +15626,8 @@ void DependentCode::SetMarkedForDeoptimization(Code* code,
     DeoptimizationInputData* deopt_data =
         DeoptimizationInputData::cast(code->deoptimization_data());
     CodeTracer::Scope scope(code->GetHeap()->isolate()->GetCodeTracer());
-    PrintF(scope.file(), "[marking dependent code 0x%08" V8PRIxPTR
-                         " (opt #%d) for deoptimization, reason: %s]\n",
+    PrintF(scope.file(), u8"[marking dependent code 0x%08" V8PRIxPTR
+                         u8" (opt #%d) for deoptimization, reason: %s]\n",
            reinterpret_cast<intptr_t>(code),
            deopt_data->OptimizationId()->value(), DependencyGroupName(group));
   }
@@ -16159,7 +16201,7 @@ void AllocationSite::DigestTransitionFeedback(Handle<AllocationSite> site,
     }
     if (IsMoreGeneralElementsKindTransition(kind, to_kind)) {
       if (FLAG_trace_track_allocation_sites) {
-        PrintF("AllocationSite: JSArray %p site updated %s->%s\n",
+        PrintF(u8"AllocationSite: JSArray %p site updated %s->%s\n",
                reinterpret_cast<void*>(*site),
                ElementsKindToString(kind),
                ElementsKindToString(to_kind));
@@ -16789,17 +16831,17 @@ const char* Symbol::PrivateSymbolToName() const {
 
 
 void Symbol::SymbolShortPrint(std::ostream& os) {
-  os << "<Symbol: " << Hash();
+  os << u8"<Symbol: " << ToAscii<uint32_t>(Hash());
   if (!name()->IsUndefined()) {
-    os << " ";
+    os << u8" ";
     HeapStringAllocator allocator;
     StringStream accumulator(&allocator);
     String::cast(name())->StringShortPrint(&accumulator);
     os << accumulator.ToCString().get();
   } else {
-    os << " (" << PrivateSymbolToName() << ")";
+    os << u8" (" << PrivateSymbolToName() << u8")";
   }
-  os << ">";
+  os << u8">";
 }
 
 

@@ -57,21 +57,21 @@ void DumpBacktrace() {
 #if V8_LIBC_GLIBC || V8_OS_BSD
   void* trace[100];
   int size = backtrace(trace, arraysize(trace));
-  OS::PrintError("\n==== C stack trace ===============================\n\n");
+  OS::PrintError(u8"\n==== C stack trace ===============================\n\n");
   if (size == 0) {
-    OS::PrintError("(empty)\n");
+    OS::PrintError(u8"(empty)\n");
   } else {
     for (int i = 1; i < size; ++i) {
-      OS::PrintError("%2d: ", i);
+      OS::PrintError(u8"%2d: ", i);
       Dl_info info;
       char* demangled = NULL;
       if (!dladdr(trace[i], &info) || !info.dli_sname) {
-        OS::PrintError("%p\n", trace[i]);
+        OS::PrintError(u8"%p\n", trace[i]);
       } else if ((demangled = abi::__cxa_demangle(info.dli_sname, 0, 0, 0))) {
-        OS::PrintError("%s\n", demangled);
+        OS::PrintError(u8"%s\n", demangled);
         free(demangled);
       } else {
-        OS::PrintError("%s\n", info.dli_sname);
+        OS::PrintError(u8"%s\n", info.dli_sname);
       }
     }
   }
@@ -85,9 +85,9 @@ void DumpBacktrace() {
   OS::PrintError(out);
   bt_addr_t trace[100];
   int size = bt_get_backtrace(&acc, trace, arraysize(trace));
-  OS::PrintError("\n==== C stack trace ===============================\n\n");
+  OS::PrintError(u8"\n==== C stack trace ===============================\n\n");
   if (size == 0) {
-    OS::PrintError("(empty)\n");
+    OS::PrintError(u8"(empty)\n");
   } else {
     bt_sprnf_addrs(&memmap, trace, size, const_cast<char*>("%a\n"),
                    out, sizeof(out), NULL);

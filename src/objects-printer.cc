@@ -885,16 +885,16 @@ void JSFunction::JSFunctionPrint(std::ostream& os) {  // NOLINT
 
 
 void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "SharedFunctionInfo");
-  os << "\n - name = " << Brief(name());
-  os << "\n - formal_parameter_count = " << internal_formal_parameter_count();
-  os << "\n - expected_nof_properties = " << expected_nof_properties();
-  os << "\n - ast_node_count = " << ast_node_count();
-  os << "\n - instance class name = ";
+  HeapObject::PrintHeader(os, u8"SharedFunctionInfo");
+  os << u8"\n - name = " << Brief(name());
+  os << u8"\n - formal_parameter_count = " << internal_formal_parameter_count();
+  os << u8"\n - expected_nof_properties = " << expected_nof_properties();
+  os << u8"\n - ast_node_count = " << ast_node_count();
+  os << u8"\n - instance class name = ";
   instance_class_name()->Print(os);
-  os << "\n - code = " << Brief(code());
+  os << u8"\n - code = " << Brief(code());
   if (HasSourceCode()) {
-    os << "\n - source code = ";
+    os << u8"\n - source code = ";
     String* source = String::cast(Script::cast(script())->source());
     int start = start_position();
     int length = end_position() - start;
@@ -906,24 +906,24 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
   // os << "\n - script =";
   // script()->Print(os);
   if (is_named_expression()) {
-    os << "\n - named expression";
+    os << u8"\n - named expression";
   } else if (is_anonymous_expression()) {
-    os << "\n - anonymous expression";
+    os << u8"\n - anonymous expression";
   } else if (is_declaration()) {
-    os << "\n - declaration";
+    os << u8"\n - declaration";
   }
-  os << "\n - function token position = " << function_token_position();
-  os << "\n - start position = " << start_position();
-  os << "\n - end position = " << end_position();
-  os << "\n - debug info = " << Brief(debug_info());
-  os << "\n - length = " << length();
-  os << "\n - optimized_code_map = " << Brief(optimized_code_map());
-  os << "\n - feedback_vector = ";
+  os << u8"\n - function token position = " << function_token_position();
+  os << u8"\n - start position = " << start_position();
+  os << u8"\n - end position = " << end_position();
+  os << u8"\n - debug info = " << Brief(debug_info());
+  os << u8"\n - length = " << length();
+  os << u8"\n - optimized_code_map = " << Brief(optimized_code_map());
+  os << u8"\n - feedback_vector = ";
   feedback_vector()->TypeFeedbackVectorPrint(os);
   if (HasBytecodeArray()) {
-    os << "\n - bytecode_array = " << bytecode_array();
+    os << u8"\n - bytecode_array = " << bytecode_array();
   }
-  os << "\n";
+  os << u8"\n";
 }
 
 

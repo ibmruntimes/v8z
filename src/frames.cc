@@ -878,10 +878,10 @@ int JavaScriptFrame::LookupExceptionHandlerInTable(
 void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
                                              Address pc, FILE* file,
                                              bool print_line_number) {
-  PrintF(file, "%s", function->IsOptimized() ? "*" : "~");
+  PrintF(file, u8"%s", function->IsOptimized() ? u8"*" : u8"~");
   function->PrintName(file);
   int code_offset = static_cast<int>(pc - code->instruction_start());
-  PrintF(file, "+%d", code_offset);
+  PrintF(file, u8"+%d", code_offset);
   if (print_line_number) {
     SharedFunctionInfo* shared = function->shared();
     int source_pos = code->SourcePosition(code_offset);
@@ -894,9 +894,9 @@ void JavaScriptFrame::PrintFunctionAndOffset(JSFunction* function, Code* code,
         String* script_name = String::cast(script->name());
         base::SmartArrayPointer<char> c_script_name =
             script_name->ToCString(DISALLOW_NULLS, ROBUST_STRING_TRAVERSAL);
-        PrintF(file, " at %s:%d", c_script_name.get(), line);
+        PrintF(file, u8" at %s:%d", c_script_name.get(), line);
       } else {
-        PrintF(file, " at <unknown>:%d", line);
+        PrintF(file, u8" at <unknown>:%d", line);
       }
     } else {
       PrintF(file, " at <unknown>:<unknown>");
@@ -913,21 +913,21 @@ void JavaScriptFrame::PrintTop(Isolate* isolate, FILE* file, bool print_args,
   while (!it.done()) {
     if (it.frame()->is_java_script()) {
       JavaScriptFrame* frame = it.frame();
-      if (frame->IsConstructor()) PrintF(file, "new ");
+      if (frame->IsConstructor()) PrintF(file, u8"new ");
       PrintFunctionAndOffset(frame->function(), frame->unchecked_code(),
                              frame->pc(), file, print_line_number);
       if (print_args) {
         // function arguments
         // (we are intentionally only printing the actually
         // supplied parameters, not all parameters required)
-        PrintF(file, "(this=");
+        PrintF(file, u8"(this=");
         frame->receiver()->ShortPrint(file);
         const int length = frame->ComputeParametersCount();
         for (int i = 0; i < length; i++) {
-          PrintF(file, ", ");
+          PrintF(file, u8", ");
           frame->GetParameter(i)->ShortPrint(file);
         }
-        PrintF(file, ")");
+        PrintF(file, u8")");
       }
       break;
     }

@@ -210,7 +210,7 @@ char* ReadCharsFromFile(FILE* file,
                         const char* filename) {
   if (file == NULL || fseek(file, 0, SEEK_END) != 0) {
     if (verbose) {
-      base::OS::PrintError("Cannot read from file %s.\n", filename);
+      base::OS::PrintError(u8"Cannot read from file %s.\n", filename);
     }
     return NULL;
   }

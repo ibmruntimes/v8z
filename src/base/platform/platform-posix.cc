@@ -496,6 +496,11 @@ void OS::FPrint(FILE* out, const char* format, ...) {
 void OS::VFPrint(FILE* out, const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_INFO, LOG_TAG, format, args);
+#elif defined (__MVS__)
+  char buf[512];
+  int len = __vsprintf_a(buf, format, args);
+  __a2e_l(buf, len);
+  fprintf(out, buf); 
 #else
   vfprintf(out, format, args);
 #endif
@@ -537,7 +542,11 @@ int OS::VSNPrintF(char* str,
                   int length,
                   const char* format,
                   va_list args) {
+#if defined(__MVS__)
+  int n = __vsnprintf_a(str, length, format, args);
+#else
   int n = vsnprintf(str, length, format, args);
+#endif
   if (n < 0 || n >= length) {
     // If the length is zero, the assignment fails.
     if (length > 0)

@@ -120,9 +120,9 @@ void S390Debugger::Stop(Instruction* instr) {
   }
   // Print the stop message and code if it is not the default code.
   if (code != kMaxStopCode) {
-    PrintF("Simulator hit stop %u: %s\n", code, msg);
+    PrintF(u8"Simulator hit stop %u: %s\n", code, msg);
   } else {
-    PrintF("Simulator hit %s\n", msg);
+    PrintF(u8"Simulator hit %s\n", msg);
   }
   sim_->set_pc(sim_->get_pc() + sizeof(FourByteInstr) + kPointerSize);
   Debug();
@@ -241,7 +241,7 @@ void S390Debugger::Debug() {
       // use a reasonably large buffer
       v8::internal::EmbeddedVector<char, 256> buffer;
       dasm.InstructionDecode(buffer, reinterpret_cast<byte*>(sim_->get_pc()));
-      PrintF("  0x%08" V8PRIxPTR "  %s\n", sim_->get_pc(), buffer.start());
+      PrintF(u8"  0x%08" V8PRIxPTR "  %s\n", sim_->get_pc(), buffer.start());
       last_pc = sim_->get_pc();
     }
     char* line = ReadLine("sim> ");
@@ -297,45 +297,45 @@ void S390Debugger::Debug() {
           if (strcmp(arg1, "all") == 0) {
             for (int i = 0; i < kNumRegisters; i++) {
               value = GetRegisterValue(i);
-              PrintF("    %3s: %08" V8PRIxPTR,
+              PrintF(u8"    %3s: %08" V8PRIxPTR,
                      Register::from_code(i).ToString(), value);
               if ((argc == 3 && strcmp(arg2, "fp") == 0) && i < 8 &&
                   (i % 2) == 0) {
                 dvalue = GetRegisterPairDoubleValue(i);
-                PrintF(" (%f)\n", dvalue);
+                PrintF(u8" (%f)\n", dvalue);
               } else if (i != 0 && !((i + 1) & 3)) {
-                PrintF("\n");
+                PrintF(u8"\n");
               }
             }
-            PrintF("  pc: %08" V8PRIxPTR "  cr: %08x\n", sim_->special_reg_pc_,
+            PrintF(u8"  pc: %08" V8PRIxPTR "  cr: %08x\n", sim_->special_reg_pc_,
                    sim_->condition_reg_);
           } else if (strcmp(arg1, "alld") == 0) {
             for (int i = 0; i < kNumRegisters; i++) {
               value = GetRegisterValue(i);
-              PrintF("     %3s: %08" V8PRIxPTR " %11" V8PRIdPTR,
+              PrintF(u8"     %3s: %08" V8PRIxPTR " %11" V8PRIdPTR,
                      Register::from_code(i).ToString(), value, value);
               if ((argc == 3 && strcmp(arg2, "fp") == 0) && i < 8 &&
                   (i % 2) == 0) {
                 dvalue = GetRegisterPairDoubleValue(i);
-                PrintF(" (%f)\n", dvalue);
+                PrintF(u8" (%f)\n", dvalue);
               } else if (!((i + 1) % 2)) {
-                PrintF("\n");
+                PrintF(u8"\n");
               }
             }
-            PrintF("   pc: %08" V8PRIxPTR "  cr: %08x\n", sim_->special_reg_pc_,
+            PrintF(u8"   pc: %08" V8PRIxPTR "  cr: %08x\n", sim_->special_reg_pc_,
                    sim_->condition_reg_);
           } else if (strcmp(arg1, "allf") == 0) {
             for (int i = 0; i < DoubleRegister::kNumRegisters; i++) {
               float fvalue = GetFPFloatRegisterValue(i);
               uint32_t as_words = bit_cast<uint32_t>(fvalue);
-              PrintF("%3s: %f 0x%08x\n",
+              PrintF(u8"%3s: %f 0x%08x\n",
                      DoubleRegister::from_code(i).ToString(), fvalue, as_words);
             }
           } else if (strcmp(arg1, "alld") == 0) {
             for (int i = 0; i < DoubleRegister::kNumRegisters; i++) {
               dvalue = GetFPDoubleRegisterValue(i);
               uint64_t as_words = bit_cast<uint64_t>(dvalue);
-              PrintF("%3s: %f 0x%08x %08x\n",
+              PrintF(u8"%3s: %f 0x%08x %08x\n",
                      DoubleRegister::from_code(i).ToString(), dvalue,
                      static_cast<uint32_t>(as_words >> 32),
                      static_cast<uint32_t>(as_words & 0xffffffff));
@@ -347,26 +347,26 @@ void S390Debugger::Debug() {
             int regnum = strtoul(&arg1[1], 0, 10);
             if (regnum != kNoRegister) {
               value = GetRegisterValue(regnum);
-              PrintF("%s: 0x%08" V8PRIxPTR " %" V8PRIdPTR "\n", arg1, value,
+              PrintF(u8"%s: 0x%08" V8PRIxPTR " %" V8PRIdPTR "\n", arg1, value,
                      value);
             } else {
-              PrintF("%s unrecognized\n", arg1);
+              PrintF(u8"%s unrecognized\n", arg1);
             }
           } else {
             if (GetValue(arg1, &value)) {
-              PrintF("%s: 0x%08" V8PRIxPTR " %" V8PRIdPTR "\n", arg1, value,
+              PrintF(u8"%s: 0x%08" V8PRIxPTR " %" V8PRIdPTR "\n", arg1, value,
                      value);
             } else if (GetFPDoubleValue(arg1, &dvalue)) {
               uint64_t as_words = bit_cast<uint64_t>(dvalue);
-              PrintF("%s: %f 0x%08x %08x\n", arg1, dvalue,
+              PrintF(u8"%s: %f 0x%08x %08x\n", arg1, dvalue,
                      static_cast<uint32_t>(as_words >> 32),
                      static_cast<uint32_t>(as_words & 0xffffffff));
             } else {
-              PrintF("%s unrecognized\n", arg1);
+              PrintF(u8"%s unrecognized\n", arg1);
             }
           }
         } else {
-          PrintF("print <register>\n");
+          PrintF(u8"print <register>\n");
         }
       } else if ((strcmp(cmd, "po") == 0) ||
                  (strcmp(cmd, "printobject") == 0)) {
@@ -386,13 +386,13 @@ void S390Debugger::Debug() {
             os << arg1 << " unrecognized\n";
           }
         } else {
-          PrintF("printobject <value>\n");
+          PrintF(u8"printobject <value>\n");
         }
       } else if (strcmp(cmd, "setpc") == 0) {
         intptr_t value;
 
         if (!GetValue(arg1, &value)) {
-          PrintF("%s unrecognized\n", arg1);
+          PrintF(u8"%s unrecognized\n", arg1);
           continue;
         }
         sim_->set_pc(value);
@@ -406,7 +406,7 @@ void S390Debugger::Debug() {
         } else {  // "mem"
           intptr_t value;
           if (!GetValue(arg1, &value)) {
-            PrintF("%s unrecognized\n", arg1);
+            PrintF(u8"%s unrecognized\n", arg1);
             continue;
           }
           cur = reinterpret_cast<intptr_t*>(value);
@@ -424,20 +424,20 @@ void S390Debugger::Debug() {
         end = cur + words;
 
         while (cur < end) {
-          PrintF("  0x%08" V8PRIxPTR ":  0x%08" V8PRIxPTR " %10" V8PRIdPTR,
+          PrintF(u8"  0x%08" V8PRIxPTR ":  0x%08" V8PRIxPTR " %10" V8PRIdPTR,
                  reinterpret_cast<intptr_t>(cur), *cur, *cur);
           HeapObject* obj = reinterpret_cast<HeapObject*>(*cur);
           intptr_t value = *cur;
           Heap* current_heap = sim_->isolate_->heap();
           if (((value & 1) == 0) ||
               current_heap->ContainsSlow(obj->address())) {
-            PrintF("(smi %d)", PlatformSmiTagging::SmiToInt(obj));
+            PrintF(u8"(smi %d)", PlatformSmiTagging::SmiToInt(obj));
           } else if (current_heap->Contains(obj)) {
-            PrintF(" (");
+            PrintF(u8" (");
             obj->ShortPrint();
-            PrintF(")");
+            PrintF(u8")");
           }
-          PrintF("\n");
+          PrintF(u8"\n");
           cur++;
         }
       } else if (strcmp(cmd, "disasm") == 0 || strcmp(cmd, "di") == 0) {
@@ -483,33 +483,33 @@ void S390Debugger::Debug() {
         while (numInstructions > 0) {
           prev = cur;
           cur += dasm.InstructionDecode(buffer, cur);
-          PrintF("  0x%08" V8PRIxPTR "  %s\n", reinterpret_cast<intptr_t>(prev),
+          PrintF(u8"  0x%08" V8PRIxPTR "  %s\n", reinterpret_cast<intptr_t>(prev),
                  buffer.start());
           numInstructions--;
         }
       } else if (strcmp(cmd, "gdb") == 0) {
-        PrintF("relinquishing control to gdb\n");
+        PrintF(u8"relinquishing control to gdb\n");
         v8::base::OS::DebugBreak();
-        PrintF("regaining control from gdb\n");
+        PrintF(u8"regaining control from gdb\n");
       } else if (strcmp(cmd, "break") == 0) {
         if (argc == 2) {
           intptr_t value;
           if (GetValue(arg1, &value)) {
             if (!SetBreakpoint(reinterpret_cast<Instruction*>(value))) {
-              PrintF("setting breakpoint failed\n");
+              PrintF(u8"setting breakpoint failed\n");
             }
           } else {
-            PrintF("%s unrecognized\n", arg1);
+            PrintF(u8"%s unrecognized\n", arg1);
           }
         } else {
-          PrintF("break <address>\n");
+          PrintF(u8"break <address>\n");
         }
       } else if (strcmp(cmd, "del") == 0) {
         if (!DeleteBreakpoint(NULL)) {
-          PrintF("deleting breakpoint failed\n");
+          PrintF(u8"deleting breakpoint failed\n");
         }
       } else if (strcmp(cmd, "cr") == 0) {
-        PrintF("Condition reg: %08x\n", sim_->condition_reg_);
+        PrintF(u8"Condition reg: %08x\n", sim_->condition_reg_);
       } else if (strcmp(cmd, "stop") == 0) {
         intptr_t value;
         intptr_t stop_pc =
@@ -523,20 +523,20 @@ void S390Debugger::Debug() {
             stop_instr->SetInstructionBits(kNopInstr);
             msg_address->SetInstructionBits(kNopInstr);
           } else {
-            PrintF("Not at debugger stop.\n");
+            PrintF(u8"Not at debugger stop.\n");
           }
         } else if (argc == 3) {
           // Print information about all/the specified breakpoint(s).
           if (strcmp(arg1, "info") == 0) {
             if (strcmp(arg2, "all") == 0) {
-              PrintF("Stop information:\n");
+              PrintF(u8"Stop information:\n");
               for (uint32_t i = 0; i < sim_->kNumOfWatchedStops; i++) {
                 sim_->PrintStopInfo(i);
               }
             } else if (GetValue(arg2, &value)) {
               sim_->PrintStopInfo(value);
             } else {
-              PrintF("Unrecognized argument.\n");
+              PrintF(u8"Unrecognized argument.\n");
             }
           } else if (strcmp(arg1, "enable") == 0) {
             // Enable all/the specified breakpoint(s).
@@ -547,7 +547,7 @@ void S390Debugger::Debug() {
             } else if (GetValue(arg2, &value)) {
               sim_->EnableStop(value);
             } else {
-              PrintF("Unrecognized argument.\n");
+              PrintF(u8"Unrecognized argument.\n");
             }
           } else if (strcmp(arg1, "disable") == 0) {
             // Disable all/the specified breakpoint(s).
@@ -558,76 +558,76 @@ void S390Debugger::Debug() {
             } else if (GetValue(arg2, &value)) {
               sim_->DisableStop(value);
             } else {
-              PrintF("Unrecognized argument.\n");
+              PrintF(u8"Unrecognized argument.\n");
             }
           }
         } else {
-          PrintF("Wrong usage. Use help command for more information.\n");
+          PrintF(u8"Wrong usage. Use help command for more information.\n");
         }
       } else if ((strcmp(cmd, "t") == 0) || strcmp(cmd, "trace") == 0) {
         ::v8::internal::FLAG_trace_sim = !::v8::internal::FLAG_trace_sim;
-        PrintF("Trace of executed instructions is %s\n",
+        PrintF(u8"Trace of executed instructions is %s\n",
                ::v8::internal::FLAG_trace_sim ? "on" : "off");
       } else if ((strcmp(cmd, "h") == 0) || (strcmp(cmd, "help") == 0)) {
-        PrintF("cont\n");
-        PrintF("  continue execution (alias 'c')\n");
-        PrintF("stepi [num instructions]\n");
-        PrintF("  step one/num instruction(s) (alias 'si')\n");
-        PrintF("print <register>\n");
-        PrintF("  print register content (alias 'p')\n");
-        PrintF("  use register name 'all' to display all integer registers\n");
+        PrintF(u8"cont\n");
+        PrintF(u8"  continue execution (alias 'c')\n");
+        PrintF(u8"stepi [num instructions]\n");
+        PrintF(u8"  step one/num instruction(s) (alias 'si')\n");
+        PrintF(u8"print <register>\n");
+        PrintF(u8"  print register content (alias 'p')\n");
+        PrintF(u8"  use register name 'all' to display all integer registers\n");
         PrintF(
-            "  use register name 'alld' to display integer registers "
-            "with decimal values\n");
-        PrintF("  use register name 'rN' to display register number 'N'\n");
-        PrintF("  add argument 'fp' to print register pair double values\n");
+            u8"  use register name 'alld' to display integer registers "
+            u8"with decimal values\n");
+        PrintF(u8"  use register name 'rN' to display register number 'N'\n");
+        PrintF(u8"  add argument 'fp' to print register pair double values\n");
         PrintF(
-            "  use register name 'allf' to display floating-point "
-            "registers\n");
-        PrintF("printobject <register>\n");
-        PrintF("  print an object from a register (alias 'po')\n");
-        PrintF("cr\n");
-        PrintF("  print condition register\n");
-        PrintF("stack [<num words>]\n");
-        PrintF("  dump stack content, default dump 10 words)\n");
-        PrintF("mem <address> [<num words>]\n");
-        PrintF("  dump memory content, default dump 10 words)\n");
-        PrintF("disasm [<instructions>]\n");
-        PrintF("disasm [<address/register>]\n");
-        PrintF("disasm [[<address/register>] <instructions>]\n");
-        PrintF("  disassemble code, default is 10 instructions\n");
-        PrintF("  from pc (alias 'di')\n");
-        PrintF("gdb\n");
-        PrintF("  enter gdb\n");
-        PrintF("break <address>\n");
-        PrintF("  set a break point on the address\n");
-        PrintF("del\n");
-        PrintF("  delete the breakpoint\n");
-        PrintF("trace (alias 't')\n");
-        PrintF("  toogle the tracing of all executed statements\n");
-        PrintF("stop feature:\n");
-        PrintF("  Description:\n");
-        PrintF("    Stops are debug instructions inserted by\n");
-        PrintF("    the Assembler::stop() function.\n");
-        PrintF("    When hitting a stop, the Simulator will\n");
-        PrintF("    stop and and give control to the S390Debugger.\n");
-        PrintF("    The first %d stop codes are watched:\n",
+            u8"  use register name 'allf' to display floating-point "
+            u8"registers\n");
+        PrintF(u8"printobject <register>\n");
+        PrintF(u8"  print an object from a register (alias 'po')\n");
+        PrintF(u8"cr\n");
+        PrintF(u8"  print condition register\n");
+        PrintF(u8"stack [<num words>]\n");
+        PrintF(u8"  dump stack content, default dump 10 words)\n");
+        PrintF(u8"mem <address> [<num words>]\n");
+        PrintF(u8"  dump memory content, default dump 10 words)\n");
+        PrintF(u8"disasm [<instructions>]\n");
+        PrintF(u8"disasm [<address/register>]\n");
+        PrintF(u8"disasm [[<address/register>] <instructions>]\n");
+        PrintF(u8"  disassemble code, default is 10 instructions\n");
+        PrintF(u8"  from pc (alias 'di')\n");
+        PrintF(u8"gdb\n");
+        PrintF(u8"  enter gdb\n");
+        PrintF(u8"break <address>\n");
+        PrintF(u8"  set a break point on the address\n");
+        PrintF(u8"del\n");
+        PrintF(u8"  delete the breakpoint\n");
+        PrintF(u8"trace (alias 't')\n");
+        PrintF(u8"  toogle the tracing of all executed statements\n");
+        PrintF(u8"stop feature:\n");
+        PrintF(u8"  Description:\n");
+        PrintF(u8"    Stops are debug instructions inserted by\n");
+        PrintF(u8"    the Assembler::stop() function.\n");
+        PrintF(u8"    When hitting a stop, the Simulator will\n");
+        PrintF(u8"    stop and and give control to the S390Debugger.\n");
+        PrintF(u8"    The first %d stop codes are watched:\n",
                Simulator::kNumOfWatchedStops);
-        PrintF("    - They can be enabled / disabled: the Simulator\n");
-        PrintF("      will / won't stop when hitting them.\n");
-        PrintF("    - The Simulator keeps track of how many times they \n");
-        PrintF("      are met. (See the info command.) Going over a\n");
-        PrintF("      disabled stop still increases its counter. \n");
-        PrintF("  Commands:\n");
-        PrintF("    stop info all/<code> : print infos about number <code>\n");
-        PrintF("      or all stop(s).\n");
-        PrintF("    stop enable/disable all/<code> : enables / disables\n");
-        PrintF("      all or number <code> stop(s)\n");
-        PrintF("    stop unstop\n");
-        PrintF("      ignore the stop instruction at the current location\n");
-        PrintF("      from now on\n");
+        PrintF(u8"    - They can be enabled / disabled: the Simulator\n");
+        PrintF(u8"      will / won't stop when hitting them.\n");
+        PrintF(u8"    - The Simulator keeps track of how many times they \n");
+        PrintF(u8"      are met. (See the info command.) Going over a\n");
+        PrintF(u8"      disabled stop still increases its counter. \n");
+        PrintF(u8"  Commands:\n");
+        PrintF(u8"    stop info all/<code> : print infos about number <code>\n");
+        PrintF(u8"      or all stop(s).\n");
+        PrintF(u8"    stop enable/disable all/<code> : enables / disables\n");
+        PrintF(u8"      all or number <code> stop(s)\n");
+        PrintF(u8"    stop unstop\n");
+        PrintF(u8"      ignore the stop instruction at the current location\n");
+        PrintF(u8"      from now on\n");
       } else {
-        PrintF("Unknown command: %s\n", cmd);
+        PrintF(u8"Unknown command: %s\n", cmd);
       }
     }
   }
@@ -1118,7 +1118,7 @@ uintptr_t Simulator::StackLimit(uintptr_t c_limit) const {
 
 // Unsupported instructions use Format to print an error and stop execution.
 void Simulator::Format(Instruction* instr, const char* format) {
-  PrintF("Simulator found unsupported instruction:\n 0x%08" V8PRIxPTR ": %s\n",
+  PrintF(u8"Simulator found unsupported instruction:\n 0x%08" V8PRIxPTR ": %s\n",
          reinterpret_cast<intptr_t>(instr), format);
   UNIMPLEMENTED();
 }
@@ -1284,15 +1284,15 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           switch (redirection->type()) {
             case ExternalReference::BUILTIN_FP_FP_CALL:
             case ExternalReference::BUILTIN_COMPARE_CALL:
-              PrintF("Call to host function at %p with args %f, %f",
+              PrintF(u8"Call to host function at %p with args %f, %f",
                      FUNCTION_ADDR(generic_target), dval0, dval1);
               break;
             case ExternalReference::BUILTIN_FP_CALL:
-              PrintF("Call to host function at %p with arg %f",
+              PrintF(u8"Call to host function at %p with arg %f",
                      FUNCTION_ADDR(generic_target), dval0);
               break;
             case ExternalReference::BUILTIN_FP_INT_CALL:
-              PrintF("Call to host function at %p with args %f, %" V8PRIdPTR,
+              PrintF(u8"Call to host function at %p with args %f, %" V8PRIdPTR,
                      FUNCTION_ADDR(generic_target), dval0, ival);
               break;
             default:
@@ -1300,10 +1300,10 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
               break;
           }
           if (!stack_aligned) {
-            PrintF(" with unaligned stack %08" V8PRIxPTR "\n",
+            PrintF(u8" with unaligned stack %08" V8PRIxPTR "\n",
                    static_cast<intptr_t>(get_register(sp)));
           }
-          PrintF("\n");
+          PrintF(u8"\n");
         }
         CHECK(stack_aligned);
         switch (redirection->type()) {
@@ -1342,12 +1342,12 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         if (::v8::internal::FLAG_trace_sim || !stack_aligned) {
           switch (redirection->type()) {
             case ExternalReference::BUILTIN_COMPARE_CALL:
-              PrintF("Returned %08x\n", iresult);
+              PrintF(u8"Returned %08x\n", iresult);
               break;
             case ExternalReference::BUILTIN_FP_FP_CALL:
             case ExternalReference::BUILTIN_FP_CALL:
             case ExternalReference::BUILTIN_FP_INT_CALL:
-              PrintF("Returned %f\n", dresult);
+              PrintF(u8"Returned %f\n", dresult);
               break;
             default:
               UNREACHABLE();
@@ -1358,13 +1358,13 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         // See callers of MacroAssembler::CallApiFunctionAndReturn for
         // explanation of register usage.
         if (::v8::internal::FLAG_trace_sim || !stack_aligned) {
-          PrintF("Call to host function at %p args %08" V8PRIxPTR,
+          PrintF(u8"Call to host function at %p args %08" V8PRIxPTR,
                  reinterpret_cast<void*>(external), arg[0]);
           if (!stack_aligned) {
-            PrintF(" with unaligned stack %08" V8PRIxPTR "\n",
+            PrintF(u8" with unaligned stack %08" V8PRIxPTR "\n",
                    static_cast<intptr_t>(get_register(sp)));
           }
-          PrintF("\n");
+          PrintF(u8"\n");
         }
         CHECK(stack_aligned);
         SimulatorRuntimeDirectApiCall target =
@@ -1374,14 +1374,14 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         // See callers of MacroAssembler::CallApiFunctionAndReturn for
         // explanation of register usage.
         if (::v8::internal::FLAG_trace_sim || !stack_aligned) {
-          PrintF("Call to host function at %p args %08" V8PRIxPTR
+          PrintF(u8"Call to host function at %p args %08" V8PRIxPTR
                  " %08" V8PRIxPTR,
                  reinterpret_cast<void*>(external), arg[0], arg[1]);
           if (!stack_aligned) {
-            PrintF(" with unaligned stack %08" V8PRIxPTR "\n",
+            PrintF(u8" with unaligned stack %08" V8PRIxPTR "\n",
                    static_cast<intptr_t>(get_register(sp)));
           }
-          PrintF("\n");
+          PrintF(u8"\n");
         }
         CHECK(stack_aligned);
         SimulatorRuntimeProfilingApiCall target =
@@ -1391,14 +1391,14 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         // See callers of MacroAssembler::CallApiFunctionAndReturn for
         // explanation of register usage.
         if (::v8::internal::FLAG_trace_sim || !stack_aligned) {
-          PrintF("Call to host function at %p args %08" V8PRIxPTR
+          PrintF(u8"Call to host function at %p args %08" V8PRIxPTR
                  " %08" V8PRIxPTR,
                  reinterpret_cast<void*>(external), arg[0], arg[1]);
           if (!stack_aligned) {
-            PrintF(" with unaligned stack %08" V8PRIxPTR "\n",
+            PrintF(u8" with unaligned stack %08" V8PRIxPTR "\n",
                    static_cast<intptr_t>(get_register(sp)));
           }
-          PrintF("\n");
+          PrintF(u8"\n");
         }
         CHECK(stack_aligned);
         SimulatorRuntimeDirectGetterCall target =
@@ -1410,14 +1410,14 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       } else if (redirection->type() ==
                  ExternalReference::PROFILING_GETTER_CALL) {
         if (::v8::internal::FLAG_trace_sim || !stack_aligned) {
-          PrintF("Call to host function at %p args %08" V8PRIxPTR
+          PrintF(u8"Call to host function at %p args %08" V8PRIxPTR
                  " %08" V8PRIxPTR " %08" V8PRIxPTR,
                  reinterpret_cast<void*>(external), arg[0], arg[1], arg[2]);
           if (!stack_aligned) {
-            PrintF(" with unaligned stack %08" V8PRIxPTR "\n",
+            PrintF(u8" with unaligned stack %08" V8PRIxPTR "\n",
                    static_cast<intptr_t>(get_register(sp)));
           }
-          PrintF("\n");
+          PrintF(u8"\n");
         }
         CHECK(stack_aligned);
         SimulatorRuntimeProfilingGetterCall target =
@@ -1432,16 +1432,16 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           SimulatorRuntimeCall target =
               reinterpret_cast<SimulatorRuntimeCall>(external);
           PrintF(
-              "Call to host function at %p,\n"
-              "\t\t\t\targs %08" V8PRIxPTR ", %08" V8PRIxPTR ", %08" V8PRIxPTR
-              ", %08" V8PRIxPTR ", %08" V8PRIxPTR ", %08" V8PRIxPTR,
+              u8"Call to host function at %p,\n"
+              u8"\t\t\t\targs %08" V8PRIxPTR ", %08" V8PRIxPTR ", %08" V8PRIxPTR
+              u8", %08" V8PRIxPTR ", %08" V8PRIxPTR ", %08" V8PRIxPTR,
               FUNCTION_ADDR(target), arg[0], arg[1], arg[2], arg[3], arg[4],
               arg[5]);
           if (!stack_aligned) {
-            PrintF(" with unaligned stack %08" V8PRIxPTR "\n",
+            PrintF(u8" with unaligned stack %08" V8PRIxPTR "\n",
                    static_cast<intptr_t>(get_register(sp)));
           }
-          PrintF("\n");
+          PrintF(u8"\n");
         }
         CHECK(stack_aligned);
         if (redirection->type() == ExternalReference::BUILTIN_CALL_TRIPLE) {
@@ -1450,7 +1450,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           ObjectTriple result =
               target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
           if (::v8::internal::FLAG_trace_sim) {
-            PrintF("Returned {%08" V8PRIxPTR ", %08" V8PRIxPTR ", %08" V8PRIxPTR
+            PrintF(u8"Returned {%08" V8PRIxPTR ", %08" V8PRIxPTR ", %08" V8PRIxPTR
                    "}\n",
                    reinterpret_cast<intptr_t>(result.x),
                    reinterpret_cast<intptr_t>(result.y),
@@ -1469,7 +1469,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
             intptr_t y;
             decodeObjectPair(&result, &x, &y);
             if (::v8::internal::FLAG_trace_sim) {
-              PrintF("Returned {%08" V8PRIxPTR ", %08" V8PRIxPTR "}\n", x, y);
+              PrintF(u8"Returned {%08" V8PRIxPTR ", %08" V8PRIxPTR "}\n", x, y);
             }
             if (ABI_RETURNS_OBJECT_PAIRS_IN_REGS) {
 #ifdef V8_OS_ZOS
@@ -1491,7 +1491,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
             intptr_t result =
                 target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
             if (::v8::internal::FLAG_trace_sim) {
-              PrintF("Returned %08" V8PRIxPTR "\n", result);
+              PrintF(u8"Returned %08" V8PRIxPTR "\n", result);
             }
             set_register(result_reg, result);
           }
@@ -1508,13 +1508,13 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         //         int32_t hi_res = static_cast<int32_t>(result >> 32);
         // #if !V8_TARGET_LITTLE_ENDIAN
         //         if (::v8::internal::FLAG_trace_sim) {
-        //           PrintF("Returned %08x\n", hi_res);
+        //           PrintF(u8"Returned %08x\n", hi_res);
         //         }
         //         set_register(r2, hi_res);
         //         set_register(r3, lo_res);
         // #else
         //         if (::v8::internal::FLAG_trace_sim) {
-        //           PrintF("Returned %08x\n", lo_res);
+        //           PrintF(u8"Returned %08x\n", lo_res);
         //         }
         //         set_register(r2, lo_res);
         //         set_register(r3, hi_res);
@@ -1527,7 +1527,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         //           arg[4],
         //               arg[5]);
         //           if (::v8::internal::FLAG_trace_sim) {
-        //             PrintF("Returned %08" V8PRIxPTR "\n", result);
+        //             PrintF(u8"Returned %08" V8PRIxPTR "\n", result);
         //           }
         //           set_register(r2, result);
         //         } else {
@@ -1538,7 +1538,7 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
         //           ObjectPair result = target(arg[0], arg[1], arg[2], arg[3],
         //               arg[4], arg[5]);
         //           if (::v8::internal::FLAG_trace_sim) {
-        //             PrintF("Returned %08" V8PRIxPTR ", %08" V8PRIxPTR "\n",
+        //             PrintF(u8"Returned %08" V8PRIxPTR ", %08" V8PRIxPTR "\n",
         //                 result.x, result.y);
         //           }
         // #if ABI_RETURNS_OBJECTPAIR_IN_REGS
@@ -1631,8 +1631,8 @@ void Simulator::IncreaseStopCounter(uint32_t code) {
   DCHECK(isWatchedStop(code));
   if ((watched_stops_[code].count & ~(1 << 31)) == 0x7fffffff) {
     PrintF(
-        "Stop counter for code %i has overflowed.\n"
-        "Enabling this code and reseting the counter to 0.\n",
+        u8"Stop counter for code %i has overflowed.\n"
+        u8"Enabling this code and reseting the counter to 0.\n",
         code);
     watched_stops_[code].count = 0;
     EnableStop(code);
@@ -1645,17 +1645,17 @@ void Simulator::IncreaseStopCounter(uint32_t code) {
 void Simulator::PrintStopInfo(uint32_t code) {
   DCHECK(code <= kMaxStopCode);
   if (!isWatchedStop(code)) {
-    PrintF("Stop not watched.");
+    PrintF(u8"Stop not watched.");
   } else {
     const char* state = isEnabledStop(code) ? "Enabled" : "Disabled";
     int32_t count = watched_stops_[code].count & ~kStopDisabledBit;
     // Don't print the state of unused breakpoints.
     if (count != 0) {
       if (watched_stops_[code].desc) {
-        PrintF("stop %i - 0x%x: \t%s, \tcounter = %i, \t%s\n", code, code,
+        PrintF(u8"stop %i - 0x%x: \t%s, \tcounter = %i, \t%s\n", code, code,
                state, count, watched_stops_[code].desc);
       } else {
-        PrintF("stop %i - 0x%x: \t%s, \tcounter = %i\n", code, code, state,
+        PrintF(u8"stop %i - 0x%x: \t%s, \tcounter = %i\n", code, code, state,
                count);
       }
     }
@@ -4844,10 +4844,10 @@ void Simulator::ExecuteInstruction(Instruction* instr, bool auto_incr_pc) {
     v8::internal::EmbeddedVector<char, 256> buffer;
     dasm.InstructionDecode(buffer, reinterpret_cast<byte*>(instr));
 #ifdef V8_TARGET_ARCH_S390X
-    PrintF("%05ld  %08" V8PRIxPTR "  %s\n", icount_,
+    PrintF(u8"%05ld  %08" V8PRIxPTR "  %s\n", icount_,
            reinterpret_cast<intptr_t>(instr), buffer.start());
 #else
-    PrintF("%05lld  %08" V8PRIxPTR "  %s\n", icount_,
+    PrintF(u8"%05lld  %08" V8PRIxPTR "  %s\n", icount_,
            reinterpret_cast<intptr_t>(instr), buffer.start());
 #endif
     // Flush stdout to prevent incomplete file output during abnormal exits

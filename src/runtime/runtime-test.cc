@@ -321,7 +321,7 @@ RUNTIME_FUNCTION(Runtime_GlobalPrint) {
   StringCharacterStream stream(string);
   while (stream.HasMore()) {
     uint16_t character = stream.GetNext();
-    PrintF("%c", character);
+    PrintF(u8"%c", character);
   }
   return string;
 }
@@ -367,7 +367,7 @@ RUNTIME_FUNCTION(Runtime_AbortJS) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(String, message, 0);
-  base::OS::PrintError("abort: %s\n", message->ToCString().get());
+  base::OS::PrintError(u8"abort: %s\n", message->ToCString().get());
   isolate->PrintStack(stderr);
   base::OS::Abort();
   UNREACHABLE();
@@ -420,9 +420,9 @@ void PrintIndentation(Isolate* isolate) {
   const int nmax = 80;
   int n = StackSize(isolate);
   if (n <= nmax) {
-    PrintF("%4d:%*s", n, n, u8"");
+    PrintF(u8"%4d:%*s", n, n, u8"");
   } else {
-    PrintF("%4d:%*s", n, nmax, u8"...");
+    PrintF(u8"%4d:%*s", n, nmax, u8"...");
   }
 }
 
@@ -433,7 +433,7 @@ RUNTIME_FUNCTION(Runtime_TraceEnter) {
   DCHECK_EQ(0, args.length());
   PrintIndentation(isolate);
   JavaScriptFrame::PrintTop(isolate, stdout, true, false);
-  PrintF(" {\n");
+  PrintF(u8" {\n");
   return isolate->heap()->undefined_value();
 }
 
@@ -443,9 +443,9 @@ RUNTIME_FUNCTION(Runtime_TraceExit) {
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_CHECKED(Object, obj, 0);
   PrintIndentation(isolate);
-  PrintF("} -> ");
+  PrintF(u8"} -> ");
   obj->ShortPrint();
-  PrintF("\n");
+  PrintF(u8"\n");
   return obj;  // return TOS
 }
 
@@ -453,7 +453,7 @@ RUNTIME_FUNCTION(Runtime_TraceTailCall) {
   SealHandleScope shs(isolate);
   DCHECK_EQ(0, args.length());
   PrintIndentation(isolate);
-  PrintF("} -> tail call ->\n");
+  PrintF(u8"} -> tail call ->\n");
   return isolate->heap()->undefined_value();
 }
 

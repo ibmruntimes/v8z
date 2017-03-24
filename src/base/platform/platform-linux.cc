@@ -216,7 +216,7 @@ void OS::SignalCodeMovingGC() {
   long size = sysconf(_SC_PAGESIZE);  // NOLINT(runtime/int)
   FILE* f = fopen(OS::GetGCFakeMMapFile(), "w+");
   if (f == NULL) {
-    OS::PrintError("Failed to open %s\n", OS::GetGCFakeMMapFile());
+    OS::PrintError(u8"Failed to open %s\n", OS::GetGCFakeMMapFile());
     OS::Abort();
   }
   void* addr = mmap(OS::GetRandomMmapAddr(), size,
