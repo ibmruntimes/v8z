@@ -11,9 +11,15 @@ namespace internal {
 
 // These register names are defined in a way to match the native disassembler
 // formatting. See for example the command "objdump -d <binary file>".
+#ifdef V8_OS_ZOS
 const char* Registers::names_[kNumRegisters] = {
-    u8"r0", u8"r1", u8"r2",  u8"r3", u8"r4", u8"r5",  u8"r6",  u8"r7",
-    u8"r8", u8"r9", u8"r10", u8"fp", u8"ip", u8"r13", u8"r14", u8"sp"};
+    u8"r0", u8"r1", u8"r2",  u8"r3", u8"sp", u8"r5",  u8"r6",  u8"r7",
+    u8"r8", u8"r9", u8"r10", u8"fp", u8"ip", u8"r13", u8"r14", u8"r15"};
+#else
+const char* Registers::names_[kNumRegisters] = {
+    "r0", "r1", "r2",  "r3", "r4", "r5",  "r6",  "r7",
+    "r8", "r9", "r10", "fp", "ip", "r13", "r14", "sp"};
+#endif
 
 const char* DoubleRegisters::names_[kNumDoubleRegisters] = {
     u8"f0", u8"f1", u8"f2",  u8"f3",  u8"f4",  u8"f5",  u8"f6",  u8"f7",

@@ -48,6 +48,10 @@
 
 #include "src/macro-assembler.h"
 
+#ifdef V8_OS_ZOS
+#include "src/s390/frames-s390.h"
+#endif
+
 namespace v8 {
 namespace internal {
 
@@ -200,8 +204,13 @@ void CpuFeatures::PrintFeatures() {
 
 Register ToRegister(int num) {
   DCHECK(num >= 0 && num < kNumRegisters);
+#ifdef V8_OS_ZOS
+  const Register kRegisters[] = {r0, r1, r2,  r3, sp, r5,  r6,  r7,
+                                 r8, r9, r10, fp, ip, r13, r14, r4};
+#else
   const Register kRegisters[] = {r0, r1, r2,  r3, r4, r5,  r6,  r7,
                                  r8, r9, r10, fp, ip, r13, r14, sp};
+#endif
   return kRegisters[num];
 }
 
@@ -241,15 +250,25 @@ Operand::Operand(Handle<Object> handle) {
   }
 }
 
-MemOperand::MemOperand(Register rn, int32_t offset) {
+MemOperand::MemOperand(Register rn, int32_t offset, bool bias) {
   baseRegister = rn;
   indexRegister = r0;
+  // TODO(mcornac): Need to check range of offset?
+#if V8_OS_ZOS
+  if (rn.is(sp) && bias) offset_ = offset + kStackPointerBias;
+  else
+#endif
   offset_ = offset;
 }
 
-MemOperand::MemOperand(Register rx, Register rb, int32_t offset) {
+MemOperand::MemOperand(Register rx, Register rb, int32_t offset, bool bias) {
   baseRegister = rb;
   indexRegister = rx;
+  // TODO(mcornac): Need to check range of offset?
+#if V8_OS_ZOS
+  if (rx.is(sp) && bias) offset_ = offset + kStackPointerBias;
+  else
+#endif
   offset_ = offset;
 }
 
@@ -1435,11 +1454,21 @@ RIL1_FORM_EMIT(xilf, XILF)
 // -------------------------
 // Load Address Register-Storage
 void Assembler::la(Register r1, const MemOperand& opnd) {
+#if V8_OS_ZOS
+  if (r1.is(sp) && (opnd.rb().is(sp) || opnd.rx().is(sp))) {
+    rx_form(LA, r1, opnd.rx(), opnd.rb(), opnd.offset() - kStackPointerBias);
+  } else
+#endif
   rx_form(LA, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 
 // Load Address Register-Storage
 void Assembler::lay(Register r1, const MemOperand& opnd) {
+#if V8_OS_ZOS
+  if (r1.is(sp) && (opnd.rb().is(sp) || opnd.rx().is(sp))) {
+    rxy_form(LAY, r1, opnd.rx(), opnd.rb(), opnd.offset() - kStackPointerBias);
+  } else
+#endif
   rxy_form(LAY, r1, opnd.rx(), opnd.rb(), opnd.offset());
 }
 

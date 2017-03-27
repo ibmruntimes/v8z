@@ -5513,7 +5513,13 @@ void LCodeGen::DoStackCheck(LStackCheck* instr) {
   if (instr->hydrogen()->is_function_entry()) {
     // Perform stack overflow check.
     Label done;
+#ifdef V8_OS_ZOS
+    __ lay(sp, MemOperand(sp, kStackPointerBias));
+#endif
     __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
+#ifdef V8_OS_ZOS
+    __ lay(sp, MemOperand(sp, -kStackPointerBias));
+#endif
     __ bge(&done, Label::kNear);
     DCHECK(instr->context()->IsRegister());
     DCHECK(ToRegister(instr->context()).is(cp));
@@ -5525,7 +5531,13 @@ void LCodeGen::DoStackCheck(LStackCheck* instr) {
     // Perform stack overflow check if this goto needs it before jumping.
     DeferredStackCheck* deferred_stack_check =
         new (zone()) DeferredStackCheck(this, instr);
+#ifdef V8_OS_ZOS
+    __ lay(sp, MemOperand(sp, kStackPointerBias));
+#endif
     __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
+#ifdef V8_OS_ZOS
+    __ lay(sp, MemOperand(sp, -kStackPointerBias));
+#endif
     __ blt(deferred_stack_check->entry());
     EnsureSpaceForLazyDeopt(Deoptimizer::patch_size());
     __ bind(instr->done_label());

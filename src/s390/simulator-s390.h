@@ -105,7 +105,11 @@ class Simulator {
     r1 = 1,
     r2 = 2,
     r3 = 3,
+#ifdef V8_OS_ZOS
+    r4 = 15,
+#else
     r4 = 4,
+#endif
     r5 = 5,
     r6 = 6,
     r7 = 7,
@@ -116,7 +120,11 @@ class Simulator {
     r12 = 12,
     r13 = 13,
     r14 = 14,
+#ifdef V8_OS_ZOS
+    r15 = 4,
+#else
     r15 = 15,
+#endif
     fp = r11,
     ip = r12,
     cp = r13,

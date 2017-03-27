@@ -1044,7 +1044,11 @@ int MacroAssembler::LeaveFrame(StackFrame::Type type, int stack_adjustment) {
   lay(r1, MemOperand(
               fp, StandardFrameConstants::kCallerSPOffset + stack_adjustment));
   LoadP(fp, MemOperand(fp, StandardFrameConstants::kCallerFPOffset));
+#ifdef V8_OS_ZOS
+  lay(sp, MemOperand(r1, -kStackPointerBias));
+#else
   LoadRR(sp, r1);
+#endif
   int frame_ends = pc_offset();
   return frame_ends;
 }
@@ -3182,7 +3186,12 @@ void MacroAssembler::PrepareCallCFunction(int num_reg_arguments,
   if (frame_alignment > kPointerSize) {
     // Make stack end at alignment and make room for stack arguments
     // -- preserving original value of sp.
+    // TODO(mcornac): using unbiased sp on stack.
+#ifdef V8_OS_ZOS
+    lay(scratch, MemOperand(sp, kStackPointerBias));
+#else
     LoadRR(scratch, sp);
+#endif
     lay(sp, MemOperand(sp, -(stack_passed_arguments + 1) * kPointerSize));
     DCHECK(base::bits::IsPowerOfTwo32(frame_alignment));
     ClearRightImm(sp, sp, Operand(WhichPowerOf2(frame_alignment)));
@@ -3245,13 +3254,12 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   LoadRR(r2, r3);
   LoadRR(r3, r4);
  
-   // Set up stack.
+  // Set up stack.
   stack_space = 16;  // Save area + debug area + reserved space.
   stack_space += 5;  // Stack passed arguments.
-  lay(r4, MemOperand(sp, -((stack_space * kPointerSize) + kStackPointerBias)));
-   // XPLINK linkage requires args in r5-r7 to be passed on the stack.
-  StoreMultipleP(r5, r7,
-                 MemOperand(r4, kStackPointerBias + 19 * kPointerSize));
+  lay(sp, MemOperand(sp, -stack_space * kPointerSize));
+  // XPLINK linkage requires args in r5-r7 to be passed on the stack.
+  StoreMultipleP(r5, r7, MemOperand(sp, 19 * kPointerSize));
 #endif 
   // Just call directly. The function called cannot cause a GC, or
   // allow preemption, so the return address in the link register
@@ -3270,8 +3278,8 @@ void MacroAssembler::CallCFunctionHelper(Register function,
 #ifdef V8_OS_ZOS
   CallC(dest);
   // Restore r5-r7.                                                      
-  LoadMultipleP(r5, r7,                                                  
-                MemOperand(r4, kStackPointerBias + 19 * kPointerSize));  
+  LoadMultipleP(r5, r7, MemOperand(sp, 19 * kPointerSize));
+  la(sp, MemOperand(sp, stack_space * kPointerSize));
   // Shuffle result.                                                     
   LoadRR(r2, r3);
 #else
@@ -3284,6 +3292,10 @@ void MacroAssembler::CallCFunctionHelper(Register function,
   if (ActivationFrameAlignment() > kPointerSize) {
     // Load the original stack pointer (pre-alignment) from the stack
     LoadP(sp, MemOperand(sp, stack_space * kPointerSize));
+#ifdef V8_OS_ZOS
+    // TODO(mcornac): rebias sp loaded from stack.
+    lay(sp, MemOperand(sp, -kStackPointerBias));
+#endif
   } else {
     la(sp, MemOperand(sp, stack_space * kPointerSize));
   }

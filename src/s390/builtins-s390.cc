@@ -503,7 +503,13 @@ void Builtins::Generate_InOptimizationQueue(MacroAssembler* masm) {
   // would be quite expensive.  A good compromise is to first check against
   // stack limit as a cue for an interrupt signal.
   Label ok;
+#if V8_OS_ZOS
+  __ lay(sp, MemOperand(sp, kStackPointerBias));
+#endif
   __ CmpLogicalP(sp, RootMemOperand(Heap::kStackLimitRootIndex));
+#if V8_OS_ZOS
+  __ lay(sp, MemOperand(sp, -kStackPointerBias));
+#endif
   __ bge(&ok, Label::kNear);
 
   GenerateTailCallToReturnedCode(masm, Runtime::kTryInstallOptimizedCode);
@@ -1747,6 +1753,9 @@ static void ArgumentAdaptorStackCheck(MacroAssembler* masm,
   __ LoadRoot(r7, Heap::kRealStackLimitRootIndex);
   // Make r7 the space we have left. The stack might already be overflowed
   // here which will cause r7 to become negative.
+#if V8_OS_ZOS
+  __ lay(r7, MemOperand(r7, -kStackPointerBias));
+#endif
   __ SubP(r7, sp, r7);
   // Check if the arguments will overflow the stack.
   __ ShiftLeftP(r0, r4, Operand(kPointerSizeLog2));

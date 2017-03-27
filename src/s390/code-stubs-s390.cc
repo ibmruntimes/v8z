@@ -1127,7 +1127,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     // Stack Pointer Bias = Xplink Bias(2048) + SaveArea(12 ptrs +
     // Reserved(2ptrs) + Debug Area(1ptr) +
     // Arg Area Prefix(1ptr) + Argument Area(3 ptrs).
-    __ lay(r4, MemOperand(sp, -(kStackPointerBias + 19 * kPointerSize)));
+    __ lay(sp, MemOperand(sp, -19 * kPointerSize));
 #endif
 	
     __ b(target);
@@ -1264,21 +1264,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
 
-#if V8_OS_ZOS
-  __ LoadRR(sp, r4);
-  __ lay(sp, MemOperand(sp, -12 * kPointerSize));
-  __ StoreMultipleP(r4, sp, MemOperand(sp, 0));
-  // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
-  // parameters and also places them starting at r4+2112 on the biased stack.
-  // Explicitly load argc and argv from stack back into r5/r6 respectively.
-  __ LoadP(r5, MemOperand(r4, 2048 + (19  * kPointerSize)));
-  __ LoadP(r6, MemOperand(r4, 2048 + (20  * kPointerSize)));
-
-  __ LoadRR(r4, r3);
-  __ LoadRR(r3, r2);
-  __ LoadRR(r2, r1);
-#endif  // V8_OS_ZOS
-  
 // saving floating point registers
 #if V8_TARGET_ARCH_S390X
   // 64bit ABI requires f8 to f15 be saved
@@ -1299,7 +1284,20 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ std(d6, MemOperand(sp, kDoubleSize));
 #endif
 
-#if !V8_OS_ZOS
+#if V8_OS_ZOS
+  __ lay(sp, MemOperand(sp, -12 * kPointerSize));
+  __ StoreMultipleP(sp, r4, MemOperand(sp));
+
+  // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
+  // parameters and also places them starting at r4+2112 on the biased stack.
+  // Explicitly load argc and argv from stack back into r5/r6 respectively.
+  __ LoadP(r5, MemOperand(sp, (19 + 12) * kPointerSize + 2 * kDoubleSize));
+  __ LoadP(r6, MemOperand(sp, (20 + 12) * kPointerSize + 2 * kDoubleSize));
+
+  __ LoadRR(r4, r3);
+  __ LoadRR(r3, r2);
+  __ LoadRR(r2, r1);
+#else
   // zLinux ABI
   //    Incoming parameters:
   //          r2: code entry
@@ -1439,7 +1437,11 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ lay(sp, MemOperand(sp, -EntryFrameConstants::kCallerFPOffset));
 
   // Reload callee-saved preserved regs, return address reg (r14) and sp
-#ifndef V8_OS_ZOS
+#ifdef V8_OS_ZOS
+  __ LoadRR(r3, r2);
+  __ LoadMultipleP(sp, r4, MemOperand(sp));
+  __ lay(sp, MemOperand(sp, 12 * kPointerSize));
+#else
   __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
 #endif
@@ -1465,9 +1467,6 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
 #endif
 
 #ifdef V8_OS_ZOS
-  __ LoadRR(r3, r2);
-  __ LoadMultipleP(r4, sp, MemOperand(sp, 0));
-  __ lay(sp, MemOperand(sp, 12 * kPointerSize));
   __ b(r7);
 #else
   __ b(r14);
@@ -3398,7 +3397,7 @@ void DirectCEntryStub::Generate(MacroAssembler* masm) {
   __ CleanseP(r14);
 #else
   __ CleanseP(r7);
-  __ StoreP(r7, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+  __ StoreP(r7, MemOperand(sp, 18 * kPointerSize));
 #endif
   // Statement positions are expected to be recorded when the target
   // address is loaded.
@@ -3859,7 +3858,7 @@ void StubFailureTrampolineStub::Generate(MacroAssembler* masm) {
   }
   masm->LeaveFrame(StackFrame::STUB_FAILURE_TRAMPOLINE);
   __ ShiftLeftP(r3, r3, Operand(kPointerSizeLog2));
-  __ la(sp, MemOperand(r3, sp));
+  __ la(sp, MemOperand(sp, r3));
   __ Ret();
 }
 
@@ -5554,7 +5553,6 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
    __ LoadRR(r2, r3);
    __ LoadRR(r3, r4);
   }
-  __ lay(r4, MemOperand(sp, -(kStackPointerBias + 18 * kPointerSize)));
   __ LoadRR(r10, r7);
 #endif
   
@@ -5711,7 +5709,7 @@ void CallApiCallbackStub::Generate(MacroAssembler* masm) {
   DCHECK(!api_function_address.is(r2) && !scratch.is(r2));
   // r2 = FunctionCallbackInfo&
   // Arguments is after the return address.
-  __ AddP(r2, sp, Operand(kFunctionCallbackInfoOffset));
+  __ AddP(r2, sp, Operand(kStackPointerBias + kFunctionCallbackInfoOffset));
   // FunctionCallbackInfo::implicit_args_
   __ StoreP(scratch, MemOperand(r2, 0 * kPointerSize));
   // FunctionCallbackInfo::values_
@@ -5767,7 +5765,11 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   const int kStackUnwindSpace = PropertyCallbackArguments::kArgsLength + 1;
 
   // Load address of v8::PropertyAccessorInfo::args_ array and name handle.
+#ifdef V8_OS_ZOS
+  __ lay(r2, MemOperand(sp));                  // r2 = Handle<Name>
+#else
   __ LoadRR(r2, sp);                           // r2 = Handle<Name>
+#endif
   __ AddP(r3, r2, Operand(1 * kPointerSize));  // r3 = v8::PCI::args_
 
   // If ABI passes Handles (pointer-sized struct) in a register:
@@ -5797,7 +5799,7 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   if (!ABI_PASSES_HANDLES_IN_REGS) {
     // pass 1st arg by reference
     __ StoreP(r2, MemOperand(sp, arg0Slot * kPointerSize));
-    __ AddP(r2, sp, Operand(arg0Slot * kPointerSize));
+    __ AddP(r2, sp, Operand(arg0Slot * kPointerSize + kStackPointerBias));
   }
 
   // Create v8::PropertyCallbackInfo object on the stack and initialize

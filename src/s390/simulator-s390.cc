@@ -753,7 +753,7 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
 // Set up simulator support first. Some of this information is needed to
 // setup the architecture state.
 #if V8_OS_ZOS
-  size_t stack_size = MB + 2048;
+  size_t stack_size = MB + kStackPointerBias;
 #elif V8_TARGET_ARCH_S390X
   size_t stack_size = FLAG_sim_stack_size * KB;
 #else
@@ -788,12 +788,8 @@ Simulator::Simulator(Isolate* isolate) : isolate_(isolate) {
   // The sp is initialized to point to the bottom (high address) of the
   // allocated stack area. To be safe in potential stack underflows we leave
   // some buffer below.
-#ifdef V8_OS_ZOS
-  registers_[r4] = reinterpret_cast<intptr_t>(stack_) + stack_size - stack_protection_size_; 
-#else
-  registers_[sp] =
-      reinterpret_cast<intptr_t>(stack_) + stack_size - stack_protection_size_;
-#endif  
+  registers_[sp] = reinterpret_cast<intptr_t>(stack_) + stack_size -
+                   stack_protection_size_ - kStackPointerBias;
   InitializeCoverage();
 
   last_debugger_input_ = NULL;
@@ -1247,14 +1243,14 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
       for (int i = 0; i < kArgCount - 1; i++) {
         arg[i] = get_register(arg0_regnum + i);
       }
-      intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
 #ifdef V8_OS_ZOS
       intptr_t* argument_area = reinterpret_cast<intptr_t*>(get_register(r4)
-        + 2048 + 16 * kPointerSize);
+        + kStackPointerBias + 16 * kPointerSize);
       arg[3] = argument_area[3];
       arg[4] = argument_area[4];
       arg[5] = argument_area[5];
 #else
+      intptr_t* stack_pointer = reinterpret_cast<intptr_t*>(get_register(sp));
       arg[5] = stack_pointer[kCalleeRegisterSaveAreaSize / kPointerSize];
 #endif      
       bool fp_call =
@@ -1265,8 +1261,8 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
 
       // Place the return address on the stack, making the call GC safe.
 #ifdef V8_OS_ZOS
-     intptr_t* ra_slot = reinterpret_cast<intptr_t *>(get_register(r4)
-        + 2048 + 3 * kPointerSize);
+     intptr_t* ra_slot = reinterpret_cast<intptr_t *>(get_register(sp)
+        + kStackPointerBias + 3 * kPointerSize);
      *ra_slot = get_register(r7);
 #else
       *reinterpret_cast<intptr_t*>(get_register(sp) +
@@ -5054,16 +5050,14 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
     set_register(i + reg_arg_start, value);
   }
 
-#ifdef V8_OS_ZOS
   // Remaining arguments passed on stack.
-  int64_t original_stack = get_register(r4);
+  int64_t original_stack = get_register(sp);
+#ifdef V8_OS_ZOS
   // Compute position of stack on entry to generated code.
   intptr_t entry_stack =
       (original_stack -
        (kCalleeRegisterSaveAreaSize + stack_arg_count * sizeof(intptr_t)));
 #else
-  // Remaining arguments passed on stack.
-  int64_t original_stack = get_register(sp);
   // Compute position of stack on entry to generated code.
   intptr_t entry_stack =
       (original_stack -
@@ -5087,11 +5081,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
     stack_argument[i] = value;
   }
   va_end(parameters);
-#ifdef V8_OS_ZOS
-  set_register(r4, entry_stack);
-#else
   set_register(sp, entry_stack);
-#endif
 // Prepare to execute the code at entry
 #if ABI_USES_FUNCTION_DESCRIPTORS
   // entry is the function descriptor
@@ -5187,11 +5177,7 @@ intptr_t Simulator::Call(byte* entry, int argument_count, ...) {
   DCHECK_EQ(entry_stack, get_register(sp));
 #endif
 
-#ifdef V8_OS_ZOS
-  set_register(r4, original_stack);
-#else
   set_register(sp, original_stack);
-#endif
   // Return value register
 #ifdef V8_OS_ZOS
   intptr_t result = get_register(r3);
@@ -5220,15 +5206,17 @@ double Simulator::CallFPReturnsDouble(byte* entry, double d0, double d1) {
 
 uintptr_t Simulator::PushAddress(uintptr_t address) {
   uintptr_t new_sp = get_register(sp) - sizeof(uintptr_t);
-  uintptr_t* stack_slot = reinterpret_cast<uintptr_t*>(new_sp);
+  uintptr_t* stack_slot = reinterpret_cast<uintptr_t*>(new_sp +
+                                                       kStackPointerBias);
   *stack_slot = address;
   set_register(sp, new_sp);
-  return new_sp;
+  return new_sp + kStackPointerBias;
 }
 
 uintptr_t Simulator::PopAddress() {
   uintptr_t current_sp = get_register(sp);
-  uintptr_t* stack_slot = reinterpret_cast<uintptr_t*>(current_sp);
+  uintptr_t* stack_slot = reinterpret_cast<uintptr_t*>(current_sp +
+                                                       kStackPointerBias);
   uintptr_t address = *stack_slot;
   set_register(sp, current_sp + sizeof(uintptr_t));
   return address;
