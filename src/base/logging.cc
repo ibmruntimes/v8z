@@ -103,6 +103,7 @@ void DumpBacktrace() {
 
 
 // Contains protection against recursive calls (faults while handling faults).
+#ifdef V8_OS_ZOS
 // TODO: Rmove this once compiler can handle u8 prefixed literals in macro definitions
 extern "C" void V8_Fatal_e(const char* file, int line, const char* format, const char* str) {
   size_t format_size = strlen(format);
@@ -117,13 +118,16 @@ extern "C" void V8_Fatal_e(const char* file, int line, const char* format, const
   __e2a_s(str_a);
   V8_Fatal(file, line, format_a, str_a);
 }
+#endif
 
 extern "C" void V8_Fatal(const char* file, int line, const char* format, ...) {
   fflush(stdout);
   fflush(stderr);
   char filename[256];
   strcpy(filename, file);
+#ifdef V8_OS_ZOS
   __e2a_s(filename);
+#endif
   v8::base::OS::PrintError(u8"\n\n#\n# Fatal error in %s, line %d\n# ", filename,
                            line);
   va_list arguments;

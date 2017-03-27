@@ -11,8 +11,10 @@
 
 #include "src/base/build_config.h"
 
+#ifdef V8_OS_ZOS
 extern "C" V8_NORETURN void V8_Fatal_e(const char* file, int line,
                                      const char* format, const char* str);
+#endif
 
 extern "C" V8_NORETURN void V8_Fatal(const char* file, int line,
                                      const char* format, ...);
@@ -49,12 +51,21 @@ namespace base {
 // We make sure CHECK et al. always evaluates their arguments, as
 // doing CHECK(FunctionWithSideEffect()) is a common idiom.
 
+#ifdef V8_OS_ZOS
 #define CHECK(condition)                                             \
   do {                                                               \
     if (V8_UNLIKELY(!(condition))) {                                 \
       V8_Fatal_e(__FILE__, __LINE__, "Check failed: %s.", #condition); \
     }                                                                \
   } while (0)
+#else
+#define CHECK(condition)                                             \
+  do {                                                               \
+    if (V8_UNLIKELY(!(condition))) {                                 \
+      V8_Fatal(__FILE__, __LINE__, "Check failed: %s.", #condition); \
+    }                                                                \
+  } while (0)
+#endif
 
 
 #ifdef DEBUG
