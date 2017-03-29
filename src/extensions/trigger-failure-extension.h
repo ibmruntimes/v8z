@@ -12,7 +12,7 @@ namespace internal {
 
 class TriggerFailureExtension : public v8::Extension {
  public:
-  TriggerFailureExtension() : v8::Extension("v8/trigger-failure", kSource) {}
+  TriggerFailureExtension() : v8::Extension("\x76\x38\x2f\x74\x72\x69\x67\x67\x65\x72\x2d\x66\x61\x69\x6c\x75\x72\x65", kSource) {}
   virtual v8::Local<v8::FunctionTemplate> GetNativeFunctionTemplate(
       v8::Isolate* isolate, v8::Local<v8::String> name);
   static void TriggerCheckFalse(

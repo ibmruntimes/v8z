@@ -37,18 +37,18 @@ typedef SimpleStringResource<uc16, v8::String::ExternalStringResource>
     SimpleTwoByteStringResource;
 
 const char* const ExternalizeStringExtension::kSource =
-    u8"native function externalizeString();"
-    u8"native function isOneByteString();"
-    u8"function x() { return 1; }";
+    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x3b"
+    "\x6e\x61\x74\x69\x76\x65\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x69\x73\x4f\x6e\x65\x42\x79\x74\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x3b"
+    "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x78\x28\x29\x20\x7b\x20\x72\x65\x74\x75\x72\x6e\x20\x31\x3b\x20\x7d";
 
 v8::Local<v8::FunctionTemplate>
 ExternalizeStringExtension::GetNativeFunctionTemplate(
     v8::Isolate* isolate, v8::Local<v8::String> str) {
-  if (strcmp(*v8::String::Utf8Value(str), u8"externalizeString") == 0) {
+  if (strcmp(*v8::String::Utf8Value(str), "\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67") == 0) {
     return v8::FunctionTemplate::New(isolate,
                                      ExternalizeStringExtension::Externalize);
   } else {
-    DCHECK(strcmp(*v8::String::Utf8Value(str), u8"isOneByteString") == 0);
+    DCHECK(strcmp(*v8::String::Utf8Value(str), "\x69\x73\x4f\x6e\x65\x42\x79\x74\x65\x53\x74\x72\x69\x6e\x67") == 0);
     return v8::FunctionTemplate::New(isolate,
                                      ExternalizeStringExtension::IsOneByte);
   }
@@ -61,7 +61,7 @@ void ExternalizeStringExtension::Externalize(
     args.GetIsolate()->ThrowException(
         v8::String::NewFromUtf8(
             args.GetIsolate(),
-            u8"First parameter to externalizeString() must be a string.",
+            "\x46\x69\x72\x73\x74\x20\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x20\x74\x6f\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x6d\x75\x73\x74\x20\x62\x65\x20\x61\x20\x73\x74\x72\x69\x6e\x67\x2e",
             NewStringType::kNormal).ToLocalChecked());
     return;
   }
@@ -76,7 +76,7 @@ void ExternalizeStringExtension::Externalize(
       args.GetIsolate()->ThrowException(
           v8::String::NewFromUtf8(
               args.GetIsolate(),
-              u8"Second parameter to externalizeString() must be a boolean.",
+              "\x53\x65\x63\x6f\x6e\x64\x20\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x20\x74\x6f\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x6d\x75\x73\x74\x20\x62\x65\x20\x61\x20\x62\x6f\x6f\x6c\x65\x61\x6e\x2e",
               NewStringType::kNormal).ToLocalChecked());
       return;
     }
@@ -86,7 +86,7 @@ void ExternalizeStringExtension::Externalize(
   if (string->IsExternalString()) {
     args.GetIsolate()->ThrowException(
         v8::String::NewFromUtf8(args.GetIsolate(),
-                                u8"externalizeString() can't externalize twice.",
+                                "\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x63\x61\x6e\x27\x74\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x20\x74\x77\x69\x63\x65\x2e",
                                 NewStringType::kNormal).ToLocalChecked());
     return;
   }
@@ -116,7 +116,7 @@ void ExternalizeStringExtension::Externalize(
   if (!result) {
     args.GetIsolate()->ThrowException(
         v8::String::NewFromUtf8(args.GetIsolate(),
-                                u8"externalizeString() failed.",
+                                "\x65\x78\x74\x65\x72\x6e\x61\x6c\x69\x7a\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x66\x61\x69\x6c\x65\x64\x2e",
                                 NewStringType::kNormal).ToLocalChecked());
     return;
   }
@@ -129,7 +129,7 @@ void ExternalizeStringExtension::IsOneByte(
     args.GetIsolate()->ThrowException(
         v8::String::NewFromUtf8(
             args.GetIsolate(),
-            u8"isOneByteString() requires a single string argument.",
+            "\x69\x73\x4f\x6e\x65\x42\x79\x74\x65\x53\x74\x72\x69\x6e\x67\x28\x29\x20\x72\x65\x71\x75\x69\x72\x65\x73\x20\x61\x20\x73\x69\x6e\x67\x6c\x65\x20\x73\x74\x72\x69\x6e\x67\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x2e",
             NewStringType::kNormal).ToLocalChecked());
     return;
   }
