@@ -1659,7 +1659,7 @@ std::ostream& operator<<(std::ostream& os, ToAscii<void*> obj) {
   os << &buf[0];
   return os;
 #else
-  return os << i.value();
+  return os << obj.value();
 #endif
 }
   
