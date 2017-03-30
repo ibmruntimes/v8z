@@ -179,7 +179,7 @@
 
   ##############################################################################
   # No need to waste time for this test.
-  'd8-performance-now': [PASS, NO_VARIANTS],
+  'd8-performance-now': [PASS, NO_VARIANTS, ['arch == s390x or arch == s390' SKIP ]],
   'regress/regress-crbug-491062': [PASS, NO_VARIANTS],
 
   # Issue 488: this test sometimes times out.
