@@ -180,9 +180,9 @@
   ##############################################################################
   # No need to waste time for this test.
   'd8-performance-now': [PASS, NO_VARIANTS, ['arch == s390x or arch == s390', SKIP]],
-  'd8-worker' : ['arch == s390x or arch == s390', SKIP]
-  'd8-worker-spawn-worker' : ['arch == s390x or arch == s390', SKIP]
-  'd8-worker-sharedarraybuffer' : ['arch == s390x or arch == s390' , SKIP]
+  'd8-worker' : ['arch == s390x or arch == s390', SKIP],
+  'd8-worker-spawn-worker' : ['arch == s390x or arch == s390', SKIP],
+  'd8-worker-sharedarraybuffer' : ['arch == s390x or arch == s390' , SKIP],
 
   'regress/regress-crbug-491062': [PASS, NO_VARIANTS],
 
