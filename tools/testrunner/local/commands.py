@@ -1,4 +1,4 @@
-# Copyright 2012 the V8 project authors. All rights reserved.
+/
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
@@ -25,7 +25,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
+import os
 import subprocess
 import sys
 import time
@@ -49,6 +49,10 @@ def Win32SetErrorMode(mode):
     pass
   return prev_error_mode
 
+def CleanupSemaphores():
+  if (platform.system() == 'OS/S390'):
+     os.system("for u in $(ipcs -s | grep `whoami` | tr -s ' ' | cut -d ' ' -f2);"
+             "do ipcrm -s $u; done")
 
 def RunProcess(verbose, timeout, args, **rest):
   if verbose: print "#", " ".join(args)
@@ -130,6 +134,7 @@ def RunProcess(verbose, timeout, args, **rest):
   except Exception as e:
     print "Exception: " + str(e)
 
+  CleanupSemaphores()
   return output.Output(
       process.returncode,
       timed_out,
@@ -142,3 +147,4 @@ def RunProcess(verbose, timeout, args, **rest):
 def Execute(args, verbose=False, timeout=None):
   args = [ c for c in args if c != "" ]
   return RunProcess(verbose, timeout, args=args)
+
