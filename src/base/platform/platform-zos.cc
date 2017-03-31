@@ -168,12 +168,12 @@ const char* OS::LocalTimezone(double time, TimezoneCache* cache) {
   time_t tv = static_cast<time_t>(std::floor(time/msPerSecond));
   struct tm* t = localtime(&tv);
   if (NULL == t) return "";
-  double offset_secs = LocalTimeOffset(cache);
+  double offset_secs = LocalTimeOffset(cache) / msPerSecond;
   int offset_hrs  = (int)offset_secs/3600;
   if ( offset_hrs == 0)
-     return "\x47\x4d\x54";
+    return u8"GMT";
   else if (offset_hrs > -6 && offset_hrs <= -5)
-          return "\x45\x53\x54";
+    return u8"EST";
   //Todo(muntasir) Add the rest of the timezones
   return "";
 }

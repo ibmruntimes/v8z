@@ -2936,16 +2936,16 @@ void ToDateString(double time_val, Vector<char> str, DateCache* date_cache,
   const char* local_timezone = date_cache->LocalTimezone(time_ms);
   switch (mode) {
     case kDateOnly:
-      SNPrintF(str, "\x6c\xa2\x20\x6c\xa2\x20\x6c\xf0\xf2\x84\x20\x6c\xf4\x84", kShortWeekDays[weekday],
+      SNPrintF(str, "%s %s %02d %4d", kShortWeekDays[weekday],
                kShortMonths[month], day, year);
       return;
     case kTimeOnly:
-      SNPrintF(str, "\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x20\x47\x4d\x54\x6c\x83\x6c\xf0\xf2\x84\x6c\xf0\xf2\x84\x20\x28\x6c\xa2\x29", hour, min, sec,
+      SNPrintF(str, "%02d:%02d:%02d GMT%c%02d%02d (%s)", hour, min, sec,
                (timezone_offset < 0) ? '\x2d' : '\x2b', timezone_hour, timezone_min,
                local_timezone);
       return;
     case kDateAndTime:
-      SNPrintF(str, "\x6c\xa2\x20\x6c\xa2\x20\x6c\xf0\xf2\x84\x20\x6c\xf4\x84\x20\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x20\x47\x4d\x54\x6c\x83\x6c\xf0\xf2\x84\x6c\xf0\xf2\x84\x20\x28\x6c\xa2\x29",
+      SNPrintF(str, u8"%s %s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
                kShortWeekDays[weekday], kShortMonths[month], day, year, hour,
                min, sec, (timezone_offset < 0) ? '\x2d' : '\x2b', timezone_hour,
                timezone_min, local_timezone);
