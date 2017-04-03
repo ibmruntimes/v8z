@@ -51,7 +51,7 @@ namespace base {
 // We make sure CHECK et al. always evaluates their arguments, as
 // doing CHECK(FunctionWithSideEffect()) is a common idiom.
 
-#ifdef V8_OS_ZOS
+#if V8_OS_ZOS
 #define CHECK(condition)                                             \
   do {                                                               \
     if (V8_UNLIKELY(!(condition))) {                                 \
@@ -72,14 +72,25 @@ namespace base {
 
 // Helper macro for binary operators.
 // Don't use this macro directly in your code, use CHECK_EQ et al below.
+#if V8_OS_ZOS
 #define CHECK_OP(name, op, lhs, rhs)                                    \
   do {                                                                  \
     if (std::string* _msg = ::v8::base::Check##name##Impl(              \
             (lhs), (rhs), #lhs " " #op " " #rhs)) {                     \
-      V8_Fatal(__FILE__, __LINE__, "\x43\x68\x65\x63\x6b\x20\x66\x61\x69\x6c\x65\x64\x3a\x20\x25\x73\x2e", _msg->c_str()); \
+      V8_Fatal_e(__FILE__, __LINE__, "Check failed: %s.", _msg->c_str()); \
       delete _msg;                                                      \
     }                                                                   \
   } while (0)
+#else
+#define CHECK_OP(name, op, lhs, rhs)                                    \
+  do {                                                                  \
+    if (std::string* _msg = ::v8::base::Check##name##Impl(              \
+            (lhs), (rhs), #lhs " " #op " " #rhs)) {                     \
+      V8_Fatal(__FILE__, __LINE__, "Check failed: %s.", _msg->c_str()); \
+      delete _msg;                                                      \
+    }                                                                   \
+  } while (0)
+#endif
 
 #else
 
