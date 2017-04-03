@@ -31,9 +31,9 @@ RUNTIME_FUNCTION(Runtime_ExportFromRuntime) {
   CONVERT_ARG_HANDLE_CHECKED(JSObject, container, 0);
   RUNTIME_ASSERT(isolate->bootstrapper()->IsActive());
   JSObject::NormalizeProperties(container, KEEP_INOBJECT_PROPERTIES, 10,
-                                "ExportFromRuntime");
+                                "\x45\x78\x70\x6f\x72\x74\x46\x72\x6f\x6d\x52\x75\x6e\x74\x69\x6d\x65");
   Bootstrapper::ExportFromRuntime(isolate, container);
-  JSObject::MigrateSlowToFast(container, 0, "ExportFromRuntime");
+  JSObject::MigrateSlowToFast(container, 0, "\x45\x78\x70\x6f\x72\x74\x46\x72\x6f\x6d\x52\x75\x6e\x74\x69\x6d\x65");
   return *container;
 }
 
@@ -44,9 +44,9 @@ RUNTIME_FUNCTION(Runtime_ExportExperimentalFromRuntime) {
   CONVERT_ARG_HANDLE_CHECKED(JSObject, container, 0);
   RUNTIME_ASSERT(isolate->bootstrapper()->IsActive());
   JSObject::NormalizeProperties(container, KEEP_INOBJECT_PROPERTIES, 10,
-                                "ExportExperimentalFromRuntime");
+                                "\x45\x78\x70\x6f\x72\x74\x45\x78\x70\x65\x72\x69\x6d\x65\x6e\x74\x61\x6c\x46\x72\x6f\x6d\x52\x75\x6e\x74\x69\x6d\x65");
   Bootstrapper::ExportExperimentalFromRuntime(isolate, container);
-  JSObject::MigrateSlowToFast(container, 0, "ExportExperimentalFromRuntime");
+  JSObject::MigrateSlowToFast(container, 0, "\x45\x78\x70\x6f\x72\x74\x45\x78\x70\x65\x72\x69\x6d\x65\x6e\x74\x61\x6c\x46\x72\x6f\x6d\x52\x75\x6e\x74\x69\x6d\x65");
   return *container;
 }
 

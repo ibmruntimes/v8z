@@ -24,7 +24,7 @@ RUNTIME_FUNCTION(Runtime_NumberToRadixString) {
     int value = args.smi_at(0);
     if (value >= 0 && value < radix) {
       // Character array used for conversion.
-      static const char kCharTable[] = u8"0123456789abcdefghijklmnopqrstuvwxyz";
+      static const char kCharTable[] = "\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6a\x6b\x6c\x6d\x6e\x6f\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7a";
       return *isolate->factory()->LookupSingleCharacterStringFromCode(
           kCharTable[value]);
     }

@@ -198,7 +198,7 @@ RUNTIME_FUNCTION(Runtime_FinalizeClassDefinition) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 2);
   CONVERT_ARG_HANDLE_CHECKED(JSObject, constructor, 0);
-  JSObject::MigrateSlowToFast(constructor, 0, "RuntimeToFastProperties");
+  JSObject::MigrateSlowToFast(constructor, 0, "\x52\x75\x6e\x74\x69\x6d\x65\x54\x6f\x46\x61\x73\x74\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73");
   return *constructor;
 }
 

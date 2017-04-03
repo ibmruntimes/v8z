@@ -109,7 +109,7 @@ RUNTIME_FUNCTION(Runtime_NotifyDeoptimized) {
   Deoptimizer* deoptimizer = Deoptimizer::Grab(isolate);
   DCHECK(AllowHeapAllocation::IsAllowed());
   TimerEventScope<TimerEventDeoptimizeCode> timer(isolate);
-  TRACE_EVENT0("v8", "V8.DeoptimizeCode");
+  TRACE_EVENT0("\x76\x38", "\x56\x38\x2e\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x43\x6f\x64\x65");
 
   Handle<JSFunction> function = deoptimizer->function();
   Handle<Code> optimized_code = deoptimizer->compiled_code();
@@ -151,7 +151,7 @@ RUNTIME_FUNCTION(Runtime_NotifyDeoptimized) {
     // Evict optimized code for this function from the cache so that it
     // doesn't get used for new closures.
     function->shared()->EvictFromOptimizedCodeMap(*optimized_code,
-                                                  "notify deoptimized");
+                                                  "\x6e\x6f\x74\x69\x66\x79\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64");
   } else {
     // TODO(titzer): we should probably do DeoptimizeCodeList(code)
     // unconditionally if the code is not already marked for deoptimization.

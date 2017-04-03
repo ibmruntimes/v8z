@@ -146,13 +146,13 @@ static MaybeHandle<JSArray> GetIteratorInternalProperties(
   const char* kind = NULL;
   switch (Smi::cast(iterator->kind())->value()) {
     case IteratorType::kKindKeys:
-      kind = u8"keys";
+      kind = "\x6b\x65\x79\x73";
       break;
     case IteratorType::kKindValues:
-      kind = u8"values";
+      kind = "\x76\x61\x6c\x75\x65\x73";
       break;
     case IteratorType::kKindEntries:
-      kind = u8"entries";
+      kind = "\x65\x6e\x74\x72\x69\x65\x73";
       break;
     default:
       RUNTIME_ASSERT_HANDLIFIED(false, JSArray);
@@ -160,17 +160,17 @@ static MaybeHandle<JSArray> GetIteratorInternalProperties(
 
   Handle<FixedArray> result = factory->NewFixedArray(2 * 3);
   Handle<String> has_more =
-      factory->NewStringFromAsciiChecked("[[IteratorHasMore]]");
+      factory->NewStringFromAsciiChecked("\x5b\x5b\x49\x74\x65\x72\x61\x74\x6f\x72\x48\x61\x73\x4d\x6f\x72\x65\x5d\x5d");
   result->set(0, *has_more);
   result->set(1, isolate->heap()->ToBoolean(iterator->HasMore()));
 
   Handle<String> index =
-      factory->NewStringFromAsciiChecked("[[IteratorIndex]]");
+      factory->NewStringFromAsciiChecked("\x5b\x5b\x49\x74\x65\x72\x61\x74\x6f\x72\x49\x6e\x64\x65\x78\x5d\x5d");
   result->set(2, *index);
   result->set(3, iterator->index());
 
   Handle<String> iterator_kind =
-      factory->NewStringFromAsciiChecked("[[IteratorKind]]");
+      factory->NewStringFromAsciiChecked("\x5b\x5b\x49\x74\x65\x72\x61\x74\x6f\x72\x4b\x69\x6e\x64\x5d\x5d");
   result->set(4, *iterator_kind);
   Handle<String> kind_str = factory->NewStringFromAsciiChecked(kind);
   result->set(5, *kind_str);
@@ -186,17 +186,17 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
 
     Handle<FixedArray> result = factory->NewFixedArray(2 * 3);
     Handle<String> target =
-        factory->NewStringFromAsciiChecked("[[TargetFunction]]");
+        factory->NewStringFromAsciiChecked("\x5b\x5b\x54\x61\x72\x67\x65\x74\x46\x75\x6e\x63\x74\x69\x6f\x6e\x5d\x5d");
     result->set(0, *target);
     result->set(1, function->bound_target_function());
 
     Handle<String> bound_this =
-        factory->NewStringFromAsciiChecked("[[BoundThis]]");
+        factory->NewStringFromAsciiChecked("\x5b\x5b\x42\x6f\x75\x6e\x64\x54\x68\x69\x73\x5d\x5d");
     result->set(2, *bound_this);
     result->set(3, function->bound_this());
 
     Handle<String> bound_args =
-        factory->NewStringFromAsciiChecked("[[BoundArgs]]");
+        factory->NewStringFromAsciiChecked("\x5b\x5b\x42\x6f\x75\x6e\x64\x41\x72\x67\x73\x5d\x5d");
     result->set(4, *bound_args);
     Handle<FixedArray> bound_arguments =
         factory->CopyFixedArray(handle(function->bound_arguments(), isolate));
@@ -214,29 +214,29 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
     Handle<JSGeneratorObject> generator =
         Handle<JSGeneratorObject>::cast(object);
 
-    const char* status = u8"suspended";
+    const char* status = "\x73\x75\x73\x70\x65\x6e\x64\x65\x64";
     if (generator->is_closed()) {
-      status = u8"closed";
+      status = "\x63\x6c\x6f\x73\x65\x64";
     } else if (generator->is_executing()) {
-      status = u8"running";
+      status = "\x72\x75\x6e\x6e\x69\x6e\x67";
     } else {
       DCHECK(generator->is_suspended());
     }
 
     Handle<FixedArray> result = factory->NewFixedArray(2 * 3);
     Handle<String> generator_status =
-        factory->NewStringFromAsciiChecked("[[GeneratorStatus]]");
+        factory->NewStringFromAsciiChecked("\x5b\x5b\x47\x65\x6e\x65\x72\x61\x74\x6f\x72\x53\x74\x61\x74\x75\x73\x5d\x5d");
     result->set(0, *generator_status);
     Handle<String> status_str = factory->NewStringFromAsciiChecked(status);
     result->set(1, *status_str);
 
     Handle<String> function =
-        factory->NewStringFromAsciiChecked("[[GeneratorFunction]]");
+        factory->NewStringFromAsciiChecked("\x5b\x5b\x47\x65\x6e\x65\x72\x61\x74\x6f\x72\x46\x75\x6e\x63\x74\x69\x6f\x6e\x5d\x5d");
     result->set(2, *function);
     result->set(3, generator->function());
 
     Handle<String> receiver =
-        factory->NewStringFromAsciiChecked("[[GeneratorReceiver]]");
+        factory->NewStringFromAsciiChecked("\x5b\x5b\x47\x65\x6e\x65\x72\x61\x74\x6f\x72\x52\x65\x63\x65\x69\x76\x65\x72\x5d\x5d");
     result->set(4, *receiver);
     result->set(5, generator->receiver());
     return factory->NewJSArrayWithElements(result);
@@ -246,14 +246,14 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
     Handle<Object> status_obj =
         DebugGetProperty(promise, isolate->factory()->promise_status_symbol());
     RUNTIME_ASSERT_HANDLIFIED(status_obj->IsSmi(), JSArray);
-    const char* status = u8"rejected";
+    const char* status = "\x72\x65\x6a\x65\x63\x74\x65\x64";
     int status_val = Handle<Smi>::cast(status_obj)->value();
     switch (status_val) {
       case +1:
-        status = u8"resolved";
+        status = "\x72\x65\x73\x6f\x6c\x76\x65\x64";
         break;
       case 0:
-        status = u8"pending";
+        status = "\x70\x65\x6e\x64\x69\x6e\x67";
         break;
       default:
         DCHECK_EQ(-1, status_val);
@@ -261,7 +261,7 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
 
     Handle<FixedArray> result = factory->NewFixedArray(2 * 2);
     Handle<String> promise_status =
-        factory->NewStringFromAsciiChecked("[[PromiseStatus]]");
+        factory->NewStringFromAsciiChecked("\x5b\x5b\x50\x72\x6f\x6d\x69\x73\x65\x53\x74\x61\x74\x75\x73\x5d\x5d");
     result->set(0, *promise_status);
     Handle<String> status_str = factory->NewStringFromAsciiChecked(status);
     result->set(1, *status_str);
@@ -269,7 +269,7 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
     Handle<Object> value_obj =
         DebugGetProperty(promise, isolate->factory()->promise_value_symbol());
     Handle<String> promise_value =
-        factory->NewStringFromAsciiChecked("[[PromiseValue]]");
+        factory->NewStringFromAsciiChecked("\x5b\x5b\x50\x72\x6f\x6d\x69\x73\x65\x56\x61\x6c\x75\x65\x5d\x5d");
     result->set(2, *promise_value);
     result->set(3, *value_obj);
     return factory->NewJSArrayWithElements(result);
@@ -278,7 +278,7 @@ MaybeHandle<JSArray> Runtime::GetInternalProperties(Isolate* isolate,
 
     Handle<FixedArray> result = factory->NewFixedArray(2);
     Handle<String> primitive_value =
-        factory->NewStringFromAsciiChecked("[[PrimitiveValue]]");
+        factory->NewStringFromAsciiChecked("\x5b\x5b\x50\x72\x69\x6d\x69\x74\x69\x76\x65\x56\x61\x6c\x75\x65\x5d\x5d");
     result->set(0, *primitive_value);
     result->set(1, js_value->value());
     return factory->NewJSArrayWithElements(result);
@@ -1547,7 +1547,7 @@ RUNTIME_FUNCTION(Runtime_GetDebugContext) {
 RUNTIME_FUNCTION(Runtime_CollectGarbage) {
   SealHandleScope shs(isolate);
   DCHECK(args.length() == 1);
-  isolate->heap()->CollectAllGarbage(Heap::kNoGCFlags, "%CollectGarbage");
+  isolate->heap()->CollectAllGarbage(Heap::kNoGCFlags, "\x25\x43\x6f\x6c\x6c\x65\x63\x74\x47\x61\x72\x62\x61\x67\x65");
   return isolate->heap()->undefined_value();
 }
 

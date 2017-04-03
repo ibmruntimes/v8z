@@ -50,7 +50,7 @@ RUNTIME_FUNCTION(Runtime_CanonicalizeLanguageTag) {
   v8::String::Utf8Value locale_id(v8::Utils::ToLocal(locale_id_str));
 
   // Return value which denotes invalid language tag.
-  const char* const kInvalidTag = "invalid-tag";
+  const char* const kInvalidTag = "\x69\x6e\x76\x61\x6c\x69\x64\x2d\x74\x61\x67";
 
   UErrorCode error = U_ZERO_ERROR;
   char icu_result[ULOC_FULLNAME_CAPACITY];
@@ -85,13 +85,13 @@ RUNTIME_FUNCTION(Runtime_AvailableLocalesOf) {
   const icu::Locale* available_locales = NULL;
   int32_t count = 0;
 
-  if (service->IsUtf8EqualTo(CStrVector("collator"))) {
+  if (service->IsUtf8EqualTo(CStrVector("\x63\x6f\x6c\x6c\x61\x74\x6f\x72"))) {
     available_locales = icu::Collator::getAvailableLocales(count);
-  } else if (service->IsUtf8EqualTo(CStrVector("numberformat"))) {
+  } else if (service->IsUtf8EqualTo(CStrVector("\x6e\x75\x6d\x62\x65\x72\x66\x6f\x72\x6d\x61\x74"))) {
     available_locales = icu::NumberFormat::getAvailableLocales(count);
-  } else if (service->IsUtf8EqualTo(CStrVector("dateformat"))) {
+  } else if (service->IsUtf8EqualTo(CStrVector("\x64\x61\x74\x65\x66\x6f\x72\x6d\x61\x74"))) {
     available_locales = icu::DateFormat::getAvailableLocales(count);
-  } else if (service->IsUtf8EqualTo(CStrVector("breakiterator"))) {
+  } else if (service->IsUtf8EqualTo(CStrVector("\x62\x72\x65\x61\x6b\x69\x74\x65\x72\x61\x74\x6f\x72"))) {
     available_locales = icu::BreakIterator::getAvailableLocales(count);
   }
 
@@ -137,7 +137,7 @@ RUNTIME_FUNCTION(Runtime_GetDefaultICULocale) {
     return *factory->NewStringFromAsciiChecked(result);
   }
 
-  return *factory->NewStringFromStaticChars("und");
+  return *factory->NewStringFromStaticChars("\x75\x6e\x64");
 }
 
 
@@ -154,8 +154,8 @@ RUNTIME_FUNCTION(Runtime_GetLanguageTagVariants) {
   // Can be bumped when callers' requirements change.
   RUNTIME_ASSERT(length < 100);
   Handle<FixedArray> output = factory->NewFixedArray(length);
-  Handle<Name> maximized = factory->NewStringFromStaticChars("maximized");
-  Handle<Name> base = factory->NewStringFromStaticChars("base");
+  Handle<Name> maximized = factory->NewStringFromStaticChars("\x6d\x61\x78\x69\x6d\x69\x7a\x65\x64");
+  Handle<Name> base = factory->NewStringFromStaticChars("\x62\x61\x73\x65");
   for (unsigned int i = 0; i < length; ++i) {
     Handle<Object> locale_id;
     ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
@@ -330,8 +330,8 @@ RUNTIME_FUNCTION(Runtime_CreateDateTimeFormat) {
   local_object->SetInternalField(0, reinterpret_cast<Smi*>(date_format));
 
   Factory* factory = isolate->factory();
-  Handle<String> key = factory->NewStringFromStaticChars("dateFormat");
-  Handle<String> value = factory->NewStringFromStaticChars("valid");
+  Handle<String> key = factory->NewStringFromStaticChars("\x64\x61\x74\x65\x46\x6f\x72\x6d\x61\x74");
+  Handle<String> value = factory->NewStringFromStaticChars("\x76\x61\x6c\x69\x64");
   JSObject::AddProperty(local_object, key, value, NONE);
 
   // Make object handle weak so we can delete the data format once GC kicks in.
@@ -425,8 +425,8 @@ RUNTIME_FUNCTION(Runtime_CreateNumberFormat) {
   local_object->SetInternalField(0, reinterpret_cast<Smi*>(number_format));
 
   Factory* factory = isolate->factory();
-  Handle<String> key = factory->NewStringFromStaticChars("numberFormat");
-  Handle<String> value = factory->NewStringFromStaticChars("valid");
+  Handle<String> key = factory->NewStringFromStaticChars("\x6e\x75\x6d\x62\x65\x72\x46\x6f\x72\x6d\x61\x74");
+  Handle<String> value = factory->NewStringFromStaticChars("\x76\x61\x6c\x69\x64");
   JSObject::AddProperty(local_object, key, value, NONE);
 
   Handle<Object> wrapper = isolate->global_handles()->Create(*local_object);
@@ -531,8 +531,8 @@ RUNTIME_FUNCTION(Runtime_CreateCollator) {
   local_object->SetInternalField(0, reinterpret_cast<Smi*>(collator));
 
   Factory* factory = isolate->factory();
-  Handle<String> key = factory->NewStringFromStaticChars("collator");
-  Handle<String> value = factory->NewStringFromStaticChars("valid");
+  Handle<String> key = factory->NewStringFromStaticChars("\x63\x6f\x6c\x6c\x61\x74\x6f\x72");
+  Handle<String> value = factory->NewStringFromStaticChars("\x76\x61\x6c\x69\x64");
   JSObject::AddProperty(local_object, key, value, NONE);
 
   Handle<Object> wrapper = isolate->global_handles()->Create(*local_object);
@@ -633,8 +633,8 @@ RUNTIME_FUNCTION(Runtime_CreateBreakIterator) {
   local_object->SetInternalField(1, static_cast<Smi*>(nullptr));
 
   Factory* factory = isolate->factory();
-  Handle<String> key = factory->NewStringFromStaticChars("breakIterator");
-  Handle<String> value = factory->NewStringFromStaticChars("valid");
+  Handle<String> key = factory->NewStringFromStaticChars("\x62\x72\x65\x61\x6b\x49\x74\x65\x72\x61\x74\x6f\x72");
+  Handle<String> value = factory->NewStringFromStaticChars("\x76\x61\x6c\x69\x64");
   JSObject::AddProperty(local_object, key, value, NONE);
 
   // Make object handle weak so we can delete the break iterator once GC kicks
@@ -736,17 +736,17 @@ RUNTIME_FUNCTION(Runtime_BreakIteratorBreakType) {
   int32_t status = rule_based_iterator->getRuleStatus();
   // Keep return values in sync with JavaScript BreakType enum.
   if (status >= UBRK_WORD_NONE && status < UBRK_WORD_NONE_LIMIT) {
-    return *isolate->factory()->NewStringFromStaticChars("none");
+    return *isolate->factory()->NewStringFromStaticChars("\x6e\x6f\x6e\x65");
   } else if (status >= UBRK_WORD_NUMBER && status < UBRK_WORD_NUMBER_LIMIT) {
     return *isolate->factory()->number_string();
   } else if (status >= UBRK_WORD_LETTER && status < UBRK_WORD_LETTER_LIMIT) {
-    return *isolate->factory()->NewStringFromStaticChars("letter");
+    return *isolate->factory()->NewStringFromStaticChars("\x6c\x65\x74\x74\x65\x72");
   } else if (status >= UBRK_WORD_KANA && status < UBRK_WORD_KANA_LIMIT) {
-    return *isolate->factory()->NewStringFromStaticChars("kana");
+    return *isolate->factory()->NewStringFromStaticChars("\x6b\x61\x6e\x61");
   } else if (status >= UBRK_WORD_IDEO && status < UBRK_WORD_IDEO_LIMIT) {
-    return *isolate->factory()->NewStringFromStaticChars("ideo");
+    return *isolate->factory()->NewStringFromStaticChars("\x69\x64\x65\x6f");
   } else {
-    return *isolate->factory()->NewStringFromStaticChars("unknown");
+    return *isolate->factory()->NewStringFromStaticChars("\x75\x6e\x6b\x6e\x6f\x77\x6e");
   }
 }
 }  // namespace internal

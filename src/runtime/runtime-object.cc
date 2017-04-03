@@ -348,7 +348,7 @@ RUNTIME_FUNCTION(Runtime_OptimizeObjectForAddingMultipleProperties) {
   RUNTIME_ASSERT(properties <= 100000);
   if (object->HasFastProperties() && !object->IsJSGlobalProxy()) {
     JSObject::NormalizeProperties(object, KEEP_INOBJECT_PROPERTIES, properties,
-                                  "OptimizeForAdding");
+                                  "\x4f\x70\x74\x69\x6d\x69\x7a\x65\x46\x6f\x72\x41\x64\x64\x69\x6e\x67");
   }
   return *object;
 }
@@ -690,7 +690,7 @@ RUNTIME_FUNCTION(Runtime_ToFastProperties) {
   CONVERT_ARG_HANDLE_CHECKED(Object, object, 0);
   if (object->IsJSObject() && !object->IsJSGlobalObject()) {
     JSObject::MigrateSlowToFast(Handle<JSObject>::cast(object), 0,
-                                "RuntimeToFastProperties");
+                                "\x52\x75\x6e\x74\x69\x6d\x65\x54\x6f\x46\x61\x73\x74\x50\x72\x6f\x70\x65\x72\x74\x69\x65\x73");
   }
   return *object;
 }

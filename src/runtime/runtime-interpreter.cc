@@ -44,12 +44,12 @@ void AdvanceToOffsetForTracing(
 void PrintRegisters(std::ostream& os, bool is_input,
                     interpreter::BytecodeArrayIterator& bytecode_iterator,
                     Handle<Object> accumulator) {
-  static const char kAccumulator[] = u8"accumulator";
+  static const char kAccumulator[] = "\x61\x63\x63\x75\x6d\x75\x6c\x61\x74\x6f\x72";
   static const int kRegFieldWidth = static_cast<int>(sizeof(kAccumulator) - 1);
-  static const char* kInputColourCode = u8"\033[0;36m";
-  static const char* kOutputColourCode = u8"\033[0;35m";
-  static const char* kNormalColourCode = u8"\033[0;m";
-  const char* kArrowDirection = is_input ? u8" -> " : u8" <- ";
+  static const char* kInputColourCode = "\x03\x33\x5b\x30\x3b\x33\x36\x6d";
+  static const char* kOutputColourCode = "\x03\x33\x5b\x30\x3b\x33\x35\x6d";
+  static const char* kNormalColourCode = "\x03\x33\x5b\x30\x3b\x6d";
+  const char* kArrowDirection = is_input ? "\x20\x2d\x3e\x20" : "\x20\x3c\x2d\x20";
   if (FLAG_log_colour) {
     os << (is_input ? kInputColourCode : kOutputColourCode);
   }
@@ -59,7 +59,7 @@ void PrintRegisters(std::ostream& os, bool is_input,
   // Print accumulator.
   if ((is_input && interpreter::Bytecodes::ReadsAccumulator(bytecode)) ||
       (!is_input && interpreter::Bytecodes::WritesAccumulator(bytecode))) {
-    os << u8"      [ " << kAccumulator << kArrowDirection;
+    os << "      [ " << kAccumulator << kArrowDirection;
     accumulator->ShortPrint();
     os << " ]" << std::endl;
   }
@@ -119,8 +119,8 @@ RUNTIME_FUNCTION(Runtime_InterpreterTraceBytecodeEntry) {
     // Print bytecode.
     const uint8_t* bytecode_address =
         reinterpret_cast<const uint8_t*>(*bytecode_array) + bytecode_offset;
-    os << u8" -> " << static_cast<const void*>(bytecode_address)
-       << u8" (" << bytecode_offset << u8") : ";
+    os << " -> " << static_cast<const void*>(bytecode_address)
+       << " (" << bytecode_offset << ") : ";
     interpreter::Bytecodes::Decode(os, bytecode_address,
                                    bytecode_array->parameter_count());
     os << std::endl;

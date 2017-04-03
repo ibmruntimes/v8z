@@ -110,7 +110,7 @@ class CompiledReplacement {
               parts->Add(
                   ReplacementPart::ReplacementSubString(last, next_index),
                   zone);
-              last = next_index + 1;  // Continue after the second "$".
+              last = next_index + 1;  // Continue after the second "\x24".
             } else {
               // Let the next substring start with the second "$".
               last = next_index;

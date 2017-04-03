@@ -51,13 +51,13 @@ RUNTIME_FUNCTION(Runtime_SpecialArrayFunctions) {
   Handle<JSObject> holder =
       isolate->factory()->NewJSObject(isolate->object_function());
 
-  InstallBuiltin(isolate, holder, "pop", Builtins::kArrayPop);
+  InstallBuiltin(isolate, holder, "\x70\x6f\x70", Builtins::kArrayPop);
   FastArrayPushStub stub(isolate);
-  InstallCode(isolate, holder, "push", stub.GetCode());
-  InstallBuiltin(isolate, holder, "shift", Builtins::kArrayShift);
-  InstallBuiltin(isolate, holder, "unshift", Builtins::kArrayUnshift);
-  InstallBuiltin(isolate, holder, "slice", Builtins::kArraySlice);
-  InstallBuiltin(isolate, holder, "splice", Builtins::kArraySplice);
+  InstallCode(isolate, holder, "\x70\x75\x73\x68", stub.GetCode());
+  InstallBuiltin(isolate, holder, "\x73\x68\x69\x66\x74", Builtins::kArrayShift);
+  InstallBuiltin(isolate, holder, "\x75\x6e\x73\x68\x69\x66\x74", Builtins::kArrayUnshift);
+  InstallBuiltin(isolate, holder, "\x73\x6c\x69\x63\x65", Builtins::kArraySlice);
+  InstallBuiltin(isolate, holder, "\x73\x70\x6c\x69\x63\x65", Builtins::kArraySplice);
 
   return *holder;
 }

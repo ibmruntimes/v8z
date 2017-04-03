@@ -47,7 +47,7 @@ RUNTIME_FUNCTION(Runtime_SymbolDescriptiveString) {
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_HANDLE_CHECKED(Symbol, symbol, 0);
   IncrementalStringBuilder builder(isolate);
-  builder.AppendCString(u8"Symbol(");
+  builder.AppendCString("\x53\x79\x6d\x62\x6f\x6c\x28");
   if (symbol->name()->IsString()) {
     builder.AppendString(handle(String::cast(symbol->name()), isolate));
   }

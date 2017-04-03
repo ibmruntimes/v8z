@@ -99,7 +99,7 @@ RUNTIME_FUNCTION(Runtime_OptimizeFunctionOnNextCall) {
   Code* unoptimized = function->shared()->code();
   if (args.length() == 2 && unoptimized->kind() == Code::FUNCTION) {
     CONVERT_ARG_HANDLE_CHECKED(String, type, 1);
-    if (type->IsOneByteEqualTo(STATIC_CHAR_VECTOR(u8"concurrent")) &&
+    if (type->IsOneByteEqualTo(STATIC_CHAR_VECTOR("\x63\x6f\x6e\x63\x75\x72\x72\x65\x6e\x74")) &&
         isolate->concurrent_recompilation_enabled()) {
       function->AttemptConcurrentOptimization();
     }
@@ -163,12 +163,12 @@ RUNTIME_FUNCTION(Runtime_GetOptimizationStatus) {
   HandleScope scope(isolate);
   RUNTIME_ASSERT(args.length() == 1 || args.length() == 2);
   if (!isolate->use_crankshaft()) {
-    return Smi::FromInt(4);  // 4 == "never".
+    return Smi::FromInt(4);  // 4 == "\x6e\x65\x76\x65\x72".
   }
   bool sync_with_compiler_thread = true;
   if (args.length() == 2) {
     CONVERT_ARG_HANDLE_CHECKED(String, sync, 1);
-    if (sync->IsOneByteEqualTo(STATIC_CHAR_VECTOR(u8"no sync"))) {
+    if (sync->IsOneByteEqualTo(STATIC_CHAR_VECTOR("\x6e\x6f\x20\x73\x79\x6e\x63"))) {
       sync_with_compiler_thread = false;
     }
   }
@@ -183,16 +183,16 @@ RUNTIME_FUNCTION(Runtime_GetOptimizationStatus) {
   if (FLAG_always_opt || FLAG_prepare_always_opt) {
     // With --always-opt, optimization status expectations might not
     // match up, so just return a sentinel.
-    return Smi::FromInt(3);  // 3 == "always".
+    return Smi::FromInt(3);  // 3 == "\x61\x6c\x77\x61\x79\x73".
   }
   if (FLAG_deopt_every_n_times) {
-    return Smi::FromInt(6);  // 6 == "maybe deopted".
+    return Smi::FromInt(6);  // 6 == "\x6d\x61\x79\x62\x65\x20\x64\x65\x6f\x70\x74\x65\x64".
   }
   if (function->IsOptimized() && function->code()->is_turbofanned()) {
-    return Smi::FromInt(7);  // 7 == "TurboFan compiler".
+    return Smi::FromInt(7);  // 7 == "\x54\x75\x72\x62\x6f\x46\x61\x6e\x20\x63\x6f\x6d\x70\x69\x6c\x65\x72".
   }
-  return function->IsOptimized() ? Smi::FromInt(1)   // 1 == "yes".
-                                 : Smi::FromInt(2);  // 2 == "no".
+  return function->IsOptimized() ? Smi::FromInt(1)   // 1 == "\x79\x65\x73".
+                                 : Smi::FromInt(2);  // 2 == "\x6e\x6f".
 }
 
 
@@ -321,7 +321,7 @@ RUNTIME_FUNCTION(Runtime_GlobalPrint) {
   StringCharacterStream stream(string);
   while (stream.HasMore()) {
     uint16_t character = stream.GetNext();
-    PrintF(u8"%c", character);
+    PrintF("%c", character);
   }
   return string;
 }
@@ -355,7 +355,7 @@ RUNTIME_FUNCTION(Runtime_Abort) {
   CONVERT_SMI_ARG_CHECKED(message_id, 0);
   const char* message =
       GetBailoutReason(static_cast<BailoutReason>(message_id));
-  base::OS::PrintError(u8"abort: %s\n", message);
+  base::OS::PrintError("abort: %s\n", message);
   isolate->PrintStack(stderr);
   base::OS::Abort();
   UNREACHABLE();
@@ -367,7 +367,7 @@ RUNTIME_FUNCTION(Runtime_AbortJS) {
   HandleScope scope(isolate);
   DCHECK(args.length() == 1);
   CONVERT_ARG_HANDLE_CHECKED(String, message, 0);
-  base::OS::PrintError(u8"abort: %s\n", message->ToCString().get());
+  base::OS::PrintError("abort: %s\n", message->ToCString().get());
   isolate->PrintStack(stderr);
   base::OS::Abort();
   UNREACHABLE();
@@ -420,9 +420,9 @@ void PrintIndentation(Isolate* isolate) {
   const int nmax = 80;
   int n = StackSize(isolate);
   if (n <= nmax) {
-    PrintF(u8"%4d:%*s", n, n, u8"");
+    PrintF("%4d:%*s", n, n, "");
   } else {
-    PrintF(u8"%4d:%*s", n, nmax, u8"...");
+    PrintF("%4d:%*s", n, nmax, "...");
   }
 }
 
@@ -433,7 +433,7 @@ RUNTIME_FUNCTION(Runtime_TraceEnter) {
   DCHECK_EQ(0, args.length());
   PrintIndentation(isolate);
   JavaScriptFrame::PrintTop(isolate, stdout, true, false);
-  PrintF(u8" {\n");
+  PrintF(" {\n");
   return isolate->heap()->undefined_value();
 }
 
@@ -443,9 +443,9 @@ RUNTIME_FUNCTION(Runtime_TraceExit) {
   DCHECK_EQ(1, args.length());
   CONVERT_ARG_CHECKED(Object, obj, 0);
   PrintIndentation(isolate);
-  PrintF(u8"} -> ");
+  PrintF("} -> ");
   obj->ShortPrint();
-  PrintF(u8"\n");
+  PrintF("\n");
   return obj;  // return TOS
 }
 
@@ -453,7 +453,7 @@ RUNTIME_FUNCTION(Runtime_TraceTailCall) {
   SealHandleScope shs(isolate);
   DCHECK_EQ(0, args.length());
   PrintIndentation(isolate);
-  PrintF(u8"} -> tail call ->\n");
+  PrintF("} -> tail call ->\n");
   return isolate->heap()->undefined_value();
 }
 
