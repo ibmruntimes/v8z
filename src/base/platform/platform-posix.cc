@@ -242,8 +242,8 @@ void OS::Sleep(TimeDelta interval) {
 
 
 void OS::Abort() {
-  v8::base::Semaphore::ReleaseSystemResources();
   if (g_hard_abort) {
+    v8::base::Semaphore::ReleaseSystemResources();
     V8_IMMEDIATE_CRASH();
   }
   // Redirect to std abort to signal abnormal program termination.
