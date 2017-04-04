@@ -1562,6 +1562,35 @@ static inline void WriteUnalignedUInt32(void* p, uint32_t value) {
   WriteUnalignedValue(p, value);
 }
 
+class E2A {
+  public:
+    explicit E2A(const char* val);
+    explicit E2A(const char* val, unsigned len);
+
+    ~E2A() {
+#ifdef __MVS__
+        free(str_);
+#endif
+    }
+
+    char* operator*() {
+      return str_;
+    };
+
+    const char* operator*() const {
+      return str_;
+    };
+
+    size_t length() const {
+      return length_;
+    };
+
+  private:
+    size_t length_;
+    char* str_;
+};
+
+
 }  // namespace internal
 }  // namespace v8
 

@@ -6,6 +6,9 @@
 
 #include <stdarg.h>
 #include <sys/stat.h>
+#ifdef __MVS__
+#include <unistd.h>
+#endif
 
 #include "src/base/functional.h"
 #include "src/base/logging.h"
@@ -447,6 +450,32 @@ bool DoubleToBoolean(double d) {
   return true;
 }
 
+E2A::E2A(const char* val)
+#ifdef __MVS__
+  : length_(strlen(val)) {
+    str_ = (char *)malloc(sizeof(char) * length_ + 1);
+    assert(str_ != NULL);
+    memcpy(str_, val, length_);
+    str_[length_] = NULL;
+    __e2a_l(str_, length_);
+#else
+  : length_(strlen(val)), str_(val) {
+#endif
+}
+
+
+E2A::E2A(const char* val, unsigned len)
+#ifdef __MVS__
+  : length_(len) {
+    str_ = (char *)malloc(sizeof(char) * length_ + 1);
+    assert(str_ != NULL);
+    memcpy(str_, val, length_);
+    str_[length_] = NULL;
+    __e2a_l(str_, length_);
+#else
+  : length_(len), str_(val) {
+#endif
+}
 
 }  // namespace internal
 }  // namespace v8
