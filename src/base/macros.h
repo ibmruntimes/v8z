@@ -159,7 +159,7 @@ char (&ArraySizeHelper(const T (&array)[N]))[N];
 template <class Dest, class Source>
 V8_INLINE Dest bit_cast(Source const& source) {
   static_assert(sizeof(Dest) == sizeof(Source),
-                "source and dest must be same size");
+                "\x73\x6f\x75\x72\x63\x65\x20\x61\x6e\x64\x20\x64\x65\x73\x74\x20\x6d\x75\x73\x74\x20\x62\x65\x20\x73\x61\x6d\x65\x20\x73\x69\x7a\x65");
   Dest dest;
   memcpy(&dest, &source, sizeof(dest));
   return dest;
@@ -240,7 +240,7 @@ inline void USE(T) { }
 # define V8_INT64_C(x)    (x ## I64)
 # if V8_HOST_ARCH_64_BIT
 #  define V8_INTPTR_C(x)  (x ## I64)
-#  define V8_PTR_PREFIX   "ll"
+#  define V8_PTR_PREFIX   "\x6c\x6c"
 # else
 #  define V8_INTPTR_C(x)  (x)
 #  define V8_PTR_PREFIX   ""
@@ -249,7 +249,7 @@ inline void USE(T) { }
 # define V8_UINT64_C(x)   (x ## ULL)
 # define V8_INT64_C(x)    (x ## LL)
 # define V8_INTPTR_C(x)   (x ## LL)
-# define V8_PTR_PREFIX    "I64"
+# define V8_PTR_PREFIX    "\x49\x36\x34"
 #elif V8_HOST_ARCH_64_BIT
 # if V8_OS_MACOSX || V8_OS_OPENBSD
 #  define V8_UINT64_C(x)   (x ## ULL)
@@ -259,35 +259,35 @@ inline void USE(T) { }
 #  define V8_INT64_C(x)    (x ## L)
 # endif
 # define V8_INTPTR_C(x)   (x ## L)
-# define V8_PTR_PREFIX    "l"
+# define V8_PTR_PREFIX    "\x6c"
 #else
 # define V8_UINT64_C(x)   (x ## ULL)
 # define V8_INT64_C(x)    (x ## LL)
 # define V8_INTPTR_C(x)   (x)
 #if V8_OS_AIX
-#define V8_PTR_PREFIX "l"
+#define V8_PTR_PREFIX "\x6c"
 #else
 # define V8_PTR_PREFIX    ""
 #endif
 #endif
 
-#define V8PRIxPTR V8_PTR_PREFIX "x"
-#define V8PRIdPTR V8_PTR_PREFIX "d"
-#define V8PRIuPTR V8_PTR_PREFIX "u"
+#define V8PRIxPTR V8_PTR_PREFIX "\x78"
+#define V8PRIdPTR V8_PTR_PREFIX "\x64"
+#define V8PRIuPTR V8_PTR_PREFIX "\x75"
 
 // Fix for Mac OS X defining uintptr_t as "unsigned long":
 #if V8_OS_MACOSX
 #undef V8PRIxPTR
-#define V8PRIxPTR "lx"
+#define V8PRIxPTR "\x6c\x78"
 #undef V8PRIuPTR
-#define V8PRIuPTR "lxu"
+#define V8PRIuPTR "\x6c\x78\x75"
 #endif
 
 // GCC on S390 31-bit expands 'size_t' to 'long unsigned int'
 // instead of 'int', resulting in compilation errors with %d.
 // The printf format specifier needs to be %zd instead.
 #if V8_HOST_ARCH_S390 && !V8_HOST_ARCH_64_BIT
-#define V8_SIZET_PREFIX "z"
+#define V8_SIZET_PREFIX "\x7a"
 #else
 #define V8_SIZET_PREFIX ""
 #endif

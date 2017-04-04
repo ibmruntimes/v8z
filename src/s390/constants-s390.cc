@@ -12,12 +12,12 @@ namespace internal {
 // These register names are defined in a way to match the native disassembler
 // formatting. See for example the command "objdump -d <binary file>".
 const char* Registers::names_[kNumRegisters] = {
-    "r0", "r1", "r2",  "r3", "r4", "r5",  "r6",  "r7",
-    "r8", "r9", "r10", "fp", "ip", "r13", "r14", "sp"};
+    u8"r0", u8"r1", u8"r2",  u8"r3", u8"r4", u8"r5",  u8"r6",  u8"r7",
+    u8"r8", u8"r9", u8"r10", u8"fp", u8"ip", u8"r13", u8"r14", u8"sp"};
 
 const char* DoubleRegisters::names_[kNumDoubleRegisters] = {
-    "f0", "f1", "f2",  "f3",  "f4",  "f5",  "f6",  "f7",
-    "f8", "f9", "f10", "f11", "f12", "f13", "f14", "f15"};
+    u8"f0", u8"f1", u8"f2",  u8"f3",  u8"f4",  u8"f5",  u8"f6",  u8"f7",
+    u8"f8", u8"f9", u8"f10", u8"f11", u8"f12", u8"f13", u8"f14", u8"f15"};
 
 int DoubleRegisters::Number(const char* name) {
   for (int i = 0; i < kNumDoubleRegisters; i++) {

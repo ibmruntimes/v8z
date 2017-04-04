@@ -46,7 +46,7 @@ class Decoder {
  public:
   Decoder(const disasm::NameConverter& converter, Vector<char> out_buffer)
       : converter_(converter), out_buffer_(out_buffer), out_buffer_pos_(0) {
-    out_buffer_[out_buffer_pos_] = '\0';
+    out_buffer_[out_buffer_pos_] = '\x0';
   }
 
   ~Decoder() {}
@@ -58,7 +58,7 @@ class Decoder {
  private:
   // Bottleneck functions to print into the out_buffer.
   void PrintChar(const char ch);
-  void Print(const char* str);
+  void Print(const char* str, bool ebc = false);
 
   // Printing of common values.
   void PrintRegister(int reg);
@@ -95,9 +95,10 @@ class Decoder {
 void Decoder::PrintChar(const char ch) { out_buffer_[out_buffer_pos_++] = ch; }
 
 // Append the str to the output buffer.
-void Decoder::Print(const char* str) {
+void Decoder::Print(const char* str, bool ebc) {
   char cur = *str++;
-  while (cur != '\0' && (out_buffer_pos_ < (out_buffer_.length() - 1))) {
+  while (cur != '\x0' && (out_buffer_pos_ < (out_buffer_.length() - 1))) {
+    if (ebc) cur = Ebcdic2Ascii(cur);
     PrintChar(cur);
     cur = *str++;
   }
@@ -106,7 +107,11 @@ void Decoder::Print(const char* str) {
 
 // Print the register name according to the active name converter.
 void Decoder::PrintRegister(int reg) {
+#ifdef V8_OS_ZOS
+  Print(converter_.NameOfCPURegister(reg), true);
+#else
   Print(converter_.NameOfCPURegister(reg));
+#endif
 }
 
 // Print the double FP register name according to the active name converter.
@@ -119,17 +124,17 @@ void Decoder::PrintDRegister(int reg) {
 void Decoder::PrintSoftwareInterrupt(SoftwareInterruptCodes svc) {
   switch (svc) {
     case kCallRtRedirected:
-      Print("call rt redirected");
+      Print(u8"call rt redirected");
       return;
     case kBreakpoint:
-      Print("breakpoint");
+      Print(u8"breakpoint");
       return;
     default:
       if (svc >= kStopCode) {
-        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d - 0x%x",
+        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d - 0x%x",
                                     svc & kStopCodeMask, svc & kStopCodeMask);
       } else {
-        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", svc);
+        out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", svc);
       }
       return;
   }
@@ -138,19 +143,19 @@ void Decoder::PrintSoftwareInterrupt(SoftwareInterruptCodes svc) {
 // Handle all register based formatting in this function to reduce the
 // complexity of FormatOption.
 int Decoder::FormatRegister(Instruction* instr, const char* format) {
-  DCHECK(format[0] == 'r');
+  DCHECK(format[0] == '\x72');
 
-  if (format[1] == '1') {  // 'r1: register resides in bit 8-11
+  if (format[1] == '\x31') {  // 'r1: register resides in bit 8-11
     RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
     int reg = rrinstr->R1Value();
     PrintRegister(reg);
     return 2;
-  } else if (format[1] == '2') {  // 'r2: register resides in bit 12-15
+  } else if (format[1] == '\x32') {  // 'r2: register resides in bit 12-15
     RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
     int reg = rrinstr->R2Value();
     // indicating it is a r0 for displacement, in which case the offset
     // should be 0.
-    if (format[2] == 'd') {
+    if (format[2] == '\x64') {
       if (reg == 0) return 4;
       PrintRegister(reg);
       return 3;
@@ -158,27 +163,27 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
       PrintRegister(reg);
       return 2;
     }
-  } else if (format[1] == '3') {  // 'r3: register resides in bit 16-19
+  } else if (format[1] == '\x33') {  // 'r3: register resides in bit 16-19
     RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
     int reg = rsinstr->B2Value();
     PrintRegister(reg);
     return 2;
-  } else if (format[1] == '4') {  // 'r4: register resides in bit 20-23
+  } else if (format[1] == '\x34') {  // 'r4: register resides in bit 20-23
     RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
     int reg = rsinstr->B2Value();
     PrintRegister(reg);
     return 2;
-  } else if (format[1] == '5') {  // 'r5: register resides in bit 24-28
+  } else if (format[1] == '\x35') {  // 'r5: register resides in bit 24-28
     RREInstruction* rreinstr = reinterpret_cast<RREInstruction*>(instr);
     int reg = rreinstr->R1Value();
     PrintRegister(reg);
     return 2;
-  } else if (format[1] == '6') {  // 'r6: register resides in bit 29-32
+  } else if (format[1] == '\x36') {  // 'r6: register resides in bit 29-32
     RREInstruction* rreinstr = reinterpret_cast<RREInstruction*>(instr);
     int reg = rreinstr->R2Value();
     PrintRegister(reg);
     return 2;
-  } else if (format[1] == '7') {  // 'r6: register resides in bit 32-35
+  } else if (format[1] == '\x37') {  // 'r6: register resides in bit 32-35
     SSInstruction* ssinstr = reinterpret_cast<SSInstruction*>(instr);
     int reg = ssinstr->B2Value();
     PrintRegister(reg);
@@ -190,30 +195,30 @@ int Decoder::FormatRegister(Instruction* instr, const char* format) {
 }
 
 int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
-  DCHECK(format[0] == 'f');
+  DCHECK(format[0] == '\x66');
 
   // reuse 1, 5 and 6 because it is coresponding
-  if (format[1] == '1') {  // 'r1: register resides in bit 8-11
+  if (format[1] == '\x31') {  // 'r1: register resides in bit 8-11
     RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
     int reg = rrinstr->R1Value();
     PrintDRegister(reg);
     return 2;
-  } else if (format[1] == '2') {  // 'f2: register resides in bit 12-15
+  } else if (format[1] == '\x32') {  // 'f2: register resides in bit 12-15
     RRInstruction* rrinstr = reinterpret_cast<RRInstruction*>(instr);
     int reg = rrinstr->R2Value();
     PrintDRegister(reg);
     return 2;
-  } else if (format[1] == '3') {  // 'f3: register resides in bit 16-19
+  } else if (format[1] == '\x33') {  // 'f3: register resides in bit 16-19
     RRDInstruction* rrdinstr = reinterpret_cast<RRDInstruction*>(instr);
     int reg = rrdinstr->R1Value();
     PrintDRegister(reg);
     return 2;
-  } else if (format[1] == '5') {  // 'f5: register resides in bit 24-28
+  } else if (format[1] == '\x35') {  // 'f5: register resides in bit 24-28
     RREInstruction* rreinstr = reinterpret_cast<RREInstruction*>(instr);
     int reg = rreinstr->R1Value();
     PrintDRegister(reg);
     return 2;
-  } else if (format[1] == '6') {  // 'f6: register resides in bit 29-32
+  } else if (format[1] == '\x36') {  // 'f6: register resides in bit 29-32
     RREInstruction* rreinstr = reinterpret_cast<RREInstruction*>(instr);
     int reg = rreinstr->R2Value();
     PrintDRegister(reg);
@@ -230,69 +235,69 @@ int Decoder::FormatFloatingRegister(Instruction* instr, const char* format) {
 // characters that were consumed from the formatting string.
 int Decoder::FormatOption(Instruction* instr, const char* format) {
   switch (format[0]) {
-    case 'o': {
+    case '\x6f': {
       if (instr->Bit(10) == 1) {
-        Print("o");
+        Print(u8"o");
       }
       return 1;
     }
-    case '.': {
+    case '\x2e': {
       if (instr->Bit(0) == 1) {
-        Print(".");
+        Print(u8".");
       } else {
-        Print(" ");  // ensure consistent spacing
+        Print(u8" ");  // ensure consistent spacing
       }
       return 1;
     }
-    case 'r': {
+    case '\x72': {
       return FormatRegister(instr, format);
     }
-    case 'f': {
+    case '\x66': {
       return FormatFloatingRegister(instr, format);
     }
-    case 'i': {  // int16
+    case '\x69': {  // int16
       return FormatImmediate(instr, format);
     }
-    case 'u': {  // uint16
+    case '\x75': {  // uint16
       int32_t value = instr->Bits(15, 0);
-      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
       return 6;
     }
-    case 'l': {
+    case '\x6c': {
       // Link (LK) Bit 0
       if (instr->Bit(0) == 1) {
-        Print("l");
+        Print(u8"l");
       }
       return 1;
     }
-    case 'a': {
+    case '\x61': {
       // Absolute Address Bit 1
       if (instr->Bit(1) == 1) {
-        Print("a");
+        Print(u8"a");
       }
       return 1;
     }
-    case 't': {  // 'target: target of branch instructions
+    case '\x74': {  // 'target: target of branch instructions
       // target26 or target16
-      DCHECK(STRING_STARTS_WITH(format, "target"));
-      if ((format[6] == '2') && (format[7] == '6')) {
+      DCHECK(STRING_STARTS_WITH(format, u8"target"));
+      if ((format[6] == '\x32') && (format[7] == '\x36')) {
         int off = ((instr->Bits(25, 2)) << 8) >> 6;
         out_buffer_pos_ += SNPrintF(
-            out_buffer_ + out_buffer_pos_, "%+d -> %s", off,
+            out_buffer_ + out_buffer_pos_, u8"%+d -> %s", off,
             converter_.NameOfAddress(reinterpret_cast<byte*>(instr) + off));
         return 8;
-      } else if ((format[6] == '1') && (format[7] == '6')) {
+      } else if ((format[6] == '\x31') && (format[7] == '\x36')) {
         int off = ((instr->Bits(15, 2)) << 18) >> 16;
         out_buffer_pos_ += SNPrintF(
-            out_buffer_ + out_buffer_pos_, "%+d -> %s", off,
+            out_buffer_ + out_buffer_pos_, u8"%+d -> %s", off,
             converter_.NameOfAddress(reinterpret_cast<byte*>(instr) + off));
         return 8;
       }
-      case 'm': {
+      case '\x6d': {
         return FormatMask(instr, format);
       }
     }
-    case 'd': {  // ds value for offset
+    case '\x64': {  // ds value for offset
       return FormatDisplacement(instr, format);
     }
     default: {
@@ -306,149 +311,149 @@ int Decoder::FormatOption(Instruction* instr, const char* format) {
 }
 
 int Decoder::FormatMask(Instruction* instr, const char* format) {
-  DCHECK(format[0] == 'm');
+  DCHECK(format[0] == '\x6d');
   int32_t value = 0;
-  if ((format[1] == '1')) {  // prints the mask format in bits 8-12
+  if ((format[1] == '\x31')) {  // prints the mask format in bits 8-12
     value = reinterpret_cast<RRInstruction*>(instr)->R1Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "0x%x", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"0x%x", value);
     return 2;
-  } else if (format[1] == '2') {  // mask format in bits 16-19
+  } else if (format[1] == '\x32') {  // mask format in bits 16-19
     value = reinterpret_cast<RXInstruction*>(instr)->B2Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "0x%x", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"0x%x", value);
     return 2;
-  } else if (format[1] == '3') {  // mask format in bits 20-23
+  } else if (format[1] == '\x33') {  // mask format in bits 20-23
     value = reinterpret_cast<RRFInstruction*>(instr)->M4Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "0x%x", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"0x%x", value);
     return 2;
   }
 
-  out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+  out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
   return 2;
 }
 
 int Decoder::FormatDisplacement(Instruction* instr, const char* format) {
-  DCHECK(format[0] == 'd');
+  DCHECK(format[0] == '\x64');
 
-  if (format[1] == '1') {  // displacement in 20-31
+  if (format[1] == '\x31') {  // displacement in 20-31
     RSInstruction* rsinstr = reinterpret_cast<RSInstruction*>(instr);
     uint16_t value = rsinstr->D2Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
 
     return 2;
-  } else if (format[1] == '2') {  // displacement in 20-39
+  } else if (format[1] == '\x32') {  // displacement in 20-39
     RXYInstruction* rxyinstr = reinterpret_cast<RXYInstruction*>(instr);
     int32_t value = rxyinstr->D2Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == '4') {  // SS displacement 2 36-47
+  } else if (format[1] == '\x34') {  // SS displacement 2 36-47
     SSInstruction* ssInstr = reinterpret_cast<SSInstruction*>(instr);
     uint16_t value = ssInstr->D2Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == '3') {  // SS displacement 1 20 - 32
+  } else if (format[1] == '\x33') {  // SS displacement 1 20 - 32
     SSInstruction* ssInstr = reinterpret_cast<SSInstruction*>(instr);
     uint16_t value = ssInstr->D1Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
   } else {  // s390 specific
     int32_t value = SIGN_EXT_IMM16(instr->Bits(15, 0) & ~3);
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 1;
   }
 }
 
 int Decoder::FormatImmediate(Instruction* instr, const char* format) {
-  DCHECK(format[0] == 'i');
+  DCHECK(format[0] == '\x69');
 
-  if (format[1] == '1') {  // immediate in 16-31
+  if (format[1] == '\x31') {  // immediate in 16-31
     RIInstruction* riinstr = reinterpret_cast<RIInstruction*>(instr);
     int16_t value = riinstr->I2Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == '2') {  // immediate in 16-48
+  } else if (format[1] == '\x32') {  // immediate in 16-48
     RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
     int32_t value = rilinstr->I2Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == '3') {  // immediate in I format
+  } else if (format[1] == '\x33') {  // immediate in I format
     IInstruction* iinstr = reinterpret_cast<IInstruction*>(instr);
     int8_t value = iinstr->IValue();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == '4') {  // immediate in 16-31, but outputs as offset
+  } else if (format[1] == '\x34') {  // immediate in 16-31, but outputs as offset
     RIInstruction* riinstr = reinterpret_cast<RIInstruction*>(instr);
     int16_t value = riinstr->I2Value() * 2;
     if (value >= 0)
-      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "*+");
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"*+");
     else
-      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "*");
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"*");
 
     out_buffer_pos_ += SNPrintF(
-        out_buffer_ + out_buffer_pos_, "%d -> %s", value,
+        out_buffer_ + out_buffer_pos_, u8"%d -> %s", value,
         converter_.NameOfAddress(reinterpret_cast<byte*>(instr) + value));
     return 2;
-  } else if (format[1] == '5') {  // immediate in 16-31, but outputs as offset
+  } else if (format[1] == '\x35') {  // immediate in 16-31, but outputs as offset
     RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
     int32_t value = rilinstr->I2Value() * 2;
     if (value >= 0)
-      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "*+");
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"*+");
     else
-      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "*");
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"*");
 
     out_buffer_pos_ += SNPrintF(
-        out_buffer_ + out_buffer_pos_, "%d -> %s", value,
+        out_buffer_ + out_buffer_pos_, u8"%d -> %s", value,
         converter_.NameOfAddress(reinterpret_cast<byte*>(instr) + value));
     return 2;
-  } else if (format[1] == '6') {  // unsigned immediate in 16-31
+  } else if (format[1] == '\x36') {  // unsigned immediate in 16-31
     RIInstruction* riinstr = reinterpret_cast<RIInstruction*>(instr);
     uint16_t value = riinstr->I2UnsignedValue();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == '7') {  // unsigned immediate in 16-47
+  } else if (format[1] == '\x37') {  // unsigned immediate in 16-47
     RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
     uint32_t value = rilinstr->I2UnsignedValue();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == '8') {  // unsigned immediate in 8-15
+  } else if (format[1] == '\x38') {  // unsigned immediate in 8-15
     SSInstruction* ssinstr = reinterpret_cast<SSInstruction*>(instr);
     uint8_t value = ssinstr->Length();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == '9') {  // unsigned immediate in 16-23
+  } else if (format[1] == '\x39') {  // unsigned immediate in 16-23
     RIEInstruction* rie_instr = reinterpret_cast<RIEInstruction*>(instr);
     uint8_t value = rie_instr->I3Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == 'a') {  // unsigned immediate in 24-31
+  } else if (format[1] == '\x61') {  // unsigned immediate in 24-31
     RIEInstruction* rie_instr = reinterpret_cast<RIEInstruction*>(instr);
     uint8_t value = rie_instr->I4Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == 'b') {  // unsigned immediate in 32-39
+  } else if (format[1] == '\x62') {  // unsigned immediate in 32-39
     RIEInstruction* rie_instr = reinterpret_cast<RIEInstruction*>(instr);
     uint8_t value = rie_instr->I5Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == 'c') {  // signed immediate in 8-15
+  } else if (format[1] == '\x63') {  // signed immediate in 8-15
     SSInstruction* ssinstr = reinterpret_cast<SSInstruction*>(instr);
     int8_t value = ssinstr->Length();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == 'd') {  // signed immediate in 32-47
+  } else if (format[1] == '\x64') {  // signed immediate in 32-47
     SILInstruction* silinstr = reinterpret_cast<SILInstruction*>(instr);
     int16_t value = silinstr->I2Value();
-    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%d", value);
+    out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%d", value);
     return 2;
-  } else if (format[1] == 'e') {  // immediate in 16-47, but outputs as offset
+  } else if (format[1] == '\x65') {  // immediate in 16-47, but outputs as offset
     RILInstruction* rilinstr = reinterpret_cast<RILInstruction*>(instr);
     int32_t value = rilinstr->I2Value() * 2;
     if (value >= 0)
-      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "*+");
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"*+");
     else
-      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "*");
+      out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"*");
 
     out_buffer_pos_ += SNPrintF(
-        out_buffer_ + out_buffer_pos_, "%d -> %s", value,
+        out_buffer_ + out_buffer_pos_, u8"%d -> %s", value,
         converter_.NameOfAddress(reinterpret_cast<byte*>(instr) + value));
     return 2;
   }
@@ -463,14 +468,14 @@ int Decoder::FormatImmediate(Instruction* instr, const char* format) {
 void Decoder::Format(Instruction* instr, const char* format) {
   char cur = *format++;
   while ((cur != 0) && (out_buffer_pos_ < (out_buffer_.length() - 1))) {
-    if (cur == '\'') {  // Single quote is used as the formatting escape.
+    if (cur == '\x27') {  // Single quote is used as the formatting escape.
       format += FormatOption(instr, format);
     } else {
       out_buffer_[out_buffer_pos_++] = cur;
     }
     cur = *format++;
   }
-  out_buffer_[out_buffer_pos_] = '\0';
+  out_buffer_[out_buffer_pos_] = '\x0';
 }
 
 // The disassembler may end up decoding data inlined in the code. We do not want
@@ -483,14 +488,14 @@ void Decoder::Format(Instruction* instr, const char* format) {
 
 // For currently unimplemented decodings the disassembler calls Unknown(instr)
 // which will just print "unknown" of the instruction bits.
-void Decoder::Unknown(Instruction* instr) { Format(instr, "unknown"); }
+void Decoder::Unknown(Instruction* instr) { Format(instr, u8"unknown"); }
 
 // For currently unimplemented decodings the disassembler calls
 // UnknownFormat(instr) which will just print opcode name of the
 // instruction bits.
 void Decoder::UnknownFormat(Instruction* instr, const char* name) {
   char buffer[100];
-  snprintf(buffer, sizeof(buffer), "%s (unknown-format)", name);
+  snprintf(buffer, sizeof(buffer), u8"%s (unknown-format)", name);
   Format(instr, buffer);
 }
 
@@ -498,67 +503,67 @@ void Decoder::UnknownFormat(Instruction* instr, const char* name) {
 // @return true if successfully decoded
 bool Decoder::DecodeTwoByte(Instruction* instr) {
   // Print the Instruction bits.
-  out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%04x           ",
+  out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%04x           ",
                               instr->InstructionBits<TwoByteInstr>());
 
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
     case AR:
-      Format(instr, "ar\t'r1,'r2");
+      Format(instr, u8"ar\t'r1,'r2");
       break;
     case SR:
-      Format(instr, "sr\t'r1,'r2");
+      Format(instr, u8"sr\t'r1,'r2");
       break;
     case MR:
-      Format(instr, "mr\t'r1,'r2");
+      Format(instr, u8"mr\t'r1,'r2");
       break;
     case DR:
-      Format(instr, "dr\t'r1,'r2");
+      Format(instr, u8"dr\t'r1,'r2");
       break;
     case OR:
-      Format(instr, "or\t'r1,'r2");
+      Format(instr, u8"or\t'r1,'r2");
       break;
     case NR:
-      Format(instr, "nr\t'r1,'r2");
+      Format(instr, u8"nr\t'r1,'r2");
       break;
     case XR:
-      Format(instr, "xr\t'r1,'r2");
+      Format(instr, u8"xr\t'r1,'r2");
       break;
     case LR:
-      Format(instr, "lr\t'r1,'r2");
+      Format(instr, u8"lr\t'r1,'r2");
       break;
     case CR:
-      Format(instr, "cr\t'r1,'r2");
+      Format(instr, u8"cr\t'r1,'r2");
       break;
     case CLR:
-      Format(instr, "clr\t'r1,'r2");
+      Format(instr, u8"clr\t'r1,'r2");
       break;
     case BCR:
-      Format(instr, "bcr\t'm1,'r2");
+      Format(instr, u8"bcr\t'm1,'r2");
       break;
     case LTR:
-      Format(instr, "ltr\t'r1,'r2");
+      Format(instr, u8"ltr\t'r1,'r2");
       break;
     case ALR:
-      Format(instr, "alr\t'r1,'r2");
+      Format(instr, u8"alr\t'r1,'r2");
       break;
     case SLR:
-      Format(instr, "slr\t'r1,'r2");
+      Format(instr, u8"slr\t'r1,'r2");
       break;
     case LNR:
-      Format(instr, "lnr\t'r1,'r2");
+      Format(instr, u8"lnr\t'r1,'r2");
       break;
     case LCR:
-      Format(instr, "lcr\t'r1,'r2");
+      Format(instr, u8"lcr\t'r1,'r2");
       break;
     case BASR:
-      Format(instr, "basr\t'r1,'r2");
+      Format(instr, u8"basr\t'r1,'r2");
       break;
     case LDR:
-      Format(instr, "ldr\t'f1,'f2");
+      Format(instr, u8"ldr\t'f1,'f2");
       break;
     case BKPT:
-      Format(instr, "bkpt");
+      Format(instr, u8"bkpt");
       break;
     default:
       return false;
@@ -570,441 +575,441 @@ bool Decoder::DecodeTwoByte(Instruction* instr) {
 // @return true if successfully decoded
 bool Decoder::DecodeFourByte(Instruction* instr) {
   // Print the Instruction bits.
-  out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, "%08x       ",
+  out_buffer_pos_ += SNPrintF(out_buffer_ + out_buffer_pos_, u8"%08x       ",
                               instr->InstructionBits<FourByteInstr>());
 
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
     case AHI:
-      Format(instr, "ahi\t'r1,'i1");
+      Format(instr, u8"ahi\t'r1,'i1");
       break;
     case AGHI:
-      Format(instr, "aghi\t'r1,'i1");
+      Format(instr, u8"aghi\t'r1,'i1");
       break;
     case LHI:
-      Format(instr, "lhi\t'r1,'i1");
+      Format(instr, u8"lhi\t'r1,'i1");
       break;
     case LGHI:
-      Format(instr, "lghi\t'r1,'i1");
+      Format(instr, u8"lghi\t'r1,'i1");
       break;
     case MHI:
-      Format(instr, "mhi\t'r1,'i1");
+      Format(instr, u8"mhi\t'r1,'i1");
       break;
     case MGHI:
-      Format(instr, "mghi\t'r1,'i1");
+      Format(instr, u8"mghi\t'r1,'i1");
       break;
     case CHI:
-      Format(instr, "chi\t'r1,'i1");
+      Format(instr, u8"chi\t'r1,'i1");
       break;
     case CGHI:
-      Format(instr, "cghi\t'r1,'i1");
+      Format(instr, u8"cghi\t'r1,'i1");
       break;
     case BRAS:
-      Format(instr, "bras\t'r1,'i1");
+      Format(instr, u8"bras\t'r1,'i1");
       break;
     case BRC:
-      Format(instr, "brc\t'm1,'i4");
+      Format(instr, u8"brc\t'm1,'i4");
       break;
     case BRCT:
-      Format(instr, "brct\t'r1,'i4");
+      Format(instr, u8"brct\t'r1,'i4");
       break;
     case BRCTG:
-      Format(instr, "brctg\t'r1,'i4");
+      Format(instr, u8"brctg\t'r1,'i4");
       break;
     case IIHH:
-      Format(instr, "iihh\t'r1,'i1");
+      Format(instr, u8"iihh\t'r1,'i1");
       break;
     case IIHL:
-      Format(instr, "iihl\t'r1,'i1");
+      Format(instr, u8"iihl\t'r1,'i1");
       break;
     case IILH:
-      Format(instr, "iilh\t'r1,'i1");
+      Format(instr, u8"iilh\t'r1,'i1");
       break;
     case IILL:
-      Format(instr, "iill\t'r1,'i1");
+      Format(instr, u8"iill\t'r1,'i1");
       break;
     case OILL:
-      Format(instr, "oill\t'r1,'i1");
+      Format(instr, u8"oill\t'r1,'i1");
       break;
     case TMLL:
-      Format(instr, "tmll\t'r1,'i1");
+      Format(instr, u8"tmll\t'r1,'i1");
       break;
     case STM:
-      Format(instr, "stm\t'r1,'r2,'d1('r3)");
+      Format(instr, u8"stm\t'r1,'r2,'d1('r3)");
       break;
     case LM:
-      Format(instr, "lm\t'r1,'r2,'d1('r3)");
+      Format(instr, u8"lm\t'r1,'r2,'d1('r3)");
       break;
     case SLL:
-      Format(instr, "sll\t'r1,'d1('r3)");
+      Format(instr, u8"sll\t'r1,'d1('r3)");
       break;
     case SRL:
-      Format(instr, "srl\t'r1,'d1('r3)");
+      Format(instr, u8"srl\t'r1,'d1('r3)");
       break;
     case SLA:
-      Format(instr, "sla\t'r1,'d1('r3)");
+      Format(instr, u8"sla\t'r1,'d1('r3)");
       break;
     case SRA:
-      Format(instr, "sra\t'r1,'d1('r3)");
+      Format(instr, u8"sra\t'r1,'d1('r3)");
       break;
     case SLDL:
-      Format(instr, "sldl\t'r1,'d1('r3)");
+      Format(instr, u8"sldl\t'r1,'d1('r3)");
       break;
     case AGR:
-      Format(instr, "agr\t'r5,'r6");
+      Format(instr, u8"agr\t'r5,'r6");
       break;
     case AGFR:
-      Format(instr, "agfr\t'r5,'r6");
+      Format(instr, u8"agfr\t'r5,'r6");
       break;
     case ARK:
-      Format(instr, "ark\t'r5,'r6,'r3");
+      Format(instr, u8"ark\t'r5,'r6,'r3");
       break;
     case AGRK:
-      Format(instr, "agrk\t'r5,'r6,'r3");
+      Format(instr, u8"agrk\t'r5,'r6,'r3");
       break;
     case SGR:
-      Format(instr, "sgr\t'r5,'r6");
+      Format(instr, u8"sgr\t'r5,'r6");
       break;
     case SGFR:
-      Format(instr, "sgfr\t'r5,'r6");
+      Format(instr, u8"sgfr\t'r5,'r6");
       break;
     case SRK:
-      Format(instr, "srk\t'r5,'r6,'r3");
+      Format(instr, u8"srk\t'r5,'r6,'r3");
       break;
     case SGRK:
-      Format(instr, "sgrk\t'r5,'r6,'r3");
+      Format(instr, u8"sgrk\t'r5,'r6,'r3");
       break;
     case NGR:
-      Format(instr, "ngr\t'r5,'r6");
+      Format(instr, u8"ngr\t'r5,'r6");
       break;
     case NRK:
-      Format(instr, "nrk\t'r5,'r6,'r3");
+      Format(instr, u8"nrk\t'r5,'r6,'r3");
       break;
     case NGRK:
-      Format(instr, "ngrk\t'r5,'r6,'r3");
+      Format(instr, u8"ngrk\t'r5,'r6,'r3");
       break;
     case NILL:
-      Format(instr, "nill\t'r1,'i1");
+      Format(instr, u8"nill\t'r1,'i1");
       break;
     case NILH:
-      Format(instr, "nilh\t'r1,'i1");
+      Format(instr, u8"nilh\t'r1,'i1");
       break;
     case OGR:
-      Format(instr, "ogr\t'r5,'r6");
+      Format(instr, u8"ogr\t'r5,'r6");
       break;
     case ORK:
-      Format(instr, "ork\t'r5,'r6,'r3");
+      Format(instr, u8"ork\t'r5,'r6,'r3");
       break;
     case OGRK:
-      Format(instr, "ogrk\t'r5,'r6,'r3");
+      Format(instr, u8"ogrk\t'r5,'r6,'r3");
       break;
     case XGR:
-      Format(instr, "xgr\t'r5,'r6");
+      Format(instr, u8"xgr\t'r5,'r6");
       break;
     case XRK:
-      Format(instr, "xrk\t'r5,'r6,'r3");
+      Format(instr, u8"xrk\t'r5,'r6,'r3");
       break;
     case XGRK:
-      Format(instr, "xgrk\t'r5,'r6,'r3");
+      Format(instr, u8"xgrk\t'r5,'r6,'r3");
       break;
     case CGR:
-      Format(instr, "cgr\t'r5,'r6");
+      Format(instr, u8"cgr\t'r5,'r6");
       break;
     case CLGR:
-      Format(instr, "clgr\t'r5,'r6");
+      Format(instr, u8"clgr\t'r5,'r6");
       break;
     case LLGFR:
-      Format(instr, "llgfr\t'r5,'r6");
+      Format(instr, u8"llgfr\t'r5,'r6");
       break;
     case LBR:
-      Format(instr, "lbr\t'r5,'r6");
+      Format(instr, u8"lbr\t'r5,'r6");
       break;
     case LEDBR:
-      Format(instr, "ledbr\t'f5,'f6");
+      Format(instr, u8"ledbr\t'f5,'f6");
       break;
     case LDEBR:
-      Format(instr, "ldebr\t'f5,'f6");
+      Format(instr, u8"ldebr\t'f5,'f6");
       break;
     case LTGR:
-      Format(instr, "ltgr\t'r5,'r6");
+      Format(instr, u8"ltgr\t'r5,'r6");
       break;
     case LTDBR:
-      Format(instr, "ltdbr\t'f5,'f6");
+      Format(instr, u8"ltdbr\t'f5,'f6");
       break;
     case LTEBR:
-      Format(instr, "ltebr\t'f5,'f6");
+      Format(instr, u8"ltebr\t'f5,'f6");
       break;
     case LGR:
-      Format(instr, "lgr\t'r5,'r6");
+      Format(instr, u8"lgr\t'r5,'r6");
       break;
     case LGDR:
-      Format(instr, "lgdr\t'r5,'f6");
+      Format(instr, u8"lgdr\t'r5,'f6");
       break;
     case LGFR:
-      Format(instr, "lgfr\t'r5,'r6");
+      Format(instr, u8"lgfr\t'r5,'r6");
       break;
     case LTGFR:
-      Format(instr, "ltgfr\t'r5,'r6");
+      Format(instr, u8"ltgfr\t'r5,'r6");
       break;
     case LCGR:
-      Format(instr, "lcgr\t'r5,'r6");
+      Format(instr, u8"lcgr\t'r5,'r6");
       break;
     case MSR:
-      Format(instr, "msr\t'r5,'r6");
+      Format(instr, u8"msr\t'r5,'r6");
       break;
     case LGBR:
-      Format(instr, "lgbr\t'r5,'r6");
+      Format(instr, u8"lgbr\t'r5,'r6");
       break;
     case LGHR:
-      Format(instr, "lghr\t'r5,'r6");
+      Format(instr, u8"lghr\t'r5,'r6");
       break;
     case MSGR:
-      Format(instr, "msgr\t'r5,'r6");
+      Format(instr, u8"msgr\t'r5,'r6");
       break;
     case DSGR:
-      Format(instr, "dsgr\t'r5,'r6");
+      Format(instr, u8"dsgr\t'r5,'r6");
       break;
     case LZDR:
-      Format(instr, "lzdr\t'f5");
+      Format(instr, u8"lzdr\t'f5");
       break;
     case MLR:
-      Format(instr, "mlr\t'r5,'r6");
+      Format(instr, u8"mlr\t'r5,'r6");
       break;
     case MLGR:
-      Format(instr, "mlgr\t'r5,'r6");
+      Format(instr, u8"mlgr\t'r5,'r6");
       break;
     case ALCR:
-      Format(instr, "alcr\t'r5,'r6");
+      Format(instr, u8"alcr\t'r5,'r6");
       break;
     case ALGR:
-      Format(instr, "algr\t'r5,'r6");
+      Format(instr, u8"algr\t'r5,'r6");
       break;
     case ALRK:
-      Format(instr, "alrk\t'r5,'r6,'r3");
+      Format(instr, u8"alrk\t'r5,'r6,'r3");
       break;
     case ALGRK:
-      Format(instr, "algrk\t'r5,'r6,'r3");
+      Format(instr, u8"algrk\t'r5,'r6,'r3");
       break;
     case SLGR:
-      Format(instr, "slgr\t'r5,'r6");
+      Format(instr, u8"slgr\t'r5,'r6");
       break;
     case SLBR:
-      Format(instr, "slbr\t'r5,'r6");
+      Format(instr, u8"slbr\t'r5,'r6");
       break;
     case DLR:
-      Format(instr, "dlr\t'r5,'r6");
+      Format(instr, u8"dlr\t'r5,'r6");
       break;
     case DLGR:
-      Format(instr, "dlgr\t'r5,'r6");
+      Format(instr, u8"dlgr\t'r5,'r6");
       break;
     case SLRK:
-      Format(instr, "slrk\t'r5,'r6,'r3");
+      Format(instr, u8"slrk\t'r5,'r6,'r3");
       break;
     case SLGRK:
-      Format(instr, "slgrk\t'r5,'r6,'r3");
+      Format(instr, u8"slgrk\t'r5,'r6,'r3");
       break;
     case LHR:
-      Format(instr, "lhr\t'r5,'r6");
+      Format(instr, u8"lhr\t'r5,'r6");
       break;
     case LLHR:
-      Format(instr, "llhr\t'r5,'r6");
+      Format(instr, u8"llhr\t'r5,'r6");
       break;
     case LLGHR:
-      Format(instr, "llghr\t'r5,'r6");
+      Format(instr, u8"llghr\t'r5,'r6");
       break;
     case LNGR:
-      Format(instr, "lngr\t'r5,'r6");
+      Format(instr, u8"lngr\t'r5,'r6");
       break;
     case A:
-      Format(instr, "a\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"a\t'r1,'d1('r2d,'r3)");
       break;
     case S:
-      Format(instr, "s\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"s\t'r1,'d1('r2d,'r3)");
       break;
     case M:
-      Format(instr, "m\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"m\t'r1,'d1('r2d,'r3)");
       break;
     case D:
-      Format(instr, "d\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"d\t'r1,'d1('r2d,'r3)");
       break;
     case O:
-      Format(instr, "o\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"o\t'r1,'d1('r2d,'r3)");
       break;
     case N:
-      Format(instr, "n\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"n\t'r1,'d1('r2d,'r3)");
       break;
     case L:
-      Format(instr, "l\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"l\t'r1,'d1('r2d,'r3)");
       break;
     case C:
-      Format(instr, "c\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"c\t'r1,'d1('r2d,'r3)");
       break;
     case AH:
-      Format(instr, "ah\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"ah\t'r1,'d1('r2d,'r3)");
       break;
     case SH:
-      Format(instr, "sh\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"sh\t'r1,'d1('r2d,'r3)");
       break;
     case MH:
-      Format(instr, "mh\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"mh\t'r1,'d1('r2d,'r3)");
       break;
     case AL:
-      Format(instr, "al\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"al\t'r1,'d1('r2d,'r3)");
       break;
     case SL:
-      Format(instr, "sl\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"sl\t'r1,'d1('r2d,'r3)");
       break;
     case LA:
-      Format(instr, "la\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"la\t'r1,'d1('r2d,'r3)");
       break;
     case CH:
-      Format(instr, "ch\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"ch\t'r1,'d1('r2d,'r3)");
       break;
     case CL:
-      Format(instr, "cl\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"cl\t'r1,'d1('r2d,'r3)");
       break;
     case CLI:
-      Format(instr, "cli\t'd1('r3),'i8");
+      Format(instr, u8"cli\t'd1('r3),'i8");
       break;
     case TM:
-      Format(instr, "tm\t'd1('r3),'i8");
+      Format(instr, u8"tm\t'd1('r3),'i8");
       break;
     case BC:
-      Format(instr, "bc\t'm1,'d1('r2d,'r3)");
+      Format(instr, u8"bc\t'm1,'d1('r2d,'r3)");
       break;
     case BCT:
-      Format(instr, "bct\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"bct\t'r1,'d1('r2d,'r3)");
       break;
     case ST:
-      Format(instr, "st\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"st\t'r1,'d1('r2d,'r3)");
       break;
     case STC:
-      Format(instr, "stc\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"stc\t'r1,'d1('r2d,'r3)");
       break;
     case IC_z:
-      Format(instr, "ic\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"ic\t'r1,'d1('r2d,'r3)");
       break;
     case LD:
-      Format(instr, "ld\t'f1,'d1('r2d,'r3)");
+      Format(instr, u8"ld\t'f1,'d1('r2d,'r3)");
       break;
     case LE:
-      Format(instr, "le\t'f1,'d1('r2d,'r3)");
+      Format(instr, u8"le\t'f1,'d1('r2d,'r3)");
       break;
     case LDGR:
-      Format(instr, "ldgr\t'f5,'r6");
+      Format(instr, u8"ldgr\t'f5,'r6");
       break;
     case STE:
-      Format(instr, "ste\t'f1,'d1('r2d,'r3)");
+      Format(instr, u8"ste\t'f1,'d1('r2d,'r3)");
       break;
     case STD:
-      Format(instr, "std\t'f1,'d1('r2d,'r3)");
+      Format(instr, u8"std\t'f1,'d1('r2d,'r3)");
       break;
     case CFDBR:
-      Format(instr, "cfdbr\t'r5,'m2,'f6");
+      Format(instr, u8"cfdbr\t'r5,'m2,'f6");
       break;
     case CDFBR:
-      Format(instr, "cdfbr\t'f5,'m2,'r6");
+      Format(instr, u8"cdfbr\t'f5,'m2,'r6");
       break;
     case CFEBR:
-      Format(instr, "cfebr\t'r5,'m2,'f6");
+      Format(instr, u8"cfebr\t'r5,'m2,'f6");
       break;
     case CEFBR:
-      Format(instr, "cefbr\t'f5,'m2,'r6");
+      Format(instr, u8"cefbr\t'f5,'m2,'r6");
       break;
     case CGEBR:
-      Format(instr, "cgebr\t'r5,'m2,'f6");
+      Format(instr, u8"cgebr\t'r5,'m2,'f6");
       break;
     case CGDBR:
-      Format(instr, "cgdbr\t'r5,'m2,'f6");
+      Format(instr, u8"cgdbr\t'r5,'m2,'f6");
       break;
     case CEGBR:
-      Format(instr, "cegbr\t'f5,'m2,'r6");
+      Format(instr, u8"cegbr\t'f5,'m2,'r6");
       break;
     case CDGBR:
-      Format(instr, "cdgbr\t'f5,'m2,'r6");
+      Format(instr, u8"cdgbr\t'f5,'m2,'r6");
       break;
     case CDLFBR:
-      Format(instr, "cdlfbr\t'f5,'m2,'r6");
+      Format(instr, u8"cdlfbr\t'f5,'m2,'r6");
       break;
     case CDLGBR:
-      Format(instr, "cdlgbr\t'f5,'m2,'r6");
+      Format(instr, u8"cdlgbr\t'f5,'m2,'r6");
       break;
     case CELGBR:
-      Format(instr, "celgbr\t'f5,'m2,'r6");
+      Format(instr, u8"celgbr\t'f5,'m2,'r6");
       break;
     case CLFDBR:
-      Format(instr, "clfdbr\t'r5,'m2,'f6");
+      Format(instr, u8"clfdbr\t'r5,'m2,'f6");
       break;
     case CLGDBR:
-      Format(instr, "clgdbr\t'r5,'m2,'f6");
+      Format(instr, u8"clgdbr\t'r5,'m2,'f6");
       break;
     case AEBR:
-      Format(instr, "aebr\t'f5,'f6");
+      Format(instr, u8"aebr\t'f5,'f6");
       break;
     case SEBR:
-      Format(instr, "sebr\t'f5,'f6");
+      Format(instr, u8"sebr\t'f5,'f6");
       break;
     case MEEBR:
-      Format(instr, "meebr\t'f5,'f6");
+      Format(instr, u8"meebr\t'f5,'f6");
       break;
     case DEBR:
-      Format(instr, "debr\t'f5,'f6");
+      Format(instr, u8"debr\t'f5,'f6");
       break;
     case ADBR:
-      Format(instr, "adbr\t'f5,'f6");
+      Format(instr, u8"adbr\t'f5,'f6");
       break;
     case SDBR:
-      Format(instr, "sdbr\t'f5,'f6");
+      Format(instr, u8"sdbr\t'f5,'f6");
       break;
     case MDBR:
-      Format(instr, "mdbr\t'f5,'f6");
+      Format(instr, u8"mdbr\t'f5,'f6");
       break;
     case DDBR:
-      Format(instr, "ddbr\t'f5,'f6");
+      Format(instr, u8"ddbr\t'f5,'f6");
       break;
     case CDBR:
-      Format(instr, "cdbr\t'f5,'f6");
+      Format(instr, u8"cdbr\t'f5,'f6");
       break;
     case CEBR:
-      Format(instr, "cebr\t'f5,'f6");
+      Format(instr, u8"cebr\t'f5,'f6");
       break;
     case SQDBR:
-      Format(instr, "sqdbr\t'f5,'f6");
+      Format(instr, u8"sqdbr\t'f5,'f6");
       break;
     case SQEBR:
-      Format(instr, "sqebr\t'f5,'f6");
+      Format(instr, u8"sqebr\t'f5,'f6");
       break;
     case LCDBR:
-      Format(instr, "lcdbr\t'f5,'f6");
+      Format(instr, u8"lcdbr\t'f5,'f6");
       break;
     case STH:
-      Format(instr, "sth\t'r1,'d1('r2d,'r3)");
+      Format(instr, u8"sth\t'r1,'d1('r2d,'r3)");
       break;
     case SRDA:
-      Format(instr, "srda\t'r1,'d1('r3)");
+      Format(instr, u8"srda\t'r1,'d1('r3)");
       break;
     case SRDL:
-      Format(instr, "srdl\t'r1,'d1('r3)");
+      Format(instr, u8"srdl\t'r1,'d1('r3)");
       break;
     case MADBR:
-      Format(instr, "madbr\t'f3,'f5,'f6");
+      Format(instr, u8"madbr\t'f3,'f5,'f6");
       break;
     case MSDBR:
-      Format(instr, "msdbr\t'f3,'f5,'f6");
+      Format(instr, u8"msdbr\t'f3,'f5,'f6");
       break;
     case FLOGR:
-      Format(instr, "flogr\t'r5,'r6");
+      Format(instr, u8"flogr\t'r5,'r6");
       break;
     case FIEBRA:
-      Format(instr, "fiebra\t'f5,'m2,'f6,'m3");
+      Format(instr, u8"fiebra\t'f5,'m2,'f6,'m3");
       break;
     case FIDBRA:
-      Format(instr, "fidbra\t'f5,'m2,'f6,'m3");
+      Format(instr, u8"fidbra\t'f5,'m2,'f6,'m3");
       break;
     // TRAP4 is used in calling to native function. it will not be generated
     // in native code.
     case TRAP4: {
-      Format(instr, "trap4");
+      Format(instr, u8"trap4");
       break;
     }
     default:
@@ -1018,313 +1023,313 @@ bool Decoder::DecodeFourByte(Instruction* instr) {
 bool Decoder::DecodeSixByte(Instruction* instr) {
   // Print the Instruction bits.
   out_buffer_pos_ +=
-      SNPrintF(out_buffer_ + out_buffer_pos_, "%012" PRIx64 "   ",
+      SNPrintF(out_buffer_ + out_buffer_pos_, u8"%012" PRIx64 u8"   ",
                instr->InstructionBits<SixByteInstr>());
 
   Opcode opcode = instr->S390OpcodeValue();
   switch (opcode) {
     case LLILF:
-      Format(instr, "llilf\t'r1,'i7");
+      Format(instr, u8"llilf\t'r1,'i7");
       break;
     case LLIHF:
-      Format(instr, "llihf\t'r1,'i7");
+      Format(instr, u8"llihf\t'r1,'i7");
       break;
     case AFI:
-      Format(instr, "afi\t'r1,'i7");
+      Format(instr, u8"afi\t'r1,'i7");
       break;
     case ASI:
-      Format(instr, "asi\t'd2('r3),'ic");
+      Format(instr, u8"asi\t'd2('r3),'ic");
       break;
     case AGSI:
-      Format(instr, "agsi\t'd2('r3),'ic");
+      Format(instr, u8"agsi\t'd2('r3),'ic");
       break;
     case ALFI:
-      Format(instr, "alfi\t'r1,'i7");
+      Format(instr, u8"alfi\t'r1,'i7");
       break;
     case AHIK:
-      Format(instr, "ahik\t'r1,'r2,'i1");
+      Format(instr, u8"ahik\t'r1,'r2,'i1");
       break;
     case AGHIK:
-      Format(instr, "aghik\t'r1,'r2,'i1");
+      Format(instr, u8"aghik\t'r1,'r2,'i1");
       break;
     case CLGFI:
-      Format(instr, "clgfi\t'r1,'i7");
+      Format(instr, u8"clgfi\t'r1,'i7");
       break;
     case CLFI:
-      Format(instr, "clfi\t'r1,'i7");
+      Format(instr, u8"clfi\t'r1,'i7");
       break;
     case CFI:
-      Format(instr, "cfi\t'r1,'i2");
+      Format(instr, u8"cfi\t'r1,'i2");
       break;
     case CGFI:
-      Format(instr, "cgfi\t'r1,'i2");
+      Format(instr, u8"cgfi\t'r1,'i2");
       break;
     case BRASL:
-      Format(instr, "brasl\t'r1,'ie");
+      Format(instr, u8"brasl\t'r1,'ie");
       break;
     case BRCL:
-      Format(instr, "brcl\t'm1,'i5");
+      Format(instr, u8"brcl\t'm1,'i5");
       break;
     case IIHF:
-      Format(instr, "iihf\t'r1,'i7");
+      Format(instr, u8"iihf\t'r1,'i7");
       break;
     case IILF:
-      Format(instr, "iilf\t'r1,'i7");
+      Format(instr, u8"iilf\t'r1,'i7");
       break;
     case XIHF:
-      Format(instr, "xihf\t'r1,'i7");
+      Format(instr, u8"xihf\t'r1,'i7");
       break;
     case XILF:
-      Format(instr, "xilf\t'r1,'i7");
+      Format(instr, u8"xilf\t'r1,'i7");
       break;
     case SLLK:
-      Format(instr, "sllk\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"sllk\t'r1,'r2,'d2('r3)");
       break;
     case SLLG:
-      Format(instr, "sllg\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"sllg\t'r1,'r2,'d2('r3)");
       break;
     case RLL:
-      Format(instr, "rll\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"rll\t'r1,'r2,'d2('r3)");
       break;
     case RLLG:
-      Format(instr, "rllg\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"rllg\t'r1,'r2,'d2('r3)");
       break;
     case SRLK:
-      Format(instr, "srlk\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"srlk\t'r1,'r2,'d2('r3)");
       break;
     case SRLG:
-      Format(instr, "srlg\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"srlg\t'r1,'r2,'d2('r3)");
       break;
     case SLAK:
-      Format(instr, "slak\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"slak\t'r1,'r2,'d2('r3)");
       break;
     case SLAG:
-      Format(instr, "slag\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"slag\t'r1,'r2,'d2('r3)");
       break;
     case SRAK:
-      Format(instr, "srak\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"srak\t'r1,'r2,'d2('r3)");
       break;
     case SRAG:
-      Format(instr, "srag\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"srag\t'r1,'r2,'d2('r3)");
       break;
     case RISBG:
-      Format(instr, "risbg\t'r1,'r2,'i9,'ia,'ib");
+      Format(instr, u8"risbg\t'r1,'r2,'i9,'ia,'ib");
       break;
     case RISBGN:
-      Format(instr, "risbgn\t'r1,'r2,'i9,'ia,'ib");
+      Format(instr, u8"risbgn\t'r1,'r2,'i9,'ia,'ib");
       break;
     case LMY:
-      Format(instr, "lmy\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"lmy\t'r1,'r2,'d2('r3)");
       break;
     case LMG:
-      Format(instr, "lmg\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"lmg\t'r1,'r2,'d2('r3)");
       break;
     case STMY:
-      Format(instr, "stmy\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"stmy\t'r1,'r2,'d2('r3)");
       break;
     case STMG:
-      Format(instr, "stmg\t'r1,'r2,'d2('r3)");
+      Format(instr, u8"stmg\t'r1,'r2,'d2('r3)");
       break;
     case LT:
-      Format(instr, "lt\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"lt\t'r1,'d2('r2d,'r3)");
       break;
     case LTG:
-      Format(instr, "ltg\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"ltg\t'r1,'d2('r2d,'r3)");
       break;
     case ML:
-      Format(instr, "ml\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"ml\t'r1,'d2('r2d,'r3)");
       break;
     case AY:
-      Format(instr, "ay\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"ay\t'r1,'d2('r2d,'r3)");
       break;
     case SY:
-      Format(instr, "sy\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"sy\t'r1,'d2('r2d,'r3)");
       break;
     case NY:
-      Format(instr, "ny\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"ny\t'r1,'d2('r2d,'r3)");
       break;
     case OY:
-      Format(instr, "oy\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"oy\t'r1,'d2('r2d,'r3)");
       break;
     case XY:
-      Format(instr, "xy\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"xy\t'r1,'d2('r2d,'r3)");
       break;
     case CY:
-      Format(instr, "cy\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"cy\t'r1,'d2('r2d,'r3)");
       break;
     case AHY:
-      Format(instr, "ahy\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"ahy\t'r1,'d2('r2d,'r3)");
       break;
     case SHY:
-      Format(instr, "shy\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"shy\t'r1,'d2('r2d,'r3)");
       break;
     case LGH:
-      Format(instr, "lgh\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"lgh\t'r1,'d2('r2d,'r3)");
       break;
     case AG:
-      Format(instr, "ag\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"ag\t'r1,'d2('r2d,'r3)");
       break;
     case AGF:
-      Format(instr, "agf\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"agf\t'r1,'d2('r2d,'r3)");
       break;
     case SG:
-      Format(instr, "sg\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"sg\t'r1,'d2('r2d,'r3)");
       break;
     case NG:
-      Format(instr, "ng\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"ng\t'r1,'d2('r2d,'r3)");
       break;
     case OG:
-      Format(instr, "og\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"og\t'r1,'d2('r2d,'r3)");
       break;
     case XG:
-      Format(instr, "xg\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"xg\t'r1,'d2('r2d,'r3)");
       break;
     case CG:
-      Format(instr, "cg\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"cg\t'r1,'d2('r2d,'r3)");
       break;
     case LB:
-      Format(instr, "lb\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"lb\t'r1,'d2('r2d,'r3)");
       break;
     case LG:
-      Format(instr, "lg\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"lg\t'r1,'d2('r2d,'r3)");
       break;
     case LGF:
-      Format(instr, "lgf\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"lgf\t'r1,'d2('r2d,'r3)");
       break;
     case LLGF:
-      Format(instr, "llgf\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"llgf\t'r1,'d2('r2d,'r3)");
       break;
     case LY:
-      Format(instr, "ly\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"ly\t'r1,'d2('r2d,'r3)");
       break;
     case ALY:
-      Format(instr, "aly\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"aly\t'r1,'d2('r2d,'r3)");
       break;
     case ALG:
-      Format(instr, "alg\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"alg\t'r1,'d2('r2d,'r3)");
       break;
     case SLG:
-      Format(instr, "slg\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"slg\t'r1,'d2('r2d,'r3)");
       break;
     case SGF:
-      Format(instr, "sgf\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"sgf\t'r1,'d2('r2d,'r3)");
       break;
     case SLY:
-      Format(instr, "sly\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"sly\t'r1,'d2('r2d,'r3)");
       break;
     case LLH:
-      Format(instr, "llh\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"llh\t'r1,'d2('r2d,'r3)");
       break;
     case LLGH:
-      Format(instr, "llgh\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"llgh\t'r1,'d2('r2d,'r3)");
       break;
     case LLC:
-      Format(instr, "llc\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"llc\t'r1,'d2('r2d,'r3)");
       break;
     case LLGC:
-      Format(instr, "llgc\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"llgc\t'r1,'d2('r2d,'r3)");
       break;
     case LDEB:
-      Format(instr, "ldeb\t'f1,'d2('r2d,'r3)");
+      Format(instr, u8"ldeb\t'f1,'d2('r2d,'r3)");
       break;
     case LAY:
-      Format(instr, "lay\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"lay\t'r1,'d2('r2d,'r3)");
       break;
     case LARL:
-      Format(instr, "larl\t'r1,'i5");
+      Format(instr, u8"larl\t'r1,'i5");
       break;
     case LGB:
-      Format(instr, "lgb\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"lgb\t'r1,'d2('r2d,'r3)");
       break;
     case CHY:
-      Format(instr, "chy\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"chy\t'r1,'d2('r2d,'r3)");
       break;
     case CLY:
-      Format(instr, "cly\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"cly\t'r1,'d2('r2d,'r3)");
       break;
     case CLIY:
-      Format(instr, "cliy\t'd2('r3),'i8");
+      Format(instr, u8"cliy\t'd2('r3),'i8");
       break;
     case TMY:
-      Format(instr, "tmy\t'd2('r3),'i8");
+      Format(instr, u8"tmy\t'd2('r3),'i8");
       break;
     case CLG:
-      Format(instr, "clg\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"clg\t'r1,'d2('r2d,'r3)");
       break;
     case BCTG:
-      Format(instr, "bctg\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"bctg\t'r1,'d2('r2d,'r3)");
       break;
     case STY:
-      Format(instr, "sty\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"sty\t'r1,'d2('r2d,'r3)");
       break;
     case STG:
-      Format(instr, "stg\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"stg\t'r1,'d2('r2d,'r3)");
       break;
     case ICY:
-      Format(instr, "icy\t'r1,'d2('r2d,'r3)");
+      Format(instr, u8"icy\t'r1,'d2('r2d,'r3)");
       break;
     case MVC:
-      Format(instr, "mvc\t'd3('i8,'r3),'d4('r7)");
+      Format(instr, u8"mvc\t'd3('i8,'r3),'d4('r7)");
       break;
     case MVHI:
-      Format(instr, "mvhi\t'd3('r3),'id");
+      Format(instr, u8"mvhi\t'd3('r3),'id");
       break;
     case MVGHI:
-      Format(instr, "mvghi\t'd3('r3),'id");
+      Format(instr, u8"mvghi\t'd3('r3),'id");
       break;
     case ALGFI:
-      Format(instr, "algfi\t'r1,'i7");
+      Format(instr, u8"algfi\t'r1,'i7");
       break;
     case SLGFI:
-      Format(instr, "slgfi\t'r1,'i7");
+      Format(instr, u8"slgfi\t'r1,'i7");
       break;
     case SLFI:
-      Format(instr, "slfi\t'r1,'i7");
+      Format(instr, u8"slfi\t'r1,'i7");
       break;
     case NIHF:
-      Format(instr, "nihf\t'r1,'i7");
+      Format(instr, u8"nihf\t'r1,'i7");
       break;
     case NILF:
-      Format(instr, "nilf\t'r1,'i7");
+      Format(instr, u8"nilf\t'r1,'i7");
       break;
     case OIHF:
-      Format(instr, "oihf\t'r1,'i7");
+      Format(instr, u8"oihf\t'r1,'i7");
       break;
     case OILF:
-      Format(instr, "oilf\t'r1,'i7");
+      Format(instr, u8"oilf\t'r1,'i7");
       break;
     case MSFI:
-      Format(instr, "msfi\t'r1,'i7");
+      Format(instr, u8"msfi\t'r1,'i7");
       break;
     case MSGFI:
-      Format(instr, "msgfi\t'r1,'i7");
+      Format(instr, u8"msgfi\t'r1,'i7");
       break;
     case LDY:
-      Format(instr, "ldy\t'f1,'d2('r2d,'r3)");
+      Format(instr, u8"ldy\t'f1,'d2('r2d,'r3)");
       break;
     case LEY:
-      Format(instr, "ley\t'f1,'d2('r2d,'r3)");
+      Format(instr, u8"ley\t'f1,'d2('r2d,'r3)");
       break;
     case STEY:
-      Format(instr, "stey\t'f1,'d2('r2d,'r3)");
+      Format(instr, u8"stey\t'f1,'d2('r2d,'r3)");
       break;
     case STDY:
-      Format(instr, "stdy\t'f1,'d2('r2d,'r3)");
+      Format(instr, u8"stdy\t'f1,'d2('r2d,'r3)");
       break;
     case ADB:
-      Format(instr, "adb\t'r1,'d1('r2d, 'r3)");
+      Format(instr, u8"adb\t'r1,'d1('r2d, 'r3)");
       break;
     case SDB:
-      Format(instr, "sdb\t'r1,'d1('r2d, 'r3)");
+      Format(instr, u8"sdb\t'r1,'d1('r2d, 'r3)");
       break;
     case MDB:
-      Format(instr, "mdb\t'r1,'d1('r2d, 'r3)");
+      Format(instr, u8"mdb\t'r1,'d1('r2d, 'r3)");
       break;
     case DDB:
-      Format(instr, "ddb\t'r1,'d1('r2d, 'r3)");
+      Format(instr, u8"ddb\t'r1,'d1('r2d, 'r3)");
       break;
     case SQDB:
-      Format(instr, "sqdb\t'r1,'d1('r2d, 'r3)");
+      Format(instr, u8"sqdb\t'r1,'d1('r2d, 'r3)");
       break;
     default:
       return false;
@@ -1357,7 +1362,7 @@ int Decoder::InstructionDecode(byte* instr_ptr) {
 namespace disasm {
 
 const char* NameConverter::NameOfAddress(byte* addr) const {
-  v8::internal::SNPrintF(tmp_buffer_, "%p", addr);
+  v8::internal::SNPrintF(tmp_buffer_, u8"%p", addr);
   return tmp_buffer_.start();
 }
 
@@ -1371,20 +1376,20 @@ const char* NameConverter::NameOfCPURegister(int reg) const {
 
 const char* NameConverter::NameOfByteCPURegister(int reg) const {
   UNREACHABLE();  // S390 does not have the concept of a byte register
-  return "nobytereg";
+  return u8"nobytereg";
 }
 
 const char* NameConverter::NameOfXMMRegister(int reg) const {
   // S390 does not have XMM register
   // TODO(joransiu): Consider update this for Vector Regs
   UNREACHABLE();
-  return "noxmmreg";
+  return u8"noxmmreg";
 }
 
 const char* NameConverter::NameInCode(byte* addr) const {
   // The default name converter is called for unknown code. So we will not try
   // to access any memory.
-  return "";
+  return u8"";
 }
 
 //------------------------------------------------------------------------------
@@ -1408,10 +1413,10 @@ void Disassembler::Disassemble(FILE* f, byte* begin, byte* end) {
   Disassembler d(converter);
   for (byte* pc = begin; pc < end;) {
     v8::internal::EmbeddedVector<char, 128> buffer;
-    buffer[0] = '\0';
+    buffer[0] = '\x0';
     byte* prev_pc = pc;
     pc += d.InstructionDecode(buffer, pc);
-    v8::internal::PrintF(f, "%p    %08x      %s\n", prev_pc,
+    v8::internal::PrintF(f, u8"%p    %08x      %s\n", prev_pc,
                          *reinterpret_cast<int32_t*>(prev_pc), buffer.start());
   }
 }
