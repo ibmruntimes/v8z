@@ -880,7 +880,7 @@ bool Isolate::MayAccess(Handle<Context> accessing_context,
 
 
 const char* const Isolate::kStackOverflowMessage =
-  "Uncaught RangeError: Maximum call stack size exceeded";
+  u8"Uncaught RangeError: Maximum call stack size exceeded";
 
 
 Object* Isolate::StackOverflow() {
