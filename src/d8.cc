@@ -4,6 +4,9 @@
 
 
 // Defined when linking against shared lib on Windows.
+#ifdef __MVS__
+#define _AE_BIMODAL
+#endif
 #if defined(USING_V8_SHARED) && !defined(V8_SHARED)
 #define V8_SHARED
 #endif
@@ -72,6 +75,28 @@ const int MB = 1024 * 1024;
 const int kMaxWorkers = 50;
 #endif
 
+#ifdef __MVS__
+static void PrintF(const char* format, ...) {
+  char buf[2048];
+  int ret;
+  va_list args;
+
+  va_start(args, format);
+  ret = __vsnprintf_a(buf, sizeof(buf), format, args);
+  if (ret < sizeof(buf)) {
+    __a2e_s(buf);
+    fwrite(buf, 1, ret, stdout);
+  } else {
+    char big[ret+1];
+    __snprintf_a(big, ret+1, format, args);
+    __a2e_s(big);
+    fwrite(big, 1, ret, stdout);
+  }
+  va_end(args);
+}
+#else
+#define PrintF printf
+#endif
 
 class ShellArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
  public:
@@ -408,13 +433,13 @@ bool Shell::ExecuteString(Isolate* isolate, Local<String> source,
         // the returned value.
         v8::String::Utf8Value str(result);
         fwrite(*str, sizeof(**str), str.length(), stdout);
-        printf("\n");
+        PrintF(u8"\n");
       }
 #if !defined(V8_SHARED)
     } else {
       v8::String::Utf8Value str(Stringify(isolate, result));
       fwrite(*str, sizeof(**str), str.length(), stdout);
-      printf("\n");
+      PrintF(u8"\n");
     }
 #endif
   }
@@ -624,7 +649,7 @@ void Shell::RealmSharedSet(Local<String> property,
 
 void Shell::Print(const v8::FunctionCallbackInfo<v8::Value>& args) {
   Write(args);
-  printf("\n");
+  PrintF(u8"\n");
   fflush(stdout);
 }
 
@@ -633,7 +658,7 @@ void Shell::Write(const v8::FunctionCallbackInfo<v8::Value>& args) {
   for (int i = 0; i < args.Length(); i++) {
     HandleScope handle_scope(args.GetIsolate());
     if (i != 0) {
-      printf(" ");
+      PrintF(u8" ");
     }
 
     // Explicitly catch potential exceptions in toString().
@@ -653,7 +678,7 @@ void Shell::Write(const v8::FunctionCallbackInfo<v8::Value>& args) {
     v8::String::Utf8Value str(str_obj);
     int n = static_cast<int>(fwrite(*str, sizeof(**str), str.length(), stdout));
     if (n != str.length()) {
-      printf("Error in fwrite\n");
+      PrintF(u8"Error in fwrite\n");
       Exit(1);
     }
   }
@@ -912,40 +937,40 @@ void Shell::ReportException(Isolate* isolate, v8::TryCatch* try_catch) {
   if (message.IsEmpty()) {
     // V8 didn't provide any extra information about this error; just
     // print the exception.
-    printf("%s\n", exception_string);
+    PrintF(u8"%s\n", exception_string);
   } else {
     // Print (filename):(line number): (message).
     v8::String::Utf8Value filename(message->GetScriptOrigin().ResourceName());
     const char* filename_string = ToCString(filename);
     int linenum =
         message->GetLineNumber(isolate->GetCurrentContext()).FromJust();
-    printf("%s:%i: %s\n", filename_string, linenum, exception_string);
+    PrintF(u8"%s:%i: %s\n", filename_string, linenum, exception_string);
     // Print line of source code.
     v8::String::Utf8Value sourceline(
         message->GetSourceLine(isolate->GetCurrentContext()).ToLocalChecked());
     const char* sourceline_string = ToCString(sourceline);
-    printf("%s\n", sourceline_string);
+    PrintF(u8"%s\n", sourceline_string);
     // Print wavy underline (GetUnderline is deprecated).
     int start =
         message->GetStartColumn(isolate->GetCurrentContext()).FromJust();
     for (int i = 0; i < start; i++) {
-      printf(" ");
+      PrintF(u8" ");
     }
     int end = message->GetEndColumn(isolate->GetCurrentContext()).FromJust();
     for (int i = start; i < end; i++) {
-      printf("^");
+      PrintF(u8"^");
     }
-    printf("\n");
+    PrintF(u8"\n");
     Local<Value> stack_trace_string;
     if (try_catch->StackTrace(isolate->GetCurrentContext())
             .ToLocal(&stack_trace_string) &&
         stack_trace_string->IsString()) {
       v8::String::Utf8Value stack_trace(
           Local<String>::Cast(stack_trace_string));
-      printf("%s\n", ToCString(stack_trace));
+      PrintF(u8"%s\n", ToCString(stack_trace));
     }
   }
-  printf("\n");
+  PrintF(u8"\n");
 #ifndef V8_SHARED
   if (enter_context) context->Exit();
 #endif  // !V8_SHARED
@@ -989,7 +1014,7 @@ void Shell::MapCounters(v8::Isolate* isolate, const char* name) {
   void* memory = (counters_file_ == NULL) ?
       NULL : counters_file_->memory();
   if (memory == NULL) {
-    printf("Could not map counters file %s\n", name);
+    PrintF(u8"Could not map counters file %s\n", name);
     Exit(1);
   }
   counters_ = static_cast<CounterCollection*>(memory);
@@ -1303,23 +1328,23 @@ void Shell::OnExit(v8::Isolate* isolate) {
       counters[j].key = i.CurrentKey();
     }
     std::sort(counters, counters + number_of_counters);
-    printf("+----------------------------------------------------------------+"
+    PrintF(u8"+----------------------------------------------------------------+"
            "-------------+\n");
-    printf("| Name                                                           |"
+    PrintF(u8"| Name                                                           |"
            " Value       |\n");
-    printf("+----------------------------------------------------------------+"
+    PrintF(u8"+----------------------------------------------------------------+"
            "-------------+\n");
     for (j = 0; j < number_of_counters; j++) {
       Counter* counter = counters[j].counter;
       const char* key = counters[j].key;
       if (counter->is_histogram()) {
-        printf("| c:%-60s | %11i |\n", key, counter->count());
-        printf("| t:%-60s | %11i |\n", key, counter->sample_total());
+        PrintF(u8"| c:%-60s | %11i |\n", key, counter->count());
+        PrintF(u8"| t:%-60s | %11i |\n", key, counter->sample_total());
       } else {
-        printf("| %-62s | %11i |\n", key, counter->count());
+        PrintF(u8"| %-62s | %11i |\n", key, counter->count());
       }
     }
-    printf("+----------------------------------------------------------------+"
+    PrintF(u8"+----------------------------------------------------------------+"
            "-------------+\n");
     delete [] counters;
   }
@@ -1453,10 +1478,10 @@ void Shell::RunShell(Isolate* isolate) {
   Local<String> name =
       String::NewFromUtf8(isolate, u8"(d8)", NewStringType::kNormal)
           .ToLocalChecked();
-  printf("V8 version %s\n", V8::GetVersion());
+  PrintF(u8"V8 version %s\n", V8::GetVersion());
   while (true) {
     HandleScope inner_scope(isolate);
-    printf("d8> ");
+    PrintF(u8"d8> ");
 #if defined(__native_client__)
     // Native Client libc is used to being embedded in Chrome and
     // has trouble recognizing when to flush.
@@ -1466,7 +1491,7 @@ void Shell::RunShell(Isolate* isolate) {
     if (input.IsEmpty()) break;
     ExecuteString(isolate, input, name, true, true);
   }
-  printf("\n");
+  PrintF(u8"\n");
 }
 
 
@@ -1515,11 +1540,7 @@ void SourceGroup::Execute(Isolate* isolate) {
             .ToLocalChecked();
     Local<String> source = ReadFile(isolate, arg);
     if (source.IsEmpty()) {
-#ifdef V8_OS_ZOS
-      base::OS::PrintASCII(u8"Error reading '%s'\n", arg);
-#else
-      printf("Error reading '%s'\n", arg);
-#endif
+      PrintF(u8"Error reading '%s'\n", arg);
       Shell::Exit(1);
     }
     Shell::options.script_executed = true;
@@ -1928,13 +1949,13 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       continue;
     } else if (strcmp(argv[i], u8"--isolate") == 0) {
 #ifdef V8_SHARED
-      printf("D8 with shared library does not support multi-threading\n");
+      PrintF(u8"D8 with shared library does not support multi-threading\n");
       return false;
 #endif  // V8_SHARED
       options.num_isolates++;
     } else if (strcmp(argv[i], u8"--dump-heap-constants") == 0) {
 #ifdef V8_SHARED
-      printf("D8 with shared library does not support constant dumping\n");
+      PrintF(u8"D8 with shared library does not support constant dumping\n");
       return false;
 #else
       options.dump_heap_constants = true;
@@ -1948,7 +1969,7 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       argv[i] = NULL;
 #ifdef V8_SHARED
     } else if (strcmp(argv[i], "--dump-counters") == 0) {
-      printf("D8 with shared library does not include counters\n");
+      PrintF(u8"D8 with shared library does not include counters\n");
       return false;
 #endif  // V8_SHARED
 #ifdef V8_USE_EXTERNAL_STARTUP_DATA
@@ -1969,7 +1990,7 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       } else if (strncmp(value, u8"=none", 6) == 0) {
         options.compile_options = v8::ScriptCompiler::kNoCompileOptions;
       } else {
-        printf("Unknown option to --cache.\n");
+        PrintF(u8"Unknown option to --cache.\n");
         return false;
       }
       argv[i] = NULL;
@@ -1991,7 +2012,7 @@ bool Shell::SetOptions(int argc, char* argv[]) {
     } else if (strcmp(str, u8"--module") == 0) {
       // Pass on to SourceGroup, which understands this option.
     } else if (strncmp(argv[i], u8"--", 2) == 0) {
-      printf("Warning: unknown flag %s.\nTry --help for options\n", argv[i]);
+      PrintF(u8"Warning: unknown flag %s.\nTry --help for options\n", argv[i]);
     } else if (strcmp(str, u8"-e") == 0 && i + 1 < argc) {
       options.script_executed = true;
     } else if (strncmp(str, u8"-", 1) != 0) {
@@ -2336,21 +2357,21 @@ static void DumpHeapConstants(i::Isolate* isolate) {
   i::Heap* heap = isolate->heap();
 
   // Dump the INSTANCE_TYPES table to the console.
-  printf("# List of known V8 instance types.\n");
+  PrintF(u8"# List of known V8 instance types.\n");
 #define DUMP_TYPE(T) printf("  %d: \"%s\",\n", i::T, USTR(#T));
-  printf("INSTANCE_TYPES = {\n");
+  PrintF(u8"INSTANCE_TYPES = {\n");
   INSTANCE_TYPE_LIST(DUMP_TYPE)
-  printf("}\n");
+  PrintF(u8"}\n");
 #undef DUMP_TYPE
 
   // Dump the KNOWN_MAP table to the console.
-  printf("\n# List of known V8 maps.\n");
+  PrintF(u8"\n# List of known V8 maps.\n");
 #define ROOT_LIST_CASE(type, name, camel_name) \
   if (n == NULL && o == heap->name()) n = USTR(#camel_name);
 #define STRUCT_LIST_CASE(upper_name, camel_name, name) \
   if (n == NULL && o == heap->name##_map()) n = USTR(#camel_name) u8"Map";
   i::HeapObjectIterator it(heap->map_space());
-  printf("KNOWN_MAPS = {\n");
+  PrintF(u8"KNOWN_MAPS = {\n");
   for (i::Object* o = it.Next(); o != NULL; o = it.Next()) {
     i::Map* m = i::Map::cast(o);
     const char* n = NULL;
@@ -2359,18 +2380,18 @@ static void DumpHeapConstants(i::Isolate* isolate) {
     ROOT_LIST(ROOT_LIST_CASE)
     STRUCT_LIST(STRUCT_LIST_CASE)
     if (n == NULL) continue;
-    printf("  0x%05" V8PRIxPTR ": (%d, \"%s\"),\n", p, t, n);
+    PrintF(u8"  0x%05" V8PRIxPTR ": (%d, \"%s\"),\n", p, t, n);
   }
-  printf("}\n");
+  PrintF(u8"}\n");
 #undef STRUCT_LIST_CASE
 #undef ROOT_LIST_CASE
 
   // Dump the KNOWN_OBJECTS table to the console.
-  printf("\n# List of known V8 objects.\n");
+  PrintF(u8"\n# List of known V8 objects.\n");
 #define ROOT_LIST_CASE(type, name, camel_name) \
   if (n == NULL && o == heap->name()) n = USTR(#camel_name);
   i::OldSpaces spit(heap);
-  printf("KNOWN_OBJECTS = {\n");
+  PrintF(u8"KNOWN_OBJECTS = {\n");
   for (i::PagedSpace* s = spit.next(); s != NULL; s = spit.next()) {
     i::HeapObjectIterator it(s);
     const char* sname = AllocationSpaceName(s->identity());
@@ -2379,10 +2400,10 @@ static void DumpHeapConstants(i::Isolate* isolate) {
       intptr_t p = reinterpret_cast<intptr_t>(o) & 0xfffff;
       ROOT_LIST(ROOT_LIST_CASE)
       if (n == NULL) continue;
-      printf("  (\"%s\", 0x%05" V8PRIxPTR "): \"%s\",\n", sname, p, n);
+      PrintF(u8"  (\"%s\", 0x%05" V8PRIxPTR "): \"%s\",\n", sname, p, n);
     }
   }
-  printf("}\n");
+  PrintF(u8"}\n");
 #undef ROOT_LIST_CASE
 }
 #endif  // !V8_SHARED
@@ -2469,19 +2490,19 @@ int Shell::Main(int argc, char* argv[]) {
                                 : Testing::kStressTypeDeopt);
       options.stress_runs = Testing::GetStressRuns();
       for (int i = 0; i < options.stress_runs && result == 0; i++) {
-        printf("============ Stress %d/%d ============\n", i + 1,
+        PrintF(u8"============ Stress %d/%d ============\n", i + 1,
                options.stress_runs);
         Testing::PrepareStressRun(i);
         bool last_run = i == options.stress_runs - 1;
         result = RunMain(isolate, argc, argv, last_run);
       }
-      printf("======== Full Deoptimization =======\n");
+      PrintF(u8"======== Full Deoptimization =======\n");
       Testing::DeoptimizeAll(isolate);
 #if !defined(V8_SHARED)
     } else if (i::FLAG_stress_runs > 0) {
       options.stress_runs = i::FLAG_stress_runs;
       for (int i = 0; i < options.stress_runs && result == 0; i++) {
-        printf("============ Run %d/%d ============\n", i + 1,
+        PrintF(u8"============ Run %d/%d ============\n", i + 1,
                options.stress_runs);
         bool last_run = i == options.stress_runs - 1;
         result = RunMain(isolate, argc, argv, last_run);
