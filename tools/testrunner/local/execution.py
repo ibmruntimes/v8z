@@ -332,7 +332,10 @@ class Runner(object):
     if platform.system() == 'OS/390':
       pc = MakeProcessContext(self.context)
       for test in self.tests:
-        result = RunTest(TestJob(test), pc)
+        try:
+          result = RunTest(TestJob(test), pc)
+        except e:
+          print e
         if self.context.predictable:
           update_perf = self._ProcessTestPredictable(test, result, None)
         else:
