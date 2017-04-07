@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flags: --expose-gc --stack-size=120
+// Flags: --expose-gc --stack-size=500
 
 var __v_11 = {};
 function __f_2(depth) {

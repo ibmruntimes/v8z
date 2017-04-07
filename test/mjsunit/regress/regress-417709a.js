@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 // Flags: --harmony-object-observe
-// Flags: --stack-size=100
+// Flags: --stack-size=500
 
 var a = [];
 

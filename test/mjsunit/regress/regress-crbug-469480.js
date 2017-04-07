@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 // Flags: --allow-natives-syntax --stress-compaction --verify-heap
-// Flags: --stack-size=100
+// Flags: --stack-size=500
 
 // Load the debug context to fill up code space.
 %GetDebugContext();

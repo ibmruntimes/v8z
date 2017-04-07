@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flags: --stack-size=200 --allow-natives-syntax
+// Flags: --stack-size=500 --allow-natives-syntax
 
 %ScheduleBreak(); // Schedule an interrupt that does not go away.
 

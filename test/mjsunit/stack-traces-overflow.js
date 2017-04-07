@@ -25,7 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Flags: --stack-size=100
+// Flags: --stack-size=500
 
 function rec1(a) { rec1(a+1); }
 function rec2(a) { rec3(a+1); }

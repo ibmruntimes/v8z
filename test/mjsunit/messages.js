@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flags: --stack-size=100 --harmony
+// Flags: --stack-size=500 --harmony
 // Flags: --harmony-simd --harmony-instanceof
 
 function test(f, expected, type) {

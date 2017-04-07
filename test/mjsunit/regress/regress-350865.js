@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flags: --stress-compaction --stack-size=150
+// Flags: --stress-compaction --stack-size=500
 
 /\2/.test("1");
 

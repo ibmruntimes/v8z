@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Flags: --stack-size=100
+// Flags: --stack-size=500
 
 // Not guaranteed to throw because the stack limits are different on all
 // architectures, hence we use try-catch instead of assertThrows here.
