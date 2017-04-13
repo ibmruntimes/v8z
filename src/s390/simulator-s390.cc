@@ -262,7 +262,10 @@ void S390Debugger::Debug() {
                         "%" XSTR(ARG_SIZE) "s "
                         "%" XSTR(ARG_SIZE) "s",
                         cmd, arg1, arg2);
-      if ((strcmp(cmd, "si") == 0) || (strcmp(cmd, "stepi") == 0)) {
+      __e2a_s(cmd);
+      __e2a_s(arg1);
+      __e2a_s(arg2);
+      if ((strcmp(cmd, u8"si") == 0) || (strcmp(cmd, u8"stepi") == 0)) {
         intptr_t value;
 
         // If at a breakpoint, proceed past it.
@@ -278,7 +281,7 @@ void S390Debugger::Debug() {
            sim_->stop_instr_num_ = sim_->icount_ + value;
            break;
          }
-       } else if ((strcmp(cmd, "c") == 0) || (strcmp(cmd, "cont") == 0)) {
+       } else if ((strcmp(cmd, u8"c") == 0) || (strcmp(cmd, u8"cont") == 0)) {
         // If at a breakpoint, proceed past it.
         if ((reinterpret_cast<Instruction*>(sim_->get_pc()))
                 ->InstructionBits() == 0x7d821008) {
@@ -290,16 +293,16 @@ void S390Debugger::Debug() {
         }
         // Leave the debugger shell.
         done = true;
-      } else if ((strcmp(cmd, "p") == 0) || (strcmp(cmd, "print") == 0)) {
-        if (argc == 2 || (argc == 3 && strcmp(arg2, "fp") == 0)) {
+      } else if ((strcmp(cmd, u8"p") == 0) || (strcmp(cmd, u8"print") == 0)) {
+        if (argc == 2 || (argc == 3 && strcmp(arg2, u8"fp") == 0)) {
           intptr_t value;
           double dvalue;
-          if (strcmp(arg1, "all") == 0) {
+          if (strcmp(arg1, u8"all") == 0) {
             for (int i = 0; i < kNumRegisters; i++) {
               value = GetRegisterValue(i);
               PrintF(u8"    %3s: %08" V8PRIxPTR,
                      Register::from_code(i).ToString(), value);
-              if ((argc == 3 && strcmp(arg2, "fp") == 0) && i < 8 &&
+              if ((argc == 3 && strcmp(arg2, u8"fp") == 0) && i < 8 &&
                   (i % 2) == 0) {
                 dvalue = GetRegisterPairDoubleValue(i);
                 PrintF(u8" (%f)\n", dvalue);
@@ -309,12 +312,12 @@ void S390Debugger::Debug() {
             }
             PrintF(u8"  pc: %08" V8PRIxPTR "  cr: %08x\n", sim_->special_reg_pc_,
                    sim_->condition_reg_);
-          } else if (strcmp(arg1, "alld") == 0) {
+          } else if (strcmp(arg1, u8"alld") == 0) {
             for (int i = 0; i < kNumRegisters; i++) {
               value = GetRegisterValue(i);
               PrintF(u8"     %3s: %08" V8PRIxPTR " %11" V8PRIdPTR,
                      Register::from_code(i).ToString(), value, value);
-              if ((argc == 3 && strcmp(arg2, "fp") == 0) && i < 8 &&
+              if ((argc == 3 && strcmp(arg2, u8"fp") == 0) && i < 8 &&
                   (i % 2) == 0) {
                 dvalue = GetRegisterPairDoubleValue(i);
                 PrintF(u8" (%f)\n", dvalue);
@@ -324,14 +327,14 @@ void S390Debugger::Debug() {
             }
             PrintF(u8"   pc: %08" V8PRIxPTR "  cr: %08x\n", sim_->special_reg_pc_,
                    sim_->condition_reg_);
-          } else if (strcmp(arg1, "allf") == 0) {
+          } else if (strcmp(arg1, u8"allf") == 0) {
             for (int i = 0; i < DoubleRegister::kNumRegisters; i++) {
               float fvalue = GetFPFloatRegisterValue(i);
               uint32_t as_words = bit_cast<uint32_t>(fvalue);
               PrintF(u8"%3s: %f 0x%08x\n",
                      DoubleRegister::from_code(i).ToString(), fvalue, as_words);
             }
-          } else if (strcmp(arg1, "alld") == 0) {
+          } else if (strcmp(arg1, u8"alld") == 0) {
             for (int i = 0; i < DoubleRegister::kNumRegisters; i++) {
               dvalue = GetFPDoubleRegisterValue(i);
               uint64_t as_words = bit_cast<uint64_t>(dvalue);
@@ -340,10 +343,10 @@ void S390Debugger::Debug() {
                      static_cast<uint32_t>(as_words >> 32),
                      static_cast<uint32_t>(as_words & 0xffffffff));
             }
-          } else if (arg1[0] == 'r' &&
-                     (arg1[1] >= '0' && arg1[1] <= '2' &&
-                      (arg1[2] == '\0' || (arg1[2] >= '0' && arg1[2] <= '5' &&
-                                           arg1[3] == '\0')))) {
+          } else if (arg1[0] == '\x72' &&
+                     (arg1[1] >= '\x30' && arg1[1] <= '\x32' &&
+                      (arg1[2] == '\x0' || (arg1[2] >= '\x30' && arg1[2] <= '\x35' &&
+                                           arg1[3] == '\x0')))) {
             int regnum = strtoul(&arg1[1], 0, 10);
             if (regnum != kNoRegister) {
               value = GetRegisterValue(regnum);
@@ -368,8 +371,8 @@ void S390Debugger::Debug() {
         } else {
           PrintF(u8"print <register>\n");
         }
-      } else if ((strcmp(cmd, "po") == 0) ||
-                 (strcmp(cmd, "printobject") == 0)) {
+      } else if ((strcmp(cmd, u8"po") == 0) ||
+                 (strcmp(cmd, u8"printobject") == 0)) {
         if (argc == 2) {
           intptr_t value;
           OFStream os(stdout);
@@ -388,7 +391,7 @@ void S390Debugger::Debug() {
         } else {
           PrintF(u8"printobject <value>\n");
         }
-      } else if (strcmp(cmd, "setpc") == 0) {
+      } else if (strcmp(cmd, u8"setpc") == 0) {
         intptr_t value;
 
         if (!GetValue(arg1, &value)) {
@@ -396,12 +399,12 @@ void S390Debugger::Debug() {
           continue;
         }
         sim_->set_pc(value);
-      } else if (strcmp(cmd, "stack") == 0 || strcmp(cmd, "mem") == 0) {
+      } else if (strcmp(cmd, u8"stack") == 0 || strcmp(cmd, u8"mem") == 0) {
         intptr_t* cur = NULL;
         intptr_t* end = NULL;
         int next_arg = 1;
 
-        if (strcmp(cmd, "stack") == 0) {
+        if (strcmp(cmd, u8"stack") == 0) {
           cur = reinterpret_cast<intptr_t*>(sim_->get_register(Simulator::sp));
         } else {  // "mem"
           intptr_t value;
@@ -440,7 +443,7 @@ void S390Debugger::Debug() {
           PrintF(u8"\n");
           cur++;
         }
-      } else if (strcmp(cmd, "disasm") == 0 || strcmp(cmd, "di") == 0) {
+      } else if (strcmp(cmd, u8"disasm") == 0 || strcmp(cmd, u8"di") == 0) {
         disasm::NameConverter converter;
         disasm::Disassembler dasm(converter);
         // use a reasonably large buffer
@@ -455,7 +458,7 @@ void S390Debugger::Debug() {
           cur = reinterpret_cast<byte*>(sim_->get_pc());
         } else if (argc == 2) {
           int regnum = Registers::Number(arg1);
-          if (regnum != kNoRegister || strncmp(arg1, "0x", 2) == 0) {
+          if (regnum != kNoRegister || strncmp(arg1, u8"0x", 2) == 0) {
             // The argument is an address or a register name.
             intptr_t value;
             if (GetValue(arg1, &value)) {
@@ -487,11 +490,11 @@ void S390Debugger::Debug() {
                  buffer.start());
           numInstructions--;
         }
-      } else if (strcmp(cmd, "gdb") == 0) {
+      } else if (strcmp(cmd, u8"gdb") == 0) {
         PrintF(u8"relinquishing control to gdb\n");
         v8::base::OS::DebugBreak();
         PrintF(u8"regaining control from gdb\n");
-      } else if (strcmp(cmd, "break") == 0) {
+      } else if (strcmp(cmd, u8"break") == 0) {
         if (argc == 2) {
           intptr_t value;
           if (GetValue(arg1, &value)) {
@@ -504,20 +507,20 @@ void S390Debugger::Debug() {
         } else {
           PrintF(u8"break <address>\n");
         }
-      } else if (strcmp(cmd, "del") == 0) {
+      } else if (strcmp(cmd, u8"del") == 0) {
         if (!DeleteBreakpoint(NULL)) {
           PrintF(u8"deleting breakpoint failed\n");
         }
-      } else if (strcmp(cmd, "cr") == 0) {
+      } else if (strcmp(cmd, u8"cr") == 0) {
         PrintF(u8"Condition reg: %08x\n", sim_->condition_reg_);
-      } else if (strcmp(cmd, "stop") == 0) {
+      } else if (strcmp(cmd, u8"stop") == 0) {
         intptr_t value;
         intptr_t stop_pc =
             sim_->get_pc() - (sizeof(FourByteInstr) + kPointerSize);
         Instruction* stop_instr = reinterpret_cast<Instruction*>(stop_pc);
         Instruction* msg_address =
             reinterpret_cast<Instruction*>(stop_pc + sizeof(FourByteInstr));
-        if ((argc == 2) && (strcmp(arg1, "unstop") == 0)) {
+        if ((argc == 2) && (strcmp(arg1, u8"unstop") == 0)) {
           // Remove the current stop.
           if (sim_->isStopInstruction(stop_instr)) {
             stop_instr->SetInstructionBits(kNopInstr);
@@ -527,8 +530,8 @@ void S390Debugger::Debug() {
           }
         } else if (argc == 3) {
           // Print information about all/the specified breakpoint(s).
-          if (strcmp(arg1, "info") == 0) {
-            if (strcmp(arg2, "all") == 0) {
+          if (strcmp(arg1, u8"info") == 0) {
+            if (strcmp(arg2, u8"all") == 0) {
               PrintF(u8"Stop information:\n");
               for (uint32_t i = 0; i < sim_->kNumOfWatchedStops; i++) {
                 sim_->PrintStopInfo(i);
@@ -538,9 +541,9 @@ void S390Debugger::Debug() {
             } else {
               PrintF(u8"Unrecognized argument.\n");
             }
-          } else if (strcmp(arg1, "enable") == 0) {
+          } else if (strcmp(arg1, u8"enable") == 0) {
             // Enable all/the specified breakpoint(s).
-            if (strcmp(arg2, "all") == 0) {
+            if (strcmp(arg2, u8"all") == 0) {
               for (uint32_t i = 0; i < sim_->kNumOfWatchedStops; i++) {
                 sim_->EnableStop(i);
               }
@@ -549,9 +552,9 @@ void S390Debugger::Debug() {
             } else {
               PrintF(u8"Unrecognized argument.\n");
             }
-          } else if (strcmp(arg1, "disable") == 0) {
+          } else if (strcmp(arg1, u8"disable") == 0) {
             // Disable all/the specified breakpoint(s).
-            if (strcmp(arg2, "all") == 0) {
+            if (strcmp(arg2, u8"all") == 0) {
               for (uint32_t i = 0; i < sim_->kNumOfWatchedStops; i++) {
                 sim_->DisableStop(i);
               }
@@ -564,11 +567,11 @@ void S390Debugger::Debug() {
         } else {
           PrintF(u8"Wrong usage. Use help command for more information.\n");
         }
-      } else if ((strcmp(cmd, "t") == 0) || strcmp(cmd, "trace") == 0) {
+      } else if ((strcmp(cmd, u8"t") == 0) || strcmp(cmd, u8"trace") == 0) {
         ::v8::internal::FLAG_trace_sim = !::v8::internal::FLAG_trace_sim;
         PrintF(u8"Trace of executed instructions is %s\n",
                ::v8::internal::FLAG_trace_sim ? "on" : "off");
-      } else if ((strcmp(cmd, "h") == 0) || (strcmp(cmd, "help") == 0)) {
+      } else if ((strcmp(cmd, u8"h") == 0) || (strcmp(cmd, u8"help") == 0)) {
         PrintF(u8"cont\n");
         PrintF(u8"  continue execution (alias 'c')\n");
         PrintF(u8"stepi [num instructions]\n");
