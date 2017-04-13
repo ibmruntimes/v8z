@@ -334,7 +334,7 @@ class Runner(object):
       for test in self.tests:
         try:
           result = RunTest(TestJob(test), pc)
-        except e:
+        except Exception as e:
           print e
         if self.context.predictable:
           update_perf = self._ProcessTestPredictable(test, result, None)
