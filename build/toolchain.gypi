@@ -1007,6 +1007,7 @@
           '-qdebug=nohook',
           '-qbitfield=signed',
           '-qnortti',
+          '-qinline=:::300',
           '-Wc,expo',
         ],
         'ldflags': [
