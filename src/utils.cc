@@ -56,7 +56,7 @@ void SimpleStringBuilder::AddDecimalInteger(int32_t value) {
   }
   position_ += digits;
   for (int i = 1; i <= digits; i++) {
-    buffer_[position_ - i] = '0' + static_cast<char>(number % 10);
+    buffer_[position_ - i] = '\x30' + static_cast<char>(number % 10);
     number /= 10;
   }
 }
