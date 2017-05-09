@@ -2936,7 +2936,7 @@ void ToDateString(double time_val, Vector<char> str, DateCache* date_cache,
   const char* local_timezone = date_cache->LocalTimezone(time_ms);
   switch (mode) {
     case kDateOnly:
-      SNPrintF(str, "%s %s %02d %4d", kShortWeekDays[weekday],
+      SNPrintF(str, u8"%s %s %02d %4d", kShortWeekDays[weekday],
                kShortMonths[month], day, year);
       return;
     case kTimeOnly:
@@ -3584,13 +3584,13 @@ BUILTIN(DatePrototypeToISOString) {
   char buffer[128];
   Vector<char> str(buffer, arraysize(buffer));
   if (year >= 0 && year <= 9999) {
-    SNPrintF(str, "\x6c\xf0\xf4\x84\x2d\x6c\xf0\xf2\x84\x2d\x6c\xf0\xf2\x84\x54\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x2e\x6c\xf0\xf3\x84\x5a", year, month + 1, day,
+    SNPrintF(str, u8"%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", year, month + 1, day,
              hour, min, sec, ms);
   } else if (year < 0) {
-    SNPrintF(str, "\x2d\x6c\xf0\xf6\x84\x2d\x6c\xf0\xf2\x84\x2d\x6c\xf0\xf2\x84\x54\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x2e\x6c\xf0\xf3\x84\x5a", -year, month + 1, day,
+    SNPrintF(str, u8"-%06d-%02d-%02dT%02d:%02d:%02d.%03dZ", -year, month + 1, day,
              hour, min, sec, ms);
   } else {
-    SNPrintF(str, "\x2b\x6c\xf0\xf6\x84\x2d\x6c\xf0\xf2\x84\x2d\x6c\xf0\xf2\x84\x54\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x2e\x6c\xf0\xf3\x84\x5a", year, month + 1, day,
+    SNPrintF(str, u8"+%06d-%02d-%02dT%02d:%02d:%02d.%03dZ", year, month + 1, day,
              hour, min, sec, ms);
   }
   return *isolate->factory()->NewStringFromAsciiChecked(str.start());
@@ -3641,7 +3641,7 @@ BUILTIN(DatePrototypeToUTCString) {
   int year, month, day, weekday, hour, min, sec, ms;
   isolate->date_cache()->BreakDownTime(time_ms, &year, &month, &day, &weekday,
                                        &hour, &min, &sec, &ms);
-  SNPrintF(str, "\x6c\xa2\x2c\x20\x6c\xf0\xf2\x84\x20\x6c\xa2\x20\x6c\xf4\x84\x20\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x3a\x6c\xf0\xf2\x84\x20\x47\x4d\x54", kShortWeekDays[weekday],
+  SNPrintF(str, u8"%s, %02d %s %4d %02d:%02d:%02d GMT", kShortWeekDays[weekday],
            day, kShortMonths[month], year, hour, min, sec);
   return *isolate->factory()->NewStringFromAsciiChecked(str.start());
 }
