@@ -437,7 +437,7 @@ void CallPrinter::PrintLiteral(Object* value, bool quote) {
   Object* object = value;
   if (object->IsString()) {
     if (quote) Print(u8"\"");
-    Print("%s", String::cast(object)->ToCString().get());
+    Print(u8"%s", String::cast(object)->ToCString().get());
     if (quote) Print(u8"\"");
   } else if (object->IsNull()) {
     Print(u8"null");
