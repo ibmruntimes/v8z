@@ -2922,7 +2922,7 @@ enum ToDateStringMode { kDateOnly, kTimeOnly, kDateAndTime };
 void ToDateString(double time_val, Vector<char> str, DateCache* date_cache,
                   ToDateStringMode mode = kDateAndTime) {
   if (std::isnan(time_val)) {
-    SNPrintF(str, u8"Invalid Date");
+    SNPrintF(str, "\x49\x6e\x76\x61\x6c\x69\x64\x20\x44\x61\x74\x65");
     return;
   }
   int64_t time_ms = static_cast<int64_t>(time_val);
@@ -2940,14 +2940,14 @@ void ToDateString(double time_val, Vector<char> str, DateCache* date_cache,
                kShortMonths[month], day, year);
       return;
     case kTimeOnly:
-      SNPrintF(str, u8"%02d:%02d:%02d GMT%c%02d%02d (%s)", hour, min, sec,
+      SNPrintF(str, "%02d:%02d:%02d GMT%c%02d%02d (%s)", hour, min, sec,
                (timezone_offset < 0) ? '\x2d' : '\x2b', timezone_hour, timezone_min,
                local_timezone);
       return;
     case kDateAndTime:
       SNPrintF(str, u8"%s %s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
                kShortWeekDays[weekday], kShortMonths[month], day, year, hour,
-               min, sec, (timezone_offset < 0) ? '-' : '+', timezone_hour,
+               min, sec, (timezone_offset < 0) ? '\x2d' : '\x2b', timezone_hour,
                timezone_min, local_timezone);
       return;
   }
