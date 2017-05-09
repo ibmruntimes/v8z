@@ -268,11 +268,11 @@ void RegExpMacroAssemblerS390::CheckNotBackReferenceIgnoreCase(
     __ Or(r6, Operand(0x20));  // Also convert input character.
     __ CmpP(r6, r5);
     __ bne(&fail);
-    __ SubP(r5, Operand('a'));
-    __ CmpLogicalP(r5, Operand('z' - 'a'));  // Is r5 a lowercase letter?
-    __ ble(&loop_check);                     // In range 'a'-'z'.
+    __ SubP(r5, Operand('\x61'));
+    __ CmpLogicalP(r5, Operand('\x7a' - '\x61'));  // Is r5 a lowercase letter?
+    __ ble(&loop_check);                     // In range '\x61'-'\x7a'.
     // Latin-1: Check for values in range [224,254] but not 247.
-    __ SubP(r5, Operand(224 - 'a'));
+    __ SubP(r5, Operand(224 - '\x61'));
     __ CmpLogicalP(r5, Operand(254 - 224));
     __ bgt(&fail);                           // Weren't Latin-1 letters.
     __ CmpLogicalP(r5, Operand(247 - 224));  // Check for 247.
@@ -490,40 +490,40 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
   // Range checks (c in min..max) are generally implemented by an unsigned
   // (c - min) <= (max - min) check
   switch (type) {
-    case 's':
+    case '\x73':
       // Match space-characters
       if (mode_ == LATIN1) {
         // One byte space characters are '\t'..'\r', ' ' and \u00a0.
         Label success;
-        __ CmpP(current_character(), Operand(' '));
+        __ CmpP(current_character(), Operand('\x20'));
         __ beq(&success);
         // Check range 0x09..0x0d
-        __ SubP(r2, current_character(), Operand('\t'));
-        __ CmpLogicalP(r2, Operand('\r' - '\t'));
+        __ SubP(r2, current_character(), Operand('\x9'));
+        __ CmpLogicalP(r2, Operand('\xd' - '\x9'));
         __ ble(&success);
         // \u00a0 (NBSP).
-        __ CmpLogicalP(r2, Operand(0x00a0 - '\t'));
+        __ CmpLogicalP(r2, Operand(0x00a0 - '\x9'));
         BranchOrBacktrack(ne, on_no_match);
         __ bind(&success);
         return true;
       }
       return false;
-    case 'S':
+    case '\x53':
       // The emitted code for generic character classes is good enough.
       return false;
-    case 'd':
+    case '\x64':
       // Match ASCII digits ('0'..'9')
-      __ SubP(r2, current_character(), Operand('0'));
-      __ CmpLogicalP(r2, Operand('9' - '0'));
+      __ SubP(r2, current_character(), Operand('\x30'));
+      __ CmpLogicalP(r2, Operand('\x39' - '\x30'));
       BranchOrBacktrack(gt, on_no_match);
       return true;
-    case 'D':
+    case '\x44':
       // Match non ASCII-digits
-      __ SubP(r2, current_character(), Operand('0'));
-      __ CmpLogicalP(r2, Operand('9' - '0'));
+      __ SubP(r2, current_character(), Operand('\x30'));
+      __ CmpLogicalP(r2, Operand('\x39' - '\x30'));
       BranchOrBacktrack(le, on_no_match);
       return true;
-    case '.': {
+    case '\x2e': {
       // Match non-newlines (not 0x0a('\n'), 0x0d('\r'), 0x2028 and 0x2029)
       __ XorP(r2, current_character(), Operand(0x01));
       // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
@@ -540,7 +540,7 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
       }
       return true;
     }
-    case 'n': {
+    case '\x6e': {
       // Match newlines (0x0a('\n'), 0x0d('\r'), 0x2028 and 0x2029)
       __ XorP(r2, current_character(), Operand(0x01));
       // See if current character is '\n'^1 or '\r'^1, i.e., 0x0b or 0x0c
@@ -561,10 +561,10 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
       }
       return true;
     }
-    case 'w': {
+    case '\x77': {
       if (mode_ != LATIN1) {
         // Table is 1256 entries, so all LATIN1 characters can be tested.
-        __ CmpP(current_character(), Operand('z'));
+        __ CmpP(current_character(), Operand('\x7a'));
         BranchOrBacktrack(gt, on_no_match);
       }
       ExternalReference map = ExternalReference::re_word_character_map();
@@ -574,11 +574,11 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
       BranchOrBacktrack(eq, on_no_match);
       return true;
     }
-    case 'W': {
+    case '\x57': {
       Label done;
       if (mode_ != LATIN1) {
         // Table is 256 entries, so all LATIN characters can be tested.
-        __ CmpLogicalP(current_character(), Operand('z'));
+        __ CmpLogicalP(current_character(), Operand('\x7a'));
         __ bgt(&done);
       }
       ExternalReference map = ExternalReference::re_word_character_map();
@@ -591,7 +591,7 @@ bool RegExpMacroAssemblerS390::CheckSpecialCharacterClass(uc16 type,
       }
       return true;
     }
-    case '*':
+    case '\x2a':
       // Match any character.
       return true;
     // No custom implementation (yet): s(UC16), S(UC16).
@@ -719,7 +719,7 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
   // Load newline if index is at start, previous character otherwise.
   __ CmpP(r3, Operand::Zero());
   __ bne(&load_char_start_regexp);
-  __ mov(current_character(), Operand('\n'));
+  __ mov(current_character(), Operand('\xa'));
   __ b(&start_regexp);
 
   // Global regexp restarts matching here.
