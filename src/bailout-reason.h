@@ -257,6 +257,7 @@ namespace internal {
   V(kUnexpectedReturnFromThrow, u8"Unexpectedly returned from a throw")          \
   V(kUnsupportedSwitchStatement, u8"Unsupported switch statement")               \
   V(kUnsupportedTaggedImmediate, u8"Unsupported tagged immediate")               \
+  V(kUnstableConstantTypeHeapObject, u8"Unstable constant-type heap object")     \
   V(kVariableResolvedToWithContext, u8"Variable resolved to with context")       \
   V(kWeShouldNotHaveAnEmptyLexicalContext,                                     \
     u8"We should not have an empty lexical context")                             \

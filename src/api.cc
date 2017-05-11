@@ -241,7 +241,7 @@ void i::FatalProcessOutOfMemory(const char* location) {
 
 // When V8 cannot allocated memory FatalProcessOutOfMemory is called.
 // The default fatal error handler is called and execution is stopped.
-void i::V8::FatalProcessOutOfMemory(const char* location, bool take_snapshot) {
+void i::V8::FatalProcessOutOfMemory(const char* location, bool is_heap_oom) {
   i::Isolate* isolate = i::Isolate::Current();
   char last_few_messages[Heap::kTraceRingBufferSize + 1];
   char js_stacktrace[Heap::kStacktraceBufferSize + 1];
@@ -303,7 +303,9 @@ void i::V8::FatalProcessOutOfMemory(const char* location, bool take_snapshot) {
     PrintF("\n<--- Last few GCs --->\n%s\n", first_newline);
     PrintF("\n<--- JS stacktrace --->\n%s\n", js_stacktrace);
   }
-  Utils::ApiCheck(false, location, u8"Allocation failed - process out of memory");
+  Utils::ApiCheck(false, location, is_heap_oom
+                  ? u8"Allocation failed - JavaScript heap out of memory"
+                  : u8"Allocation failed - process out of memory");
   // If the fatal error handler returns, we stop execution.
   FATAL(u8"API fatal error handler returned after process out of memory");
 }
@@ -787,9 +789,12 @@ HandleScope::~HandleScope() {
   i::HandleScope::CloseScope(isolate_, prev_next_, prev_limit_);
 }
 
-void HandleScope::operator delete(void*, size_t){
-	base::OS::Abort();
+V8_NORETURN void* HandleScope::operator new(size_t) {
+  base::OS::Abort();
+  abort();
 }
+
+void HandleScope::operator delete(void*, size_t) { base::OS::Abort(); }
 
 int HandleScope::NumberOfHandles(Isolate* isolate) {
   return i::HandleScope::NumberOfHandles(
@@ -815,10 +820,6 @@ EscapableHandleScope::EscapableHandleScope(Isolate* v8_isolate) {
   Initialize(v8_isolate);
 }
 
-void EscapableHandleScope::operator delete(void*, size_t){
-	base::OS::Abort();
-}
-
 i::Object** EscapableHandleScope::Escape(i::Object** escape_value) {
   i::Heap* heap = reinterpret_cast<i::Isolate*>(GetIsolate())->heap();
   Utils::ApiCheck(*escape_slot_ == heap->the_hole_value(),
@@ -832,6 +833,12 @@ i::Object** EscapableHandleScope::Escape(i::Object** escape_value) {
   return escape_slot_;
 }
 
+V8_NORETURN void* EscapableHandleScope::operator new(size_t) {
+  base::OS::Abort();
+  abort();
+}
+
+void EscapableHandleScope::operator delete(void*, size_t) { base::OS::Abort(); }
 
 SealHandleScope::SealHandleScope(Isolate* isolate) {
   i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
@@ -853,6 +860,12 @@ SealHandleScope::~SealHandleScope() {
   current->sealed_level = prev_sealed_level_;
 }
 
+V8_NORETURN void* SealHandleScope::operator new(size_t) {
+  base::OS::Abort();
+  abort();
+}
+
+void SealHandleScope::operator delete(void*, size_t) { base::OS::Abort(); }
 
 void Context::Enter() {
   i::Handle<i::Context> env = Utils::OpenHandle(this);
@@ -1039,6 +1052,16 @@ void Template::Set(v8::Local<Name> name, v8::Local<Data> value,
     if (templ->IsFunctionTemplateInfo()) {
       i::Handle<i::FunctionTemplateInfo>::cast(templ)->set_do_not_cache(true);
     }
+  }
+  if (i::FLAG_warn_template_set &&
+      value_obj->IsJSReceiver() &&
+      !value_obj->IsTemplateInfo()) {
+    base::OS::PrintError(
+        "(node) v8::%sTemplate::Set() with non-primitive values is deprecated\n"
+        "(node) and will stop working in the next major release.\n",
+        templ->IsFunctionTemplateInfo() ? "Function" : "Object");
+    isolate->PrintStack(stderr, i::Isolate::kPrintStackConcise);
+    base::DumpBacktrace();
   }
   // TODO(dcarney): split api to allow values of v8::Value or v8::TemplateInfo.
   i::ApiNatives::AddDataProperty(isolate, templ, Utils::OpenHandle(*name),
@@ -2267,9 +2290,12 @@ v8::TryCatch::~TryCatch() {
   }
 }
 
-void v8::TryCatch::operator delete(void*, size_t){
-	base::OS::Abort();
+V8_NORETURN void* v8::TryCatch::operator new(size_t) {
+  base::OS::Abort();
+  abort();
 }
+
+void v8::TryCatch::operator delete(void*, size_t) { base::OS::Abort(); }
 
 bool v8::TryCatch::HasCaught() const {
   return !reinterpret_cast<i::Object*>(exception_)->IsTheHole();
@@ -5541,7 +5567,6 @@ HeapStatistics::HeapStatistics()
       total_available_size_(0),
       used_heap_size_(0),
       heap_size_limit_(0),
-      malloced_memory_(0),
       does_zap_garbage_(0) {}
 
 HeapSpaceStatistics::HeapSpaceStatistics(): space_name_(0),
@@ -6743,7 +6768,11 @@ Local<ArrayBuffer> v8::ArrayBuffer::New(Isolate* isolate, size_t byte_length) {
   ENTER_V8(i_isolate);
   i::Handle<i::JSArrayBuffer> obj =
       i_isolate->factory()->NewJSArrayBuffer(i::SharedFlag::kNotShared);
-  i::JSArrayBuffer::SetupAllocatingData(obj, i_isolate, byte_length);
+  // TODO(jbroman): It may be useful in the future to provide a MaybeLocal
+  // version that throws an exception or otherwise does not crash.
+  if (!i::JSArrayBuffer::SetupAllocatingData(obj, i_isolate, byte_length)) {
+    i::FatalProcessOutOfMemory("v8::ArrayBuffer::New");
+  }
   return Utils::ToLocal(obj);
 }
 
@@ -6939,8 +6968,12 @@ Local<SharedArrayBuffer> v8::SharedArrayBuffer::New(Isolate* isolate,
   ENTER_V8(i_isolate);
   i::Handle<i::JSArrayBuffer> obj =
       i_isolate->factory()->NewJSArrayBuffer(i::SharedFlag::kShared);
-  i::JSArrayBuffer::SetupAllocatingData(obj, i_isolate, byte_length, true,
-                                        i::SharedFlag::kShared);
+  // TODO(jborman): It may be useful in the future to provide a MaybeLocal
+  // version that throws an exception or otherwise does not crash.
+  if (!i::JSArrayBuffer::SetupAllocatingData(obj, i_isolate, byte_length, true,
+                                             i::SharedFlag::kShared)) {
+    i::FatalProcessOutOfMemory("v8::SharedArrayBuffer::New");
+  }
   return Utils::ToLocalShared(obj);
 }
 
@@ -7449,8 +7482,6 @@ void Isolate::GetHeapStatistics(HeapStatistics* heap_statistics) {
   heap_statistics->total_available_size_ = heap->Available();
   heap_statistics->used_heap_size_ = heap->SizeOfObjects();
   heap_statistics->heap_size_limit_ = heap->MaxReserved();
-  heap_statistics->malloced_memory_ =
-      isolate->allocator()->GetCurrentMemoryUsage();
   heap_statistics->does_zap_garbage_ = heap->ShouldZapGarbage();
 }
 

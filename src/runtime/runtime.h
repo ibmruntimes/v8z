@@ -190,6 +190,7 @@ namespace internal {
   F(DebugPrepareStepInIfStepping, 1, 1)        \
   F(DebugPushPromise, 2, 1)                    \
   F(DebugPopPromise, 0, 1)                     \
+  F(DebugPromiseEvent, 1, 1)                   \
   F(DebugAsyncTaskEvent, 1, 1)                 \
   F(DebugIsActive, 0, 1)                       \
   F(DebugBreakInOptimizedCode, 0, 1)
@@ -1128,11 +1129,6 @@ class Runtime : public AllStatic {
   static void ArrayIdToTypeAndSize(int array_id, ExternalArrayType* type,
                                    ElementsKind* fixed_elements_kind,
                                    size_t* element_size);
-
-  // Used in runtime.cc and hydrogen's VisitArrayLiteral.
-  MUST_USE_RESULT static MaybeHandle<Object> CreateArrayLiteralBoilerplate(
-      Isolate* isolate, Handle<LiteralsArray> literals,
-      Handle<FixedArray> elements);
 
   static MaybeHandle<JSArray> GetInternalProperties(Isolate* isolate,
                                                     Handle<Object>);

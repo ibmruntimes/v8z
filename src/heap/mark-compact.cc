@@ -1374,8 +1374,8 @@ class RootMarkingVisitor : public ObjectVisitor {
   void MarkObjectByPointer(Object** p) {
     if (!(*p)->IsHeapObject()) return;
 
-    // Replace flat cons strings in place.
     HeapObject* object = HeapObject::cast(*p);
+
     MarkBit mark_bit = Marking::MarkBitFrom(object);
     if (Marking::IsBlackOrGrey(mark_bit)) return;
 
@@ -1674,6 +1674,7 @@ class MarkCompactCollector::EvacuateNewSpaceVisitor final
     const int size = old_object->Size();
     AllocationAlignment alignment = old_object->RequiredAlignment();
     AllocationResult allocation;
+    AllocationSpace space_allocated_in = space_to_allocate_;
     if (space_to_allocate_ == NEW_SPACE) {
       if (size > kMaxLabObjectSize) {
         allocation =
@@ -1684,11 +1685,12 @@ class MarkCompactCollector::EvacuateNewSpaceVisitor final
     }
     if (allocation.IsRetry() || (space_to_allocate_ == OLD_SPACE)) {
       allocation = AllocateInOldSpace(size, alignment);
+      space_allocated_in = OLD_SPACE;
     }
     bool ok = allocation.To(target_object);
     DCHECK(ok);
     USE(ok);
-    return space_to_allocate_;
+    return space_allocated_in;
   }
 
   inline bool NewLocalAllocationBuffer() {
@@ -1728,8 +1730,8 @@ class MarkCompactCollector::EvacuateNewSpaceVisitor final
         compaction_spaces_->Get(OLD_SPACE)->AllocateRaw(size_in_bytes,
                                                         alignment);
     if (allocation.IsRetry()) {
-      FatalProcessOutOfMemory(
-          "MarkCompactCollector: semi-space copy, fallback in old gen\n");
+      v8::internal::Heap::FatalProcessOutOfMemory(
+          "MarkCompactCollector: semi-space copy, fallback in old gen", true);
     }
     return allocation;
   }
@@ -3496,10 +3498,20 @@ int NumberOfPointerUpdateTasks(int pages) {
 
 template <PointerDirection direction>
 void UpdatePointersInParallel(Heap* heap, base::Semaphore* semaphore) {
+  // Work-around bug in clang-3.4
+  // https://github.com/nodejs/node/issues/8323
+  struct MemoryChunkVisitor {
+    PageParallelJob<PointerUpdateJobTraits<direction> >& job_;
+    MemoryChunkVisitor(PageParallelJob<PointerUpdateJobTraits<direction> >& job)
+      : job_(job) {}
+    void operator()(MemoryChunk* chunk) {
+      job_.AddPage(chunk, 0);
+    }
+  };
+
   PageParallelJob<PointerUpdateJobTraits<direction> > job(
       heap, heap->isolate()->cancelable_task_manager(), semaphore);
-  RememberedSet<direction>::IterateMemoryChunks(
-      heap, [&job](MemoryChunk* chunk) { job.AddPage(chunk, 0); });
+  RememberedSet<direction>::IterateMemoryChunks(heap, MemoryChunkVisitor(job));
   PointersUpdatingVisitor visitor(heap);
   int num_pages = job.NumberOfPages();
   int num_tasks = NumberOfPointerUpdateTasks(num_pages);

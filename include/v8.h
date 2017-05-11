@@ -993,13 +993,7 @@ class V8_EXPORT SealHandleScope {
   SealHandleScope(const SealHandleScope&);
   void operator=(const SealHandleScope&);
   void* operator new(size_t size);
-#ifdef V8_OS_ZOS
-  void operator delete(void*, size_t) {
-	  assert(0 && "should not reach this part of the code");
-  };
-#else
   void operator delete(void*, size_t);
-#endif
 
   internal::Isolate* isolate_;
 #ifdef V8_OS_ZOS
@@ -3195,7 +3189,7 @@ class FunctionCallbackInfo {
   V8_INLINE Isolate* GetIsolate() const;
   V8_INLINE ReturnValue<T> GetReturnValue() const;
   // This shouldn't be public, but the arm compiler needs it.
-  static const int kArgsLength = 7;
+  static const int kArgsLength = 8;
 
  protected:
   friend class internal::FunctionCallbackArguments;
@@ -3207,6 +3201,7 @@ class FunctionCallbackInfo {
   static const int kDataIndex = 4;
   static const int kCalleeIndex = 5;
   static const int kContextSaveIndex = 6;
+  static const int kNewTargetIndex = 7;
 
   V8_INLINE FunctionCallbackInfo(internal::Object** implicit_args,
                    internal::Object** values,
@@ -5224,7 +5219,6 @@ class V8_EXPORT HeapStatistics {
   size_t total_available_size() { return total_available_size_; }
   size_t used_heap_size() { return used_heap_size_; }
   size_t heap_size_limit() { return heap_size_limit_; }
-  size_t malloced_memory() { return malloced_memory_; }
   size_t does_zap_garbage() { return does_zap_garbage_; }
 
  private:
@@ -5234,7 +5228,6 @@ class V8_EXPORT HeapStatistics {
   size_t total_available_size_;
   size_t used_heap_size_;
   size_t heap_size_limit_;
-  size_t malloced_memory_;
   bool does_zap_garbage_;
 
   friend class V8;
@@ -7357,7 +7350,7 @@ class Internals {
       1 * kApiPointerSize + kApiIntSize;
   static const int kStringResourceOffset = 3 * kApiPointerSize;
 
-  static const int kOddballKindOffset = 5 * kApiPointerSize;
+  static const int kOddballKindOffset = 4 * kApiPointerSize;
   static const int kForeignAddressOffset = kApiPointerSize;
   static const int kJSObjectHeaderSize = 3 * kApiPointerSize;
   static const int kFixedArrayHeaderSize = 2 * kApiPointerSize;
@@ -7376,12 +7369,12 @@ class Internals {
   static const int kIsolateRootsOffset =
       kAmountOfExternalAllocatedMemoryAtLastGlobalGCOffset + kApiInt64Size +
       kApiPointerSize;
-  static const int kUndefinedValueRootIndex = 4;
-  static const int kTheHoleValueRootIndex = 5;
-  static const int kNullValueRootIndex = 6;
-  static const int kTrueValueRootIndex = 7;
-  static const int kFalseValueRootIndex = 8;
-  static const int kEmptyStringRootIndex = 9;
+  static const int kUndefinedValueRootIndex = 5;
+  static const int kNullValueRootIndex = 7;
+  static const int kTrueValueRootIndex = 8;
+  static const int kFalseValueRootIndex = 9;
+  static const int kEmptyStringRootIndex = 10;
+  static const int kTheHoleValueRootIndex = 11;
 
   // The external allocation limit should be below 256 MB on all architectures
   // to avoid that resource-constrained embedders run low on memory.
@@ -7397,7 +7390,7 @@ class Internals {
   static const int kNodeIsPartiallyDependentShift = 4;
   static const int kNodeIsActiveShift = 4;
 
-  static const int kJSObjectType = 0xb8;
+  static const int kJSObjectType = 0xb5;
   static const int kFirstNonstringType = 0x80;
   static const int kOddballType = 0x83;
   static const int kForeignType = 0x87;
@@ -7921,7 +7914,6 @@ Local<Object> FunctionCallbackInfo<T>::Holder() const {
   return Local<Object>(reinterpret_cast<Object*>(
       &implicit_args_[kHolderIndex]));
 }
-
 
 template<typename T>
 Local<Value> FunctionCallbackInfo<T>::Data() const {

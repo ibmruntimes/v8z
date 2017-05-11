@@ -2439,7 +2439,6 @@ Statement* Parser::ParseExpressionOrLabelledStatement(
       ReportUnexpectedToken(Next());
       *ok = false;
       return nullptr;
-
     default:
       break;
   }
@@ -2923,39 +2922,39 @@ TryStatement* Parser::ParseTryStatement(bool* ok) {
     catch_scope = NewScope(scope_, CATCH_SCOPE);
     catch_scope->set_start_position(scanner()->location().beg_pos);
 
-    ExpressionClassifier pattern_classifier(this);
-    Expression* pattern = ParsePrimaryExpression(&pattern_classifier, CHECK_OK);
-    ValidateBindingPattern(&pattern_classifier, CHECK_OK);
-
-    const AstRawString* name = ast_value_factory()->dot_catch_string();
-    bool is_simple = pattern->IsVariableProxy();
-    if (is_simple) {
-      auto proxy = pattern->AsVariableProxy();
-      scope_->RemoveUnresolved(proxy);
-      name = proxy->raw_name();
-    }
-
-    catch_variable = catch_scope->DeclareLocal(name, VAR, kCreatedInitialized,
-                                               Variable::NORMAL);
-
-    Expect(Token::RPAREN, CHECK_OK);
-
     {
       CollectExpressionsInTailPositionToListScope
           collect_expressions_in_tail_position_scope(
               function_state_, &expressions_in_tail_position_in_catch_block);
       BlockState block_state(&scope_, catch_scope);
 
-      // TODO(adamk): Make a version of ParseBlock that takes a scope and
-      // a block.
       catch_block =
           factory()->NewBlock(nullptr, 16, false, RelocInfo::kNoPosition);
-      Scope* block_scope = NewScope(scope_, BLOCK_SCOPE);
 
+      // Create a block scope to hold any lexical declarations created
+      // as part of destructuring the catch parameter.
+      Scope* block_scope = NewScope(scope_, BLOCK_SCOPE);
       block_scope->set_start_position(scanner()->location().beg_pos);
       {
         BlockState block_state(&scope_, block_scope);
         Target target(&this->target_stack_, catch_block);
+
+        ExpressionClassifier pattern_classifier(this);
+        Expression* pattern =
+            ParsePrimaryExpression(&pattern_classifier, CHECK_OK);
+        ValidateBindingPattern(&pattern_classifier, CHECK_OK);
+
+        const AstRawString* name = ast_value_factory()->dot_catch_string();
+        bool is_simple = pattern->IsVariableProxy();
+        if (is_simple) {
+          auto proxy = pattern->AsVariableProxy();
+          scope_->RemoveUnresolved(proxy);
+          name = proxy->raw_name();
+        }
+        catch_variable = catch_scope->DeclareLocal(
+            name, VAR, kCreatedInitialized, Variable::NORMAL);
+
+        Expect(Token::RPAREN, CHECK_OK);
 
         if (!is_simple) {
           DeclarationDescriptor descriptor;
@@ -2978,6 +2977,8 @@ TryStatement* Parser::ParseTryStatement(bool* ok) {
           catch_block->statements()->Add(init_block, zone());
         }
 
+        // TODO(adamk): This should call ParseBlock in order to properly
+        // add an additional block scope for the catch body.
         Expect(Token::LBRACE, CHECK_OK);
         while (peek() != Token::RBRACE) {
           Statement* stat = ParseStatementListItem(CHECK_OK);
@@ -4445,9 +4446,6 @@ Block* Parser::BuildParameterInitializationBlock(
     // TODO(adamk): Should this be RelocInfo::kNoPosition, since
     // it's just copying from a temp var to the real param var?
     descriptor.initialization_pos = parameter.pattern->position();
-    // The initializer position which will end up in,
-    // Variable::initializer_position(), used for hole check elimination.
-    int initializer_position = parameter.pattern->position();
     Expression* initial_value =
         factory()->NewVariableProxy(parameters.scope->parameter(i));
     if (parameter.initializer != nullptr) {
@@ -4465,7 +4463,6 @@ Block* Parser::BuildParameterInitializationBlock(
           condition, parameter.initializer, initial_value,
           RelocInfo::kNoPosition);
       descriptor.initialization_pos = parameter.initializer->position();
-      initializer_position = parameter.initializer_end_position;
     }
 
     Scope* param_scope = scope_;
@@ -4479,12 +4476,18 @@ Block* Parser::BuildParameterInitializationBlock(
       param_block = factory()->NewBlock(NULL, 8, true, RelocInfo::kNoPosition);
       param_block->set_scope(param_scope);
       descriptor.hoist_scope = scope_;
+      // Pass the appropriate scope in so that PatternRewriter can appropriately
+      // rewrite inner initializers of the pattern to param_scope
+      descriptor.scope = param_scope;
+      // Rewrite the outer initializer to point to param_scope
+      RewriteParameterInitializerScope(stack_limit(), initial_value, scope_,
+                                       param_scope);
     }
 
     {
       BlockState block_state(&scope_, param_scope);
       DeclarationParsingResult::Declaration decl(
-          parameter.pattern, initializer_position, initial_value);
+          parameter.pattern, parameter.initializer_end_position, initial_value);
       PatternRewriter::DeclareAndInitializeVariables(param_block, &descriptor,
                                                      &decl, nullptr, CHECK_OK);
     }
@@ -5401,13 +5404,19 @@ void ParserTraits::RewriteNonPattern(Type::ExpressionClassifier* classifier,
 }
 
 
-Zone* ParserTraits::zone() const {
-  return parser_->function_state_->scope()->zone();
+ZoneList<Expression*>* ParserTraits::GetNonPatternList() const {
+  return parser_->function_state_->non_patterns_to_rewrite();
 }
 
 
-ZoneList<Expression*>* ParserTraits::GetNonPatternList() const {
-  return parser_->function_state_->non_patterns_to_rewrite();
+ZoneList<typename ParserTraits::Type::ExpressionClassifier::Error>*
+ParserTraits::GetReportedErrorList() const {
+  return parser_->function_state_->GetReportedErrorList();
+}
+
+
+Zone* ParserTraits::zone() const {
+  return parser_->function_state_->scope()->zone();
 }
 
 
@@ -5573,16 +5582,35 @@ Expression* Parser::RewriteSpreads(ArrayLiteral* lit) {
     if (spread == nullptr) {
       // If the element is not a spread, we're adding a single:
       // %AppendElement($R, value)
-      ZoneList<Expression*>* append_element_args = NewExpressionList(2, zone());
-      append_element_args->Add(factory()->NewVariableProxy(result), zone());
-      append_element_args->Add(value, zone());
-      do_block->statements()->Add(
-          factory()->NewExpressionStatement(
-              factory()->NewCallRuntime(Runtime::kAppendElement,
-                                        append_element_args,
+      // or, in case of a hole,
+      // ++($R.length)
+      if (!value->IsLiteral() ||
+          !value->AsLiteral()->raw_value()->IsTheHole()) {
+        ZoneList<Expression*>* append_element_args =
+            NewExpressionList(2, zone());
+        append_element_args->Add(factory()->NewVariableProxy(result), zone());
+        append_element_args->Add(value, zone());
+        do_block->statements()->Add(
+            factory()->NewExpressionStatement(
+                factory()->NewCallRuntime(Runtime::kAppendElement,
+                                          append_element_args,
+                                          RelocInfo::kNoPosition),
+                RelocInfo::kNoPosition),
+            zone());
+      } else {
+        Property* length_property = factory()->NewProperty(
+            factory()->NewVariableProxy(result),
+            factory()->NewStringLiteral(ast_value_factory()->length_string(),
                                         RelocInfo::kNoPosition),
-              RelocInfo::kNoPosition),
-          zone());
+            RelocInfo::kNoPosition);
+        CountOperation* count_op = factory()->NewCountOperation(
+            Token::INC, true /* prefix */, length_property,
+            RelocInfo::kNoPosition);
+        do_block->statements()->Add(
+            factory()->NewExpressionStatement(count_op,
+                                              RelocInfo::kNoPosition),
+            zone());
+      }
     } else {
       // If it's a spread, we're adding a for/of loop iterating through it.
       Variable* each =
@@ -5624,9 +5652,9 @@ void ParserTraits::QueueDestructuringAssignmentForRewriting(Expression* expr) {
 }
 
 
-void ParserTraits::QueueNonPatternForRewriting(Expression* expr) {
+void ParserTraits::QueueNonPatternForRewriting(Expression* expr, bool* ok) {
   DCHECK(expr->IsRewritableExpression());
-  parser_->function_state_->AddNonPatternForRewriting(expr);
+  parser_->function_state_->AddNonPatternForRewriting(expr, ok);
 }
 
 

@@ -646,7 +646,7 @@ class ParserTraits {
 
   V8_INLINE void QueueDestructuringAssignmentForRewriting(
       Expression* assignment);
-  V8_INLINE void QueueNonPatternForRewriting(Expression* expr);
+  V8_INLINE void QueueNonPatternForRewriting(Expression* expr, bool* ok);
 
   void SetFunctionNameFromPropertyName(ObjectLiteralProperty* property,
                                        const AstRawString* name);
@@ -658,6 +658,8 @@ class ParserTraits {
   V8_INLINE void RewriteNonPattern(Type::ExpressionClassifier* classifier,
                                    bool* ok);
 
+  V8_INLINE ZoneList<typename Type::ExpressionClassifier::Error>*
+      GetReportedErrorList() const;
   V8_INLINE Zone* zone() const;
 
   V8_INLINE ZoneList<Expression*>* GetNonPatternList() const;
@@ -879,6 +881,8 @@ class Parser : public ParserBase<ParserTraits> {
     bool IsSubPattern() const { return recursion_level_ > 1; }
     PatternContext SetAssignmentContextIfNeeded(Expression* node);
     PatternContext SetInitializerContextIfNeeded(Expression* node);
+
+    void RewriteParameterScopes(Expression* expr);
 
     Variable* CreateTempVar(Expression* value = nullptr);
 

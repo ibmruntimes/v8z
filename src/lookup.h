@@ -179,6 +179,7 @@ class LookupIterator final BASE_EMBEDDED {
   Handle<Object> GetReceiver() const { return receiver_; }
 
   Handle<JSObject> GetStoreTarget() const {
+    DCHECK(receiver_->IsJSObject());
     if (receiver_->IsJSGlobalProxy()) {
       Map* map = JSGlobalProxy::cast(*receiver_)->map();
       if (map->has_hidden_prototype()) {
@@ -289,7 +290,8 @@ class LookupIterator final BASE_EMBEDDED {
   void NextInternal(Map* map, JSReceiver* holder);
   template <bool is_element>
   inline State LookupInHolder(Map* map, JSReceiver* holder) {
-    return map->instance_type() <= LAST_SPECIAL_RECEIVER_TYPE
+    return (map->instance_type() <= LAST_SPECIAL_RECEIVER_TYPE ||
+            map->instance_type() == JS_GLOBAL_PROXY_TYPE)
                ? LookupInSpecialHolder<is_element>(map, holder)
                : LookupInRegularHolder<is_element>(map, holder);
   }

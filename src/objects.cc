@@ -3111,9 +3111,16 @@ void MigrateFastToSlow(Handle<JSObject> object, Handle<Map> new_map,
   // Ensure that in-object space of slow-mode object does not contain random
   // garbage.
   int inobject_properties = new_map->GetInObjectProperties();
-  for (int i = 0; i < inobject_properties; i++) {
-    FieldIndex index = FieldIndex::ForPropertyIndex(*new_map, i);
-    object->RawFastPropertyAtPut(index, Smi::FromInt(0));
+  if (inobject_properties) {
+    Heap* heap = isolate->heap();
+    heap->ClearRecordedSlotRange(
+        object->address() + map->GetInObjectPropertyOffset(0),
+        object->address() + new_instance_size);
+
+    for (int i = 0; i < inobject_properties; i++) {
+      FieldIndex index = FieldIndex::ForPropertyIndex(*new_map, i);
+      object->RawFastPropertyAtPut(index, Smi::FromInt(0));
+    }
   }
 
   isolate->counters()->props_to_dictionary()->Increment();
@@ -4256,11 +4263,20 @@ Maybe<bool> Object::SetPropertyInternal(LookupIterator* it,
         return JSProxy::SetProperty(it->GetHolder<JSProxy>(), it->GetName(),
                                     value, it->GetReceiver(), language_mode);
 
-      case LookupIterator::INTERCEPTOR:
+      case LookupIterator::INTERCEPTOR: {
+        Handle<Map> store_target_map;
+        if (it->GetReceiver()->IsJSObject()) {
+          store_target_map = handle(it->GetStoreTarget()->map(), it->isolate());
+        }
         if (it->HolderIsReceiverOrHiddenPrototype()) {
           Maybe<bool> result =
               JSObject::SetPropertyWithInterceptor(it, should_throw, value);
           if (result.IsNothing() || result.FromJust()) return result;
+          Utils::ApiCheck(store_target_map.is_null() ||
+                              *store_target_map == it->GetStoreTarget()->map(),
+                          it->IsElement() ? "v8::IndexedPropertySetterCallback"
+                                          : "v8::NamedPropertySetterCallback",
+                          "Interceptor silently changed store target.");
         } else {
           Maybe<PropertyAttributes> maybe_attributes =
               JSObject::GetPropertyAttributesWithInterceptor(it);
@@ -4269,10 +4285,16 @@ Maybe<bool> Object::SetPropertyInternal(LookupIterator* it,
           if ((maybe_attributes.FromJust() & READ_ONLY) != 0) {
             return WriteToReadOnlyProperty(it, value, should_throw);
           }
+          Utils::ApiCheck(store_target_map.is_null() ||
+                              *store_target_map == it->GetStoreTarget()->map(),
+                          it->IsElement() ? "v8::IndexedPropertySetterCallback"
+                                          : "v8::NamedPropertySetterCallback",
+                          "Interceptor silently changed store target.");
           *found = false;
           return Nothing<bool>();
         }
         break;
+      }
 
       case LookupIterator::ACCESSOR: {
         if (it->IsReadOnly()) {
@@ -8453,7 +8475,8 @@ bool Map::OnlyHasSimpleProperties() {
   // Wrapped string elements aren't explicitly stored in the elements backing
   // store, but are loaded indirectly from the underlying string.
   return !IsStringWrapperElementsKind(elements_kind()) &&
-         instance_type() > LAST_SPECIAL_RECEIVER_TYPE &&
+         (instance_type() > LAST_SPECIAL_RECEIVER_TYPE &&
+         instance_type() != JS_GLOBAL_PROXY_TYPE) &&
          !has_hidden_prototype() && !is_dictionary_map();
 }
 
@@ -13106,50 +13129,51 @@ namespace {
 
 bool CanSubclassHaveInobjectProperties(InstanceType instance_type) {
   switch (instance_type) {
-    case JS_OBJECT_TYPE:
-    case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
-    case JS_GENERATOR_OBJECT_TYPE:
-    case JS_MODULE_TYPE:
-    case JS_VALUE_TYPE:
-    case JS_DATE_TYPE:
-    case JS_ARRAY_TYPE:
-    case JS_MESSAGE_OBJECT_TYPE:
     case JS_ARRAY_BUFFER_TYPE:
-    case JS_TYPED_ARRAY_TYPE:
+    case JS_ARRAY_TYPE:
+    case JS_CONTEXT_EXTENSION_OBJECT_TYPE:
     case JS_DATA_VIEW_TYPE:
-    case JS_SET_TYPE:
-    case JS_MAP_TYPE:
-    case JS_SET_ITERATOR_TYPE:
+    case JS_DATE_TYPE:
+    case JS_FUNCTION_TYPE:
+    case JS_GENERATOR_OBJECT_TYPE:
     case JS_MAP_ITERATOR_TYPE:
-    case JS_WEAK_MAP_TYPE:
-    case JS_WEAK_SET_TYPE:
+    case JS_MAP_TYPE:
+    case JS_MESSAGE_OBJECT_TYPE:
+    case JS_MODULE_TYPE:
+    case JS_OBJECT_TYPE:
     case JS_PROMISE_TYPE:
     case JS_REGEXP_TYPE:
-    case JS_FUNCTION_TYPE:
+    case JS_SET_ITERATOR_TYPE:
+    case JS_SET_TYPE:
+    case JS_SPECIAL_API_OBJECT_TYPE:
+    case JS_TYPED_ARRAY_TYPE:
+    case JS_VALUE_TYPE:
+    case JS_WEAK_MAP_TYPE:
+    case JS_WEAK_SET_TYPE:
       return true;
 
-    case JS_BOUND_FUNCTION_TYPE:
-    case JS_PROXY_TYPE:
-    case JS_GLOBAL_PROXY_TYPE:
-    case JS_GLOBAL_OBJECT_TYPE:
+    case BYTECODE_ARRAY_TYPE:
+    case BYTE_ARRAY_TYPE:
+    case CELL_TYPE:
+    case CODE_TYPE:
+    case FILLER_TYPE:
     case FIXED_ARRAY_TYPE:
     case FIXED_DOUBLE_ARRAY_TYPE:
-    case ODDBALL_TYPE:
     case FOREIGN_TYPE:
-    case MAP_TYPE:
-    case CODE_TYPE:
-    case CELL_TYPE:
-    case PROPERTY_CELL_TYPE:
-    case WEAK_CELL_TYPE:
-    case SYMBOL_TYPE:
-    case BYTECODE_ARRAY_TYPE:
-    case HEAP_NUMBER_TYPE:
-    case MUTABLE_HEAP_NUMBER_TYPE:
-    case SIMD128_VALUE_TYPE:
-    case FILLER_TYPE:
-    case BYTE_ARRAY_TYPE:
     case FREE_SPACE_TYPE:
+    case HEAP_NUMBER_TYPE:
+    case JS_BOUND_FUNCTION_TYPE:
+    case JS_GLOBAL_OBJECT_TYPE:
+    case JS_GLOBAL_PROXY_TYPE:
+    case JS_PROXY_TYPE:
+    case MAP_TYPE:
+    case MUTABLE_HEAP_NUMBER_TYPE:
+    case ODDBALL_TYPE:
+    case PROPERTY_CELL_TYPE:
     case SHARED_FUNCTION_INFO_TYPE:
+    case SIMD128_VALUE_TYPE:
+    case SYMBOL_TYPE:
+    case WEAK_CELL_TYPE:
 
 #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) \
   case FIXED_##TYPE##_ARRAY_TYPE:
@@ -17430,7 +17454,7 @@ Handle<Derived> HashTable<Derived, Shape, Key>::EnsureCapacity(
   int capacity = table->Capacity();
   int nof = table->NumberOfElements() + n;
 
-  if (table->HasSufficientCapacity(n)) return table;
+  if (table->HasSufficientCapacityToAdd(n)) return table;
 
   const int kMinCapacityForPretenure = 256;
   bool should_pretenure = pretenure == TENURED ||
@@ -17446,16 +17470,16 @@ Handle<Derived> HashTable<Derived, Shape, Key>::EnsureCapacity(
   return new_table;
 }
 
-
 template <typename Derived, typename Shape, typename Key>
-bool HashTable<Derived, Shape, Key>::HasSufficientCapacity(int n) {
+bool HashTable<Derived, Shape, Key>::HasSufficientCapacityToAdd(
+    int number_of_additional_elements) {
   int capacity = Capacity();
-  int nof = NumberOfElements() + n;
+  int nof = NumberOfElements() + number_of_additional_elements;
   int nod = NumberOfDeletedElements();
   // Return true if:
-  //   50% is still free after adding n elements and
+  //   50% is still free after adding number_of_additional_elements elements and
   //   at most 50% of the free elements are deleted elements.
-  if (nod <= (capacity - nof) >> 1) {
+  if ((nof < capacity) && ((nod <= (capacity - nof) >> 1))) {
     int needed_free = nof >> 1;
     if (nof + needed_free <= capacity) return true;
   }
@@ -18373,7 +18397,7 @@ void Dictionary<Derived, Shape, Key>::SetRequiresCopyOnCapacityChange() {
   DCHECK_EQ(0, DerivedHashTable::NumberOfDeletedElements());
   // Make sure that HashTable::EnsureCapacity will create a copy.
   DerivedHashTable::SetNumberOfDeletedElements(DerivedHashTable::Capacity());
-  DCHECK(!DerivedHashTable::HasSufficientCapacity(1));
+  DCHECK(!DerivedHashTable::HasSufficientCapacityToAdd(1));
 }
 
 
@@ -18780,6 +18804,19 @@ Handle<ObjectHashTable> ObjectHashTable::Put(Handle<ObjectHashTable> table,
   // TODO(jochen): Consider to shrink the fixed array in place.
   if ((table->NumberOfDeletedElements() << 1) > table->NumberOfElements()) {
     table->Rehash(isolate->factory()->undefined_value());
+  }
+  // If we're out of luck, we didn't get a GC recently, and so rehashing
+  // isn't enough to avoid a crash.
+  if (!table->HasSufficientCapacityToAdd(1)) {
+    int nof = table->NumberOfElements() + 1;
+    int capacity = ObjectHashTable::ComputeCapacity(nof * 2);
+    if (capacity > ObjectHashTable::kMaxCapacity) {
+      for (size_t i = 0; i < 2; ++i) {
+        isolate->heap()->CollectAllGarbage(
+            Heap::kFinalizeIncrementalMarkingMask, "full object hash table");
+      }
+      table->Rehash(isolate->factory()->undefined_value());
+    }
   }
 
   // Check whether the hash table should be extended.

@@ -172,6 +172,9 @@ struct MaybeBoolFlag {
 //
 #define FLAG FLAG_FULL
 
+DEFINE_BOOL(warn_template_set, true,
+            "warn on deprecated v8::Template::Set() use")
+
 DEFINE_BOOL(experimental_extras, false,
             "\x65\x6e\x61\x62\x6c\x65\x20\x63\x6f\x64\x65\x20\x63\x6f\x6d\x70\x69\x6c\x65\x64\x20\x69\x6e\x20\x76\x69\x61\x20\x76\x38\x5f\x65\x78\x70\x65\x72\x69\x6d\x65\x6e\x74\x61\x6c\x5f\x65\x78\x74\x72\x61\x5f\x6c\x69\x62\x72\x61\x72\x79\x5f\x66\x69\x6c\x65\x73")
 
@@ -232,6 +235,20 @@ DEFINE_IMPLICATION(es_staging, move_object_start)
 // and associated tests are moved from the harmony directory to the appropriate
 // esN directory.
 
+// no-op flags added back for V8 5.0 compatibility for Node.js v6.x.
+#define NODE_NOP_HARMONY_FEATURES(V)                                      \
+  V(harmony_default_parameters, "harmony default parameters")             \
+  V(harmony_destructuring_assignment, "harmony destructuring assignment") \
+  V(harmony_destructuring_bind, "harmony destructuring bind")             \
+  V(harmony_regexps, "harmony regular expression extensions")             \
+  V(harmony_proxies, "harmony proxies")                                   \
+  V(harmony_reflect, "harmony Reflect API")                               \
+  V(harmony_tostring, "harmony toString")
+
+#define FLAG_NODE_NOP_HARMONY_FEATURES(id, description) \
+  DEFINE_BOOL(id, true, "nop flag for " #description)
+NODE_NOP_HARMONY_FEATURES(FLAG_NODE_NOP_HARMONY_FEATURES)
+#undef FLAG_NODE_NOP_HARMONY_FEATURES
 
 #define FLAG_INPROGRESS_FEATURES(id, description) \
   DEFINE_BOOL(id, false, "\x65\x6e\x61\x62\x6c\x65\x20" #description "\x20\x28\x69\x6e\x20\x70\x72\x6f\x67\x72\x65\x73\x73\x29")
