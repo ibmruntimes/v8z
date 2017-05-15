@@ -1719,7 +1719,7 @@ MaybeHandle<Object> Debug::MakeCompileEvent(Handle<Script> script,
 MaybeHandle<Object> Debug::MakePromiseEvent(Handle<JSObject> event_data) {
   // Create the promise event object.
   Handle<Object> argv[] = { event_data };
-  return CallFunction("MakePromiseEvent", arraysize(argv), argv);
+  return CallFunction(u8"MakePromiseEvent", arraysize(argv), argv);
 }
 
 
