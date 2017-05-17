@@ -16,7 +16,7 @@ size_t hash_value(OutputFrameStateCombine const& sc) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, OutputFrameStateCombine const& sc) {
+v8::base::OStream& operator<<(v8::base::OStream& os, OutputFrameStateCombine const& sc) {
   switch (sc.kind_) {
     case OutputFrameStateCombine::kPushOutput:
       if (sc.parameter_ == 0) return os << "Ignore";
@@ -47,7 +47,7 @@ size_t hash_value(FrameStateInfo const& info) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, FrameStateType type) {
+v8::base::OStream& operator<<(v8::base::OStream& os, FrameStateType type) {
   switch (type) {
     case FrameStateType::kJavaScriptFunction:
       os << "JS_FRAME";
@@ -69,7 +69,7 @@ std::ostream& operator<<(std::ostream& os, FrameStateType type) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, FrameStateInfo const& info) {
+v8::base::OStream& operator<<(v8::base::OStream& os, FrameStateInfo const& info) {
   os << info.type() << ", " << info.bailout_id() << ", "
      << info.state_combine();
   Handle<SharedFunctionInfo> shared_info;

@@ -23,7 +23,7 @@ typedef MachInst<Node* (RawMachineAssembler::*)(Node*, Node*)> MachInst2;
 
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const MachInst<T>& mi) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const MachInst<T>& mi) {
   return os << mi.constructor_name;
 }
 
@@ -34,7 +34,7 @@ struct Shift {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const Shift& shift) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Shift& shift) {
   return os << shift.mi;
 }
 
@@ -130,7 +130,7 @@ struct AddSub {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const AddSub& op) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AddSub& op) {
   return os << op.mi;
 }
 
@@ -250,7 +250,7 @@ struct FPCmp {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const FPCmp& cmp) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const FPCmp& cmp) {
   return os << cmp.mi;
 }
 
@@ -290,7 +290,7 @@ struct Conversion {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const Conversion& conv) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Conversion& conv) {
   return os << conv.mi;
 }
 
@@ -1640,7 +1640,7 @@ struct MulDPInst {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const MulDPInst& inst) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const MulDPInst& inst) {
   return os << inst.mul_constructor_name;
 }
 
@@ -2120,7 +2120,7 @@ struct MemoryAccess {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const MemoryAccess& memacc) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const MemoryAccess& memacc) {
   return os << memacc.type;
 }
 
@@ -2619,7 +2619,7 @@ struct IntegerCmp {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const IntegerCmp& cmp) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const IntegerCmp& cmp) {
   return os << cmp.mi;
 }
 

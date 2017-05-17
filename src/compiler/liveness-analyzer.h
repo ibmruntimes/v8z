@@ -62,7 +62,7 @@ class LivenessAnalyzer {
 
   Zone* zone() { return zone_; }
 
-  void Print(std::ostream& os);
+  void Print(v8::base::OStream& os);
 
   size_t local_count() { return local_count_; }
 
@@ -131,7 +131,7 @@ class LivenessAnalyzerBlock {
   }
 
   size_t id() { return id_; }
-  void Print(std::ostream& os);
+  void Print(v8::base::OStream& os);
 
   ZoneDeque<Entry> entries_;
   ZoneDeque<LivenessAnalyzerBlock*> predecessors_;

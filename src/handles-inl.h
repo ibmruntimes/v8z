@@ -35,7 +35,7 @@ HandleScope::HandleScope(Isolate* isolate) {
 
 
 template <typename T>
-inline std::ostream& operator<<(std::ostream& os, Handle<T> handle) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, Handle<T> handle) {
   return os << Brief(*handle);
 }
 

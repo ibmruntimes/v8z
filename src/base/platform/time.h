@@ -281,7 +281,8 @@ class Time final {
   int64_t us_;
 };
 
-std::ostream& operator<<(std::ostream&, const Time&);
+v8::base::OStream& operator<<(v8::base::OStream&, const Time&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const Time&);
 
 inline Time operator+(const TimeDelta& delta, const Time& time) {
   return time + delta;

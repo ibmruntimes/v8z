@@ -8,7 +8,7 @@
 namespace v8 {
 namespace internal {
 
-std::ostream& operator<<(std::ostream& os, MachineRepresentation rep) {
+v8::base::OStream& operator<<(v8::base::OStream& os, MachineRepresentation rep) {
   switch (rep) {
     case MachineRepresentation::kNone:
       return os << u8"kMachNone";
@@ -36,7 +36,7 @@ std::ostream& operator<<(std::ostream& os, MachineRepresentation rep) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, MachineSemantic type) {
+v8::base::OStream& operator<<(v8::base::OStream& os, MachineSemantic type) {
   switch (type) {
     case MachineSemantic::kNone:
       return os << u8"kMachNone";
@@ -60,7 +60,7 @@ std::ostream& operator<<(std::ostream& os, MachineSemantic type) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, MachineType type) {
+v8::base::OStream& operator<<(v8::base::OStream& os, MachineType type) {
   if (type == MachineType::None()) {
     return os;
   } else if (type.representation() == MachineRepresentation::kNone) {

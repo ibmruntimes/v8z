@@ -69,6 +69,7 @@ class SideEffectsTracker final BASE_EMBEDDED {
   SideEffects ComputeDependsOn(HInstruction* instr);
 
  private:
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, const TrackedEffects& f);
   friend std::ostream& operator<<(std::ostream& os, const TrackedEffects& f);
   bool ComputeGlobalVar(Unique<PropertyCell> cell, int* index);
   bool ComputeInobjectField(HObjectAccess access, int* index);
@@ -106,7 +107,8 @@ struct TrackedEffects {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const TrackedEffects& f);
+v8::base::OStream& operator<<(v8::base::OStream& os, const TrackedEffects& f);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const TrackedEffects&);
 
 
 // Perform common subexpression elimination and loop-invariant code motion.

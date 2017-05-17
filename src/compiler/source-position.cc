@@ -50,7 +50,7 @@ SourcePosition SourcePositionTable::GetSourcePosition(Node* node) const {
 }
 
 
-void SourcePositionTable::Print(std::ostream& os) const {
+void SourcePositionTable::Print(v8::base::OStream& os) const {
   os << "{";
   bool needs_comma = false;
   for (auto i : table_) {

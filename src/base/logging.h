@@ -44,6 +44,82 @@ extern "C" void V8_RuntimeError(const char* file, int line,
 namespace v8 {
 namespace base {
 
+struct _SetW {
+  int n;
+};
+
+class OStream : public std::ostream {
+  public:
+    explicit OStream(std::streambuf* sb) : std::ostream(sb) {}
+
+    static struct _SetW setw(int n) {
+      return {n};
+    }
+
+    OStream& operator<< (const struct _SetW val) {
+      std::ostream::width(val.n);
+      return *this;
+    }
+
+    OStream& operator<<(const std::string& val) {
+      std::ostream::operator<<(val.c_str());
+      return *this;
+    }
+
+#define OVERLOAD_OPERATOR_FOR(T) \
+    OStream& operator<< (T val) { \
+      std::ostream::operator<<(val); \
+      return *this; \
+    }
+
+    OVERLOAD_OPERATOR_FOR(bool)
+    OVERLOAD_OPERATOR_FOR(short)
+    OVERLOAD_OPERATOR_FOR(unsigned short)
+    OVERLOAD_OPERATOR_FOR(int)
+    OVERLOAD_OPERATOR_FOR(unsigned int)
+    OVERLOAD_OPERATOR_FOR(long)
+    OVERLOAD_OPERATOR_FOR(unsigned long)
+    OVERLOAD_OPERATOR_FOR(long long)
+    OVERLOAD_OPERATOR_FOR(unsigned long long)
+    OVERLOAD_OPERATOR_FOR(float)
+    OVERLOAD_OPERATOR_FOR(double)
+    OVERLOAD_OPERATOR_FOR(long double)
+    OVERLOAD_OPERATOR_FOR(void*)
+    OVERLOAD_OPERATOR_FOR(const char)
+    OVERLOAD_OPERATOR_FOR(const unsigned char)
+    OVERLOAD_OPERATOR_FOR(const signed char)
+    OVERLOAD_OPERATOR_FOR(const char *)
+    OVERLOAD_OPERATOR_FOR(const unsigned char *const)
+    typedef std::ostream& (*pfostream)(std::ostream&);
+    typedef std::ios_base& (*pfios_base)(std::ios_base&);
+    typedef std::ios& (*pfios)(std::ios&);
+    OVERLOAD_OPERATOR_FOR(pfostream)
+    OVERLOAD_OPERATOR_FOR(pfios_base)
+    OVERLOAD_OPERATOR_FOR(pfios)
+
+};
+
+class OStringStream : public OStream {
+  private:
+    std::stringbuf _buf;
+  public:
+    OStringStream() : OStream(&_buf) {}
+    OStringStream(const std::string& s) : OStream(&_buf), _buf(s) {}
+    std::string str() const {
+      return _buf.str();
+    }
+};
+
+#define DEFINE_INSERT_OPERATOR_FOR_OSTREAM(T) \
+  inline std::ostream& operator<<(std::ostream& os, T val) { \
+    v8::base::OStringStream oss; \
+    oss << val; \
+    os << oss.str(); \
+    return os; \
+  }
+
+typedef OStringStream StringStream;
+
 // CHECK dies with a fatal error if condition is not true.  It is *not*
 // controlled by DEBUG, so the check will be executed regardless of
 // compilation mode.
@@ -109,7 +185,7 @@ namespace base {
 template <typename Lhs, typename Rhs>
 std::string* MakeCheckOpString(Lhs const& lhs, Rhs const& rhs,
                                char const* msg) {
-  std::ostringstream ss;
+  v8::base::OStringStream ss;
   ss << msg << " (" << lhs << " vs. " << rhs << ")";
   return new std::string(ss.str());
 }

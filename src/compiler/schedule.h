@@ -169,8 +169,8 @@ class BasicBlock final : public ZoneObject {
   DISALLOW_COPY_AND_ASSIGN(BasicBlock);
 };
 
-std::ostream& operator<<(std::ostream&, const BasicBlock::Control&);
-std::ostream& operator<<(std::ostream&, const BasicBlock::Id&);
+v8::base::OStream& operator<<(v8::base::OStream&, const BasicBlock::Control&);
+v8::base::OStream& operator<<(v8::base::OStream&, const BasicBlock::Id&);
 
 
 // A schedule represents the result of assigning nodes to basic blocks
@@ -278,7 +278,7 @@ class Schedule final : public ZoneObject {
   DISALLOW_COPY_AND_ASSIGN(Schedule);
 };
 
-std::ostream& operator<<(std::ostream&, const Schedule&);
+v8::base::OStream& operator<<(v8::base::OStream&, const Schedule&);
 
 }  // namespace compiler
 }  // namespace internal

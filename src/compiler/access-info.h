@@ -25,7 +25,7 @@ namespace compiler {
 // Whether we are loading a property or storing to a property.
 enum class AccessMode { kLoad, kStore };
 
-std::ostream& operator<<(std::ostream&, AccessMode);
+v8::base::OStream& operator<<(v8::base::OStream&, AccessMode);
 
 
 // Mapping of transition source to transition target.

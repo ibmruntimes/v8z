@@ -33,7 +33,7 @@ class OFStreamBase : public std::streambuf {
 
 
 // An output stream writing to a file.
-class OFStream : public std::ostream {
+class OFStream : public v8::base::OStream {
  public:
   explicit OFStream(FILE* f);
   virtual ~OFStream();
@@ -70,18 +70,22 @@ struct AsEscapedUC16ForJSON {
 // Writes the given character to the output escaping everything outside of
 // printable/space ASCII range. Additionally escapes '\' making escaping
 // reversible.
-std::ostream& operator<<(std::ostream& os, const AsReversiblyEscapedUC16& c);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsReversiblyEscapedUC16& c);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const AsReversiblyEscapedUC16&);
 
 // Same as AsReversiblyEscapedUC16 with additional escaping of \n, \r, " and '.
-std::ostream& operator<<(std::ostream& os, const AsEscapedUC16ForJSON& c);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsEscapedUC16ForJSON& c);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const AsEscapedUC16ForJSON&);
 
 // Writes the given character to the output escaping everything outside
 // of printable ASCII range.
-std::ostream& operator<<(std::ostream& os, const AsUC16& c);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsUC16& c);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const AsUC16&);
 
 // Writes the given character to the output escaping everything outside
 // of printable ASCII range.
-std::ostream& operator<<(std::ostream& os, const AsUC32& c);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsUC32& c);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const AsUC32&);
 
 }  // namespace internal
 }  // namespace v8

@@ -275,14 +275,14 @@ TEST(SimdObjects) {
     // Check value printing.
     {
       value = factory->NewFloat32x4(lanes);
-      std::ostringstream os;
+      v8::base::OStringStream os;
       value->Float32x4Print(os);
       CHECK_EQ("1, 2, 3, 4", os.str());
     }
     {
       float special_lanes[4] = {0, -0.0, quiet_NaN, signaling_NaN};
       value = factory->NewFloat32x4(special_lanes);
-      std::ostringstream os;
+      v8::base::OStringStream os;
       value->Float32x4Print(os);
       // Value printing doesn't preserve signed zeroes.
       CHECK_EQ("0, 0, NaN, NaN", os.str());
@@ -298,7 +298,7 @@ TEST(SimdObjects) {
     CheckSimdValue<Int32x4, int32_t, 4>(*value, lanes, 3);
 
 #ifdef OBJECT_PRINT
-    std::ostringstream os;
+    v8::base::OStringStream os;
     value->Int32x4Print(os);
     CHECK_EQ("1, 2, 3, 4", os.str());
 #endif  // OBJECT_PRINT
@@ -312,7 +312,7 @@ TEST(SimdObjects) {
     CheckSimdValue<Uint32x4, uint32_t, 4>(*value, lanes, 3);
 
 #ifdef OBJECT_PRINT
-    std::ostringstream os;
+    v8::base::OStringStream os;
     value->Uint32x4Print(os);
     CHECK_EQ("1, 2, 3, 4", os.str());
 #endif  // OBJECT_PRINT
@@ -326,7 +326,7 @@ TEST(SimdObjects) {
     CheckSimdValue<Bool32x4, bool, 4>(*value, lanes, false);
 
 #ifdef OBJECT_PRINT
-    std::ostringstream os;
+    v8::base::OStringStream os;
     value->Bool32x4Print(os);
     CHECK_EQ("true, false, true, false", os.str());
 #endif  // OBJECT_PRINT
@@ -340,7 +340,7 @@ TEST(SimdObjects) {
     CheckSimdValue<Int16x8, int16_t, 8>(*value, lanes, 32767);
 
 #ifdef OBJECT_PRINT
-    std::ostringstream os;
+    v8::base::OStringStream os;
     value->Int16x8Print(os);
     CHECK_EQ("1, 2, 3, 4, 5, 6, 7, 8", os.str());
 #endif  // OBJECT_PRINT
@@ -354,7 +354,7 @@ TEST(SimdObjects) {
     CheckSimdValue<Uint16x8, uint16_t, 8>(*value, lanes, 32767);
 
 #ifdef OBJECT_PRINT
-    std::ostringstream os;
+    v8::base::OStringStream os;
     value->Uint16x8Print(os);
     CHECK_EQ("1, 2, 3, 4, 5, 6, 7, 8", os.str());
 #endif  // OBJECT_PRINT
@@ -368,7 +368,7 @@ TEST(SimdObjects) {
     CheckSimdValue<Bool16x8, bool, 8>(*value, lanes, false);
 
 #ifdef OBJECT_PRINT
-    std::ostringstream os;
+    v8::base::OStringStream os;
     value->Bool16x8Print(os);
     CHECK_EQ("true, false, true, false, true, false, true, false", os.str());
 #endif  // OBJECT_PRINT
@@ -382,7 +382,7 @@ TEST(SimdObjects) {
     CheckSimdValue<Int8x16, int8_t, 16>(*value, lanes, 127);
 
 #ifdef OBJECT_PRINT
-    std::ostringstream os;
+    v8::base::OStringStream os;
     value->Int8x16Print(os);
     CHECK_EQ("1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16", os.str());
 #endif  // OBJECT_PRINT
@@ -396,7 +396,7 @@ TEST(SimdObjects) {
     CheckSimdValue<Uint8x16, uint8_t, 16>(*value, lanes, 127);
 
 #ifdef OBJECT_PRINT
-    std::ostringstream os;
+    v8::base::OStringStream os;
     value->Uint8x16Print(os);
     CHECK_EQ("1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16", os.str());
 #endif  // OBJECT_PRINT
@@ -411,7 +411,7 @@ TEST(SimdObjects) {
     CheckSimdValue<Bool8x16, bool, 16>(*value, lanes, false);
 
 #ifdef OBJECT_PRINT
-    std::ostringstream os;
+    v8::base::OStringStream os;
     value->Bool8x16Print(os);
     CHECK_EQ(
         "true, false, true, false, true, false, true, false, true, false, "

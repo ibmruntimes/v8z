@@ -36,7 +36,7 @@ v8::Local<v8::String> BytecodeExpectationsPrinter::V8StringFromUTF8(
 
 std::string BytecodeExpectationsPrinter::WrapCodeInFunction(
     const char* function_name, const std::string& function_body) const {
-  std::ostringstream program_stream;
+  v8::base::OStringStream program_stream;
   program_stream << "function " << function_name << "() {" << function_body
                  << "}\n"
                  << function_name << "();";
@@ -79,7 +79,7 @@ BytecodeExpectationsPrinter::GetBytecodeArrayForScript(
 }
 
 void BytecodeExpectationsPrinter::PrintEscapedString(
-    std::ostream& stream, const std::string& string) const {
+    v8::base::OStream& stream, const std::string& string) const {
   for (char c : string) {
     switch (c) {
       case '"':
@@ -102,7 +102,7 @@ i::Runtime::FunctionId IndexToFunctionId(uint32_t index) {
 }  // namespace
 
 void BytecodeExpectationsPrinter::PrintBytecodeOperand(
-    std::ostream& stream, const BytecodeArrayIterator& bytecode_iter,
+    v8::base::OStream& stream, const BytecodeArrayIterator& bytecode_iter,
     const Bytecode& bytecode, int op_index, int parameter_count) const {
   OperandType op_type = Bytecodes::GetOperandType(bytecode, op_index);
   OperandSize op_size = Bytecodes::GetOperandSize(
@@ -175,7 +175,7 @@ void BytecodeExpectationsPrinter::PrintBytecodeOperand(
 }
 
 void BytecodeExpectationsPrinter::PrintBytecode(
-    std::ostream& stream, const BytecodeArrayIterator& bytecode_iter,
+    v8::base::OStream& stream, const BytecodeArrayIterator& bytecode_iter,
     int parameter_count) const {
   Bytecode bytecode = bytecode_iter.current_bytecode();
   OperandScale operand_scale = bytecode_iter.current_operand_scale();
@@ -192,7 +192,7 @@ void BytecodeExpectationsPrinter::PrintBytecode(
   }
 }
 
-void BytecodeExpectationsPrinter::PrintV8String(std::ostream& stream,
+void BytecodeExpectationsPrinter::PrintV8String(v8::base::OStream& stream,
                                                 i::String* string) const {
   stream << '"';
   for (int i = 0, length = string->length(); i < length; ++i) {
@@ -202,7 +202,7 @@ void BytecodeExpectationsPrinter::PrintV8String(std::ostream& stream,
 }
 
 void BytecodeExpectationsPrinter::PrintConstant(
-    std::ostream& stream, i::Handle<i::Object> constant) const {
+    v8::base::OStream& stream, i::Handle<i::Object> constant) const {
   switch (const_pool_type_) {
     case ConstantPoolType::kString:
       CHECK(constant->IsString());
@@ -233,7 +233,7 @@ void BytecodeExpectationsPrinter::PrintConstant(
 }
 
 void BytecodeExpectationsPrinter::PrintFrameSize(
-    std::ostream& stream, i::Handle<i::BytecodeArray> bytecode_array) const {
+    v8::base::OStream& stream, i::Handle<i::BytecodeArray> bytecode_array) const {
   const int kPointerSize = sizeof(void*);
   int frame_size = bytecode_array->frame_size();
 
@@ -243,7 +243,7 @@ void BytecodeExpectationsPrinter::PrintFrameSize(
 }
 
 void BytecodeExpectationsPrinter::PrintBytecodeSequence(
-    std::ostream& stream, i::Handle<i::BytecodeArray> bytecode_array) const {
+    v8::base::OStream& stream, i::Handle<i::BytecodeArray> bytecode_array) const {
   stream << "bytecode array length: " << bytecode_array->length()
          << "\nbytecodes: [\n";
   BytecodeArrayIterator bytecode_iter(bytecode_array);
@@ -256,7 +256,7 @@ void BytecodeExpectationsPrinter::PrintBytecodeSequence(
 }
 
 void BytecodeExpectationsPrinter::PrintConstantPool(
-    std::ostream& stream, i::FixedArray* constant_pool) const {
+    v8::base::OStream& stream, i::FixedArray* constant_pool) const {
   stream << "constant pool: [\n";
   int num_constants = constant_pool->length();
   if (num_constants > 0) {
@@ -270,7 +270,7 @@ void BytecodeExpectationsPrinter::PrintConstantPool(
 }
 
 void BytecodeExpectationsPrinter::PrintCodeSnippet(
-    std::ostream& stream, const std::string& body) const {
+    v8::base::OStream& stream, const std::string& body) const {
   stream << "snippet: \"\n";
   std::stringstream body_stream(body);
   std::string body_line;
@@ -283,7 +283,7 @@ void BytecodeExpectationsPrinter::PrintCodeSnippet(
 }
 
 void BytecodeExpectationsPrinter::PrintHandlers(
-    std::ostream& stream, i::Handle<i::BytecodeArray> bytecode_array) const {
+    v8::base::OStream& stream, i::Handle<i::BytecodeArray> bytecode_array) const {
   stream << "handlers: [\n";
   HandlerTable* table = HandlerTable::cast(bytecode_array->handler_table());
   for (int i = 0, num_entries = table->NumberOfRangeEntries(); i < num_entries;
@@ -295,7 +295,7 @@ void BytecodeExpectationsPrinter::PrintHandlers(
 }
 
 void BytecodeExpectationsPrinter::PrintBytecodeArray(
-    std::ostream& stream, i::Handle<i::BytecodeArray> bytecode_array) const {
+    v8::base::OStream& stream, i::Handle<i::BytecodeArray> bytecode_array) const {
   PrintFrameSize(stream, bytecode_array);
   PrintBytecodeSequence(stream, bytecode_array);
   PrintConstantPool(stream, bytecode_array->constant_pool());
@@ -303,7 +303,7 @@ void BytecodeExpectationsPrinter::PrintBytecodeArray(
 }
 
 void BytecodeExpectationsPrinter::PrintExpectation(
-    std::ostream& stream, const std::string& snippet) const {
+    v8::base::OStream& stream, const std::string& snippet) const {
   std::string source_code =
       wrap_ ? WrapCodeInFunction(test_function_name_.c_str(), snippet)
             : snippet;

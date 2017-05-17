@@ -60,7 +60,7 @@ const char* V8NameConverter::NameInCode(byte* addr) const {
 }
 
 
-static void DumpBuffer(std::ostream* os, StringBuilder* out) {
+static void DumpBuffer(v8::base::OStream* os, StringBuilder* out) {
   (*os) << out->Finalize() << std::endl;
   out->Reset();
 }
@@ -69,7 +69,7 @@ static void DumpBuffer(std::ostream* os, StringBuilder* out) {
 static const int kOutBufferSize = 2048 + String::kMaxShortPrintLength;
 static const int kRelocInfoPosition = 57;
 
-static int DecodeIt(Isolate* isolate, std::ostream* os,
+static int DecodeIt(Isolate* isolate, v8::base::OStream* os,
                     const V8NameConverter& converter, byte* begin, byte* end) {
   SealHandleScope shs(isolate);
   DisallowHeapAllocation no_alloc;
@@ -278,7 +278,7 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
 }
 
 
-int Disassembler::Decode(Isolate* isolate, std::ostream* os, byte* begin,
+int Disassembler::Decode(Isolate* isolate, v8::base::OStream* os, byte* begin,
                          byte* end, Code* code) {
   V8NameConverter v8NameConverter(code);
   return DecodeIt(isolate, os, v8NameConverter, begin, end);
@@ -286,7 +286,7 @@ int Disassembler::Decode(Isolate* isolate, std::ostream* os, byte* begin,
 
 #else  // ENABLE_DISASSEMBLER
 
-int Disassembler::Decode(Isolate* isolate, std::ostream* os, byte* begin,
+int Disassembler::Decode(Isolate* isolate, v8::base::OStream* os, byte* begin,
                          byte* end, Code* code) {
   return 0;
 }

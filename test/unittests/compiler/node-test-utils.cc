@@ -51,8 +51,14 @@ class NodeMatcher : public MatcherInterface<Node*> {
  public:
   explicit NodeMatcher(IrOpcode::Value opcode) : opcode_(opcode) {}
 
-  void DescribeTo(std::ostream* os) const override {
+  void DescribeTo(v8::base::OStream* os) const {
     *os << "is a " << IrOpcode::Mnemonic(opcode_) << " node";
+  }
+
+  void DescribeTo(std::ostream* os) const override {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
   }
 
   bool MatchAndExplain(Node* node,
@@ -82,13 +88,19 @@ class IsBranchMatcher final : public NodeMatcher {
         value_matcher_(value_matcher),
         control_matcher_(control_matcher) {}
 
-  void DescribeTo(std::ostream* os) const final {
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose value (";
     value_matcher_.DescribeTo(os);
     *os << ") and control (";
     control_matcher_.DescribeTo(os);
     *os << ")";
+  }
+
+  void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
   }
 
   bool MatchAndExplain(Node* node, MatchResultListener* listener) const final {
@@ -113,13 +125,19 @@ class IsSwitchMatcher final : public NodeMatcher {
         value_matcher_(value_matcher),
         control_matcher_(control_matcher) {}
 
-  void DescribeTo(std::ostream* os) const final {
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose value (";
     value_matcher_.DescribeTo(os);
     *os << ") and control (";
     control_matcher_.DescribeTo(os);
     *os << ")";
+  }
+
+  void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
   }
 
   bool MatchAndExplain(Node* node, MatchResultListener* listener) const final {
@@ -144,13 +162,19 @@ class IsIfValueMatcher final : public NodeMatcher {
         value_matcher_(value_matcher),
         control_matcher_(control_matcher) {}
 
-  void DescribeTo(std::ostream* os) const final {
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose value (";
     value_matcher_.DescribeTo(os);
     *os << ") and control (";
     control_matcher_.DescribeTo(os);
     *os << ")";
+  }
+
+  void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
   }
 
   bool MatchAndExplain(Node* node, MatchResultListener* listener) const final {
@@ -173,11 +197,17 @@ class IsControl1Matcher final : public NodeMatcher {
                     const Matcher<Node*>& control_matcher)
       : NodeMatcher(opcode), control_matcher_(control_matcher) {}
 
-  void DescribeTo(std::ostream* os) const final {
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose control (";
     control_matcher_.DescribeTo(os);
     *os << ")";
+  }
+
+  void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
   }
 
   bool MatchAndExplain(Node* node, MatchResultListener* listener) const final {
@@ -200,13 +230,19 @@ class IsControl2Matcher final : public NodeMatcher {
         control0_matcher_(control0_matcher),
         control1_matcher_(control1_matcher) {}
 
-  void DescribeTo(std::ostream* os) const final {
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose control0 (";
     control0_matcher_.DescribeTo(os);
     *os << ") and control1 (";
     control1_matcher_.DescribeTo(os);
     *os << ")";
+  }
+
+  void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
   }
 
   bool MatchAndExplain(Node* node, MatchResultListener* listener) const final {
@@ -234,7 +270,7 @@ class IsControl3Matcher final : public NodeMatcher {
         control1_matcher_(control1_matcher),
         control2_matcher_(control2_matcher) {}
 
-  void DescribeTo(std::ostream* os) const final {
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose control0 (";
     control0_matcher_.DescribeTo(os);
@@ -243,6 +279,12 @@ class IsControl3Matcher final : public NodeMatcher {
     *os << ") and control2 (";
     control2_matcher_.DescribeTo(os);
     *os << ")";
+  }
+
+  void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
   }
 
   bool MatchAndExplain(Node* node, MatchResultListener* listener) const final {
@@ -267,11 +309,17 @@ class IsBeginRegionMatcher final : public NodeMatcher {
   explicit IsBeginRegionMatcher(const Matcher<Node*>& effect_matcher)
       : NodeMatcher(IrOpcode::kBeginRegion), effect_matcher_(effect_matcher) {}
 
-  void DescribeTo(std::ostream* os) const final {
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose effect (";
     effect_matcher_.DescribeTo(os);
     *os << ")";
+  }
+
+  void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
   }
 
   bool MatchAndExplain(Node* node, MatchResultListener* listener) const final {
@@ -293,13 +341,19 @@ class IsFinishRegionMatcher final : public NodeMatcher {
         value_matcher_(value_matcher),
         effect_matcher_(effect_matcher) {}
 
-  void DescribeTo(std::ostream* os) const final {
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose value (";
     value_matcher_.DescribeTo(os);
     *os << ") and effect (";
     effect_matcher_.DescribeTo(os);
     *os << ")";
+  }
+
+  void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
   }
 
   bool MatchAndExplain(Node* node, MatchResultListener* listener) const final {
@@ -339,7 +393,7 @@ class IsReturnMatcher final : public NodeMatcher {
         control_matcher_(control_matcher),
         has_second_return_value_(true) {}
 
-  void DescribeTo(std::ostream* os) const final {
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose value (";
     value_matcher_.DescribeTo(os);
@@ -352,6 +406,12 @@ class IsReturnMatcher final : public NodeMatcher {
     *os << ") and control (";
     control_matcher_.DescribeTo(os);
     *os << ")";
+  }
+
+  void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
   }
 
   bool MatchAndExplain(Node* node, MatchResultListener* listener) const final {
@@ -385,6 +445,12 @@ class IsTerminateMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose effect (";
     effect_matcher_.DescribeTo(os);
@@ -414,6 +480,12 @@ class IsConstantMatcher final : public NodeMatcher {
       : NodeMatcher(opcode), value_matcher_(value_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose value (";
     value_matcher_.DescribeTo(os);
@@ -444,6 +516,12 @@ class IsSelectMatcher final : public NodeMatcher {
         value2_matcher_(value2_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose representation (";
     type_matcher_.DescribeTo(os);
@@ -490,6 +568,12 @@ class IsPhiMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose representation (";
     type_matcher_.DescribeTo(os);
@@ -537,6 +621,12 @@ class IsPhi2Matcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose representation (";
     type_matcher_.DescribeTo(os);
@@ -585,6 +675,12 @@ class IsEffectPhiMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << "), effect0 (";
     effect0_matcher_.DescribeTo(os);
@@ -621,6 +717,12 @@ class IsEffectSetMatcher final : public NodeMatcher {
         effect1_matcher_(effect1_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << "), effect0 (";
     effect0_matcher_.DescribeTo(os);
@@ -664,6 +766,12 @@ class IsProjectionMatcher final : public NodeMatcher {
         base_matcher_(base_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose index (";
     index_matcher_.DescribeTo(os);
@@ -699,6 +807,12 @@ class IsCallMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     for (size_t i = 0; i < value_matchers_.size(); ++i) {
       if (i == 0) {
@@ -722,7 +836,7 @@ class IsCallMatcher final : public NodeMatcher {
       return false;
     }
     for (size_t i = 0; i < value_matchers_.size(); ++i) {
-      std::ostringstream ost;
+      v8::base::OStringStream ost;
       ost << "value" << i;
       if (!PrintMatchAndExplain(
               NodeProperties::GetValueInput(node, static_cast<int>(i)),
@@ -765,6 +879,12 @@ class IsTailCallMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     for (size_t i = 0; i < value_matchers_.size(); ++i) {
       if (i == 0) {
@@ -788,7 +908,7 @@ class IsTailCallMatcher final : public NodeMatcher {
       return false;
     }
     for (size_t i = 0; i < value_matchers_.size(); ++i) {
-      std::ostringstream ost;
+      v8::base::OStringStream ost;
       ost << "value" << i;
       if (!PrintMatchAndExplain(
               NodeProperties::GetValueInput(node, static_cast<int>(i)),
@@ -884,6 +1004,12 @@ class IsLoadFieldMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose access (";
     access_matcher_.DescribeTo(os);
@@ -931,6 +1057,12 @@ class IsStoreFieldMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose access (";
     access_matcher_.DescribeTo(os);
@@ -985,6 +1117,12 @@ class IsLoadBufferMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose access (";
     access_matcher_.DescribeTo(os);
@@ -1046,6 +1184,12 @@ class IsStoreBufferMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose access (";
     access_matcher_.DescribeTo(os);
@@ -1108,6 +1252,12 @@ class IsLoadElementMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose access (";
     access_matcher_.DescribeTo(os);
@@ -1162,6 +1312,12 @@ class IsStoreElementMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose access (";
     access_matcher_.DescribeTo(os);
@@ -1219,6 +1375,12 @@ class IsLoadMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose rep (";
     rep_matcher_.DescribeTo(os);
@@ -1281,6 +1443,12 @@ class IsStoreMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose rep (";
     rep_matcher_.DescribeTo(os);
@@ -1336,6 +1504,12 @@ class IsStackSlotMatcher final : public NodeMatcher {
       : NodeMatcher(IrOpcode::kStackSlot), rep_matcher_(rep_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose rep (";
     rep_matcher_.DescribeTo(os);
@@ -1391,6 +1565,12 @@ class IsToNumberMatcher final : public NodeMatcher {
         control_matcher_(control_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose base (";
     base_matcher_.DescribeTo(os);
@@ -1432,6 +1612,12 @@ class IsLoadContextMatcher final : public NodeMatcher {
         context_matcher_(context_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose access (";
     access_matcher_.DescribeTo(os);
@@ -1466,6 +1652,12 @@ class IsQuadopMatcher final : public NodeMatcher {
         d_matcher_(d_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose a (";
     a_matcher_.DescribeTo(os);
@@ -1508,6 +1700,12 @@ class IsTernopMatcher final : public NodeMatcher {
         rhs_matcher_(rhs_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose lhs (";
     lhs_matcher_.DescribeTo(os);
@@ -1543,6 +1741,12 @@ class IsBinopMatcher final : public NodeMatcher {
         rhs_matcher_(rhs_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose lhs (";
     lhs_matcher_.DescribeTo(os);
@@ -1571,6 +1775,12 @@ class IsUnopMatcher final : public NodeMatcher {
       : NodeMatcher(opcode), input_matcher_(input_matcher) {}
 
   void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     NodeMatcher::DescribeTo(os);
     *os << " whose input (";
     input_matcher_.DescribeTo(os);
@@ -1593,7 +1803,13 @@ class IsParameterMatcher final : public NodeMatcher {
   explicit IsParameterMatcher(const Matcher<int>& index_matcher)
       : NodeMatcher(IrOpcode::kParameter), index_matcher_(index_matcher) {}
 
-  void DescribeTo(std::ostream* os) const override {
+  void DescribeTo(std::ostream* os) const final {
+    v8::base::OStringStream oss;
+    DescribeTo(&oss);
+    *os << oss.str().c_str();
+  }
+
+  void DescribeTo(v8::base::OStream* os) const {
     *os << "is a Parameter node with index(";
     index_matcher_.DescribeTo(os);
     *os << ")";

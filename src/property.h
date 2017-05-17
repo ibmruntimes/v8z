@@ -60,7 +60,8 @@ class Descriptor BASE_EMBEDDED {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const Descriptor& d);
+v8::base::OStream& operator<<(v8::base::OStream& os, const Descriptor& d);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const Descriptor&);
 
 
 class DataDescriptor final : public Descriptor {

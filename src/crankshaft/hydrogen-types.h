@@ -69,6 +69,7 @@ class HType final {
                              Zone* temp_zone) WARN_UNUSED_RESULT;
   static HType FromValue(Handle<Object> value) WARN_UNUSED_RESULT;
 
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, const HType& t);
   friend std::ostream& operator<<(std::ostream& os, const HType& t);
 
  private:
@@ -88,7 +89,8 @@ class HType final {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const HType& t);
+v8::base::OStream& operator<<(v8::base::OStream& os, const HType& t);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const HType&);
 }  // namespace internal
 }  // namespace v8
 

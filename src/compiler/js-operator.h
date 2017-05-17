@@ -71,7 +71,8 @@ bool operator!=(CallConstructParameters const&, CallConstructParameters const&);
 
 size_t hash_value(CallConstructParameters const&);
 
-std::ostream& operator<<(std::ostream&, CallConstructParameters const&);
+v8::base::OStream& operator<<(v8::base::OStream&, CallConstructParameters const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(CallConstructParameters const&)
 
 CallConstructParameters const& CallConstructParametersOf(Operator const*);
 
@@ -120,7 +121,8 @@ class CallFunctionParameters final {
 
 size_t hash_value(CallFunctionParameters const&);
 
-std::ostream& operator<<(std::ostream&, CallFunctionParameters const&);
+v8::base::OStream& operator<<(v8::base::OStream&, CallFunctionParameters const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(CallFunctionParameters const&)
 
 const CallFunctionParameters& CallFunctionParametersOf(const Operator* op);
 
@@ -145,7 +147,8 @@ bool operator!=(CallRuntimeParameters const&, CallRuntimeParameters const&);
 
 size_t hash_value(CallRuntimeParameters const&);
 
-std::ostream& operator<<(std::ostream&, CallRuntimeParameters const&);
+v8::base::OStream& operator<<(v8::base::OStream&, CallRuntimeParameters const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(CallRuntimeParameters const&)
 
 const CallRuntimeParameters& CallRuntimeParametersOf(const Operator* op);
 
@@ -174,7 +177,8 @@ bool operator!=(ContextAccess const&, ContextAccess const&);
 
 size_t hash_value(ContextAccess const&);
 
-std::ostream& operator<<(std::ostream&, ContextAccess const&);
+v8::base::OStream& operator<<(v8::base::OStream&, ContextAccess const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(ContextAccess const&)
 
 ContextAccess const& ContextAccessOf(Operator const*);
 
@@ -202,7 +206,8 @@ bool operator!=(NamedAccess const&, NamedAccess const&);
 
 size_t hash_value(NamedAccess const&);
 
-std::ostream& operator<<(std::ostream&, NamedAccess const&);
+v8::base::OStream& operator<<(v8::base::OStream&, NamedAccess const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(NamedAccess const&)
 
 const NamedAccess& NamedAccessOf(const Operator* op);
 
@@ -231,7 +236,8 @@ bool operator!=(LoadGlobalParameters const&, LoadGlobalParameters const&);
 
 size_t hash_value(LoadGlobalParameters const&);
 
-std::ostream& operator<<(std::ostream&, LoadGlobalParameters const&);
+v8::base::OStream& operator<<(v8::base::OStream&, LoadGlobalParameters const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(LoadGlobalParameters const&)
 
 const LoadGlobalParameters& LoadGlobalParametersOf(const Operator* op);
 
@@ -260,7 +266,8 @@ bool operator!=(StoreGlobalParameters const&, StoreGlobalParameters const&);
 
 size_t hash_value(StoreGlobalParameters const&);
 
-std::ostream& operator<<(std::ostream&, StoreGlobalParameters const&);
+v8::base::OStream& operator<<(v8::base::OStream&, StoreGlobalParameters const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(StoreGlobalParameters const&)
 
 const StoreGlobalParameters& StoreGlobalParametersOf(const Operator* op);
 
@@ -285,7 +292,8 @@ bool operator!=(PropertyAccess const&, PropertyAccess const&);
 
 size_t hash_value(PropertyAccess const&);
 
-std::ostream& operator<<(std::ostream&, PropertyAccess const&);
+v8::base::OStream& operator<<(v8::base::OStream&, PropertyAccess const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(PropertyAccess const&)
 
 PropertyAccess const& PropertyAccessOf(const Operator* op);
 
@@ -314,7 +322,8 @@ bool operator!=(CreateArrayParameters const&, CreateArrayParameters const&);
 
 size_t hash_value(CreateArrayParameters const&);
 
-std::ostream& operator<<(std::ostream&, CreateArrayParameters const&);
+v8::base::OStream& operator<<(v8::base::OStream&, CreateArrayParameters const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(CreateArrayParameters const&)
 
 const CreateArrayParameters& CreateArrayParametersOf(const Operator* op);
 
@@ -340,7 +349,8 @@ bool operator!=(CreateClosureParameters const&, CreateClosureParameters const&);
 
 size_t hash_value(CreateClosureParameters const&);
 
-std::ostream& operator<<(std::ostream&, CreateClosureParameters const&);
+v8::base::OStream& operator<<(v8::base::OStream&, CreateClosureParameters const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(CreateClosureParameters const&)
 
 const CreateClosureParameters& CreateClosureParametersOf(const Operator* op);
 
@@ -371,7 +381,8 @@ bool operator!=(CreateLiteralParameters const&, CreateLiteralParameters const&);
 
 size_t hash_value(CreateLiteralParameters const&);
 
-std::ostream& operator<<(std::ostream&, CreateLiteralParameters const&);
+v8::base::OStream& operator<<(v8::base::OStream&, CreateLiteralParameters const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(CreateLiteralParameters const&)
 
 const CreateLiteralParameters& CreateLiteralParametersOf(const Operator* op);
 

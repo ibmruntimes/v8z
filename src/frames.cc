@@ -1321,8 +1321,8 @@ namespace {
 void PrintFunctionSource(StringStream* accumulator, SharedFunctionInfo* shared,
                          Code* code) {
   if (FLAG_max_stack_trace_source_length != 0 && code != NULL) {
-    std::ostringstream os;
-    os <<"--------- s o u r c e   c o d e ---------\n"
+    v8::base::OStringStream os;
+    os << "--------- s o u r c e   c o d e ---------\n"
        << SourceCodeOf(shared, FLAG_max_stack_trace_source_length)
        <<"\n-----------------------------------------\n";
     accumulator->Add(os.str().c_str());

@@ -466,7 +466,7 @@ RUNTIME_FUNCTION(Runtime_GetOrdinaryHasInstance) {
 RUNTIME_FUNCTION(Runtime_GetAndResetRuntimeCallStats) {
   HandleScope scope(isolate);
   DCHECK_EQ(0, args.length());
-  std::stringstream stats_stream;
+  v8::base::StringStream stats_stream;
   isolate->counters()->runtime_call_stats()->Print(stats_stream);
   Handle<String> result =
       isolate->factory()->NewStringFromAsciiChecked(stats_stream.str().c_str());

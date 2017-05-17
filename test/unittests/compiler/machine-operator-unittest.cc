@@ -180,9 +180,10 @@ struct PureOperator {
 };
 
 
-std::ostream& operator<<(std::ostream& os, PureOperator const& pop) {
+v8::base::OStream& operator<<(v8::base::OStream& os, PureOperator const& pop) {
   return os << pop.constructor_name;
 }
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(PureOperator const&)
 
 const PureOperator kPureOperators[] = {
 #define PURE(Name, value_input_count, control_input_count, value_output_count) \
@@ -309,9 +310,10 @@ struct OptionalOperatorEntry {
 };
 
 
-std::ostream& operator<<(std::ostream& os, OptionalOperatorEntry const& pop) {
+v8::base::OStream& operator<<(v8::base::OStream& os, OptionalOperatorEntry const& pop) {
   return os << pop.constructor_name;
 }
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(OptionalOperatorEntry const&)
 
 const OptionalOperatorEntry kOptionalOperators[] = {
 #define OPTIONAL_ENTRY(Name, value_input_count, control_input_count,       \

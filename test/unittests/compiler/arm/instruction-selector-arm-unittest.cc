@@ -25,7 +25,7 @@ struct DPI {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const DPI& dpi) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const DPI& dpi) {
   return os << dpi.constructor_name;
 }
 
@@ -47,7 +47,7 @@ struct FAI {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const FAI& fai) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const FAI& fai) {
   return os << fai.constructor_name;
 }
 
@@ -79,7 +79,7 @@ struct ODPI {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const ODPI& odpi) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const ODPI& odpi) {
   return os << odpi.constructor_name;
 }
 
@@ -101,7 +101,7 @@ struct Shift {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const Shift& shift) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Shift& shift) {
   return os << shift.constructor_name;
 }
 
@@ -1267,7 +1267,7 @@ struct MemoryAccess {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const MemoryAccess& memacc) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const MemoryAccess& memacc) {
   return os << memacc.type;
 }
 
@@ -1445,7 +1445,7 @@ struct Comparison {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const Comparison& cmp) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Comparison& cmp) {
   return os << cmp.constructor_name;
 }
 

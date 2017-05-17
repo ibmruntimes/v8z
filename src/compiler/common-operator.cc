@@ -16,7 +16,7 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-std::ostream& operator<<(std::ostream& os, BranchHint hint) {
+v8::base::OStream& operator<<(v8::base::OStream& os, BranchHint hint) {
   switch (hint) {
     case BranchHint::kNone:
       return os << "None";
@@ -39,7 +39,7 @@ BranchHint BranchHintOf(const Operator* const op) {
 size_t hash_value(DeoptimizeKind kind) { return static_cast<size_t>(kind); }
 
 
-std::ostream& operator<<(std::ostream& os, DeoptimizeKind kind) {
+v8::base::OStream& operator<<(v8::base::OStream& os, DeoptimizeKind kind) {
   switch (kind) {
     case DeoptimizeKind::kEager:
       return os << "Eager";
@@ -60,7 +60,7 @@ DeoptimizeKind DeoptimizeKindOf(const Operator* const op) {
 size_t hash_value(IfExceptionHint hint) { return static_cast<size_t>(hint); }
 
 
-std::ostream& operator<<(std::ostream& os, IfExceptionHint hint) {
+v8::base::OStream& operator<<(v8::base::OStream& os, IfExceptionHint hint) {
   switch (hint) {
     case IfExceptionHint::kLocallyCaught:
       return os << "Caught";
@@ -88,7 +88,7 @@ size_t hash_value(SelectParameters const& p) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, SelectParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, SelectParameters const& p) {
   return os << p.representation() << "|" << p.hint();
 }
 
@@ -136,7 +136,7 @@ bool operator!=(ParameterInfo const& lhs, ParameterInfo const& rhs) {
 size_t hash_value(ParameterInfo const& p) { return p.index(); }
 
 
-std::ostream& operator<<(std::ostream& os, ParameterInfo const& i) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ParameterInfo const& i) {
   if (i.debug_name()) os << i.debug_name() << '#';
   os << i.index();
   return os;
@@ -795,7 +795,7 @@ const Operator* CommonOperatorBuilder::Call(const CallDescriptor* descriptor) {
               Operator::ZeroIfPure(descriptor->properties()),
               Operator::ZeroIfNoThrow(descriptor->properties()), descriptor) {}
 
-    void PrintParameter(std::ostream& os) const override {
+    void PrintParameter(v8::base::OStream& os) const override {
       os << "[" << *parameter() << "]";
     }
   };
@@ -813,7 +813,7 @@ const Operator* CommonOperatorBuilder::TailCall(
               descriptor->InputCount() + descriptor->FrameStateCount(), 1, 1, 0,
               0, 1, descriptor) {}
 
-    void PrintParameter(std::ostream& os) const override {
+    void PrintParameter(v8::base::OStream& os) const override {
       os << "[" << *parameter() << "]";
     }
   };

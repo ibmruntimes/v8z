@@ -693,7 +693,7 @@ class HValue : public ZoneObject {
   virtual void FinalizeUniqueness() { }
 
   // Printing support.
-  virtual std::ostream& PrintTo(std::ostream& os) const = 0;  // NOLINT
+  virtual v8::base::OStream& PrintTo(v8::base::OStream& os) const = 0;  // NOLINT
 
   const char* Mnemonic() const;
 
@@ -802,6 +802,7 @@ class HValue : public ZoneObject {
     result.Remove(kOsrEntries);
     return result;
   }
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, const ChangesOf& v);
   friend std::ostream& operator<<(std::ostream& os, const ChangesOf& v);
 
   // A flag mask of all side effects that can make observable changes in
@@ -863,10 +864,14 @@ struct ChangesOf {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const HValue& v);
-std::ostream& operator<<(std::ostream& os, const NameOf& v);
-std::ostream& operator<<(std::ostream& os, const TypeOf& v);
-std::ostream& operator<<(std::ostream& os, const ChangesOf& v);
+v8::base::OStream& operator<<(v8::base::OStream& os, const HValue& v);
+v8::base::OStream& operator<<(v8::base::OStream& os, const NameOf& v);
+v8::base::OStream& operator<<(v8::base::OStream& os, const TypeOf& v);
+v8::base::OStream& operator<<(v8::base::OStream& os, const ChangesOf& v);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const HValue&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const NameOf&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const TypeOf&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const ChangesOf&);
 
 
 #define DECLARE_INSTRUCTION_FACTORY_P0(I)                        \
@@ -1051,8 +1056,8 @@ class HInstruction : public HValue {
   HInstruction* next() const { return next_; }
   HInstruction* previous() const { return previous_; }
 
-  std::ostream& PrintTo(std::ostream& os) const override;          // NOLINT
-  virtual std::ostream& PrintDataTo(std::ostream& os) const;       // NOLINT
+  v8::base::OStream& PrintTo(v8::base::OStream& os) const override;          // NOLINT
+  virtual v8::base::OStream& PrintDataTo(v8::base::OStream& os) const;       // NOLINT
 
   bool IsLinked() const { return block() != NULL; }
   void Unlink();
@@ -1158,7 +1163,7 @@ class HControlInstruction : public HInstruction {
   virtual int SuccessorCount() const = 0;
   virtual void SetSuccessorAt(int i, HBasicBlock* block) = 0;
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   virtual bool KnownSuccessorBlock(HBasicBlock** block) {
     *block = NULL;
@@ -1248,7 +1253,7 @@ class HDummyUse final : public HTemplateInstruction<1> {
     return Representation::None();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(DummyUse);
 };
@@ -1294,7 +1299,7 @@ class HGoto final : public HTemplateControlInstruction<1, 0> {
     return Representation::None();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(Goto)
 };
@@ -1346,7 +1351,7 @@ class HUnaryControlInstruction : public HTemplateControlInstruction<2, 1> {
     SetSuccessorAt(1, false_target);
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HValue* value() const { return OperandAt(0); }
 };
@@ -1366,7 +1371,7 @@ class HBranch final : public HUnaryControlInstruction {
 
   bool KnownSuccessorBlock(HBasicBlock** block) override;
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   ToBooleanICStub::Types expected_input_types() const {
     return expected_input_types_;
@@ -1402,7 +1407,7 @@ class HCompareMap final : public HUnaryControlInstruction {
     return false;
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   static const int kNoKnownSuccessorIndex = -1;
   int known_successor_index() const {
@@ -1487,7 +1492,7 @@ class HReturn final : public HTemplateControlInstruction<0, 3> {
     return Representation::Tagged();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HValue* value() const { return OperandAt(0); }
   HValue* context() const { return OperandAt(1); }
@@ -1530,7 +1535,7 @@ class HUnaryOperation : public HTemplateInstruction<1> {
   }
 
   HValue* value() const { return OperandAt(0); }
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 };
 
 
@@ -1566,7 +1571,7 @@ class HForceRepresentation final : public HTemplateInstruction<1> {
     return representation();  // Same as the output representation.
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(ForceRepresentation)
 
@@ -1622,7 +1627,7 @@ class HChange final : public HUnaryOperation {
 
   Range* InferRange(Zone* zone) override;
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(Change)
 
@@ -1739,7 +1744,7 @@ class HSimulate final : public HInstruction {
                    DoneWithReplayField::encode(false)) {}
   ~HSimulate() {}
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   bool HasAstId() const { return !ast_id_.IsNone(); }
   BailoutId ast_id() const { return ast_id_; }
@@ -1854,7 +1859,7 @@ class HEnvironmentMarker final : public HTemplateInstruction<1> {
     return Representation::None();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
 #ifdef DEBUG
   void set_closure(Handle<JSFunction> closure) {
@@ -1949,7 +1954,7 @@ class HEnterInlined final : public HTemplateInstruction<0> {
   void RegisterReturnTarget(HBasicBlock* return_target, Zone* zone);
   ZoneList<HBasicBlock*>* return_targets() { return &return_targets_; }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Handle<SharedFunctionInfo> shared() const { return shared_; }
   Handle<JSFunction> closure() const { return closure_; }
@@ -2186,7 +2191,7 @@ class HUnaryCall : public HCall<1> {
     return Representation::Tagged();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HValue* value() const { return OperandAt(0); }
 };
@@ -2200,7 +2205,7 @@ class HBinaryCall : public HCall<2> {
     SetOperandAt(1, second);
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) final {
     return Representation::Tagged();
@@ -2266,7 +2271,7 @@ class HCallWithDescriptor final : public HInstruction {
     return OperandAt(0);
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
  private:
   // The argument count includes the receiver.
@@ -2340,8 +2345,8 @@ class HInvokeFunction final : public HBinaryCall {
 
   DECLARE_CONCRETE_INSTRUCTION(InvokeFunction)
 
-  std::ostream& PrintTo(std::ostream& os) const override;      // NOLINT
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintTo(v8::base::OStream& os) const override;      // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
  private:
   void set_has_stack_check(bool has_stack_check) {
@@ -2390,7 +2395,7 @@ class HCallNewArray final : public HBinaryCall {
   HValue* context() { return first(); }
   HValue* constructor() { return second(); }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   ElementsKind elements_kind() const { return elements_kind_; }
   Handle<AllocationSite> site() const { return site_; }
@@ -2414,7 +2419,7 @@ class HCallRuntime final : public HCall<1> {
   DECLARE_INSTRUCTION_WITH_CONTEXT_FACTORY_P2(HCallRuntime,
                                               const Runtime::Function*, int);
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HValue* context() { return OperandAt(0); }
   const Runtime::Function* function() const { return c_function_; }
@@ -2451,7 +2456,7 @@ class HUnaryMathOperation final : public HTemplateInstruction<2> {
   HValue* context() const { return OperandAt(0); }
   HValue* value() const { return OperandAt(1); }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     if (index == 0) {
@@ -2632,7 +2637,7 @@ class HCheckMaps final : public HTemplateInstruction<2> {
     return HType::HeapObject();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HValue* value() const { return OperandAt(0); }
   HValue* typecheck() const { return OperandAt(1); }
@@ -2752,7 +2757,7 @@ class HCheckValue final : public HUnaryOperation {
   Representation RequiredInputRepresentation(int index) override {
     return Representation::Tagged();
   }
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HValue* Canonicalize() override;
 
@@ -2799,7 +2804,7 @@ class HCheckInstanceType final : public HUnaryOperation {
 
   DECLARE_INSTRUCTION_FACTORY_P2(HCheckInstanceType, HValue*, Check);
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     return Representation::Tagged();
@@ -2978,7 +2983,7 @@ class HPhi final : public HValue {
 
   int merged_index() const { return merged_index_; }
 
-  std::ostream& PrintTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintTo(v8::base::OStream& os) const override;  // NOLINT
 
 #ifdef DEBUG
   void Verify() override;
@@ -3110,7 +3115,7 @@ class HCapturedObject final : public HDematerializedObject {
   // Replay effects of this instruction on the given environment.
   void ReplayEnvironment(HEnvironment* env);
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(CapturedObject)
 
@@ -3221,7 +3226,7 @@ class HConstant final : public HTemplateInstruction<0> {
   }
 
   bool EmitAtUses() override;
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
   HConstant* CopyToRepresentation(Representation r, Zone* zone) const;
   Maybe<HConstant*> CopyToTruncatedInt32(Zone* zone);
   Maybe<HConstant*> CopyToTruncatedNumber(Isolate* isolate, Zone* zone);
@@ -3509,7 +3514,7 @@ class HBinaryOperation : public HTemplateInstruction<3> {
 
   virtual bool IsCommutative() const { return false; }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     if (index == 0) return Representation::Tagged();
@@ -3556,7 +3561,7 @@ class HWrapReceiver final : public HTemplateInstruction<2> {
 
   HValue* Canonicalize() override;
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
   bool known_function() const { return known_function_; }
 
   DECLARE_CONCRETE_INSTRUCTION(WrapReceiver)
@@ -3675,7 +3680,7 @@ class HAccessArgumentsAt final : public HTemplateInstruction<3> {
  public:
   DECLARE_INSTRUCTION_FACTORY_P3(HAccessArgumentsAt, HValue*, HValue*, HValue*);
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     // The arguments elements is considered tagged.
@@ -3718,7 +3723,7 @@ class HBoundsCheck final : public HTemplateInstruction<2> {
     return representation();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
   void InferRepresentation(HInferRepresentationPhase* h_infer) override;
 
   HValue* index() const { return OperandAt(0); }
@@ -3880,7 +3885,7 @@ class HCompareGeneric final : public HBinaryOperation {
   }
 
   Token::Value token() const { return token_; }
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(CompareGeneric)
 
@@ -3930,7 +3935,7 @@ class HCompareNumericAndBranch : public HTemplateControlInstruction<2, 2> {
 
   bool KnownSuccessorBlock(HBasicBlock** block) override;
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   void SetOperandPositions(Zone* zone, SourcePosition left_pos,
                            SourcePosition right_pos) {
@@ -3999,7 +4004,7 @@ class HCompareObjectEqAndBranch : public HTemplateControlInstruction<2, 2> {
   HValue* left() const { return OperandAt(0); }
   HValue* right() const { return OperandAt(1); }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     return Representation::Tagged();
@@ -4122,7 +4127,7 @@ class HStringCompareAndBranch final : public HTemplateControlInstruction<2, 3> {
   HValue* right() const { return OperandAt(2); }
   Token::Value token() const { return token_; }
 
-  std::ostream& PrintDataTo(std::ostream& os) const final;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const final;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) final {
     return Representation::Tagged();
@@ -4158,7 +4163,7 @@ class HHasInstanceTypeAndBranch final : public HUnaryControlInstruction {
   InstanceType from() { return from_; }
   InstanceType to() { return to_; }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     return Representation::Tagged();
@@ -4230,7 +4235,7 @@ class HClassOfTestAndBranch final : public HUnaryControlInstruction {
     return Representation::Tagged();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Handle<String> class_name() const { return class_name_; }
 
@@ -4248,7 +4253,7 @@ class HTypeofIsAndBranch final : public HUnaryControlInstruction {
   DECLARE_INSTRUCTION_FACTORY_P2(HTypeofIsAndBranch, HValue*, Handle<String>);
 
   Handle<String> type_literal() const { return type_literal_.handle(); }
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(TypeofIsAndBranch)
 
@@ -4279,7 +4284,7 @@ class HInstanceOf final : public HBinaryOperation {
     return Representation::Tagged();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(InstanceOf)
 
@@ -4637,7 +4642,7 @@ class HBitwise final : public HBitwiseBinaryOperation {
 
   HValue* Canonicalize() override;
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(Bitwise)
 
@@ -4824,7 +4829,7 @@ class HParameter final : public HTemplateInstruction<0> {
   unsigned index() const { return index_; }
   ParameterKind kind() const { return kind_; }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     return Representation::None();
@@ -4863,7 +4868,7 @@ class HUnknownOSRValue final : public HTemplateInstruction<0> {
  public:
   DECLARE_INSTRUCTION_FACTORY_P2(HUnknownOSRValue, HEnvironment*, int);
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     return Representation::None();
@@ -4915,7 +4920,7 @@ class HLoadGlobalGeneric final : public HTemplateInstruction<2> {
     slot_ = slot;
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     return Representation::Tagged();
@@ -5016,7 +5021,7 @@ class HAllocate final : public HTemplateInstruction<2> {
   bool HandleSideEffectDominator(GVNFlag side_effect,
                                  HValue* dominator) override;
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(Allocate)
 
@@ -5154,7 +5159,7 @@ class HInnerAllocatedObject final : public HTemplateInstruction<2> {
     return index == 0 ? Representation::Tagged() : Representation::Integer32();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(InnerAllocatedObject)
 
@@ -5254,7 +5259,7 @@ class HLoadContextSlot final : public HUnaryOperation {
     return Representation::Tagged();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(LoadContextSlot)
 
@@ -5311,7 +5316,7 @@ class HStoreContextSlot final : public HTemplateInstruction<2> {
     return Representation::Tagged();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(StoreContextSlot)
 
@@ -5790,7 +5795,7 @@ class HObjectAccess final {
   friend class HLoadNamedField;
   friend class HStoreNamedField;
   friend class SideEffectsTracker;
-  friend std::ostream& operator<<(std::ostream& os,
+  friend v8::base::OStream& operator<<(v8::base::OStream& os,
                                   const HObjectAccess& access);
 
   inline Portion portion() const {
@@ -5799,7 +5804,7 @@ class HObjectAccess final {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const HObjectAccess& access);
+v8::base::OStream& operator<<(v8::base::OStream& os, const HObjectAccess& access);
 
 
 class HLoadNamedField final : public HTemplateInstruction<2> {
@@ -5836,7 +5841,7 @@ class HLoadNamedField final : public HTemplateInstruction<2> {
     return Representation::None();
   }
   Range* InferRange(Zone* zone) override;
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   bool CanBeReplacedWith(HValue* other) const {
     if (!CheckFlag(HValue::kCantBeReplaced)) return false;
@@ -5950,7 +5955,7 @@ class HLoadNamedGeneric final : public HTemplateInstruction<2> {
     return Representation::Tagged();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(LoadNamedGeneric)
 
@@ -6090,7 +6095,7 @@ class HLoadKeyed final : public HTemplateInstruction<4>,
     return RequiredInputRepresentation(index);
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   bool UsesMustHandleHole() const;
   bool AllUsesCanTreatHoleAsNaN() const;
@@ -6232,7 +6237,7 @@ class HLoadKeyedGeneric final : public HTemplateInstruction<3> {
     slot_ = slot;
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     // tagged[tagged]
@@ -6316,7 +6321,7 @@ class HStoreNamedField final : public HTemplateInstruction<3> {
     dominator_ = dominator;
     return false;
   }
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HValue* object() const { return OperandAt(0); }
   HValue* value() const { return OperandAt(1); }
@@ -6433,7 +6438,7 @@ class HStoreNamedGeneric final : public HTemplateInstruction<3> {
     return initialization_state_;
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     return Representation::Tagged();
@@ -6600,7 +6605,7 @@ class HStoreKeyed final : public HTemplateInstruction<4>,
 
   bool NeedsCanonicalization();
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(StoreKeyed)
 
@@ -6689,7 +6694,7 @@ class HStoreKeyedGeneric final : public HTemplateInstruction<4> {
     slot_ = slot;
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(StoreKeyedGeneric)
 
@@ -6739,7 +6744,7 @@ class HTransitionElementsKind final : public HTemplateInstruction<2> {
   }
   bool map_is_stable() const { return MapIsStableField::decode(bit_field_); }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(TransitionElementsKind)
 
@@ -6798,7 +6803,7 @@ class HStringAdd final : public HBinaryOperation {
     return Representation::Tagged();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   DECLARE_CONCRETE_INSTRUCTION(StringAdd)
 
@@ -6926,7 +6931,7 @@ class HTypeof final : public HTemplateInstruction<2> {
   HValue* context() const { return OperandAt(0); }
   HValue* value() const { return OperandAt(1); }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   Representation RequiredInputRepresentation(int index) override {
     return Representation::Tagged();
@@ -7109,7 +7114,7 @@ class HCheckMapValue final : public HTemplateInstruction<2> {
     return Representation::Tagged();
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HType CalculateInferredType() override {
     if (value()->type().IsHeapObject()) return value()->type();
@@ -7152,7 +7157,7 @@ class HForInPrepareMap final : public HTemplateInstruction<2> {
   HValue* context() const { return OperandAt(0); }
   HValue* enumerable() const { return OperandAt(1); }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HType CalculateInferredType() override { return HType::Tagged(); }
 
@@ -7189,7 +7194,7 @@ class HForInCacheArray final : public HTemplateInstruction<2> {
     index_cache_ = index_cache;
   }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HType CalculateInferredType() override { return HType::Tagged(); }
 
@@ -7232,7 +7237,7 @@ class HLoadFieldByIndex final : public HTemplateInstruction<2> {
   HValue* object() const { return OperandAt(0); }
   HValue* index() const { return OperandAt(1); }
 
-  std::ostream& PrintDataTo(std::ostream& os) const override;  // NOLINT
+  v8::base::OStream& PrintDataTo(v8::base::OStream& os) const override;  // NOLINT
 
   HType CalculateInferredType() override { return HType::Tagged(); }
 

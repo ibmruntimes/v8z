@@ -865,6 +865,7 @@ class FeedbackVectorSlot {
   bool operator!=(FeedbackVectorSlot that) const { return !(*this == that); }
 
   friend size_t hash_value(FeedbackVectorSlot slot) { return slot.ToInt(); }
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, FeedbackVectorSlot);
   friend std::ostream& operator<<(std::ostream& os, FeedbackVectorSlot);
 
  private:
@@ -873,6 +874,7 @@ class FeedbackVectorSlot {
   int id_;
 };
 
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(FeedbackVectorSlot);
 
 class BailoutId {
  public:
@@ -891,6 +893,7 @@ class BailoutId {
   bool operator==(const BailoutId& other) const { return id_ == other.id_; }
   bool operator!=(const BailoutId& other) const { return id_ != other.id_; }
   friend size_t hash_value(BailoutId);
+  friend v8::base::OStream& operator<<(v8::base::OStream&, BailoutId);
   friend std::ostream& operator<<(std::ostream&, BailoutId);
 
  private:
@@ -914,6 +917,8 @@ class BailoutId {
 
   int id_;
 };
+
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(BailoutId);
 
 class TokenDispenserForFinally {
  public:

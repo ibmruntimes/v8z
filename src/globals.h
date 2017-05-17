@@ -264,7 +264,7 @@ template <typename T, class P = FreeStoreAllocationPolicy> class List;
 enum LanguageMode { SLOPPY, STRICT, LANGUAGE_END = 3 };
 
 
-inline std::ostream& operator<<(std::ostream& os, const LanguageMode& mode) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, const LanguageMode& mode) {
   switch (mode) {
     case SLOPPY: return os << u8"sloppy";
     case STRICT: return os << u8"strict";
@@ -273,6 +273,7 @@ inline std::ostream& operator<<(std::ostream& os, const LanguageMode& mode) {
   return os;
 }
 
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const LanguageMode&)
 
 inline bool is_sloppy(LanguageMode language_mode) {
   return language_mode == SLOPPY;
@@ -466,7 +467,7 @@ enum AllocationAlignment {
 // allows).
 enum PretenureFlag { NOT_TENURED, TENURED };
 
-inline std::ostream& operator<<(std::ostream& os, const PretenureFlag& flag) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, const PretenureFlag& flag) {
   switch (flag) {
     case NOT_TENURED:
       return os << u8"NotTenured";
@@ -476,6 +477,7 @@ inline std::ostream& operator<<(std::ostream& os, const PretenureFlag& flag) {
   UNREACHABLE();
   return os;
 }
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const PretenureFlag&)
 
 enum MinimumCapacity {
   USE_DEFAULT_MINIMUM_CAPACITY,
@@ -711,7 +713,7 @@ inline size_t hash_value(ConvertReceiverMode mode) {
   return bit_cast<unsigned>(mode);
 }
 
-inline std::ostream& operator<<(std::ostream& os, ConvertReceiverMode mode) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, ConvertReceiverMode mode) {
   switch (mode) {
     case ConvertReceiverMode::kNullOrUndefined:
       return os << u8"NULL_OR_UNDEFINED";
@@ -723,13 +725,14 @@ inline std::ostream& operator<<(std::ostream& os, ConvertReceiverMode mode) {
   UNREACHABLE();
   return os;
 }
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(ConvertReceiverMode)
 
 // Defines whether tail call optimization is allowed.
 enum class TailCallMode : unsigned { kAllow, kDisallow };
 
 inline size_t hash_value(TailCallMode mode) { return bit_cast<unsigned>(mode); }
 
-inline std::ostream& operator<<(std::ostream& os, TailCallMode mode) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, TailCallMode mode) {
   switch (mode) {
     case TailCallMode::kAllow:
       return os << u8"ALLOW_TAIL_CALLS";
@@ -739,6 +742,7 @@ inline std::ostream& operator<<(std::ostream& os, TailCallMode mode) {
   UNREACHABLE();
   return os;
 }
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(TailCallMode)
 
 // Defines specifics about arguments object or rest parameter creation.
 enum class CreateArgumentsType : uint8_t {
@@ -751,7 +755,7 @@ inline size_t hash_value(CreateArgumentsType type) {
   return bit_cast<uint8_t>(type);
 }
 
-inline std::ostream& operator<<(std::ostream& os, CreateArgumentsType type) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, CreateArgumentsType type) {
   switch (type) {
     case CreateArgumentsType::kMappedArguments:
       return os << u8"MAPPED_ARGUMENTS";
@@ -763,6 +767,7 @@ inline std::ostream& operator<<(std::ostream& os, CreateArgumentsType type) {
   UNREACHABLE();
   return os;
 }
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(CreateArgumentsType)
 
 // Used to specify if a macro instruction must perform a smi check on tagged
 // values.

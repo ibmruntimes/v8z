@@ -78,7 +78,7 @@ Type* FieldType::Convert(Zone* zone) {
   return Type::Class(AsClass(), zone);
 }
 
-void FieldType::PrintTo(std::ostream& os) {
+void FieldType::PrintTo(v8::base::OStream& os) {
   if (IsAny()) {
     os << "Any";
   } else if (IsNone()) {

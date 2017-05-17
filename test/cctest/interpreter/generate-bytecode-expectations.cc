@@ -50,7 +50,7 @@ class ProgramOptions final {
 
   bool Validate() const;
   void UpdateFromHeader(std::istream& stream);   // NOLINT
-  void PrintHeader(std::ostream& stream) const;  // NOLINT
+  void PrintHeader(v8::base::OStream& stream) const;  // NOLINT
 
   bool parsing_failed() const { return parsing_failed_; }
   bool print_help() const { return print_help_; }
@@ -327,7 +327,7 @@ void ProgramOptions::UpdateFromHeader(std::istream& stream) {
   }
 }
 
-void ProgramOptions::PrintHeader(std::ostream& stream) const {  // NOLINT
+void ProgramOptions::PrintHeader(v8::base::OStream& stream) const {  // NOLINT
   stream << "---"
             "\npool type: "
          << ConstantPoolTypeToString(const_pool_type_)
@@ -369,7 +369,7 @@ V8InitializationScope::~V8InitializationScope() {
 }
 
 std::string ReadRawJSSnippet(std::istream& stream) {  // NOLINT
-  std::stringstream body_buffer;
+  v8::base::StringStream body_buffer;
   CHECK(body_buffer << stream.rdbuf());
   return body_buffer.str();
 }
@@ -426,7 +426,7 @@ void ExtractSnippets(std::vector<std::string>* snippet_list,
   }
 }
 
-void GenerateExpectationsFile(std::ostream& stream,  // NOLINT
+void GenerateExpectationsFile(v8::base::OStream& stream,  // NOLINT
                               const std::vector<std::string>& snippet_list,
                               const V8InitializationScope& platform,
                               const ProgramOptions& options) {
@@ -459,16 +459,15 @@ bool WriteExpectationsFile(const std::vector<std::string>& snippet_list,
                            const V8InitializationScope& platform,
                            const ProgramOptions& options,
                            const std::string& output_filename) {
-  std::ofstream output_file_handle;
+  FILE* output_file_handle = NULL;
   if (!options.write_to_stdout()) {
-    output_file_handle.open(output_filename.c_str());
-    if (!output_file_handle.is_open()) {
+    output_file_handle = fopen(output_filename.c_str(), "w");
+    if (!output_file_handle) {
       REPORT_ERROR("Could not open " << output_filename << " for writing.");
       return false;
     }
   }
-  std::ostream& output_stream =
-      options.write_to_stdout() ? std::cout : output_file_handle;
+  v8::internal::OFStream output_stream( options.write_to_stdout() ? stdout : output_file_handle);
 
   GenerateExpectationsFile(output_stream, snippet_list, platform, options);
 

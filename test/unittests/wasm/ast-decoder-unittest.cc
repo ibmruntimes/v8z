@@ -86,7 +86,7 @@ class AstDecoderTest : public TestWithZone {
     if (result.error_code != expected) {
       ptrdiff_t pc = result.error_pc - result.start;
       ptrdiff_t pt = result.error_pt - result.start;
-      std::ostringstream str;
+      v8::base::OStringStream str;
       if (expected == kSuccess) {
         str << "Verification failed: " << result.error_code << " pc = +" << pc;
         if (result.error_pt) str << ", pt = +" << pt;

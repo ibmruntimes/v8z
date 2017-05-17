@@ -192,7 +192,7 @@ static const char* Type2String(Flag::FlagType type) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const Flag& flag) {  // NOLINT
+v8::base::OStream& operator<<(v8::base::OStream& os, const Flag& flag) {  // NOLINT
   switch (flag.type()) {
     case Flag::TYPE_BOOL:
       os << (*flag.bool_variable() ? "\x74\x72\x75\x65" : "\x66\x61\x6c\x73\x65");
@@ -242,19 +242,19 @@ List<const char*>* FlagList::argv() {
       }
       {
         bool disabled = f->type() == Flag::TYPE_BOOL && !*f->bool_variable();
-        std::ostringstream os;
+        v8::base::OStringStream os;
         os << (disabled ? "\x2d\x2d\x6e\x6f" : "\x2d\x2d") << f->name();
         args->Add(StrDup(os.str().c_str()));
       }
       if (f->type() != Flag::TYPE_BOOL) {
-        std::ostringstream os;
+        v8::base::OStringStream os;
         os << *f;
         args->Add(StrDup(os.str().c_str()));
       }
     }
   }
   if (args_flag != NULL) {
-    std::ostringstream os;
+    v8::base::OStringStream os;
     os << "\x2d\x2d" << args_flag->name();
     args->Add(StrDup(os.str().c_str()));
     JSArguments jsargs = *args_flag->args_variable();
@@ -578,7 +578,7 @@ static uint32_t flag_hash = 0;
 
 
 void ComputeFlagListHash() {
-  std::ostringstream modified_args_as_string;
+  v8::base::OStringStream modified_args_as_string;
 #ifdef DEBUG
   modified_args_as_string << "\x64\x65\x62\x75\x67";
 #endif  // DEBUG

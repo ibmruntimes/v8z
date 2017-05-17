@@ -12,7 +12,7 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-std::ostream& operator<<(std::ostream& os, TruncationMode mode) {
+v8::base::OStream& operator<<(v8::base::OStream& os, TruncationMode mode) {
   switch (mode) {
     case TruncationMode::kJavaScript:
       return os << "JavaScript";
@@ -30,7 +30,7 @@ TruncationMode TruncationModeOf(Operator const* op) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, WriteBarrierKind kind) {
+v8::base::OStream& operator<<(v8::base::OStream& os, WriteBarrierKind kind) {
   switch (kind) {
     case kNoWriteBarrier:
       return os << "NoWriteBarrier";
@@ -62,7 +62,7 @@ size_t hash_value(StoreRepresentation rep) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, StoreRepresentation rep) {
+v8::base::OStream& operator<<(v8::base::OStream& os, StoreRepresentation rep) {
   return os << "(" << rep.representation() << " : " << rep.write_barrier_kind()
             << ")";
 }

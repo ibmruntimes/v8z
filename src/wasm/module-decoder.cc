@@ -578,7 +578,7 @@ class ModuleDecoder : public Decoder {
     TreeResult result = VerifyWasmCode(module_zone->allocator(), body);
     if (result.failed()) {
       // Wrap the error message from the function decoder.
-      std::ostringstream str;
+      v8::base::OStringStream str;
       str << "in function " << WasmFunctionName(function, menv) << ": ";
       str << result;
       std::string strval = str.str();

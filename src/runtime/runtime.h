@@ -1168,7 +1168,7 @@ class RuntimeState {
 };
 
 
-std::ostream& operator<<(std::ostream&, Runtime::FunctionId);
+v8::base::OStream& operator<<(v8::base::OStream&, Runtime::FunctionId);
 
 //---------------------------------------------------------------------------
 // Constants used by interface to runtime functions.

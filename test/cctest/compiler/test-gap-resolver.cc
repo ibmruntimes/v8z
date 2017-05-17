@@ -108,7 +108,7 @@ class InterpreterState {
         key.index);
   }
 
-  friend std::ostream& operator<<(std::ostream& os,
+  friend v8::base::OStream& operator<<(v8::base::OStream& os,
                                   const InterpreterState& is) {
     for (OperandMap::const_iterator it = is.values_.begin();
          it != is.values_.end(); ++it) {

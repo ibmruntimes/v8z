@@ -31,7 +31,7 @@ char const* IrOpcode::Mnemonic(Value value) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, IrOpcode::Value opcode) {
+v8::base::OStream& operator<<(v8::base::OStream& os, IrOpcode::Value opcode) {
   return os << IrOpcode::Mnemonic(opcode);
 }
 

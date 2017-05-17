@@ -192,7 +192,7 @@ struct FunctionBody {
 struct Tree;
 typedef Result<Tree*> TreeResult;
 
-std::ostream& operator<<(std::ostream& os, const Tree& tree);
+v8::base::OStream& operator<<(v8::base::OStream& os, const Tree& tree);
 
 TreeResult VerifyWasmCode(base::AccountingAllocator* allocator,
                           FunctionBody& body);

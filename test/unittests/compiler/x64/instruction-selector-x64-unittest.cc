@@ -85,7 +85,7 @@ struct MemoryAccess {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const MemoryAccess& memacc) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const MemoryAccess& memacc) {
   return os << memacc.type;
 }
 
@@ -157,7 +157,7 @@ struct BinaryOperation {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const BinaryOperation& bop) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const BinaryOperation& bop) {
   return os << bop.constructor_name;
 }
 

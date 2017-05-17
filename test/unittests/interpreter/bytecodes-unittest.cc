@@ -225,7 +225,7 @@ TEST(Bytecodes, DecodeBytecodeAndOperands) {
 
   for (size_t i = 0; i < arraysize(cases); ++i) {
     // Generate reference string by prepending formatted bytes.
-    std::stringstream expected_ss;
+    v8::base::StringStream expected_ss;
     std::ios default_format(nullptr);
     default_format.copyfmt(expected_ss);
     // Match format of Bytecodes::Decode() for byte representations.
@@ -239,7 +239,7 @@ TEST(Bytecodes, DecodeBytecodeAndOperands) {
     expected_ss << cases[i].output;
 
     // Generate decoded byte output.
-    std::stringstream actual_ss;
+    v8::base::StringStream actual_ss;
     Bytecodes::Decode(actual_ss, cases[i].bytecode, cases[i].parameter_count);
 
     // Compare.

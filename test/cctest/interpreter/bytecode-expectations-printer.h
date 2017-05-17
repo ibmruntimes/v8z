@@ -39,7 +39,7 @@ class BytecodeExpectationsPrinter final {
         top_level_(false),
         test_function_name_(kDefaultTopFunctionName) {}
 
-  void PrintExpectation(std::ostream& stream,  // NOLINT
+  void PrintExpectation(v8::base::OStream& stream,  // NOLINT
                         const std::string& snippet) const;
 
   void set_constant_pool_type(ConstantPoolType const_pool_type) {
@@ -62,30 +62,30 @@ class BytecodeExpectationsPrinter final {
   std::string test_function_name() const { return test_function_name_; }
 
  private:
-  void PrintEscapedString(std::ostream& stream,  // NOLINT
+  void PrintEscapedString(v8::base::OStream& stream,  // NOLINT
                           const std::string& string) const;
-  void PrintBytecodeOperand(std::ostream& stream,  // NOLINT
+  void PrintBytecodeOperand(v8::base::OStream& stream,  // NOLINT
                             const BytecodeArrayIterator& bytecode_iter,
                             const Bytecode& bytecode, int op_index,
                             int parameter_count) const;
-  void PrintBytecode(std::ostream& stream,  // NOLINT
+  void PrintBytecode(v8::base::OStream& stream,  // NOLINT
                      const BytecodeArrayIterator& bytecode_iter,
                      int parameter_count) const;
-  void PrintV8String(std::ostream& stream,  // NOLINT
+  void PrintV8String(v8::base::OStream& stream,  // NOLINT
                      i::String* string) const;
-  void PrintConstant(std::ostream& stream,  // NOLINT
+  void PrintConstant(v8::base::OStream& stream,  // NOLINT
                      i::Handle<i::Object> constant) const;
-  void PrintFrameSize(std::ostream& stream,  // NOLINT
+  void PrintFrameSize(v8::base::OStream& stream,  // NOLINT
                       i::Handle<i::BytecodeArray> bytecode_array) const;
-  void PrintBytecodeSequence(std::ostream& stream,  // NOLINT
+  void PrintBytecodeSequence(v8::base::OStream& stream,  // NOLINT
                              i::Handle<i::BytecodeArray> bytecode_array) const;
-  void PrintConstantPool(std::ostream& stream,  // NOLINT
+  void PrintConstantPool(v8::base::OStream& stream,  // NOLINT
                          i::FixedArray* constant_pool) const;
-  void PrintCodeSnippet(std::ostream& stream,  // NOLINT
+  void PrintCodeSnippet(v8::base::OStream& stream,  // NOLINT
                         const std::string& body) const;
-  void PrintBytecodeArray(std::ostream& stream,  // NOLINT
+  void PrintBytecodeArray(v8::base::OStream& stream,  // NOLINT
                           i::Handle<i::BytecodeArray> bytecode_array) const;
-  void PrintHandlers(std::ostream& stream,  // NOLINT
+  void PrintHandlers(v8::base::OStream& stream,  // NOLINT
                      i::Handle<i::BytecodeArray> bytecode_array) const;
 
   v8::Local<v8::String> V8StringFromUTF8(const char* data) const;

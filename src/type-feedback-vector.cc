@@ -25,7 +25,7 @@ static bool IsPropertyNameFeedback(Object* feedback) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, FeedbackVectorSlotKind kind) {
+v8::base::OStream& operator<<(v8::base::OStream& os, FeedbackVectorSlotKind kind) {
   return os << TypeFeedbackMetadata::Kind2String(kind);
 }
 

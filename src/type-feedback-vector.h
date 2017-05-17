@@ -35,7 +35,8 @@ enum class FeedbackVectorSlotKind {
 };
 
 
-std::ostream& operator<<(std::ostream& os, FeedbackVectorSlotKind kind);
+v8::base::OStream& operator<<(v8::base::OStream& os, FeedbackVectorSlotKind kind);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(FeedbackVectorSlotKind);
 
 
 template <typename Derived>

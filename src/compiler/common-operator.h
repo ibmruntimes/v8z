@@ -42,7 +42,8 @@ inline BranchHint NegateBranchHint(BranchHint hint) {
 
 inline size_t hash_value(BranchHint hint) { return static_cast<size_t>(hint); }
 
-std::ostream& operator<<(std::ostream&, BranchHint);
+v8::base::OStream& operator<<(v8::base::OStream&, BranchHint);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(BranchHint);
 
 BranchHint BranchHintOf(const Operator* const);
 
@@ -52,7 +53,8 @@ enum class DeoptimizeKind : uint8_t { kEager, kSoft };
 
 size_t hash_value(DeoptimizeKind kind);
 
-std::ostream& operator<<(std::ostream&, DeoptimizeKind);
+v8::base::OStream& operator<<(v8::base::OStream&, DeoptimizeKind);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(DeoptimizeKind);
 
 DeoptimizeKind DeoptimizeKindOf(const Operator* const);
 
@@ -62,7 +64,8 @@ enum class IfExceptionHint { kLocallyUncaught, kLocallyCaught };
 
 size_t hash_value(IfExceptionHint hint);
 
-std::ostream& operator<<(std::ostream&, IfExceptionHint);
+v8::base::OStream& operator<<(v8::base::OStream&, IfExceptionHint);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(IfExceptionHint);
 
 
 class SelectParameters final {
@@ -84,7 +87,8 @@ bool operator!=(SelectParameters const&, SelectParameters const&);
 
 size_t hash_value(SelectParameters const& p);
 
-std::ostream& operator<<(std::ostream&, SelectParameters const& p);
+v8::base::OStream& operator<<(v8::base::OStream&, SelectParameters const& p);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(SelectParameters const&);
 
 SelectParameters const& SelectParametersOf(const Operator* const);
 
@@ -109,7 +113,8 @@ class ParameterInfo final {
   const char* debug_name_;
 };
 
-std::ostream& operator<<(std::ostream&, ParameterInfo const&);
+v8::base::OStream& operator<<(v8::base::OStream&, ParameterInfo const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(ParameterInfo const&);
 
 int ParameterIndexOf(const Operator* const);
 const ParameterInfo& ParameterInfoOf(const Operator* const);

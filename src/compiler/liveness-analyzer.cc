@@ -18,7 +18,7 @@ LivenessAnalyzer::LivenessAnalyzer(size_t local_count, Zone* zone)
     : zone_(zone), blocks_(zone), local_count_(local_count), queue_(zone) {}
 
 
-void LivenessAnalyzer::Print(std::ostream& os) {
+void LivenessAnalyzer::Print(v8::base::OStream& os) {
   for (auto block : blocks_) {
     block->Print(os);
     os << std::endl;
@@ -157,7 +157,7 @@ Node* NonLiveFrameStateSlotReplacer::ClearNonLiveStateValues(
 }
 
 
-void LivenessAnalyzerBlock::Print(std::ostream& os) {
+void LivenessAnalyzerBlock::Print(v8::base::OStream& os) {
   os << "Block " << id();
   bool first = true;
   for (LivenessAnalyzerBlock* pred : predecessors_) {

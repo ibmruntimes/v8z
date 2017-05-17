@@ -11,7 +11,7 @@
 namespace v8 {
 namespace internal {
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PropertyAttributes& attributes) {
   os << "[";
   os << (((attributes & READ_ONLY) == 0) ? "W" : "_");    // writable
@@ -34,7 +34,7 @@ struct FastPropertyDetails {
 
 
 // Outputs PropertyDetails as a dictionary details.
-std::ostream& operator<<(std::ostream& os, const PropertyDetails& details) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const PropertyDetails& details) {
   os << "(";
   if (details.location() == kDescriptor) {
     os << "immutable ";
@@ -46,7 +46,7 @@ std::ostream& operator<<(std::ostream& os, const PropertyDetails& details) {
 
 
 // Outputs PropertyDetails as a descriptor array details.
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const FastPropertyDetails& details_fast) {
   const PropertyDetails& details = details_fast.details;
   os << "(";
@@ -76,7 +76,7 @@ void PropertyDetails::Print(bool dictionary_mode) {
 #endif
 
 
-std::ostream& operator<<(std::ostream& os, const Descriptor& d) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Descriptor& d) {
   Object* value = *d.GetValue();
   os << "Descriptor " << Brief(*d.GetKey()) << " @ " << Brief(value) << " ";
   if (value->IsAccessorPair()) {

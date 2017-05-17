@@ -22,15 +22,15 @@ class BasicBlockProfiler {
     size_t n_blocks() const { return n_blocks_; }
     const uint32_t* counts() const { return &counts_[0]; }
 
-    void SetCode(std::ostringstream* os);
-    void SetFunctionName(std::ostringstream* os);
-    void SetSchedule(std::ostringstream* os);
+    void SetCode(v8::base::OStringStream* os);
+    void SetFunctionName(v8::base::OStringStream* os);
+    void SetSchedule(v8::base::OStringStream* os);
     void SetBlockId(size_t offset, size_t block_id);
     uint32_t* GetCounterAddress(size_t offset);
 
    private:
     friend class BasicBlockProfiler;
-    friend std::ostream& operator<<(std::ostream& os,
+    friend v8::base::OStream& operator<<(v8::base::OStream& os,
                                     const BasicBlockProfiler::Data& s);
 
     explicit Data(size_t n_blocks);
@@ -58,7 +58,7 @@ class BasicBlockProfiler {
   const DataList* data_list() { return &data_list_; }
 
  private:
-  friend std::ostream& operator<<(std::ostream& os,
+  friend v8::base::OStream& operator<<(v8::base::OStream& os,
                                   const BasicBlockProfiler& s);
 
   DataList data_list_;
@@ -66,8 +66,8 @@ class BasicBlockProfiler {
   DISALLOW_COPY_AND_ASSIGN(BasicBlockProfiler);
 };
 
-std::ostream& operator<<(std::ostream& os, const BasicBlockProfiler& s);
-std::ostream& operator<<(std::ostream& os, const BasicBlockProfiler::Data& s);
+v8::base::OStream& operator<<(v8::base::OStream& os, const BasicBlockProfiler& s);
+v8::base::OStream& operator<<(v8::base::OStream& os, const BasicBlockProfiler::Data& s);
 
 }  // namespace internal
 }  // namespace v8

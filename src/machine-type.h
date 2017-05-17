@@ -171,9 +171,12 @@ V8_INLINE size_t hash_value(MachineType type) {
          static_cast<size_t>(type.semantic()) * 16;
 }
 
-std::ostream& operator<<(std::ostream& os, MachineRepresentation rep);
-std::ostream& operator<<(std::ostream& os, MachineSemantic type);
-std::ostream& operator<<(std::ostream& os, MachineType type);
+v8::base::OStream& operator<<(v8::base::OStream& os, MachineRepresentation rep);
+v8::base::OStream& operator<<(v8::base::OStream& os, MachineSemantic type);
+v8::base::OStream& operator<<(v8::base::OStream& os, MachineType type);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(MachineRepresentation);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(MachineSemantic);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(MachineType);
 
 inline bool IsFloatingPoint(MachineRepresentation rep) {
   return rep == MachineRepresentation::kFloat32 ||

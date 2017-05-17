@@ -246,10 +246,11 @@ struct ComparisonBinaryOperator {
 };
 
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          ComparisonBinaryOperator const& cbop) {
   return os << cbop.constructor_name;
 }
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(ComparisonBinaryOperator const&);
 
 
 const ComparisonBinaryOperator kComparisonBinaryOperators[] = {

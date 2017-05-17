@@ -1784,7 +1784,7 @@ TEST(InterpreterContextVariables) {
   HandleAndZoneScope handles;
   i::Isolate* isolate = handles.main_isolate();
 
-  std::ostringstream unique_vars;
+  v8::base::OStringStream unique_vars;
   for (int i = 0; i < 250; i++) {
     unique_vars << "var a" << i << " = 0;";
   }
@@ -2769,7 +2769,7 @@ TEST(InterpreterForIn) {
   // used.
   for (int pass = 0; pass < 2; pass++) {
     HandleAndZoneScope handles;
-    std::ostringstream wide_os;
+    v8::base::OStringStream wide_os;
     if (pass == 1) {
       for (int i = 0; i < 200; i++) {
         wide_os << "var local" << i << " = 0;\n";
@@ -2777,7 +2777,7 @@ TEST(InterpreterForIn) {
     }
 
     for (size_t i = 0; i < arraysize(for_in_samples); i++) {
-      std::ostringstream body_os;
+      v8::base::OStringStream body_os;
       body_os << wide_os.str() << for_in_samples[i].first;
       std::string body(body_os.str());
       std::string function = InterpreterTester::SourceForBody(body.c_str());
@@ -3343,7 +3343,7 @@ TEST(InterpreterLookupSlotWide) {
       "        }; f = t;\");"
       "}"
       "f1();";
-  std::ostringstream str;
+  v8::base::OStringStream str;
   str << "var y = 2.3;";
   for (int i = 1; i < 256; i++) {
     str << "y = " << 2.3 + i << ";";
@@ -3420,14 +3420,14 @@ TEST(JumpWithConstantsAndWideConstants) {
   for (int constants = 11; constants < 256 + 3 * kStep; constants += kStep) {
     auto isolate = handles.main_isolate();
     auto factory = isolate->factory();
-    std::ostringstream filler_os;
+    v8::base::OStringStream filler_os;
     // Generate a string that consumes constant pool entries and
     // spread out branch distances in script below.
     for (int i = 0; i < constants; i++) {
       filler_os << "var x_ = 'x_" << i << "';\n";
     }
     std::string filler(filler_os.str());
-    std::ostringstream script_os;
+    v8::base::OStringStream script_os;
     script_os << "function " << InterpreterTester::function_name() << "(a) {\n";
     script_os << "  " << filler;
     script_os << "  for (var i = a; i < 2; i++) {\n";
@@ -3635,7 +3635,7 @@ TEST(InterpreterWideRegisterArithmetic) {
   i::Isolate* isolate = handles.main_isolate();
 
   static const size_t kMaxRegisterForTest = 150;
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << "function " << InterpreterTester::function_name() << "(arg) {\n";
   os << "  var retval = -77;\n";
   for (size_t i = 0; i < kMaxRegisterForTest; i++) {
@@ -3677,7 +3677,7 @@ TEST(InterpreterCallWideRegisters) {
   static const int kStartChar = 65;
 
   for (int pass = 0; pass < 3; pass += 1) {
-    std::ostringstream os;
+    v8::base::OStringStream os;
     for (int i = 0; i < pass * 97; i += 1) {
       os << "var x" << i << " = " << i << "\n";
     }
@@ -3705,7 +3705,7 @@ TEST(InterpreterWideParametersPickOne) {
   for (int parameter = 0; parameter < 10; parameter++) {
     HandleAndZoneScope handles;
     i::Isolate* isolate = handles.main_isolate();
-    std::ostringstream os;
+    v8::base::OStringStream os;
     os << "function " << InterpreterTester::function_name() << "(arg) {\n";
     os << "  function selector(i";
     for (int i = 0; i < kParameterCount; i++) {
@@ -3737,7 +3737,7 @@ TEST(InterpreterWideParametersSummation) {
   static int kBaseValue = 17000;
   HandleAndZoneScope handles;
   i::Isolate* isolate = handles.main_isolate();
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << "function " << InterpreterTester::function_name() << "(arg) {\n";
   os << "  function summation(i";
   for (int i = 0; i < kParameterCount; i++) {

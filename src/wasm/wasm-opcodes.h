@@ -47,7 +47,7 @@ const LocalType kAstF64 = MachineRepresentation::kFloat64;
 const LocalType kAstEnd = MachineRepresentation::kTagged;
 
 typedef Signature<LocalType> FunctionSig;
-std::ostream& operator<<(std::ostream& os, const FunctionSig& function);
+v8::base::OStream& operator<<(v8::base::OStream& os, const FunctionSig& function);
 
 struct WasmName {
   const char* name;

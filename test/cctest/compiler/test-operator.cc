@@ -69,7 +69,7 @@ TEST(TestOperator_Equals) {
 
 
 static v8::base::SmartArrayPointer<const char> OperatorToString(Operator* op) {
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << *op;
   return v8::base::SmartArrayPointer<const char>(StrDup(os.str().c_str()));
 }

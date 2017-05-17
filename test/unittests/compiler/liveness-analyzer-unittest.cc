@@ -86,10 +86,16 @@ class LivenessAnalysisTest : public GraphTest {
           locals_count_(locals_count),
           replacement_(replacement) {}
 
-    void DescribeTo(std::ostream* os) const override {
+    void DescribeTo(v8::base::OStream* os) const {
       *os << "is a frame state with '" << liveness_
           << "' liveness, empty "
              "parameters and empty expression stack";
+    }
+
+    void DescribeTo(std::ostream* os) const override {
+      v8::base::OStringStream oss;
+      DescribeTo(&oss);
+      *os << oss.str().c_str();
     }
 
     bool MatchAndExplain(Node* frame_state,

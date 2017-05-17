@@ -176,7 +176,7 @@ struct MemoryAccess {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const MemoryAccess& memacc) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const MemoryAccess& memacc) {
   return os << memacc.type;
 }
 
@@ -487,7 +487,7 @@ struct MultParam {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const MultParam& m) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const MultParam& m) {
   return os << m.value << "." << m.lea_expected << "." << m.addressing_mode;
 }
 

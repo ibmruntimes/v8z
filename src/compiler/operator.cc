@@ -39,13 +39,13 @@ Operator::Operator(Opcode opcode, Properties properties, const char* mnemonic,
       control_out_(CheckRange<uint16_t>(control_out)) {}
 
 
-std::ostream& operator<<(std::ostream& os, const Operator& op) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Operator& op) {
   op.PrintTo(os);
   return os;
 }
 
 
-void Operator::PrintTo(std::ostream& os) const { os << mnemonic(); }
+void Operator::PrintTo(v8::base::OStream& os) const { os << mnemonic(); }
 
 }  // namespace compiler
 }  // namespace internal

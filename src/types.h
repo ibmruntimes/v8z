@@ -308,7 +308,7 @@ class BitsetType {
   static bitset ExpandInternals(bitset bits);
 
   static const char* Name(bitset);
-  static void Print(std::ostream& os, bitset);  // NOLINT
+  static void Print(v8::base::OStream& os, bitset);  // NOLINT
 #ifdef DEBUG
   static void Print(bitset);
 #endif
@@ -849,7 +849,7 @@ class Type {
 
   enum PrintDimension { BOTH_DIMS, SEMANTIC_DIM, REPRESENTATION_DIM };
 
-  void PrintTo(std::ostream& os, PrintDimension dim = BOTH_DIMS);  // NOLINT
+  void PrintTo(v8::base::OStream& os, PrintDimension dim = BOTH_DIMS);  // NOLINT
 
 #ifdef DEBUG
   void Print();

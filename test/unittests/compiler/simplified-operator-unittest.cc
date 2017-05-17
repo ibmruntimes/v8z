@@ -27,9 +27,9 @@ struct PureOperator {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const PureOperator& pop) {
-  return os << IrOpcode::Mnemonic(pop.opcode);
-}
+// v8::base::OStream& operator<<(v8::base::OStream& os, const PureOperator& pop) {
+//   return os << IrOpcode::Mnemonic(pop.opcode);
+// }
 
 
 const PureOperator kPureOperators[] = {

@@ -290,10 +290,11 @@ class CodeStub BASE_EMBEDDED {
 
   Code::Flags GetCodeFlags() const;
 
-  friend std::ostream& operator<<(std::ostream& os, const CodeStub& s) {
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, const CodeStub& s) {
     s.PrintName(os);
     return os;
   }
+  friend DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const CodeStub&);
 
   Isolate* isolate() const { return isolate_; }
 
@@ -308,9 +309,9 @@ class CodeStub BASE_EMBEDDED {
   // a fixed (non-moveable) code object.
   virtual bool NeedsImmovableCode() { return false; }
 
-  virtual void PrintName(std::ostream& os) const;        // NOLINT
-  virtual void PrintBaseName(std::ostream& os) const;    // NOLINT
-  virtual void PrintState(std::ostream& os) const { ; }  // NOLINT
+  virtual void PrintName(v8::base::OStream& os) const;        // NOLINT
+  virtual void PrintBaseName(v8::base::OStream& os) const;    // NOLINT
+  virtual void PrintState(v8::base::OStream& os) const { ; }  // NOLINT
 
   // Computes the key based on major and minor.
   uint32_t GetKey() {
@@ -894,7 +895,8 @@ enum StringAddFlags {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const StringAddFlags& flags);
+v8::base::OStream& operator<<(v8::base::OStream& os, const StringAddFlags& flags);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const StringAddFlags&);
 
 
 class NumberToStringStub final : public HydrogenCodeStub {
@@ -1170,7 +1172,7 @@ class ArrayConstructorStub: public PlatformCodeStub {
   void GenerateDispatchToArrayStub(MacroAssembler* masm,
                                    AllocationSiteOverrideMode mode);
 
-  void PrintName(std::ostream& os) const override;  // NOLINT
+  void PrintName(v8::base::OStream& os) const override;  // NOLINT
 
   class ArgumentCountBits : public BitField<ArgumentCountKey, 0, 2> {};
 
@@ -1250,7 +1252,7 @@ class CallICStub: public PlatformCodeStub {
   void HandleArrayCase(MacroAssembler* masm, Label* miss);
 
  private:
-  void PrintState(std::ostream& os) const override;  // NOLINT
+  void PrintState(v8::base::OStream& os) const override;  // NOLINT
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(CallFunctionWithFeedbackAndVector);
   DEFINE_PLATFORM_CODE_STUB(CallIC, PlatformCodeStub);
@@ -1749,7 +1751,7 @@ class BinaryOpICStub : public HydrogenCodeStub {
     return BinaryOpICState(isolate(), GetExtraICState());
   }
 
-  void PrintState(std::ostream& os) const final;  // NOLINT
+  void PrintState(v8::base::OStream& os) const final;  // NOLINT
 
   // Parameters accessed via CodeStubGraphBuilder::GetParameter()
   static const int kLeft = 0;
@@ -1790,7 +1792,7 @@ class BinaryOpICWithAllocationSiteStub final : public PlatformCodeStub {
     return static_cast<ExtraICState>(minor_key_);
   }
 
-  void PrintState(std::ostream& os) const override;  // NOLINT
+  void PrintState(v8::base::OStream& os) const override;  // NOLINT
 
  private:
   BinaryOpICState state() const {
@@ -1850,7 +1852,7 @@ class StringAddStub final : public HydrogenCodeStub {
   class StringAddFlagsBits : public BitField<StringAddFlags, 0, 3> {};
   class PretenureFlagBits : public BitField<PretenureFlag, 3, 1> {};
 
-  void PrintBaseName(std::ostream& os) const override;  // NOLINT
+  void PrintBaseName(v8::base::OStream& os) const override;  // NOLINT
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(StringAdd);
   DEFINE_HYDROGEN_CODE_STUB(StringAdd, HydrogenCodeStub);
@@ -1964,7 +1966,7 @@ class JSEntryStub : public PlatformCodeStub {
  private:
   void FinishCode(Handle<Code> code) override;
 
-  void PrintName(std::ostream& os) const override {  // NOLINT
+  void PrintName(v8::base::OStream& os) const override {  // NOLINT
     os << (type() == StackFrame::ENTRY ? u8"JSEntryStub"
                                        : u8"JSConstructEntryStub");
   }
@@ -2708,7 +2710,7 @@ class ArrayConstructorStubBase : public HydrogenCodeStub {
   static const int kAllocationSite = 1;
 
  protected:
-  std::ostream& BasePrintName(std::ostream& os,
+  v8::base::OStream& BasePrintName(v8::base::OStream& os,
                               const char* name) const;  // NOLINT
 
  private:
@@ -2733,7 +2735,7 @@ class ArrayNoArgumentConstructorStub : public ArrayConstructorStubBase {
   }
 
  private:
-  void PrintName(std::ostream& os) const override {  // NOLINT
+  void PrintName(v8::base::OStream& os) const override {  // NOLINT
     BasePrintName(os, u8"ArrayNoArgumentConstructorStub");
   }
 
@@ -2753,7 +2755,7 @@ class ArraySingleArgumentConstructorStub : public ArrayConstructorStubBase {
   }
 
  private:
-  void PrintName(std::ostream& os) const override {  // NOLINT
+  void PrintName(v8::base::OStream& os) const override {  // NOLINT
     BasePrintName(os, u8"ArraySingleArgumentConstructorStub");
   }
 
@@ -2773,7 +2775,7 @@ class ArrayNArgumentsConstructorStub : public ArrayConstructorStubBase {
   }
 
  private:
-  void PrintName(std::ostream& os) const override {  // NOLINT
+  void PrintName(v8::base::OStream& os) const override {  // NOLINT
     BasePrintName(os, u8"ArrayNArgumentsConstructorStub");
   }
 
@@ -2915,7 +2917,7 @@ class ToBooleanICStub : public HydrogenCodeStub {
   Types types() const { return Types(TypesBits::decode(sub_minor_key())); }
 
   Code::Kind GetCodeKind() const override { return Code::TO_BOOLEAN_IC; }
-  void PrintState(std::ostream& os) const override;  // NOLINT
+  void PrintState(v8::base::OStream& os) const override;  // NOLINT
 
   bool SometimesSetsUpAFrame() override { return false; }
 
@@ -2943,7 +2945,8 @@ class ToBooleanICStub : public HydrogenCodeStub {
   DEFINE_HYDROGEN_CODE_STUB(ToBooleanIC, HydrogenCodeStub);
 };
 
-std::ostream& operator<<(std::ostream& os, const ToBooleanICStub::Types& t);
+v8::base::OStream& operator<<(v8::base::OStream& os, const ToBooleanICStub::Types& t);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const ToBooleanICStub::Types&);
 
 class ElementsTransitionAndStoreStub : public HydrogenCodeStub {
  public:

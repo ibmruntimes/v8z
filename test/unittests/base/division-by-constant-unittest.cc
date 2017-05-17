@@ -11,12 +11,13 @@
 #include <ostream>  // NOLINT
 
 #include "testing/gtest-support.h"
+#include "src/base/logging.h"
 
 namespace v8 {
 namespace base {
 
 template <class T>
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const MagicNumbersForDivision<T>& mag) {
   return os << "{ multiplier: " << mag.multiplier << ", shift: " << mag.shift
             << ", add: " << mag.add << " }";

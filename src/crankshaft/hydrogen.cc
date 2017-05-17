@@ -3595,7 +3595,7 @@ void HBasicBlock::FinishExit(HControlInstruction* instruction,
 }
 
 
-std::ostream& operator<<(std::ostream& os, const HBasicBlock& b) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const HBasicBlock& b) {
   return os << "B" << b.block_id();
 }
 
@@ -13220,7 +13220,7 @@ HEnvironment* HEnvironment::CopyForInlining(
 }
 
 
-std::ostream& operator<<(std::ostream& os, const HEnvironment& env) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const HEnvironment& env) {
   for (int i = 0; i < env.length(); i++) {
     if (i == 0) os << "parameters\n";
     if (i == env.parameter_count()) os << "specials\n";
@@ -13349,7 +13349,7 @@ void HTracer::Trace(const char* name, HGraph* graph, LChunk* chunk) {
       for (int j = 0; j < total; ++j) {
         HPhi* phi = current->phis()->at(j);
         PrintIndent();
-        std::ostringstream os;
+        v8::base::OStringStream os;
         os << phi->merged_index() << " " << NameOf(phi) << " " << *phi << "\n";
         trace_.Add(os.str().c_str());
       }
@@ -13361,7 +13361,7 @@ void HTracer::Trace(const char* name, HGraph* graph, LChunk* chunk) {
         HInstruction* instruction = it.Current();
         int uses = instruction->UseCount();
         PrintIndent();
-        std::ostringstream os;
+        v8::base::OStringStream os;
         os << "0 " << uses << " " << NameOf(instruction) << " " << *instruction;
         if (graph->info()->is_tracking_positions() &&
             instruction->has_position() && instruction->position().raw() != 0) {
@@ -13389,7 +13389,7 @@ void HTracer::Trace(const char* name, HGraph* graph, LChunk* chunk) {
             trace_.Add("%d ",
                        LifetimePosition::FromInstructionIndex(i).Value());
             linstr->PrintTo(&trace_);
-            std::ostringstream os;
+            v8::base::OStringStream os;
             os << " [hir:" << NameOf(linstr->hydrogen_value()) << "] <|@\n";
             trace_.Add(os.str().c_str());
           }

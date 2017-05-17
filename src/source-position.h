@@ -71,7 +71,7 @@ class SourcePosition {
   uint32_t value_;
 };
 
-inline std::ostream& operator<<(std::ostream& os, const SourcePosition& p) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, const SourcePosition& p) {
   if (p.IsUnknown()) {
     return os << u8"<?>";
   } else if (FLAG_hydrogen_track_positions) {
@@ -80,6 +80,7 @@ inline std::ostream& operator<<(std::ostream& os, const SourcePosition& p) {
     return os << u8"<0:" << p.raw() << u8">";
   }
 }
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const SourcePosition&);
 
 }  // namespace internal
 }  // namespace v8

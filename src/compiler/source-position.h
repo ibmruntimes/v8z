@@ -75,7 +75,7 @@ class SourcePositionTable final {
 
   SourcePosition GetSourcePosition(Node* node) const;
 
-  void Print(std::ostream& os) const;
+  void Print(v8::base::OStream& os) const;
 
  private:
   class Decorator;

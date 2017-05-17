@@ -407,7 +407,7 @@ SideEffects SideEffectsTracker::ComputeDependsOn(HInstruction* instr) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const TrackedEffects& te) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const TrackedEffects& te) {
   SideEffectsTracker* t = te.tracker;
   const char* separator = "";
   os << "[";

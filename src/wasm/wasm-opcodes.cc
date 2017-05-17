@@ -25,7 +25,7 @@ const char* WasmOpcodes::OpcodeName(WasmOpcode opcode) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const FunctionSig& sig) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const FunctionSig& sig) {
   if (sig.return_count() == 0) os << "v";
   for (size_t i = 0; i < sig.return_count(); i++) {
     os << WasmOpcodes::ShortNameOf(sig.GetReturn(i));

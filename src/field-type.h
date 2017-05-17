@@ -40,7 +40,7 @@ class FieldType : public Object {
   bool NowIs(Handle<FieldType> other);
   Type* Convert(Zone* zone);
 
-  void PrintTo(std::ostream& os);
+  void PrintTo(v8::base::OStream& os);
 };
 
 }  // namespace internal

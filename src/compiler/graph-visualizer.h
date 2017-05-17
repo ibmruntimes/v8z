@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <iosfwd>
+#include "src/base/logging.h"
 
 namespace v8 {
 namespace internal {
@@ -30,14 +31,16 @@ struct AsJSON {
   const SourcePositionTable* positions;
 };
 
-std::ostream& operator<<(std::ostream& os, const AsJSON& ad);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsJSON& ad);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const AsJSON&);
 
 struct AsRPO {
   explicit AsRPO(const Graph& g) : graph(g) {}
   const Graph& graph;
 };
 
-std::ostream& operator<<(std::ostream& os, const AsRPO& ad);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsRPO& ad);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const AsRPO&);
 
 
 struct AsC1VCompilation {
@@ -68,10 +71,13 @@ struct AsC1VRegisterAllocationData {
   const RegisterAllocationData* data_;
 };
 
-std::ostream& operator<<(std::ostream& os, const AsC1VCompilation& ac);
-std::ostream& operator<<(std::ostream& os, const AsC1V& ac);
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsC1VCompilation& ac);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsC1V& ac);
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const AsC1VRegisterAllocationData& ac);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const AsC1VCompilation&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const AsC1V&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const AsC1VRegisterAllocationData&);
 
 }  // namespace compiler
 }  // namespace internal

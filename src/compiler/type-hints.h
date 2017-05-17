@@ -49,8 +49,8 @@ class BinaryOperationHints final {
   uint32_t bit_field_;
 };
 
-std::ostream& operator<<(std::ostream&, BinaryOperationHints::Hint);
-std::ostream& operator<<(std::ostream&, BinaryOperationHints);
+v8::base::OStream& operator<<(v8::base::OStream&, BinaryOperationHints::Hint);
+v8::base::OStream& operator<<(v8::base::OStream&, BinaryOperationHints);
 
 
 // Type hints for the ToBoolean type conversion.
@@ -69,11 +69,11 @@ enum class ToBooleanHint : uint16_t {
          kSymbol | kHeapNumber | kSimdValue
 };
 
-std::ostream& operator<<(std::ostream&, ToBooleanHint);
+v8::base::OStream& operator<<(v8::base::OStream&, ToBooleanHint);
 
 typedef base::Flags<ToBooleanHint, uint16_t> ToBooleanHints;
 
-std::ostream& operator<<(std::ostream&, ToBooleanHints);
+v8::base::OStream& operator<<(v8::base::OStream&, ToBooleanHints);
 
 DEFINE_OPERATORS_FOR_FLAGS(ToBooleanHints)
 

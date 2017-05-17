@@ -34,9 +34,10 @@ struct SharedOperator {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const SharedOperator& fop) {
-  return os << IrOpcode::Mnemonic(fop.opcode);
-}
+// v8::base::OStream& operator<<(v8::base::OStream& os, const SharedOperator& fop) {
+//   return os << IrOpcode::Mnemonic(fop.opcode);
+// }
+// DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const SharedOperator&);
 
 
 const SharedOperator kSharedOperators[] = {

@@ -646,7 +646,7 @@ class RelocInfo {
 #ifdef ENABLE_DISASSEMBLER
   // Printing
   static const char* RelocModeName(Mode rmode);
-  void Print(Isolate* isolate, std::ostream& os);  // NOLINT
+  void Print(Isolate* isolate, v8::base::OStream& os);  // NOLINT
 #endif  // ENABLE_DISASSEMBLER
 #ifdef VERIFY_HEAP
   void Verify(Isolate* isolate);
@@ -1112,7 +1112,8 @@ bool operator!=(ExternalReference, ExternalReference);
 
 size_t hash_value(ExternalReference);
 
-std::ostream& operator<<(std::ostream&, ExternalReference);
+v8::base::OStream& operator<<(v8::base::OStream&, ExternalReference);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(ExternalReference)
 
 
 // -----------------------------------------------------------------------------

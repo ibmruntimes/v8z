@@ -28,7 +28,8 @@ struct SimplifiedOperatorGlobalCache;
 
 enum BaseTaggedness { kUntaggedBase, kTaggedBase };
 
-std::ostream& operator<<(std::ostream&, BaseTaggedness);
+v8::base::OStream& operator<<(v8::base::OStream&, BaseTaggedness);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(BaseTaggedness)
 
 
 // An access descriptor for loads/stores of array buffers.
@@ -49,7 +50,8 @@ bool operator!=(BufferAccess, BufferAccess);
 
 size_t hash_value(BufferAccess);
 
-std::ostream& operator<<(std::ostream&, BufferAccess);
+v8::base::OStream& operator<<(v8::base::OStream&, BufferAccess);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(BufferAccess)
 
 BufferAccess const BufferAccessOf(const Operator* op) WARN_UNUSED_RESULT;
 
@@ -72,7 +74,8 @@ bool operator!=(FieldAccess const&, FieldAccess const&);
 
 size_t hash_value(FieldAccess const&);
 
-std::ostream& operator<<(std::ostream&, FieldAccess const&);
+v8::base::OStream& operator<<(v8::base::OStream&, FieldAccess const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(FieldAccess const&)
 
 FieldAccess const& FieldAccessOf(const Operator* op) WARN_UNUSED_RESULT;
 
@@ -95,7 +98,8 @@ bool operator!=(ElementAccess const&, ElementAccess const&);
 
 size_t hash_value(ElementAccess const&);
 
-std::ostream& operator<<(std::ostream&, ElementAccess const&);
+v8::base::OStream& operator<<(v8::base::OStream&, ElementAccess const&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(ElementAccess const&)
 
 ElementAccess const& ElementAccessOf(const Operator* op) WARN_UNUSED_RESULT;
 

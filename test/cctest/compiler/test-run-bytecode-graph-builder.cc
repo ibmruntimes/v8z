@@ -2596,7 +2596,7 @@ void TestJumpWithConstantsAndWideConstants(size_t shard) {
   const int kStep = 46;
   int start = static_cast<int>(7 + 17 * shard);
   for (int constants = start; constants < 300; constants += kStep) {
-    std::stringstream filler_os;
+    v8::base::StringStream filler_os;
     // Generate a string that consumes constant pool entries and
     // spread out branch distances in script below.
     for (int i = 0; i < constants; i++) {
@@ -2604,7 +2604,7 @@ void TestJumpWithConstantsAndWideConstants(size_t shard) {
     }
     std::string filler(filler_os.str());
 
-    std::stringstream script_os;
+    v8::base::StringStream script_os;
     script_os << "function " << kFunctionName << "(a) {\n";
     script_os << "  " << filler;
     script_os << "  for (var i = a; i < 2; i++) {\n";

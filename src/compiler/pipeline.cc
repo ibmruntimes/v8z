@@ -370,7 +370,7 @@ void TraceSchedule(CompilationInfo* info, Schedule* schedule) {
     if (json_file != nullptr) {
       OFStream json_of(json_file);
       json_of << "{\"name\":\"Schedule\",\"type\":\"schedule\",\"data\":\"";
-      std::stringstream schedule_stream;
+      v8::base::StringStream schedule_stream;
       schedule_stream << *schedule;
       std::string schedule_string(schedule_stream.str());
       for (const auto& c : schedule_string) {
@@ -1358,7 +1358,7 @@ Handle<Code> Pipeline::ScheduleAndGenerateCode(
                  data->sequence());
   }
 
-  std::ostringstream source_position_output;
+  v8::base::OStringStream source_position_output;
   if (FLAG_trace_turbo) {
     // Output source position information before the graph is deleted.
     data_->source_positions()->Print(source_position_output);
@@ -1395,7 +1395,7 @@ Handle<Code> Pipeline::ScheduleAndGenerateCode(
   Handle<Code> code = data->code();
   if (profiler_data != nullptr) {
 #if ENABLE_DISASSEMBLER
-    std::ostringstream os;
+    v8::base::OStringStream os;
     code->Disassemble(nullptr, os);
     profiler_data->SetCode(&os);
 #endif
@@ -1411,7 +1411,7 @@ Handle<Code> Pipeline::ScheduleAndGenerateCode(
       json_of
           << "{\"name\":\"disassembly\",\"type\":\"disassembly\",\"data\":\"";
 #if ENABLE_DISASSEMBLER
-      std::stringstream disassembly_stream;
+      v8::base::StringStream disassembly_stream;
       code->Disassemble(nullptr, disassembly_stream);
       std::string disassembly_string(disassembly_stream.str());
       for (const auto& c : disassembly_string) {

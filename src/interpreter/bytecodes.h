@@ -550,7 +550,7 @@ class Bytecodes {
                                         OperandScale operand_scale);
 
   // Decode a single bytecode and operands to |os|.
-  static std::ostream& Decode(std::ostream& os, const uint8_t* bytecode_start,
+  static v8::base::OStream& Decode(v8::base::OStream& os, const uint8_t* bytecode_start,
                               int number_of_parameters);
 
   // Returns true if a handler is generated for a bytecode at a given
@@ -566,11 +566,16 @@ class Bytecodes {
   DISALLOW_IMPLICIT_CONSTRUCTORS(Bytecodes);
 };
 
-std::ostream& operator<<(std::ostream& os, const Bytecode& bytecode);
-std::ostream& operator<<(std::ostream& os, const AccumulatorUse& use);
-std::ostream& operator<<(std::ostream& os, const OperandScale& operand_scale);
-std::ostream& operator<<(std::ostream& os, const OperandSize& operand_size);
-std::ostream& operator<<(std::ostream& os, const OperandType& operand_type);
+v8::base::OStream& operator<<(v8::base::OStream& os, const Bytecode& bytecode);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AccumulatorUse& use);
+v8::base::OStream& operator<<(v8::base::OStream& os, const OperandScale& operand_scale);
+v8::base::OStream& operator<<(v8::base::OStream& os, const OperandSize& operand_size);
+v8::base::OStream& operator<<(v8::base::OStream& os, const OperandType& operand_type);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const Bytecode&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const AccumulatorUse&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const OperandScale&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const OperandSize&);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const OperandType&);
 
 }  // namespace interpreter
 }  // namespace internal

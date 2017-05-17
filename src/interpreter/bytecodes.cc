@@ -527,7 +527,7 @@ uint32_t Bytecodes::DecodeUnsignedOperand(const uint8_t* operand_start,
 }
 
 // static
-std::ostream& Bytecodes::Decode(std::ostream& os, const uint8_t* bytecode_start,
+v8::base::OStream& Bytecodes::Decode(v8::base::OStream& os, const uint8_t* bytecode_start,
                                 int parameter_count) {
   Bytecode bytecode = Bytecodes::FromByte(bytecode_start[0]);
   int prefix_offset = 0;
@@ -624,23 +624,23 @@ bool Bytecodes::BytecodeHasHandler(Bytecode bytecode,
          Bytecodes::IsBytecodeWithScalableOperands(bytecode);
 }
 
-std::ostream& operator<<(std::ostream& os, const Bytecode& bytecode) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Bytecode& bytecode) {
   return os << Bytecodes::ToString(bytecode);
 }
 
-std::ostream& operator<<(std::ostream& os, const AccumulatorUse& use) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AccumulatorUse& use) {
   return os << Bytecodes::AccumulatorUseToString(use);
 }
 
-std::ostream& operator<<(std::ostream& os, const OperandSize& operand_size) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const OperandSize& operand_size) {
   return os << Bytecodes::OperandSizeToString(operand_size);
 }
 
-std::ostream& operator<<(std::ostream& os, const OperandScale& operand_scale) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const OperandScale& operand_scale) {
   return os << Bytecodes::OperandScaleToString(operand_scale);
 }
 
-std::ostream& operator<<(std::ostream& os, const OperandType& operand_type) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const OperandType& operand_type) {
   return os << Bytecodes::OperandTypeToString(operand_type);
 }
 
@@ -732,12 +732,12 @@ std::string Register::ToString(int parameter_count) {
     if (parameter_index == 0) {
       return std::string("<this>");
     } else {
-      std::ostringstream s;
+      v8::base::OStringStream s;
       s << "a" << parameter_index - 1;
       return s.str();
     }
   } else {
-    std::ostringstream s;
+    v8::base::OStringStream s;
     s << "r" << index();
     return s.str();
   }

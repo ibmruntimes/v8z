@@ -43,7 +43,8 @@ V8_INLINE size_t hash_value(TruncationMode mode) {
   return static_cast<uint8_t>(mode);
 }
 
-std::ostream& operator<<(std::ostream&, TruncationMode);
+v8::base::OStream& operator<<(v8::base::OStream&, TruncationMode);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(TruncationMode);
 
 TruncationMode TruncationModeOf(Operator const*);
 
@@ -56,7 +57,8 @@ enum WriteBarrierKind {
   kFullWriteBarrier
 };
 
-std::ostream& operator<<(std::ostream& os, WriteBarrierKind);
+v8::base::OStream& operator<<(v8::base::OStream& os, WriteBarrierKind);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(WriteBarrierKind);
 
 
 // A Load needs a MachineType.
@@ -86,7 +88,8 @@ bool operator!=(StoreRepresentation, StoreRepresentation);
 
 size_t hash_value(StoreRepresentation);
 
-std::ostream& operator<<(std::ostream&, StoreRepresentation);
+v8::base::OStream& operator<<(v8::base::OStream&, StoreRepresentation);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(StoreRepresentation);
 
 StoreRepresentation const& StoreRepresentationOf(Operator const*);
 

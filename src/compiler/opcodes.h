@@ -6,6 +6,7 @@
 #define V8_COMPILER_OPCODES_H_
 
 #include <iosfwd>
+#include "src/base/logging.h"
 
 // Opcodes for control operators.
 #define CONTROL_OP_LIST(V) \
@@ -428,7 +429,7 @@ class IrOpcode {
   }
 };
 
-std::ostream& operator<<(std::ostream&, IrOpcode::Value);
+v8::base::OStream& operator<<(v8::base::OStream&, IrOpcode::Value);
 
 }  // namespace compiler
 }  // namespace internal

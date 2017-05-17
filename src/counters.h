@@ -554,7 +554,7 @@ struct RuntimeCallStats {
   RuntimeCallTimer* current_timer() { return current_timer_; }
 
   void Reset();
-  void Print(std::ostream& os);
+  void Print(v8::base::OStream& os);
 
   RuntimeCallStats() { Reset(); }
 };

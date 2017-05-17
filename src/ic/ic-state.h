@@ -54,7 +54,8 @@ class CallICState final BASE_EMBEDDED {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const CallICState& s);
+v8::base::OStream& operator<<(v8::base::OStream& os, const CallICState& s);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const CallICState&);
 
 
 class BinaryOpICState final BASE_EMBEDDED {
@@ -129,6 +130,7 @@ class BinaryOpICState final BASE_EMBEDDED {
   Isolate* isolate() const { return isolate_; }
 
  private:
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, const BinaryOpICState& s);
   friend std::ostream& operator<<(std::ostream& os, const BinaryOpICState& s);
 
   enum Kind { NONE, SMI, INT32, NUMBER, STRING, GENERIC };
@@ -161,7 +163,8 @@ class BinaryOpICState final BASE_EMBEDDED {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const BinaryOpICState& s);
+v8::base::OStream& operator<<(v8::base::OStream& os, const BinaryOpICState& s);
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(const BinaryOpICState&);
 
 
 class CompareICState {

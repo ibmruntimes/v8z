@@ -63,9 +63,9 @@ const SharedOperator kSharedOperators[] = {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const SharedOperator& sop) {
-  return os << IrOpcode::Mnemonic(sop.opcode);
-}
+// v8::base::OStream& operator<<(v8::base::OStream& os, const SharedOperator& sop) {
+//   return os << IrOpcode::Mnemonic(sop.opcode);
+// }
 
 }  // namespace
 

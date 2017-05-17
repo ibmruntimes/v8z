@@ -114,8 +114,8 @@ class Operator : public ZoneObject {
  protected:
   // Print the full operator into the given stream, including any
   // static parameters. Useful for debugging and visualizing the IR.
-  virtual void PrintTo(std::ostream& os) const;
-  friend std::ostream& operator<<(std::ostream& os, const Operator& op);
+  virtual void PrintTo(v8::base::OStream& os) const;
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, const Operator& op);
 
  private:
   Opcode opcode_;
@@ -133,7 +133,7 @@ class Operator : public ZoneObject {
 
 DEFINE_OPERATORS_FOR_FLAGS(Operator::Properties)
 
-std::ostream& operator<<(std::ostream& os, const Operator& op);
+v8::base::OStream& operator<<(v8::base::OStream& os, const Operator& op);
 
 
 // Default equality function for below Operator1<*> class.
@@ -172,12 +172,12 @@ class Operator1 : public Operator {
   size_t HashCode() const final {
     return base::hash_combine(this->opcode(), this->hash_(this->parameter()));
   }
-  virtual void PrintParameter(std::ostream& os) const {
+  virtual void PrintParameter(v8::base::OStream& os) const {
     os << "[" << this->parameter() << "]";
   }
 
  protected:
-  void PrintTo(std::ostream& os) const final {
+  void PrintTo(v8::base::OStream& os) const final {
     os << mnemonic();
     PrintParameter(os);
   }

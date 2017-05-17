@@ -138,9 +138,11 @@ class Unique final {
 };
 
 template <typename T>
-inline std::ostream& operator<<(std::ostream& os, Unique<T> uniq) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, Unique<T> uniq) {
   return os << Brief(*uniq.handle());
 }
+template <typename T>
+DEFINE_INSERT_OPERATOR_FOR_OSTREAM(Unique<T>);
 
 
 template <typename T>

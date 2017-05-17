@@ -80,7 +80,7 @@ bool CodeStub::FindCodeInCache(Code** code_out) {
 
 
 void CodeStub::RecordCodeGeneration(Handle<Code> code) {
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << *this;
   PROFILE(isolate(),
           CodeCreateEvent(Logger::STUB_TAG, AbstractCode::cast(*code),
@@ -167,7 +167,7 @@ Handle<Code> CodeStub::GetCode() {
     if (FLAG_print_code_stubs) {
       CodeTracer::Scope trace_scope(isolate()->GetCodeTracer());
       OFStream os(trace_scope.file());
-      std::ostringstream name;
+      v8::base::OStringStream name;
       name << *this;
       new_object->Disassemble(name.str().c_str(), os);
       os << u8"\n";
@@ -211,12 +211,12 @@ const char* CodeStub::MajorName(CodeStub::Major major_key) {
 }
 #pragma convert(pop)
 
-void CodeStub::PrintBaseName(std::ostream& os) const {  // NOLINT
+void CodeStub::PrintBaseName(v8::base::OStream& os) const {  // NOLINT
   os << MajorName(MajorKey());
 }
 
 
-void CodeStub::PrintName(std::ostream& os) const {  // NOLINT
+void CodeStub::PrintName(v8::base::OStream& os) const {  // NOLINT
   PrintBaseName(os);
   PrintState(os);
 }
@@ -287,7 +287,7 @@ void BinaryOpICStub::GenerateAheadOfTime(Isolate* isolate) {
 }
 
 
-void BinaryOpICStub::PrintState(std::ostream& os) const {  // NOLINT
+void BinaryOpICStub::PrintState(v8::base::OStream& os) const {  // NOLINT
   os << state();
 }
 
@@ -308,7 +308,7 @@ void BinaryOpICWithAllocationSiteStub::GenerateAheadOfTime(Isolate* isolate) {
 
 
 void BinaryOpICWithAllocationSiteStub::PrintState(
-    std::ostream& os) const {  // NOLINT
+    v8::base::OStream& os) const {  // NOLINT
   os << state();
 }
 
@@ -323,7 +323,7 @@ void BinaryOpICWithAllocationSiteStub::GenerateAheadOfTime(
 }
 
 
-std::ostream& operator<<(std::ostream& os, const StringAddFlags& flags) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const StringAddFlags& flags) {
   switch (flags) {
     case STRING_ADD_CHECK_NONE:
       return os << u8"CheckNone";
@@ -345,7 +345,7 @@ std::ostream& operator<<(std::ostream& os, const StringAddFlags& flags) {
 }
 
 
-void StringAddStub::PrintBaseName(std::ostream& os) const {  // NOLINT
+void StringAddStub::PrintBaseName(v8::base::OStream& os) const {  // NOLINT
   os << u8"StringAddStub_" << flags() << u8"_" << pretenure_flag();
 }
 
@@ -3094,7 +3094,7 @@ void HydrogenCodeStub::TraceTransition(StateType from, StateType to) {
 // TODO(svenpanne) Make this a real infix_ostream_iterator.
 class SimpleListPrinter {
  public:
-  explicit SimpleListPrinter(std::ostream& os) : os_(os), first_(true) {}
+  explicit SimpleListPrinter(v8::base::OStream& os) : os_(os), first_(true) {}
 
   void Add(const char* s) {
     if (first_) {
@@ -3106,12 +3106,12 @@ class SimpleListPrinter {
   }
 
  private:
-  std::ostream& os_;
+  v8::base::OStream& os_;
   bool first_;
 };
 
 
-void CallICStub::PrintState(std::ostream& os) const {  // NOLINT
+void CallICStub::PrintState(v8::base::OStream& os) const {  // NOLINT
   os << state();
 }
 
@@ -3350,7 +3350,7 @@ void StoreFastElementStub::GenerateAheadOfTime(Isolate* isolate) {
 }
 
 
-void ArrayConstructorStub::PrintName(std::ostream& os) const {  // NOLINT
+void ArrayConstructorStub::PrintName(v8::base::OStream& os) const {  // NOLINT
   os << u8"ArrayConstructorStub";
   switch (argument_count()) {
     case ANY:
@@ -3370,8 +3370,8 @@ void ArrayConstructorStub::PrintName(std::ostream& os) const {  // NOLINT
 }
 
 
-std::ostream& ArrayConstructorStubBase::BasePrintName(
-    std::ostream& os,  // NOLINT
+v8::base::OStream& ArrayConstructorStubBase::BasePrintName(
+    v8::base::OStream& os,  // NOLINT
     const char* name) const {
   os << name << u8"_" << ElementsKindToString(elements_kind());
   if (override_mode() == DISABLE_ALLOCATION_SITES) {
@@ -3389,11 +3389,11 @@ bool ToBooleanICStub::UpdateStatus(Handle<Object> object) {
   return to_boolean_value;
 }
 
-void ToBooleanICStub::PrintState(std::ostream& os) const {  // NOLINT
+void ToBooleanICStub::PrintState(v8::base::OStream& os) const {  // NOLINT
   os << types();
 }
 
-std::ostream& operator<<(std::ostream& os, const ToBooleanICStub::Types& s) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const ToBooleanICStub::Types& s) {
   os << u8"(";
   SimpleListPrinter p(os);
   if (s.IsEmpty()) p.Add(u8"None");

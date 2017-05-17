@@ -302,9 +302,9 @@ struct WasmFunctionName {
       : function_(function), module_(menv ? menv->module : nullptr) {}
 };
 
-std::ostream& operator<<(std::ostream& os, const WasmModule& module);
-std::ostream& operator<<(std::ostream& os, const WasmFunction& function);
-std::ostream& operator<<(std::ostream& os, const WasmFunctionName& name);
+v8::base::OStream& operator<<(v8::base::OStream& os, const WasmModule& module);
+v8::base::OStream& operator<<(v8::base::OStream& os, const WasmFunction& function);
+v8::base::OStream& operator<<(v8::base::OStream& os, const WasmFunctionName& name);
 
 typedef Result<WasmModule*> ModuleResult;
 typedef Result<WasmFunction*> FunctionResult;

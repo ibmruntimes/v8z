@@ -68,7 +68,7 @@
 namespace v8 {
 namespace internal {
 
-std::ostream& operator<<(std::ostream& os, InstanceType instance_type) {
+v8::base::OStream& operator<<(v8::base::OStream& os, InstanceType instance_type) {
   switch (instance_type) {
 #define WRITE_TYPE(TYPE) \
   case TYPE:             \
@@ -1662,12 +1662,12 @@ std::ostream& operator<<(std::ostream& os, ToAscii<void*> obj) {
   return os << obj.value();
 #endif
 }
-  
-
-void Object::ShortPrint(std::ostream& os) { os << Brief(this); }
 
 
-std::ostream& operator<<(std::ostream& os, const Brief& v) {
+void Object::ShortPrint(v8::base::OStream& os) { os << Brief(this); }
+
+
+v8::base::OStream& operator<<(v8::base::OStream& os, const Brief& v) {
   if (v.value->IsSmi()) {
     Smi::cast(v.value)->SmiPrint(os);
   } else {
@@ -1679,7 +1679,7 @@ std::ostream& operator<<(std::ostream& os, const Brief& v) {
 }
 
 
-void Smi::SmiPrint(std::ostream& os) const {  // NOLINT
+void Smi::SmiPrint(v8::base::OStream& os) const {  // NOLINT
   os << value();
 }
 
@@ -1927,7 +1927,7 @@ void String::StringShortPrint(StringStream* accumulator) {
 }
 
 
-void String::PrintUC16(std::ostream& os, int start, int end) {  // NOLINT
+void String::PrintUC16(v8::base::OStream& os, int start, int end) {  // NOLINT
   if (end < 0) end = length();
   StringCharacterStream stream(this, start);
   for (int i = start; i < end && stream.HasMore(); i++) {
@@ -2171,7 +2171,7 @@ void JSObject::PrintInstanceMigration(FILE* file,
 }
 
 
-void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
+void HeapObject::HeapObjectShortPrint(v8::base::OStream& os) {  // NOLINT
   Heap* heap = GetHeap();
   if (!heap->Contains(this)) {
     os << u8"!!!INVALID POINTER!!!";
@@ -2374,7 +2374,7 @@ bool HeapNumber::HeapNumberBooleanValue() {
 }
 
 
-void HeapNumber::HeapNumberPrint(std::ostream& os) {  // NOLINT
+void HeapNumber::HeapNumberPrint(v8::base::OStream& os) {  // NOLINT
   os << value();
 }
 
@@ -2408,7 +2408,7 @@ Handle<String> Float32x4::ToString(Handle<Float32x4> input) {
   Isolate* const isolate = input->GetIsolate();
   char arr[100];
   Vector<char> buffer(arr, arraysize(arr));
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << "SIMD.Float32x4("
      << std::string(DoubleToCString(input->get_lane(0), buffer)) << ", "
      << std::string(DoubleToCString(input->get_lane(1), buffer)) << ", "
@@ -2421,7 +2421,7 @@ Handle<String> Float32x4::ToString(Handle<Float32x4> input) {
 #define SIMD128_BOOL_TO_STRING(Type, lane_count)                            \
   Handle<String> Type::ToString(Handle<Type> input) {                       \
     Isolate* const isolate = input->GetIsolate();                           \
-    std::ostringstream os;                                                  \
+    v8::base::OStringStream os;                                                  \
     os << "SIMD." #Type "(";                                                \
     os << (input->get_lane(0) ? "true" : "false");                          \
     for (int i = 1; i < lane_count; i++) {                                  \
@@ -2441,8 +2441,8 @@ SIMD128_BOOL_TO_STRING(Bool8x16, 16)
     Isolate* const isolate = input->GetIsolate();                           \
     char arr[100];                                                          \
     Vector<char> buffer(arr, arraysize(arr));                               \
-    std::ostringstream os;                                                  \
-    os << "SIMD."#Type "(";                                                \
+    v8::base::OStringStream os;                                                  \
+    os << "SIMD." #Type "(";                                                \
     os << IntToCString(input->get_lane(0), buffer);                         \
     for (int i = 1; i < lane_count; i++) {                                  \
       os << ", " << IntToCString(input->get_lane(i), buffer);               \
@@ -13835,7 +13835,7 @@ void JSFunction::CalculateInstanceSizeForDerivedClass(
 
 
 // Output the source code without any allocation in the heap.
-std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const SourceCodeOf& v) {
   const SharedFunctionInfo* s = v.value;
   // For some native functions there is no source.
   if (!s->HasSourceCode()) return os << "<No Source>";
@@ -14746,7 +14746,7 @@ WeakCell* Code::CachedWeakCell() {
 #ifdef ENABLE_DISASSEMBLER
 
 void DeoptimizationInputData::DeoptimizationInputDataPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   disasm::NameConverter converter;
   int const inlined_function_count = InlinedFunctionCount()->value();
   os << "Inlined functions (count = " << inlined_function_count << ")\n";
@@ -14941,7 +14941,7 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
 
 
 void DeoptimizationOutputData::DeoptimizationOutputDataPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   os << "Deoptimization Output Data (deopt points = " << this->DeoptPoints()
      << ")\n";
   if (this->DeoptPoints() == 0) return;
@@ -14957,7 +14957,7 @@ void DeoptimizationOutputData::DeoptimizationOutputDataPrint(
 }
 
 
-void HandlerTable::HandlerTableRangePrint(std::ostream& os) {
+void HandlerTable::HandlerTableRangePrint(v8::base::OStream& os) {
   os << "   from   to       hdlr\n";
   for (int i = 0; i < length(); i += kRangeEntrySize) {
     int pc_start = Smi::cast(get(i + kRangeStartIndex))->value();
@@ -14973,7 +14973,7 @@ void HandlerTable::HandlerTableRangePrint(std::ostream& os) {
 }
 
 
-void HandlerTable::HandlerTableReturnPrint(std::ostream& os) {
+void HandlerTable::HandlerTableReturnPrint(v8::base::OStream& os) {
   os << "   off      hdlr (c)\n";
   for (int i = 0; i < length(); i += kReturnEntrySize) {
     int pc_offset = Smi::cast(get(i + kReturnOffsetIndex))->value();
@@ -15013,7 +15013,7 @@ const char* Code::StubType2String(StubType type) {
 }
 
 
-void Code::PrintExtraICState(std::ostream& os,  // NOLINT
+void Code::PrintExtraICState(v8::base::OStream& os,  // NOLINT
                              Kind kind, ExtraICState extra) {
   os << "extra_ic_state = ";
   if ((kind == STORE_IC || kind == KEYED_STORE_IC) &&
@@ -15025,7 +15025,7 @@ void Code::PrintExtraICState(std::ostream& os,  // NOLINT
 }
 
 
-void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
+void Code::Disassemble(const char* name, v8::base::OStream& os) {  // NOLINT
   os << "kind = " << Kind2String(kind()) << "\n";
   if (IsCodeStubOrIC()) {
     const char* n = CodeStub::MajorName(CodeStub::GetMajorKey(this));
@@ -15210,7 +15210,7 @@ int BytecodeArray::SourceStatementPosition(int offset) {
   return statement_position;
 }
 
-void BytecodeArray::Disassemble(std::ostream& os) {
+void BytecodeArray::Disassemble(v8::base::OStream& os) {
   os << u8"Parameter count " << parameter_count() << u8"\n";
   os << u8"Frame size " << frame_size() << u8"\n";
   Vector<char> buf = Vector<char>::New(50);
@@ -16406,7 +16406,7 @@ int JSObject::GetFastElementsUsage() {
 // we keep it here instead to satisfy certain compilers.
 #ifdef OBJECT_PRINT
 template <typename Derived, typename Shape, typename Key>
-void Dictionary<Derived, Shape, Key>::Print(std::ostream& os) {  // NOLINT
+void Dictionary<Derived, Shape, Key>::Print(v8::base::OStream& os) {  // NOLINT
   int capacity = this->Capacity();
   for (int i = 0; i < capacity; i++) {
     Object* k = this->KeyAt(i);
@@ -16854,7 +16854,7 @@ const char* Symbol::PrivateSymbolToName() const {
 }
 
 
-void Symbol::SymbolShortPrint(std::ostream& os) {
+void Symbol::SymbolShortPrint(v8::base::OStream& os) {
   os << u8"<Symbol: " << ToAscii<uint32_t>(Hash());
   if (!name()->IsUndefined()) {
     os << u8" ";

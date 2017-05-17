@@ -41,7 +41,7 @@ void AdvanceToOffsetForTracing(
               interpreter::OperandScale::kSingle));
 }
 
-void PrintRegisters(std::ostream& os, bool is_input,
+void PrintRegisters(v8::base::OStream& os, bool is_input,
                     interpreter::BytecodeArrayIterator& bytecode_iterator,
                     Handle<Object> accumulator) {
   static const char kAccumulator[] = "\x61\x63\x63\x75\x6d\x75\x6c\x61\x74\x6f\x72";

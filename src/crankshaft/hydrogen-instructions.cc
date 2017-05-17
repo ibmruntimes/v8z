@@ -524,12 +524,12 @@ void HValue::SetBlock(HBasicBlock* block) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const HValue& v) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const HValue& v) {
   return v.PrintTo(os);
 }
 
 
-std::ostream& operator<<(std::ostream& os, const TypeOf& t) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const TypeOf& t) {
   if (t.value->representation().IsTagged() &&
       !t.value->type().Equals(HType::Tagged()))
     return os;
@@ -537,7 +537,7 @@ std::ostream& operator<<(std::ostream& os, const TypeOf& t) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const ChangesOf& c) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const ChangesOf& c) {
   GVNFlagSet changes_flags = c.value->ChangesFlags();
   if (changes_flags.IsEmpty()) return os;
   os << " changes[";
@@ -616,7 +616,7 @@ void HValue::ComputeInitialRange(Zone* zone) {
 }
 
 
-std::ostream& HInstruction::PrintTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HInstruction::PrintTo(v8::base::OStream& os) const {  // NOLINT
   os << Mnemonic() << " ";
   PrintDataTo(os) << ChangesOf(this) << TypeOf(this);
   if (CheckFlag(HValue::kHasNoObservableSideEffects)) os << " [noOSE]";
@@ -625,7 +625,7 @@ std::ostream& HInstruction::PrintTo(std::ostream& os) const {  // NOLINT
 }
 
 
-std::ostream& HInstruction::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HInstruction::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   for (int i = 0; i < OperandCount(); ++i) {
     if (i > 0) os << " ";
     os << NameOf(OperandAt(i));
@@ -883,38 +883,38 @@ bool HInstruction::CanDeoptimize() {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const NameOf& v) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const NameOf& v) {
   return os << v.value->representation().Mnemonic() << v.value->id();
 }
 
-std::ostream& HDummyUse::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HDummyUse::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(value());
 }
 
 
-std::ostream& HEnvironmentMarker::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HEnvironmentMarker::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   return os << (kind() == BIND ? "bind" : "lookup") << " var[" << index()
             << "]";
 }
 
 
-std::ostream& HUnaryCall::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HUnaryCall::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(value()) << " #" << argument_count();
 }
 
 
-std::ostream& HBinaryCall::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HBinaryCall::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(first()) << " " << NameOf(second()) << " #"
             << argument_count();
 }
 
-std::ostream& HInvokeFunction::PrintTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HInvokeFunction::PrintTo(v8::base::OStream& os) const {  // NOLINT
   if (tail_call_mode() == TailCallMode::kAllow) os << "Tail";
   return HBinaryCall::PrintTo(os);
 }
 
-std::ostream& HInvokeFunction::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HInvokeFunction::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   HBinaryCall::PrintDataTo(os);
   if (syntactic_tail_call_mode() == TailCallMode::kAllow) {
     os << ", JSTailCall";
@@ -922,7 +922,7 @@ std::ostream& HInvokeFunction::PrintDataTo(std::ostream& os) const {  // NOLINT
   return os;
 }
 
-std::ostream& HBoundsCheck::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HBoundsCheck::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << NameOf(index()) << " " << NameOf(length());
   if (base() != NULL && (offset() != 0 || scale() != 0)) {
     os << " base: ((";
@@ -977,8 +977,8 @@ Range* HBoundsCheck::InferRange(Zone* zone) {
 }
 
 
-std::ostream& HCallWithDescriptor::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCallWithDescriptor::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   for (int i = 0; i < OperandCount(); i++) {
     os << NameOf(OperandAt(i)) << " ";
   }
@@ -990,40 +990,40 @@ std::ostream& HCallWithDescriptor::PrintDataTo(
 }
 
 
-std::ostream& HCallNewArray::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCallNewArray::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << ElementsKindToString(elements_kind()) << " ";
   return HBinaryCall::PrintDataTo(os);
 }
 
 
-std::ostream& HCallRuntime::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCallRuntime::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << function()->name << " ";
   if (save_doubles() == kSaveFPRegs) os << "[save doubles] ";
   return os << "#" << argument_count();
 }
 
 
-std::ostream& HClassOfTestAndBranch::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HClassOfTestAndBranch::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   return os << "class_of_test(" << NameOf(value()) << ", \""
             << class_name()->ToCString().get() << "\")";
 }
 
 
-std::ostream& HWrapReceiver::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HWrapReceiver::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(receiver()) << " " << NameOf(function());
 }
 
 
-std::ostream& HAccessArgumentsAt::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HAccessArgumentsAt::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(arguments()) << "[" << NameOf(index()) << "], length "
             << NameOf(length());
 }
 
 
-std::ostream& HControlInstruction::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HControlInstruction::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   os << " goto (";
   bool first_block = true;
   for (HSuccessorIterator it(this); !it.Done(); it.Advance()) {
@@ -1035,14 +1035,14 @@ std::ostream& HControlInstruction::PrintDataTo(
 }
 
 
-std::ostream& HUnaryControlInstruction::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HUnaryControlInstruction::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   os << NameOf(value());
   return HControlInstruction::PrintDataTo(os);
 }
 
 
-std::ostream& HReturn::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HReturn::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(value()) << " (pop " << NameOf(parameter_count())
             << " values)";
 }
@@ -1087,13 +1087,13 @@ bool HBranch::KnownSuccessorBlock(HBasicBlock** block) {
 }
 
 
-std::ostream& HBranch::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HBranch::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return HUnaryControlInstruction::PrintDataTo(os) << " "
                                                    << expected_input_types();
 }
 
 
-std::ostream& HCompareMap::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCompareMap::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << NameOf(value()) << " (" << *map().handle() << ")";
   HControlInstruction::PrintDataTo(os);
   if (known_successor_index() == 0) {
@@ -1157,19 +1157,19 @@ Range* HUnaryMathOperation::InferRange(Zone* zone) {
 }
 
 
-std::ostream& HUnaryMathOperation::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HUnaryMathOperation::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   return os << OpName() << " " << NameOf(value());
 }
 
 
-std::ostream& HUnaryOperation::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HUnaryOperation::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(value());
 }
 
 
-std::ostream& HHasInstanceTypeAndBranch::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HHasInstanceTypeAndBranch::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   os << NameOf(value());
   switch (from_) {
     case FIRST_JS_RECEIVER_TYPE:
@@ -1191,8 +1191,8 @@ std::ostream& HHasInstanceTypeAndBranch::PrintDataTo(
 }
 
 
-std::ostream& HTypeofIsAndBranch::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HTypeofIsAndBranch::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   os << NameOf(value()) << " == " << type_literal()->ToCString().get();
   return HControlInstruction::PrintDataTo(os);
 }
@@ -1258,7 +1258,7 @@ bool HTypeofIsAndBranch::KnownSuccessorBlock(HBasicBlock** block) {
 }
 
 
-std::ostream& HCheckMapValue::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCheckMapValue::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(value()) << " " << NameOf(map());
 }
 
@@ -1274,19 +1274,19 @@ HValue* HCheckMapValue::Canonicalize() {
 }
 
 
-std::ostream& HForInPrepareMap::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HForInPrepareMap::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(enumerable());
 }
 
 
-std::ostream& HForInCacheArray::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HForInCacheArray::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(enumerable()) << " " << NameOf(map()) << "[" << idx_
             << "]";
 }
 
 
-std::ostream& HLoadFieldByIndex::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HLoadFieldByIndex::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(object()) << " " << NameOf(index());
 }
 
@@ -1438,7 +1438,7 @@ HValue* HWrapReceiver::Canonicalize() {
 }
 
 
-std::ostream& HTypeof::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HTypeof::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(value());
 }
 
@@ -1455,13 +1455,13 @@ HInstruction* HForceRepresentation::New(Isolate* isolate, Zone* zone,
 }
 
 
-std::ostream& HForceRepresentation::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HForceRepresentation::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   return os << representation().Mnemonic() << " " << NameOf(value());
 }
 
 
-std::ostream& HChange::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HChange::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   HUnaryOperation::PrintDataTo(os);
   os << " " << from().Mnemonic() << " to " << to().Mnemonic();
 
@@ -1580,7 +1580,7 @@ void HCheckInstanceType::GetCheckMaskAndTag(uint8_t* mask, uint8_t* tag) {
 }
 
 
-std::ostream& HCheckMaps::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCheckMaps::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << NameOf(value()) << " [" << *maps()->at(0).handle();
   for (int i = 1; i < maps()->size(); ++i) {
     os << "," << *maps()->at(i).handle();
@@ -1611,7 +1611,7 @@ HValue* HCheckMaps::Canonicalize() {
 }
 
 
-std::ostream& HCheckValue::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCheckValue::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(value()) << " " << Brief(*object().handle());
 }
 
@@ -1636,14 +1636,14 @@ const char* HCheckInstanceType::GetCheckName() const {
 }
 
 
-std::ostream& HCheckInstanceType::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCheckInstanceType::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   os << GetCheckName() << " ";
   return HUnaryOperation::PrintDataTo(os);
 }
 
 
-std::ostream& HUnknownOSRValue::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HUnknownOSRValue::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   const char* type = "expression";
   if (environment_->is_local_index(index_)) type = "local";
   if (environment_->is_special_index(index_)) type = "special";
@@ -1652,7 +1652,7 @@ std::ostream& HUnknownOSRValue::PrintDataTo(std::ostream& os) const {  // NOLINT
 }
 
 
-std::ostream& HInstanceOf::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HInstanceOf::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(left()) << " " << NameOf(right()) << " "
             << NameOf(context());
 }
@@ -1925,7 +1925,7 @@ void HPushArguments::AddInput(HValue* value) {
 }
 
 
-std::ostream& HPhi::PrintTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HPhi::PrintTo(v8::base::OStream& os) const {  // NOLINT
   os << "[";
   for (int i = 0; i < OperandCount(); ++i) {
     os << " " << NameOf(OperandAt(i)) << " ";
@@ -2051,7 +2051,7 @@ void HSimulate::MergeWith(ZoneList<HSimulate*>* list) {
 }
 
 
-std::ostream& HSimulate::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HSimulate::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << "id=" << ast_id().ToInt();
   if (pop_count_ > 0) os << " pop " << pop_count_;
   if (values_.length() > 0) {
@@ -2113,7 +2113,7 @@ void HCapturedObject::ReplayEnvironment(HEnvironment* env) {
 }
 
 
-std::ostream& HCapturedObject::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCapturedObject::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << "#" << capture_id() << " ";
   return HDematerializedObject::PrintDataTo(os);
 }
@@ -2126,7 +2126,7 @@ void HEnterInlined::RegisterReturnTarget(HBasicBlock* return_target,
 }
 
 
-std::ostream& HEnterInlined::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HEnterInlined::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << function()->debug_name()->ToCString().get();
   if (syntactic_tail_call_mode() == TailCallMode::kAllow) {
     os << ", JSTailCall";
@@ -2430,7 +2430,7 @@ Maybe<HConstant*> HConstant::CopyToTruncatedNumber(Isolate* isolate,
 }
 
 
-std::ostream& HConstant::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HConstant::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   if (HasInteger32Value()) {
     os << int32_value_ << " ";
   } else if (HasDoubleValue()) {
@@ -2449,7 +2449,7 @@ std::ostream& HConstant::PrintDataTo(std::ostream& os) const {  // NOLINT
 }
 
 
-std::ostream& HBinaryOperation::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HBinaryOperation::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << NameOf(left()) << " " << NameOf(right());
   if (CheckFlag(kCanOverflow)) os << " !";
   if (CheckFlag(kBailoutOnMinusZero)) os << " -0?";
@@ -2676,28 +2676,28 @@ Range* HLoadKeyed::InferRange(Zone* zone) {
 }
 
 
-std::ostream& HCompareGeneric::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCompareGeneric::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << Token::Name(token()) << " ";
   return HBinaryOperation::PrintDataTo(os);
 }
 
 
-std::ostream& HStringCompareAndBranch::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HStringCompareAndBranch::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   os << Token::Name(token()) << " ";
   return HControlInstruction::PrintDataTo(os);
 }
 
 
-std::ostream& HCompareNumericAndBranch::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCompareNumericAndBranch::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   os << Token::Name(token()) << " " << NameOf(left()) << " " << NameOf(right());
   return HControlInstruction::PrintDataTo(os);
 }
 
 
-std::ostream& HCompareObjectEqAndBranch::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HCompareObjectEqAndBranch::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   os << NameOf(left()) << " " << NameOf(right());
   return HControlInstruction::PrintDataTo(os);
 }
@@ -2800,7 +2800,7 @@ bool HCompareNumericAndBranch::KnownSuccessorBlock(HBasicBlock** block) {
 }
 
 
-std::ostream& HGoto::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HGoto::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << *SuccessorAt(0);
 }
 
@@ -2844,12 +2844,12 @@ void HCompareNumericAndBranch::InferRepresentation(
 }
 
 
-std::ostream& HParameter::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HParameter::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << index();
 }
 
 
-std::ostream& HLoadNamedField::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HLoadNamedField::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << NameOf(object()) << access_;
 
   if (maps() != NULL) {
@@ -2865,14 +2865,14 @@ std::ostream& HLoadNamedField::PrintDataTo(std::ostream& os) const {  // NOLINT
 }
 
 
-std::ostream& HLoadNamedGeneric::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HLoadNamedGeneric::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   Handle<String> n = Handle<String>::cast(name());
   return os << NameOf(object()) << "." << n->ToCString().get();
 }
 
 
-std::ostream& HLoadKeyed::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HLoadKeyed::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   if (!is_fixed_typed_array()) {
     os << NameOf(elements());
   } else {
@@ -2964,8 +2964,8 @@ bool HLoadKeyed::RequiresHoleCheck() const {
 }
 
 
-std::ostream& HLoadKeyedGeneric::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HLoadKeyedGeneric::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(object()) << "[" << NameOf(key()) << "]";
 }
 
@@ -3003,15 +3003,15 @@ HValue* HLoadKeyedGeneric::Canonicalize() {
 }
 
 
-std::ostream& HStoreNamedGeneric::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HStoreNamedGeneric::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   Handle<String> n = Handle<String>::cast(name());
   return os << NameOf(object()) << "." << n->ToCString().get() << " = "
             << NameOf(value());
 }
 
 
-std::ostream& HStoreNamedField::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HStoreNamedField::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << NameOf(object()) << access_ << " = " << NameOf(value());
   if (NeedsWriteBarrier()) os << " (write-barrier)";
   if (has_transition()) os << " (transition map " << *transition_map() << ")";
@@ -3019,7 +3019,7 @@ std::ostream& HStoreNamedField::PrintDataTo(std::ostream& os) const {  // NOLINT
 }
 
 
-std::ostream& HStoreKeyed::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HStoreKeyed::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   if (!is_fixed_typed_array()) {
     os << NameOf(elements());
   } else {
@@ -3034,15 +3034,15 @@ std::ostream& HStoreKeyed::PrintDataTo(std::ostream& os) const {  // NOLINT
 }
 
 
-std::ostream& HStoreKeyedGeneric::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HStoreKeyedGeneric::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(object()) << "[" << NameOf(key())
             << "] = " << NameOf(value());
 }
 
 
-std::ostream& HTransitionElementsKind::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HTransitionElementsKind::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   os << NameOf(object());
   ElementsKind from_kind = original_map().handle()->elements_kind();
   ElementsKind to_kind = transitioned_map().handle()->elements_kind();
@@ -3055,26 +3055,26 @@ std::ostream& HTransitionElementsKind::PrintDataTo(
 }
 
 
-std::ostream& HLoadGlobalGeneric::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HLoadGlobalGeneric::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   return os << name()->ToCString().get() << " ";
 }
 
 
-std::ostream& HInnerAllocatedObject::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HInnerAllocatedObject::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   os << NameOf(base_object()) << " offset ";
   return offset()->PrintTo(os);
 }
 
 
-std::ostream& HLoadContextSlot::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HLoadContextSlot::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(value()) << "[" << slot_index() << "]";
 }
 
 
-std::ostream& HStoreContextSlot::PrintDataTo(
-    std::ostream& os) const {  // NOLINT
+v8::base::OStream& HStoreContextSlot::PrintDataTo(
+    v8::base::OStream& os) const {  // NOLINT
   return os << NameOf(context()) << "[" << slot_index()
             << "] = " << NameOf(value());
 }
@@ -3354,7 +3354,7 @@ void HAllocate::ClearNextMapWord(int offset) {
 }
 
 
-std::ostream& HAllocate::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HAllocate::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << NameOf(size()) << " (";
   if (IsNewSpaceAllocation()) os << "N";
   if (IsOldSpaceAllocation()) os << "P";
@@ -3451,7 +3451,7 @@ HInstruction* HStringAdd::New(Isolate* isolate, Zone* zone, HValue* context,
 }
 
 
-std::ostream& HStringAdd::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HStringAdd::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   if ((flags() & STRING_ADD_CHECK_BOTH) == STRING_ADD_CHECK_BOTH) {
     os << "_CheckBoth";
   } else if ((flags() & STRING_ADD_CHECK_BOTH) == STRING_ADD_CHECK_LEFT) {
@@ -3780,7 +3780,7 @@ HInstruction* HSeqStringGetChar::New(Isolate* isolate, Zone* zone,
 #undef H_CONSTANT_DOUBLE
 
 
-std::ostream& HBitwise::PrintDataTo(std::ostream& os) const {  // NOLINT
+v8::base::OStream& HBitwise::PrintDataTo(v8::base::OStream& os) const {  // NOLINT
   os << Token::Name(op_) << " ";
   return HBitwiseBinaryOperation::PrintDataTo(os);
 }
@@ -4103,7 +4103,7 @@ void HObjectAccess::SetGVNFlags(HValue *instr, PropertyAccessType access_type) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const HObjectAccess& access) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const HObjectAccess& access) {
   os << ".";
 
   switch (access.portion()) {

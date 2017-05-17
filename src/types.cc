@@ -1137,7 +1137,7 @@ const char* BitsetType::Name(bitset bits) {
   }
 }
 
-void BitsetType::Print(std::ostream& os,  // NOLINT
+void BitsetType::Print(v8::base::OStream& os,  // NOLINT
                        bitset bits) {
   DisallowHeapAllocation no_allocation;
   const char* name = Name(bits);
@@ -1174,7 +1174,7 @@ void BitsetType::Print(std::ostream& os,  // NOLINT
   os << u8")";
 }
 
-void Type::PrintTo(std::ostream& os, PrintDimension dim) {
+void Type::PrintTo(v8::base::OStream& os, PrintDimension dim) {
   DisallowHeapAllocation no_allocation;
   if (dim != REPRESENTATION_DIM) {
     if (this->IsBitset()) {
@@ -1186,7 +1186,7 @@ void Type::PrintTo(std::ostream& os, PrintDimension dim) {
     } else if (this->IsConstant()) {
       os << "Constant(" << Brief(*this->AsConstant()->Value()) << ")";
     } else if (this->IsRange()) {
-      std::ostream::fmtflags saved_flags = os.setf(std::ios::fixed);
+      v8::base::OStream::fmtflags saved_flags = os.setf(std::ios::fixed);
       std::streamsize saved_precision = os.precision(0);
       os << u8"Range(" << this->AsRange()->Min() << u8", " << this->AsRange()->Max()
          << u8")";

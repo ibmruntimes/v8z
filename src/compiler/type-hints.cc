@@ -8,7 +8,7 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-std::ostream& operator<<(std::ostream& os, BinaryOperationHints::Hint hint) {
+v8::base::OStream& operator<<(v8::base::OStream& os, BinaryOperationHints::Hint hint) {
   switch (hint) {
     case BinaryOperationHints::kNone:
       return os << "None";
@@ -28,12 +28,12 @@ std::ostream& operator<<(std::ostream& os, BinaryOperationHints::Hint hint) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, BinaryOperationHints hints) {
+v8::base::OStream& operator<<(v8::base::OStream& os, BinaryOperationHints hints) {
   return os << hints.left() << "*" << hints.right() << "->" << hints.result();
 }
 
 
-std::ostream& operator<<(std::ostream& os, ToBooleanHint hint) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ToBooleanHint hint) {
   switch (hint) {
     case ToBooleanHint::kNone:
       return os << "None";
@@ -63,7 +63,7 @@ std::ostream& operator<<(std::ostream& os, ToBooleanHint hint) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, ToBooleanHints hints) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ToBooleanHints hints) {
   if (hints == ToBooleanHint::kAny) return os << "Any";
   if (hints == ToBooleanHint::kNone) return os << "None";
   bool first = true;

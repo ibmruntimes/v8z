@@ -13,7 +13,7 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-std::ostream& operator<<(std::ostream& os, BaseTaggedness base_taggedness) {
+v8::base::OStream& operator<<(v8::base::OStream& os, BaseTaggedness base_taggedness) {
   switch (base_taggedness) {
     case kUntaggedBase:
       return os << "untagged base";
@@ -63,7 +63,7 @@ size_t hash_value(BufferAccess access) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, BufferAccess access) {
+v8::base::OStream& operator<<(v8::base::OStream& os, BufferAccess access) {
   switch (access.external_array_type()) {
 #define TYPED_ARRAY_CASE(Type, type, TYPE, ctype, size) \
   case kExternal##Type##Array:                          \
@@ -100,7 +100,7 @@ size_t hash_value(FieldAccess const& access) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, FieldAccess const& access) {
+v8::base::OStream& operator<<(v8::base::OStream& os, FieldAccess const& access) {
   os << "[" << access.base_is_tagged << ", " << access.offset << ", ";
 #ifdef OBJECT_PRINT
   Handle<Name> name;
@@ -133,7 +133,7 @@ size_t hash_value(ElementAccess const& access) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, ElementAccess const& access) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ElementAccess const& access) {
   os << access.base_is_tagged << ", " << access.header_size << ", ";
   access.type->PrintTo(os);
   os << ", " << access.machine_type;

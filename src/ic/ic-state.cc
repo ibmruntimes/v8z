@@ -16,7 +16,7 @@ void ICUtility::Clear(Isolate* isolate, Address address,
 }
 
 
-std::ostream& operator<<(std::ostream& os, const CallICState& s) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const CallICState& s) {
   return os << "(args(" << s.argc() << "), " << s.convert_mode() << ", ";
 }
 
@@ -204,7 +204,7 @@ Type* BinaryOpICState::GetResultType() const {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const BinaryOpICState& s) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const BinaryOpICState& s) {
   os << "(" << Token::Name(s.op_);
   if (s.CouldCreateAllocationMementos()) os << "_CreateAllocationMementos";
   os << ":" << BinaryOpICState::KindToString(s.left_kind_) << "*";

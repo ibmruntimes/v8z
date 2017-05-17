@@ -80,10 +80,9 @@ char* SimpleStringBuilder::Finalize() {
 }
 
 
-std::ostream& operator<<(std::ostream& os, FeedbackVectorSlot slot) {
+v8::base::OStream& operator<<(v8::base::OStream& os, FeedbackVectorSlot slot) {
   return os << "#" << slot.id_;
 }
-
 
 size_t hash_value(BailoutId id) {
   base::hash<int> h;
@@ -91,10 +90,9 @@ size_t hash_value(BailoutId id) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, BailoutId id) {
+v8::base::OStream& operator<<(v8::base::OStream& os, BailoutId id) {
   return os << id.id_;
 }
-
 
 void PrintF(const char* format, ...) {
   va_list arguments;

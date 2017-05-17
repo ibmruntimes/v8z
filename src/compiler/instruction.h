@@ -122,7 +122,7 @@ struct PrintableInstructionOperand {
 };
 
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableInstructionOperand& op);
 
 
@@ -645,7 +645,7 @@ struct PrintableMoveOperands {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const PrintableMoveOperands& mo);
+v8::base::OStream& operator<<(v8::base::OStream& os, const PrintableMoveOperands& mo);
 
 
 class ParallelMove final : public ZoneVector<MoveOperands*>, public ZoneObject {
@@ -686,7 +686,7 @@ struct PrintableParallelMove {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const PrintableParallelMove& pm);
+v8::base::OStream& operator<<(v8::base::OStream& os, const PrintableParallelMove& pm);
 
 
 class ReferenceMap final : public ZoneObject {
@@ -707,13 +707,13 @@ class ReferenceMap final : public ZoneObject {
   void RecordReference(const AllocatedOperand& op);
 
  private:
-  friend std::ostream& operator<<(std::ostream& os, const ReferenceMap& pm);
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, const ReferenceMap& pm);
 
   ZoneVector<InstructionOperand> reference_operands_;
   int instruction_position_;
 };
 
-std::ostream& operator<<(std::ostream& os, const ReferenceMap& pm);
+v8::base::OStream& operator<<(v8::base::OStream& os, const ReferenceMap& pm);
 
 class Instruction final {
  public:
@@ -889,7 +889,7 @@ struct PrintableInstruction {
   const RegisterConfiguration* register_configuration_;
   const Instruction* instr_;
 };
-std::ostream& operator<<(std::ostream& os, const PrintableInstruction& instr);
+v8::base::OStream& operator<<(v8::base::OStream& os, const PrintableInstruction& instr);
 
 
 class RpoNumber final {
@@ -926,7 +926,7 @@ class RpoNumber final {
 };
 
 
-std::ostream& operator<<(std::ostream&, const RpoNumber&);
+v8::base::OStream& operator<<(v8::base::OStream&, const RpoNumber&);
 
 
 class Constant final {
@@ -998,7 +998,7 @@ class Constant final {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const Constant& constant);
+v8::base::OStream& operator<<(v8::base::OStream& os, const Constant& constant);
 
 
 // Forward declarations.
@@ -1379,7 +1379,7 @@ class InstructionSequence final : public ZoneObject {
   void ValidateSSA();
 
  private:
-  friend std::ostream& operator<<(std::ostream& os,
+  friend v8::base::OStream& operator<<(v8::base::OStream& os,
                                   const PrintableInstructionSequence& code);
 
   typedef ZoneMap<const Instruction*, SourcePosition> SourcePositionMap;
@@ -1407,7 +1407,7 @@ struct PrintableInstructionSequence {
 };
 
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableInstructionSequence& code);
 
 }  // namespace compiler

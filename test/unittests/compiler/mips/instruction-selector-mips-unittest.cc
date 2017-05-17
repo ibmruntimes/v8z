@@ -19,7 +19,7 @@ struct MachInst {
 };
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const MachInst<T>& mi) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const MachInst<T>& mi) {
   return os << mi.constructor_name;
 }
 
@@ -810,7 +810,7 @@ struct MemoryAccessImm {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const MemoryAccessImm& acc) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const MemoryAccessImm& acc) {
   return os << acc.type;
 }
 
@@ -825,7 +825,7 @@ struct MemoryAccessImm1 {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const MemoryAccessImm1& acc) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const MemoryAccessImm1& acc) {
   return os << acc.type;
 }
 

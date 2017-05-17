@@ -63,7 +63,7 @@ struct Result {
 };
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, const Result<T>& result) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Result<T>& result) {
   os << "Result = ";
   if (result.ok()) {
     if (result.val != nullptr) {
@@ -85,7 +85,7 @@ std::ostream& operator<<(std::ostream& os, const Result<T>& result) {
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const ErrorCode& error_code);
+v8::base::OStream& operator<<(v8::base::OStream& os, const ErrorCode& error_code);
 
 // A helper for generating error messages that bubble up to JS exceptions.
 class ErrorThrower {
@@ -97,7 +97,7 @@ class ErrorThrower {
 
   template <typename T>
   void Failed(const char* error, Result<T>& result) {
-    std::ostringstream str;
+    v8::base::OStringStream str;
     str << error << result;
     return Error(str.str().c_str());
   }

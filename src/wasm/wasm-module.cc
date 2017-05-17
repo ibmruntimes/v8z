@@ -49,7 +49,7 @@ size_t WasmSection::getNameLength(WasmSection::Code code) {
   return wasmSectionsLengths[(size_t)code];
 }
 
-std::ostream& operator<<(std::ostream& os, const WasmModule& module) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const WasmModule& module) {
   os << "WASM module with ";
   os << (module.min_mem_pages * module.kPageSize) << " min mem";
   os << (module.max_mem_pages * module.kPageSize) << " max mem";
@@ -60,7 +60,7 @@ std::ostream& operator<<(std::ostream& os, const WasmModule& module) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const WasmFunction& function) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const WasmFunction& function) {
   os << "WASM function with signature " << *function.sig;
 
   os << " locals: ";
@@ -74,7 +74,7 @@ std::ostream& operator<<(std::ostream& os, const WasmFunction& function) {
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const WasmFunctionName& pair) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const WasmFunctionName& pair) {
   os << "#" << pair.function_->func_index << ":";
   if (pair.function_->name_offset > 0) {
     if (pair.module_) {
@@ -599,7 +599,7 @@ int32_t CompileAndRunWasmModule(Isolate* isolate, const byte* module_start,
       delete result.val;
     }
     // Module verification failed. throw.
-    std::ostringstream str;
+    v8::base::OStringStream str;
     str << "WASM.compileRun() failed: " << result;
     isolate->Throw(
         *isolate->factory()->NewStringFromAsciiChecked(str.str().c_str()));

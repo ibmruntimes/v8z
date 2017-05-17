@@ -1660,7 +1660,7 @@ TreeResult BuildTFGraph(base::AccountingAllocator* allocator,
 }
 
 
-std::ostream& operator<<(std::ostream& os, const Tree& tree) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Tree& tree) {
   if (tree.pc == nullptr) {
     os << "null";
     return os;

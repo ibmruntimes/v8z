@@ -52,7 +52,7 @@ std::streamsize OFStreamBase::xsputn(const char* s, std::streamsize n) {
 }
 
 
-OFStream::OFStream(FILE* f) : std::ostream(nullptr), buf_(f) {
+OFStream::OFStream(FILE* f) : v8::base::OStream(nullptr), buf_(f) {
   DCHECK_NOT_NULL(f);
   rdbuf(&buf_);
 }
@@ -69,7 +69,7 @@ bool IsSpace(uint16_t c) { return (0x9 <= c && c <= 0xd) || c == 0x20; }
 bool IsOK(uint16_t c) { return (IsPrint(c) || IsSpace(c)) && c != '\\'; }
 
 
-std::ostream& PrintUC16(std::ostream& os, uint16_t c, bool (*pred)(uint16_t)) {
+v8::base::OStream& PrintUC16(v8::base::OStream& os, uint16_t c, bool (*pred)(uint16_t)) {
   char buf[10];
   const char* format = pred(c) ? "%c" : (c <= 0xff) ? "\\x%02x" : "\\u%04x";
   snprintf(buf, sizeof(buf), format, c);
@@ -77,7 +77,7 @@ std::ostream& PrintUC16(std::ostream& os, uint16_t c, bool (*pred)(uint16_t)) {
 }
 
 
-std::ostream& PrintUC32(std::ostream& os, int32_t c, bool (*pred)(uint16_t)) {
+v8::base::OStream& PrintUC32(v8::base::OStream& os, int32_t c, bool (*pred)(uint16_t)) {
   if (c <= String::kMaxUtf16CodeUnit) {
     return PrintUC16(os, static_cast<uint16_t>(c), pred);
   }
@@ -89,12 +89,12 @@ std::ostream& PrintUC32(std::ostream& os, int32_t c, bool (*pred)(uint16_t)) {
 }  // namespace
 
 
-std::ostream& operator<<(std::ostream& os, const AsReversiblyEscapedUC16& c) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsReversiblyEscapedUC16& c) {
   return PrintUC16(os, c.value, IsOK);
 }
 
 
-std::ostream& operator<<(std::ostream& os, const AsEscapedUC16ForJSON& c) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsEscapedUC16ForJSON& c) {
   if (c.value == '\n') return os << "\\n";
   if (c.value == '\r') return os << "\\r";
   if (c.value == '\t') return os << "\\t";
@@ -103,12 +103,12 @@ std::ostream& operator<<(std::ostream& os, const AsEscapedUC16ForJSON& c) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const AsUC16& c) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsUC16& c) {
   return PrintUC16(os, c.value, IsPrint);
 }
 
 
-std::ostream& operator<<(std::ostream& os, const AsUC32& c) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsUC32& c) {
   return PrintUC32(os, c.value, IsPrint);
 }
 

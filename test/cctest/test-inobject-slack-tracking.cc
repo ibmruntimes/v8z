@@ -535,7 +535,7 @@ TEST(SubclassBasicNoInlineNew) {
 // Creates class hierachy of length matching the |hierarchy_desc| length and
 // with the number of fields at i'th level equal to |hierarchy_desc[i]|.
 static void CreateClassHierarchy(const std::vector<int>& hierarchy_desc) {
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << "'use strict';\n\n";
 
   int n = static_cast<int>(hierarchy_desc.size());
@@ -561,14 +561,14 @@ static void CreateClassHierarchy(const std::vector<int>& hierarchy_desc) {
 
 
 static std::string GetClassName(int class_index) {
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << "A" << class_index;
   return os.str();
 }
 
 
 static v8::Local<v8::Script> GetNewObjectScript(const std::string& class_name) {
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << "new " << class_name << "();";
   return v8_compile(os.str().c_str());
 }
@@ -790,7 +790,7 @@ static void TestSubclassBuiltin(const char* subclass_name,
                                 const char* ctor_arguments = "",
                                 int builtin_properties_count = 0) {
   {
-    std::ostringstream os;
+    v8::base::OStringStream os;
     os << "'use strict';\n"
           "class "
        << subclass_name << " extends " << builtin_name
@@ -812,7 +812,7 @@ static void TestSubclassBuiltin(const char* subclass_name,
 
   v8::Local<v8::Script> new_script;
   {
-    std::ostringstream os;
+    v8::base::OStringStream os;
     os << "new " << subclass_name << "(" << ctor_arguments << ");";
     new_script = v8_compile(os.str().c_str());
   }

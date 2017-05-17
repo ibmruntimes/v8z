@@ -16,7 +16,7 @@ namespace v8 {
 namespace internal {
 namespace wasm {
 
-std::ostream& operator<<(std::ostream& os, const ErrorCode& error_code) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const ErrorCode& error_code) {
   switch (error_code) {
     case kSuccess:
       os << "Success";
@@ -39,7 +39,7 @@ void ErrorThrower::Error(const char* format, ...) {
   base::OS::VSNPrintF(buffer, 255, format, arguments);
   va_end(arguments);
 
-  std::ostringstream str;
+  v8::base::OStringStream str;
   if (context_ != nullptr) {
     str << context_ << ": ";
   }
