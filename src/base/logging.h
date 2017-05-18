@@ -61,17 +61,17 @@ class OStream : public std::ostream {
       return *this;
     }
 
-    OStream& operator<<(const std::string& val) {
-      std::ostream::operator<<(val.c_str());
+    virtual OStream& operator<<(const std::string& val) {
+      *this << val.c_str();
       return *this;
     }
 
 #define OVERLOAD_OPERATOR_FOR(T) \
-    OStream& operator<< (T val) { \
-      std::ostream::operator<<(val); \
-      return *this; \
-    }
+    virtual OStream& operator<< (T val);
 
+    typedef std::ostream& (*pfostream)(std::ostream&);
+    typedef std::ios_base& (*pfios_base)(std::ios_base&);
+    typedef std::ios& (*pfios)(std::ios&);
     OVERLOAD_OPERATOR_FOR(bool)
     OVERLOAD_OPERATOR_FOR(short)
     OVERLOAD_OPERATOR_FOR(unsigned short)
@@ -90,12 +90,10 @@ class OStream : public std::ostream {
     OVERLOAD_OPERATOR_FOR(const signed char)
     OVERLOAD_OPERATOR_FOR(const char *)
     OVERLOAD_OPERATOR_FOR(const unsigned char *const)
-    typedef std::ostream& (*pfostream)(std::ostream&);
-    typedef std::ios_base& (*pfios_base)(std::ios_base&);
-    typedef std::ios& (*pfios)(std::ios&);
     OVERLOAD_OPERATOR_FOR(pfostream)
     OVERLOAD_OPERATOR_FOR(pfios_base)
     OVERLOAD_OPERATOR_FOR(pfios)
+#undef OVERLOAD_OPERATOR_FOR
 
 };
 

@@ -16,11 +16,68 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
 
 #include "src/base/platform/platform.h"
 
 namespace v8 {
 namespace base {
+
+#ifdef V8_OS_ZOS
+#define OVERLOAD_OPERATOR_FOR(T) \
+    OStream& OStream::operator<<(T val) { \
+      std::ostringstream oss; \
+      oss << val; \
+      std::string str = oss.str(); \
+      std::string ret = str; \
+      std::transform(str.begin(), str.end(), str.begin(), Ebcdic2Ascii); \
+      std::operator<<(*this, str.c_str()); \
+      return *this; \
+    }
+#else
+#define OVERLOAD_OPERATOR_FOR(T) \
+    OStream& OStream::operator<<(T val) { \
+      std::ostream::operator<<(val); \
+      return *this; \
+    }
+#endif
+    OVERLOAD_OPERATOR_FOR(bool)
+    OVERLOAD_OPERATOR_FOR(short)
+    OVERLOAD_OPERATOR_FOR(unsigned short)
+    OVERLOAD_OPERATOR_FOR(int)
+    OVERLOAD_OPERATOR_FOR(unsigned int)
+    OVERLOAD_OPERATOR_FOR(long)
+    OVERLOAD_OPERATOR_FOR(unsigned long)
+    OVERLOAD_OPERATOR_FOR(long long)
+    OVERLOAD_OPERATOR_FOR(unsigned long long)
+    OVERLOAD_OPERATOR_FOR(float)
+    OVERLOAD_OPERATOR_FOR(double)
+    OVERLOAD_OPERATOR_FOR(long double)
+    OVERLOAD_OPERATOR_FOR(void*)
+    OVERLOAD_OPERATOR_FOR(const char)
+    OVERLOAD_OPERATOR_FOR(const unsigned char)
+    OVERLOAD_OPERATOR_FOR(const signed char)
+#undef OVERLOAD_OPERATOR_FOR
+
+#define OVERLOAD_OPERATOR_FOR_GENERAL_CASE(T) \
+    OStream& OStream::operator<< (T val) { \
+      std::ostream::operator<<(val); \
+      return *this; \
+    }
+    OVERLOAD_OPERATOR_FOR_GENERAL_CASE(OStream::pfostream)
+    OVERLOAD_OPERATOR_FOR_GENERAL_CASE(OStream::pfios_base)
+    OVERLOAD_OPERATOR_FOR_GENERAL_CASE(OStream::pfios)
+#undef OVERLOAD_OPERATOR_FOR_SPECIAL_CASE
+
+OStream& OStream::operator<< (const char* val) {
+  std::operator<<(*this, val);
+  return *this;
+}
+
+OStream& OStream::operator<< (const unsigned char *const val) {
+  std::operator<<(*this, val);
+  return *this;
+}
 
 // Explicit instantiations for commonly used comparisons.
 #define DEFINE_MAKE_CHECK_OP_STRING(type)              \

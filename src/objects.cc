@@ -1620,47 +1620,10 @@ void Object::ShortPrint(FILE* out) {
 }
 
 
-template <typename T> class ToAscii {
-  public:
-  ToAscii(T t) :
-    t_(t) {}
-  T& value(){ return t_; }
-  private:
-  T t_;
-};
-  
-
 void Object::ShortPrint(StringStream* accumulator) {
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << Brief(this);
   accumulator->Add(os.str().c_str());
-}
-
-
-std::ostream& operator<<(std::ostream& os, ToAscii<uint32_t> i) {
-#if V8_OS_ZOS
-  char buf[25];
-  snprintf(buf, sizeof(buf), "%u", i.value());
-  __e2a_s(buf);
-  os << &buf[0];
-  return os;
-#else
-  return os << i.value();
-#endif
-}
-  
-  
-std::ostream& operator<<(std::ostream& os, ToAscii<void*> obj) {
-#if V8_OS_ZOS
-  char buf[25];
-
-  snprintf(buf, sizeof(buf), "%p", obj.value());
-  __e2a_s(buf);
-  os << &buf[0];
-  return os;
-#else
-  return os << obj.value();
-#endif
 }
 
 
@@ -2182,7 +2145,7 @@ void HeapObject::HeapObjectShortPrint(v8::base::OStream& os) {  // NOLINT
     return;
   }
 
-  os << ToAscii<void*>(this) << u8" ";
+  os << this << u8" ";
 
   if (IsString()) {
     HeapStringAllocator allocator;
@@ -16855,7 +16818,7 @@ const char* Symbol::PrivateSymbolToName() const {
 
 
 void Symbol::SymbolShortPrint(v8::base::OStream& os) {
-  os << u8"<Symbol: " << ToAscii<uint32_t>(Hash());
+  os << u8"<Symbol: " << Hash();
   if (!name()->IsUndefined()) {
     os << u8" ";
     HeapStringAllocator allocator;
