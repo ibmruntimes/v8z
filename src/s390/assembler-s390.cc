@@ -348,6 +348,8 @@ int Assembler::target_at(int pos) {
       imm32 <<= 1;  // BR* + LARL treat immediate in # of halfwords
     if (imm32 == 0) return kEndOfChain;
     return pos + imm32;
+  } else if (TRAP4 == opcode) {
+    return kEndOfChain; 
   }
 
   // Unknown condition
@@ -385,6 +387,11 @@ void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
     instr &= (~static_cast<uint64_t>(0xffffffff));
     instr_at_put<SixByteInstr>(pos, instr | imm32);
     return;
+  } else if ( TRAP4 == opcode) {
+    CodePatcher patcher(isolate(), reinterpret_cast<byte *>(buffer_ + pos), 
+                kPointerSize,CodePatcher::DONT_FLUSH);
+    patcher.masm()->dp(target_pos);
+    return;
   }
   DCHECK(false);
 }
@@ -404,6 +411,10 @@ int Assembler::max_reach_from(int pos) {
                 // llilf: Emitted label constant, not part of
                 //        a branch (regexp PushBacktrack).
   }
+  else if (TRAP4 == opcode) {
+    return 0;    //we use a TRAP4 to indicate that a label address
+                 //has been emitted here and there are no limits
+  }
   DCHECK(false);
   return 16;
 }
@@ -418,7 +429,11 @@ void Assembler::bind_to(Label* L, int pos) {
     int maxReach = max_reach_from(fixup_pos);
 #endif
     next(L);  // call next before overwriting link with target at fixup_pos
+    //Label addresses will have a max reach of 0
+    if (maxReach != 0)  { 
     DCHECK(is_intn(offset, maxReach));
+    }
+
     target_at_put(fixup_pos, pos, &is_branch);
   }
   L->bind_to(pos);
@@ -2995,17 +3010,9 @@ void Assembler::GrowBuffer(int needed) {
   reloc_info_writer.Reposition(reloc_info_writer.pos() + rc_delta,
                                reloc_info_writer.last_pc() + pc_delta);
 
-  // On s390 Linux None of our relocation types are pc relative pointing outside the code
+  // On s390 None of our relocation types are pc relative pointing outside the code
   // buffer nor pc absolute pointing inside the code buffer, so there is no need
   // to relocate any emitted relocation entries.
-#ifdef V8_OS_ZOS
-  for (RelocIterator it(desc); !it.done(); it.next()) {
-    RelocInfo::Mode rmode = it.rinfo()->rmode();
-    if (rmode == RelocInfo::INTERNAL_REFERENCE) {
-      RelocateInternalReference(it.rinfo()->pc(), pc_delta, 0);
-    }
-  }
-#endif
 }
 
 void Assembler::db(uint8_t data) {
@@ -3033,9 +3040,6 @@ void Assembler::dp(uintptr_t data) {
 }
 
 void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
-#ifdef V8_OS_ZOS
-  RelocInfo rinfo(isolate(), pc_, rmode, data,  NULL);
-#endif
   if (RelocInfo::IsNone(rmode) ||
       // Don't record external references unless the heap will be serialized.
       (rmode == RelocInfo::EXTERNAL_REFERENCE && !serializer_enabled() &&
@@ -3044,33 +3048,27 @@ void Assembler::RecordRelocInfo(RelocInfo::Mode rmode, intptr_t data) {
   }
   if (rmode == RelocInfo::CODE_TARGET_WITH_ID) {
     data = RecordedAstId().ToInt();
-#ifdef V8_OS_ZOS
-    RelocInfo reloc_info_with_ast_id(isolate(),
-                                     rinfo.pc(),
-                                     rinfo.rmode(),
-                                     RecordedAstId().ToInt(),
-                                     NULL);
-    ClearRecordedAstId();
-    reloc_info_writer.Write(&reloc_info_with_ast_id);
-  } else {
-    reloc_info_writer.Write(&rinfo);
-  }
-#else
     ClearRecordedAstId();
   }
 
   DeferredRelocInfo rinfo(pc_offset(), rmode, data);
   relocations_.push_back(rinfo);
-#endif
 }
 
 void Assembler::emit_label_addr(Label* label) {
   CheckBuffer();
   RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
   int position = link(label);
-  DCHECK(label->is_bound());
+  if (label->is_bound()) {
+      dp(position);
+  } else {
+    uintptr_t trap = TRAP4 << 16;
+#ifdef V8_TARGET_ARCH_S390X
+    trap = trap << 32;
+#endif
+    dp(trap);
+  }
   // Keep internal references relative until EmitRelocations.
-  dp(position);
 }
 
 void Assembler::EmitRelocations() {
@@ -3106,9 +3104,10 @@ void Assembler::EmitRelocations() {
 void Assembler::function_descriptor() {
 #ifdef ABI_USES_FUNCTION_DESCRIPTORS  
   DCHECK(pc_offset() == 0);
-  RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
+  Label code_start;
   dp(0);
-  dp(reinterpret_cast<uintptr_t>(pc_) + kPointerSize);
+  emit_label_addr(&code_start);
+  bind(&code_start);
 #endif
 }
 
@@ -3129,13 +3128,6 @@ void Assembler::RelocateInternalReference(Address pc,
     return;
   }
 #endif
-/* Todo: investigate if this is needed for zOS
-  Address constant_pool = NULL;
-  if (delta) {
-    code_start = target_address_at(pc, constant_pool) + delta;
-  }
-  set_target_address_at(pc, constant_pool, code_start, icache_flush_mode);
-*/
 }
 
 
