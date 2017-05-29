@@ -186,4 +186,5 @@ void sem_destroy_all() {
     sem_destroy(&(*i));
     i++;
   }
+  system_ipc.clear();
 }
