@@ -676,6 +676,7 @@ void Shell::Write(const v8::FunctionCallbackInfo<v8::Value>& args) {
     }
 
     v8::String::Utf8Value str(str_obj);
+    __a2e_l(*str, str.length());
     int n = static_cast<int>(fwrite(*str, sizeof(**str), str.length(), stdout));
     if (n != str.length()) {
       PrintF(u8"Error in fwrite\n");
