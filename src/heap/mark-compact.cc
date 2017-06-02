@@ -33,10 +33,10 @@ namespace v8 {
 namespace internal {
 
 
-const char* Marking::kWhiteBitPattern = "00";
-const char* Marking::kBlackBitPattern = "11";
-const char* Marking::kGreyBitPattern = "10";
-const char* Marking::kImpossibleBitPattern = "01";
+const char* Marking::kWhiteBitPattern = "\x30\x30";
+const char* Marking::kBlackBitPattern = "\x31\x31";
+const char* Marking::kGreyBitPattern = "\x31\x30";
+const char* Marking::kImpossibleBitPattern = "\x30\x31";
 
 
 // The following has to hold in order for {Marking::MarkBitFrom} to not produce
@@ -250,10 +250,10 @@ static void VerifyEvacuation(Heap* heap) {
 
 
 void MarkCompactCollector::SetUp() {
-  DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
+  DCHECK(strcmp(Marking::kWhiteBitPattern, "\x30\x30") == 0);
+  DCHECK(strcmp(Marking::kBlackBitPattern, "\x31\x31") == 0);
+  DCHECK(strcmp(Marking::kGreyBitPattern, "\x31\x30") == 0);
+  DCHECK(strcmp(Marking::kImpossibleBitPattern, "\x30\x31") == 0);
 
   EnsureMarkingDequeIsReserved();
   EnsureMarkingDequeIsCommitted(kMinMarkingDequeSize);
@@ -261,7 +261,7 @@ void MarkCompactCollector::SetUp() {
   if (FLAG_flush_code) {
     code_flusher_ = new CodeFlusher(isolate());
     if (FLAG_trace_code_flushing) {
-      PrintF("[code-flushing is now on]\n");
+      PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x69\x73\x20\x6e\x6f\x77\x20\x6f\x6e\x5d\xa");
     }
   }
 }
@@ -285,7 +285,7 @@ static void TraceFragmentation(PagedSpace* space) {
   int number_of_pages = space->CountTotalPages();
   intptr_t reserved = (number_of_pages * space->AreaSize());
   intptr_t free = reserved - space->SizeOfObjects();
-  PrintF("[%s]: %d pages, %d (%.1f%%) free\n",
+  PrintF("\x5b\x25\x73\x5d\x3a\x20\x25\x64\x20\x70\x61\x67\x65\x73\x2c\x20\x25\x64\x20\x28\x25\x2e\x31\x66\x25\x25\x29\x20\x66\x72\x65\x65\xa",
          AllocationSpaceName(space->identity()), number_of_pages,
          static_cast<int>(free), static_cast<double>(free) * 100 / reserved);
 }
@@ -607,15 +607,15 @@ void Marking::TransferMark(Heap* heap, Address old_start, Address new_start) {
 const char* AllocationSpaceName(AllocationSpace space) {
   switch (space) {
     case NEW_SPACE:
-      return "NEW_SPACE";
+      return "\x4e\x45\x57\x5f\x53\x50\x41\x43\x45";
     case OLD_SPACE:
-      return "OLD_SPACE";
+      return "\x4f\x4c\x44\x5f\x53\x50\x41\x43\x45";
     case CODE_SPACE:
-      return "CODE_SPACE";
+      return "\x43\x4f\x44\x45\x5f\x53\x50\x41\x43\x45";
     case MAP_SPACE:
-      return "MAP_SPACE";
+      return "\x4d\x41\x50\x5f\x53\x50\x41\x43\x45";
     case LO_SPACE:
-      return "LO_SPACE";
+      return "\x4c\x4f\x5f\x53\x50\x41\x43\x45";
     default:
       UNREACHABLE();
   }
@@ -759,10 +759,10 @@ void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
       }
       if (FLAG_trace_fragmentation_verbose) {
         PrintIsolate(isolate(),
-                     "compaction-selection-page: space=%s free_bytes_page=%d "
-                     "fragmentation_limit_kb=%d fragmentation_limit_percent=%d "
-                     "sum_compaction_kb=%d "
-                     "compaction_limit_kb=%d\n",
+                     "\x63\x6f\x6d\x70\x61\x63\x74\x69\x6f\x6e\x2d\x73\x65\x6c\x65\x63\x74\x69\x6f\x6e\x2d\x70\x61\x67\x65\x3a\x20\x73\x70\x61\x63\x65\x3d\x25\x73\x20\x66\x72\x65\x65\x5f\x62\x79\x74\x65\x73\x5f\x70\x61\x67\x65\x3d\x25\x64\x20"
+                     "\x66\x72\x61\x67\x6d\x65\x6e\x74\x61\x74\x69\x6f\x6e\x5f\x6c\x69\x6d\x69\x74\x5f\x6b\x62\x3d\x25\x64\x20\x66\x72\x61\x67\x6d\x65\x6e\x74\x61\x74\x69\x6f\x6e\x5f\x6c\x69\x6d\x69\x74\x5f\x70\x65\x72\x63\x65\x6e\x74\x3d\x25\x64\x20"
+                     "\x73\x75\x6d\x5f\x63\x6f\x6d\x70\x61\x63\x74\x69\x6f\x6e\x5f\x6b\x62\x3d\x25\x64\x20"
+                     "\x63\x6f\x6d\x70\x61\x63\x74\x69\x6f\x6e\x5f\x6c\x69\x6d\x69\x74\x5f\x6b\x62\x3d\x25\x64\xa",
                      AllocationSpaceName(space->identity()), free_bytes / KB,
                      free_bytes_threshold / KB, target_fragmentation_percent,
                      total_live_bytes / KB, max_evacuated_bytes / KB);
@@ -784,8 +784,8 @@ void MarkCompactCollector::CollectEvacuationCandidates(PagedSpace* space) {
 
   if (FLAG_trace_fragmentation) {
     PrintIsolate(isolate(),
-                 "compaction-selection: space=%s reduce_memory=%d pages=%d "
-                 "total_live_bytes=%d\n",
+                 "\x63\x6f\x6d\x70\x61\x63\x74\x69\x6f\x6e\x2d\x73\x65\x6c\x65\x63\x74\x69\x6f\x6e\x3a\x20\x73\x70\x61\x63\x65\x3d\x25\x73\x20\x72\x65\x64\x75\x63\x65\x5f\x6d\x65\x6d\x6f\x72\x79\x3d\x25\x64\x20\x70\x61\x67\x65\x73\x3d\x25\x64\x20"
+                 "\x74\x6f\x74\x61\x6c\x5f\x6c\x69\x76\x65\x5f\x62\x79\x74\x65\x73\x3d\x25\x64\xa",
                  AllocationSpaceName(space->identity()), reduce_memory,
                  candidate_count, total_live_bytes / KB);
   }
@@ -938,9 +938,9 @@ void CodeFlusher::ProcessJSFunctionCandidates() {
     MarkBit code_mark = Marking::MarkBitFrom(code);
     if (Marking::IsWhite(code_mark)) {
       if (FLAG_trace_code_flushing && shared->is_compiled()) {
-        PrintF("[code-flushing clears: ");
+        PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x63\x6c\x65\x61\x72\x73\x3a\x20");
         shared->ShortPrint();
-        PrintF(" - age: %d]\n", code->GetAge());
+        PrintF("\x20\x2d\x20\x61\x67\x65\x3a\x20\x25\x64\x5d\xa", code->GetAge());
       }
       // Always flush the optimized code map if there is one.
       if (!shared->OptimizedCodeMapIsCleared()) {
@@ -985,9 +985,9 @@ void CodeFlusher::ProcessSharedFunctionInfoCandidates() {
     MarkBit code_mark = Marking::MarkBitFrom(code);
     if (Marking::IsWhite(code_mark)) {
       if (FLAG_trace_code_flushing && candidate->is_compiled()) {
-        PrintF("[code-flushing clears: ");
+        PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x63\x6c\x65\x61\x72\x73\x3a\x20");
         candidate->ShortPrint();
-        PrintF(" - age: %d]\n", code->GetAge());
+        PrintF("\x20\x2d\x20\x61\x67\x65\x3a\x20\x25\x64\x5d\xa", code->GetAge());
       }
       // Always flush the optimized code map if there is one.
       if (!candidate->OptimizedCodeMapIsCleared()) {
@@ -1013,9 +1013,9 @@ void CodeFlusher::EvictCandidate(SharedFunctionInfo* shared_info) {
   isolate_->heap()->incremental_marking()->IterateBlackObject(shared_info);
 
   if (FLAG_trace_code_flushing) {
-    PrintF("[code-flushing abandons function-info: ");
+    PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x61\x62\x61\x6e\x64\x6f\x6e\x73\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x2d\x69\x6e\x66\x6f\x3a\x20");
     shared_info->ShortPrint();
-    PrintF("]\n");
+    PrintF("\x5d\xa");
   }
 
   SharedFunctionInfo* candidate = shared_function_info_candidates_head_;
@@ -1051,9 +1051,9 @@ void CodeFlusher::EvictCandidate(JSFunction* function) {
       function->shared());
 
   if (FLAG_trace_code_flushing) {
-    PrintF("[code-flushing abandons closure: ");
+    PrintF("\x5b\x63\x6f\x64\x65\x2d\x66\x6c\x75\x73\x68\x69\x6e\x67\x20\x61\x62\x61\x6e\x64\x6f\x6e\x73\x20\x63\x6c\x6f\x73\x75\x72\x65\x3a\x20");
     function->shared()->ShortPrint();
-    PrintF("]\n");
+    PrintF("\x5d\xa");
   }
 
   JSFunction* candidate = jsfunction_candidates_head_;
@@ -1731,7 +1731,7 @@ class MarkCompactCollector::EvacuateNewSpaceVisitor final
                                                         alignment);
     if (allocation.IsRetry()) {
       v8::internal::Heap::FatalProcessOutOfMemory(
-          "MarkCompactCollector: semi-space copy, fallback in old gen", true);
+          "\x4d\x61\x72\x6b\x43\x6f\x6d\x70\x61\x63\x74\x43\x6f\x6c\x6c\x65\x63\x74\x6f\x72\x3a\x20\x73\x65\x6d\x69\x2d\x73\x70\x61\x63\x65\x20\x63\x6f\x70\x79\x2c\x20\x66\x61\x6c\x6c\x62\x61\x63\x6b\x20\x69\x6e\x20\x6f\x6c\x64\x20\x67\x65\x6e", true);
     }
     return allocation;
   }
@@ -2009,7 +2009,7 @@ void MarkCompactCollector::EnsureMarkingDequeIsReserved() {
     marking_deque_memory_committed_ = 0;
   }
   if (marking_deque_memory_ == NULL) {
-    V8::FatalProcessOutOfMemory("EnsureMarkingDequeIsReserved");
+    V8::FatalProcessOutOfMemory("\x45\x6e\x73\x75\x72\x65\x4d\x61\x72\x6b\x69\x6e\x67\x44\x65\x71\x75\x65\x49\x73\x52\x65\x73\x65\x72\x76\x65\x64");
   }
 }
 
@@ -2044,7 +2044,7 @@ void MarkCompactCollector::EnsureMarkingDequeIsCommitted(size_t max_size) {
       return;
     }
   }
-  V8::FatalProcessOutOfMemory("EnsureMarkingDequeIsCommitted");
+  V8::FatalProcessOutOfMemory("\x45\x6e\x73\x75\x72\x65\x4d\x61\x72\x6b\x69\x6e\x67\x44\x65\x71\x75\x65\x49\x73\x43\x6f\x6d\x6d\x69\x74\x74\x65\x64");
 }
 
 
@@ -2995,8 +2995,8 @@ bool MarkCompactCollector::Evacuator::EvacuateSinglePage(
   }
   if (FLAG_trace_evacuation) {
     PrintIsolate(heap()->isolate(),
-                 "evacuation[%p]: page=%p new_space=%d executable=%d "
-                 "live_bytes=%d time=%f\n",
+                 "\x65\x76\x61\x63\x75\x61\x74\x69\x6f\x6e\x5b\x25\x70\x5d\x3a\x20\x70\x61\x67\x65\x3d\x25\x70\x20\x6e\x65\x77\x5f\x73\x70\x61\x63\x65\x3d\x25\x64\x20\x65\x78\x65\x63\x75\x74\x61\x62\x6c\x65\x3d\x25\x64\x20"
+                 "\x6c\x69\x76\x65\x5f\x62\x79\x74\x65\x73\x3d\x25\x64\x20\x74\x69\x6d\x65\x3d\x25\x66\xa",
                  this, p, p->InNewSpace(),
                  p->IsFlagSet(MemoryChunk::IS_EXECUTABLE), saved_live_bytes,
                  evacuation_time);
@@ -3148,11 +3148,11 @@ void MarkCompactCollector::EvacuatePagesInParallel() {
   if (FLAG_trace_evacuation) {
     PrintIsolate(
         isolate(),
-        "%8.0f ms: evacuation-summary: parallel=%s pages=%d aborted=%d "
-        "wanted_tasks=%d tasks=%d cores=%d live_bytes=%" V8_PTR_PREFIX
-        "d compaction_speed=%.f\n",
+        "\x25\x38\x2e\x30\x66\x20\x6d\x73\x3a\x20\x65\x76\x61\x63\x75\x61\x74\x69\x6f\x6e\x2d\x73\x75\x6d\x6d\x61\x72\x79\x3a\x20\x70\x61\x72\x61\x6c\x6c\x65\x6c\x3d\x25\x73\x20\x70\x61\x67\x65\x73\x3d\x25\x64\x20\x61\x62\x6f\x72\x74\x65\x64\x3d\x25\x64\x20"
+        "\x77\x61\x6e\x74\x65\x64\x5f\x74\x61\x73\x6b\x73\x3d\x25\x64\x20\x74\x61\x73\x6b\x73\x3d\x25\x64\x20\x63\x6f\x72\x65\x73\x3d\x25\x64\x20\x6c\x69\x76\x65\x5f\x62\x79\x74\x65\x73\x3d\x25" V8_PTR_PREFIX
+        "\x64\x20\x63\x6f\x6d\x70\x61\x63\x74\x69\x6f\x6e\x5f\x73\x70\x65\x65\x64\x3d\x25\x2e\x66\xa",
         isolate()->time_millis_since_init(),
-        FLAG_parallel_compaction ? "yes" : "no", job.NumberOfPages(),
+        FLAG_parallel_compaction ? "\x79\x65\x73" : "\x6e\x6f", job.NumberOfPages(),
         abandoned_pages, wanted_num_tasks, job.NumberOfTasks(),
         V8::GetCurrentPlatform()->NumberOfAvailableBackgroundThreads(),
         live_bytes, compaction_speed);
@@ -3719,7 +3719,7 @@ void MarkCompactCollector::StartSweepSpace(PagedSpace* space) {
     if (p->LiveBytes() == 0) {
       if (unused_page_present) {
         if (FLAG_gc_verbose) {
-          PrintIsolate(isolate(), "sweeping: released page: %p", p);
+          PrintIsolate(isolate(), "\x73\x77\x65\x65\x70\x69\x6e\x67\x3a\x20\x72\x65\x6c\x65\x61\x73\x65\x64\x20\x70\x61\x67\x65\x3a\x20\x25\x70", p);
         }
         space->ReleasePage(p);
         continue;
@@ -3735,7 +3735,7 @@ void MarkCompactCollector::StartSweepSpace(PagedSpace* space) {
   }
 
   if (FLAG_gc_verbose) {
-    PrintIsolate(isolate(), "sweeping: space=%s initialized_for_sweeping=%d",
+    PrintIsolate(isolate(), "\x73\x77\x65\x65\x70\x69\x6e\x67\x3a\x20\x73\x70\x61\x63\x65\x3d\x25\x73\x20\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64\x5f\x66\x6f\x72\x5f\x73\x77\x65\x65\x70\x69\x6e\x67\x3d\x25\x64",
                  AllocationSpaceName(space->identity()), will_be_swept);
   }
   std::sort(sweeping_list(space).begin(), sweeping_list(space).end(),

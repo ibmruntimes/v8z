@@ -77,7 +77,7 @@ Comment::Comment(MacroAssembler* masm, const char* msg)
 
 
 Comment::~Comment() {
-  if (msg_[0] == '[') __ RecordComment("]");
+  if (msg_[0] == '\x5b') __ RecordComment("\x5d");
 }
 
 #endif  // DEBUG
@@ -93,27 +93,27 @@ void CodeGenerator::MakeCodePrologue(CompilationInfo* info, const char* kind) {
   if (info->isolate()->bootstrapper()->IsActive()) {
     print_source = FLAG_print_builtin_source;
     print_ast = FLAG_print_builtin_ast;
-    ftype = "builtin";
+    ftype = "\x62\x75\x69\x6c\x74\x69\x6e";
   } else {
     print_source = FLAG_print_source;
     print_ast = FLAG_print_ast;
-    ftype = "user-defined";
+    ftype = "\x75\x73\x65\x72\x2d\x64\x65\x66\x69\x6e\x65\x64";
   }
 
   if (FLAG_trace_codegen || print_source || print_ast) {
     base::SmartArrayPointer<char> name = info->GetDebugName();
-    PrintF("[generating %s code for %s function: %s]\n", kind, ftype,
+    PrintF("\x5b\x67\x65\x6e\x65\x72\x61\x74\x69\x6e\x67\x20\x25\x73\x20\x63\x6f\x64\x65\x20\x66\x6f\x72\x20\x25\x73\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20\x25\x73\x5d\xa", kind, ftype,
            name.get());
   }
 
 #ifdef DEBUG
   if (info->parse_info() && print_source && false) {
-    PrintF("--- Source from AST ---\n%s\n",
+    PrintF("\x2d\x2d\x2d\x20\x53\x6f\x75\x72\x63\x65\x20\x66\x72\x6f\x6d\x20\x41\x53\x54\x20\x2d\x2d\x2d\xa\x25\x73\xa",
            PrettyPrinter(info->isolate()).PrintProgram(info->literal()));
   }
 
   if (info->parse_info() && print_ast && false) {
-    PrintF("--- AST ---\n%s\n",
+    PrintF("\x2d\x2d\x2d\x20\x41\x53\x54\x20\x2d\x2d\x2d\xa\x25\x73\xa",
            AstPrinter(info->isolate()).PrintProgram(info->literal()));
   }
 #endif  // DEBUG
@@ -165,7 +165,7 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
       FunctionLiteral* literal = info->literal();
       Handle<Script> script = info->script();
       if (!script->IsUndefined() && !script->source()->IsUndefined()) {
-        os << "--- Raw source ---\n";
+        os << "\x2d\x2d\x2d\x20\x52\x61\x77\x20\x73\x6f\x75\x72\x63\x65\x20\x2d\x2d\x2d\xa";
         StringCharacterStream stream(String::cast(script->source()),
                                      literal->start_position());
         // fun->end_position() points to the last character in the stream. We
@@ -174,38 +174,28 @@ void CodeGenerator::PrintCode(Handle<Code> code, CompilationInfo* info) {
             literal->end_position() - literal->start_position() + 1;
         for (int i = 0; i < source_len; i++) {
           if (stream.HasMore()) {
-#ifdef V8_OS_ZOS
-            os << AsReversiblyEscapedUC16(Ascii2Ebcdic(stream.GetNext()));
-#else
             os << AsReversiblyEscapedUC16(stream.GetNext());
-#endif
           }
         }
-        os << "\n\n";
+        os << "\xa\xa";
       }
     }
     if (info->IsOptimizing()) {
       if (FLAG_print_unopt_code && info->parse_info()) {
-        os << "--- Unoptimized code ---\n";
-#ifdef V8_OS_ZOS
-        char* ebc = debug_name.get();
-        __a2e_s(ebc);
-        info->closure()->shared()->code()->Disassemble(ebc, os);
-#else
+        os << "\x2d\x2d\x2d\x20\x55\x6e\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x2d\x2d\x2d\xa";
         info->closure()->shared()->code()->Disassemble(debug_name.get(), os);
-#endif
       }
-      os << "--- Optimized code ---\n"
-         << "optimization_id = " << info->optimization_id() << "\n";
+      os << "\x2d\x2d\x2d\x20\x4f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65\x20\x2d\x2d\x2d\xa"
+         << "\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x5f\x69\x64\x20\x3d\x20" << info->optimization_id() << "\xa";
     } else {
-      os << "--- Code ---\n";
+      os << "\x2d\x2d\x2d\x20\x43\x6f\x64\x65\x20\x2d\x2d\x2d\xa";
     }
     if (print_source) {
       FunctionLiteral* literal = info->literal();
-      os << "source_position = " << literal->start_position() << "\n";
+      os << "\x73\x6f\x75\x72\x63\x65\x5f\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x3d\x20" << literal->start_position() << "\xa";
     }
     code->Disassemble(debug_name.get(), os);
-    os << "--- End code ---\n";
+    os << "\x2d\x2d\x2d\x20\x45\x6e\x64\x20\x63\x6f\x64\x65\x20\x2d\x2d\x2d\xa";
   }
 #endif  // ENABLE_DISASSEMBLER
 }

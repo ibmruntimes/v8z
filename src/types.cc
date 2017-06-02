@@ -1180,11 +1180,11 @@ void Type::PrintTo(v8::base::OStream& os, PrintDimension dim) {
     if (this->IsBitset()) {
       BitsetType::Print(os, SEMANTIC(this->AsBitset()));
     } else if (this->IsClass()) {
-      os << "Class(" << static_cast<void*>(*this->AsClass()->Map()) << " < ";
+      os << u8"Class(" << static_cast<void*>(*this->AsClass()->Map()) << u8" < ";
       BitsetType::New(BitsetType::Lub(this))->PrintTo(os, dim);
       os << u8")";
     } else if (this->IsConstant()) {
-      os << "Constant(" << Brief(*this->AsConstant()->Value()) << ")";
+      os << u8"Constant(" << Brief(*this->AsConstant()->Value()) << u8")";
     } else if (this->IsRange()) {
       v8::base::OStream::fmtflags saved_flags = os.setf(std::ios::fixed);
       std::streamsize saved_precision = os.precision(0);

@@ -255,10 +255,10 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
 
       if (FLAG_trace_deopt) {
         CodeTracer::Scope scope(code->GetHeap()->isolate()->GetCodeTracer());
-        PrintF(scope.file(), "[deoptimizer unlinked: ");
+        PrintF(scope.file(), "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x72\x20\x75\x6e\x6c\x69\x6e\x6b\x65\x64\x3a\x20");
         function->PrintName(scope.file());
         PrintF(scope.file(),
-               " / %" V8PRIxPTR "]\n", reinterpret_cast<intptr_t>(function));
+               "\x20\x2f\x20\x25" V8PRIxPTR "\x5d\xa", reinterpret_cast<intptr_t>(function));
       }
     }
   };
@@ -283,10 +283,10 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
           static_cast<OptimizedFrame*>(it.frame())->function();
       if (FLAG_trace_deopt) {
         CodeTracer::Scope scope(isolate->GetCodeTracer());
-        PrintF(scope.file(),"[deoptimizer found activation of function: ");
+        PrintF(scope.file(),"\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x72\x20\x66\x6f\x75\x6e\x64\x20\x61\x63\x74\x69\x76\x61\x74\x69\x6f\x6e\x20\x6f\x66\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x3a\x20");
         function->PrintName(scope.file());
         PrintF(scope.file(),
-               " / %" V8PRIxPTR "]\n", reinterpret_cast<intptr_t>(function));
+               "\x20\x2f\x20\x25" V8PRIxPTR "\x5d\xa", reinterpret_cast<intptr_t>(function));
       }
       SafepointEntry safepoint = code->GetSafepointEntry(it.frame()->pc());
       int deopt_index = safepoint.deoptimization_index();
@@ -358,7 +358,7 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
         DeoptimizationInputData::cast(codes[i]->deoptimization_data());
     SharedFunctionInfo* shared =
         SharedFunctionInfo::cast(deopt_data->SharedFunctionInfo());
-    shared->EvictFromOptimizedCodeMap(codes[i], "deoptimized code");
+    shared->EvictFromOptimizedCodeMap(codes[i], "\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x63\x6f\x64\x65");
 
     // Do platform-specific patching to force any activations to lazy deopt.
     PatchCodeForDeoptimization(isolate, codes[i]);
@@ -373,10 +373,10 @@ void Deoptimizer::DeoptimizeMarkedCodeForContext(Context* context) {
 
 void Deoptimizer::DeoptimizeAll(Isolate* isolate) {
   TimerEventScope<TimerEventDeoptimizeCode> timer(isolate);
-  TRACE_EVENT0("v8", "V8.DeoptimizeCode");
+  TRACE_EVENT0("\x76\x38", "\x56\x38\x2e\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x43\x6f\x64\x65");
   if (FLAG_trace_deopt) {
     CodeTracer::Scope scope(isolate->GetCodeTracer());
-    PrintF(scope.file(), "[deoptimize all code in all contexts]\n");
+    PrintF(scope.file(), "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x20\x61\x6c\x6c\x20\x63\x6f\x64\x65\x20\x69\x6e\x20\x61\x6c\x6c\x20\x63\x6f\x6e\x74\x65\x78\x74\x73\x5d\xa");
   }
   DisallowHeapAllocation no_allocation;
   // For all contexts, mark all code, then deoptimize.
@@ -392,10 +392,10 @@ void Deoptimizer::DeoptimizeAll(Isolate* isolate) {
 
 void Deoptimizer::DeoptimizeMarkedCode(Isolate* isolate) {
   TimerEventScope<TimerEventDeoptimizeCode> timer(isolate);
-  TRACE_EVENT0("v8", "V8.DeoptimizeCode");
+  TRACE_EVENT0("\x76\x38", "\x56\x38\x2e\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x43\x6f\x64\x65");
   if (FLAG_trace_deopt) {
     CodeTracer::Scope scope(isolate->GetCodeTracer());
-    PrintF(scope.file(), "[deoptimize marked code in all contexts]\n");
+    PrintF(scope.file(), "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x20\x6d\x61\x72\x6b\x65\x64\x20\x63\x6f\x64\x65\x20\x69\x6e\x20\x61\x6c\x6c\x20\x63\x6f\x6e\x74\x65\x78\x74\x73\x5d\xa");
   }
   DisallowHeapAllocation no_allocation;
   // For all contexts, deoptimize code already marked.
@@ -421,7 +421,7 @@ void Deoptimizer::MarkAllCodeForContext(Context* context) {
 
 void Deoptimizer::DeoptimizeFunction(JSFunction* function) {
   TimerEventScope<TimerEventDeoptimizeCode> timer(function->GetIsolate());
-  TRACE_EVENT0("v8", "V8.DeoptimizeCode");
+  TRACE_EVENT0("\x76\x38", "\x56\x38\x2e\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x43\x6f\x64\x65");
   Code* code = function->code();
   if (code->kind() == Code::OPTIMIZED_FUNCTION) {
     // Mark the code for deoptimization and unlink any functions that also
@@ -448,18 +448,18 @@ bool Deoptimizer::TraceEnabledFor(BailoutType deopt_type,
           ? FLAG_trace_stub_failures
           : FLAG_trace_deopt;
   }
-  FATAL(u8"Unsupported deopt type");
+  FATAL("\x55\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x74\x79\x70\x65");
   return false;
 }
 
 
 const char* Deoptimizer::MessageFor(BailoutType type) {
   switch (type) {
-    case EAGER: return "eager";
-    case SOFT: return "soft";
-    case LAZY: return "lazy";
+    case EAGER: return "\x65\x61\x67\x65\x72";
+    case SOFT: return "\x73\x6f\x66\x74";
+    case LAZY: return "\x6c\x61\x7a\x79";
   }
-  FATAL(u8"Unsupported deopt type");
+  FATAL("\x55\x6e\x73\x75\x70\x70\x6f\x72\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x74\x79\x70\x65");
   return NULL;
 }
 
@@ -550,7 +550,7 @@ Code* Deoptimizer::FindOptimizedCode(JSFunction* function,
           : compiled_code;
     }
   }
-  FATAL(u8"Could not find code for optimized function");
+  FATAL("\x43\x6f\x75\x6c\x64\x20\x6e\x6f\x74\x20\x66\x69\x6e\x64\x20\x63\x6f\x64\x65\x20\x66\x6f\x72\x20\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e");
   return NULL;
 }
 
@@ -560,7 +560,7 @@ void Deoptimizer::PrintFunctionName() {
     function_->ShortPrint(trace_scope_->file());
   } else {
     PrintF(trace_scope_->file(),
-           "%s", Code::Kind2String(compiled_code_->kind()));
+           "\x25\x73", Code::Kind2String(compiled_code_->kind()));
   }
 }
 
@@ -636,13 +636,13 @@ int Deoptimizer::GetOutputInfo(DeoptimizationOutputData* data,
     }
   }
   OFStream os(stderr);
-  os << "[couldn't find pc offset for node=" << id.ToInt() << "]\n"
-     << "[method: " << shared->DebugName()->ToCString().get() << "]\n"
-     << "[source:\n" << SourceCodeOf(shared) << "\n]" << std::endl;
+  os << "\x5b\x63\x6f\x75\x6c\x64\x6e\x27\x74\x20\x66\x69\x6e\x64\x20\x70\x63\x20\x6f\x66\x66\x73\x65\x74\x20\x66\x6f\x72\x20\x6e\x6f\x64\x65\x3d" << id.ToInt() << "\x5d\xa"
+     << "\x5b\x6d\x65\x74\x68\x6f\x64\x3a\x20" << shared->DebugName()->ToCString().get() << "\x5d\xa"
+     << "\x5b\x73\x6f\x75\x72\x63\x65\x3a\xa" << SourceCodeOf(shared) << "\xa\x5d" << std::endl;
 
   shared->GetHeap()->isolate()->PushStackTraceAndDie(0xfefefefe, data, shared,
                                                      0xfefefeff);
-  FATAL(u8"unable to find pc offset during deoptimization");
+  FATAL("\x75\x6e\x61\x62\x6c\x65\x20\x74\x6f\x20\x66\x69\x6e\x64\x20\x70\x63\x20\x6f\x66\x66\x73\x65\x74\x20\x64\x75\x72\x69\x6e\x67\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e");
   return -1;
 }
 
@@ -735,12 +735,12 @@ void Deoptimizer::DoComputeOutputFrames() {
 
   if (trace_scope_ != NULL) {
     timer.Start();
-    PrintF(trace_scope_->file(), "[deoptimizing (DEOPT %s): begin ",
+    PrintF(trace_scope_->file(), "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x20\x28\x44\x45\x4f\x50\x54\x20\x25\x73\x29\x3a\x20\x62\x65\x67\x69\x6e\x20",
            MessageFor(bailout_type_));
     PrintFunctionName();
     PrintF(trace_scope_->file(),
-           " (opt #%d) @%d, FP to SP delta: %d, caller sp: 0x%08" V8PRIxPTR
-           "]\n",
+           "\x20\x28\x6f\x70\x74\x20\x23\x25\x64\x29\x20\x40\x25\x64\x2c\x20\x46\x50\x20\x74\x6f\x20\x53\x50\x20\x64\x65\x6c\x74\x61\x3a\x20\x25\x64\x2c\x20\x63\x61\x6c\x6c\x65\x72\x20\x73\x70\x3a\x20\x30\x78\x25\x30\x38" V8PRIxPTR
+           "\x5d\xa",
            input_data->OptimizationId()->value(), bailout_id_, fp_to_sp_delta_,
            caller_frame_top_);
     if (bailout_type_ == EAGER || bailout_type_ == SOFT ||
@@ -823,7 +823,7 @@ void Deoptimizer::DoComputeOutputFrames() {
         DoComputeCompiledStubFrame(translated_frame, frame_index);
         break;
       case TranslatedFrame::kInvalid:
-        FATAL(u8"invalid frame");
+        FATAL("\x69\x6e\x76\x61\x6c\x69\x64\x20\x66\x72\x61\x6d\x65");
         break;
     }
   }
@@ -832,12 +832,12 @@ void Deoptimizer::DoComputeOutputFrames() {
   if (trace_scope_ != NULL) {
     double ms = timer.Elapsed().InMillisecondsF();
     int index = output_count_ - 1;  // Index of the topmost frame.
-    PrintF(trace_scope_->file(), "[deoptimizing (%s): end ",
+    PrintF(trace_scope_->file(), "\x5b\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x69\x6e\x67\x20\x28\x25\x73\x29\x3a\x20\x65\x6e\x64\x20",
            MessageFor(bailout_type_));
     PrintFunctionName();
     PrintF(trace_scope_->file(),
-           " @%d => node=%d, pc=0x%08" V8PRIxPTR ", caller sp=0x%08" V8PRIxPTR
-           ", state=%s, took %0.3f ms]\n",
+           "\x20\x40\x25\x64\x20\x3d\x3e\x20\x6e\x6f\x64\x65\x3d\x25\x64\x2c\x20\x70\x63\x3d\x30\x78\x25\x30\x38" V8PRIxPTR "\x2c\x20\x63\x61\x6c\x6c\x65\x72\x20\x73\x70\x3d\x30\x78\x25\x30\x38" V8PRIxPTR
+           "\x2c\x20\x73\x74\x61\x74\x65\x3d\x25\x73\x2c\x20\x74\x6f\x6f\x6b\x20\x25\x30\x2e\x33\x66\x20\x6d\x73\x5d\xa",
            bailout_id_, node_id.ToInt(), output_[index]->GetPc(),
            caller_frame_top_, FullCodeGenerator::State2String(
                                   static_cast<FullCodeGenerator::State>(
@@ -871,11 +871,11 @@ void Deoptimizer::DoComputeJSFrame(TranslatedFrame* translated_frame,
   value_iterator++;
   input_index++;
   if (trace_scope_ != NULL) {
-    PrintF(trace_scope_->file(), "  translating frame ");
+    PrintF(trace_scope_->file(), "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x66\x72\x61\x6d\x65\x20");
     base::SmartArrayPointer<char> name = shared->DebugName()->ToCString();
-    PrintF(trace_scope_->file(), "%s", name.get());
-    PrintF(trace_scope_->file(), " => node=%d, height=%d%s\n", node_id.ToInt(),
-           height_in_bytes, goto_catch_handler ? " (throw)" : "");
+    PrintF(trace_scope_->file(), "\x25\x73", name.get());
+    PrintF(trace_scope_->file(), "\x20\x3d\x3e\x20\x6e\x6f\x64\x65\x3d\x25\x64\x2c\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x64\x25\x73\xa", node_id.ToInt(),
+           height_in_bytes, goto_catch_handler ? "\x20\x28\x74\x68\x72\x6f\x77\x29" : "");
   }
 
   // The 'fixed' part of the frame consists of the incoming parameters and
@@ -927,7 +927,7 @@ void Deoptimizer::DoComputeJSFrame(TranslatedFrame* translated_frame,
     value = output_[frame_index - 1]->GetPc();
   }
   output_frame->SetCallerPc(output_offset, value);
-  DebugPrintOutputSlot(value, frame_index, output_offset, "caller's pc\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa");
 
   // The caller's frame pointer for the bottommost output frame is the same
   // as in the input frame.  For all subsequent output frames, it can be
@@ -946,7 +946,7 @@ void Deoptimizer::DoComputeJSFrame(TranslatedFrame* translated_frame,
     Register fp_reg = JavaScriptFrame::fp_register();
     output_frame->SetRegister(fp_reg.code(), fp_value);
   }
-  DebugPrintOutputSlot(value, frame_index, output_offset, "caller's fp\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa");
 
   if (FLAG_enable_embedded_constant_pool) {
     // For the bottommost output frame the constant pool pointer can be gotten
@@ -960,7 +960,7 @@ void Deoptimizer::DoComputeJSFrame(TranslatedFrame* translated_frame,
     }
     output_frame->SetCallerConstantPool(output_offset, value);
     DebugPrintOutputSlot(value, frame_index, output_offset,
-                         "caller's constant_pool\n");
+                         "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x5f\x70\x6f\x6f\x6c\xa");
   }
 
   // For the bottommost output frame the context can be gotten from the input
@@ -995,7 +995,7 @@ void Deoptimizer::DoComputeJSFrame(TranslatedFrame* translated_frame,
     output_frame->SetRegister(context_reg.code(), value);
   }
   WriteValueToOutput(context, context_input_index, frame_index, output_offset,
-                     "context    ");
+                     "\x63\x6f\x6e\x74\x65\x78\x74\x20\x20\x20\x20");
   if (context == isolate_->heap()->arguments_marker()) {
     Address output_address =
         reinterpret_cast<Address>(output_[frame_index]->GetTop()) +
@@ -1008,7 +1008,7 @@ void Deoptimizer::DoComputeJSFrame(TranslatedFrame* translated_frame,
   // The function was mentioned explicitly in the BEGIN_FRAME.
   output_offset -= kPointerSize;
   value = reinterpret_cast<intptr_t>(function);
-  WriteValueToOutput(function, 0, frame_index, output_offset, "function    ");
+  WriteValueToOutput(function, 0, frame_index, output_offset, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x20\x20\x20");
 
   // Translate the rest of the frame.
   for (unsigned i = 0; i < height; ++i) {
@@ -1022,7 +1022,7 @@ void Deoptimizer::DoComputeJSFrame(TranslatedFrame* translated_frame,
     Object* exception_obj = reinterpret_cast<Object*>(
         input_->GetRegister(FullCodeGenerator::result_register().code()));
     WriteValueToOutput(exception_obj, input_index, frame_index, output_offset,
-                       "exception   ");
+                       "\x65\x78\x63\x65\x70\x74\x69\x6f\x6e\x20\x20\x20");
     input_index++;
   }
   CHECK_EQ(0u, output_offset);
@@ -1089,12 +1089,12 @@ void Deoptimizer::DoComputeInterpretedFrame(TranslatedFrame* translated_frame,
   value_iterator++;
   input_index++;
   if (trace_scope_ != NULL) {
-    PrintF(trace_scope_->file(), "  translating interpreted frame ");
+    PrintF(trace_scope_->file(), "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x69\x6e\x74\x65\x72\x70\x72\x65\x74\x65\x64\x20\x66\x72\x61\x6d\x65\x20");
     base::SmartArrayPointer<char> name = shared->DebugName()->ToCString();
-    PrintF(trace_scope_->file(), "%s", name.get());
-    PrintF(trace_scope_->file(), " => bytecode_offset=%d, height=%d%s\n",
+    PrintF(trace_scope_->file(), "\x25\x73", name.get());
+    PrintF(trace_scope_->file(), "\x20\x3d\x3e\x20\x62\x79\x74\x65\x63\x6f\x64\x65\x5f\x6f\x66\x66\x73\x65\x74\x3d\x25\x64\x2c\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x64\x25\x73\xa",
            bytecode_offset, height_in_bytes,
-           goto_catch_handler ? " (throw)" : "");
+           goto_catch_handler ? "\x20\x28\x74\x68\x72\x6f\x77\x29" : "");
   }
   if (goto_catch_handler) {
     bytecode_offset = catch_handler_pc_offset_;
@@ -1152,7 +1152,7 @@ void Deoptimizer::DoComputeInterpretedFrame(TranslatedFrame* translated_frame,
     value = output_[frame_index - 1]->GetPc();
   }
   output_frame->SetCallerPc(output_offset, value);
-  DebugPrintOutputSlot(value, frame_index, output_offset, "caller's pc\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa");
 
   // The caller's frame pointer for the bottommost output frame is the same
   // as in the input frame.  For all subsequent output frames, it can be
@@ -1171,7 +1171,7 @@ void Deoptimizer::DoComputeInterpretedFrame(TranslatedFrame* translated_frame,
     Register fp_reg = InterpretedFrame::fp_register();
     output_frame->SetRegister(fp_reg.code(), fp_value);
   }
-  DebugPrintOutputSlot(value, frame_index, output_offset, "caller's fp\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa");
 
   if (FLAG_enable_embedded_constant_pool) {
     // For the bottommost output frame the constant pool pointer can be gotten
@@ -1185,7 +1185,7 @@ void Deoptimizer::DoComputeInterpretedFrame(TranslatedFrame* translated_frame,
     }
     output_frame->SetCallerConstantPool(output_offset, value);
     DebugPrintOutputSlot(value, frame_index, output_offset,
-                         "caller's constant_pool\n");
+                         "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x5f\x70\x6f\x6f\x6c\xa");
   }
 
   // For the bottommost output frame the context can be gotten from the input
@@ -1214,27 +1214,27 @@ void Deoptimizer::DoComputeInterpretedFrame(TranslatedFrame* translated_frame,
   output_frame->SetContext(value);
   if (is_topmost) output_frame->SetRegister(context_reg.code(), value);
   WriteValueToOutput(context, context_input_index, frame_index, output_offset,
-                     "context    ");
+                     "\x63\x6f\x6e\x74\x65\x78\x74\x20\x20\x20\x20");
   value_iterator++;
   input_index++;
 
   // The function was mentioned explicitly in the BEGIN_FRAME.
   output_offset -= kPointerSize;
   value = reinterpret_cast<intptr_t>(function);
-  WriteValueToOutput(function, 0, frame_index, output_offset, "function    ");
+  WriteValueToOutput(function, 0, frame_index, output_offset, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x20\x20\x20");
 
   // The new.target slot is only used during function activiation which is
   // before the first deopt point, so should never be needed. Just set it to
   // undefined.
   output_offset -= kPointerSize;
   Object* new_target = isolate_->heap()->undefined_value();
-  WriteValueToOutput(new_target, 0, frame_index, output_offset, "new_target  ");
+  WriteValueToOutput(new_target, 0, frame_index, output_offset, "\x6e\x65\x77\x5f\x74\x61\x72\x67\x65\x74\x20\x20");
 
   // Set the bytecode array pointer.
   output_offset -= kPointerSize;
   Object* bytecode_array = shared->bytecode_array();
   WriteValueToOutput(bytecode_array, 0, frame_index, output_offset,
-                     "bytecode array ");
+                     "\x62\x79\x74\x65\x63\x6f\x64\x65\x20\x61\x72\x72\x61\x79\x20");
 
   // The bytecode offset was mentioned explicitly in the BEGIN_FRAME.
   output_offset -= kPointerSize;
@@ -1242,7 +1242,7 @@ void Deoptimizer::DoComputeInterpretedFrame(TranslatedFrame* translated_frame,
       BytecodeArray::kHeaderSize - kHeapObjectTag + bytecode_offset;
   Smi* smi_bytecode_offset = Smi::FromInt(raw_bytecode_offset);
   WriteValueToOutput(smi_bytecode_offset, 0, frame_index, output_offset,
-                     "bytecode offset ");
+                     "\x62\x79\x74\x65\x63\x6f\x64\x65\x20\x6f\x66\x66\x73\x65\x74\x20");
 
   // Translate the rest of the interpreter registers in the frame.
   for (unsigned i = 0; i < height - 1; ++i) {
@@ -1260,7 +1260,7 @@ void Deoptimizer::DoComputeInterpretedFrame(TranslatedFrame* translated_frame,
     intptr_t accumulator_value =
         input_->GetRegister(FullCodeGenerator::result_register().code());
     WriteValueToOutput(reinterpret_cast<Object*>(accumulator_value), 0,
-                       frame_index, output_offset, "accumulator ");
+                       frame_index, output_offset, "\x61\x63\x63\x75\x6d\x75\x6c\x61\x74\x6f\x72\x20");
     value_iterator++;
   } else {
     WriteTranslatedValueToOutput(&value_iterator, &input_index, frame_index,
@@ -1317,7 +1317,7 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(
   input_index++;
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "  translating arguments adaptor => height=%d\n", height_in_bytes);
+           "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x61\x64\x61\x70\x74\x6f\x72\x20\x3d\x3e\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x64\xa", height_in_bytes);
   }
 
   unsigned fixed_frame_size = ArgumentsAdaptorFrameConstants::kFixedFrameSize;
@@ -1361,7 +1361,7 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(
     value = output_[frame_index - 1]->GetPc();
   }
   output_frame->SetCallerPc(output_offset, value);
-  DebugPrintOutputSlot(value, frame_index, output_offset, "caller's pc\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa");
 
   // Read caller's FP from the previous frame, and set this frame's FP.
   output_offset -= kFPOnStackSize;
@@ -1373,7 +1373,7 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(
   output_frame->SetCallerFp(output_offset, value);
   intptr_t fp_value = top_address + output_offset;
   output_frame->SetFp(fp_value);
-  DebugPrintOutputSlot(value, frame_index, output_offset, "caller's fp\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa");
 
   if (FLAG_enable_embedded_constant_pool) {
     // Read the caller's constant pool from the previous frame.
@@ -1385,7 +1385,7 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(
     }
     output_frame->SetCallerConstantPool(output_offset, value);
     DebugPrintOutputSlot(value, frame_index, output_offset,
-                         "caller's constant_pool\n");
+                         "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x5f\x70\x6f\x6f\x6c\xa");
   }
 
   // A marker value is used in place of the context.
@@ -1394,20 +1394,20 @@ void Deoptimizer::DoComputeArgumentsAdaptorFrame(
       Smi::FromInt(StackFrame::ARGUMENTS_ADAPTOR));
   output_frame->SetFrameSlot(output_offset, context);
   DebugPrintOutputSlot(context, frame_index, output_offset,
-                       "context (adaptor sentinel)\n");
+                       "\x63\x6f\x6e\x74\x65\x78\x74\x20\x28\x61\x64\x61\x70\x74\x6f\x72\x20\x73\x65\x6e\x74\x69\x6e\x65\x6c\x29\xa");
 
   // The function was mentioned explicitly in the ARGUMENTS_ADAPTOR_FRAME.
   output_offset -= kPointerSize;
   value = reinterpret_cast<intptr_t>(function);
-  WriteValueToOutput(function, 0, frame_index, output_offset, "function    ");
+  WriteValueToOutput(function, 0, frame_index, output_offset, "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x20\x20\x20");
 
   // Number of incoming arguments.
   output_offset -= kPointerSize;
   value = reinterpret_cast<intptr_t>(Smi::FromInt(height - 1));
   output_frame->SetFrameSlot(output_offset, value);
-  DebugPrintOutputSlot(value, frame_index, output_offset, "argc ");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x61\x72\x67\x63\x20");
   if (trace_scope_ != nullptr) {
-    PrintF(trace_scope_->file(), "(%d)\n", height - 1);
+    PrintF(trace_scope_->file(), "\x28\x25\x64\x29\xa", height - 1);
   }
 
   DCHECK(0 == output_offset);
@@ -1435,9 +1435,9 @@ void Deoptimizer::DoComputeTailCallerFrame(TranslatedFrame* translated_frame,
   CHECK_NE(output_count_ - 1, frame_index);
 
   if (trace_scope_ != NULL) {
-    PrintF(trace_scope_->file(), "  translating tail caller frame ");
+    PrintF(trace_scope_->file(), "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x74\x61\x69\x6c\x20\x63\x61\x6c\x6c\x65\x72\x20\x66\x72\x61\x6d\x65\x20");
     base::SmartArrayPointer<char> name = shared->DebugName()->ToCString();
-    PrintF(trace_scope_->file(), "%s\n", name.get());
+    PrintF(trace_scope_->file(), "\x25\x73\xa", name.get());
   }
 
   if (!is_bottommost) return;
@@ -1478,10 +1478,10 @@ void Deoptimizer::DoComputeTailCallerFrame(TranslatedFrame* translated_frame,
 
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "    dropping caller arguments adaptor frame: offset=%d, "
-           "fp: 0x%08" V8PRIxPTR " -> 0x%08" V8PRIxPTR
-           ", "
-           "caller sp: 0x%08" V8PRIxPTR " -> 0x%08" V8PRIxPTR "\n",
+           "\x20\x20\x20\x20\x64\x72\x6f\x70\x70\x69\x6e\x67\x20\x63\x61\x6c\x6c\x65\x72\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x61\x64\x61\x70\x74\x6f\x72\x20\x66\x72\x61\x6d\x65\x3a\x20\x6f\x66\x66\x73\x65\x74\x3d\x25\x64\x2c\x20"
+           "\x66\x70\x3a\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x2d\x3e\x20\x30\x78\x25\x30\x38" V8PRIxPTR
+           "\x2c\x20"
+           "\x63\x61\x6c\x6c\x65\x72\x20\x73\x70\x3a\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x2d\x3e\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\xa",
            offset, stack_fp_, new_stack_fp, caller_frame_top_,
            new_caller_frame_top);
   }
@@ -1519,7 +1519,7 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslatedFrame* translated_frame,
   input_index++;
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "  translating construct stub => height=%d\n", height_in_bytes);
+           "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x20\x73\x74\x75\x62\x20\x3d\x3e\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x64\xa", height_in_bytes);
   }
 
   unsigned fixed_frame_size = ConstructFrameConstants::kFixedFrameSize;
@@ -1558,7 +1558,7 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslatedFrame* translated_frame,
   output_offset -= kPCOnStackSize;
   intptr_t callers_pc = output_[frame_index - 1]->GetPc();
   output_frame->SetCallerPc(output_offset, callers_pc);
-  DebugPrintOutputSlot(callers_pc, frame_index, output_offset, "caller's pc\n");
+  DebugPrintOutputSlot(callers_pc, frame_index, output_offset, "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa");
 
   // Read caller's FP from the previous frame, and set this frame's FP.
   output_offset -= kFPOnStackSize;
@@ -1570,7 +1570,7 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslatedFrame* translated_frame,
     Register fp_reg = JavaScriptFrame::fp_register();
     output_frame->SetRegister(fp_reg.code(), fp_value);
   }
-  DebugPrintOutputSlot(value, frame_index, output_offset, "caller's fp\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa");
 
   if (FLAG_enable_embedded_constant_pool) {
     // Read the caller's constant pool from the previous frame.
@@ -1578,7 +1578,7 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslatedFrame* translated_frame,
     value = output_[frame_index - 1]->GetConstantPool();
     output_frame->SetCallerConstantPool(output_offset, value);
     DebugPrintOutputSlot(value, frame_index, output_offset,
-                         "caller's constant_pool\n");
+                         "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x5f\x70\x6f\x6f\x6c\xa");
   }
 
   // A marker value is used to mark the frame.
@@ -1586,7 +1586,7 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslatedFrame* translated_frame,
   value = reinterpret_cast<intptr_t>(Smi::FromInt(StackFrame::CONSTRUCT));
   output_frame->SetFrameSlot(output_offset, value);
   DebugPrintOutputSlot(value, frame_index, output_offset,
-                       "typed frame marker\n");
+                       "\x74\x79\x70\x65\x64\x20\x66\x72\x61\x6d\x65\x20\x6d\x61\x72\x6b\x65\x72\xa");
 
   // The context can be gotten from the previous frame.
   output_offset -= kPointerSize;
@@ -1596,21 +1596,21 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslatedFrame* translated_frame,
     Register context_reg = JavaScriptFrame::context_register();
     output_frame->SetRegister(context_reg.code(), value);
   }
-  DebugPrintOutputSlot(value, frame_index, output_offset, "context\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x6f\x6e\x74\x65\x78\x74\xa");
 
   // The allocation site.
   output_offset -= kPointerSize;
   value = reinterpret_cast<intptr_t>(isolate_->heap()->undefined_value());
   output_frame->SetFrameSlot(output_offset, value);
-  DebugPrintOutputSlot(value, frame_index, output_offset, "allocation site\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x73\x69\x74\x65\xa");
 
   // Number of incoming arguments.
   output_offset -= kPointerSize;
   value = reinterpret_cast<intptr_t>(Smi::FromInt(height - 1));
   output_frame->SetFrameSlot(output_offset, value);
-  DebugPrintOutputSlot(value, frame_index, output_offset, "argc ");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x61\x72\x67\x63\x20");
   if (trace_scope_ != nullptr) {
-    PrintF(trace_scope_->file(), "(%d)\n", height - 1);
+    PrintF(trace_scope_->file(), "\x28\x25\x64\x29\xa", height - 1);
   }
 
   // The newly allocated object was passed as receiver in the artificial
@@ -1619,7 +1619,7 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslatedFrame* translated_frame,
   value = output_frame->GetFrameSlot(output_frame_size - kPointerSize);
   output_frame->SetFrameSlot(output_offset, value);
   DebugPrintOutputSlot(value, frame_index, output_offset,
-                       "allocated receiver\n");
+                       "\x61\x6c\x6c\x6f\x63\x61\x74\x65\x64\x20\x72\x65\x63\x65\x69\x76\x65\x72\xa");
 
   if (is_topmost) {
     // Ensure the result is restored back when we return to the stub.
@@ -1628,7 +1628,7 @@ void Deoptimizer::DoComputeConstructStubFrame(TranslatedFrame* translated_frame,
     value = input_->GetRegister(result_reg.code());
     output_frame->SetFrameSlot(output_offset, value);
     DebugPrintOutputSlot(value, frame_index, output_offset,
-                         "constructor result\n");
+                         "\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x20\x72\x65\x73\x75\x6c\x74\xa");
 
     output_frame->SetState(Smi::FromInt(FullCodeGenerator::TOS_REG));
   }
@@ -1692,10 +1692,10 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslatedFrame* translated_frame,
     height_in_bytes += kPointerSize;
   }
 
-  const char* kind = is_setter_stub_frame ? "setter" : "getter";
+  const char* kind = is_setter_stub_frame ? "\x73\x65\x74\x74\x65\x72" : "\x67\x65\x74\x74\x65\x72";
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "  translating %s stub => height=%u\n", kind, height_in_bytes);
+           "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x25\x73\x20\x73\x74\x75\x62\x20\x3d\x3e\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x75\xa", kind, height_in_bytes);
   }
 
   // We need 1 stack entry for the return address and enough entries for the
@@ -1730,7 +1730,7 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslatedFrame* translated_frame,
   output_offset -= kPCOnStackSize;
   intptr_t callers_pc = output_[frame_index - 1]->GetPc();
   output_frame->SetCallerPc(output_offset, callers_pc);
-  DebugPrintOutputSlot(callers_pc, frame_index, output_offset, "caller's pc\n");
+  DebugPrintOutputSlot(callers_pc, frame_index, output_offset, "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa");
 
   // Read caller's FP from the previous frame, and set this frame's FP.
   output_offset -= kFPOnStackSize;
@@ -1742,7 +1742,7 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslatedFrame* translated_frame,
     Register fp_reg = JavaScriptFrame::fp_register();
     output_frame->SetRegister(fp_reg.code(), fp_value);
   }
-  DebugPrintOutputSlot(value, frame_index, output_offset, "caller's fp\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa");
 
   if (FLAG_enable_embedded_constant_pool) {
     // Read the caller's constant pool from the previous frame.
@@ -1750,16 +1750,16 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslatedFrame* translated_frame,
     value = output_[frame_index - 1]->GetConstantPool();
     output_frame->SetCallerConstantPool(output_offset, value);
     DebugPrintOutputSlot(value, frame_index, output_offset,
-                         "caller's constant_pool\n");
+                         "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x5f\x70\x6f\x6f\x6c\xa");
   }
 
   // Set the frame type.
   output_offset -= kPointerSize;
   value = reinterpret_cast<intptr_t>(Smi::FromInt(StackFrame::INTERNAL));
   output_frame->SetFrameSlot(output_offset, value);
-  DebugPrintOutputSlot(value, frame_index, output_offset, "frame type ");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x66\x72\x61\x6d\x65\x20\x74\x79\x70\x65\x20");
   if (trace_scope_ != nullptr) {
-    PrintF(trace_scope_->file(), "(%s sentinel)\n", kind);
+    PrintF(trace_scope_->file(), "\x28\x25\x73\x20\x73\x65\x6e\x74\x69\x6e\x65\x6c\x29\xa", kind);
   }
 
   // Get Code object from accessor stub.
@@ -1770,7 +1770,7 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslatedFrame* translated_frame,
   Code* accessor_stub = isolate_->builtins()->builtin(name);
   value = reinterpret_cast<intptr_t>(accessor_stub);
   output_frame->SetFrameSlot(output_offset, value);
-  DebugPrintOutputSlot(value, frame_index, output_offset, "code object\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x6f\x64\x65\x20\x6f\x62\x6a\x65\x63\x74\xa");
 
   // The context can be gotten from the previous frame.
   output_offset -= kPointerSize;
@@ -1780,7 +1780,7 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslatedFrame* translated_frame,
     Register context_reg = JavaScriptFrame::context_register();
     output_frame->SetRegister(context_reg.code(), value);
   }
-  DebugPrintOutputSlot(value, frame_index, output_offset, "context\n");
+  DebugPrintOutputSlot(value, frame_index, output_offset, "\x63\x6f\x6e\x74\x65\x78\x74\xa");
 
   // Skip receiver.
   value_iterator++;
@@ -1801,7 +1801,7 @@ void Deoptimizer::DoComputeAccessorStubFrame(TranslatedFrame* translated_frame,
     value = input_->GetRegister(result_reg.code());
     output_frame->SetFrameSlot(output_offset, value);
     DebugPrintOutputSlot(value, frame_index, output_offset,
-                         "accessor result\n");
+                         "\x61\x63\x63\x65\x73\x73\x6f\x72\x20\x72\x65\x73\x75\x6c\x74\xa");
 
     output_frame->SetState(Smi::FromInt(FullCodeGenerator::TOS_REG));
   } else {
@@ -1897,7 +1897,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslatedFrame* translated_frame,
   int output_frame_size = height_in_bytes + fixed_frame_size;
   if (trace_scope_ != NULL) {
     PrintF(trace_scope_->file(),
-           "  translating %s => StubFailureTrampolineStub, height=%d\n",
+           "\x20\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6e\x67\x20\x25\x73\x20\x3d\x3e\x20\x53\x74\x75\x62\x46\x61\x69\x6c\x75\x72\x65\x54\x72\x61\x6d\x70\x6f\x6c\x69\x6e\x65\x53\x74\x75\x62\x2c\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x64\xa",
            CodeStub::MajorName(static_cast<CodeStub::Major>(major_key)),
            height_in_bytes);
   }
@@ -1919,7 +1919,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslatedFrame* translated_frame,
   intptr_t value = caller_pc_;
   output_frame->SetCallerPc(output_frame_offset, value);
   DebugPrintOutputSlot(value, frame_index, output_frame_offset,
-                       "caller's pc\n");
+                       "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x70\x63\xa");
 
   // Read caller's FP from the input frame, and set this frame's FP.
   value = caller_fp_;
@@ -1930,7 +1930,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslatedFrame* translated_frame,
   output_frame->SetRegister(fp_reg.code(), frame_ptr);
   output_frame->SetFp(frame_ptr);
   DebugPrintOutputSlot(value, frame_index, output_frame_offset,
-                       "caller's fp\n");
+                       "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x66\x70\xa");
 
   if (FLAG_enable_embedded_constant_pool) {
     // Read the caller's constant pool from the input frame.
@@ -1938,7 +1938,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslatedFrame* translated_frame,
     output_frame_offset -= kPointerSize;
     output_frame->SetCallerConstantPool(output_frame_offset, value);
     DebugPrintOutputSlot(value, frame_index, output_frame_offset,
-                         "caller's constant_pool\n");
+                         "\x63\x61\x6c\x6c\x65\x72\x27\x73\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x5f\x70\x6f\x6f\x6c\xa");
   }
 
   // The marker for the typed stack frame
@@ -1947,7 +1947,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslatedFrame* translated_frame,
       Smi::FromInt(StackFrame::STUB_FAILURE_TRAMPOLINE));
   output_frame->SetFrameSlot(output_frame_offset, value);
   DebugPrintOutputSlot(value, frame_index, output_frame_offset,
-                       "function (stub failure sentinel)\n");
+                       "\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x28\x73\x74\x75\x62\x20\x66\x61\x69\x6c\x75\x72\x65\x20\x73\x65\x6e\x74\x69\x6e\x65\x6c\x29\xa");
 
   intptr_t caller_arg_count = stack_param_count;
   bool arg_count_known = !descriptor.stack_parameter_count().is_valid();
@@ -1967,7 +1967,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslatedFrame* translated_frame,
   output_frame->SetFrameSlot(args_arguments_offset, value);
   DebugPrintOutputSlot(
       value, frame_index, args_arguments_offset,
-      arg_count_known ? "args.arguments\n" : "args.arguments (the hole)\n");
+      arg_count_known ? "\x61\x72\x67\x73\x2e\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\xa" : "\x61\x72\x67\x73\x2e\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x28\x74\x68\x65\x20\x68\x6f\x6c\x65\x29\xa");
 
   output_frame_offset -= kPointerSize;
   int length_frame_offset = output_frame_offset;
@@ -1975,13 +1975,13 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslatedFrame* translated_frame,
   output_frame->SetFrameSlot(length_frame_offset, value);
   DebugPrintOutputSlot(
       value, frame_index, length_frame_offset,
-      arg_count_known ? "args.length\n" : "args.length (the hole)\n");
+      arg_count_known ? "\x61\x72\x67\x73\x2e\x6c\x65\x6e\x67\x74\x68\xa" : "\x61\x72\x67\x73\x2e\x6c\x65\x6e\x67\x74\x68\x20\x28\x74\x68\x65\x20\x68\x6f\x6c\x65\x29\xa");
 
   output_frame_offset -= kPointerSize;
   value = frame_ptr + StandardFrameConstants::kCallerSPOffset -
       (output_frame_size - output_frame_offset) + kPointerSize;
   output_frame->SetFrameSlot(output_frame_offset, value);
-  DebugPrintOutputSlot(value, frame_index, output_frame_offset, "args*\n");
+  DebugPrintOutputSlot(value, frame_index, output_frame_offset, "\x61\x72\x67\x73\x2a\xa");
 
   // Copy the register parameters to the failure frame.
   int arguments_length_offset = -1;
@@ -2015,7 +2015,7 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslatedFrame* translated_frame,
     value = reinterpret_cast<intptr_t>(*stack_parameter);
     output_frame->SetFrameSlot(output_frame_offset, value);
     DebugPrintOutputSlot(value, frame_index, output_frame_offset,
-                         "stack parameter\n");
+                         "\x73\x74\x61\x63\x6b\x20\x70\x61\x72\x61\x6d\x65\x74\x65\x72\xa");
   }
 
   CHECK_EQ(0u, output_frame_offset);
@@ -2030,12 +2030,12 @@ void Deoptimizer::DoComputeCompiledStubFrame(TranslatedFrame* translated_frame,
     caller_arg_count = smi_caller_arg_count->value();
     output_frame->SetFrameSlot(length_frame_offset, caller_arg_count);
     DebugPrintOutputSlot(caller_arg_count, frame_index, length_frame_offset,
-                         "args.length\n");
+                         "\x61\x72\x67\x73\x2e\x6c\x65\x6e\x67\x74\x68\xa");
     value = frame_ptr + StandardFrameConstants::kCallerSPOffset +
         (caller_arg_count - 1) * kPointerSize;
     output_frame->SetFrameSlot(args_arguments_offset, value);
     DebugPrintOutputSlot(value, frame_index, args_arguments_offset,
-                         "args.arguments");
+                         "\x61\x72\x67\x73\x2e\x61\x72\x67\x75\x6d\x65\x6e\x74\x73");
   }
 
   // Copy the double registers from the input into the output frame.
@@ -2081,11 +2081,11 @@ void Deoptimizer::MaterializeHeapObjects(JavaScriptFrameIterator* it) {
     Handle<Object> value = materialization.value_->GetValue();
 
     if (trace_scope_ != nullptr) {
-      PrintF("Materialization [0x%08" V8PRIxPTR "] <- 0x%08" V8PRIxPTR " ;  ",
+      PrintF("\x4d\x61\x74\x65\x72\x69\x61\x6c\x69\x7a\x61\x74\x69\x6f\x6e\x20\x5b\x30\x78\x25\x30\x38" V8PRIxPTR "\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x3b\x20\x20",
              reinterpret_cast<intptr_t>(materialization.output_slot_address_),
              reinterpret_cast<intptr_t>(*value));
       value->ShortPrint(trace_scope_->file());
-      PrintF(trace_scope_->file(), "\n");
+      PrintF(trace_scope_->file(), "\xa");
     }
 
     *(reinterpret_cast<intptr_t*>(materialization.output_slot_address_)) =
@@ -2132,7 +2132,7 @@ void Deoptimizer::WriteValueToOutput(Object* value, int input_index,
     DebugPrintOutputSlot(reinterpret_cast<intptr_t>(value), frame_index,
                          output_offset, debug_hint_string);
     value->ShortPrint(trace_scope_->file());
-    PrintF(trace_scope_->file(), "  (input #%d)\n", input_index);
+    PrintF(trace_scope_->file(), "\x20\x20\x28\x69\x6e\x70\x75\x74\x20\x23\x25\x64\x29\xa", input_index);
   }
 }
 
@@ -2145,7 +2145,7 @@ void Deoptimizer::DebugPrintOutputSlot(intptr_t value, int frame_index,
         reinterpret_cast<Address>(output_[frame_index]->GetTop()) +
         output_offset;
     PrintF(trace_scope_->file(),
-           "    0x%08" V8PRIxPTR ": [top + %d] <- 0x%08" V8PRIxPTR " ;  %s",
+           "\x20\x20\x20\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x3a\x20\x5b\x74\x6f\x70\x20\x2b\x20\x25\x64\x5d\x20\x3c\x2d\x20\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x3b\x20\x20\x25\x73",
            reinterpret_cast<intptr_t>(output_address), output_offset, value,
            debug_hint_string == nullptr ? "" : debug_hint_string);
   }
@@ -2243,7 +2243,7 @@ void Deoptimizer::EnsureCodeForDeoptimizationEntry(Isolate* isolate,
         desc.instr_size);
   if (!chunk->CommitArea(desc.instr_size)) {
     V8::FatalProcessOutOfMemory(
-        "Deoptimizer::EnsureCodeForDeoptimizationEntry");
+        "\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x72\x3a\x3a\x45\x6e\x73\x75\x72\x65\x43\x6f\x64\x65\x46\x6f\x72\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x45\x6e\x74\x72\x79");
   }
   CopyBytes(chunk->area_start(), desc.buffer,
             static_cast<size_t>(desc.instr_size));
@@ -2527,7 +2527,7 @@ int Translation::NumberOfOperandsFor(Opcode opcode) {
     case INTERPRETED_FRAME:
       return 3;
   }
-  FATAL(u8"Unexpected translation type");
+  FATAL("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x74\x72\x61\x6e\x73\x6c\x61\x74\x69\x6f\x6e\x20\x74\x79\x70\x65");
   return -1;
 }
 
@@ -2956,11 +2956,11 @@ Handle<Object> TranslatedValue::GetValue() {
       return container_->MaterializeObjectAt(object_index());
 
     case TranslatedValue::kInvalid:
-      FATAL(u8"unexpected case");
+      FATAL("\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x63\x61\x73\x65");
       return Handle<Object>::null();
   }
 
-  FATAL(u8"internal error: value missing");
+  FATAL("\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x65\x72\x72\x6f\x72\x3a\x20\x76\x61\x6c\x75\x65\x20\x6d\x69\x73\x73\x69\x6e\x67");
   return Handle<Object>::null();
 }
 
@@ -2996,7 +2996,7 @@ void TranslatedValue::MaterializeSimple() {
     case kInvalid:
     case kTagged:
     case kBoolBit:
-      FATAL(u8"internal error: unexpected materialization.");
+      FATAL("\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x65\x72\x72\x6f\x72\x3a\x20\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x6d\x61\x74\x65\x72\x69\x61\x6c\x69\x7a\x61\x74\x69\x6f\x6e\x2e");
       break;
   }
 }
@@ -3156,9 +3156,9 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
       if (trace_file != nullptr) {
         base::SmartArrayPointer<char> name =
             shared_info->DebugName()->ToCString();
-        PrintF(trace_file, "  reading input frame %s", name.get());
+        PrintF(trace_file, "\x20\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x69\x6e\x70\x75\x74\x20\x66\x72\x61\x6d\x65\x20\x25\x73", name.get());
         int arg_count = shared_info->internal_formal_parameter_count() + 1;
-        PrintF(trace_file, " => node=%d, args=%d, height=%d; inputs:\n",
+        PrintF(trace_file, "\x20\x3d\x3e\x20\x6e\x6f\x64\x65\x3d\x25\x64\x2c\x20\x61\x72\x67\x73\x3d\x25\x64\x2c\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x64\x3b\x20\x69\x6e\x70\x75\x74\x73\x3a\xa",
                node_id.ToInt(), arg_count, height);
       }
       return TranslatedFrame::JSFrame(node_id, shared_info, height);
@@ -3172,10 +3172,10 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
       if (trace_file != nullptr) {
         base::SmartArrayPointer<char> name =
             shared_info->DebugName()->ToCString();
-        PrintF(trace_file, "  reading input frame %s", name.get());
+        PrintF(trace_file, "\x20\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x69\x6e\x70\x75\x74\x20\x66\x72\x61\x6d\x65\x20\x25\x73", name.get());
         int arg_count = shared_info->internal_formal_parameter_count() + 1;
         PrintF(trace_file,
-               " => bytecode_offset=%d, args=%d, height=%d; inputs:\n",
+               "\x20\x3d\x3e\x20\x62\x79\x74\x65\x63\x6f\x64\x65\x5f\x6f\x66\x66\x73\x65\x74\x3d\x25\x64\x2c\x20\x61\x72\x67\x73\x3d\x25\x64\x2c\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x64\x3b\x20\x69\x6e\x70\x75\x74\x73\x3a\xa",
                bytecode_offset.ToInt(), arg_count, height);
       }
       return TranslatedFrame::InterpretedFrame(bytecode_offset, shared_info,
@@ -3189,8 +3189,8 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
       if (trace_file != nullptr) {
         base::SmartArrayPointer<char> name =
             shared_info->DebugName()->ToCString();
-        PrintF(trace_file, "  reading arguments adaptor frame %s", name.get());
-        PrintF(trace_file, " => height=%d; inputs:\n", height);
+        PrintF(trace_file, "\x20\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x61\x64\x61\x70\x74\x6f\x72\x20\x66\x72\x61\x6d\x65\x20\x25\x73", name.get());
+        PrintF(trace_file, "\x20\x3d\x3e\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x64\x3b\x20\x69\x6e\x70\x75\x74\x73\x3a\xa", height);
       }
       return TranslatedFrame::ArgumentsAdaptorFrame(shared_info, height);
     }
@@ -3201,7 +3201,7 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
       if (trace_file != nullptr) {
         base::SmartArrayPointer<char> name =
             shared_info->DebugName()->ToCString();
-        PrintF(trace_file, "  reading tail caller frame marker %s\n",
+        PrintF(trace_file, "\x20\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x74\x61\x69\x6c\x20\x63\x61\x6c\x6c\x65\x72\x20\x66\x72\x61\x6d\x65\x20\x6d\x61\x72\x6b\x65\x72\x20\x25\x73\xa",
                name.get());
       }
       return TranslatedFrame::TailCallerFrame(shared_info);
@@ -3214,8 +3214,8 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
       if (trace_file != nullptr) {
         base::SmartArrayPointer<char> name =
             shared_info->DebugName()->ToCString();
-        PrintF(trace_file, "  reading construct stub frame %s", name.get());
-        PrintF(trace_file, " => height=%d; inputs:\n", height);
+        PrintF(trace_file, "\x20\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x63\x6f\x6e\x73\x74\x72\x75\x63\x74\x20\x73\x74\x75\x62\x20\x66\x72\x61\x6d\x65\x20\x25\x73", name.get());
+        PrintF(trace_file, "\x20\x3d\x3e\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x64\x3b\x20\x69\x6e\x70\x75\x74\x73\x3a\xa", height);
       }
       return TranslatedFrame::ConstructStubFrame(shared_info, height);
     }
@@ -3226,7 +3226,7 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
       if (trace_file != nullptr) {
         base::SmartArrayPointer<char> name =
             shared_info->DebugName()->ToCString();
-        PrintF(trace_file, "  reading getter frame %s; inputs:\n", name.get());
+        PrintF(trace_file, "\x20\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x67\x65\x74\x74\x65\x72\x20\x66\x72\x61\x6d\x65\x20\x25\x73\x3b\x20\x69\x6e\x70\x75\x74\x73\x3a\xa", name.get());
       }
       return TranslatedFrame::AccessorFrame(TranslatedFrame::kGetter,
                                             shared_info);
@@ -3238,7 +3238,7 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
       if (trace_file != nullptr) {
         base::SmartArrayPointer<char> name =
             shared_info->DebugName()->ToCString();
-        PrintF(trace_file, "  reading setter frame %s; inputs:\n", name.get());
+        PrintF(trace_file, "\x20\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x73\x65\x74\x74\x65\x72\x20\x66\x72\x61\x6d\x65\x20\x25\x73\x3b\x20\x69\x6e\x70\x75\x74\x73\x3a\xa", name.get());
       }
       return TranslatedFrame::AccessorFrame(TranslatedFrame::kSetter,
                                             shared_info);
@@ -3248,7 +3248,7 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
       int height = iterator->Next();
       if (trace_file != nullptr) {
         PrintF(trace_file,
-               "  reading compiler stub frame => height=%d; inputs:\n", height);
+               "\x20\x20\x72\x65\x61\x64\x69\x6e\x67\x20\x63\x6f\x6d\x70\x69\x6c\x65\x72\x20\x73\x74\x75\x62\x20\x66\x72\x61\x6d\x65\x20\x3d\x3e\x20\x68\x65\x69\x67\x68\x74\x3d\x25\x64\x3b\x20\x69\x6e\x70\x75\x74\x73\x3a\xa", height);
       }
       return TranslatedFrame::CompiledStubFrame(height,
                                                 literal_array->GetIsolate());
@@ -3271,7 +3271,7 @@ TranslatedFrame TranslatedState::CreateNextTranslatedFrame(
     case Translation::LITERAL:
       break;
   }
-  FATAL(u8"We should never get here - unexpected deopt info.");
+  FATAL("\x57\x65\x20\x73\x68\x6f\x75\x6c\x64\x20\x6e\x65\x76\x65\x72\x20\x67\x65\x74\x20\x68\x65\x72\x65\x20\x2d\x20\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x69\x6e\x66\x6f\x2e");
   return TranslatedFrame::InvalidFrame();
 }
 
@@ -3318,7 +3318,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
     case Translation::DUPLICATED_OBJECT: {
       int object_id = iterator->Next();
       if (trace_file != nullptr) {
-        PrintF(trace_file, "duplicated object #%d", object_id);
+        PrintF(trace_file, "\x64\x75\x70\x6c\x69\x63\x61\x74\x65\x64\x20\x6f\x62\x6a\x65\x63\x74\x20\x23\x25\x64", object_id);
       }
       object_positions_.push_back(object_positions_[object_id]);
       return TranslatedValue::NewDuplicateObject(this, object_id);
@@ -3328,7 +3328,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       int arg_count = iterator->Next();
       int object_index = static_cast<int>(object_positions_.size());
       if (trace_file != nullptr) {
-        PrintF(trace_file, "argumets object #%d (length = %d)", object_index,
+        PrintF(trace_file, "\x61\x72\x67\x75\x6d\x65\x74\x73\x20\x6f\x62\x6a\x65\x63\x74\x20\x23\x25\x64\x20\x28\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20\x25\x64\x29", object_index,
                arg_count);
       }
       object_positions_.push_back({frame_index, value_index});
@@ -3339,7 +3339,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       int field_count = iterator->Next();
       int object_index = static_cast<int>(object_positions_.size());
       if (trace_file != nullptr) {
-        PrintF(trace_file, "captured object #%d (length = %d)", object_index,
+        PrintF(trace_file, "\x63\x61\x70\x74\x75\x72\x65\x64\x20\x6f\x62\x6a\x65\x63\x74\x20\x23\x25\x64\x20\x28\x6c\x65\x6e\x67\x74\x68\x20\x3d\x20\x25\x64\x29", object_index,
                field_count);
       }
       object_positions_.push_back({frame_index, value_index});
@@ -3352,7 +3352,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       if (registers == nullptr) return TranslatedValue::NewInvalid(this);
       intptr_t value = registers->GetRegister(input_reg);
       if (trace_file != nullptr) {
-        PrintF(trace_file, "0x%08" V8PRIxPTR " ; %s ", value,
+        PrintF(trace_file, "\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x3b\x20\x25\x73\x20", value,
                converter.NameOfCPURegister(input_reg));
         reinterpret_cast<Object*>(value)->ShortPrint(trace_file);
       }
@@ -3364,7 +3364,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       if (registers == nullptr) return TranslatedValue::NewInvalid(this);
       intptr_t value = registers->GetRegister(input_reg);
       if (trace_file != nullptr) {
-        PrintF(trace_file, "%" V8PRIdPTR " ; %s ", value,
+        PrintF(trace_file, "\x25" V8PRIdPTR "\x20\x3b\x20\x25\x73\x20", value,
                converter.NameOfCPURegister(input_reg));
       }
       return TranslatedValue::NewInt32(this, static_cast<int32_t>(value));
@@ -3375,7 +3375,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       if (registers == nullptr) return TranslatedValue::NewInvalid(this);
       intptr_t value = registers->GetRegister(input_reg);
       if (trace_file != nullptr) {
-        PrintF(trace_file, "%" V8PRIuPTR " ; %s (uint)", value,
+        PrintF(trace_file, "\x25" V8PRIuPTR "\x20\x3b\x20\x25\x73\x20\x28\x75\x69\x6e\x74\x29", value,
                converter.NameOfCPURegister(input_reg));
         reinterpret_cast<Object*>(value)->ShortPrint(trace_file);
       }
@@ -3387,7 +3387,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       if (registers == nullptr) return TranslatedValue::NewInvalid(this);
       intptr_t value = registers->GetRegister(input_reg);
       if (trace_file != nullptr) {
-        PrintF(trace_file, "%" V8PRIdPTR " ; %s (bool)", value,
+        PrintF(trace_file, "\x25" V8PRIdPTR "\x20\x3b\x20\x25\x73\x20\x28\x62\x6f\x6f\x6c\x29", value,
                converter.NameOfCPURegister(input_reg));
       }
       return TranslatedValue::NewBool(this, static_cast<uint32_t>(value));
@@ -3398,7 +3398,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       if (registers == nullptr) return TranslatedValue::NewInvalid(this);
       double value = registers->GetDoubleRegister(input_reg);
       if (trace_file != nullptr) {
-        PrintF(trace_file, "%e ; %s (bool)", value,
+        PrintF(trace_file, "\x25\x65\x20\x3b\x20\x25\x73\x20\x28\x62\x6f\x6f\x6c\x29", value,
                DoubleRegister::from_code(input_reg).ToString());
       }
       return TranslatedValue::NewDouble(this, value);
@@ -3409,7 +3409,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
           OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->Next());
       intptr_t value = *(reinterpret_cast<intptr_t*>(fp + slot_offset));
       if (trace_file != nullptr) {
-        PrintF(trace_file, "0x%08" V8PRIxPTR " ; [fp %c %d] ", value,
+        PrintF(trace_file, "\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x3b\x20\x5b\x66\x70\x20\x25\x63\x20\x25\x64\x5d\x20", value,
                slot_offset < 0 ? '\x2d' : '\x2b', std::abs(slot_offset));
         reinterpret_cast<Object*>(value)->ShortPrint(trace_file);
       }
@@ -3421,7 +3421,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
           OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->Next());
       uint32_t value = GetUInt32Slot(fp, slot_offset);
       if (trace_file != nullptr) {
-        PrintF(trace_file, "%d ; (int) [fp %c %d] ",
+        PrintF(trace_file, "\x25\x64\x20\x3b\x20\x28\x69\x6e\x74\x29\x20\x5b\x66\x70\x20\x25\x63\x20\x25\x64\x5d\x20",
                static_cast<int32_t>(value), slot_offset < 0 ? '\x2d' : '\x2b',
                std::abs(slot_offset));
       }
@@ -3433,7 +3433,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
           OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->Next());
       uint32_t value = GetUInt32Slot(fp, slot_offset);
       if (trace_file != nullptr) {
-        PrintF(trace_file, "%u ; (uint) [fp %c %d] ", value,
+        PrintF(trace_file, "\x25\x75\x20\x3b\x20\x28\x75\x69\x6e\x74\x29\x20\x5b\x66\x70\x20\x25\x63\x20\x25\x64\x5d\x20", value,
                slot_offset < 0 ? '\x2d' : '\x2b', std::abs(slot_offset));
       }
       return TranslatedValue::NewUInt32(this, value);
@@ -3444,7 +3444,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
           OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->Next());
       uint32_t value = GetUInt32Slot(fp, slot_offset);
       if (trace_file != nullptr) {
-        PrintF(trace_file, "%u ; (bool) [fp %c %d] ", value,
+        PrintF(trace_file, "\x25\x75\x20\x3b\x20\x28\x62\x6f\x6f\x6c\x29\x20\x5b\x66\x70\x20\x25\x63\x20\x25\x64\x5d\x20", value,
                slot_offset < 0 ? '\x2d' : '\x2b', std::abs(slot_offset));
       }
       return TranslatedValue::NewBool(this, value);
@@ -3455,7 +3455,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
           OptimizedFrame::StackSlotOffsetRelativeToFp(iterator->Next());
       double value = ReadDoubleValue(fp + slot_offset);
       if (trace_file != nullptr) {
-        PrintF(trace_file, "%e ; (double) [fp %c %d] ", value,
+        PrintF(trace_file, "\x25\x65\x20\x3b\x20\x28\x64\x6f\x75\x62\x6c\x65\x29\x20\x5b\x66\x70\x20\x25\x63\x20\x25\x64\x5d\x20", value,
                slot_offset < 0 ? '\x2d' : '\x2b', std::abs(slot_offset));
       }
       return TranslatedValue::NewDouble(this, value);
@@ -3465,7 +3465,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
       int literal_index = iterator->Next();
       Object* value = literal_array->get(literal_index);
       if (trace_file != nullptr) {
-        PrintF(trace_file, "0x%08" V8PRIxPTR " ; (literal %d) ",
+        PrintF(trace_file, "\x30\x78\x25\x30\x38" V8PRIxPTR "\x20\x3b\x20\x28\x6c\x69\x74\x65\x72\x61\x6c\x20\x25\x64\x29\x20",
                reinterpret_cast<intptr_t>(value), literal_index);
         reinterpret_cast<Object*>(value)->ShortPrint(trace_file);
       }
@@ -3474,7 +3474,7 @@ TranslatedValue TranslatedState::CreateNextTranslatedValue(
     }
   }
 
-  FATAL(u8"We should never get here - unexpected deopt info.");
+  FATAL("\x57\x65\x20\x73\x68\x6f\x75\x6c\x64\x20\x6e\x65\x76\x65\x72\x20\x67\x65\x74\x20\x68\x65\x72\x65\x20\x2d\x20\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x69\x6e\x66\x6f\x2e");
   return TranslatedValue(nullptr, TranslatedValue::kInvalid);
 }
 
@@ -3531,13 +3531,13 @@ void TranslatedState::Init(Address input_frame_pointer,
       if (trace_file != nullptr) {
         if (nested_counts.empty()) {
           // For top level values, print the value number.
-          PrintF(trace_file, "    %3i: ",
+          PrintF(trace_file, "\x20\x20\x20\x20\x25\x33\x69\x3a\x20",
                  frame.GetValueCount() - values_to_process);
         } else {
           // Take care of indenting for nested values.
-          PrintF(trace_file, "         ");
+          PrintF(trace_file, "\x20\x20\x20\x20\x20\x20\x20\x20\x20");
           for (size_t j = 0; j < nested_counts.size(); j++) {
-            PrintF(trace_file, "  ");
+            PrintF(trace_file, "\x20\x20");
           }
         }
       }
@@ -3548,7 +3548,7 @@ void TranslatedState::Init(Address input_frame_pointer,
       frame.Add(value);
 
       if (trace_file != nullptr) {
-        PrintF(trace_file, "\n");
+        PrintF(trace_file, "\xa");
       }
 
       // Update the value count and resolve the nesting.
@@ -3728,9 +3728,9 @@ Handle<Object> TranslatedState::MaterializeAt(int frame_index,
           return object;
         }
         default:
-          PrintF(stderr, "[couldn't handle instance type %d]\n",
+          PrintF(stderr, "\x5b\x63\x6f\x75\x6c\x64\x6e\x27\x74\x20\x68\x61\x6e\x64\x6c\x65\x20\x69\x6e\x73\x74\x61\x6e\x63\x65\x20\x74\x79\x70\x65\x20\x25\x64\x5d\xa",
                  map->instance_type());
-          FATAL(u8"unreachable");
+          FATAL("\x75\x6e\x72\x65\x61\x63\x68\x61\x62\x6c\x65");
           return Handle<Object>::null();
       }
       UNREACHABLE();
@@ -3762,7 +3762,7 @@ Handle<Object> TranslatedState::MaterializeAt(int frame_index,
       break;
   }
 
-  FATAL(u8"We should never get here - unexpected deopt slot kind.");
+  FATAL("\x57\x65\x20\x73\x68\x6f\x75\x6c\x64\x20\x6e\x65\x76\x65\x72\x20\x67\x65\x74\x20\x68\x65\x72\x65\x20\x2d\x20\x75\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x73\x6c\x6f\x74\x20\x6b\x69\x6e\x64\x2e");
   return Handle<Object>::null();
 }
 

@@ -33,7 +33,7 @@ void Object::Print(v8::base::OStream& os) {  // NOLINT
 
 
 void HeapObject::PrintHeader(v8::base::OStream& os, const char* id) {  // NOLINT
-  os << reinterpret_cast<void*>(this) << ": [" << id << "]";
+  os << reinterpret_cast<void*>(this) << u8": [" << id << u8"]";
 }
 
 
@@ -57,9 +57,9 @@ void HeapObject::HeapObjectPrint(v8::base::OStream& os) {  // NOLINT
       HeapNumber::cast(this)->HeapNumberPrint(os);
       break;
     case MUTABLE_HEAP_NUMBER_TYPE:
-      os << "<mutable ";
+      os << u8"<mutable ";
       HeapNumber::cast(this)->HeapNumberPrint(os);
-      os << ">";
+      os << u8">";
       break;
     case SIMD128_VALUE_TYPE:
       Simd128Value::cast(this)->Simd128ValuePrint(os);
@@ -92,7 +92,7 @@ void HeapObject::HeapObjectPrint(v8::base::OStream& os) {  // NOLINT
 #undef PRINT_FIXED_TYPED_ARRAY
 
     case FILLER_TYPE:
-      os << "filler";
+      os << u8"filler";
       break;
     case JS_OBJECT_TYPE:  // fall through
     case JS_SPECIAL_API_OBJECT_TYPE:
@@ -188,7 +188,7 @@ void HeapObject::HeapObjectPrint(v8::base::OStream& os) {  // NOLINT
 #undef MAKE_STRUCT_CASE
 
     default:
-      os << "UNKNOWN TYPE " << map()->instance_type();
+      os << u8"UNKNOWN TYPE " << map()->instance_type();
       UNREACHABLE();
       break;
   }
@@ -207,9 +207,9 @@ void Simd128Value::Simd128ValuePrint(v8::base::OStream& os) {  // NOLINT
 void Float32x4::Float32x4Print(v8::base::OStream& os) {  // NOLINT
   char arr[100];
   Vector<char> buffer(arr, arraysize(arr));
-  os << std::string(DoubleToCString(get_lane(0), buffer)) << ", "
-     << std::string(DoubleToCString(get_lane(1), buffer)) << ", "
-     << std::string(DoubleToCString(get_lane(2), buffer)) << ", "
+  os << std::string(DoubleToCString(get_lane(0), buffer)) << u8", "
+     << std::string(DoubleToCString(get_lane(1), buffer)) << u8", "
+     << std::string(DoubleToCString(get_lane(2), buffer)) << u8", "
      << std::string(DoubleToCString(get_lane(3), buffer));
 }
 
@@ -220,7 +220,7 @@ void Float32x4::Float32x4Print(v8::base::OStream& os) {  // NOLINT
     Vector<char> buffer(arr, arraysize(arr));                       \
     os << std::string(IntToCString(get_lane(0), buffer));           \
     for (int i = 1; i < lane_count; i++) {                          \
-      os << ", " << std::string(IntToCString(get_lane(i), buffer)); \
+      os << u8", " << std::string(IntToCString(get_lane(i), buffer)); \
     }                                                               \
   }
 SIMD128_INT_PRINT_FUNCTION(Int32x4, 4)
@@ -236,9 +236,9 @@ SIMD128_INT_PRINT_FUNCTION(Uint8x16, 16)
   void type::type##Print(v8::base::OStream& os) {                     \
     char arr[100];                                               \
     Vector<char> buffer(arr, arraysize(arr));                    \
-    os << std::string(get_lane(0) ? "true" : "false");           \
+    os << std::string(get_lane(0) ? u8"true" : u8"false");           \
     for (int i = 1; i < lane_count; i++) {                       \
-      os << ", " << std::string(get_lane(i) ? "true" : "false"); \
+      os << u8", " << std::string(get_lane(i) ? u8"true" : u8"false"); \
     }                                                            \
   }
 SIMD128_BOOL_PRINT_FUNCTION(Bool32x4, 4)
@@ -248,7 +248,7 @@ SIMD128_BOOL_PRINT_FUNCTION(Bool8x16, 16)
 
 
 void ByteArray::ByteArrayPrint(v8::base::OStream& os) {  // NOLINT
-  os << "byte array, data starts at " << GetDataStartAddress();
+  os << u8"byte array, data starts at " << GetDataStartAddress();
 }
 
 
@@ -258,14 +258,14 @@ void BytecodeArray::BytecodeArrayPrint(v8::base::OStream& os) {  // NOLINT
 
 
 void FreeSpace::FreeSpacePrint(v8::base::OStream& os) {  // NOLINT
-  os << "free space, size " << Size();
+  os << u8"free space, size " << Size();
 }
 
 
 template <class Traits>
 void FixedTypedArray<Traits>::FixedTypedArrayPrint(
     v8::base::OStream& os) {  // NOLINT
-  os << "fixed " << Traits::Designator();
+  os << u8"fixed " << Traits::Designator();
 }
 
 
@@ -273,30 +273,30 @@ void JSObject::PrintProperties(v8::base::OStream& os) {  // NOLINT
   if (HasFastProperties()) {
     DescriptorArray* descs = map()->instance_descriptors();
     for (int i = 0; i < map()->NumberOfOwnDescriptors(); i++) {
-      os << "\n   ";
+      os << u8"\n   ";
       descs->GetKey(i)->NamePrint(os);
-      os << ": ";
+      os << u8": ";
       switch (descs->GetType(i)) {
         case DATA: {
           FieldIndex index = FieldIndex::ForDescriptor(map(), i);
           if (IsUnboxedDoubleField(index)) {
-            os << "<unboxed double> " << RawFastDoublePropertyAt(index);
+            os << u8"<unboxed double> " << RawFastDoublePropertyAt(index);
           } else {
             os << Brief(RawFastPropertyAt(index));
           }
-          os << " (data field at offset " << index.property_index() << ")";
+          os << u8" (data field at offset " << index.property_index() << u8")";
           break;
         }
         case ACCESSOR: {
           FieldIndex index = FieldIndex::ForDescriptor(map(), i);
-          os << " (accessor field at offset " << index.property_index() << ")";
+          os << u8" (accessor field at offset " << index.property_index() << u8")";
           break;
         }
         case DATA_CONSTANT:
-          os << Brief(descs->GetConstant(i)) << " (data constant)";
+          os << Brief(descs->GetConstant(i)) << u8" (data constant)";
           break;
         case ACCESSOR_CONSTANT:
-          os << Brief(descs->GetCallbacksObject(i)) << " (accessor constant)";
+          os << Brief(descs->GetCallbacksObject(i)) << u8" (accessor constant)";
           break;
       }
     }
@@ -312,7 +312,7 @@ template <class T>
 static void DoPrintElements(v8::base::OStream& os, Object* object) {  // NOLINT
   T* p = T::cast(object);
   for (int i = 0; i < p->length(); i++) {
-    os << "\n   " << i << ": " << p->get_scalar(i);
+    os << u8"\n   " << i << u8": " << p->get_scalar(i);
   }
 }
 
@@ -329,7 +329,7 @@ void JSObject::PrintElements(v8::base::OStream& os) {  // NOLINT
       // Print in array notation for non-sparse arrays.
       FixedArray* p = FixedArray::cast(elements());
       for (int i = 0; i < p->length(); i++) {
-        os << "\n   " << i << ": " << Brief(p->get(i));
+        os << u8"\n   " << i << u8": " << Brief(p->get(i));
       }
       break;
     }
@@ -339,9 +339,9 @@ void JSObject::PrintElements(v8::base::OStream& os) {  // NOLINT
       if (elements()->length() > 0) {
         FixedDoubleArray* p = FixedDoubleArray::cast(elements());
         for (int i = 0; i < p->length(); i++) {
-          os << "\n   " << i << ": ";
+          os << u8"\n   " << i << u8": ";
           if (p->is_the_hole(i)) {
-            os << "<the hole>";
+            os << u8"<the hole>";
           } else {
             os << p->get_scalar(i);
           }
@@ -371,18 +371,18 @@ void JSObject::PrintElements(v8::base::OStream& os) {  // NOLINT
 
     case DICTIONARY_ELEMENTS:
     case SLOW_STRING_WRAPPER_ELEMENTS:
-      os << "\n - elements: ";
+      os << u8"\n - elements: ";
       elements()->Print(os);
       break;
     case FAST_SLOPPY_ARGUMENTS_ELEMENTS:
     case SLOW_SLOPPY_ARGUMENTS_ELEMENTS: {
       FixedArray* p = FixedArray::cast(elements());
-      os << "\n   parameter map:";
+      os << u8"\n   parameter map:";
       for (int i = 2; i < p->length(); i++) {
-        os << " " << (i - 2) << ":" << Brief(p->get(i));
+        os << u8" " << (i - 2) << u8":" << Brief(p->get(i));
       }
-      os << "\n   context: " << Brief(p->get(0))
-         << "\n   arguments: " << Brief(p->get(1));
+      os << u8"\n   context: " << Brief(p->get(0))
+         << u8"\n   arguments: " << Brief(p->get(1));
       break;
     }
     case NO_ELEMENTS:
@@ -396,180 +396,180 @@ static void JSObjectPrintHeader(v8::base::OStream& os, JSObject* obj,
   obj->PrintHeader(os, id);
   // Don't call GetElementsKind, its validation code can cause the printer to
   // fail when debugging.
-  os << "\n - map = " << reinterpret_cast<void*>(obj->map()) << " ["
+  os << u8"\n - map = " << reinterpret_cast<void*>(obj->map()) << u8" ["
      << ElementsKindToString(obj->map()->elements_kind());
   if (obj->elements()->map() == obj->GetHeap()->fixed_cow_array_map()) {
-    os << " (COW)";
+    os << u8" (COW)";
   }
   PrototypeIterator iter(obj->GetIsolate(), obj);
-  os << "]\n - prototype = " << reinterpret_cast<void*>(iter.GetCurrent());
+  os << u8"]\n - prototype = " << reinterpret_cast<void*>(iter.GetCurrent());
   if (obj->elements()->length() > 0) {
-    os << "\n - elements = " << Brief(obj->elements());
+    os << u8"\n - elements = " << Brief(obj->elements());
   }
 }
 
 
 static void JSObjectPrintBody(v8::base::OStream& os, JSObject* obj,  // NOLINT
                               bool print_elements = true) {
-  os << "\n {";
+  os << u8"\n {";
   obj->PrintProperties(os);
   obj->PrintTransitions(os);
   if (print_elements) obj->PrintElements(os);
-  os << "\n }\n";
+  os << u8"\n }\n";
 }
 
 
 void JSObject::JSObjectPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSObject");
+  JSObjectPrintHeader(os, this, u8"JSObject");
   JSObjectPrintBody(os, this);
 }
 
 
 void JSRegExp::JSRegExpPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSRegExp");
-  os << "\n - data = " << Brief(data());
+  JSObjectPrintHeader(os, this, u8"JSRegExp");
+  os << u8"\n - data = " << Brief(data());
   JSObjectPrintBody(os, this);
 }
 
 
 void JSModule::JSModulePrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSModule");
-  os << "\n - context = " << Brief(context());
-  os << " - scope_info = " << Brief(scope_info());
+  JSObjectPrintHeader(os, this, u8"JSModule");
+  os << u8"\n - context = " << Brief(context());
+  os << u8" - scope_info = " << Brief(scope_info());
   JSObjectPrintBody(os, this);
 }
 
 
 void Symbol::SymbolPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "Symbol");
-  os << "\n - hash: " << Hash();
-  os << "\n - name: " << Brief(name());
+  HeapObject::PrintHeader(os, u8"Symbol");
+  os << u8"\n - hash: " << Hash();
+  os << u8"\n - name: " << Brief(name());
   if (name()->IsUndefined()) {
-    os << " (" << PrivateSymbolToName() << ")";
+    os << u8" (" << PrivateSymbolToName() << u8")";
   }
-  os << "\n - private: " << is_private();
-  os << "\n";
+  os << u8"\n - private: " << is_private();
+  os << u8"\n";
 }
 
 
 void Map::MapPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "Map");
-  os << "\n - type: " << instance_type();
-  os << "\n - instance size: " << instance_size();
+  HeapObject::PrintHeader(os, u8"Map");
+  os << u8"\n - type: " << instance_type();
+  os << u8"\n - instance size: " << instance_size();
   if (IsJSObjectMap()) {
-    os << "\n - inobject properties: " << GetInObjectProperties();
+    os << u8"\n - inobject properties: " << GetInObjectProperties();
   }
-  os << "\n - elements kind: " << ElementsKindToString(elements_kind());
-  os << "\n - unused property fields: " << unused_property_fields();
-  os << "\n - enum length: ";
+  os << u8"\n - elements kind: " << ElementsKindToString(elements_kind());
+  os << u8"\n - unused property fields: " << unused_property_fields();
+  os << u8"\n - enum length: ";
   if (EnumLength() == kInvalidEnumCacheSentinel) {
-    os << "invalid";
+    os << u8"invalid";
   } else {
     os << EnumLength();
   }
-  if (is_deprecated()) os << "\n - deprecated_map";
-  if (is_stable()) os << "\n - stable_map";
-  if (is_dictionary_map()) os << "\n - dictionary_map";
-  if (has_hidden_prototype()) os << "\n - has_hidden_prototype";
-  if (has_named_interceptor()) os << " - named_interceptor";
-  if (has_indexed_interceptor()) os << "\n - indexed_interceptor";
-  if (is_undetectable()) os << "\n - undetectable";
-  if (is_callable()) os << "\n - callable";
-  if (is_constructor()) os << "\n - constructor";
-  if (is_access_check_needed()) os << "\n - access_check_needed";
-  if (!is_extensible()) os << "\n - non-extensible";
-  if (is_observed()) os << "\n - observed";
+  if (is_deprecated()) os << u8"\n - deprecated_map";
+  if (is_stable()) os << u8"\n - stable_map";
+  if (is_dictionary_map()) os << u8"\n - dictionary_map";
+  if (has_hidden_prototype()) os << u8"\n - has_hidden_prototype";
+  if (has_named_interceptor()) os << u8" - named_interceptor";
+  if (has_indexed_interceptor()) os << u8"\n - indexed_interceptor";
+  if (is_undetectable()) os << u8"\n - undetectable";
+  if (is_callable()) os << u8"\n - callable";
+  if (is_constructor()) os << u8"\n - constructor";
+  if (is_access_check_needed()) os << u8"\n - access_check_needed";
+  if (!is_extensible()) os << u8"\n - non-extensible";
+  if (is_observed()) os << u8"\n - observed";
   if (is_prototype_map()) {
-    os << "\n - prototype_map";
-    os << "\n - prototype info: " << Brief(prototype_info());
+    os << u8"\n - prototype_map";
+    os << u8"\n - prototype info: " << Brief(prototype_info());
   } else {
-    os << "\n - back pointer: " << Brief(GetBackPointer());
+    os << u8"\n - back pointer: " << Brief(GetBackPointer());
   }
-  os << "\n - instance descriptors " << (owns_descriptors() ? "(own) " : "")
-     << "#" << NumberOfOwnDescriptors() << ": "
+  os << u8"\n - instance descriptors " << (owns_descriptors() ? u8"(own) " : u8"")
+     << u8"#" << NumberOfOwnDescriptors() << u8": "
      << Brief(instance_descriptors());
   if (FLAG_unbox_double_fields) {
-    os << "\n - layout descriptor: " << Brief(layout_descriptor());
+    os << u8"\n - layout descriptor: " << Brief(layout_descriptor());
   }
   int nof_transitions = TransitionArray::NumberOfTransitions(raw_transitions());
   if (nof_transitions > 0) {
-    os << "\n - transitions #" << nof_transitions << ": "
+    os << u8"\n - transitions #" << nof_transitions << u8": "
        << Brief(raw_transitions());
     TransitionArray::PrintTransitions(os, raw_transitions(), false);
   }
-  os << "\n - prototype: " << Brief(prototype());
-  os << "\n - constructor: " << Brief(GetConstructor());
-  os << "\n - code cache: " << Brief(code_cache());
-  os << "\n - dependent code: " << Brief(dependent_code());
-  os << "\n - construction counter: " << construction_counter();
-  os << "\n";
+  os << u8"\n - prototype: " << Brief(prototype());
+  os << u8"\n - constructor: " << Brief(GetConstructor());
+  os << u8"\n - code cache: " << Brief(code_cache());
+  os << u8"\n - dependent code: " << Brief(dependent_code());
+  os << u8"\n - construction counter: " << construction_counter();
+  os << u8"\n";
 }
 
 
 void CodeCache::CodeCachePrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "CodeCache");
-  os << "\n - default_cache: " << Brief(default_cache());
-  os << "\n - normal_type_cache: " << Brief(normal_type_cache());
+  HeapObject::PrintHeader(os, u8"CodeCache");
+  os << u8"\n - default_cache: " << Brief(default_cache());
+  os << u8"\n - normal_type_cache: " << Brief(normal_type_cache());
 }
 
 
 void PolymorphicCodeCache::PolymorphicCodeCachePrint(
     v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "PolymorphicCodeCache");
-  os << "\n - cache: " << Brief(cache());
+  HeapObject::PrintHeader(os, u8"PolymorphicCodeCache");
+  os << u8"\n - cache: " << Brief(cache());
 }
 
 
 void TypeFeedbackInfo::TypeFeedbackInfoPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "TypeFeedbackInfo");
-  os << "\n - ic_total_count: " << ic_total_count()
-     << ", ic_with_type_info_count: " << ic_with_type_info_count()
-     << ", ic_generic_count: " << ic_generic_count() << "\n";
+  HeapObject::PrintHeader(os, u8"TypeFeedbackInfo");
+  os << u8"\n - ic_total_count: " << ic_total_count()
+     << u8", ic_with_type_info_count: " << ic_with_type_info_count()
+     << u8", ic_generic_count: " << ic_generic_count() << u8"\n";
 }
 
 
 void AliasedArgumentsEntry::AliasedArgumentsEntryPrint(
     v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "AliasedArgumentsEntry");
-  os << "\n - aliased_context_slot: " << aliased_context_slot();
+  HeapObject::PrintHeader(os, u8"AliasedArgumentsEntry");
+  os << u8"\n - aliased_context_slot: " << aliased_context_slot();
 }
 
 
 void FixedArray::FixedArrayPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "FixedArray");
-  os << "\n - length: " << length();
+  HeapObject::PrintHeader(os, u8"FixedArray");
+  os << u8"\n - length: " << length();
   for (int i = 0; i < length(); i++) {
-    os << "\n  [" << i << "]: " << Brief(get(i));
+    os << u8"\n  [" << i << u8"]: " << Brief(get(i));
   }
-  os << "\n";
+  os << u8"\n";
 }
 
 
 void FixedDoubleArray::FixedDoubleArrayPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "FixedDoubleArray");
-  os << "\n - length: " << length();
+  HeapObject::PrintHeader(os, u8"FixedDoubleArray");
+  os << u8"\n - length: " << length();
   for (int i = 0; i < length(); i++) {
-    os << "\n  [" << i << "]: ";
+    os << u8"\n  [" << i << u8"]: ";
     if (is_the_hole(i)) {
-      os << "<the hole>";
+      os << u8"<the hole>";
     } else {
       os << get_scalar(i);
     }
   }
-  os << "\n";
+  os << u8"\n";
 }
 
 
 void TransitionArray::TransitionArrayPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "TransitionArray");
-  os << "\n - capacity: " << length();
+  HeapObject::PrintHeader(os, u8"TransitionArray");
+  os << u8"\n - capacity: " << length();
   for (int i = 0; i < length(); i++) {
-    os << "\n  [" << i << "]: " << Brief(get(i));
-    if (i == kNextLinkIndex) os << " (next link)";
-    if (i == kPrototypeTransitionsIndex) os << " (prototype transitions)";
-    if (i == kTransitionLengthIndex) os << " (number of transitions)";
+    os << u8"\n  [" << i << u8"]: " << Brief(get(i));
+    if (i == kNextLinkIndex) os << u8" (next link)";
+    if (i == kPrototypeTransitionsIndex) os << u8" (prototype transitions)";
+    if (i == kTransitionLengthIndex) os << u8" (number of transitions)";
   }
-  os << "\n";
+  os << u8"\n";
 }
 
 
@@ -582,10 +582,10 @@ void TypeFeedbackMetadata::Print() {
 
 void TypeFeedbackMetadata::TypeFeedbackMetadataPrint(
     v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "TypeFeedbackMetadata");
-  os << "\n - length: " << length();
+  HeapObject::PrintHeader(os, u8"TypeFeedbackMetadata");
+  os << u8"\n - length: " << length();
   if (length() == 0) {
-    os << " (empty)\n";
+    os << u8" (empty)\n";
     return;
   }
 
@@ -593,9 +593,9 @@ void TypeFeedbackMetadata::TypeFeedbackMetadataPrint(
   while (iter.HasNext()) {
     FeedbackVectorSlot slot = iter.Next();
     FeedbackVectorSlotKind kind = iter.kind();
-    os << "\n Slot " << slot << " " << kind;
+    os << u8"\n Slot " << slot << u8" " << kind;
   }
-  os << "\n";
+  os << u8"\n";
 }
 
 
@@ -607,10 +607,10 @@ void TypeFeedbackVector::Print() {
 
 
 void TypeFeedbackVector::TypeFeedbackVectorPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "TypeFeedbackVector");
-  os << "\n - length: " << length();
+  HeapObject::PrintHeader(os, u8"TypeFeedbackVector");
+  os << u8"\n - length: " << length();
   if (length() == 0) {
-    os << " (empty)\n";
+    os << u8" (empty)\n";
     return;
   }
 
@@ -619,7 +619,7 @@ void TypeFeedbackVector::TypeFeedbackVectorPrint(v8::base::OStream& os) {  // NO
     FeedbackVectorSlot slot = iter.Next();
     FeedbackVectorSlotKind kind = iter.kind();
 
-    os << "\n Slot " << slot << " " << kind << " ";
+    os << u8"\n Slot " << slot << u8" " << kind << u8" ";
     switch (kind) {
       case FeedbackVectorSlotKind::LOAD_IC: {
         LoadICNexus nexus(this, slot);
@@ -657,42 +657,42 @@ void TypeFeedbackVector::TypeFeedbackVectorPrint(v8::base::OStream& os) {  // NO
     int entry_size = iter.entry_size();
     for (int i = 0; i < entry_size; i++) {
       int index = GetIndex(slot) + i;
-      os << "\n  [" << index << "]: " << Brief(get(index));
+      os << u8"\n  [" << index << u8"]: " << Brief(get(index));
     }
   }
-  os << "\n";
+  os << u8"\n";
 }
 
 
 void JSValue::JSValuePrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSValue");
-  os << "\n - value = " << Brief(value());
+  JSObjectPrintHeader(os, this, u8"JSValue");
+  os << u8"\n - value = " << Brief(value());
   JSObjectPrintBody(os, this);
 }
 
 
 void JSMessageObject::JSMessageObjectPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSMessageObject");
-  os << "\n - type: " << type();
-  os << "\n - arguments: " << Brief(argument());
-  os << "\n - start_position: " << start_position();
-  os << "\n - end_position: " << end_position();
-  os << "\n - script: " << Brief(script());
-  os << "\n - stack_frames: " << Brief(stack_frames());
+  JSObjectPrintHeader(os, this, u8"JSMessageObject");
+  os << u8"\n - type: " << type();
+  os << u8"\n - arguments: " << Brief(argument());
+  os << u8"\n - start_position: " << start_position();
+  os << u8"\n - end_position: " << end_position();
+  os << u8"\n - script: " << Brief(script());
+  os << u8"\n - stack_frames: " << Brief(stack_frames());
   JSObjectPrintBody(os, this);
 }
 
 
 void String::StringPrint(v8::base::OStream& os) {  // NOLINT
   if (StringShape(this).IsInternalized()) {
-    os << "#";
+    os << u8"#";
   } else if (StringShape(this).IsCons()) {
-    os << "c\"";
+    os << u8"c\"";
   } else {
-    os << "\"";
+    os << u8"\"";
   }
 
-  const char truncated_epilogue[] = "...<truncated>";
+  const char truncated_epilogue[] = u8"...<truncated>";
   int len = length();
   if (!FLAG_use_verbose_printer) {
     if (len > 100) {
@@ -700,17 +700,13 @@ void String::StringPrint(v8::base::OStream& os) {  // NOLINT
     }
   }
   for (int i = 0; i < len; i++) {
-#ifndef V8_OS_ZOS
     os << AsUC16(Get(i));
-#else
-    os << static_cast<char>(Ascii2Ebcdic(Get(i)));
-#endif
   }
   if (len != length()) {
     os << truncated_epilogue;
   }
 
-  if (!StringShape(this).IsInternalized()) os << "\"";
+  if (!StringShape(this).IsInternalized()) os << u8"\"";
 }
 
 
@@ -726,20 +722,20 @@ void Name::NamePrint(v8::base::OStream& os) {  // NOLINT
 
 
 static const char* const weekdays[] = {
-  "???", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+  u8"???", u8"Sun", u8"Mon", u8"Tue", u8"Wed", u8"Thu", u8"Fri", u8"Sat"
 };
 
 
 void JSDate::JSDatePrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSDate");
-  os << "\n - value = " << Brief(value());
+  JSObjectPrintHeader(os, this, u8"JSDate");
+  os << u8"\n - value = " << Brief(value());
   if (!year()->IsSmi()) {
-    os << "\n - time = NaN\n";
+    os << u8"\n - time = NaN\n";
   } else {
     // TODO(svenpanne) Add some basic formatting to our streams.
     ScopedVector<char> buf(100);
     SNPrintF(
-        buf, "\n - time = %s %04d/%02d/%02d %02d:%02d:%02d\n",
+        buf, u8"\n - time = %s %04d/%02d/%02d %02d:%02d:%02d\n",
         weekdays[weekday()->IsSmi() ? Smi::cast(weekday())->value() + 1 : 0],
         year()->IsSmi() ? Smi::cast(year())->value() : -1,
         month()->IsSmi() ? Smi::cast(month())->value() : -1,
@@ -754,28 +750,28 @@ void JSDate::JSDatePrint(v8::base::OStream& os) {  // NOLINT
 
 
 void JSProxy::JSProxyPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "JSProxy");
-  os << "\n - map = " << reinterpret_cast<void*>(map());
-  os << "\n - target = ";
+  HeapObject::PrintHeader(os, u8"JSProxy");
+  os << u8"\n - map = " << reinterpret_cast<void*>(map());
+  os << u8"\n - target = ";
   target()->ShortPrint(os);
-  os << "\n - handler = ";
+  os << u8"\n - handler = ";
   handler()->ShortPrint(os);
-  os << "\n - hash = ";
+  os << u8"\n - hash = ";
   hash()->ShortPrint(os);
-  os << "\n";
+  os << u8"\n";
 }
 
 
 void JSSet::JSSetPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSSet");
-  os << " - table = " << Brief(table());
+  JSObjectPrintHeader(os, this, u8"JSSet");
+  os << u8" - table = " << Brief(table());
   JSObjectPrintBody(os, this);
 }
 
 
 void JSMap::JSMapPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSMap");
-  os << " - table = " << Brief(table());
+  JSObjectPrintHeader(os, this, u8"JSMap");
+  os << u8" - table = " << Brief(table());
   JSObjectPrintBody(os, this);
 }
 
@@ -784,10 +780,10 @@ template <class Derived, class TableType>
 void
 OrderedHashTableIterator<Derived, TableType>::OrderedHashTableIteratorPrint(
     v8::base::OStream& os) {  // NOLINT
-  os << "\n - table = " << Brief(table());
-  os << "\n - index = " << Brief(index());
-  os << "\n - kind = " << Brief(kind());
-  os << "\n";
+  os << u8"\n - table = " << Brief(table());
+  os << u8"\n - index = " << Brief(index());
+  os << u8"\n - kind = " << Brief(kind());
+  os << u8"\n";
 }
 
 
@@ -802,84 +798,84 @@ template void OrderedHashTableIterator<
 
 
 void JSSetIterator::JSSetIteratorPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSSetIterator");
+  JSObjectPrintHeader(os, this, u8"JSSetIterator");
   OrderedHashTableIteratorPrint(os);
 }
 
 
 void JSMapIterator::JSMapIteratorPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSMapIterator");
+  JSObjectPrintHeader(os, this, u8"JSMapIterator");
   OrderedHashTableIteratorPrint(os);
 }
 
 
 void JSWeakMap::JSWeakMapPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSWeakMap");
-  os << "\n - table = " << Brief(table());
+  JSObjectPrintHeader(os, this, u8"JSWeakMap");
+  os << u8"\n - table = " << Brief(table());
   JSObjectPrintBody(os, this);
 }
 
 
 void JSWeakSet::JSWeakSetPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSWeakSet");
-  os << "\n - table = " << Brief(table());
+  JSObjectPrintHeader(os, this, u8"JSWeakSet");
+  os << u8"\n - table = " << Brief(table());
   JSObjectPrintBody(os, this);
 }
 
 
 void JSArrayBuffer::JSArrayBufferPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSArrayBuffer");
-  os << "\n - backing_store = " << backing_store();
-  os << "\n - byte_length = " << Brief(byte_length());
-  if (was_neutered()) os << " - neutered\n";
+  JSObjectPrintHeader(os, this, u8"JSArrayBuffer");
+  os << u8"\n - backing_store = " << backing_store();
+  os << u8"\n - byte_length = " << Brief(byte_length());
+  if (was_neutered()) os << u8" - neutered\n";
   JSObjectPrintBody(os, this, !was_neutered());
 }
 
 
 void JSTypedArray::JSTypedArrayPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSTypedArray");
-  os << "\n - buffer = " << Brief(buffer());
-  os << "\n - byte_offset = " << Brief(byte_offset());
-  os << "\n - byte_length = " << Brief(byte_length());
-  os << "\n - length = " << Brief(length());
-  if (WasNeutered()) os << " - neutered\n";
+  JSObjectPrintHeader(os, this, u8"JSTypedArray");
+  os << u8"\n - buffer = " << Brief(buffer());
+  os << u8"\n - byte_offset = " << Brief(byte_offset());
+  os << u8"\n - byte_length = " << Brief(byte_length());
+  os << u8"\n - length = " << Brief(length());
+  if (WasNeutered()) os << u8" - neutered\n";
   JSObjectPrintBody(os, this, !WasNeutered());
 }
 
 
 void JSDataView::JSDataViewPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSDataView");
-  os << "\n - buffer =" << Brief(buffer());
-  os << "\n - byte_offset = " << Brief(byte_offset());
-  os << "\n - byte_length = " << Brief(byte_length());
-  if (WasNeutered()) os << " - neutered\n";
+  JSObjectPrintHeader(os, this, u8"JSDataView");
+  os << u8"\n - buffer =" << Brief(buffer());
+  os << u8"\n - byte_offset = " << Brief(byte_offset());
+  os << u8"\n - byte_length = " << Brief(byte_length());
+  if (WasNeutered()) os << u8" - neutered\n";
   JSObjectPrintBody(os, this, !WasNeutered());
 }
 
 
 void JSBoundFunction::JSBoundFunctionPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "JSBoundFunction");
-  os << "\n - bound_target_function = " << Brief(bound_target_function());
-  os << "\n - bound_this = " << Brief(bound_this());
-  os << "\n - bound_arguments = " << Brief(bound_arguments());
+  JSObjectPrintHeader(os, this, u8"JSBoundFunction");
+  os << u8"\n - bound_target_function = " << Brief(bound_target_function());
+  os << u8"\n - bound_this = " << Brief(bound_this());
+  os << u8"\n - bound_arguments = " << Brief(bound_arguments());
   JSObjectPrintBody(os, this);
 }
 
 
 void JSFunction::JSFunctionPrint(v8::base::OStream& os) {  // NOLINT
-  JSObjectPrintHeader(os, this, "Function");
-  os << "\n - initial_map = ";
+  JSObjectPrintHeader(os, this, u8"Function");
+  os << u8"\n - initial_map = ";
   if (has_initial_map()) os << Brief(initial_map());
-  os << "\n - shared_info = " << Brief(shared());
-  os << "\n - name = " << Brief(shared()->name());
-  os << "\n - formal_parameter_count = "
+  os << u8"\n - shared_info = " << Brief(shared());
+  os << u8"\n - name = " << Brief(shared()->name());
+  os << u8"\n - formal_parameter_count = "
      << shared()->internal_formal_parameter_count();
   if (shared()->is_generator()) {
-    os << "\n   - generator";
+    os << u8"\n   - generator";
   }
-  os << "\n - context = " << Brief(context());
-  os << "\n - literals = " << Brief(literals());
-  os << "\n - code = " << Brief(code());
+  os << u8"\n - context = " << Brief(context());
+  os << u8"\n - literals = " << Brief(literals());
+  os << u8"\n - code = " << Brief(code());
   JSObjectPrintBody(os, this);
 }
 
@@ -928,50 +924,50 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(v8::base::OStream& os) {  // NO
 
 
 void JSGlobalProxy::JSGlobalProxyPrint(v8::base::OStream& os) {  // NOLINT
-  os << "global_proxy ";
+  os << u8"global_proxy ";
   JSObjectPrint(os);
-  os << "native context : " << Brief(native_context());
-  os << "\n";
+  os << u8"native context : " << Brief(native_context());
+  os << u8"\n";
 }
 
 
 void JSGlobalObject::JSGlobalObjectPrint(v8::base::OStream& os) {  // NOLINT
-  os << "global ";
+  os << u8"global ";
   JSObjectPrint(os);
-  os << "native context : " << Brief(native_context());
-  os << "\n";
+  os << u8"native context : " << Brief(native_context());
+  os << u8"\n";
 }
 
 
 void Cell::CellPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "Cell");
-  os << "\n - value: " << Brief(value());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"Cell");
+  os << u8"\n - value: " << Brief(value());
+  os << u8"\n";
 }
 
 
 void PropertyCell::PropertyCellPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "PropertyCell");
-  os << "\n - value: " << Brief(value());
-  os << "\n - details: " << property_details();
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"PropertyCell");
+  os << u8"\n - value: " << Brief(value());
+  os << u8"\n - details: " << property_details();
+  os << u8"\n";
 }
 
 
 void WeakCell::WeakCellPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "WeakCell");
+  HeapObject::PrintHeader(os, u8"WeakCell");
   if (cleared()) {
-    os << "\n - cleared";
+    os << u8"\n - cleared";
   } else {
-    os << "\n - value: " << Brief(value());
+    os << u8"\n - value: " << Brief(value());
   }
-  os << "\n";
+  os << u8"\n";
 }
 
 
 void Code::CodePrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "Code");
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"Code");
+  os << u8"\n";
 #ifdef ENABLE_DISASSEMBLER
   if (FLAG_use_verbose_printer) {
     Disassemble(NULL, os);
@@ -981,199 +977,199 @@ void Code::CodePrint(v8::base::OStream& os) {  // NOLINT
 
 
 void Foreign::ForeignPrint(v8::base::OStream& os) {  // NOLINT
-  os << "foreign address : " << foreign_address();
-  os << "\n";
+  os << u8"foreign address : " << foreign_address();
+  os << u8"\n";
 }
 
 
 void AccessorInfo::AccessorInfoPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "AccessorInfo");
-  os << "\n - name: " << Brief(name());
-  os << "\n - flag: " << flag();
-  os << "\n - getter: " << Brief(getter());
-  os << "\n - setter: " << Brief(setter());
-  os << "\n - data: " << Brief(data());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"AccessorInfo");
+  os << u8"\n - name: " << Brief(name());
+  os << u8"\n - flag: " << flag();
+  os << u8"\n - getter: " << Brief(getter());
+  os << u8"\n - setter: " << Brief(setter());
+  os << u8"\n - data: " << Brief(data());
+  os << u8"\n";
 }
 
 
 void Box::BoxPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "Box");
-  os << "\n - value: " << Brief(value());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"Box");
+  os << u8"\n - value: " << Brief(value());
+  os << u8"\n";
 }
 
 
 void PrototypeInfo::PrototypeInfoPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "PrototypeInfo");
-  os << "\n - prototype users: " << Brief(prototype_users());
-  os << "\n - registry slot: " << registry_slot();
-  os << "\n - validity cell: " << Brief(validity_cell());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"PrototypeInfo");
+  os << u8"\n - prototype users: " << Brief(prototype_users());
+  os << u8"\n - registry slot: " << registry_slot();
+  os << u8"\n - validity cell: " << Brief(validity_cell());
+  os << u8"\n";
 }
 
 
 void SloppyBlockWithEvalContextExtension::
     SloppyBlockWithEvalContextExtensionPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "SloppyBlockWithEvalContextExtension");
-  os << "\n - scope_info: " << Brief(scope_info());
-  os << "\n - extension: " << Brief(extension());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"SloppyBlockWithEvalContextExtension");
+  os << u8"\n - scope_info: " << Brief(scope_info());
+  os << u8"\n - extension: " << Brief(extension());
+  os << u8"\n";
 }
 
 
 void AccessorPair::AccessorPairPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "AccessorPair");
-  os << "\n - getter: " << Brief(getter());
-  os << "\n - setter: " << Brief(setter());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"AccessorPair");
+  os << u8"\n - getter: " << Brief(getter());
+  os << u8"\n - setter: " << Brief(setter());
+  os << u8"\n";
 }
 
 
 void AccessCheckInfo::AccessCheckInfoPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "AccessCheckInfo");
-  os << "\n - named_callback: " << Brief(named_callback());
-  os << "\n - indexed_callback: " << Brief(indexed_callback());
-  os << "\n - callback: " << Brief(callback());
-  os << "\n - data: " << Brief(data());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"AccessCheckInfo");
+  os << u8"\n - named_callback: " << Brief(named_callback());
+  os << u8"\n - indexed_callback: " << Brief(indexed_callback());
+  os << u8"\n - callback: " << Brief(callback());
+  os << u8"\n - data: " << Brief(data());
+  os << u8"\n";
 }
 
 
 void InterceptorInfo::InterceptorInfoPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "InterceptorInfo");
-  os << "\n - getter: " << Brief(getter());
-  os << "\n - setter: " << Brief(setter());
-  os << "\n - query: " << Brief(query());
-  os << "\n - deleter: " << Brief(deleter());
-  os << "\n - enumerator: " << Brief(enumerator());
-  os << "\n - data: " << Brief(data());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"InterceptorInfo");
+  os << u8"\n - getter: " << Brief(getter());
+  os << u8"\n - setter: " << Brief(setter());
+  os << u8"\n - query: " << Brief(query());
+  os << u8"\n - deleter: " << Brief(deleter());
+  os << u8"\n - enumerator: " << Brief(enumerator());
+  os << u8"\n - data: " << Brief(data());
+  os << u8"\n";
 }
 
 
 void CallHandlerInfo::CallHandlerInfoPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "CallHandlerInfo");
-  os << "\n - callback: " << Brief(callback());
-  os << "\n - data: " << Brief(data());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"CallHandlerInfo");
+  os << u8"\n - callback: " << Brief(callback());
+  os << u8"\n - data: " << Brief(data());
+  os << u8"\n";
 }
 
 
 void FunctionTemplateInfo::FunctionTemplateInfoPrint(
     v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "FunctionTemplateInfo");
-  os << "\n - class name: " << Brief(class_name());
-  os << "\n - tag: " << Brief(tag());
-  os << "\n - serial_number: " << Brief(serial_number());
-  os << "\n - property_list: " << Brief(property_list());
-  os << "\n - call_code: " << Brief(call_code());
-  os << "\n - property_accessors: " << Brief(property_accessors());
-  os << "\n - prototype_template: " << Brief(prototype_template());
-  os << "\n - parent_template: " << Brief(parent_template());
-  os << "\n - named_property_handler: " << Brief(named_property_handler());
-  os << "\n - indexed_property_handler: " << Brief(indexed_property_handler());
-  os << "\n - instance_template: " << Brief(instance_template());
-  os << "\n - signature: " << Brief(signature());
-  os << "\n - access_check_info: " << Brief(access_check_info());
-  os << "\n - hidden_prototype: " << (hidden_prototype() ? "true" : "false");
-  os << "\n - undetectable: " << (undetectable() ? "true" : "false");
-  os << "\n - need_access_check: " << (needs_access_check() ? "true" : "false");
-  os << "\n - instantiated: " << (instantiated() ? "true" : "false");
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"FunctionTemplateInfo");
+  os << u8"\n - class name: " << Brief(class_name());
+  os << u8"\n - tag: " << Brief(tag());
+  os << u8"\n - serial_number: " << Brief(serial_number());
+  os << u8"\n - property_list: " << Brief(property_list());
+  os << u8"\n - call_code: " << Brief(call_code());
+  os << u8"\n - property_accessors: " << Brief(property_accessors());
+  os << u8"\n - prototype_template: " << Brief(prototype_template());
+  os << u8"\n - parent_template: " << Brief(parent_template());
+  os << u8"\n - named_property_handler: " << Brief(named_property_handler());
+  os << u8"\n - indexed_property_handler: " << Brief(indexed_property_handler());
+  os << u8"\n - instance_template: " << Brief(instance_template());
+  os << u8"\n - signature: " << Brief(signature());
+  os << u8"\n - access_check_info: " << Brief(access_check_info());
+  os << u8"\n - hidden_prototype: " << (hidden_prototype() ? u8"true" : u8"false");
+  os << u8"\n - undetectable: " << (undetectable() ? u8"true" : u8"false");
+  os << u8"\n - need_access_check: " << (needs_access_check() ? u8"true" : u8"false");
+  os << u8"\n - instantiated: " << (instantiated() ? u8"true" : u8"false");
+  os << u8"\n";
 }
 
 
 void ObjectTemplateInfo::ObjectTemplateInfoPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "ObjectTemplateInfo");
-  os << "\n - tag: " << Brief(tag());
-  os << "\n - serial_number: " << Brief(serial_number());
-  os << "\n - property_list: " << Brief(property_list());
-  os << "\n - property_accessors: " << Brief(property_accessors());
-  os << "\n - constructor: " << Brief(constructor());
-  os << "\n - internal_field_count: " << Brief(internal_field_count());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"ObjectTemplateInfo");
+  os << u8"\n - tag: " << Brief(tag());
+  os << u8"\n - serial_number: " << Brief(serial_number());
+  os << u8"\n - property_list: " << Brief(property_list());
+  os << u8"\n - property_accessors: " << Brief(property_accessors());
+  os << u8"\n - constructor: " << Brief(constructor());
+  os << u8"\n - internal_field_count: " << Brief(internal_field_count());
+  os << u8"\n";
 }
 
 
 void AllocationSite::AllocationSitePrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "AllocationSite");
-  os << "\n - weak_next: " << Brief(weak_next());
-  os << "\n - dependent code: " << Brief(dependent_code());
-  os << "\n - nested site: " << Brief(nested_site());
-  os << "\n - memento found count: "
+  HeapObject::PrintHeader(os, u8"AllocationSite");
+  os << u8"\n - weak_next: " << Brief(weak_next());
+  os << u8"\n - dependent code: " << Brief(dependent_code());
+  os << u8"\n - nested site: " << Brief(nested_site());
+  os << u8"\n - memento found count: "
      << Brief(Smi::FromInt(memento_found_count()));
-  os << "\n - memento create count: "
+  os << u8"\n - memento create count: "
      << Brief(Smi::FromInt(memento_create_count()));
-  os << "\n - pretenure decision: "
+  os << u8"\n - pretenure decision: "
      << Brief(Smi::FromInt(pretenure_decision()));
-  os << "\n - transition_info: ";
+  os << u8"\n - transition_info: ";
   if (transition_info()->IsSmi()) {
     ElementsKind kind = GetElementsKind();
-    os << "Array allocation with ElementsKind " << ElementsKindToString(kind);
+    os << u8"Array allocation with ElementsKind " << ElementsKindToString(kind);
   } else if (transition_info()->IsJSArray()) {
-    os << "Array literal " << Brief(transition_info());
+    os << u8"Array literal " << Brief(transition_info());
   } else {
-    os << "unknown transition_info" << Brief(transition_info());
+    os << u8"unknown transition_info" << Brief(transition_info());
   }
-  os << "\n";
+  os << u8"\n";
 }
 
 
 void AllocationMemento::AllocationMementoPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "AllocationMemento");
-  os << "\n - allocation site: ";
+  HeapObject::PrintHeader(os, u8"AllocationMemento");
+  os << u8"\n - allocation site: ";
   if (IsValid()) {
     GetAllocationSite()->Print(os);
   } else {
-    os << "<invalid>\n";
+    os << u8"<invalid>\n";
   }
 }
 
 
 void Script::ScriptPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "Script");
-  os << "\n - source: " << Brief(source());
-  os << "\n - name: " << Brief(name());
-  os << "\n - line_offset: " << line_offset();
-  os << "\n - column_offset: " << column_offset();
-  os << "\n - type: " << type();
-  os << "\n - id: " << id();
-  os << "\n - context data: " << Brief(context_data());
-  os << "\n - wrapper: " << Brief(wrapper());
-  os << "\n - compilation type: " << compilation_type();
-  os << "\n - line ends: " << Brief(line_ends());
-  os << "\n - eval from shared: " << Brief(eval_from_shared());
-  os << "\n - eval from instructions offset: "
+  HeapObject::PrintHeader(os, u8"Script");
+  os << u8"\n - source: " << Brief(source());
+  os << u8"\n - name: " << Brief(name());
+  os << u8"\n - line_offset: " << line_offset();
+  os << u8"\n - column_offset: " << column_offset();
+  os << u8"\n - type: " << type();
+  os << u8"\n - id: " << id();
+  os << u8"\n - context data: " << Brief(context_data());
+  os << u8"\n - wrapper: " << Brief(wrapper());
+  os << u8"\n - compilation type: " << compilation_type();
+  os << u8"\n - line ends: " << Brief(line_ends());
+  os << u8"\n - eval from shared: " << Brief(eval_from_shared());
+  os << u8"\n - eval from instructions offset: "
      << eval_from_instructions_offset();
-  os << "\n - shared function infos: " << Brief(shared_function_infos());
-  os << "\n";
+  os << u8"\n - shared function infos: " << Brief(shared_function_infos());
+  os << u8"\n";
 }
 
 
 void DebugInfo::DebugInfoPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "DebugInfo");
-  os << "\n - shared: " << Brief(shared());
-  os << "\n - code: " << Brief(abstract_code());
-  os << "\n - break_points: ";
+  HeapObject::PrintHeader(os, u8"DebugInfo");
+  os << u8"\n - shared: " << Brief(shared());
+  os << u8"\n - code: " << Brief(abstract_code());
+  os << u8"\n - break_points: ";
   break_points()->Print(os);
 }
 
 
 void BreakPointInfo::BreakPointInfoPrint(v8::base::OStream& os) {  // NOLINT
-  HeapObject::PrintHeader(os, "BreakPointInfo");
-  os << "\n - code_offset: " << code_offset();
-  os << "\n - source_position: " << source_position();
-  os << "\n - statement_position: " << statement_position();
-  os << "\n - break_point_objects: " << Brief(break_point_objects());
-  os << "\n";
+  HeapObject::PrintHeader(os, u8"BreakPointInfo");
+  os << u8"\n - code_offset: " << code_offset();
+  os << u8"\n - source_position: " << source_position();
+  os << u8"\n - statement_position: " << statement_position();
+  os << u8"\n - break_point_objects: " << Brief(break_point_objects());
+  os << u8"\n";
 }
 
 
 static void PrintBitMask(v8::base::OStream& os, uint32_t value) {  // NOLINT
   for (int i = 0; i < 32; i++) {
-    if ((i & 7) == 0) os << " ";
-    os << (((value & 1) == 0) ? "_" : "x");
+    if ((i & 7) == 0) os << u8" ";
+    os << (((value & 1) == 0) ? u8"_" : u8"x");
     value >>= 1;
   }
 }
@@ -1187,23 +1183,23 @@ void LayoutDescriptor::Print() {
 
 
 void LayoutDescriptor::Print(v8::base::OStream& os) {  // NOLINT
-  os << "Layout descriptor: ";
+  os << u8"Layout descriptor: ";
   if (IsUninitialized()) {
-    os << "<uninitialized>";
+    os << u8"<uninitialized>";
   } else if (IsFastPointerLayout()) {
-    os << "<all tagged>";
+    os << u8"<all tagged>";
   } else if (IsSmi()) {
-    os << "fast";
+    os << u8"fast";
     PrintBitMask(os, static_cast<uint32_t>(Smi::cast(this)->value()));
   } else {
-    os << "slow";
+    os << u8"slow";
     int len = length();
     for (int i = 0; i < len; i++) {
-      if (i > 0) os << " |";
+      if (i > 0) os << u8" |";
       PrintBitMask(os, get_scalar(i));
     }
   }
-  os << "\n";
+  os << u8"\n";
 }
 
 
@@ -1215,14 +1211,14 @@ void LayoutDescriptor::Print(v8::base::OStream& os) {  // NOLINT
 
 void Name::NameShortPrint() {
   if (this->IsString()) {
-    PrintF("%s", String::cast(this)->ToCString().get());
+    PrintF(u8"%s", String::cast(this)->ToCString().get());
   } else {
     DCHECK(this->IsSymbol());
     Symbol* s = Symbol::cast(this);
     if (s->name()->IsUndefined()) {
       PrintF(u8"#<%s>", s->PrivateSymbolToName());
     } else {
-      PrintF("<%s>", String::cast(s->name())->ToCString().get());
+      PrintF(u8"<%s>", String::cast(s->name())->ToCString().get());
     }
   }
 }
@@ -1230,14 +1226,14 @@ void Name::NameShortPrint() {
 
 int Name::NameShortPrint(Vector<char> str) {
   if (this->IsString()) {
-    return SNPrintF(str, "%s", String::cast(this)->ToCString().get());
+    return SNPrintF(str, u8"%s", String::cast(this)->ToCString().get());
   } else {
     DCHECK(this->IsSymbol());
     Symbol* s = Symbol::cast(this);
     if (s->name()->IsUndefined()) {
-      return SNPrintF(str, "#<%s>", s->PrivateSymbolToName());
+      return SNPrintF(str, u8"#<%s>", s->PrivateSymbolToName());
     } else {
-      return SNPrintF(str, "<%s>", String::cast(s->name())->ToCString().get());
+      return SNPrintF(str, u8"<%s>", String::cast(s->name())->ToCString().get());
     }
   }
 }
@@ -1284,7 +1280,7 @@ void DescriptorArray::PrintDescriptors(v8::base::OStream& os) {  // NOLINT
 void TransitionArray::Print() {
   OFStream os(stdout);
   TransitionArray::PrintTransitions(os, this);
-  os << "\n" << std::flush;
+  os << u8"\n" << std::flush;
 }
 
 

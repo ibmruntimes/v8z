@@ -430,10 +430,9 @@ void Assembler::bind_to(Label* L, int pos) {
 #endif
     next(L);  // call next before overwriting link with target at fixup_pos
     //Label addresses will have a max reach of 0
-#ifdef DEBUG
-    if (maxReach != 0)
-      DCHECK(is_intn(offset, maxReach));
-#endif
+    if (maxReach != 0)  { 
+    DCHECK(is_intn(offset, maxReach));
+    }
 
     target_at_put(fixup_pos, pos, &is_branch);
   }
@@ -3135,14 +3134,12 @@ void Assembler::RelocateInternalReference(Address pc,
 int Assembler::DecodeInternalReference(Vector<char> buffer, Address pc) {
 #if ABI_USES_FUNCTION_DESCRIPTORS
   uintptr_t *fd = reinterpret_cast<uintptr_t*>(pc);
-  if (fd[0] == 0 && (fd[1] & 0x00000000) == 0) {
     // Function descriptor
     SNPrintF(buffer,
              "[%08" V8PRIxPTR ", %08" V8PRIxPTR "]"
              "   function descriptor",
              fd[0], fd[1]);
-    return kPointerSize * 2;
-  }
+  return kPointerSize * 2;
 #endif
   return 0;
 }

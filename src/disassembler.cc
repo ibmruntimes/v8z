@@ -36,7 +36,7 @@ const char* V8NameConverter::NameOfAddress(byte* pc) const {
       code_ == NULL ? NULL : code_->GetIsolate()->builtins()->Lookup(pc);
 
   if (name != NULL) {
-    SNPrintF(v8_buffer_, "%s  (%p)", name, pc);
+    SNPrintF(v8_buffer_, "\x25\x73\x20\x20\x28\x25\x70\x29", name, pc);
     return v8_buffer_.start();
   }
 
@@ -44,7 +44,7 @@ const char* V8NameConverter::NameOfAddress(byte* pc) const {
     int offs = static_cast<int>(pc - code_->instruction_start());
     // print as code offset, if it seems reasonable
     if (0 <= offs && offs < code_->instruction_size()) {
-      SNPrintF(v8_buffer_, "%d  (%p)", offs, pc);
+      SNPrintF(v8_buffer_, "\x25\x64\x20\x20\x28\x25\x70\x29", offs, pc);
       return v8_buffer_.start();
     }
   }
@@ -93,7 +93,7 @@ static int DecodeIt(Isolate* isolate, v8::base::OStream* os,
     byte* prev_pc = pc;
     if (constants > 0) {
       SNPrintF(decode_buffer,
-               "%08x       constant",
+               "\x25\x30\x38\x78\x20\x20\x20\x20\x20\x20\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74",
                *reinterpret_cast<int32_t*>(pc));
       constants--;
       pc += 4;
@@ -101,7 +101,7 @@ static int DecodeIt(Isolate* isolate, v8::base::OStream* os,
       int num_const = d.ConstantPoolSizeAt(pc);
       if (num_const >= 0) {
         SNPrintF(decode_buffer,
-                 "%08x       constant pool begin (num_const = %d)",
+                 "\x25\x30\x38\x78\x20\x20\x20\x20\x20\x20\x20\x63\x6f\x6e\x73\x74\x61\x6e\x74\x20\x70\x6f\x6f\x6c\x20\x62\x65\x67\x69\x6e\x20\x28\x6e\x75\x6d\x5f\x63\x6f\x6e\x73\x74\x20\x3d\x20\x25\x64\x29",
                  *reinterpret_cast<int32_t*>(pc), num_const);
         constants = num_const;
         pc += 4;
@@ -114,13 +114,13 @@ static int DecodeIt(Isolate* isolate, v8::base::OStream* os,
         // raw pointer embedded in code stream, e.g., jump table
         byte* ptr = *reinterpret_cast<byte**>(pc);
         SNPrintF(decode_buffer,
-                 "%08" V8PRIxPTR "      jump table entry %4" V8PRIdPTR,
+                 "\x25\x30\x38" V8PRIxPTR "\x20\x20\x20\x20\x20\x20\x6a\x75\x6d\x70\x20\x74\x61\x62\x6c\x65\x20\x65\x6e\x74\x72\x79\x20\x25\x34" V8PRIdPTR,
                  reinterpret_cast<intptr_t>(ptr),
                  ptr - begin);
         pc += sizeof(ptr);
 #endif
       } else {
-        decode_buffer[0] = '\0';
+        decode_buffer[0] = '\x0';
         pc += d.InstructionDecode(decode_buffer, pc);
       }
     }
@@ -147,15 +147,15 @@ static int DecodeIt(Isolate* isolate, v8::base::OStream* os,
 
     // Comments.
     for (int i = 0; i < comments.length(); i++) {
-      out.AddFormatted("                  %s", comments[i]);
+      out.AddFormatted("\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x25\x73", comments[i]);
       DumpBuffer(os, &out);
     }
 
     // Instruction address and instruction offset.
-    out.AddFormatted("%p  %4d  ", prev_pc, prev_pc - begin);
+    out.AddFormatted("\x25\x70\x20\x20\x25\x34\x64\x20\x20", prev_pc, prev_pc - begin);
 
     // Instruction.
-    out.AddFormatted("%s", decode_buffer.start());
+    out.AddFormatted("\x25\x73", decode_buffer.start());
 
     // Print all the reloc info for this instruction which are not comments.
     for (int i = 0; i < pcs.length(); i++) {
@@ -166,53 +166,53 @@ static int DecodeIt(Isolate* isolate, v8::base::OStream* os,
       // Indent the printing of the reloc info.
       if (i == 0) {
         // The first reloc info is printed after the disassembled instruction.
-        out.AddPadding(' ', kRelocInfoPosition - out.position());
+        out.AddPadding('\x20', kRelocInfoPosition - out.position());
       } else {
         // Additional reloc infos are printed on separate lines.
         DumpBuffer(os, &out);
-        out.AddPadding(' ', kRelocInfoPosition);
+        out.AddPadding('\x20', kRelocInfoPosition);
       }
 
       RelocInfo::Mode rmode = relocinfo.rmode();
       if (RelocInfo::IsPosition(rmode)) {
         if (RelocInfo::IsStatementPosition(rmode)) {
-          out.AddFormatted("    ;; debug: statement %d", relocinfo.data());
+          out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x64\x65\x62\x75\x67\x3a\x20\x73\x74\x61\x74\x65\x6d\x65\x6e\x74\x20\x25\x64", relocinfo.data());
         } else {
-          out.AddFormatted("    ;; debug: position %d", relocinfo.data());
+          out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x64\x65\x62\x75\x67\x3a\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e\x20\x25\x64", relocinfo.data());
         }
       } else if (rmode == RelocInfo::DEOPT_REASON) {
         Deoptimizer::DeoptReason reason =
             static_cast<Deoptimizer::DeoptReason>(relocinfo.data());
-        out.AddFormatted("    ;; debug: deopt reason '%s'",
+        out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x64\x65\x62\x75\x67\x3a\x20\x64\x65\x6f\x70\x74\x20\x72\x65\x61\x73\x6f\x6e\x20\x27\x25\x73\x27",
                          Deoptimizer::GetDeoptReason(reason));
       } else if (rmode == RelocInfo::EMBEDDED_OBJECT) {
         HeapStringAllocator allocator;
         StringStream accumulator(&allocator);
         relocinfo.target_object()->ShortPrint(&accumulator);
         base::SmartArrayPointer<const char> obj_name = accumulator.ToCString();
-        out.AddFormatted("    ;; object: %s", obj_name.get());
+        out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x6f\x62\x6a\x65\x63\x74\x3a\x20\x25\x73", obj_name.get());
       } else if (rmode == RelocInfo::EXTERNAL_REFERENCE) {
 #ifndef V8_OS_ZOS
         const char* reference_name = ref_encoder.NameOfAddress(
             isolate, relocinfo.target_external_reference());
-        out.AddFormatted("    ;; external reference (%s)", reference_name);
+        out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x65\x78\x74\x65\x72\x6e\x61\x6c\x20\x72\x65\x66\x65\x72\x65\x6e\x63\x65\x20\x28\x25\x73\x29", reference_name);
 #endif
       } else if (RelocInfo::IsCodeTarget(rmode)) {
-        out.AddFormatted("    ;; code:");
+        out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x63\x6f\x64\x65\x3a");
         Code* code = Code::GetCodeFromTargetAddress(relocinfo.target_address());
         Code::Kind kind = code->kind();
         if (code->is_inline_cache_stub()) {
           if (kind == Code::LOAD_IC &&
               LoadICState::GetTypeofMode(code->extra_ic_state()) ==
                   NOT_INSIDE_TYPEOF) {
-            out.AddFormatted(" contextual,");
+            out.AddFormatted("\x20\x63\x6f\x6e\x74\x65\x78\x74\x75\x61\x6c\x2c");
           }
           InlineCacheState ic_state = code->ic_state();
-          out.AddFormatted(" %s, %s", Code::Kind2String(kind),
+          out.AddFormatted("\x20\x25\x73\x2c\x20\x25\x73", Code::Kind2String(kind),
               Code::ICState2String(ic_state));
           if (ic_state == MONOMORPHIC) {
             Code::StubType type = code->type();
-            out.AddFormatted(", %s", Code::StubType2String(type));
+            out.AddFormatted("\x2c\x20\x25\x73", Code::StubType2String(type));
           }
         } else if (kind == Code::STUB || kind == Code::HANDLER) {
           // Get the STUB key and extract major and minor key.
@@ -221,13 +221,13 @@ static int DecodeIt(Isolate* isolate, v8::base::OStream* os,
           CodeStub::Major major_key = CodeStub::GetMajorKey(code);
           DCHECK(major_key == CodeStub::MajorKeyFromKey(key));
           const char * name = CodeStub::MajorName(major_key);
-          out.AddFormatted(" %s, %s, ", Code::Kind2String(kind), name);
-          out.AddFormatted("minor: %d", minor_key);
+          out.AddFormatted("\x20\x25\x73\x2c\x20\x25\x73\x2c\x20", Code::Kind2String(kind), name);
+          out.AddFormatted("\x6d\x69\x6e\x6f\x72\x3a\x20\x25\x64", minor_key);
         } else {
-          out.AddFormatted(" %s", Code::Kind2String(kind));
+          out.AddFormatted("\x20\x25\x73", Code::Kind2String(kind));
         }
         if (rmode == RelocInfo::CODE_TARGET_WITH_ID) {
-          out.AddFormatted(" (id = %d)", static_cast<int>(relocinfo.data()));
+          out.AddFormatted("\x20\x28\x69\x64\x20\x3d\x20\x25\x64\x29", static_cast<int>(relocinfo.data()));
         }
       } else if (RelocInfo::IsRuntimeEntry(rmode) &&
                  isolate->deoptimizer_data() != NULL) {
@@ -245,18 +245,18 @@ static int DecodeIt(Isolate* isolate, v8::base::OStream* os,
                                                   addr,
                                                   Deoptimizer::SOFT);
             if (id == Deoptimizer::kNotDeoptimizationEntry) {
-              out.AddFormatted("    ;; %s", RelocInfo::RelocModeName(rmode));
+              out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x25\x73", RelocInfo::RelocModeName(rmode));
             } else {
-              out.AddFormatted("    ;; soft deoptimization bailout %d", id);
+              out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x73\x6f\x66\x74\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x62\x61\x69\x6c\x6f\x75\x74\x20\x25\x64", id);
             }
           } else {
-            out.AddFormatted("    ;; lazy deoptimization bailout %d", id);
+            out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x6c\x61\x7a\x79\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x62\x61\x69\x6c\x6f\x75\x74\x20\x25\x64", id);
           }
         } else {
-          out.AddFormatted("    ;; deoptimization bailout %d", id);
+          out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x62\x61\x69\x6c\x6f\x75\x74\x20\x25\x64", id);
         }
       } else {
-        out.AddFormatted("    ;; %s", RelocInfo::RelocModeName(rmode));
+        out.AddFormatted("\x20\x20\x20\x20\x3b\x3b\x20\x25\x73", RelocInfo::RelocModeName(rmode));
       }
     }
     DumpBuffer(os, &out);
@@ -266,7 +266,7 @@ static int DecodeIt(Isolate* isolate, v8::base::OStream* os,
   if (it != NULL) {
     for ( ; !it->done(); it->next()) {
       if (RelocInfo::IsComment(it->rinfo()->rmode())) {
-        out.AddFormatted("                  %s",
+        out.AddFormatted("\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x25\x73",
                          reinterpret_cast<const char*>(it->rinfo()->data()));
         DumpBuffer(os, &out);
       }

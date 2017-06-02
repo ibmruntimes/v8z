@@ -262,19 +262,19 @@ GarbageCollector Heap::SelectGarbageCollector(AllocationSpace space,
   // Is global GC requested?
   if (space != NEW_SPACE) {
     isolate_->counters()->gc_compactor_caused_by_request()->Increment();
-    *reason = "GC in old space requested";
+    *reason = "\x47\x43\x20\x69\x6e\x20\x6f\x6c\x64\x20\x73\x70\x61\x63\x65\x20\x72\x65\x71\x75\x65\x73\x74\x65\x64";
     return MARK_COMPACTOR;
   }
 
   if (FLAG_gc_global || (FLAG_stress_compaction && (gc_count_ & 1) != 0)) {
-    *reason = "GC in old space forced by flags";
+    *reason = "\x47\x43\x20\x69\x6e\x20\x6f\x6c\x64\x20\x73\x70\x61\x63\x65\x20\x66\x6f\x72\x63\x65\x64\x20\x62\x79\x20\x66\x6c\x61\x67\x73";
     return MARK_COMPACTOR;
   }
 
   // Is enough data promoted to justify a global GC?
   if (OldGenerationAllocationLimitReached()) {
     isolate_->counters()->gc_compactor_caused_by_promoted_data()->Increment();
-    *reason = "promotion limit reached";
+    *reason = "\x70\x72\x6f\x6d\x6f\x74\x69\x6f\x6e\x20\x6c\x69\x6d\x69\x74\x20\x72\x65\x61\x63\x68\x65\x64";
     return MARK_COMPACTOR;
   }
 
@@ -283,7 +283,7 @@ GarbageCollector Heap::SelectGarbageCollector(AllocationSpace space,
     isolate_->counters()
         ->gc_compactor_caused_by_oldspace_exhaustion()
         ->Increment();
-    *reason = "old generations exhausted";
+    *reason = "\x6f\x6c\x64\x20\x67\x65\x6e\x65\x72\x61\x74\x69\x6f\x6e\x73\x20\x65\x78\x68\x61\x75\x73\x74\x65\x64";
     return MARK_COMPACTOR;
   }
 
@@ -300,7 +300,7 @@ GarbageCollector Heap::SelectGarbageCollector(AllocationSpace space,
     isolate_->counters()
         ->gc_compactor_caused_by_oldspace_exhaustion()
         ->Increment();
-    *reason = "scavenge might not succeed";
+    *reason = "\x73\x63\x61\x76\x65\x6e\x67\x65\x20\x6d\x69\x67\x68\x74\x20\x6e\x6f\x74\x20\x73\x75\x63\x63\x65\x65\x64";
     return MARK_COMPACTOR;
   }
 
@@ -319,7 +319,7 @@ void Heap::ReportStatisticsBeforeGC() {
 #ifdef DEBUG
   if (FLAG_heap_stats || FLAG_log_gc) new_space_.CollectStatistics();
   if (FLAG_heap_stats) {
-    ReportHeapStatistics("Before GC");
+    ReportHeapStatistics("\x42\x65\x66\x6f\x72\x65\x20\x47\x43");
   } else if (FLAG_log_gc) {
     new_space_.ReportStatistics();
   }
@@ -336,57 +336,57 @@ void Heap::ReportStatisticsBeforeGC() {
 
 void Heap::PrintShortHeapStatistics() {
   if (!FLAG_trace_gc_verbose) return;
-  PrintIsolate(isolate_, "Memory allocator,   used: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", available: %6" V8_PTR_PREFIX "d KB\n",
+  PrintIsolate(isolate_, "\x4d\x65\x6d\x6f\x72\x79\x20\x61\x6c\x6c\x6f\x63\x61\x74\x6f\x72\x2c\x20\x20\x20\x75\x73\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x3a\x20\x25\x36" V8_PTR_PREFIX "\x64\x20\x4b\x42\xa",
                isolate_->memory_allocator()->Size() / KB,
                isolate_->memory_allocator()->Available() / KB);
-  PrintIsolate(isolate_, "New space,          used: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", available: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", committed: %6" V8_PTR_PREFIX "d KB\n",
+  PrintIsolate(isolate_, "\x4e\x65\x77\x20\x73\x70\x61\x63\x65\x2c\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x75\x73\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX "\x64\x20\x4b\x42\xa",
                new_space_.Size() / KB, new_space_.Available() / KB,
                new_space_.CommittedMemory() / KB);
-  PrintIsolate(isolate_, "Old space,          used: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", available: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", committed: %6" V8_PTR_PREFIX "d KB\n",
+  PrintIsolate(isolate_, "\x4f\x6c\x64\x20\x73\x70\x61\x63\x65\x2c\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x75\x73\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX "\x64\x20\x4b\x42\xa",
                old_space_->SizeOfObjects() / KB, old_space_->Available() / KB,
                old_space_->CommittedMemory() / KB);
-  PrintIsolate(isolate_, "Code space,         used: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", available: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", committed: %6" V8_PTR_PREFIX "d KB\n",
+  PrintIsolate(isolate_, "\x43\x6f\x64\x65\x20\x73\x70\x61\x63\x65\x2c\x20\x20\x20\x20\x20\x20\x20\x20\x20\x75\x73\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX "\x64\x20\x4b\x42\xa",
                code_space_->SizeOfObjects() / KB, code_space_->Available() / KB,
                code_space_->CommittedMemory() / KB);
-  PrintIsolate(isolate_, "Map space,          used: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", available: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", committed: %6" V8_PTR_PREFIX "d KB\n",
+  PrintIsolate(isolate_, "\x4d\x61\x70\x20\x73\x70\x61\x63\x65\x2c\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x75\x73\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX "\x64\x20\x4b\x42\xa",
                map_space_->SizeOfObjects() / KB, map_space_->Available() / KB,
                map_space_->CommittedMemory() / KB);
-  PrintIsolate(isolate_, "Large object space, used: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", available: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", committed: %6" V8_PTR_PREFIX "d KB\n",
+  PrintIsolate(isolate_, "\x4c\x61\x72\x67\x65\x20\x6f\x62\x6a\x65\x63\x74\x20\x73\x70\x61\x63\x65\x2c\x20\x75\x73\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX "\x64\x20\x4b\x42\xa",
                lo_space_->SizeOfObjects() / KB, lo_space_->Available() / KB,
                lo_space_->CommittedMemory() / KB);
-  PrintIsolate(isolate_, "All spaces,         used: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", available: %6" V8_PTR_PREFIX
-                         "d KB"
-                         ", committed: %6" V8_PTR_PREFIX "d KB\n",
+  PrintIsolate(isolate_, "\x41\x6c\x6c\x20\x73\x70\x61\x63\x65\x73\x2c\x20\x20\x20\x20\x20\x20\x20\x20\x20\x75\x73\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x61\x76\x61\x69\x6c\x61\x62\x6c\x65\x3a\x20\x25\x36" V8_PTR_PREFIX
+                         "\x64\x20\x4b\x42"
+                         "\x2c\x20\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX "\x64\x20\x4b\x42\xa",
                this->SizeOfObjects() / KB, this->Available() / KB,
                this->CommittedMemory() / KB);
   PrintIsolate(
-      isolate_, "External memory reported: %6" V8_PTR_PREFIX "d KB\n",
+      isolate_, "\x45\x78\x74\x65\x72\x6e\x61\x6c\x20\x6d\x65\x6d\x6f\x72\x79\x20\x72\x65\x70\x6f\x72\x74\x65\x64\x3a\x20\x25\x36" V8_PTR_PREFIX "\x64\x20\x4b\x42\xa",
       static_cast<intptr_t>(amount_of_external_allocated_memory_ / KB));
-  PrintIsolate(isolate_, "Total time spent in GC  : %.1f ms\n",
+  PrintIsolate(isolate_, "\x54\x6f\x74\x61\x6c\x20\x74\x69\x6d\x65\x20\x73\x70\x65\x6e\x74\x20\x69\x6e\x20\x47\x43\x20\x20\x3a\x20\x25\x2e\x31\x66\x20\x6d\x73\xa",
                total_gc_time_ms_);
 }
 
@@ -399,7 +399,7 @@ void Heap::ReportStatisticsAfterGC() {
 #if defined(DEBUG)
   if (FLAG_heap_stats) {
     new_space_.CollectStatistics();
-    ReportHeapStatistics("After GC");
+    ReportHeapStatistics("\x41\x66\x74\x65\x72\x20\x47\x43");
   } else if (FLAG_log_gc) {
     new_space_.ReportStatistics();
   }
@@ -477,15 +477,15 @@ intptr_t Heap::SizeOfObjects() {
 const char* Heap::GetSpaceName(int idx) {
   switch (idx) {
     case NEW_SPACE:
-      return "new_space";
+      return "\x6e\x65\x77\x5f\x73\x70\x61\x63\x65";
     case OLD_SPACE:
-      return "old_space";
+      return "\x6f\x6c\x64\x5f\x73\x70\x61\x63\x65";
     case MAP_SPACE:
-      return "map_space";
+      return "\x6d\x61\x70\x5f\x73\x70\x61\x63\x65";
     case CODE_SPACE:
-      return "code_space";
+      return "\x63\x6f\x64\x65\x5f\x73\x70\x61\x63\x65";
     case LO_SPACE:
-      return "large_object_space";
+      return "\x6c\x61\x72\x67\x65\x5f\x6f\x62\x6a\x65\x63\x74\x5f\x73\x70\x61\x63\x65";
     default:
       UNREACHABLE();
   }
@@ -608,9 +608,9 @@ void Heap::ProcessPretenuringFeedback() {
         (allocation_mementos_found > 0 || tenure_decisions > 0 ||
          dont_tenure_decisions > 0)) {
       PrintIsolate(isolate(),
-                   "pretenuring: deopt_maybe_tenured=%d visited_sites=%d "
-                   "active_sites=%d "
-                   "mementos=%d tenured=%d not_tenured=%d\n",
+                   "\x70\x72\x65\x74\x65\x6e\x75\x72\x69\x6e\x67\x3a\x20\x64\x65\x6f\x70\x74\x5f\x6d\x61\x79\x62\x65\x5f\x74\x65\x6e\x75\x72\x65\x64\x3d\x25\x64\x20\x76\x69\x73\x69\x74\x65\x64\x5f\x73\x69\x74\x65\x73\x3d\x25\x64\x20"
+                   "\x61\x63\x74\x69\x76\x65\x5f\x73\x69\x74\x65\x73\x3d\x25\x64\x20"
+                   "\x6d\x65\x6d\x65\x6e\x74\x6f\x73\x3d\x25\x64\x20\x74\x65\x6e\x75\x72\x65\x64\x3d\x25\x64\x20\x6e\x6f\x74\x5f\x74\x65\x6e\x75\x72\x65\x64\x3d\x25\x64\xa",
                    deopt_maybe_tenured ? 1 : 0, allocation_sites,
                    active_allocation_sites, allocation_mementos_found,
                    tenure_decisions, dont_tenure_decisions);
@@ -654,7 +654,7 @@ void Heap::GarbageCollectionEpilogue() {
   if (FLAG_print_global_handles) isolate_->global_handles()->Print();
   if (FLAG_print_handles) PrintHandles();
   if (FLAG_gc_verbose) Print();
-  if (FLAG_code_stats) ReportCodeStatistics("After GC");
+  if (FLAG_code_stats) ReportCodeStatistics("\x41\x66\x74\x65\x72\x20\x47\x43");
   if (FLAG_check_handle_count) CheckHandleCount();
 #endif
   if (FLAG_deopt_every_n_garbage_collections > 0) {
@@ -796,14 +796,14 @@ void Heap::HandleGCRequest() {
   } else if (incremental_marking()->request_type() ==
              IncrementalMarking::COMPLETE_MARKING) {
     incremental_marking()->reset_request_type();
-    CollectAllGarbage(current_gc_flags_, "GC interrupt",
+    CollectAllGarbage(current_gc_flags_, "\x47\x43\x20\x69\x6e\x74\x65\x72\x72\x75\x70\x74",
                       current_gc_callback_flags_);
   } else if (incremental_marking()->request_type() ==
                  IncrementalMarking::FINALIZATION &&
              incremental_marking()->IsMarking() &&
              !incremental_marking()->finalize_marking_completed()) {
     incremental_marking()->reset_request_type();
-    FinalizeIncrementalMarking("GC interrupt: finalize incremental marking");
+    FinalizeIncrementalMarking("\x47\x43\x20\x69\x6e\x74\x65\x72\x72\x75\x70\x74\x3a\x20\x66\x69\x6e\x61\x6c\x69\x7a\x65\x20\x69\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x20\x6d\x61\x72\x6b\x69\x6e\x67");
   }
 }
 
@@ -815,13 +815,13 @@ void Heap::ScheduleIdleScavengeIfNeeded(int bytes_allocated) {
 
 void Heap::FinalizeIncrementalMarking(const char* gc_reason) {
   if (FLAG_trace_incremental_marking) {
-    PrintF("[IncrementalMarking] (%s).\n", gc_reason);
+    PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x28\x25\x73\x29\x2e\xa", gc_reason);
   }
 
   TRACE_GC(tracer(), GCTracer::Scope::MC_INCREMENTAL_FINALIZE);
   HistogramTimerScope incremental_marking_scope(
       isolate()->counters()->gc_incremental_marking_finalize());
-  TRACE_EVENT0("v8", "V8.GCIncrementalMarkingFinalize");
+  TRACE_EVENT0("\x76\x38", "\x56\x38\x2e\x47\x43\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x46\x69\x6e\x61\x6c\x69\x7a\x65");
 
   {
     GCCallbacksScope scope(this);
@@ -968,7 +968,7 @@ bool Heap::CollectGarbage(GarbageCollector collector, const char* gc_reason,
 
   if (collector == SCAVENGER && !incremental_marking()->IsStopped()) {
     if (FLAG_trace_incremental_marking) {
-      PrintF("[IncrementalMarking] Scavenge during marking.\n");
+      PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x53\x63\x61\x76\x65\x6e\x67\x65\x20\x64\x75\x72\x69\x6e\x67\x20\x6d\x61\x72\x6b\x69\x6e\x67\x2e\xa");
     }
   }
 
@@ -984,10 +984,10 @@ bool Heap::CollectGarbage(GarbageCollector collector, const char* gc_reason,
         !mark_compact_collector()->marking_deque_.IsEmpty() &&
         !FLAG_gc_global) {
       if (FLAG_trace_incremental_marking) {
-        PrintF("[IncrementalMarking] Delaying MarkSweep.\n");
+        PrintF("\x5b\x49\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x4d\x61\x72\x6b\x69\x6e\x67\x5d\x20\x44\x65\x6c\x61\x79\x69\x6e\x67\x20\x4d\x61\x72\x6b\x53\x77\x65\x65\x70\x2e\xa");
       }
       collector = SCAVENGER;
-      collector_reason = "incremental marking delaying mark-sweep";
+      collector_reason = "\x69\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x20\x6d\x61\x72\x6b\x69\x6e\x67\x20\x64\x65\x6c\x61\x79\x69\x6e\x67\x20\x6d\x61\x72\x6b\x2d\x73\x77\x65\x65\x70";
     }
   }
 
@@ -1007,7 +1007,7 @@ bool Heap::CollectGarbage(GarbageCollector collector, const char* gc_reason,
     {
       HistogramTimer* gc_type_timer = GCTypeTimer(collector);
       HistogramTimerScope histogram_timer_scope(gc_type_timer);
-      TRACE_EVENT0("v8", gc_type_timer->name());
+      TRACE_EVENT0("\x76\x38", gc_type_timer->name());
 
       next_gc_likely_to_collect_more =
           PerformGarbageCollection(collector, gc_callback_flags);
@@ -1051,7 +1051,7 @@ bool Heap::CollectGarbage(GarbageCollector collector, const char* gc_reason,
   // generator needs incremental marking to stay off after it aborted.
   if (!ShouldAbortIncrementalMarking() && incremental_marking()->IsStopped() &&
       incremental_marking()->ShouldActivateEvenWithoutIdleNotification()) {
-    StartIncrementalMarking(kNoGCFlags, kNoGCCallbackFlags, "GC epilogue");
+    StartIncrementalMarking(kNoGCFlags, kNoGCCallbackFlags, "\x47\x43\x20\x65\x70\x69\x6c\x6f\x67\x75\x65");
   }
 
   return next_gc_likely_to_collect_more;
@@ -1091,7 +1091,7 @@ void Heap::StartIncrementalMarking(int gc_flags,
 void Heap::StartIdleIncrementalMarking() {
   gc_idle_time_handler_->ResetNoProgressCounter();
   StartIncrementalMarking(kReduceMemoryFootprintMask, kNoGCCallbackFlags,
-                          "idle");
+                          "\x69\x64\x6c\x65");
 }
 
 
@@ -1182,17 +1182,17 @@ bool Heap::ReserveSpace(Reservation* reservations) {
       }
       if (perform_gc) {
         if (space == NEW_SPACE) {
-          CollectGarbage(NEW_SPACE, "failed to reserve space in the new space");
+          CollectGarbage(NEW_SPACE, "\x66\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x72\x65\x73\x65\x72\x76\x65\x20\x73\x70\x61\x63\x65\x20\x69\x6e\x20\x74\x68\x65\x20\x6e\x65\x77\x20\x73\x70\x61\x63\x65");
         } else {
           if (counter > 1) {
             CollectAllGarbage(
                 kReduceMemoryFootprintMask | kAbortIncrementalMarkingMask,
-                "failed to reserve space in paged or large "
-                "object space, trying to reduce memory footprint");
+                "\x66\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x72\x65\x73\x65\x72\x76\x65\x20\x73\x70\x61\x63\x65\x20\x69\x6e\x20\x70\x61\x67\x65\x64\x20\x6f\x72\x20\x6c\x61\x72\x67\x65\x20"
+                "\x6f\x62\x6a\x65\x63\x74\x20\x73\x70\x61\x63\x65\x2c\x20\x74\x72\x79\x69\x6e\x67\x20\x74\x6f\x20\x72\x65\x64\x75\x63\x65\x20\x6d\x65\x6d\x6f\x72\x79\x20\x66\x6f\x6f\x74\x70\x72\x69\x6e\x74");
           } else {
             CollectAllGarbage(
                 kAbortIncrementalMarkingMask,
-                "failed to reserve space in paged or large object space");
+                "\x66\x61\x69\x6c\x65\x64\x20\x74\x6f\x20\x72\x65\x73\x65\x72\x76\x65\x20\x73\x70\x61\x63\x65\x20\x69\x6e\x20\x70\x61\x67\x65\x64\x20\x6f\x72\x20\x6c\x61\x72\x67\x65\x20\x6f\x62\x6a\x65\x63\x74\x20\x73\x70\x61\x63\x65");
           }
         }
         gc_performed = true;
@@ -1210,7 +1210,7 @@ void Heap::EnsureFromSpaceIsCommitted() {
 
   // Committing memory to from space failed.
   // Memory is exhausted and we will die.
-  V8::FatalProcessOutOfMemory("Committing semi space failed.");
+  V8::FatalProcessOutOfMemory("\x43\x6f\x6d\x6d\x69\x74\x74\x69\x6e\x67\x20\x73\x65\x6d\x69\x20\x73\x70\x61\x63\x65\x20\x66\x61\x69\x6c\x65\x64\x2e");
 }
 
 
@@ -1421,7 +1421,7 @@ void Heap::MarkCompact() {
   PauseAllocationObserversScope pause_observers(this);
 
   gc_state_ = MARK_COMPACT;
-  LOG(isolate_, ResourceEvent("markcompact", "begin"));
+  LOG(isolate_, ResourceEvent("\x6d\x61\x72\x6b\x63\x6f\x6d\x70\x61\x63\x74", "\x62\x65\x67\x69\x6e"));
 
   uint64_t size_of_objects_before_gc = SizeOfObjects();
 
@@ -1433,7 +1433,7 @@ void Heap::MarkCompact() {
 
   mark_compact_collector()->CollectGarbage();
 
-  LOG(isolate_, ResourceEvent("markcompact", "end"));
+  LOG(isolate_, ResourceEvent("\x6d\x61\x72\x6b\x63\x6f\x6d\x70\x61\x63\x74", "\x65\x6e\x64"));
 
   MarkCompactEpilogue();
 
@@ -1634,7 +1634,7 @@ void Heap::Scavenge() {
   gc_state_ = SCAVENGE;
 
   // Implements Cheney's copying algorithm
-  LOG(isolate_, ResourceEvent("scavenge", "begin"));
+  LOG(isolate_, ResourceEvent("\x73\x63\x61\x76\x65\x6e\x67\x65", "\x62\x65\x67\x69\x6e"));
 
   // Used for updating survived_since_last_expansion_ at function end.
   intptr_t survived_watermark = PromotedSpaceSizeOfObjects();
@@ -1755,7 +1755,7 @@ void Heap::Scavenge() {
   IncrementYoungSurvivorsCounter(static_cast<int>(
       (PromotedSpaceSizeOfObjects() - survived_watermark) + new_space_.Size()));
 
-  LOG(isolate_, ResourceEvent("scavenge", "end"));
+  LOG(isolate_, ResourceEvent("\x73\x63\x61\x76\x65\x6e\x67\x65", "\x65\x6e\x64"));
 
   gc_state_ = NOT_IN_GC;
 }
@@ -1888,8 +1888,8 @@ void Heap::EvaluateOldSpaceLocalPretenuring(
     ResetAllAllocationSitesDependentCode(TENURED);
     if (FLAG_trace_pretenuring) {
       PrintF(
-          "Deopt all allocation sites dependent code due to low survival "
-          "rate in the old generation %f\n",
+          "\x44\x65\x6f\x70\x74\x20\x61\x6c\x6c\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x73\x69\x74\x65\x73\x20\x64\x65\x70\x65\x6e\x64\x65\x6e\x74\x20\x63\x6f\x64\x65\x20\x64\x75\x65\x20\x74\x6f\x20\x6c\x6f\x77\x20\x73\x75\x72\x76\x69\x76\x61\x6c\x20"
+          "\x72\x61\x74\x65\x20\x69\x6e\x20\x74\x68\x65\x20\x6f\x6c\x64\x20\x67\x65\x6e\x65\x72\x61\x74\x69\x6f\x6e\x20\x25\x66\xa",
           old_generation_survival_rate);
     }
   }
@@ -2157,7 +2157,7 @@ const Heap::StringTypeTable Heap::string_type_table[] = {
 
 
 const Heap::ConstantStringTable Heap::constant_string_table[] = {
-    {u8"", kempty_stringRootIndex},
+    {"", kempty_stringRootIndex},
 #define CONSTANT_STRING_ELEMENT(name, contents) \
   { contents, k##name##RootIndex }              \
   ,
@@ -2654,57 +2654,57 @@ void Heap::CreateInitialObjects() {
   // Allocate
 
   // Finish initializing oddballs after creating the string table.
-  Oddball::Initialize(isolate(), factory->undefined_value(), u8"undefined",
-                      factory->nan_value(), false, u8"undefined",
+  Oddball::Initialize(isolate(), factory->undefined_value(), "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64",
+                      factory->nan_value(), false, "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64",
                       Oddball::kUndefined);
 
   // Initialize the null_value.
-  Oddball::Initialize(isolate(), factory->null_value(), u8"null",
-                      handle(Smi::FromInt(0), isolate()), false, u8"object",
+  Oddball::Initialize(isolate(), factory->null_value(), "\x6e\x75\x6c\x6c",
+                      handle(Smi::FromInt(0), isolate()), false, "\x6f\x62\x6a\x65\x63\x74",
                       Oddball::kNull);
 
   // Initialize the true_value.
-  Oddball::Initialize(isolate(), factory->true_value(), u8"true",
-                      handle(Smi::FromInt(1), isolate()), true, u8"boolean",
+  Oddball::Initialize(isolate(), factory->true_value(), "\x74\x72\x75\x65",
+                      handle(Smi::FromInt(1), isolate()), true, "\x62\x6f\x6f\x6c\x65\x61\x6e",
                       Oddball::kTrue);
 
   // Initialize the false_value.
-  Oddball::Initialize(isolate(), factory->false_value(), u8"false",
-                      handle(Smi::FromInt(0), isolate()), false, u8"boolean",
+  Oddball::Initialize(isolate(), factory->false_value(), "\x66\x61\x6c\x73\x65",
+                      handle(Smi::FromInt(0), isolate()), false, "\x62\x6f\x6f\x6c\x65\x61\x6e",
                       Oddball::kFalse);
 
   set_the_hole_value(*factory->NewOddball(
-      factory->the_hole_map(), u8"hole", handle(Smi::FromInt(-1), isolate()),
-      false, u8"undefined", Oddball::kTheHole));
+      factory->the_hole_map(), "\x68\x6f\x6c\x65", handle(Smi::FromInt(-1), isolate()),
+      false, "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", Oddball::kTheHole));
 
   set_uninitialized_value(
-      *factory->NewOddball(factory->uninitialized_map(), u8"uninitialized",
+      *factory->NewOddball(factory->uninitialized_map(), "\x75\x6e\x69\x6e\x69\x74\x69\x61\x6c\x69\x7a\x65\x64",
                            handle(Smi::FromInt(-1), isolate()), false,
-                           u8"undefined", Oddball::kUninitialized));
+                           "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", Oddball::kUninitialized));
 
   set_arguments_marker(
-      *factory->NewOddball(factory->arguments_marker_map(), u8"arguments_marker",
+      *factory->NewOddball(factory->arguments_marker_map(), "\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x5f\x6d\x61\x72\x6b\x65\x72",
                            handle(Smi::FromInt(-4), isolate()), false,
-                           u8"undefined", Oddball::kArgumentsMarker));
+                           "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", Oddball::kArgumentsMarker));
 
   set_no_interceptor_result_sentinel(*factory->NewOddball(
       factory->no_interceptor_result_sentinel_map(),
-      u8"no_interceptor_result_sentinel", handle(Smi::FromInt(-2), isolate()),
-      false, u8"undefined", Oddball::kOther));
+      "\x6e\x6f\x5f\x69\x6e\x74\x65\x72\x63\x65\x70\x74\x6f\x72\x5f\x72\x65\x73\x75\x6c\x74\x5f\x73\x65\x6e\x74\x69\x6e\x65\x6c", handle(Smi::FromInt(-2), isolate()),
+      false, "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", Oddball::kOther));
 
   set_termination_exception(*factory->NewOddball(
-      factory->termination_exception_map(), u8"termination_exception",
-      handle(Smi::FromInt(-3), isolate()), false, u8"undefined",
+      factory->termination_exception_map(), "\x74\x65\x72\x6d\x69\x6e\x61\x74\x69\x6f\x6e\x5f\x65\x78\x63\x65\x70\x74\x69\x6f\x6e",
+      handle(Smi::FromInt(-3), isolate()), false, "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64",
       Oddball::kOther));
 
-  set_exception(*factory->NewOddball(factory->exception_map(), u8"exception",
+  set_exception(*factory->NewOddball(factory->exception_map(), "\x65\x78\x63\x65\x70\x74\x69\x6f\x6e",
                                      handle(Smi::FromInt(-5), isolate()), false,
-                                     u8"undefined", Oddball::kException));
+                                     "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", Oddball::kException));
 
   set_optimized_out(
-      *factory->NewOddball(factory->optimized_out_map(), u8"optimized_out",
+      *factory->NewOddball(factory->optimized_out_map(), "\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64\x5f\x6f\x75\x74",
                            handle(Smi::FromInt(-6), isolate()), false,
-                           u8"undefined", Oddball::kOptimizedOut));
+                           "\x75\x6e\x64\x65\x66\x69\x6e\x65\x64", Oddball::kOptimizedOut));
 
   for (unsigned i = 0; i < arraysize(constant_string_table); i++) {
     Handle<String> str =
@@ -3038,7 +3038,7 @@ AllocationResult Heap::AllocateForeign(Address address,
 
 AllocationResult Heap::AllocateByteArray(int length, PretenureFlag pretenure) {
   if (length < 0 || length > ByteArray::kMaxLength) {
-    v8::internal::Heap::FatalProcessOutOfMemory("invalid array length", true);
+    v8::internal::Heap::FatalProcessOutOfMemory("\x69\x6e\x76\x61\x6c\x69\x64\x20\x61\x72\x72\x61\x79\x20\x6c\x65\x6e\x67\x74\x68", true);
   }
   int size = ByteArray::SizeFor(length);
   AllocationSpace space = SelectSpace(pretenure);
@@ -3060,7 +3060,7 @@ AllocationResult Heap::AllocateBytecodeArray(int length,
                                              int parameter_count,
                                              FixedArray* constant_pool) {
   if (length < 0 || length > BytecodeArray::kMaxLength) {
-    v8::internal::Heap::FatalProcessOutOfMemory("invalid array length", true);
+    v8::internal::Heap::FatalProcessOutOfMemory("\x69\x6e\x76\x61\x6c\x69\x64\x20\x61\x72\x72\x61\x79\x20\x6c\x65\x6e\x67\x74\x68", true);
   }
   // Bytecode array is pretenured, so constant pool array should be to.
   DCHECK(!InNewSpace(constant_pool));
@@ -3946,7 +3946,7 @@ AllocationResult Heap::CopyFixedDoubleArrayWithMap(FixedDoubleArray* src,
 AllocationResult Heap::AllocateRawFixedArray(int length,
                                              PretenureFlag pretenure) {
   if (length < 0 || length > FixedArray::kMaxLength) {
-    v8::internal::Heap::FatalProcessOutOfMemory("invalid array length", true);
+    v8::internal::Heap::FatalProcessOutOfMemory("\x69\x6e\x76\x61\x6c\x69\x64\x20\x61\x72\x72\x61\x79\x20\x6c\x65\x6e\x67\x74\x68", true);
   }
   int size = FixedArray::SizeFor(length);
   AllocationSpace space = SelectSpace(pretenure);
@@ -4014,7 +4014,7 @@ AllocationResult Heap::AllocateUninitializedFixedDoubleArray(
 AllocationResult Heap::AllocateRawFixedDoubleArray(int length,
                                                    PretenureFlag pretenure) {
   if (length < 0 || length > FixedDoubleArray::kMaxLength) {
-    v8::internal::Heap::FatalProcessOutOfMemory("invalid array length", true);
+    v8::internal::Heap::FatalProcessOutOfMemory("\x69\x6e\x76\x61\x6c\x69\x64\x20\x61\x72\x72\x61\x79\x20\x6c\x65\x6e\x67\x74\x68", true);
   }
   int size = FixedDoubleArray::SizeFor(length);
   AllocationSpace space = SelectSpace(pretenure);
@@ -4092,7 +4092,7 @@ bool Heap::IsHeapIterable() {
 void Heap::MakeHeapIterable() {
   DCHECK(AllowHeapAllocation::IsAllowed());
   if (!IsHeapIterable()) {
-    CollectAllGarbage(kMakeHeapIterableMask, "Heap::MakeHeapIterable");
+    CollectAllGarbage(kMakeHeapIterableMask, "\x48\x65\x61\x70\x3a\x3a\x4d\x61\x6b\x65\x48\x65\x61\x70\x49\x74\x65\x72\x61\x62\x6c\x65");
   }
   if (mark_compact_collector()->sweeping_in_progress()) {
     mark_compact_collector()->EnsureSweepingCompleted();
@@ -4125,8 +4125,8 @@ double Heap::YoungGenerationMutatorUtilization() {
   double result = ComputeMutatorUtilization(mutator_speed, gc_speed);
   if (FLAG_trace_mutator_utilization) {
     PrintIsolate(isolate(),
-                 "Young generation mutator utilization = %.3f ("
-                 "mutator_speed=%.f, gc_speed=%.f)\n",
+                 "\x59\x6f\x75\x6e\x67\x20\x67\x65\x6e\x65\x72\x61\x74\x69\x6f\x6e\x20\x6d\x75\x74\x61\x74\x6f\x72\x20\x75\x74\x69\x6c\x69\x7a\x61\x74\x69\x6f\x6e\x20\x3d\x20\x25\x2e\x33\x66\x20\x28"
+                 "\x6d\x75\x74\x61\x74\x6f\x72\x5f\x73\x70\x65\x65\x64\x3d\x25\x2e\x66\x2c\x20\x67\x63\x5f\x73\x70\x65\x65\x64\x3d\x25\x2e\x66\x29\xa",
                  result, mutator_speed, gc_speed);
   }
   return result;
@@ -4141,8 +4141,8 @@ double Heap::OldGenerationMutatorUtilization() {
   double result = ComputeMutatorUtilization(mutator_speed, gc_speed);
   if (FLAG_trace_mutator_utilization) {
     PrintIsolate(isolate(),
-                 "Old generation mutator utilization = %.3f ("
-                 "mutator_speed=%.f, gc_speed=%.f)\n",
+                 "\x4f\x6c\x64\x20\x67\x65\x6e\x65\x72\x61\x74\x69\x6f\x6e\x20\x6d\x75\x74\x61\x74\x6f\x72\x20\x75\x74\x69\x6c\x69\x7a\x61\x74\x69\x6f\x6e\x20\x3d\x20\x25\x2e\x33\x66\x20\x28"
+                 "\x6d\x75\x74\x61\x74\x6f\x72\x5f\x73\x70\x65\x65\x64\x3d\x25\x2e\x66\x2c\x20\x67\x63\x5f\x73\x70\x65\x65\x64\x3d\x25\x2e\x66\x29\xa",
                  result, mutator_speed, gc_speed);
   }
   return result;
@@ -4237,7 +4237,7 @@ bool Heap::TryFinalizeIdleIncrementalMarking(double idle_time_in_ms) {
        gc_idle_time_handler_->ShouldDoOverApproximateWeakClosure(
            idle_time_in_ms))) {
     FinalizeIncrementalMarking(
-        "Idle notification: finalize incremental marking");
+        "\x49\x64\x6c\x65\x20\x6e\x6f\x74\x69\x66\x69\x63\x61\x74\x69\x6f\x6e\x3a\x20\x66\x69\x6e\x61\x6c\x69\x7a\x65\x20\x69\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x20\x6d\x61\x72\x6b\x69\x6e\x67");
     return true;
   } else if (incremental_marking()->IsComplete() ||
              (mark_compact_collector()->marking_deque()->IsEmpty() &&
@@ -4245,7 +4245,7 @@ bool Heap::TryFinalizeIdleIncrementalMarking(double idle_time_in_ms) {
                   idle_time_in_ms, size_of_objects,
                   final_incremental_mark_compact_speed_in_bytes_per_ms))) {
     CollectAllGarbage(current_gc_flags_,
-                      "idle notification: finalize incremental marking");
+                      "\x69\x64\x6c\x65\x20\x6e\x6f\x74\x69\x66\x69\x63\x61\x74\x69\x6f\x6e\x3a\x20\x66\x69\x6e\x61\x6c\x69\x7a\x65\x20\x69\x6e\x63\x72\x65\x6d\x65\x6e\x74\x61\x6c\x20\x6d\x61\x72\x6b\x69\x6e\x67");
     return true;
   }
   return false;
@@ -4320,8 +4320,8 @@ bool Heap::PerformIdleTimeAction(GCIdleTimeAction action,
     case DO_FULL_GC: {
       DCHECK(contexts_disposed_ > 0);
       HistogramTimerScope scope(isolate_->counters()->gc_context());
-      TRACE_EVENT0("v8", "V8.GCContext");
-      CollectAllGarbage(kNoGCFlags, "idle notification: contexts disposed");
+      TRACE_EVENT0("\x76\x38", "\x56\x38\x2e\x47\x43\x43\x6f\x6e\x74\x65\x78\x74");
+      CollectAllGarbage(kNoGCFlags, "\x69\x64\x6c\x65\x20\x6e\x6f\x74\x69\x66\x69\x63\x61\x74\x69\x6f\x6e\x3a\x20\x63\x6f\x6e\x74\x65\x78\x74\x73\x20\x64\x69\x73\x70\x6f\x73\x65\x64");
       break;
     }
     case DO_NOTHING:
@@ -4367,20 +4367,20 @@ void Heap::IdleNotificationEpilogue(GCIdleTimeAction action,
 
   if ((FLAG_trace_idle_notification && action.type > DO_NOTHING) ||
       FLAG_trace_idle_notification_verbose) {
-    PrintIsolate(isolate_, "%8.0f ms: ", isolate()->time_millis_since_init());
+    PrintIsolate(isolate_, "\x25\x38\x2e\x30\x66\x20\x6d\x73\x3a\x20", isolate()->time_millis_since_init());
     PrintF(
-        "Idle notification: requested idle time %.2f ms, used idle time %.2f "
-        "ms, deadline usage %.2f ms [",
+        "\x49\x64\x6c\x65\x20\x6e\x6f\x74\x69\x66\x69\x63\x61\x74\x69\x6f\x6e\x3a\x20\x72\x65\x71\x75\x65\x73\x74\x65\x64\x20\x69\x64\x6c\x65\x20\x74\x69\x6d\x65\x20\x25\x2e\x32\x66\x20\x6d\x73\x2c\x20\x75\x73\x65\x64\x20\x69\x64\x6c\x65\x20\x74\x69\x6d\x65\x20\x25\x2e\x32\x66\x20"
+        "\x6d\x73\x2c\x20\x64\x65\x61\x64\x6c\x69\x6e\x65\x20\x75\x73\x61\x67\x65\x20\x25\x2e\x32\x66\x20\x6d\x73\x20\x5b",
         idle_time_in_ms, idle_time_in_ms - deadline_difference,
         deadline_difference);
     action.Print();
-    PrintF("]");
+    PrintF("\x5d");
     if (FLAG_trace_idle_notification_verbose) {
-      PrintF("[");
+      PrintF("\x5b");
       heap_state.Print();
-      PrintF("]");
+      PrintF("\x5d");
     }
-    PrintF("\n");
+    PrintF("\xa");
   }
 }
 
@@ -4406,7 +4406,7 @@ bool Heap::IdleNotification(double deadline_in_seconds) {
       static_cast<double>(base::Time::kMillisecondsPerSecond);
   HistogramTimerScope idle_notification_scope(
       isolate_->counters()->gc_idle_notification());
-  TRACE_EVENT0("v8", "V8.GCIdleNotification");
+  TRACE_EVENT0("\x76\x38", "\x56\x38\x2e\x47\x43\x49\x64\x6c\x65\x4e\x6f\x74\x69\x66\x69\x63\x61\x74\x69\x6f\x6e");
   double start_ms = MonotonicallyIncreasingTimeInMs();
   double idle_time_in_ms = deadline_in_ms - start_ms;
 
@@ -4448,7 +4448,7 @@ class MemoryPressureInterruptTask : public CancelableTask {
 
 void Heap::CheckMemoryPressure() {
   if (memory_pressure_level_.Value() == MemoryPressureLevel::kCritical) {
-    CollectGarbageOnMemoryPressure("memory pressure");
+    CollectGarbageOnMemoryPressure("\x6d\x65\x6d\x6f\x72\x79\x20\x70\x72\x65\x73\x73\x75\x72\x65");
   } else if (memory_pressure_level_.Value() == MemoryPressureLevel::kModerate) {
     if (FLAG_incremental_marking && incremental_marking()->IsStopped()) {
       StartIdleIncrementalMarking();
@@ -4498,7 +4498,7 @@ void Heap::Print() {
 
 
 void Heap::ReportCodeStatistics(const char* title) {
-  PrintF(">>>>>> Code Stats (%s) >>>>>>\n", title);
+  PrintF("\x3e\x3e\x3e\x3e\x3e\x3e\x20\x43\x6f\x64\x65\x20\x53\x74\x61\x74\x73\x20\x28\x25\x73\x29\x20\x3e\x3e\x3e\x3e\x3e\x3e\xa", title);
   PagedSpace::ResetCodeStatistics(isolate());
   // We do not look for code in new space, map space, or old space.  If code
   // somehow ends up in those spaces, we would miss it here.
@@ -4513,29 +4513,29 @@ void Heap::ReportCodeStatistics(const char* title) {
 // just-completed scavenge collection).
 void Heap::ReportHeapStatistics(const char* title) {
   USE(title);
-  PrintF(">>>>>> =============== %s (%d) =============== >>>>>>\n", title,
+  PrintF("\x3e\x3e\x3e\x3e\x3e\x3e\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x20\x25\x73\x20\x28\x25\x64\x29\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x20\x3e\x3e\x3e\x3e\x3e\x3e\xa", title,
          gc_count_);
-  PrintF("old_generation_allocation_limit_ %" V8_PTR_PREFIX "d\n",
+  PrintF("\x6f\x6c\x64\x5f\x67\x65\x6e\x65\x72\x61\x74\x69\x6f\x6e\x5f\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x5f\x6c\x69\x6d\x69\x74\x5f\x20\x25" V8_PTR_PREFIX "\x64\xa",
          old_generation_allocation_limit_);
 
-  PrintF("\n");
-  PrintF("Number of handles : %d\n", HandleScope::NumberOfHandles(isolate_));
+  PrintF("\xa");
+  PrintF("\x4e\x75\x6d\x62\x65\x72\x20\x6f\x66\x20\x68\x61\x6e\x64\x6c\x65\x73\x20\x3a\x20\x25\x64\xa", HandleScope::NumberOfHandles(isolate_));
   isolate_->global_handles()->PrintStats();
-  PrintF("\n");
+  PrintF("\xa");
 
-  PrintF("Heap statistics : ");
+  PrintF("\x48\x65\x61\x70\x20\x73\x74\x61\x74\x69\x73\x74\x69\x63\x73\x20\x3a\x20");
   isolate_->memory_allocator()->ReportStatistics();
-  PrintF("To space : ");
+  PrintF("\x54\x6f\x20\x73\x70\x61\x63\x65\x20\x3a\x20");
   new_space_.ReportStatistics();
-  PrintF("Old space : ");
+  PrintF("\x4f\x6c\x64\x20\x73\x70\x61\x63\x65\x20\x3a\x20");
   old_space_->ReportStatistics();
-  PrintF("Code space : ");
+  PrintF("\x43\x6f\x64\x65\x20\x73\x70\x61\x63\x65\x20\x3a\x20");
   code_space_->ReportStatistics();
-  PrintF("Map space : ");
+  PrintF("\x4d\x61\x70\x20\x73\x70\x61\x63\x65\x20\x3a\x20");
   map_space_->ReportStatistics();
-  PrintF("Large object space : ");
+  PrintF("\x4c\x61\x72\x67\x65\x20\x6f\x62\x6a\x65\x63\x74\x20\x73\x70\x61\x63\x65\x20\x3a\x20");
   lo_space_->ReportStatistics();
-  PrintF(">>>>>> ========================================= >>>>>>\n");
+  PrintF("\x3e\x3e\x3e\x3e\x3e\x3e\x20\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x20\x3e\x3e\x3e\x3e\x3e\x3e\xa");
 }
 
 #endif  // DEBUG
@@ -4980,8 +4980,8 @@ bool Heap::ConfigureHeap(int max_semi_space_size, int max_old_space_size,
       initial_semispace_size_ = max_semi_space_size_;
       if (FLAG_trace_gc) {
         PrintIsolate(isolate_,
-                     "Min semi-space size cannot be more than the maximum "
-                     "semi-space size of %d MB\n",
+                     "\x4d\x69\x6e\x20\x73\x65\x6d\x69\x2d\x73\x70\x61\x63\x65\x20\x73\x69\x7a\x65\x20\x63\x61\x6e\x6e\x6f\x74\x20\x62\x65\x20\x6d\x6f\x72\x65\x20\x74\x68\x61\x6e\x20\x74\x68\x65\x20\x6d\x61\x78\x69\x6d\x75\x6d\x20"
+                     "\x73\x65\x6d\x69\x2d\x73\x70\x61\x63\x65\x20\x73\x69\x7a\x65\x20\x6f\x66\x20\x25\x64\x20\x4d\x42\xa",
                      max_semi_space_size_ / MB);
       }
     } else {
@@ -5093,7 +5093,7 @@ void Heap::RecordStats(HeapStats* stats, bool take_snapshot) {
     if (gc_state() == Heap::NOT_IN_GC) {
       isolate()->PrintStack(&accumulator, Isolate::kPrintStackVerbose);
     } else {
-      accumulator.Add("Cannot get stack trace in GC.");
+      accumulator.Add("\x43\x61\x6e\x6e\x6f\x74\x20\x67\x65\x74\x20\x73\x74\x61\x63\x6b\x20\x74\x72\x61\x63\x65\x20\x69\x6e\x20\x47\x43\x2e");
     }
   }
 }
@@ -5199,8 +5199,8 @@ void Heap::SetOldGenerationAllocationLimit(intptr_t old_gen_size,
 
   if (FLAG_trace_gc_verbose) {
     PrintIsolate(isolate_,
-                 "Heap growing factor %.1f based on mu=%.3f, speed_ratio=%.f "
-                 "(gc=%.f, mutator=%.f)\n",
+                 "\x48\x65\x61\x70\x20\x67\x72\x6f\x77\x69\x6e\x67\x20\x66\x61\x63\x74\x6f\x72\x20\x25\x2e\x31\x66\x20\x62\x61\x73\x65\x64\x20\x6f\x6e\x20\x6d\x75\x3d\x25\x2e\x33\x66\x2c\x20\x73\x70\x65\x65\x64\x5f\x72\x61\x74\x69\x6f\x3d\x25\x2e\x66\x20"
+                 "\x28\x67\x63\x3d\x25\x2e\x66\x2c\x20\x6d\x75\x74\x61\x74\x6f\x72\x3d\x25\x2e\x66\x29\xa",
                  factor, kTargetMutatorUtilization, gc_speed / mutator_speed,
                  gc_speed, mutator_speed);
   }
@@ -5228,8 +5228,8 @@ void Heap::SetOldGenerationAllocationLimit(intptr_t old_gen_size,
       CalculateOldGenerationAllocationLimit(factor, old_gen_size);
 
   if (FLAG_trace_gc_verbose) {
-    PrintIsolate(isolate_, "Grow: old size: %" V8_PTR_PREFIX
-                           "d KB, new limit: %" V8_PTR_PREFIX "d KB (%.1f)\n",
+    PrintIsolate(isolate_, "\x47\x72\x6f\x77\x3a\x20\x6f\x6c\x64\x20\x73\x69\x7a\x65\x3a\x20\x25" V8_PTR_PREFIX
+                           "\x64\x20\x4b\x42\x2c\x20\x6e\x65\x77\x20\x6c\x69\x6d\x69\x74\x3a\x20\x25" V8_PTR_PREFIX "\x64\x20\x4b\x42\x20\x28\x25\x2e\x31\x66\x29\xa",
                  old_gen_size / KB, old_generation_allocation_limit_ / KB,
                  factor);
   }
@@ -5243,10 +5243,10 @@ void Heap::DampenOldGenerationAllocationLimit(intptr_t old_gen_size,
   intptr_t limit = CalculateOldGenerationAllocationLimit(factor, old_gen_size);
   if (limit < old_generation_allocation_limit_) {
     if (FLAG_trace_gc_verbose) {
-      PrintIsolate(isolate_, "Dampen: old size: %" V8_PTR_PREFIX
-                             "d KB, old limit: %" V8_PTR_PREFIX
-                             "d KB, "
-                             "new limit: %" V8_PTR_PREFIX "d KB (%.1f)\n",
+      PrintIsolate(isolate_, "\x44\x61\x6d\x70\x65\x6e\x3a\x20\x6f\x6c\x64\x20\x73\x69\x7a\x65\x3a\x20\x25" V8_PTR_PREFIX
+                             "\x64\x20\x4b\x42\x2c\x20\x6f\x6c\x64\x20\x6c\x69\x6d\x69\x74\x3a\x20\x25" V8_PTR_PREFIX
+                             "\x64\x20\x4b\x42\x2c\x20"
+                             "\x6e\x65\x77\x20\x6c\x69\x6d\x69\x74\x3a\x20\x25" V8_PTR_PREFIX "\x64\x20\x4b\x42\x20\x28\x25\x2e\x31\x66\x29\xa",
                    old_gen_size / KB, old_generation_allocation_limit_ / KB,
                    limit / KB, factor);
     }
@@ -5379,8 +5379,8 @@ bool Heap::SetUp() {
 
   array_buffer_tracker_ = new ArrayBufferTracker(this);
 
-  LOG(isolate_, IntPtrTEvent("heap-capacity", Capacity()));
-  LOG(isolate_, IntPtrTEvent("heap-available", Available()));
+  LOG(isolate_, IntPtrTEvent("\x68\x65\x61\x70\x2d\x63\x61\x70\x61\x63\x69\x74\x79", Capacity()));
+  LOG(isolate_, IntPtrTEvent("\x68\x65\x61\x70\x2d\x61\x76\x61\x69\x6c\x61\x62\x6c\x65", Available()));
 
   store_buffer()->SetUp();
 
@@ -5431,7 +5431,7 @@ void Heap::ClearStackLimits() {
 
 void Heap::PrintAlloctionsHash() {
   uint32_t hash = StringHasher::GetHashCore(raw_allocations_hash_);
-  PrintF("\n### Allocations = %u, hash = 0x%08x\n", allocations_count(), hash);
+  PrintF("\xa\x23\x23\x23\x20\x41\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x73\x20\x3d\x20\x25\x75\x2c\x20\x68\x61\x73\x68\x20\x3d\x20\x30\x78\x25\x30\x38\x78\xa", allocations_count(), hash);
 }
 
 
@@ -5465,34 +5465,34 @@ void Heap::TearDown() {
   UpdateMaximumCommitted();
 
   if (FLAG_print_cumulative_gc_stat) {
-    PrintF("\n");
-    PrintF("gc_count=%d ", gc_count_);
-    PrintF("mark_sweep_count=%d ", ms_count_);
-    PrintF("max_gc_pause=%.1f ", get_max_gc_pause());
-    PrintF("total_gc_time=%.1f ", total_gc_time_ms_);
-    PrintF("min_in_mutator=%.1f ", get_min_in_mutator());
-    PrintF("max_alive_after_gc=%" V8_PTR_PREFIX "d ", get_max_alive_after_gc());
-    PrintF("total_marking_time=%.1f ", tracer()->cumulative_marking_duration());
-    PrintF("total_sweeping_time=%.1f ",
+    PrintF("\xa");
+    PrintF("\x67\x63\x5f\x63\x6f\x75\x6e\x74\x3d\x25\x64\x20", gc_count_);
+    PrintF("\x6d\x61\x72\x6b\x5f\x73\x77\x65\x65\x70\x5f\x63\x6f\x75\x6e\x74\x3d\x25\x64\x20", ms_count_);
+    PrintF("\x6d\x61\x78\x5f\x67\x63\x5f\x70\x61\x75\x73\x65\x3d\x25\x2e\x31\x66\x20", get_max_gc_pause());
+    PrintF("\x74\x6f\x74\x61\x6c\x5f\x67\x63\x5f\x74\x69\x6d\x65\x3d\x25\x2e\x31\x66\x20", total_gc_time_ms_);
+    PrintF("\x6d\x69\x6e\x5f\x69\x6e\x5f\x6d\x75\x74\x61\x74\x6f\x72\x3d\x25\x2e\x31\x66\x20", get_min_in_mutator());
+    PrintF("\x6d\x61\x78\x5f\x61\x6c\x69\x76\x65\x5f\x61\x66\x74\x65\x72\x5f\x67\x63\x3d\x25" V8_PTR_PREFIX "\x64\x20", get_max_alive_after_gc());
+    PrintF("\x74\x6f\x74\x61\x6c\x5f\x6d\x61\x72\x6b\x69\x6e\x67\x5f\x74\x69\x6d\x65\x3d\x25\x2e\x31\x66\x20", tracer()->cumulative_marking_duration());
+    PrintF("\x74\x6f\x74\x61\x6c\x5f\x73\x77\x65\x65\x70\x69\x6e\x67\x5f\x74\x69\x6d\x65\x3d\x25\x2e\x31\x66\x20",
            tracer()->cumulative_sweeping_duration());
-    PrintF("\n\n");
+    PrintF("\xa\xa");
   }
 
   if (FLAG_print_max_heap_committed) {
-    PrintF("\n");
-    PrintF("maximum_committed_by_heap=%" V8_PTR_PREFIX "d ",
+    PrintF("\xa");
+    PrintF("\x6d\x61\x78\x69\x6d\x75\x6d\x5f\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x5f\x62\x79\x5f\x68\x65\x61\x70\x3d\x25" V8_PTR_PREFIX "\x64\x20",
            MaximumCommittedMemory());
-    PrintF("maximum_committed_by_new_space=%" V8_PTR_PREFIX "d ",
+    PrintF("\x6d\x61\x78\x69\x6d\x75\x6d\x5f\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x5f\x62\x79\x5f\x6e\x65\x77\x5f\x73\x70\x61\x63\x65\x3d\x25" V8_PTR_PREFIX "\x64\x20",
            new_space_.MaximumCommittedMemory());
-    PrintF("maximum_committed_by_old_space=%" V8_PTR_PREFIX "d ",
+    PrintF("\x6d\x61\x78\x69\x6d\x75\x6d\x5f\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x5f\x62\x79\x5f\x6f\x6c\x64\x5f\x73\x70\x61\x63\x65\x3d\x25" V8_PTR_PREFIX "\x64\x20",
            old_space_->MaximumCommittedMemory());
-    PrintF("maximum_committed_by_code_space=%" V8_PTR_PREFIX "d ",
+    PrintF("\x6d\x61\x78\x69\x6d\x75\x6d\x5f\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x5f\x62\x79\x5f\x63\x6f\x64\x65\x5f\x73\x70\x61\x63\x65\x3d\x25" V8_PTR_PREFIX "\x64\x20",
            code_space_->MaximumCommittedMemory());
-    PrintF("maximum_committed_by_map_space=%" V8_PTR_PREFIX "d ",
+    PrintF("\x6d\x61\x78\x69\x6d\x75\x6d\x5f\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x5f\x62\x79\x5f\x6d\x61\x70\x5f\x73\x70\x61\x63\x65\x3d\x25" V8_PTR_PREFIX "\x64\x20",
            map_space_->MaximumCommittedMemory());
-    PrintF("maximum_committed_by_lo_space=%" V8_PTR_PREFIX "d ",
+    PrintF("\x6d\x61\x78\x69\x6d\x75\x6d\x5f\x63\x6f\x6d\x6d\x69\x74\x74\x65\x64\x5f\x62\x79\x5f\x6c\x6f\x5f\x73\x70\x61\x63\x65\x3d\x25" V8_PTR_PREFIX "\x64\x20",
            lo_space_->MaximumCommittedMemory());
-    PrintF("\n\n");
+    PrintF("\xa\xa");
   }
 
   if (FLAG_verify_predictable) {
@@ -5698,14 +5698,14 @@ class PrintHandleVisitor : public ObjectVisitor {
  public:
   void VisitPointers(Object** start, Object** end) override {
     for (Object** p = start; p < end; p++)
-      PrintF("  handle %p to %p\n", reinterpret_cast<void*>(p),
+      PrintF("\x20\x20\x68\x61\x6e\x64\x6c\x65\x20\x25\x70\x20\x74\x6f\x20\x25\x70\xa", reinterpret_cast<void*>(p),
              reinterpret_cast<void*>(*p));
   }
 };
 
 
 void Heap::PrintHandles() {
-  PrintF("Handles:\n");
+  PrintF("\x48\x61\x6e\x64\x6c\x65\x73\x3a\xa");
   PrintHandleVisitor v;
   isolate_->handle_scope_implementer()->Iterate(&v);
 }
@@ -6136,16 +6136,16 @@ void PathTracer::UnmarkRecursively(Object** p, UnmarkVisitor* unmark_visitor) {
 void PathTracer::ProcessResults() {
   if (found_target_) {
     OFStream os(stdout);
-    os << "=====================================\n"
-       << "====        Path to object       ====\n"
-       << "=====================================\n\n";
+    os << "\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa"
+       << "\x3d\x3d\x3d\x3d\x20\x20\x20\x20\x20\x20\x20\x20\x50\x61\x74\x68\x20\x74\x6f\x20\x6f\x62\x6a\x65\x63\x74\x20\x20\x20\x20\x20\x20\x20\x3d\x3d\x3d\x3d\xa"
+       << "\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa\xa";
 
     DCHECK(!object_stack_.is_empty());
     for (int i = 0; i < object_stack_.length(); i++) {
-      if (i > 0) os << "\n     |\n     |\n     V\n\n";
+      if (i > 0) os << "\xa\x20\x20\x20\x20\x20\x7c\xa\x20\x20\x20\x20\x20\x7c\xa\x20\x20\x20\x20\x20\x56\xa\xa";
       object_stack_[i]->Print(os);
     }
-    os << "=====================================\n";
+    os << "\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\x3d\xa";
   }
 }
 
@@ -6453,30 +6453,30 @@ bool Heap::GetObjectTypeName(size_t index, const char** object_type,
   switch (static_cast<int>(index)) {
 #define COMPARE_AND_RETURN_NAME(name) \
   case name:                          \
-    *object_type = #name;             \
+    *object_type =  USTR(#name);             \
     *object_sub_type = "";            \
     return true;
     INSTANCE_TYPE_LIST(COMPARE_AND_RETURN_NAME)
 #undef COMPARE_AND_RETURN_NAME
 #define COMPARE_AND_RETURN_NAME(name)                      \
   case ObjectStats::FIRST_CODE_KIND_SUB_TYPE + Code::name: \
-    *object_type = "CODE_TYPE";                            \
-    *object_sub_type = "CODE_KIND/" #name;                 \
+    *object_type = "\x43\x4f\x44\x45\x5f\x54\x59\x50\x45";                            \
+    *object_sub_type = "\x43\x4f\x44\x45\x5f\x4b\x49\x4e\x44\x2f"  USTR(#name);                 \
     return true;
     CODE_KIND_LIST(COMPARE_AND_RETURN_NAME)
 #undef COMPARE_AND_RETURN_NAME
 #define COMPARE_AND_RETURN_NAME(name)                  \
   case ObjectStats::FIRST_FIXED_ARRAY_SUB_TYPE + name: \
-    *object_type = "FIXED_ARRAY_TYPE";                 \
-    *object_sub_type = #name;                          \
+    *object_type = "\x46\x49\x58\x45\x44\x5f\x41\x52\x52\x41\x59\x5f\x54\x59\x50\x45";                 \
+    *object_sub_type =  USTR(#name);                          \
     return true;
     FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(COMPARE_AND_RETURN_NAME)
 #undef COMPARE_AND_RETURN_NAME
 #define COMPARE_AND_RETURN_NAME(name)                                  \
   case ObjectStats::FIRST_CODE_AGE_SUB_TYPE + Code::k##name##CodeAge - \
       Code::kFirstCodeAge:                                             \
-    *object_type = "CODE_TYPE";                                        \
-    *object_sub_type = "CODE_AGE/" #name;                              \
+    *object_type = "\x43\x4f\x44\x45\x5f\x54\x59\x50\x45";                                        \
+    *object_sub_type = "\x43\x4f\x44\x45\x5f\x41\x47\x45\x2f"  USTR(#name);                              \
     return true;
     CODE_AGE_LIST_COMPLETE(COMPARE_AND_RETURN_NAME)
 #undef COMPARE_AND_RETURN_NAME

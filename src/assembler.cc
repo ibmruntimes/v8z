@@ -82,7 +82,7 @@
 #elif V8_TARGET_ARCH_X87
 #include "src/x87/assembler-x87-inl.h"  // NOLINT
 #else
-#error "Unknown architecture."
+#error "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65\x2e"
 #endif
 
 // Include native regexp-macro-assembler.
@@ -106,7 +106,7 @@
 #elif V8_TARGET_ARCH_X87
 #include "src/regexp/x87/regexp-macro-assembler-x87.h"  // NOLINT
 #else  // Unknown architecture.
-#error "Unknown architecture."
+#error "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65\x2e"
 #endif  // Target architecture.
 #endif  // V8_INTERPRETED_REGEXP
 
@@ -160,7 +160,7 @@ double uint32_bias;
 
 static DoubleConstant double_constants;
 
-const char* const RelocInfo::kFillerCommentString = "DEOPTIMIZATION PADDING";
+const char* const RelocInfo::kFillerCommentString = "\x44\x45\x4f\x50\x54\x49\x4d\x49\x5a\x41\x54\x49\x4f\x4e\x20\x50\x41\x44\x44\x49\x4e\x47";
 
 static bool math_exp_data_initialized = false;
 static base::Mutex* math_exp_data_mutex = NULL;
@@ -799,101 +799,101 @@ bool RelocInfo::RequiresRelocation(const CodeDesc& desc) {
 const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
   switch (rmode) {
     case NONE32:
-      return "no reloc 32";
+      return "\x6e\x6f\x20\x72\x65\x6c\x6f\x63\x20\x33\x32";
     case NONE64:
-      return "no reloc 64";
+      return "\x6e\x6f\x20\x72\x65\x6c\x6f\x63\x20\x36\x34";
     case EMBEDDED_OBJECT:
-      return "embedded object";
+      return "\x65\x6d\x62\x65\x64\x64\x65\x64\x20\x6f\x62\x6a\x65\x63\x74";
     case DEBUGGER_STATEMENT:
-      return "debugger statement";
+      return "\x64\x65\x62\x75\x67\x67\x65\x72\x20\x73\x74\x61\x74\x65\x6d\x65\x6e\x74";
     case CODE_TARGET:
-      return "code target";
+      return "\x63\x6f\x64\x65\x20\x74\x61\x72\x67\x65\x74";
     case CODE_TARGET_WITH_ID:
-      return "code target with id";
+      return "\x63\x6f\x64\x65\x20\x74\x61\x72\x67\x65\x74\x20\x77\x69\x74\x68\x20\x69\x64";
     case CELL:
-      return "property cell";
+      return "\x70\x72\x6f\x70\x65\x72\x74\x79\x20\x63\x65\x6c\x6c";
     case RUNTIME_ENTRY:
-      return "runtime entry";
+      return "\x72\x75\x6e\x74\x69\x6d\x65\x20\x65\x6e\x74\x72\x79";
     case COMMENT:
-      return "comment";
+      return "\x63\x6f\x6d\x6d\x65\x6e\x74";
     case POSITION:
-      return "position";
+      return "\x70\x6f\x73\x69\x74\x69\x6f\x6e";
     case STATEMENT_POSITION:
-      return "statement position";
+      return "\x73\x74\x61\x74\x65\x6d\x65\x6e\x74\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e";
     case EXTERNAL_REFERENCE:
-      return "external reference";
+      return "\x65\x78\x74\x65\x72\x6e\x61\x6c\x20\x72\x65\x66\x65\x72\x65\x6e\x63\x65";
     case INTERNAL_REFERENCE:
-      return "internal reference";
+      return "\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x72\x65\x66\x65\x72\x65\x6e\x63\x65";
     case INTERNAL_REFERENCE_ENCODED:
-      return "encoded internal reference";
+      return "\x65\x6e\x63\x6f\x64\x65\x64\x20\x69\x6e\x74\x65\x72\x6e\x61\x6c\x20\x72\x65\x66\x65\x72\x65\x6e\x63\x65";
     case DEOPT_REASON:
-      return "deopt reason";
+      return "\x64\x65\x6f\x70\x74\x20\x72\x65\x61\x73\x6f\x6e";
     case CONST_POOL:
-      return "constant pool";
+      return "\x63\x6f\x6e\x73\x74\x61\x6e\x74\x20\x70\x6f\x6f\x6c";
     case VENEER_POOL:
-      return "veneer pool";
+      return "\x76\x65\x6e\x65\x65\x72\x20\x70\x6f\x6f\x6c";
     case DEBUG_BREAK_SLOT_AT_POSITION:
-      return "debug break slot at position";
+      return "\x64\x65\x62\x75\x67\x20\x62\x72\x65\x61\x6b\x20\x73\x6c\x6f\x74\x20\x61\x74\x20\x70\x6f\x73\x69\x74\x69\x6f\x6e";
     case DEBUG_BREAK_SLOT_AT_RETURN:
-      return "debug break slot at return";
+      return "\x64\x65\x62\x75\x67\x20\x62\x72\x65\x61\x6b\x20\x73\x6c\x6f\x74\x20\x61\x74\x20\x72\x65\x74\x75\x72\x6e";
     case DEBUG_BREAK_SLOT_AT_CALL:
-      return "debug break slot at call";
+      return "\x64\x65\x62\x75\x67\x20\x62\x72\x65\x61\x6b\x20\x73\x6c\x6f\x74\x20\x61\x74\x20\x63\x61\x6c\x6c";
     case DEBUG_BREAK_SLOT_AT_TAIL_CALL:
-      return "debug break slot at tail call";
+      return "\x64\x65\x62\x75\x67\x20\x62\x72\x65\x61\x6b\x20\x73\x6c\x6f\x74\x20\x61\x74\x20\x74\x61\x69\x6c\x20\x63\x61\x6c\x6c";
     case CODE_AGE_SEQUENCE:
-      return "code age sequence";
+      return "\x63\x6f\x64\x65\x20\x61\x67\x65\x20\x73\x65\x71\x75\x65\x6e\x63\x65";
     case GENERATOR_CONTINUATION:
-      return "generator continuation";
+      return "\x67\x65\x6e\x65\x72\x61\x74\x6f\x72\x20\x63\x6f\x6e\x74\x69\x6e\x75\x61\x74\x69\x6f\x6e";
     case WASM_MEMORY_REFERENCE:
-      return "wasm memory reference";
+      return "\x77\x61\x73\x6d\x20\x6d\x65\x6d\x6f\x72\x79\x20\x72\x65\x66\x65\x72\x65\x6e\x63\x65";
     case NUMBER_OF_MODES:
     case PC_JUMP:
       UNREACHABLE();
-      return "number_of_modes";
+      return "\x6e\x75\x6d\x62\x65\x72\x5f\x6f\x66\x5f\x6d\x6f\x64\x65\x73";
   }
-  return "unknown relocation type";
+  return "\x75\x6e\x6b\x6e\x6f\x77\x6e\x20\x72\x65\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x74\x79\x70\x65";
 }
 
 
 void RelocInfo::Print(Isolate* isolate, v8::base::OStream& os) {  // NOLINT
-  os << static_cast<const void*>(pc_) << "  " << RelocModeName(rmode_);
+  os << static_cast<const void*>(pc_) << "\x20\x20" << RelocModeName(rmode_);
   if (IsComment(rmode_)) {
-    os << "  (" << reinterpret_cast<char*>(data_) << ")";
+    os << "\x20\x20\x28" << reinterpret_cast<char*>(data_) << "\x29";
   } else if (rmode_ == DEOPT_REASON) {
-    os << "  (" << Deoptimizer::GetDeoptReason(
-                       static_cast<Deoptimizer::DeoptReason>(data_)) << ")";
+    os << "\x20\x20\x28" << Deoptimizer::GetDeoptReason(
+                       static_cast<Deoptimizer::DeoptReason>(data_)) << "\x29";
   } else if (rmode_ == EMBEDDED_OBJECT) {
-    os << "  (" << Brief(target_object()) << ")";
+    os << "\x20\x20\x28" << Brief(target_object()) << "\x29";
   } else if (rmode_ == EXTERNAL_REFERENCE) {
 #ifndef V8_OS_ZOS
     ExternalReferenceEncoder ref_encoder(isolate);
-    os << " ("
+    os << "\x20\x28"
        << ref_encoder.NameOfAddress(isolate, target_external_reference())
-       << ")  (" << static_cast<const void*>(target_external_reference())
-       << ")";
+       << "\x29\x20\x20\x28" << static_cast<const void*>(target_external_reference())
+       << "\x29";
 #endif
   } else if (IsCodeTarget(rmode_)) {
     Code* code = Code::GetCodeFromTargetAddress(target_address());
-    os << " (" << Code::Kind2String(code->kind()) << ")  ("
-       << static_cast<const void*>(target_address()) << ")";
+    os << "\x20\x28" << Code::Kind2String(code->kind()) << "\x29\x20\x20\x28"
+       << static_cast<const void*>(target_address()) << "\x29";
     if (rmode_ == CODE_TARGET_WITH_ID) {
-      os << " (id=" << static_cast<int>(data_) << ")";
+      os << "\x20\x28\x69\x64\x3d" << static_cast<int>(data_) << "\x29";
     }
   } else if (IsPosition(rmode_)) {
-    os << "  (" << data() << ")";
+    os << "\x20\x20\x28" << data() << "\x29";
   } else if (IsRuntimeEntry(rmode_) &&
              isolate->deoptimizer_data() != NULL) {
     // Depotimization bailouts are stored as runtime entries.
     int id = Deoptimizer::GetDeoptimizationId(
         isolate, target_address(), Deoptimizer::EAGER);
     if (id != Deoptimizer::kNotDeoptimizationEntry) {
-      os << "  (deoptimization bailout " << id << ")";
+      os << "\x20\x20\x28\x64\x65\x6f\x70\x74\x69\x6d\x69\x7a\x61\x74\x69\x6f\x6e\x20\x62\x61\x69\x6c\x6f\x75\x74\x20" << id << "\x29";
     }
   } else if (IsConstPool(rmode_)) {
-    os << " (size " << static_cast<int>(data_) << ")";
+    os << "\x20\x28\x73\x69\x7a\x65\x20" << static_cast<int>(data_) << "\x29";
   }
 
-  os << "\n";
+  os << "\xa";
 }
 #endif  // ENABLE_DISASSEMBLER
 
@@ -1768,7 +1768,7 @@ size_t hash_value(ExternalReference reference) {
 v8::base::OStream& operator<<(v8::base::OStream& os, ExternalReference reference) {
   os << static_cast<const void*>(reference.address());
   const Runtime::Function* fn = Runtime::FunctionForEntry(reference.address());
-  if (fn) os << "<" << fn->name << ".entry>";
+  if (fn) os << "\x3c" << fn->name << "\x2e\x65\x6e\x74\x72\x79\x3e";
   return os;
 }
 

@@ -3337,7 +3337,7 @@ void MacroAssembler::CheckPageFlag(
 void MacroAssembler::JumpIfBlack(Register object, Register scratch0,
                                  Register scratch1, Label* on_black) {
   HasColor(object, scratch0, scratch1, on_black, 1, 1);  // kBlackBitPattern.
-  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
+  DCHECK(strcmp(Marking::kBlackBitPattern, u8"11") == 0);
 }
 
 void MacroAssembler::HasColor(Register object, Register bitmap_scratch,
@@ -3392,10 +3392,10 @@ void MacroAssembler::JumpIfWhite(Register value, Register bitmap_scratch,
   GetMarkBits(value, bitmap_scratch, mask_scratch);
 
   // If the value is black or grey we don't need to do anything.
-  DCHECK(strcmp(Marking::kWhiteBitPattern, "00") == 0);
-  DCHECK(strcmp(Marking::kBlackBitPattern, "11") == 0);
-  DCHECK(strcmp(Marking::kGreyBitPattern, "10") == 0);
-  DCHECK(strcmp(Marking::kImpossibleBitPattern, "01") == 0);
+  DCHECK(strcmp(Marking::kWhiteBitPattern, u8"00") == 0);
+  DCHECK(strcmp(Marking::kBlackBitPattern, u8"11") == 0);
+  DCHECK(strcmp(Marking::kGreyBitPattern, u8"10") == 0);
+  DCHECK(strcmp(Marking::kImpossibleBitPattern, u8"01") == 0);
 
   // Since both black and grey have a 1 in the first position and white does
   // not have a 1 there we only need to check one bit.

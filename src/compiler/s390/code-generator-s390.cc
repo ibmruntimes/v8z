@@ -2048,7 +2048,7 @@ void CodeGenerator::AssembleSwap(InstructionOperand* source,
 
 void CodeGenerator::AssembleJumpTable(Label** targets, size_t target_count) {
   for (size_t index = 0; index < target_count; ++index) {
-    __ emit_label_addr(targets[index]);
+          __ emit_label_addr(targets[index]);
   }
 }
 
