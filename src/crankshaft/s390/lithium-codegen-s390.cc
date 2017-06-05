@@ -39,7 +39,7 @@ class SafepointGenerator final : public CallWrapper {
 #define __ masm()->
 
 bool LCodeGen::GenerateCode() {
-  LPhase phase("Z_Code generation", chunk());
+  LPhase phase("\x5a\x5f\x43\x6f\x64\x65\x20\x67\x65\x6e\x65\x72\x61\x74\x69\x6f\x6e", chunk());
   DCHECK(is_unused());
   status_ = GENERATING;
 
@@ -62,7 +62,7 @@ void LCodeGen::FinishCode(Handle<Code> code) {
 void LCodeGen::SaveCallerDoubles() {
   DCHECK(info()->saves_caller_doubles());
   DCHECK(NeedsEagerFrame());
-  Comment(";;; Save clobbered callee double registers");
+  Comment("\x3b\x3b\x3b\x20\x53\x61\x76\x65\x20\x63\x6c\x6f\x62\x62\x65\x72\x65\x64\x20\x63\x61\x6c\x6c\x65\x65\x20\x64\x6f\x75\x62\x6c\x65\x20\x72\x65\x67\x69\x73\x74\x65\x72\x73");
   int count = 0;
   BitVector* doubles = chunk()->allocated_double_registers();
   BitVector::Iterator save_iterator(doubles);
@@ -77,7 +77,7 @@ void LCodeGen::SaveCallerDoubles() {
 void LCodeGen::RestoreCallerDoubles() {
   DCHECK(info()->saves_caller_doubles());
   DCHECK(NeedsEagerFrame());
-  Comment(";;; Restore clobbered callee double registers");
+  Comment("\x3b\x3b\x3b\x20\x52\x65\x73\x74\x6f\x72\x65\x20\x63\x6c\x6f\x62\x62\x65\x72\x65\x64\x20\x63\x61\x6c\x6c\x65\x65\x20\x64\x6f\x75\x62\x6c\x65\x20\x72\x65\x67\x69\x73\x74\x65\x72\x73");
   BitVector* doubles = chunk()->allocated_double_registers();
   BitVector::Iterator save_iterator(doubles);
   int count = 0;
@@ -146,11 +146,11 @@ bool LCodeGen::GeneratePrologue() {
 }
 
 void LCodeGen::DoPrologue(LPrologue* instr) {
-  Comment(";;; Prologue begin");
+  Comment("\x3b\x3b\x3b\x20\x50\x72\x6f\x6c\x6f\x67\x75\x65\x20\x62\x65\x67\x69\x6e");
 
   // Possibly allocate a local context.
   if (info()->scope()->num_heap_slots() > 0) {
-    Comment(";;; Allocate local context");
+    Comment("\x3b\x3b\x3b\x20\x41\x6c\x6c\x6f\x63\x61\x74\x65\x20\x6c\x6f\x63\x61\x6c\x20\x63\x6f\x6e\x74\x65\x78\x74");
     bool need_write_barrier = true;
     // Argument to NewContext is the function, which is in r3.
     int slots = info()->scope()->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
@@ -200,10 +200,10 @@ void LCodeGen::DoPrologue(LPrologue* instr) {
         }
       }
     }
-    Comment(";;; End allocate local context");
+    Comment("\x3b\x3b\x3b\x20\x45\x6e\x64\x20\x61\x6c\x6c\x6f\x63\x61\x74\x65\x20\x6c\x6f\x63\x61\x6c\x20\x63\x6f\x6e\x74\x65\x78\x74");
   }
 
-  Comment(";;; Prologue end");
+  Comment("\x3b\x3b\x3b\x20\x50\x72\x6f\x6c\x6f\x67\x75\x65\x20\x65\x6e\x64");
 }
 
 void LCodeGen::GenerateOsrPrologue() {
@@ -241,23 +241,23 @@ bool LCodeGen::GenerateDeferredCode() {
           chunk()->graph()->SourcePositionToScriptPosition(value->position()));
 
       Comment(
-          ";;; <@%d,#%d> "
-          "-------------------- Deferred %s --------------------",
+          "\x3b\x3b\x3b\x20\x3c\x40\x25\x64\x2c\x23\x25\x64\x3e\x20"
+          "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x44\x65\x66\x65\x72\x72\x65\x64\x20\x25\x73\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d",
           code->instruction_index(), code->instr()->hydrogen_value()->id(),
           code->instr()->Mnemonic());
       __ bind(code->entry());
       if (NeedsDeferredFrame()) {
-        Comment(";;; Build frame");
+        Comment("\x3b\x3b\x3b\x20\x42\x75\x69\x6c\x64\x20\x66\x72\x61\x6d\x65");
         DCHECK(!frame_is_built_);
         DCHECK(info()->IsStub());
         frame_is_built_ = true;
         __ LoadSmiLiteral(scratch0(), Smi::FromInt(StackFrame::STUB));
         __ PushCommonFrame(scratch0());
-        Comment(";;; Deferred code");
+        Comment("\x3b\x3b\x3b\x20\x44\x65\x66\x65\x72\x72\x65\x64\x20\x63\x6f\x64\x65");
       }
       code->Generate();
       if (NeedsDeferredFrame()) {
-        Comment(";;; Destroy frame");
+        Comment("\x3b\x3b\x3b\x20\x44\x65\x73\x74\x72\x6f\x79\x20\x66\x72\x61\x6d\x65");
         DCHECK(frame_is_built_);
         __ PopCommonFrame(scratch0());
         frame_is_built_ = false;
@@ -285,7 +285,7 @@ bool LCodeGen::GenerateJumpTable() {
   if (jump_table_.length() > 0) {
     Label needs_frame, call_deopt_entry;
 
-    Comment(";;; -------------------- Jump table --------------------");
+    Comment("\x3b\x3b\x3b\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x4a\x75\x6d\x70\x20\x74\x61\x62\x6c\x65\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d");
     Address base = jump_table_[0].address;
 
     Register entry_offset = scratch0();
@@ -306,7 +306,7 @@ bool LCodeGen::GenerateJumpTable() {
 
       if (table_entry->needs_frame) {
         DCHECK(!info()->saves_caller_doubles());
-        Comment(";;; call deopt with frame");
+        Comment("\x3b\x3b\x3b\x20\x63\x61\x6c\x6c\x20\x64\x65\x6f\x70\x74\x20\x77\x69\x74\x68\x20\x66\x72\x61\x6d\x65");
         __ PushCommonFrame();
         __ b(r14, &needs_frame);
       } else {
@@ -327,7 +327,7 @@ bool LCodeGen::GenerateJumpTable() {
       DCHECK(info()->IsStub());
     }
 
-    Comment(";;; call deopt");
+    Comment("\x3b\x3b\x3b\x20\x63\x61\x6c\x6c\x20\x64\x65\x6f\x70\x74");
     __ bind(&call_deopt_entry);
 
     if (info()->saves_caller_doubles()) {
@@ -743,7 +743,7 @@ void LCodeGen::DeoptimizeIf(Condition cond, LInstruction* instr,
   }
 
   if (info()->ShouldTrapOnDeopt()) {
-    __ stop("trap_on_deopt", cond, kDefaultStopCode, cr);
+    __ stop("\x74\x72\x61\x70\x5f\x6f\x6e\x5f\x64\x65\x6f\x70\x74", cond, kDefaultStopCode, cr);
   }
 
   Deoptimizer::DeoptInfo deopt_info = MakeDeoptInfo(instr, deopt_reason);
@@ -827,13 +827,13 @@ void LCodeGen::RecordAndWritePosition(int position) {
 }
 
 static const char* LabelType(LLabel* label) {
-  if (label->is_loop_header()) return " (loop header)";
-  if (label->is_osr_entry()) return " (OSR entry)";
+  if (label->is_loop_header()) return "\x20\x28\x6c\x6f\x6f\x70\x20\x68\x65\x61\x64\x65\x72\x29";
+  if (label->is_osr_entry()) return "\x20\x28\x4f\x53\x52\x20\x65\x6e\x74\x72\x79\x29";
   return "";
 }
 
 void LCodeGen::DoLabel(LLabel* label) {
-  Comment(";;; <@%d,#%d> -------------------- B%d%s --------------------",
+  Comment("\x3b\x3b\x3b\x20\x3c\x40\x25\x64\x2c\x23\x25\x64\x3e\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x42\x25\x64\x25\x73\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d",
           current_instruction_, label->hydrogen_value()->id(),
           label->block_id(), LabelType(label));
   __ bind(label->label());
@@ -2053,7 +2053,7 @@ void LCodeGen::EmitFalseBranch(InstrType instr, Condition cond) {
   __ b(cond, chunk_->GetAssemblyLabel(false_block));
 }
 
-void LCodeGen::DoDebugBreak(LDebugBreak* instr) { __ stop("LBreak"); }
+void LCodeGen::DoDebugBreak(LDebugBreak* instr) { __ stop("\x4c\x42\x72\x65\x61\x6b"); }
 
 void LCodeGen::DoBranch(LBranch* instr) {
   Representation r = instr->hydrogen()->value()->representation();
@@ -3728,9 +3728,9 @@ void LCodeGen::PrepareForTailCall(const ParameterCount& actual,
 #endif
   if (FLAG_code_comments) {
     if (actual.is_reg()) {
-      Comment(";;; PrepareForTailCall, actual: %s {", actual.reg().ToString());
+      Comment("\x3b\x3b\x3b\x20\x50\x72\x65\x70\x61\x72\x65\x46\x6f\x72\x54\x61\x69\x6c\x43\x61\x6c\x6c\x2c\x20\x61\x63\x74\x75\x61\x6c\x3a\x20\x25\x73\x20\x7b", actual.reg().ToString());
     } else {
-      Comment(";;; PrepareForTailCall, actual: %d {", actual.immediate());
+      Comment("\x3b\x3b\x3b\x20\x50\x72\x65\x70\x61\x72\x65\x46\x6f\x72\x54\x61\x69\x6c\x43\x61\x6c\x6c\x2c\x20\x61\x63\x74\x75\x61\x6c\x3a\x20\x25\x64\x20\x7b", actual.immediate());
     }
   }
 
@@ -3757,7 +3757,7 @@ void LCodeGen::PrepareForTailCall(const ParameterCount& actual,
   __ bind(&formal_parameter_count_loaded);
   __ PrepareForTailCall(actual, caller_args_count_reg, scratch2, scratch3);
 
-  Comment(";;; }");
+  Comment("\x3b\x3b\x3b\x20\x7d");
 }
 
 void LCodeGen::DoInvokeFunction(LInvokeFunction* instr) {
@@ -4049,7 +4049,7 @@ void LCodeGen::DoBoundsCheck(LBoundsCheck* instr) {
   if (FLAG_debug_code && instr->hydrogen()->skip_check()) {
     Label done;
     __ b(NegateCondition(cc), &done, Label::kNear);
-    __ stop("eliminated bounds check failed");
+    __ stop("\x65\x6c\x69\x6d\x69\x6e\x61\x74\x65\x64\x20\x62\x6f\x75\x6e\x64\x73\x20\x63\x68\x65\x63\x6b\x20\x66\x61\x69\x6c\x65\x64");
     __ bind(&done);
   } else {
     DeoptimizeIf(cc, instr, Deoptimizer::kOutOfBounds);
@@ -5312,7 +5312,7 @@ void LCodeGen::DoDeferredAllocate(LAllocate* instr) {
 #if !V8_TARGET_ARCH_S390X
     } else {
       // We should never get here at runtime => abort
-      __ stop("invalid allocation size");
+      __ stop("\x69\x6e\x76\x61\x6c\x69\x64\x20\x61\x6c\x6c\x6f\x63\x61\x74\x69\x6f\x6e\x20\x73\x69\x7a\x65");
       return;
     }
 #endif

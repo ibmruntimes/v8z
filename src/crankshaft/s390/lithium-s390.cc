@@ -40,29 +40,29 @@ void LInstruction::VerifyCall() {
 #endif
 
 void LInstruction::PrintTo(StringStream* stream) {
-  stream->Add("%s ", this->Mnemonic());
+  stream->Add("\x25\x73\x20", this->Mnemonic());
 
   PrintOutputOperandTo(stream);
 
   PrintDataTo(stream);
 
   if (HasEnvironment()) {
-    stream->Add(" ");
+    stream->Add("\x20");
     environment()->PrintTo(stream);
   }
 
   if (HasPointerMap()) {
-    stream->Add(" ");
+    stream->Add("\x20");
     pointer_map()->PrintTo(stream);
   }
 }
 
 void LInstruction::PrintDataTo(StringStream* stream) {
-  stream->Add("= ");
+  stream->Add("\x3d\x20");
   for (int i = 0; i < InputCount(); i++) {
-    if (i > 0) stream->Add(" ");
+    if (i > 0) stream->Add("\x20");
     if (InputAt(i) == NULL) {
-      stream->Add("NULL");
+      stream->Add("\x4e\x55\x4c\x4c");
     } else {
       InputAt(i)->PrintTo(stream);
     }
@@ -77,7 +77,7 @@ void LLabel::PrintDataTo(StringStream* stream) {
   LGap::PrintDataTo(stream);
   LLabel* rep = replacement();
   if (rep != NULL) {
-    stream->Add(" Dead block replaced with B%d", rep->block_id());
+    stream->Add("\x20\x44\x65\x61\x64\x20\x62\x6c\x6f\x63\x6b\x20\x72\x65\x70\x6c\x61\x63\x65\x64\x20\x77\x69\x74\x68\x20\x42\x25\x64", rep->block_id());
   }
 }
 
@@ -93,26 +93,26 @@ bool LGap::IsRedundant() const {
 
 void LGap::PrintDataTo(StringStream* stream) {
   for (int i = 0; i < 4; i++) {
-    stream->Add("(");
+    stream->Add("\x28");
     if (parallel_moves_[i] != NULL) {
       parallel_moves_[i]->PrintDataTo(stream);
     }
-    stream->Add(") ");
+    stream->Add("\x29\x20");
   }
 }
 
 const char* LArithmeticD::Mnemonic() const {
   switch (op()) {
     case Token::ADD:
-      return "add-d";
+      return "\x61\x64\x64\x2d\x64";
     case Token::SUB:
-      return "sub-d";
+      return "\x73\x75\x62\x2d\x64";
     case Token::MUL:
-      return "mul-d";
+      return "\x6d\x75\x6c\x2d\x64";
     case Token::DIV:
-      return "div-d";
+      return "\x64\x69\x76\x2d\x64";
     case Token::MOD:
-      return "mod-d";
+      return "\x6d\x6f\x64\x2d\x64";
     default:
       UNREACHABLE();
       return NULL;
@@ -122,29 +122,29 @@ const char* LArithmeticD::Mnemonic() const {
 const char* LArithmeticT::Mnemonic() const {
   switch (op()) {
     case Token::ADD:
-      return "add-t";
+      return "\x61\x64\x64\x2d\x74";
     case Token::SUB:
-      return "sub-t";
+      return "\x73\x75\x62\x2d\x74";
     case Token::MUL:
-      return "mul-t";
+      return "\x6d\x75\x6c\x2d\x74";
     case Token::MOD:
-      return "mod-t";
+      return "\x6d\x6f\x64\x2d\x74";
     case Token::DIV:
-      return "div-t";
+      return "\x64\x69\x76\x2d\x74";
     case Token::BIT_AND:
-      return "bit-and-t";
+      return "\x62\x69\x74\x2d\x61\x6e\x64\x2d\x74";
     case Token::BIT_OR:
-      return "bit-or-t";
+      return "\x62\x69\x74\x2d\x6f\x72\x2d\x74";
     case Token::BIT_XOR:
-      return "bit-xor-t";
+      return "\x62\x69\x74\x2d\x78\x6f\x72\x2d\x74";
     case Token::ROR:
-      return "ror-t";
+      return "\x72\x6f\x72\x2d\x74";
     case Token::SHL:
-      return "shl-t";
+      return "\x73\x68\x6c\x2d\x74";
     case Token::SAR:
-      return "sar-t";
+      return "\x73\x61\x72\x2d\x74";
     case Token::SHR:
-      return "shr-t";
+      return "\x73\x68\x72\x2d\x74";
     default:
       UNREACHABLE();
       return NULL;
@@ -156,170 +156,170 @@ bool LGoto::HasInterestingComment(LCodeGen* gen) const {
 }
 
 void LGoto::PrintDataTo(StringStream* stream) {
-  stream->Add("B%d", block_id());
+  stream->Add("\x42\x25\x64", block_id());
 }
 
 void LBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("B%d | B%d on ", true_block_id(), false_block_id());
+  stream->Add("\x42\x25\x64\x20\x7c\x20\x42\x25\x64\x20\x6f\x6e\x20", true_block_id(), false_block_id());
   value()->PrintTo(stream);
 }
 
 void LCompareNumericAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if ");
+  stream->Add("\x69\x66\x20");
   left()->PrintTo(stream);
-  stream->Add(" %s ", Token::String(op()));
+  stream->Add("\x20\x25\x73\x20", Token::String(op()));
   right()->PrintTo(stream);
-  stream->Add(" then B%d else B%d", true_block_id(), false_block_id());
+  stream->Add("\x20\x74\x68\x65\x6e\x20\x42\x25\x64\x20\x65\x6c\x73\x65\x20\x42\x25\x64", true_block_id(), false_block_id());
 }
 
 void LIsStringAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if is_string(");
+  stream->Add("\x69\x66\x20\x69\x73\x5f\x73\x74\x72\x69\x6e\x67\x28");
   value()->PrintTo(stream);
-  stream->Add(") then B%d else B%d", true_block_id(), false_block_id());
+  stream->Add("\x29\x20\x74\x68\x65\x6e\x20\x42\x25\x64\x20\x65\x6c\x73\x65\x20\x42\x25\x64", true_block_id(), false_block_id());
 }
 
 void LIsSmiAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if is_smi(");
+  stream->Add("\x69\x66\x20\x69\x73\x5f\x73\x6d\x69\x28");
   value()->PrintTo(stream);
-  stream->Add(") then B%d else B%d", true_block_id(), false_block_id());
+  stream->Add("\x29\x20\x74\x68\x65\x6e\x20\x42\x25\x64\x20\x65\x6c\x73\x65\x20\x42\x25\x64", true_block_id(), false_block_id());
 }
 
 void LIsUndetectableAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if is_undetectable(");
+  stream->Add("\x69\x66\x20\x69\x73\x5f\x75\x6e\x64\x65\x74\x65\x63\x74\x61\x62\x6c\x65\x28");
   value()->PrintTo(stream);
-  stream->Add(") then B%d else B%d", true_block_id(), false_block_id());
+  stream->Add("\x29\x20\x74\x68\x65\x6e\x20\x42\x25\x64\x20\x65\x6c\x73\x65\x20\x42\x25\x64", true_block_id(), false_block_id());
 }
 
 void LStringCompareAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if string_compare(");
+  stream->Add("\x69\x66\x20\x73\x74\x72\x69\x6e\x67\x5f\x63\x6f\x6d\x70\x61\x72\x65\x28");
   left()->PrintTo(stream);
   right()->PrintTo(stream);
-  stream->Add(") then B%d else B%d", true_block_id(), false_block_id());
+  stream->Add("\x29\x20\x74\x68\x65\x6e\x20\x42\x25\x64\x20\x65\x6c\x73\x65\x20\x42\x25\x64", true_block_id(), false_block_id());
 }
 
 void LHasInstanceTypeAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if has_instance_type(");
+  stream->Add("\x69\x66\x20\x68\x61\x73\x5f\x69\x6e\x73\x74\x61\x6e\x63\x65\x5f\x74\x79\x70\x65\x28");
   value()->PrintTo(stream);
-  stream->Add(") then B%d else B%d", true_block_id(), false_block_id());
+  stream->Add("\x29\x20\x74\x68\x65\x6e\x20\x42\x25\x64\x20\x65\x6c\x73\x65\x20\x42\x25\x64", true_block_id(), false_block_id());
 }
 
 void LHasCachedArrayIndexAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if has_cached_array_index(");
+  stream->Add("\x69\x66\x20\x68\x61\x73\x5f\x63\x61\x63\x68\x65\x64\x5f\x61\x72\x72\x61\x79\x5f\x69\x6e\x64\x65\x78\x28");
   value()->PrintTo(stream);
-  stream->Add(") then B%d else B%d", true_block_id(), false_block_id());
+  stream->Add("\x29\x20\x74\x68\x65\x6e\x20\x42\x25\x64\x20\x65\x6c\x73\x65\x20\x42\x25\x64", true_block_id(), false_block_id());
 }
 
 void LClassOfTestAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if class_of_test(");
+  stream->Add("\x69\x66\x20\x63\x6c\x61\x73\x73\x5f\x6f\x66\x5f\x74\x65\x73\x74\x28");
   value()->PrintTo(stream);
-  stream->Add(", \"%o\") then B%d else B%d", *hydrogen()->class_name(),
+  stream->Add("\x2c\x20\x22\x25\x6f\x22\x29\x20\x74\x68\x65\x6e\x20\x42\x25\x64\x20\x65\x6c\x73\x65\x20\x42\x25\x64", *hydrogen()->class_name(),
               true_block_id(), false_block_id());
 }
 
 void LTypeofIsAndBranch::PrintDataTo(StringStream* stream) {
-  stream->Add("if typeof ");
+  stream->Add("\x69\x66\x20\x74\x79\x70\x65\x6f\x66\x20");
   value()->PrintTo(stream);
-  stream->Add(" == \"%s\" then B%d else B%d",
+  stream->Add("\x20\x3d\x3d\x20\x22\x25\x73\x22\x20\x74\x68\x65\x6e\x20\x42\x25\x64\x20\x65\x6c\x73\x65\x20\x42\x25\x64",
               hydrogen()->type_literal()->ToCString().get(), true_block_id(),
               false_block_id());
 }
 
 void LStoreCodeEntry::PrintDataTo(StringStream* stream) {
-  stream->Add(" = ");
+  stream->Add("\x20\x3d\x20");
   function()->PrintTo(stream);
-  stream->Add(".code_entry = ");
+  stream->Add("\x2e\x63\x6f\x64\x65\x5f\x65\x6e\x74\x72\x79\x20\x3d\x20");
   code_object()->PrintTo(stream);
 }
 
 void LInnerAllocatedObject::PrintDataTo(StringStream* stream) {
-  stream->Add(" = ");
+  stream->Add("\x20\x3d\x20");
   base_object()->PrintTo(stream);
-  stream->Add(" + ");
+  stream->Add("\x20\x2b\x20");
   offset()->PrintTo(stream);
 }
 
 void LCallWithDescriptor::PrintDataTo(StringStream* stream) {
   for (int i = 0; i < InputCount(); i++) {
     InputAt(i)->PrintTo(stream);
-    stream->Add(" ");
+    stream->Add("\x20");
   }
-  stream->Add("#%d / ", arity());
+  stream->Add("\x23\x25\x64\x20\x2f\x20", arity());
 }
 
 void LLoadContextSlot::PrintDataTo(StringStream* stream) {
   context()->PrintTo(stream);
-  stream->Add("[%d]", slot_index());
+  stream->Add("\x5b\x25\x64\x5d", slot_index());
 }
 
 void LStoreContextSlot::PrintDataTo(StringStream* stream) {
   context()->PrintTo(stream);
-  stream->Add("[%d] <- ", slot_index());
+  stream->Add("\x5b\x25\x64\x5d\x20\x3c\x2d\x20", slot_index());
   value()->PrintTo(stream);
 }
 
 void LInvokeFunction::PrintDataTo(StringStream* stream) {
-  stream->Add("= ");
+  stream->Add("\x3d\x20");
   function()->PrintTo(stream);
-  stream->Add(" #%d / ", arity());
+  stream->Add("\x20\x23\x25\x64\x20\x2f\x20", arity());
 }
 
 void LCallNewArray::PrintDataTo(StringStream* stream) {
-  stream->Add("= ");
+  stream->Add("\x3d\x20");
   constructor()->PrintTo(stream);
-  stream->Add(" #%d / ", arity());
+  stream->Add("\x20\x23\x25\x64\x20\x2f\x20", arity());
   ElementsKind kind = hydrogen()->elements_kind();
-  stream->Add(" (%s) ", ElementsKindToString(kind));
+  stream->Add("\x20\x28\x25\x73\x29\x20", ElementsKindToString(kind));
 }
 
 void LAccessArgumentsAt::PrintDataTo(StringStream* stream) {
   arguments()->PrintTo(stream);
-  stream->Add(" length ");
+  stream->Add("\x20\x6c\x65\x6e\x67\x74\x68\x20");
   length()->PrintTo(stream);
-  stream->Add(" index ");
+  stream->Add("\x20\x69\x6e\x64\x65\x78\x20");
   index()->PrintTo(stream);
 }
 
 void LStoreNamedField::PrintDataTo(StringStream* stream) {
   object()->PrintTo(stream);
   v8::base::OStringStream os;
-  os << hydrogen()->access() << " <- ";
+  os << hydrogen()->access() << "\x20\x3c\x2d\x20";
   stream->Add(os.str().c_str());
   value()->PrintTo(stream);
 }
 
 void LStoreNamedGeneric::PrintDataTo(StringStream* stream) {
   object()->PrintTo(stream);
-  stream->Add(".");
+  stream->Add("\x2e");
   stream->Add(String::cast(*name())->ToCString().get());
-  stream->Add(" <- ");
+  stream->Add("\x20\x3c\x2d\x20");
   value()->PrintTo(stream);
 }
 
 void LLoadKeyed::PrintDataTo(StringStream* stream) {
   elements()->PrintTo(stream);
-  stream->Add("[");
+  stream->Add("\x5b");
   key()->PrintTo(stream);
   if (hydrogen()->IsDehoisted()) {
-    stream->Add(" + %d]", base_offset());
+    stream->Add("\x20\x2b\x20\x25\x64\x5d", base_offset());
   } else {
-    stream->Add("]");
+    stream->Add("\x5d");
   }
 }
 
 void LStoreKeyed::PrintDataTo(StringStream* stream) {
   elements()->PrintTo(stream);
-  stream->Add("[");
+  stream->Add("\x5b");
   key()->PrintTo(stream);
   if (hydrogen()->IsDehoisted()) {
-    stream->Add(" + %d] <-", base_offset());
+    stream->Add("\x20\x2b\x20\x25\x64\x5d\x20\x3c\x2d", base_offset());
   } else {
-    stream->Add("] <- ");
+    stream->Add("\x5d\x20\x3c\x2d\x20");
   }
 
   if (value() == NULL) {
     DCHECK(hydrogen()->IsConstantHoleStore() &&
            hydrogen()->value()->representation().IsDouble());
-    stream->Add("<the hole(nan)>");
+    stream->Add("\x3c\x74\x68\x65\x20\x68\x6f\x6c\x65\x28\x6e\x61\x6e\x29\x3e");
   } else {
     value()->PrintTo(stream);
   }
@@ -327,15 +327,15 @@ void LStoreKeyed::PrintDataTo(StringStream* stream) {
 
 void LStoreKeyedGeneric::PrintDataTo(StringStream* stream) {
   object()->PrintTo(stream);
-  stream->Add("[");
+  stream->Add("\x5b");
   key()->PrintTo(stream);
-  stream->Add("] <- ");
+  stream->Add("\x5d\x20\x3c\x2d\x20");
   value()->PrintTo(stream);
 }
 
 void LTransitionElementsKind::PrintDataTo(StringStream* stream) {
   object()->PrintTo(stream);
-  stream->Add(" %p -> %p", *original_map(), *transitioned_map());
+  stream->Add("\x20\x25\x70\x20\x2d\x3e\x20\x25\x70", *original_map(), *transitioned_map());
 }
 
 int LPlatformChunk::GetNextSpillIndex(RegisterKind kind) {
@@ -357,7 +357,7 @@ LOperand* LPlatformChunk::GetNextSpillSlot(RegisterKind kind) {
 LPlatformChunk* LChunkBuilder::Build() {
   DCHECK(is_unused());
   chunk_ = new (zone()) LPlatformChunk(info(), graph());
-  LPhase phase("L_Building chunk", chunk_);
+  LPhase phase("\x4c\x5f\x42\x75\x69\x6c\x64\x69\x6e\x67\x20\x63\x68\x75\x6e\x6b", chunk_);
   status_ = BUILDING;
 
   // If compiling for OSR, reserve space for the unoptimized frame,

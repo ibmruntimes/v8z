@@ -22,7 +22,7 @@ namespace internal {
 
 
 RUNTIME_FUNCTION(UnexpectedStubMiss) {
-  FATAL(u8"Unexpected deopt of a stub");
+  FATAL("\x55\x6e\x65\x78\x70\x65\x63\x74\x65\x64\x20\x64\x65\x6f\x70\x74\x20\x6f\x66\x20\x61\x20\x73\x74\x75\x62");
   return Smi::FromInt(0);
 }
 
@@ -170,7 +170,7 @@ Handle<Code> CodeStub::GetCode() {
       v8::base::OStringStream name;
       name << *this;
       new_object->Disassemble(name.str().c_str(), os);
-      os << u8"\n";
+      os << "\xa";
     }
 #endif
 
@@ -198,11 +198,11 @@ Handle<Code> CodeStub::GetCode() {
 #pragma convert("ISO8859-1")
 const char* CodeStub::MajorName(CodeStub::Major major_key) {
   switch (major_key) {
-#define DEF_CASE(name) case name: return #name "Stub";
+#define DEF_CASE(name) case name: return  USTR(#name) "\x53\x74\x75\x62";
     CODE_STUB_LIST(DEF_CASE)
 #undef DEF_CASE
     case NoCache:
-      return u8"<NoCache>Stub";
+      return "\x3c\x4e\x6f\x43\x61\x63\x68\x65\x3e\x53\x74\x75\x62";
     case NUMBER_OF_IDS:
       UNREACHABLE();
       return NULL;
@@ -326,17 +326,17 @@ void BinaryOpICWithAllocationSiteStub::GenerateAheadOfTime(
 v8::base::OStream& operator<<(v8::base::OStream& os, const StringAddFlags& flags) {
   switch (flags) {
     case STRING_ADD_CHECK_NONE:
-      return os << u8"CheckNone";
+      return os << "\x43\x68\x65\x63\x6b\x4e\x6f\x6e\x65";
     case STRING_ADD_CHECK_LEFT:
-      return os << u8"CheckLeft";
+      return os << "\x43\x68\x65\x63\x6b\x4c\x65\x66\x74";
     case STRING_ADD_CHECK_RIGHT:
-      return os << u8"CheckRight";
+      return os << "\x43\x68\x65\x63\x6b\x52\x69\x67\x68\x74";
     case STRING_ADD_CHECK_BOTH:
-      return os << u8"CheckBoth";
+      return os << "\x43\x68\x65\x63\x6b\x42\x6f\x74\x68";
     case STRING_ADD_CONVERT_LEFT:
-      return os << u8"ConvertLeft";
+      return os << "\x43\x6f\x6e\x76\x65\x72\x74\x4c\x65\x66\x74";
     case STRING_ADD_CONVERT_RIGHT:
-      return os << u8"ConvertRight";
+      return os << "\x43\x6f\x6e\x76\x65\x72\x74\x52\x69\x67\x68\x74";
     case STRING_ADD_CONVERT:
       break;
   }
@@ -346,7 +346,7 @@ v8::base::OStream& operator<<(v8::base::OStream& os, const StringAddFlags& flags
 
 
 void StringAddStub::PrintBaseName(v8::base::OStream& os) const {  // NOLINT
-  os << u8"StringAddStub_" << flags() << u8"_" << pretenure_flag();
+  os << "\x53\x74\x72\x69\x6e\x67\x41\x64\x64\x53\x74\x75\x62\x5f" << flags() << "\x5f" << pretenure_flag();
 }
 
 
@@ -3085,9 +3085,9 @@ void HydrogenCodeStub::TraceTransition(StateType from, StateType to) {
   DCHECK(from != to);
   if (!FLAG_trace_ic) return;
   OFStream os(stdout);
-  os << u8"[";
+  os << "\x5b";
   PrintBaseName(os);
-  os << u8": " << from << u8"=>" << to << u8"]" << std::endl;
+  os << "\x3a\x20" << from << "\x3d\x3e" << to << "\x5d" << std::endl;
 }
 
 
@@ -3100,7 +3100,7 @@ class SimpleListPrinter {
     if (first_) {
       first_ = false;
     } else {
-      os_ << u8",";
+      os_ << "\x2c";
     }
     os_ << s;
   }
@@ -3351,19 +3351,19 @@ void StoreFastElementStub::GenerateAheadOfTime(Isolate* isolate) {
 
 
 void ArrayConstructorStub::PrintName(v8::base::OStream& os) const {  // NOLINT
-  os << u8"ArrayConstructorStub";
+  os << "\x41\x72\x72\x61\x79\x43\x6f\x6e\x73\x74\x72\x75\x63\x74\x6f\x72\x53\x74\x75\x62";
   switch (argument_count()) {
     case ANY:
-      os << u8"_Any";
+      os << "\x5f\x41\x6e\x79";
       break;
     case NONE:
-      os << u8"_None";
+      os << "\x5f\x4e\x6f\x6e\x65";
       break;
     case ONE:
-      os << u8"_One";
+      os << "\x5f\x4f\x6e\x65";
       break;
     case MORE_THAN_ONE:
-      os << u8"_More_Than_One";
+      os << "\x5f\x4d\x6f\x72\x65\x5f\x54\x68\x61\x6e\x5f\x4f\x6e\x65";
       break;
   }
   return;
@@ -3373,9 +3373,9 @@ void ArrayConstructorStub::PrintName(v8::base::OStream& os) const {  // NOLINT
 v8::base::OStream& ArrayConstructorStubBase::BasePrintName(
     v8::base::OStream& os,  // NOLINT
     const char* name) const {
-  os << name << u8"_" << ElementsKindToString(elements_kind());
+  os << name << "\x5f" << ElementsKindToString(elements_kind());
   if (override_mode() == DISABLE_ALLOCATION_SITES) {
-    os << u8"_DISABLE_ALLOCATION_SITES";
+    os << "\x5f\x44\x49\x53\x41\x42\x4c\x45\x5f\x41\x4c\x4c\x4f\x43\x41\x54\x49\x4f\x4e\x5f\x53\x49\x54\x45\x53";
   }
   return os;
 }
@@ -3394,19 +3394,19 @@ void ToBooleanICStub::PrintState(v8::base::OStream& os) const {  // NOLINT
 }
 
 v8::base::OStream& operator<<(v8::base::OStream& os, const ToBooleanICStub::Types& s) {
-  os << u8"(";
+  os << "\x28";
   SimpleListPrinter p(os);
-  if (s.IsEmpty()) p.Add(u8"None");
-  if (s.Contains(ToBooleanICStub::UNDEFINED)) p.Add(u8"Undefined");
-  if (s.Contains(ToBooleanICStub::BOOLEAN)) p.Add(u8"Bool");
-  if (s.Contains(ToBooleanICStub::NULL_TYPE)) p.Add(u8"Null");
-  if (s.Contains(ToBooleanICStub::SMI)) p.Add(u8"Smi");
-  if (s.Contains(ToBooleanICStub::SPEC_OBJECT)) p.Add(u8"SpecObject");
-  if (s.Contains(ToBooleanICStub::STRING)) p.Add(u8"String");
-  if (s.Contains(ToBooleanICStub::SYMBOL)) p.Add(u8"Symbol");
-  if (s.Contains(ToBooleanICStub::HEAP_NUMBER)) p.Add(u8"HeapNumber");
-  if (s.Contains(ToBooleanICStub::SIMD_VALUE)) p.Add(u8"SimdValue");
-  return os << u8")";
+  if (s.IsEmpty()) p.Add("\x4e\x6f\x6e\x65");
+  if (s.Contains(ToBooleanICStub::UNDEFINED)) p.Add("\x55\x6e\x64\x65\x66\x69\x6e\x65\x64");
+  if (s.Contains(ToBooleanICStub::BOOLEAN)) p.Add("\x42\x6f\x6f\x6c");
+  if (s.Contains(ToBooleanICStub::NULL_TYPE)) p.Add("\x4e\x75\x6c\x6c");
+  if (s.Contains(ToBooleanICStub::SMI)) p.Add("\x53\x6d\x69");
+  if (s.Contains(ToBooleanICStub::SPEC_OBJECT)) p.Add("\x53\x70\x65\x63\x4f\x62\x6a\x65\x63\x74");
+  if (s.Contains(ToBooleanICStub::STRING)) p.Add("\x53\x74\x72\x69\x6e\x67");
+  if (s.Contains(ToBooleanICStub::SYMBOL)) p.Add("\x53\x79\x6d\x62\x6f\x6c");
+  if (s.Contains(ToBooleanICStub::HEAP_NUMBER)) p.Add("\x48\x65\x61\x70\x4e\x75\x6d\x62\x65\x72");
+  if (s.Contains(ToBooleanICStub::SIMD_VALUE)) p.Add("\x53\x69\x6d\x64\x56\x61\x6c\x75\x65");
+  return os << "\x29";
 }
 
 bool ToBooleanICStub::Types::UpdateStatus(Handle<Object> object) {

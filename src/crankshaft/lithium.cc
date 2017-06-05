@@ -34,7 +34,7 @@
 #include "src/crankshaft/s390/lithium-s390.h"          // NOLINT
 #include "src/crankshaft/s390/lithium-codegen-s390.h"  // NOLINT
 #else
-#error "Unknown architecture."
+#error "\x55\x6e\x6b\x6e\x6f\x77\x6e\x20\x61\x72\x63\x68\x69\x74\x65\x63\x74\x75\x72\x65\x2e"
 #endif
 
 namespace v8 {
@@ -45,13 +45,13 @@ void LOperand::PrintTo(StringStream* stream) {
   LUnallocated* unalloc = NULL;
   switch (kind()) {
     case INVALID:
-      stream->Add("(0)");
+      stream->Add("\x28\x30\x29");
       break;
     case UNALLOCATED:
       unalloc = LUnallocated::cast(this);
-      stream->Add("v%d", unalloc->virtual_register());
+      stream->Add("\x76\x25\x64", unalloc->virtual_register());
       if (unalloc->basic_policy() == LUnallocated::FIXED_SLOT) {
-        stream->Add("(=%dS)", unalloc->fixed_slot_index());
+        stream->Add("\x28\x3d\x25\x64\x53\x29", unalloc->fixed_slot_index());
         break;
       }
       switch (unalloc->extended_policy()) {
@@ -60,66 +60,66 @@ void LOperand::PrintTo(StringStream* stream) {
         case LUnallocated::FIXED_REGISTER: {
           int reg_index = unalloc->fixed_register_index();
           if (reg_index < 0 || reg_index >= Register::kNumRegisters) {
-            stream->Add("(=invalid_reg#%d)", reg_index);
+            stream->Add("\x28\x3d\x69\x6e\x76\x61\x6c\x69\x64\x5f\x72\x65\x67\x23\x25\x64\x29", reg_index);
           } else {
             const char* register_name =
                 Register::from_code(reg_index).ToString();
-            stream->Add("(=%s)", register_name);
+            stream->Add("\x28\x3d\x25\x73\x29", register_name);
           }
           break;
         }
         case LUnallocated::FIXED_DOUBLE_REGISTER: {
           int reg_index = unalloc->fixed_register_index();
           if (reg_index < 0 || reg_index >= DoubleRegister::kMaxNumRegisters) {
-            stream->Add("(=invalid_double_reg#%d)", reg_index);
+            stream->Add("\x28\x3d\x69\x6e\x76\x61\x6c\x69\x64\x5f\x64\x6f\x75\x62\x6c\x65\x5f\x72\x65\x67\x23\x25\x64\x29", reg_index);
           } else {
             const char* double_register_name =
                 DoubleRegister::from_code(reg_index).ToString();
-            stream->Add("(=%s)", double_register_name);
+            stream->Add("\x28\x3d\x25\x73\x29", double_register_name);
           }
           break;
         }
         case LUnallocated::MUST_HAVE_REGISTER:
-          stream->Add("(R)");
+          stream->Add("\x28\x52\x29");
           break;
         case LUnallocated::MUST_HAVE_DOUBLE_REGISTER:
-          stream->Add("(D)");
+          stream->Add("\x28\x44\x29");
           break;
         case LUnallocated::WRITABLE_REGISTER:
-          stream->Add("(WR)");
+          stream->Add("\x28\x57\x52\x29");
           break;
         case LUnallocated::SAME_AS_FIRST_INPUT:
-          stream->Add("(1)");
+          stream->Add("\x28\x31\x29");
           break;
         case LUnallocated::ANY:
-          stream->Add("(-)");
+          stream->Add("\x28\x2d\x29");
           break;
       }
       break;
     case CONSTANT_OPERAND:
-      stream->Add("[constant:%d]", index());
+      stream->Add("\x5b\x63\x6f\x6e\x73\x74\x61\x6e\x74\x3a\x25\x64\x5d", index());
       break;
     case STACK_SLOT:
-      stream->Add("[stack:%d]", index());
+      stream->Add("\x5b\x73\x74\x61\x63\x6b\x3a\x25\x64\x5d", index());
       break;
     case DOUBLE_STACK_SLOT:
-      stream->Add("[double_stack:%d]", index());
+      stream->Add("\x5b\x64\x6f\x75\x62\x6c\x65\x5f\x73\x74\x61\x63\x6b\x3a\x25\x64\x5d", index());
       break;
     case REGISTER: {
       int reg_index = index();
       if (reg_index < 0 || reg_index >= Register::kNumRegisters) {
-        stream->Add("(=invalid_reg#%d|R)", reg_index);
+        stream->Add("\x28\x3d\x69\x6e\x76\x61\x6c\x69\x64\x5f\x72\x65\x67\x23\x25\x64\x7c\x52\x29", reg_index);
       } else {
-        stream->Add("[%s|R]", Register::from_code(reg_index).ToString());
+        stream->Add("\x5b\x25\x73\x7c\x52\x5d", Register::from_code(reg_index).ToString());
       }
       break;
     }
     case DOUBLE_REGISTER: {
       int reg_index = index();
       if (reg_index < 0 || reg_index >= DoubleRegister::kMaxNumRegisters) {
-        stream->Add("(=invalid_double_reg#%d|R)", reg_index);
+        stream->Add("\x28\x3d\x69\x6e\x76\x61\x6c\x69\x64\x5f\x64\x6f\x75\x62\x6c\x65\x5f\x72\x65\x67\x23\x25\x64\x7c\x52\x29", reg_index);
       } else {
-        stream->Add("[%s|R]", DoubleRegister::from_code(reg_index).ToString());
+        stream->Add("\x5b\x25\x73\x7c\x52\x5d", DoubleRegister::from_code(reg_index).ToString());
       }
       break;
     }
@@ -177,37 +177,37 @@ void LParallelMove::PrintDataTo(StringStream* stream) const {
     if (!move_operands_[i].IsEliminated()) {
       LOperand* source = move_operands_[i].source();
       LOperand* destination = move_operands_[i].destination();
-      if (!first) stream->Add(" ");
+      if (!first) stream->Add("\x20");
       first = false;
       if (source->Equals(destination)) {
         destination->PrintTo(stream);
       } else {
         destination->PrintTo(stream);
-        stream->Add(" = ");
+        stream->Add("\x20\x3d\x20");
         source->PrintTo(stream);
       }
-      stream->Add(";");
+      stream->Add("\x3b");
     }
   }
 }
 
 
 void LEnvironment::PrintTo(StringStream* stream) {
-  stream->Add("[id=%d|", ast_id().ToInt());
+  stream->Add("\x5b\x69\x64\x3d\x25\x64\x7c", ast_id().ToInt());
   if (deoptimization_index() != Safepoint::kNoDeoptimizationIndex) {
-    stream->Add("deopt_id=%d|", deoptimization_index());
+    stream->Add("\x64\x65\x6f\x70\x74\x5f\x69\x64\x3d\x25\x64\x7c", deoptimization_index());
   }
-  stream->Add("parameters=%d|", parameter_count());
-  stream->Add("arguments_stack_height=%d|", arguments_stack_height());
+  stream->Add("\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x73\x3d\x25\x64\x7c", parameter_count());
+  stream->Add("\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x5f\x73\x74\x61\x63\x6b\x5f\x68\x65\x69\x67\x68\x74\x3d\x25\x64\x7c", arguments_stack_height());
   for (int i = 0; i < values_.length(); ++i) {
-    if (i != 0) stream->Add(";");
+    if (i != 0) stream->Add("\x3b");
     if (values_[i] == NULL) {
-      stream->Add("[hole]");
+      stream->Add("\x5b\x68\x6f\x6c\x65\x5d");
     } else {
       values_[i]->PrintTo(stream);
     }
   }
-  stream->Add("]");
+  stream->Add("\x5d");
 }
 
 
@@ -241,12 +241,12 @@ void LPointerMap::RecordUntagged(LOperand* op, Zone* zone) {
 
 
 void LPointerMap::PrintTo(StringStream* stream) {
-  stream->Add("{");
+  stream->Add("\x7b");
   for (int i = 0; i < pointer_operands_.length(); ++i) {
-    if (i != 0) stream->Add(";");
+    if (i != 0) stream->Add("\x3b");
     pointer_operands_[i]->PrintTo(stream);
   }
-  stream->Add("}");
+  stream->Add("\x7d");
 }
 
 LChunk::LChunk(CompilationInfo* info, HGraph* graph)
@@ -285,7 +285,7 @@ Label* LChunk::GetAssemblyLabel(int block_id) const {
 
 
 void LChunk::MarkEmptyBlocks() {
-  LPhase phase("L_Mark empty blocks", this);
+  LPhase phase("\x4c\x5f\x4d\x61\x72\x6b\x20\x65\x6d\x70\x74\x79\x20\x62\x6c\x6f\x63\x6b\x73", this);
   for (int i = 0; i < graph()->blocks()->length(); ++i) {
     HBasicBlock* block = graph()->blocks()->at(i);
     int first = block->first_instruction_index();
@@ -457,7 +457,7 @@ Handle<Code> LChunk::Codegen() {
 
   if (generator.GenerateCode()) {
     generator.CheckEnvironmentUsage();
-    CodeGenerator::MakeCodePrologue(info(), "optimized");
+    CodeGenerator::MakeCodePrologue(info(), "\x6f\x70\x74\x69\x6d\x69\x7a\x65\x64");
     Handle<Code> code = CodeGenerator::MakeCodeEpilogue(&assembler, info());
     generator.FinishCode(code);
     CommitDependencies(code);

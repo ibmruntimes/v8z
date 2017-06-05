@@ -110,7 +110,7 @@ void FullCodeGenerator::Generate() {
   profiling_counter_ = isolate()->factory()->NewCell(
       Handle<Smi>(Smi::FromInt(FLAG_interrupt_budget), isolate()));
   SetFunctionPosition(literal());
-  Comment cmnt(masm_, "[ function compiled by full code generator");
+  Comment cmnt(masm_, "\x5b\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e\x20\x63\x6f\x6d\x70\x69\x6c\x65\x64\x20\x62\x79\x20\x66\x75\x6c\x6c\x20\x63\x6f\x64\x65\x20\x67\x65\x6e\x65\x72\x61\x74\x6f\x72");
 
   ProfileEntryHookStub::MaybeCallEntryHook(masm_);
 
@@ -132,7 +132,7 @@ void FullCodeGenerator::Generate() {
   __ Prologue(info->GeneratePreagedPrologue(), ip, prologue_offset);
 
   {
-    Comment cmnt(masm_, "[ Allocate locals");
+    Comment cmnt(masm_, "\x5b\x20\x41\x6c\x6c\x6f\x63\x61\x74\x65\x20\x6c\x6f\x63\x61\x6c\x73");
     int locals_count = info->scope()->num_stack_slots();
     // Generators allocate locals, if any, in context slots.
     DCHECK(!IsGeneratorFunction(info->literal()->kind()) || locals_count == 0);
@@ -180,7 +180,7 @@ void FullCodeGenerator::Generate() {
   // Possibly allocate a local context.
   if (info->scope()->num_heap_slots() > 0) {
     // Argument to NewContext is the function, which is still in r3.
-    Comment cmnt(masm_, "[ Allocate context");
+    Comment cmnt(masm_, "\x5b\x20\x41\x6c\x6c\x6f\x63\x61\x74\x65\x20\x63\x6f\x6e\x74\x65\x78\x74");
     bool need_write_barrier = true;
     int slots = info->scope()->num_heap_slots() - Context::MIN_CONTEXT_SLOTS;
     if (info->scope()->is_script_scope()) {
@@ -249,7 +249,7 @@ void FullCodeGenerator::Generate() {
   // derived constructors with super calls.
   Variable* this_function_var = scope()->this_function_var();
   if (this_function_var != nullptr) {
-    Comment cmnt(masm_, "[ This function");
+    Comment cmnt(masm_, "\x5b\x20\x54\x68\x69\x73\x20\x66\x75\x6e\x63\x74\x69\x6f\x6e");
     if (!function_in_register_r3) {
       __ LoadP(r3, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
       // The write barrier clobbers register again, keep it marked as such.
@@ -260,7 +260,7 @@ void FullCodeGenerator::Generate() {
   // Possibly set up a local binding to the new target value.
   Variable* new_target_var = scope()->new_target_var();
   if (new_target_var != nullptr) {
-    Comment cmnt(masm_, "[ new.target");
+    Comment cmnt(masm_, "\x5b\x20\x6e\x65\x77\x2e\x74\x61\x72\x67\x65\x74");
     SetVar(new_target_var, r5, r2, r4);
   }
 
@@ -268,7 +268,7 @@ void FullCodeGenerator::Generate() {
   int rest_index;
   Variable* rest_param = scope()->rest_parameter(&rest_index);
   if (rest_param) {
-    Comment cmnt(masm_, "[ Allocate rest parameter array");
+    Comment cmnt(masm_, "\x5b\x20\x41\x6c\x6c\x6f\x63\x61\x74\x65\x20\x72\x65\x73\x74\x20\x70\x61\x72\x61\x6d\x65\x74\x65\x72\x20\x61\x72\x72\x61\x79");
 
     if (!function_in_register_r3) {
       __ LoadP(r3, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
@@ -283,7 +283,7 @@ void FullCodeGenerator::Generate() {
   Variable* arguments = scope()->arguments();
   if (arguments != NULL) {
     // Function uses arguments object.
-    Comment cmnt(masm_, "[ Allocate arguments object");
+    Comment cmnt(masm_, "\x5b\x20\x41\x6c\x6c\x6f\x63\x61\x74\x65\x20\x61\x72\x67\x75\x6d\x65\x6e\x74\x73\x20\x6f\x62\x6a\x65\x63\x74");
     if (!function_in_register_r3) {
       // Load this again, if it's used by the local context below.
       __ LoadP(r3, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
@@ -309,7 +309,7 @@ void FullCodeGenerator::Generate() {
   // Visit the declarations and body.
   PrepareForBailoutForId(BailoutId::FunctionEntry(), NO_REGISTERS);
   {
-    Comment cmnt(masm_, "[ Declarations");
+    Comment cmnt(masm_, "\x5b\x20\x44\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e\x73");
     VisitDeclarations(scope()->declarations());
   }
 
@@ -319,7 +319,7 @@ void FullCodeGenerator::Generate() {
   DCHECK_EQ(0, ic_total_count_);
 
   {
-    Comment cmnt(masm_, "[ Stack check");
+    Comment cmnt(masm_, "\x5b\x20\x53\x74\x61\x63\x6b\x20\x63\x68\x65\x63\x6b");
     PrepareForBailoutForId(BailoutId::Declarations(), NO_REGISTERS);
     Label ok;
     __ LoadRoot(ip, Heap::kStackLimitRootIndex);
@@ -330,7 +330,7 @@ void FullCodeGenerator::Generate() {
   }
 
   {
-    Comment cmnt(masm_, "[ Body");
+    Comment cmnt(masm_, "\x5b\x20\x42\x6f\x64\x79");
     DCHECK(loop_depth() == 0);
     VisitStatements(literal()->body());
     DCHECK(loop_depth() == 0);
@@ -339,7 +339,7 @@ void FullCodeGenerator::Generate() {
   // Always emit a 'return undefined' in case control fell off the end of
   // the body.
   {
-    Comment cmnt(masm_, "[ return <undefined>;");
+    Comment cmnt(masm_, "\x5b\x20\x72\x65\x74\x75\x72\x6e\x20\x3c\x75\x6e\x64\x65\x66\x69\x6e\x65\x64\x3e\x3b");
     __ LoadRoot(r2, Heap::kUndefinedValueRootIndex);
   }
   EmitReturnSequence();
@@ -371,7 +371,7 @@ void FullCodeGenerator::EmitProfilingCounterReset() {
 
 void FullCodeGenerator::EmitBackEdgeBookkeeping(IterationStatement* stmt,
                                                 Label* back_edge_target) {
-  Comment cmnt(masm_, "[ Back edge bookkeeping");
+  Comment cmnt(masm_, "\x5b\x20\x42\x61\x63\x6b\x20\x65\x64\x67\x65\x20\x62\x6f\x6f\x6b\x6b\x65\x65\x70\x69\x6e\x67");
   Label ok;
 
   DCHECK(back_edge_target->is_bound());
@@ -426,7 +426,7 @@ void FullCodeGenerator::EmitProfilingCounterHandlingForReturnSequence(
 }
 
 void FullCodeGenerator::EmitReturnSequence() {
-  Comment cmnt(masm_, "[ Return sequence");
+  Comment cmnt(masm_, "\x5b\x20\x52\x65\x74\x75\x72\x6e\x20\x73\x65\x71\x75\x65\x6e\x63\x65");
   if (return_label_.is_bound()) {
     __ b(&return_label_);
   } else {
@@ -714,7 +714,7 @@ void FullCodeGenerator::VisitVariableDeclaration(
     case VariableLocation::PARAMETER:
     case VariableLocation::LOCAL:
       if (hole_init) {
-        Comment cmnt(masm_, "[ VariableDeclaration");
+        Comment cmnt(masm_, "\x5b\x20\x56\x61\x72\x69\x61\x62\x6c\x65\x44\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e");
         __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
         __ StoreP(ip, StackOperand(variable));
       }
@@ -722,7 +722,7 @@ void FullCodeGenerator::VisitVariableDeclaration(
 
     case VariableLocation::CONTEXT:
       if (hole_init) {
-        Comment cmnt(masm_, "[ VariableDeclaration");
+        Comment cmnt(masm_, "\x5b\x20\x56\x61\x72\x69\x61\x62\x6c\x65\x44\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e");
         EmitDebugCheckDeclarationContext(variable);
         __ LoadRoot(ip, Heap::kTheHoleValueRootIndex);
         __ StoreP(ip, ContextMemOperand(cp, variable->index()));
@@ -732,7 +732,7 @@ void FullCodeGenerator::VisitVariableDeclaration(
       break;
 
     case VariableLocation::LOOKUP: {
-      Comment cmnt(masm_, "[ VariableDeclaration");
+      Comment cmnt(masm_, "\x5b\x20\x56\x61\x72\x69\x61\x62\x6c\x65\x44\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e");
       __ mov(r4, Operand(variable->name()));
       // Declaration nodes are always introduced in one of four modes.
       DCHECK(IsDeclaredVariableMode(mode));
@@ -771,14 +771,14 @@ void FullCodeGenerator::VisitFunctionDeclaration(
 
     case VariableLocation::PARAMETER:
     case VariableLocation::LOCAL: {
-      Comment cmnt(masm_, "[ FunctionDeclaration");
+      Comment cmnt(masm_, "\x5b\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x44\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e");
       VisitForAccumulatorValue(declaration->fun());
       __ StoreP(result_register(), StackOperand(variable));
       break;
     }
 
     case VariableLocation::CONTEXT: {
-      Comment cmnt(masm_, "[ FunctionDeclaration");
+      Comment cmnt(masm_, "\x5b\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x44\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e");
       EmitDebugCheckDeclarationContext(variable);
       VisitForAccumulatorValue(declaration->fun());
       __ StoreP(result_register(), ContextMemOperand(cp, variable->index()));
@@ -792,7 +792,7 @@ void FullCodeGenerator::VisitFunctionDeclaration(
     }
 
     case VariableLocation::LOOKUP: {
-      Comment cmnt(masm_, "[ FunctionDeclaration");
+      Comment cmnt(masm_, "\x5b\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x44\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e");
       __ mov(r4, Operand(variable->name()));
       PushOperand(r4);
       // Push initial value for function declaration.
@@ -821,7 +821,7 @@ void FullCodeGenerator::DeclareModules(Handle<FixedArray> descriptions) {
 }
 
 void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
-  Comment cmnt(masm_, "[ SwitchStatement");
+  Comment cmnt(masm_, "\x5b\x20\x53\x77\x69\x74\x63\x68\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   Breakable nested_statement(this, stmt);
   SetStatementPosition(stmt);
 
@@ -844,7 +844,7 @@ void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
       continue;
     }
 
-    Comment cmnt(masm_, "[ Case comparison");
+    Comment cmnt(masm_, "\x5b\x20\x43\x61\x73\x65\x20\x63\x6f\x6d\x70\x61\x72\x69\x73\x6f\x6e");
     __ bind(&next_test);
     next_test.Unuse();
 
@@ -902,7 +902,7 @@ void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
 
   // Compile all the case bodies.
   for (int i = 0; i < clauses->length(); i++) {
-    Comment cmnt(masm_, "[ Case body");
+    Comment cmnt(masm_, "\x5b\x20\x43\x61\x73\x65\x20\x62\x6f\x64\x79");
     CaseClause* clause = clauses->at(i);
     __ bind(clause->body_target());
     PrepareForBailoutForId(clause->EntryId(), NO_REGISTERS);
@@ -914,7 +914,7 @@ void FullCodeGenerator::VisitSwitchStatement(SwitchStatement* stmt) {
 }
 
 void FullCodeGenerator::VisitForInStatement(ForInStatement* stmt) {
-  Comment cmnt(masm_, "[ ForInStatement");
+  Comment cmnt(masm_, "\x5b\x20\x46\x6f\x72\x49\x6e\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   SetStatementPosition(stmt, SKIP_BREAK);
 
   FeedbackVectorSlot slot = stmt->ForInFeedbackSlot();
@@ -1250,7 +1250,7 @@ void FullCodeGenerator::EmitVariableLoad(VariableProxy* proxy,
   switch (var->location()) {
     case VariableLocation::GLOBAL:
     case VariableLocation::UNALLOCATED: {
-      Comment cmnt(masm_, "[ Global variable");
+      Comment cmnt(masm_, "\x5b\x20\x47\x6c\x6f\x62\x61\x6c\x20\x76\x61\x72\x69\x61\x62\x6c\x65");
       EmitGlobalVariableLoad(proxy, typeof_mode);
       context()->Plug(r2);
       break;
@@ -1260,8 +1260,8 @@ void FullCodeGenerator::EmitVariableLoad(VariableProxy* proxy,
     case VariableLocation::LOCAL:
     case VariableLocation::CONTEXT: {
       DCHECK_EQ(NOT_INSIDE_TYPEOF, typeof_mode);
-      Comment cmnt(masm_, var->IsContextSlot() ? "[ Context variable"
-                                               : "[ Stack variable");
+      Comment cmnt(masm_, var->IsContextSlot() ? "\x5b\x20\x43\x6f\x6e\x74\x65\x78\x74\x20\x76\x61\x72\x69\x61\x62\x6c\x65"
+                                               : "\x5b\x20\x53\x74\x61\x63\x6b\x20\x76\x61\x72\x69\x61\x62\x6c\x65");
       if (NeedsHoleCheckForLoad(proxy)) {
         Label done;
         // Let and const need a read barrier.
@@ -1288,7 +1288,7 @@ void FullCodeGenerator::EmitVariableLoad(VariableProxy* proxy,
     }
 
     case VariableLocation::LOOKUP: {
-      Comment cmnt(masm_, "[ Lookup variable");
+      Comment cmnt(masm_, "\x5b\x20\x4c\x6f\x6f\x6b\x75\x70\x20\x76\x61\x72\x69\x61\x62\x6c\x65");
       Label done, slow;
       // Generate code for loading from variables potentially shadowed
       // by eval-introduced variables.
@@ -1307,7 +1307,7 @@ void FullCodeGenerator::EmitVariableLoad(VariableProxy* proxy,
 }
 
 void FullCodeGenerator::VisitRegExpLiteral(RegExpLiteral* expr) {
-  Comment cmnt(masm_, "[ RegExpLiteral");
+  Comment cmnt(masm_, "\x5b\x20\x52\x65\x67\x45\x78\x70\x4c\x69\x74\x65\x72\x61\x6c");
   __ LoadP(r5, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
   __ LoadSmiLiteral(r4, Smi::FromInt(expr->literal_index()));
   __ mov(r3, Operand(expr->pattern()));
@@ -1334,7 +1334,7 @@ void FullCodeGenerator::EmitAccessor(ObjectLiteralProperty* property) {
 }
 
 void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
-  Comment cmnt(masm_, "[ ObjectLiteral");
+  Comment cmnt(masm_, "\x5b\x20\x4f\x62\x6a\x65\x63\x74\x4c\x69\x74\x65\x72\x61\x6c");
 
   Handle<FixedArray> constant_properties = expr->constant_properties();
   __ LoadP(r5, MemOperand(fp, JavaScriptFrameConstants::kFunctionOffset));
@@ -1521,7 +1521,7 @@ void FullCodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
 }
 
 void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
-  Comment cmnt(masm_, "[ ArrayLiteral");
+  Comment cmnt(masm_, "\x5b\x20\x41\x72\x72\x61\x79\x4c\x69\x74\x65\x72\x61\x6c");
 
   Handle<FixedArray> constant_elements = expr->constant_elements();
   bool has_fast_elements =
@@ -1610,7 +1610,7 @@ void FullCodeGenerator::VisitArrayLiteral(ArrayLiteral* expr) {
 void FullCodeGenerator::VisitAssignment(Assignment* expr) {
   DCHECK(expr->target()->IsValidReferenceExpressionOrThis());
 
-  Comment cmnt(masm_, "[ Assignment");
+  Comment cmnt(masm_, "\x5b\x20\x41\x73\x73\x69\x67\x6e\x6d\x65\x6e\x74");
   SetExpressionPosition(expr, INSERT_BREAK);
 
   Property* property = expr->target()->AsProperty();
@@ -1747,7 +1747,7 @@ void FullCodeGenerator::VisitAssignment(Assignment* expr) {
 }
 
 void FullCodeGenerator::VisitYield(Yield* expr) {
-  Comment cmnt(masm_, "[ Yield");
+  Comment cmnt(masm_, "\x5b\x20\x59\x69\x65\x6c\x64");
   SetExpressionPosition(expr);
 
   // Evaluate yielded value first; the initial iterator definition depends on
@@ -1895,7 +1895,7 @@ void FullCodeGenerator::EmitGeneratorResume(
   __ Push(Smi::FromInt(resume_mode));
   __ CallRuntime(Runtime::kResumeJSGeneratorObject);
   // Not reached: the runtime call returns elsewhere.
-  __ stop("not-reached");
+  __ stop("\x6e\x6f\x74\x2d\x72\x65\x61\x63\x68\x65\x64");
 
   __ bind(&done);
   context()->Plug(result_register());
@@ -2401,7 +2401,7 @@ void FullCodeGenerator::EmitKeyedPropertyAssignment(Assignment* expr) {
 }
 
 void FullCodeGenerator::VisitProperty(Property* expr) {
-  Comment cmnt(masm_, "[ Property");
+  Comment cmnt(masm_, "\x5b\x20\x50\x72\x6f\x70\x65\x72\x74\x79");
   SetExpressionPosition(expr);
 
   Expression* key = expr->key();
@@ -2702,7 +2702,7 @@ void FullCodeGenerator::EmitPossiblyEvalCall(Call* expr) {
 }
 
 void FullCodeGenerator::VisitCallNew(CallNew* expr) {
-  Comment cmnt(masm_, "[ CallNew");
+  Comment cmnt(masm_, "\x5b\x20\x43\x61\x6c\x6c\x4e\x65\x77");
   // According to ECMA-262, section 11.2.2, page 44, the function
   // expression in new calls must be evaluated before the
   // arguments.
@@ -3273,7 +3273,7 @@ void FullCodeGenerator::EmitCallJSRuntimeFunction(CallRuntime* expr) {
 void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
   switch (expr->op()) {
     case Token::DELETE: {
-      Comment cmnt(masm_, "[ UnaryOperation (DELETE)");
+      Comment cmnt(masm_, "\x5b\x20\x55\x6e\x61\x72\x79\x4f\x70\x65\x72\x61\x74\x69\x6f\x6e\x20\x28\x44\x45\x4c\x45\x54\x45\x29");
       Property* property = expr->expression()->AsProperty();
       VariableProxy* proxy = expr->expression()->AsVariableProxy();
 
@@ -3317,14 +3317,14 @@ void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
     }
 
     case Token::VOID: {
-      Comment cmnt(masm_, "[ UnaryOperation (VOID)");
+      Comment cmnt(masm_, "\x5b\x20\x55\x6e\x61\x72\x79\x4f\x70\x65\x72\x61\x74\x69\x6f\x6e\x20\x28\x56\x4f\x49\x44\x29");
       VisitForEffect(expr->expression());
       context()->Plug(Heap::kUndefinedValueRootIndex);
       break;
     }
 
     case Token::NOT: {
-      Comment cmnt(masm_, "[ UnaryOperation (NOT)");
+      Comment cmnt(masm_, "\x5b\x20\x55\x6e\x61\x72\x79\x4f\x70\x65\x72\x61\x74\x69\x6f\x6e\x20\x28\x4e\x4f\x54\x29");
       if (context()->IsEffect()) {
         // Unary NOT has no side effects so it's only necessary to visit the
         // subexpression.  Match the optimizing compiler by not branching.
@@ -3360,7 +3360,7 @@ void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
     }
 
     case Token::TYPEOF: {
-      Comment cmnt(masm_, "[ UnaryOperation (TYPEOF)");
+      Comment cmnt(masm_, "\x5b\x20\x55\x6e\x61\x72\x79\x4f\x70\x65\x72\x61\x74\x69\x6f\x6e\x20\x28\x54\x59\x50\x45\x4f\x46\x29");
       {
         AccumulatorValueContext context(this);
         VisitForTypeofValue(expr->expression());
@@ -3380,7 +3380,7 @@ void FullCodeGenerator::VisitUnaryOperation(UnaryOperation* expr) {
 void FullCodeGenerator::VisitCountOperation(CountOperation* expr) {
   DCHECK(expr->expression()->IsValidReferenceExpressionOrThis());
 
-  Comment cmnt(masm_, "[ CountOperation");
+  Comment cmnt(masm_, "\x5b\x20\x43\x6f\x75\x6e\x74\x4f\x70\x65\x72\x61\x74\x69\x6f\x6e");
 
   Property* prop = expr->expression()->AsProperty();
   LhsKind assign_type = Property::GetAssignType(prop);
@@ -3704,7 +3704,7 @@ void FullCodeGenerator::EmitLiteralCompareTypeof(Expression* expr,
 }
 
 void FullCodeGenerator::VisitCompareOperation(CompareOperation* expr) {
-  Comment cmnt(masm_, "[ CompareOperation");
+  Comment cmnt(masm_, "\x5b\x20\x43\x6f\x6d\x70\x61\x72\x65\x4f\x70\x65\x72\x61\x74\x69\x6f\x6e");
   SetExpressionPosition(expr);
 
   // First we try a fast inlined version of the compare when one of

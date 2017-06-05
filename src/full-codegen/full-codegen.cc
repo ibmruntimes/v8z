@@ -29,14 +29,14 @@ bool FullCodeGenerator::MakeCode(CompilationInfo* info) {
   Isolate* isolate = info->isolate();
 
   TimerEventScope<TimerEventCompileFullCode> timer(info->isolate());
-  TRACE_EVENT0("v8", "V8.CompileFullCode");
+  TRACE_EVENT0("\x76\x38", "\x56\x38\x2e\x43\x6f\x6d\x70\x69\x6c\x65\x46\x75\x6c\x6c\x43\x6f\x64\x65");
 
   Handle<Script> script = info->script();
   if (!script->IsUndefined() && !script->source()->IsUndefined()) {
     int len = String::cast(script->source())->length();
     isolate->counters()->total_full_codegen_source_size()->Increment(len);
   }
-  CodeGenerator::MakeCodePrologue(info, "full");
+  CodeGenerator::MakeCodePrologue(info, "\x66\x75\x6c\x6c");
   const int kInitialBufferSize = 4 * KB;
   MacroAssembler masm(info->isolate(), NULL, kInitialBufferSize,
                       CodeObjectRequired::kYes);
@@ -415,7 +415,7 @@ void FullCodeGenerator::VisitImportDeclaration(ImportDeclaration* declaration) {
       break;
 
     case VariableLocation::CONTEXT: {
-      Comment cmnt(masm_, "[ ImportDeclaration");
+      Comment cmnt(masm_, "\x5b\x20\x49\x6d\x70\x6f\x72\x74\x44\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e");
       EmitDebugCheckDeclarationContext(variable);
       // TODO(rossberg)
       break;
@@ -435,7 +435,7 @@ void FullCodeGenerator::VisitExportDeclaration(ExportDeclaration* declaration) {
 
 
 void FullCodeGenerator::VisitVariableProxy(VariableProxy* expr) {
-  Comment cmnt(masm_, "[ VariableProxy");
+  Comment cmnt(masm_, "\x5b\x20\x56\x61\x72\x69\x61\x62\x6c\x65\x50\x72\x6f\x78\x79");
   EmitVariableLoad(expr);
 }
 
@@ -751,7 +751,7 @@ void FullCodeGenerator::VisitInDuplicateContext(Expression* expr) {
 
 
 void FullCodeGenerator::VisitComma(BinaryOperation* expr) {
-  Comment cmnt(masm_, "[ Comma");
+  Comment cmnt(masm_, "\x5b\x20\x43\x6f\x6d\x6d\x61");
   VisitForEffect(expr->left());
   VisitInDuplicateContext(expr->right());
 }
@@ -759,7 +759,7 @@ void FullCodeGenerator::VisitComma(BinaryOperation* expr) {
 
 void FullCodeGenerator::VisitLogicalExpression(BinaryOperation* expr) {
   bool is_logical_and = expr->op() == Token::AND;
-  Comment cmnt(masm_, is_logical_and ? "[ Logical AND" :  "[ Logical OR");
+  Comment cmnt(masm_, is_logical_and ? "\x5b\x20\x4c\x6f\x67\x69\x63\x61\x6c\x20\x41\x4e\x44" :  "\x5b\x20\x4c\x6f\x67\x69\x63\x61\x6c\x20\x4f\x52");
   Expression* left = expr->left();
   Expression* right = expr->right();
   BailoutId right_id = expr->RightId();
@@ -828,7 +828,7 @@ void FullCodeGenerator::VisitLogicalExpression(BinaryOperation* expr) {
 
 void FullCodeGenerator::VisitArithmeticExpression(BinaryOperation* expr) {
   Token::Value op = expr->op();
-  Comment cmnt(masm_, "[ ArithmeticExpression");
+  Comment cmnt(masm_, "\x5b\x20\x41\x72\x69\x74\x68\x6d\x65\x74\x69\x63\x45\x78\x70\x72\x65\x73\x73\x69\x6f\x6e");
   Expression* left = expr->left();
   Expression* right = expr->right();
 
@@ -861,7 +861,7 @@ void FullCodeGenerator::VisitForTypeofValue(Expression* expr) {
 
 
 void FullCodeGenerator::VisitBlock(Block* stmt) {
-  Comment cmnt(masm_, "[ Block");
+  Comment cmnt(masm_, "\x5b\x20\x42\x6c\x6f\x63\x6b");
   NestedBlock nested_block(this, stmt);
 
   {
@@ -874,7 +874,7 @@ void FullCodeGenerator::VisitBlock(Block* stmt) {
 
 
 void FullCodeGenerator::VisitDoExpression(DoExpression* expr) {
-  Comment cmnt(masm_, "[ Do Expression");
+  Comment cmnt(masm_, "\x5b\x20\x44\x6f\x20\x45\x78\x70\x72\x65\x73\x73\x69\x6f\x6e");
   NestedStatement nested_block(this);
   SetExpressionPosition(expr);
   VisitBlock(expr->block());
@@ -883,19 +883,19 @@ void FullCodeGenerator::VisitDoExpression(DoExpression* expr) {
 
 
 void FullCodeGenerator::VisitExpressionStatement(ExpressionStatement* stmt) {
-  Comment cmnt(masm_, "[ ExpressionStatement");
+  Comment cmnt(masm_, "\x5b\x20\x45\x78\x70\x72\x65\x73\x73\x69\x6f\x6e\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   SetStatementPosition(stmt);
   VisitForEffect(stmt->expression());
 }
 
 
 void FullCodeGenerator::VisitEmptyStatement(EmptyStatement* stmt) {
-  Comment cmnt(masm_, "[ EmptyStatement");
+  Comment cmnt(masm_, "\x5b\x20\x45\x6d\x70\x74\x79\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
 }
 
 
 void FullCodeGenerator::VisitIfStatement(IfStatement* stmt) {
-  Comment cmnt(masm_, "[ IfStatement");
+  Comment cmnt(masm_, "\x5b\x20\x49\x66\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   SetStatementPosition(stmt);
   Label then_part, else_part, done;
 
@@ -931,7 +931,7 @@ void FullCodeGenerator::EmitContinue(Statement* target) {
   ClearAccumulator();
   while (!current->IsContinueTarget(target)) {
     if (current->IsTryFinally()) {
-      Comment cmnt(masm(), "[ Deferred continue through finally");
+      Comment cmnt(masm(), "\x5b\x20\x44\x65\x66\x65\x72\x72\x65\x64\x20\x63\x6f\x6e\x74\x69\x6e\x75\x65\x20\x74\x68\x72\x6f\x75\x67\x68\x20\x66\x69\x6e\x61\x6c\x6c\x79");
       current->Exit(&context_length);
       DCHECK_EQ(-1, context_length);
       current->AsTryFinally()->deferred_commands()->RecordContinue(target);
@@ -956,7 +956,7 @@ void FullCodeGenerator::EmitContinue(Statement* target) {
 }
 
 void FullCodeGenerator::VisitContinueStatement(ContinueStatement* stmt) {
-  Comment cmnt(masm_, "[ ContinueStatement");
+  Comment cmnt(masm_, "\x5b\x20\x43\x6f\x6e\x74\x69\x6e\x75\x65\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   SetStatementPosition(stmt);
   EmitContinue(stmt->target());
 }
@@ -971,7 +971,7 @@ void FullCodeGenerator::EmitBreak(Statement* target) {
   ClearAccumulator();
   while (!current->IsBreakTarget(target)) {
     if (current->IsTryFinally()) {
-      Comment cmnt(masm(), "[ Deferred break through finally");
+      Comment cmnt(masm(), "\x5b\x20\x44\x65\x66\x65\x72\x72\x65\x64\x20\x62\x72\x65\x61\x6b\x20\x74\x68\x72\x6f\x75\x67\x68\x20\x66\x69\x6e\x61\x6c\x6c\x79");
       current->Exit(&context_length);
       DCHECK_EQ(-1, context_length);
       current->AsTryFinally()->deferred_commands()->RecordBreak(target);
@@ -996,7 +996,7 @@ void FullCodeGenerator::EmitBreak(Statement* target) {
 }
 
 void FullCodeGenerator::VisitBreakStatement(BreakStatement* stmt) {
-  Comment cmnt(masm_, "[ BreakStatement");
+  Comment cmnt(masm_, "\x5b\x20\x42\x72\x65\x61\x6b\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   SetStatementPosition(stmt);
   EmitBreak(stmt->target());
 }
@@ -1006,7 +1006,7 @@ void FullCodeGenerator::EmitUnwindAndReturn() {
   int context_length = 0;
   while (current != NULL) {
     if (current->IsTryFinally()) {
-      Comment cmnt(masm(), "[ Deferred return through finally");
+      Comment cmnt(masm(), "\x5b\x20\x44\x65\x66\x65\x72\x72\x65\x64\x20\x72\x65\x74\x75\x72\x6e\x20\x74\x68\x72\x6f\x75\x67\x68\x20\x66\x69\x6e\x61\x6c\x6c\x79");
       current->Exit(&context_length);
       DCHECK_EQ(-1, context_length);
       current->AsTryFinally()->deferred_commands()->RecordReturn();
@@ -1092,7 +1092,7 @@ void FullCodeGenerator::EmitLoadStoreICSlot(FeedbackVectorSlot slot) {
 }
 
 void FullCodeGenerator::VisitReturnStatement(ReturnStatement* stmt) {
-  Comment cmnt(masm_, "[ ReturnStatement");
+  Comment cmnt(masm_, "\x5b\x20\x52\x65\x74\x75\x72\x6e\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   SetStatementPosition(stmt);
   Expression* expr = stmt->expression();
   VisitForAccumulatorValue(expr);
@@ -1101,7 +1101,7 @@ void FullCodeGenerator::VisitReturnStatement(ReturnStatement* stmt) {
 
 
 void FullCodeGenerator::VisitWithStatement(WithStatement* stmt) {
-  Comment cmnt(masm_, "[ WithStatement");
+  Comment cmnt(masm_, "\x5b\x20\x57\x69\x74\x68\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   SetStatementPosition(stmt);
 
   VisitForAccumulatorValue(stmt->expression());
@@ -1130,7 +1130,7 @@ void FullCodeGenerator::VisitWithStatement(WithStatement* stmt) {
 
 
 void FullCodeGenerator::VisitDoWhileStatement(DoWhileStatement* stmt) {
-  Comment cmnt(masm_, "[ DoWhileStatement");
+  Comment cmnt(masm_, "\x5b\x20\x44\x6f\x57\x68\x69\x6c\x65\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   // Do not insert break location as we do that below.
   SetStatementPosition(stmt, SKIP_BREAK);
 
@@ -1167,7 +1167,7 @@ void FullCodeGenerator::VisitDoWhileStatement(DoWhileStatement* stmt) {
 
 
 void FullCodeGenerator::VisitWhileStatement(WhileStatement* stmt) {
-  Comment cmnt(masm_, "[ WhileStatement");
+  Comment cmnt(masm_, "\x5b\x20\x57\x68\x69\x6c\x65\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   Label loop, body;
 
   Iteration loop_statement(this, stmt);
@@ -1198,7 +1198,7 @@ void FullCodeGenerator::VisitWhileStatement(WhileStatement* stmt) {
 
 
 void FullCodeGenerator::VisitForStatement(ForStatement* stmt) {
-  Comment cmnt(masm_, "[ ForStatement");
+  Comment cmnt(masm_, "\x5b\x20\x46\x6f\x72\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   // Do not insert break location as we do it below.
   SetStatementPosition(stmt, SKIP_BREAK);
 
@@ -1246,7 +1246,7 @@ void FullCodeGenerator::VisitForStatement(ForStatement* stmt) {
 
 
 void FullCodeGenerator::VisitForOfStatement(ForOfStatement* stmt) {
-  Comment cmnt(masm_, "[ ForOfStatement");
+  Comment cmnt(masm_, "\x5b\x20\x46\x6f\x72\x4f\x66\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
 
   Iteration loop_statement(this, stmt);
   increment_loop_depth();
@@ -1291,7 +1291,7 @@ void FullCodeGenerator::VisitThisFunction(ThisFunction* expr) {
 }
 
 void FullCodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
-  Comment cmnt(masm_, "[ TryCatchStatement");
+  Comment cmnt(masm_, "\x5b\x20\x54\x72\x79\x43\x61\x74\x63\x68\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   SetStatementPosition(stmt, SKIP_BREAK);
 
   // The try block adds a handler to the exception handler chain before
@@ -1307,7 +1307,7 @@ void FullCodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
 
   // Exception handler code, the exception is in the result register.
   // Extend the context before executing the catch block.
-  { Comment cmnt(masm_, "[ Extend catch context");
+  { Comment cmnt(masm_, "\x5b\x20\x45\x78\x74\x65\x6e\x64\x20\x63\x61\x74\x63\x68\x20\x63\x6f\x6e\x74\x65\x78\x74");
     PushOperand(stmt->variable()->name());
     PushOperand(result_register());
     PushFunctionArgumentForContextAllocation();
@@ -1335,7 +1335,7 @@ void FullCodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
   int handler_index = NewHandlerTableEntry();
   EnterTryBlock(handler_index, &handler_entry);
   {
-    Comment cmnt_try(masm(), "[ Try block");
+    Comment cmnt_try(masm(), "\x5b\x20\x54\x72\x79\x20\x62\x6c\x6f\x63\x6b");
     Visit(stmt->try_block());
   }
   ExitTryBlock(handler_index);
@@ -1345,7 +1345,7 @@ void FullCodeGenerator::VisitTryCatchStatement(TryCatchStatement* stmt) {
 
 
 void FullCodeGenerator::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
-  Comment cmnt(masm_, "[ TryFinallyStatement");
+  Comment cmnt(masm_, "\x5b\x20\x54\x72\x79\x46\x69\x6e\x61\x6c\x6c\x79\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   SetStatementPosition(stmt, SKIP_BREAK);
 
   // Try finally is compiled by setting up a try-handler on the stack while
@@ -1376,7 +1376,7 @@ void FullCodeGenerator::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
   // Exception handler code.  This code is only executed when an exception
   // is thrown.  Record the continuation and jump to the finally block.
   {
-    Comment cmnt_handler(masm(), "[ Finally handler");
+    Comment cmnt_handler(masm(), "\x5b\x20\x46\x69\x6e\x61\x6c\x6c\x79\x20\x68\x61\x6e\x64\x6c\x65\x72");
     deferred.RecordThrow();
   }
 
@@ -1385,7 +1385,7 @@ void FullCodeGenerator::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
   int handler_index = NewHandlerTableEntry();
   EnterTryBlock(handler_index, &handler_entry);
   {
-    Comment cmnt_try(masm(), "[ Try block");
+    Comment cmnt_try(masm(), "\x5b\x20\x54\x72\x79\x20\x62\x6c\x6f\x63\x6b");
     TryFinally try_body(this, &deferred);
     Visit(stmt->try_block());
   }
@@ -1401,7 +1401,7 @@ void FullCodeGenerator::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
   // Finally block implementation.
   __ bind(&finally_entry);
   {
-    Comment cmnt_finally(masm(), "[ Finally block");
+    Comment cmnt_finally(masm(), "\x5b\x20\x46\x69\x6e\x61\x6c\x6c\x79\x20\x62\x6c\x6f\x63\x6b");
     OperandStackDepthIncrement(2);  // Token and accumulator are on stack.
     EnterFinallyBlock();
     Visit(stmt->finally_block());
@@ -1410,14 +1410,14 @@ void FullCodeGenerator::VisitTryFinallyStatement(TryFinallyStatement* stmt) {
   }
 
   {
-    Comment cmnt_deferred(masm(), "[ Post-finally dispatch");
+    Comment cmnt_deferred(masm(), "\x5b\x20\x50\x6f\x73\x74\x2d\x66\x69\x6e\x61\x6c\x6c\x79\x20\x64\x69\x73\x70\x61\x74\x63\x68");
     deferred.EmitCommands();  // Return to the calling code.
   }
 }
 
 
 void FullCodeGenerator::VisitDebuggerStatement(DebuggerStatement* stmt) {
-  Comment cmnt(masm_, "[ DebuggerStatement");
+  Comment cmnt(masm_, "\x5b\x20\x44\x65\x62\x75\x67\x67\x65\x72\x53\x74\x61\x74\x65\x6d\x65\x6e\x74");
   SetStatementPosition(stmt);
 
   __ DebugBreak();
@@ -1433,7 +1433,7 @@ void FullCodeGenerator::VisitCaseClause(CaseClause* clause) {
 
 
 void FullCodeGenerator::VisitConditional(Conditional* expr) {
-  Comment cmnt(masm_, "[ Conditional");
+  Comment cmnt(masm_, "\x5b\x20\x43\x6f\x6e\x64\x69\x74\x69\x6f\x6e\x61\x6c");
   Label true_case, false_case, done;
   VisitForControl(expr->condition(), &true_case, &false_case, &true_case);
 
@@ -1465,13 +1465,13 @@ void FullCodeGenerator::VisitConditional(Conditional* expr) {
 
 
 void FullCodeGenerator::VisitLiteral(Literal* expr) {
-  Comment cmnt(masm_, "[ Literal");
+  Comment cmnt(masm_, "\x5b\x20\x4c\x69\x74\x65\x72\x61\x6c");
   context()->Plug(expr->value());
 }
 
 
 void FullCodeGenerator::VisitFunctionLiteral(FunctionLiteral* expr) {
-  Comment cmnt(masm_, "[ FunctionLiteral");
+  Comment cmnt(masm_, "\x5b\x20\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4c\x69\x74\x65\x72\x61\x6c");
 
   // Build the function boilerplate and instantiate it.
   Handle<SharedFunctionInfo> function_info =
@@ -1485,7 +1485,7 @@ void FullCodeGenerator::VisitFunctionLiteral(FunctionLiteral* expr) {
 
 
 void FullCodeGenerator::VisitClassLiteral(ClassLiteral* lit) {
-  Comment cmnt(masm_, "[ ClassLiteral");
+  Comment cmnt(masm_, "\x5b\x20\x43\x6c\x61\x73\x73\x4c\x69\x74\x65\x72\x61\x6c");
 
   {
     NestedClassLiteral nested_class_literal(this, lit);
@@ -1533,7 +1533,7 @@ void FullCodeGenerator::VisitClassLiteral(ClassLiteral* lit) {
 
 void FullCodeGenerator::VisitNativeFunctionLiteral(
     NativeFunctionLiteral* expr) {
-  Comment cmnt(masm_, "[ NativeFunctionLiteral");
+  Comment cmnt(masm_, "\x5b\x20\x4e\x61\x74\x69\x76\x65\x46\x75\x6e\x63\x74\x69\x6f\x6e\x4c\x69\x74\x65\x72\x61\x6c");
   Handle<SharedFunctionInfo> shared =
       Compiler::GetSharedFunctionInfoForNative(expr->extension(), expr->name());
   EmitNewClosure(shared, false);
@@ -1541,7 +1541,7 @@ void FullCodeGenerator::VisitNativeFunctionLiteral(
 
 
 void FullCodeGenerator::VisitThrow(Throw* expr) {
-  Comment cmnt(masm_, "[ Throw");
+  Comment cmnt(masm_, "\x5b\x20\x54\x68\x72\x6f\x77");
   VisitForStackValue(expr->exception());
   SetExpressionPosition(expr);
   CallRuntimeWithOperands(Runtime::kThrow);
@@ -1586,8 +1586,8 @@ void FullCodeGenerator::VisitCall(Call* expr) {
 #endif
 
   Comment cmnt(masm_, (expr->tail_call_mode() == TailCallMode::kAllow)
-                          ? "[ TailCall"
-                          : "[ Call");
+                          ? "\x5b\x20\x54\x61\x69\x6c\x43\x61\x6c\x6c"
+                          : "\x5b\x20\x43\x61\x6c\x6c");
   Expression* callee = expr->expression();
   Call::CallType call_type = expr->GetCallType(isolate());
 
@@ -1645,7 +1645,7 @@ void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
   int arg_count = args->length();
 
   if (expr->is_jsruntime()) {
-    Comment cmnt(masm_, "[ CallRuntime");
+    Comment cmnt(masm_, "\x5b\x20\x43\x61\x6c\x6c\x52\x75\x6e\x74\x69\x6d\x65");
     EmitLoadJSRuntimeFunction(expr);
 
     // Push the arguments ("left-to-right").
@@ -1662,13 +1662,13 @@ void FullCodeGenerator::VisitCallRuntime(CallRuntime* expr) {
     switch (function->function_id) {
 #define CALL_INTRINSIC_GENERATOR(Name)     \
   case Runtime::kInline##Name: {           \
-    Comment cmnt(masm_, "[ Inline" #Name); \
+    Comment cmnt(masm_, "\x5b\x20\x49\x6e\x6c\x69\x6e\x65"  USTR(#Name)); \
     return Emit##Name(expr);               \
   }
       FOR_EACH_FULL_CODE_INTRINSIC(CALL_INTRINSIC_GENERATOR)
 #undef CALL_INTRINSIC_GENERATOR
       default: {
-        Comment cmnt(masm_, "[ CallRuntime for unhandled intrinsic");
+        Comment cmnt(masm_, "\x5b\x20\x43\x61\x6c\x6c\x52\x75\x6e\x74\x69\x6d\x65\x20\x66\x6f\x72\x20\x75\x6e\x68\x61\x6e\x64\x6c\x65\x64\x20\x69\x6e\x74\x72\x69\x6e\x73\x69\x63");
         // Push the arguments ("left-to-right").
         for (int i = 0; i < arg_count; i++) {
           VisitForStackValue(args->at(i));
@@ -1868,7 +1868,7 @@ FullCodeGenerator::EnterBlockScopeIfNeeded::EnterBlockScopeIfNeeded(
     codegen_->scope_ = scope;
     {
       if (needs_block_context_) {
-        Comment cmnt(masm(), "[ Extend block context");
+        Comment cmnt(masm(), "\x5b\x20\x45\x78\x74\x65\x6e\x64\x20\x62\x6c\x6f\x63\x6b\x20\x63\x6f\x6e\x74\x65\x78\x74");
         codegen_->PushOperand(scope->GetScopeInfo(codegen->isolate()));
         codegen_->PushFunctionArgumentForContextAllocation();
         codegen_->CallRuntimeWithOperands(Runtime::kPushBlockContext);
@@ -1881,7 +1881,7 @@ FullCodeGenerator::EnterBlockScopeIfNeeded::EnterBlockScopeIfNeeded(
       codegen_->PrepareForBailoutForId(entry_id, NO_REGISTERS);
     }
     {
-      Comment cmnt(masm(), "[ Declarations");
+      Comment cmnt(masm(), "\x5b\x20\x44\x65\x63\x6c\x61\x72\x61\x74\x69\x6f\x6e\x73");
       codegen_->VisitDeclarations(scope->declarations());
       codegen_->PrepareForBailoutForId(declarations_id, NO_REGISTERS);
     }

@@ -80,8 +80,8 @@ bool LCodeGenBase::GenerateBody() {
            instr->hydrogen_value()->block()->IsReachable());
       if (FLAG_code_comments && !emit_instructions) {
         Comment(
-            ";;; <@%d,#%d> -------------------- B%d (unreachable/replaced) "
-            "--------------------",
+            "\x3b\x3b\x3b\x20\x3c\x40\x25\x64\x2c\x23\x25\x64\x3e\x20\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x20\x42\x25\x64\x20\x28\x75\x6e\x72\x65\x61\x63\x68\x61\x62\x6c\x65\x2f\x72\x65\x70\x6c\x61\x63\x65\x64\x29\x20"
+            "\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d\x2d",
             current_instruction_,
             instr->hydrogen_value()->id(),
             instr->hydrogen_value()->block()->block_id());
@@ -90,7 +90,7 @@ bool LCodeGenBase::GenerateBody() {
     if (!emit_instructions) continue;
 
     if (FLAG_code_comments && instr->HasInterestingComment(codegen)) {
-      Comment(";;; <@%d,#%d> %s",
+      Comment("\x3b\x3b\x3b\x20\x3c\x40\x25\x64\x2c\x23\x25\x64\x3e\x20\x25\x73",
               current_instruction_,
               instr->hydrogen_value()->id(),
               instr->Mnemonic());
@@ -125,12 +125,12 @@ void LCodeGenBase::CheckEnvironmentUsage() {
 
     HInstruction* hinstr = HInstruction::cast(hval);
     if (!hinstr->CanDeoptimize() && instr->HasEnvironment()) {
-      V8_Fatal(__FILE__, __LINE__, "CanDeoptimize is wrong for %s (%s)",
+      V8_Fatal(__FILE__, __LINE__, "\x43\x61\x6e\x44\x65\x6f\x70\x74\x69\x6d\x69\x7a\x65\x20\x69\x73\x20\x77\x72\x6f\x6e\x67\x20\x66\x6f\x72\x20\x25\x73\x20\x28\x25\x73\x29",
                hinstr->Mnemonic(), instr->Mnemonic());
     }
 
     if (instr->HasEnvironment() && !instr->environment()->has_been_used()) {
-      V8_Fatal(__FILE__, __LINE__, "unused environment for %s (%s)",
+      V8_Fatal(__FILE__, __LINE__, "\x75\x6e\x75\x73\x65\x64\x20\x65\x6e\x76\x69\x72\x6f\x6e\x6d\x65\x6e\x74\x20\x66\x6f\x72\x20\x25\x73\x20\x28\x25\x73\x29",
                hinstr->Mnemonic(), instr->Mnemonic());
     }
   }
