@@ -430,10 +430,11 @@ void Assembler::bind_to(Label* L, int pos) {
 #endif
     next(L);  // call next before overwriting link with target at fixup_pos
     //Label addresses will have a max reach of 0
+#ifdef DEBUG
     if (maxReach != 0)  { 
     DCHECK(is_intn(offset, maxReach));
     }
-
+#endif
     target_at_put(fixup_pos, pos, &is_branch);
   }
   L->bind_to(pos);
