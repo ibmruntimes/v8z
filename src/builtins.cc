@@ -2946,7 +2946,7 @@ void ToDateString(double time_val, Vector<char> str, DateCache* date_cache,
     case kDateAndTime:
       SNPrintF(str, u8"%s %s %02d %4d %02d:%02d:%02d GMT%c%02d%02d (%s)",
                kShortWeekDays[weekday], kShortMonths[month], day, year, hour,
-               min, sec, (timezone_offset < 0) ? '-' : '+', timezone_hour,
+               min, sec, (timezone_offset < 0) ? '\x2d' : '\x2b', timezone_hour,
                timezone_min, local_timezone);
       return;
   }
