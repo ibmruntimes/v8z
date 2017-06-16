@@ -327,7 +327,7 @@ void MacroAssembler::RecordWriteField(
     Label ok;
     AndP(r0, dst, Operand((1 << kPointerSizeLog2) - 1));
     beq(&ok, Label::kNear);
-    stop("Unaligned cell in write barrier");
+    stop(u8"Unaligned cell in write barrier");
     bind(&ok);
   }
 

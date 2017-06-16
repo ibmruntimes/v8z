@@ -4714,7 +4714,6 @@ class BuiltinFunctionTable {
 namespace {
 
 BuiltinFunctionTable builtin_function_table = BUILTIN_FUNCTION_TABLE_INIT;
-
 Handle<Code> MacroAssemblerBuilder(Isolate* isolate,
                                    BuiltinDesc const* builtin_desc) {
 // For now we generate builtin adaptor code into a stack-allocated
@@ -4725,6 +4724,9 @@ Handle<Code> MacroAssemblerBuilder(Isolate* isolate,
   const size_t buffer_size = 32 * KB;
 #elif V8_TARGET_ARCH_PPC64
   // 8 KB is insufficient on PPC64 when FLAG_debug_code is on.
+  const size_t buffer_size = 10 * KB;
+#elif V8_OS_ZOS
+  // 8 KB is insufficient for z/OS when FLAG_debug_code is on.
   const size_t buffer_size = 10 * KB;
 #else
   const size_t buffer_size = 8 * KB;
