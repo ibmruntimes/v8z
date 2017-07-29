@@ -1070,7 +1070,7 @@ Object* Isolate::Throw(Object* exception, MessageLocation* location) {
         FLAG_abort_on_uncaught_exception = false;
         // This flag is intended for use by JavaScript developers, so
         // print a user-friendly stack trace (not an internal one).
-        PrintF(stderr, "%s\n\nFROM\n",
+        PrintF(stderr, u8"%s\n\nFROM\n",
                MessageHandler::GetLocalizedMessage(this, message_obj).get());
         PrintCurrentStackTrace(stderr);
         base::OS::Abort();
@@ -1952,7 +1952,7 @@ void Isolate::Deinit() {
   DumpAndResetCompilationStats();
 
   if (FLAG_print_deopt_stress) {
-    PrintF(stdout, "=== Stress deopt counter: %u\n", stress_deopt_count_);
+    PrintF(stdout, u8"=== Stress deopt counter: %u\n", stress_deopt_count_);
   }
 
   if (cpu_profiler_) {
@@ -2248,7 +2248,7 @@ bool Isolate::Init(Deserializer* des) {
   }
 
   if (FLAG_trace_hydrogen || FLAG_trace_hydrogen_stubs) {
-    PrintF("Concurrent recompilation has been disabled for tracing.\n");
+    PrintF(u8"Concurrent recompilation has been disabled for tracing.\n");
   } else if (OptimizingCompileDispatcher::Enabled()) {
     optimizing_compile_dispatcher_ = new OptimizingCompileDispatcher(this);
   }
@@ -2910,14 +2910,14 @@ void Isolate::CheckDetachedContextsAfterGC() {
     counters()->detached_context_age_in_gc()->AddSample(mark_sweeps + 1);
   }
   if (FLAG_trace_detached_contexts) {
-    PrintF("%d detached contexts are collected out of %d\n",
+    PrintF(u8"%d detached contexts are collected out of %d\n",
            length - new_length, length);
     for (int i = 0; i < new_length; i += 2) {
       int mark_sweeps = Smi::cast(detached_contexts->get(i))->value();
       DCHECK(detached_contexts->get(i + 1)->IsWeakCell());
       WeakCell* cell = WeakCell::cast(detached_contexts->get(i + 1));
       if (mark_sweeps > 3) {
-        PrintF("detached context 0x%p\n survived %d GCs (leak?)\n",
+        PrintF(u8"detached context 0x%p\n survived %d GCs (leak?)\n",
                static_cast<void*>(cell->value()), mark_sweeps);
       }
     }

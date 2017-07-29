@@ -61,6 +61,11 @@
 #include <sys/prctl.h>  // NOLINT, for prctl
 #endif
 
+#if V8_OS_ZOS
+#include <sys/__getipc.h>
+#include <sys/msg.h>
+#endif
+
 namespace v8 {
 namespace base {
 
@@ -112,6 +117,42 @@ void OS::Free(void* address, const size_t size) {
   USE(result);
   DCHECK(result == 0);
 }
+
+#else
+
+static void ReleaseResourcesOnExit() {
+  /* TODO: This might make all other ReleaseSystem... functions redundant */
+  IPCQPROC bufptr;
+  int token;
+  int foreignid;
+
+  token = 0;
+  foreignid = 0;
+  while (token != -1) {
+    token = __getipc(token, &bufptr, sizeof(bufptr), IPCQALL);
+    if (memcmp(bufptr.common.ipcqtype, "IMSG", 4) == 0) {
+      if (bufptr.msg.ipcqpcp.uid != getuid() || bufptr.msg.ipcqlspid != getpid()) {
+        if (foreignid == 0)
+          foreignid = bufptr.msg.ipcqmid;
+        else if (foreignid == bufptr.msg.ipcqmid) /* have we rotated to the top */
+          break;
+        continue;
+      }
+      msgctl(bufptr.msg.ipcqmid, IPC_RMID, NULL);
+    }
+    else if (memcmp(bufptr.common.ipcqtype, "ISEM", 4) == 0) {
+      if (bufptr.sem.ipcqpcp.uid != getuid() || bufptr.sem.ipcqlopid != getpid()) {
+        if (foreignid == 0)
+          foreignid = bufptr.sem.ipcqmid;
+        else if (foreignid == bufptr.sem.ipcqmid) /* have we rotated to the top */
+          break;
+        continue;
+      }
+      semctl(bufptr.sem.ipcqmid, 1, IPC_RMID);
+    }
+  }
+}
+
 #endif
 
 // Get rid of writable permission on code allocations.
@@ -244,6 +285,7 @@ void OS::Sleep(TimeDelta interval) {
 void OS::Abort() {
   if (g_hard_abort) {
     v8::base::Semaphore::ReleaseSystemResources();
+    ReleaseResourcesOnExit();
     V8_IMMEDIATE_CRASH();
   }
   // Redirect to std abort to signal abnormal program termination.
