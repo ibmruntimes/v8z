@@ -102,11 +102,14 @@ int sem_init(sem_t *sem, int pshared, unsigned int value) {
     return -1;
   }
   // Assign value to the semaphore.
-  struct sembuf buf;
-  buf.sem_num = 0;
-  buf.sem_op = value;
-  buf.sem_flg = 0;
-  if (semop(sem->__semid, &buf, 1) == -1) {
+  union {
+    int              val;
+    struct semid_ds *buf;
+    unsigned short  *array;
+  } arg;
+  arg.val = value;
+
+  if (-1 == semctl(sem->__semid, 0, SETVAL, arg)) {
     assignSemInitializeError();
     return -1;
   }
