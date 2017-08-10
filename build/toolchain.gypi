@@ -1007,7 +1007,6 @@
           '-qdebug=nohook',
           '-qbitfield=signed',
           '-qnortti',
-          '-qinline=:::300',
           '-Wc,expo',
         ],
         'ldflags': [
@@ -1161,6 +1160,7 @@
               '-O2',
               '-O1',
               '-Os',
+              '-qinline=:::300',
             ],
             'conditions': [
               ['OS!="os390"', {
