@@ -1160,15 +1160,12 @@
               '-O2',
               '-O1',
               '-Os',
-              '-qinline=:::300',
             ],
-            'conditions': [
-              ['OS!="os390"', {
-                'cflags': [
-                '-fdata-sections',
-                '-ffunction-sections',
-                ],
-              }],
+          }],
+          ['OS!="os390"', {
+            'cflags': [
+            '-fdata-sections',
+            '-ffunction-sections',
             ],
           }],
           ['OS=="mac"', {
@@ -1357,6 +1354,11 @@
                 'cflags': ['-O2'],
                 'cflags!': ['-O3'],
               }],
+            ],
+          }],
+          ['OS=="os390"', {
+            'cflags': [
+              '-qinline=:::300',
             ],
           }],
           ['OS=="android"', {
