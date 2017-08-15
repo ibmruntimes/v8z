@@ -69,13 +69,13 @@ using namespace ::v8::internal;
 #define GET_STACK_POINTER() \
   static intptr_t sp_addr = 0; \
   do { \
-    ASM("stg 15, %0" : "=g" (sp_addr)); \
+    ASM("stg 15, %0" : "=m" (sp_addr)); \
   } while (0)
 #elif defined(__s390__) || defined(_ARCH_S390)
 #define GET_STACK_POINTER() \
   static intptr_t sp_addr = 0; \
   do { \
-    ASM("st 15, %0" : "=g" (sp_addr)); \
+    ASM("st 15, %0" : "=m" (sp_addr)); \
   } while (0)
 #elif defined(__PPC64__) || defined(_ARCH_PPC64)
 #define GET_STACK_POINTER() \
