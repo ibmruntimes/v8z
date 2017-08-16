@@ -666,7 +666,7 @@ void MathExpGenerator::EmitMathExp(MacroAssembler* masm,
   __ b(&done, Label::kNear);
 
   __ bind(&zero);
-  __ ldr(result, kDoubleRegZero);
+  __ lzdr(result);
   __ b(&done, Label::kNear);
 
   __ bind(&infinity);
