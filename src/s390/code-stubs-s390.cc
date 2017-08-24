@@ -1107,7 +1107,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
       __ LoadDoubleLiteral(double_scratch, -V8_INFINITY, scratch);
       __ cdbr(double_base, double_scratch);
       __ bne(&not_minus_inf2, Label::kNear);
-      __ ldr(double_result, kDoubleRegZero);
+      __ lzdr(double_result);
       __ b(&done);
       __ bind(&not_minus_inf2);
 
@@ -1180,6 +1180,7 @@ void MathPowStub::Generate(MacroAssembler* masm) {
 
   // Test whether result is zero.  Bail out to check for subnormal result.
   // Due to subnormals, x^-y == (1/x)^y does not hold in all cases.
+  __ lzdr(kDoubleRegZero);
   __ cdbr(double_result, kDoubleRegZero);
   __ bne(&done, Label::kNear);
   // double_exponent may not containe the exponent value if the input was a
