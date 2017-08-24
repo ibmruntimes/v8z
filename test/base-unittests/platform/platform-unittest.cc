@@ -99,7 +99,7 @@ class ThreadLocalStorageTest : public Thread, public ::testing::Test {
     return reinterpret_cast<void*>(static_cast<uintptr_t>(x + 1));
   }
 
-  Thread::LocalStorageKey keys_[256];
+  Thread::LocalStorageKey keys_[32];
 };
 
 }
