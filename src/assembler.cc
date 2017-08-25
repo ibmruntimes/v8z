@@ -856,7 +856,7 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
 
 
 void RelocInfo::Print(Isolate* isolate, v8::base::OStream& os) {  // NOLINT
-  os << static_cast<const void*>(pc_) << "\x20\x20" << RelocModeName(rmode_);
+  os << static_cast<void*>(pc_) << "\x20\x20" << RelocModeName(rmode_);
   if (IsComment(rmode_)) {
     os << "\x20\x20\x28" << reinterpret_cast<char*>(data_) << "\x29";
   } else if (rmode_ == DEOPT_REASON) {
