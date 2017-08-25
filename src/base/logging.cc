@@ -29,7 +29,6 @@ namespace base {
       std::ostringstream oss; \
       oss << val; \
       std::string str = oss.str(); \
-      std::string ret = str; \
       std::transform(str.begin(), str.end(), str.begin(), Ebcdic2Ascii); \
       std::operator<<(*this, str.c_str()); \
       return *this; \
