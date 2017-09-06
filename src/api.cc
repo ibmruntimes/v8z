@@ -395,6 +395,9 @@ StartupData SerializeIsolateAndContext(
   // context even after we have disposed of the context.
   internal_isolate->heap()->CollectAllAvailableGarbage(u8"mksnapshot");
 
+  // We might rehash strings and re-sort descriptors. Clear the lookup cache.
+  internal_isolate->descriptor_lookup_cache()->Clear();
+
   // GC may have cleared weak cells, so compact any WeakFixedArrays
   // found on the heap.
   i::HeapIterator iterator(internal_isolate->heap(),
@@ -427,6 +430,9 @@ StartupData SerializeIsolateAndContext(
   i::PartialSerializer context_ser(internal_isolate, &ser, &context_sink);
   context_ser.Serialize(&raw_context);
   ser.SerializeWeakReferencesAndDeferred();
+
+  metadata.set_can_rehash(ser.can_be_rehashed() &&
+                          context_ser.can_be_rehashed());
 
   return i::Snapshot::CreateSnapshotBlob(ser, context_ser, metadata);
 }
@@ -2386,6 +2392,10 @@ void v8::TryCatch::ResetInternal() {
 
 void v8::TryCatch::SetVerbose(bool value) {
   is_verbose_ = value;
+}
+
+bool v8::TryCatch::IsVerbose() const {
+  return is_verbose_;
 }
 
 
