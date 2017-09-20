@@ -1880,7 +1880,7 @@
             '../../src/base/platform/platform-posix.cc'
           ]},
         ],
-		['OS=="os390"', {
+		['OS=="zos"', {
             'sources': [
               '../../src/s390/semaphore-zos.cc',
               '../../src/s390/semaphore-zos.h',

@@ -987,7 +987,7 @@
           },
         },
       }],
-      ['OS=="os390"', {
+      ['OS=="zos"', {
         'defines': [
           '_UNIX03_THREADS',
           '_XOPEN_SOURCE=500',
@@ -1098,7 +1098,7 @@
           }],
         ],  # conditions
       }],
-      ['OS=="os390"', {
+      ['OS=="zos"', {
         'conditions': [
           [ 'v8_no_strict_aliasing==1', {
             'cflags': [ '-qnoansialias' ],
@@ -1154,7 +1154,7 @@
         },
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" or \
-            OS=="qnx" or OS=="aix" or OS=="os390"', {
+            OS=="qnx" or OS=="aix" or OS=="zos"', {
             'cflags!': [
               '-O3',
               '-O2',
@@ -1162,7 +1162,7 @@
               '-Os',
             ],
           }],
-          ['OS!="os390"', {
+          ['OS!="zos"', {
             'cflags': [
             '-fdata-sections',
             '-ffunction-sections',
@@ -1335,7 +1335,7 @@
               '-Os',
             ],
             'conditions': [
-              ['OS!="os390"', {
+              ['OS!="zos"', {
                 'cflags': [
                   '-fdata-sections',
                   '-ffunction-sections',
@@ -1356,7 +1356,7 @@
               }],
             ],
           }],
-          ['OS=="os390"', {
+          ['OS=="zos"', {
             'cflags': [
               '-qinline=:::300',
             ],

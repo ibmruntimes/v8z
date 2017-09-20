@@ -395,10 +395,10 @@
           ['OS=="aix"', {
             'cflags': [ '-gxcoff' ],
           }],
-		  ['OS=="os390"', {
+		  ['OS=="zos"', {
 		    'cflags': [ '-o noopt' ],
 		  }],
-		  [ 'OS!="os390"', {
+		  [ 'OS!="zos"', {
 		    'cflags': [ '-O0' ], 
 		  }],
         ],
@@ -689,7 +689,7 @@
         ],
       },  # target_defaults
     }],  # OS=="mac"
-    ['OS=="os390"', {
+    ['OS=="zos"', {
       'target_defaults': {
         'cflags': [ '-qdebug=nohook','-g','-Wc,expo','-q64','-qnortti',
                     '-qbitfield=signed',
@@ -710,7 +710,7 @@
           }],
         ],
       },
-    }],  # OS=="os390"
+    }],  # OS=="zos"
     ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
        or OS=="netbsd" or OS=="aix"', {
       'target_defaults': {
