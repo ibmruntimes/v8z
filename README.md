@@ -31,36 +31,40 @@ configuration in `.git/config`:
 
 Configuring your z/OS build environment
 ================
+``` 
  #GMAKE SETUP#
- export PATH=<PATH TO GMAKE>:$PATH
+ export PATH=<PATH TO GMAKE>:PATH
  
  #PYTHON SETUP#
  export PYTHONDIR=<path to folder where python is installed>
- export PYTHONHOME=$PYTHONDIR
- export PYTHONPATH=$PYTHONDIR/lib/python2.7 
- export LIBPATH=$PYTHONDIR/lib:$LIBPATH
+ export PYTHONHOME=PYTHONDIR
+ export PYTHONPATH=PYTHONDIR/lib/python2.7 
+ export LIBPATH=PYTHONDIR/lib:LIBPATH
  
  #BUILD COMPILER SETUP#
- export PATH=<path to C/C++ compiler>:$PATH
+ export PATH=<path to C/C++ compiler>:PATH
  export CXX=njsc++ (when using the compiler packaged with z/OS Node beta)
- export CXX_host=$CXX
- export LINK=$CXX
+ export CXX_host=CXX
+ export LINK=CXX
 
  #GYP CONFIG#
  export GYP_DEFINES="OS=zos target_arch=s390x v8_target_arch=s390x"
 
+```
+
 Building and Testing
 =============
-cd v8
-make s390x.debug i18nsupport=off snapshot=off -j9 (DEBUG build)
-make s390x.release i18nsupport=off snapshot=off -j9 (RELEASE build)
+```
+ cd v8
+ make s390x.debug i18nsupport=off snapshot=off -j9 (DEBUG build)
+ make s390x.release i18nsupport=off snapshot=off -j9 (RELEASE build)
 
 For testing release build
 
-python tools/run-tests.py -j1 --arch-and-mode=s390x.release \
+ python tools/run-tests.py -j1 --arch-and-mode=s390x.release \
     --no-presubmit --no-i18n --no-snap --no-variants --nonetwork \
-        --junitout $WORKSPACE/v8a.xml "mjsunit" 2>&1
-
+        --junitout WORKSPACE/v8a.xml "mjsunit" 2>&1
+```
 
 Contributing
 =============
