@@ -746,19 +746,19 @@ Local<Value> V8::GetEternal(Isolate* v8_isolate, int index) {
 
 
 void V8::FromJustIsNothing() {
-  Utils::ApiCheck(false, "v8::FromJust", "Maybe value is Nothing.");
+  Utils::ApiCheck(false, u8"v8::FromJust", u8"Maybe value is Nothing.");
 }
 
 
 void V8::ToLocalEmpty() {
-  Utils::ApiCheck(false, "v8::ToLocalChecked", "Empty MaybeLocal.");
+  Utils::ApiCheck(false, u8"v8::ToLocalChecked", u8"Empty MaybeLocal.");
 }
 
 
 void V8::InternalFieldOutOfBounds(int index) {
   Utils::ApiCheck(0 <= index && index < kInternalFieldsInWeakCallback,
-                  "WeakCallbackInfo::GetInternalField",
-                  "Internal field out of bounds.");
+                  u8"WeakCallbackInfo::GetInternalField",
+                  u8"Internal field out of bounds.");
 }
 
 
@@ -781,8 +781,8 @@ void HandleScope::Initialize(Isolate* isolate) {
       !v8::Locker::IsActive() ||
           internal_isolate->thread_manager()->IsLockedByCurrentThread() ||
           internal_isolate->serializer_enabled(),
-      "HandleScope::HandleScope",
-      "Entering the V8 API without proper locking in place");
+      u8"HandleScope::HandleScope",
+      u8"Entering the V8 API without proper locking in place");
   i::HandleScopeData* current = internal_isolate->handle_scope_data();
   isolate_ = internal_isolate;
   prev_next_ = current->next;
@@ -829,8 +829,8 @@ EscapableHandleScope::EscapableHandleScope(Isolate* v8_isolate) {
 i::Object** EscapableHandleScope::Escape(i::Object** escape_value) {
   i::Heap* heap = reinterpret_cast<i::Isolate*>(GetIsolate())->heap();
   Utils::ApiCheck(*escape_slot_ == heap->the_hole_value(),
-                  "EscapeableHandleScope::Escape",
-                  "Escape value set twice");
+                  u8"EscapeableHandleScope::Escape",
+                  u8"Escape value set twice");
   if (escape_value == NULL) {
     *escape_slot_ = heap->undefined_value();
     return NULL;
@@ -890,8 +890,8 @@ void Context::Exit() {
   ENTER_V8(isolate);
   i::HandleScopeImplementer* impl = isolate->handle_scope_implementer();
   if (!Utils::ApiCheck(impl->LastEnteredContextWas(env),
-                       "v8::Context::Exit()",
-                       "Cannot exit non-entered context")) {
+                       u8"v8::Context::Exit()",
+                       u8"Cannot exit non-entered context")) {
     return;
   }
   impl->LeaveContext();
@@ -921,8 +921,8 @@ static i::Handle<i::FixedArray> EmbedderDataFor(Context* context,
   bool ok =
       Utils::ApiCheck(env->IsNativeContext(),
                       location,
-                      "Not a native context") &&
-      Utils::ApiCheck(index >= 0, location, "Negative index");
+                      u8"Not a native context") &&
+      Utils::ApiCheck(index >= 0, location, u8"Negative index");
   if (!ok) return i::Handle<i::FixedArray>();
   i::Handle<i::FixedArray> data(env->embedder_data());
   if (index < data->length()) return data;
@@ -1126,7 +1126,7 @@ Local<ObjectTemplate> FunctionTemplate::PrototypeTemplate() {
 static void EnsureNotInstantiated(i::Handle<i::FunctionTemplateInfo> info,
                                   const char* func) {
   Utils::ApiCheck(!info->instantiated(), func,
-                  "FunctionTemplate already instantiated");
+                  u8"FunctionTemplate already instantiated");
 }
 
 
@@ -1294,8 +1294,8 @@ static i::Handle<i::AccessorInfo> MakeAccessorInfo(
 Local<ObjectTemplate> FunctionTemplate::InstanceTemplate() {
   i::Handle<i::FunctionTemplateInfo> handle = Utils::OpenHandle(this, true);
   if (!Utils::ApiCheck(!handle.is_null(),
-                       "v8::FunctionTemplate::InstanceTemplate()",
-                       "Reading from empty handle")) {
+                       u8"v8::FunctionTemplate::InstanceTemplate()",
+                       u8"Reading from empty handle")) {
     return Local<ObjectTemplate>();
   }
   i::Isolate* isolate = handle->GetIsolate();
@@ -1687,8 +1687,8 @@ int ObjectTemplate::InternalFieldCount() {
 void ObjectTemplate::SetInternalFieldCount(int value) {
   i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
   if (!Utils::ApiCheck(i::Smi::IsValid(value),
-                       "v8::ObjectTemplate::SetInternalFieldCount()",
-                       "Invalid internal field count")) {
+                       u8"v8::ObjectTemplate::SetInternalFieldCount()",
+                       u8"Invalid internal field count")) {
     return;
   }
   ENTER_V8(isolate);
@@ -3217,78 +3217,78 @@ void v8::String::CheckCast(v8::Value* that) {
 void v8::Symbol::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsSymbol(),
-                  "v8::Symbol::Cast()",
-                  "Could not convert to symbol");
+                  u8"v8::Symbol::Cast()",
+                  u8"Could not convert to symbol");
 }
 
 
 void v8::Number::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsNumber(),
-                  "v8::Number::Cast()",
-                  "Could not convert to number");
+                  u8"v8::Number::Cast()",
+                  u8"Could not convert to number");
 }
 
 
 void v8::Integer::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsNumber(),
-                  "v8::Integer::Cast()",
-                  "Could not convert to number");
+                  u8"v8::Integer::Cast()",
+                  u8"Could not convert to number");
 }
 
 
 void v8::Int32::CheckCast(v8::Value* that) {
-  Utils::ApiCheck(that->IsInt32(), "v8::Int32::Cast()",
-                  "Could not convert to 32-bit signed integer");
+  Utils::ApiCheck(that->IsInt32(), u8"v8::Int32::Cast()",
+                  u8"Could not convert to 32-bit signed integer");
 }
 
 
 void v8::Uint32::CheckCast(v8::Value* that) {
-  Utils::ApiCheck(that->IsUint32(), "v8::Uint32::Cast()",
-                  "Could not convert to 32-bit unsigned integer");
+  Utils::ApiCheck(that->IsUint32(), u8"v8::Uint32::Cast()",
+                  u8"Could not convert to 32-bit unsigned integer");
 }
 
 
 void v8::Array::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSArray(),
-                  "v8::Array::Cast()",
-                  "Could not convert to array");
+                  u8"v8::Array::Cast()",
+                  u8"Could not convert to array");
 }
 
 
 void v8::Map::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
-  Utils::ApiCheck(obj->IsJSMap(), "v8::Map::Cast()",
-                  "Could not convert to Map");
+  Utils::ApiCheck(obj->IsJSMap(), u8"v8::Map::Cast()",
+                  u8"Could not convert to Map");
 }
 
 
 void v8::Set::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
-  Utils::ApiCheck(obj->IsJSSet(), "v8::Set::Cast()",
-                  "Could not convert to Set");
+  Utils::ApiCheck(obj->IsJSSet(), u8"v8::Set::Cast()",
+                  u8"Could not convert to Set");
 }
 
 
 void v8::Promise::CheckCast(Value* that) {
   Utils::ApiCheck(that->IsPromise(),
-                  "v8::Promise::Cast()",
-                  "Could not convert to promise");
+                  u8"v8::Promise::Cast()",
+                  u8"Could not convert to promise");
 }
 
 
 void v8::Promise::Resolver::CheckCast(Value* that) {
   Utils::ApiCheck(that->IsPromise(),
-                  "v8::Promise::Resolver::Cast()",
-                  "Could not convert to promise resolver");
+                  u8"v8::Promise::Resolver::Cast()",
+                  u8"Could not convert to promise resolver");
 }
 
 
 void v8::Proxy::CheckCast(Value* that) {
-  Utils::ApiCheck(that->IsProxy(), "v8::Proxy::Cast()",
-                  "Could not convert to proxy");
+  Utils::ApiCheck(that->IsProxy(), u8"v8::Proxy::Cast()",
+                  u8"Could not convert to proxy");
 }
 
 
@@ -3296,23 +3296,23 @@ void v8::ArrayBuffer::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(
       obj->IsJSArrayBuffer() && !i::JSArrayBuffer::cast(*obj)->is_shared(),
-      "v8::ArrayBuffer::Cast()", "Could not convert to ArrayBuffer");
+      u8"v8::ArrayBuffer::Cast()", "Could not convert to ArrayBuffer");
 }
 
 
 void v8::ArrayBufferView::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSArrayBufferView(),
-                  "v8::ArrayBufferView::Cast()",
-                  "Could not convert to ArrayBufferView");
+                  u8"v8::ArrayBufferView::Cast()",
+                  u8"Could not convert to ArrayBufferView");
 }
 
 
 void v8::TypedArray::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSTypedArray(),
-                  "v8::TypedArray::Cast()",
-                  "Could not convert to TypedArray");
+                  u8"v8::TypedArray::Cast()",
+                  u8"Could not convert to TypedArray");
 }
 
 
@@ -3334,8 +3334,8 @@ TYPED_ARRAYS(CHECK_TYPED_ARRAY_CAST)
 void v8::DataView::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSDataView(),
-                  "v8::DataView::Cast()",
-                  "Could not convert to DataView");
+                  u8"v8::DataView::Cast()",
+                  u8"Could not convert to DataView");
 }
 
 
@@ -3343,7 +3343,7 @@ void v8::SharedArrayBuffer::CheckCast(Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(
       obj->IsJSArrayBuffer() && i::JSArrayBuffer::cast(*obj)->is_shared(),
-      "v8::SharedArrayBuffer::Cast()",
+      u8"v8::SharedArrayBuffer::Cast()",
       "Could not convert to SharedArrayBuffer");
 }
 
@@ -3354,7 +3354,7 @@ void v8::Date::CheckCast(v8::Value* that) {
   if (obj->IsHeapObject()) isolate = i::HeapObject::cast(*obj)->GetIsolate();
   Utils::ApiCheck(isolate != NULL &&
                   obj->HasSpecificClassOf(isolate->heap()->Date_string()),
-                  "v8::Date::Cast()",
+                  u8"v8::Date::Cast()",
                   "Could not convert to date");
 }
 
@@ -3365,7 +3365,7 @@ void v8::StringObject::CheckCast(v8::Value* that) {
   if (obj->IsHeapObject()) isolate = i::HeapObject::cast(*obj)->GetIsolate();
   Utils::ApiCheck(isolate != NULL &&
                   obj->HasSpecificClassOf(isolate->heap()->String_string()),
-                  "v8::StringObject::Cast()",
+                  u8"v8::StringObject::Cast()",
                   "Could not convert to StringObject");
 }
 
@@ -3376,8 +3376,8 @@ void v8::SymbolObject::CheckCast(v8::Value* that) {
   if (obj->IsHeapObject()) isolate = i::HeapObject::cast(*obj)->GetIsolate();
   Utils::ApiCheck(isolate != NULL &&
                   obj->HasSpecificClassOf(isolate->heap()->Symbol_string()),
-                  "v8::SymbolObject::Cast()",
-                  "Could not convert to SymbolObject");
+                  u8"v8::SymbolObject::Cast()",
+                  u8"Could not convert to SymbolObject");
 }
 
 
@@ -3387,8 +3387,8 @@ void v8::NumberObject::CheckCast(v8::Value* that) {
   if (obj->IsHeapObject()) isolate = i::HeapObject::cast(*obj)->GetIsolate();
   Utils::ApiCheck(isolate != NULL &&
                   obj->HasSpecificClassOf(isolate->heap()->Number_string()),
-                  "v8::NumberObject::Cast()",
-                  "Could not convert to NumberObject");
+                  u8"v8::NumberObject::Cast()",
+                  u8"Could not convert to NumberObject");
 }
 
 
@@ -3398,16 +3398,16 @@ void v8::BooleanObject::CheckCast(v8::Value* that) {
   if (obj->IsHeapObject()) isolate = i::HeapObject::cast(*obj)->GetIsolate();
   Utils::ApiCheck(isolate != NULL &&
                   obj->HasSpecificClassOf(isolate->heap()->Boolean_string()),
-                  "v8::BooleanObject::Cast()",
-                  "Could not convert to BooleanObject");
+                  u8"v8::BooleanObject::Cast()",
+                  u8"Could not convert to BooleanObject");
 }
 
 
 void v8::RegExp::CheckCast(v8::Value* that) {
   i::Handle<i::Object> obj = Utils::OpenHandle(that);
   Utils::ApiCheck(obj->IsJSRegExp(),
-                  "v8::RegExp::Cast()",
-                  "Could not convert to regular expression");
+                  u8"v8::RegExp::Cast()",
+                  u8"Could not convert to regular expression");
 }
 
 
@@ -5478,7 +5478,7 @@ static bool InternalFieldOK(i::Handle<i::JSReceiver> obj, int index,
   return Utils::ApiCheck(
       obj->IsJSObject() &&
           (index < i::Handle<i::JSObject>::cast(obj)->GetInternalFieldCount()),
-      location, "Internal field out of bounds");
+      location, u8"Internal field out of bounds");
 }
 
 
@@ -6733,8 +6733,8 @@ bool v8::ArrayBuffer::IsNeuterable() const {
 v8::ArrayBuffer::Contents v8::ArrayBuffer::Externalize() {
   i::Handle<i::JSArrayBuffer> self = Utils::OpenHandle(this);
   i::Isolate* isolate = self->GetIsolate();
-  Utils::ApiCheck(!self->is_external(), "v8::ArrayBuffer::Externalize",
-                  "ArrayBuffer already externalized");
+  Utils::ApiCheck(!self->is_external(), u8"v8::ArrayBuffer::Externalize",
+                  u8"ArrayBuffer already externalized");
   self->set_is_external(true);
   isolate->heap()->UnregisterArrayBuffer(*self);
 
@@ -6756,11 +6756,11 @@ void v8::ArrayBuffer::Neuter() {
   i::Handle<i::JSArrayBuffer> obj = Utils::OpenHandle(this);
   i::Isolate* isolate = obj->GetIsolate();
   Utils::ApiCheck(obj->is_external(),
-                  "v8::ArrayBuffer::Neuter",
-                  "Only externalized ArrayBuffers can be neutered");
-  Utils::ApiCheck(obj->is_neuterable(), "v8::ArrayBuffer::Neuter",
-                  "Only neuterable ArrayBuffers can be neutered");
-  LOG_API(obj->GetIsolate(), "v8::ArrayBuffer::Neuter()");
+                  u8"v8::ArrayBuffer::Neuter",
+                  u8"Only externalized ArrayBuffers can be neutered");
+  Utils::ApiCheck(obj->is_neuterable(), u8"v8::ArrayBuffer::Neuter",
+                  u8"Only neuterable ArrayBuffers can be neutered");
+  LOG_API(obj->GetIsolate(), u8"v8::ArrayBuffer::Neuter()");
   ENTER_V8(isolate);
   obj->Neuter();
 }
@@ -6946,8 +6946,8 @@ bool v8::SharedArrayBuffer::IsExternal() const {
 v8::SharedArrayBuffer::Contents v8::SharedArrayBuffer::Externalize() {
   i::Handle<i::JSArrayBuffer> self = Utils::OpenHandle(this);
   i::Isolate* isolate = self->GetIsolate();
-  Utils::ApiCheck(!self->is_external(), "v8::SharedArrayBuffer::Externalize",
-                  "SharedArrayBuffer already externalized");
+  Utils::ApiCheck(!self->is_external(), u8"v8::SharedArrayBuffer::Externalize",
+                  u8"SharedArrayBuffer already externalized");
   self->set_is_external(true);
   isolate->heap()->UnregisterArrayBuffer(*self);
   return GetContents();
@@ -7394,8 +7394,8 @@ Isolate* Isolate::New(const Isolate::CreateParams& params) {
 void Isolate::Dispose() {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
   if (!Utils::ApiCheck(!isolate->IsInUse(),
-                       "v8::Isolate::Dispose()",
-                       "Disposing the isolate that is entered by a thread.")) {
+                       u8"v8::Isolate::Dispose()",
+                       u8"Disposing the isolate that is entered by a thread.")) {
     return;
   }
   isolate->TearDown();
