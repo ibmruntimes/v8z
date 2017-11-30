@@ -460,7 +460,7 @@ $(OUT_MAKEFILES): $(GYPFILES) $(ENVFILE)
 $(OUTDIR)/Makefile.native: $(GYPFILES) $(ENVFILE)
 	PYTHONPATH="$(shell pwd)/tools/generate_shim_headers:$(shell pwd)/build:$(PYTHONPATH):$(shell pwd)/build/gyp/pylib:$(PYTHONPATH)" \
 	GYP_GENERATORS=make \
-	build/gyp/gyp $(if $(findstring OS=os390, $(GYP_DEFINES)), \
+	build/gyp/gyp $(if $(findstring OS=zos, $(GYP_DEFINES)), \
 	              --no-parallel) \
 	              --generator-output="$(OUTDIR)" build/all.gyp \
 	              -Ibuild/standalone.gypi --depth=. -S.native $(GYPFLAGS)
