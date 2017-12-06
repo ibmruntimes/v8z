@@ -946,9 +946,13 @@ Type* Type::Union(Type* type1, Type* type2, Zone* zone) {
   Type* range1 = type1->GetRange();
   Type* range2 = type2->GetRange();
   if (range1 != NULL && range2 != NULL) {
+    double min1 = range1->Min();
+    double max1 = range1->Max();
+    double min2 = range2->Min();
+    double max2 = range2->Max();
     RangeType::Limits lims =
-        RangeType::Limits::Union(RangeType::Limits(range1->AsRange()),
-                                 RangeType::Limits(range2->AsRange()));
+        RangeType::Limits::Union(RangeType::Limits(min1,max1),
+                                 RangeType::Limits(min2,max2));
     Type* union_range = RangeType::New(lims, representation, zone);
     range = NormalizeRangeAndBitset(union_range, &new_bitset, zone);
   } else if (range1 != NULL) {
