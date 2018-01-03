@@ -990,7 +990,6 @@
       ['OS=="zos"', {
         'defines': [
           '_UNIX03_THREADS',
-          '_XOPEN_SOURCE=500',
           '__IBMCPP_TR1__',
           '_OPEN_SYS_TIMED_EXT',
           '__BIG_ENDIAN=4321',
