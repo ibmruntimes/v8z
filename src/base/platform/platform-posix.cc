@@ -126,30 +126,26 @@ static void ReleaseResourcesOnExit() {
   int token;
   int foreignid;
 
-  token = 0;
-  foreignid = 0;
-  while (token != -1) {
-    token = __getipc(token, &bufptr, sizeof(bufptr), IPCQALL);
-    if (memcmp(bufptr.common.ipcqtype, "IMSG", 4) == 0) {
-      if (bufptr.msg.ipcqpcp.uid != getuid() || bufptr.msg.ipcqlspid != getpid()) {
-        if (foreignid == 0)
-          foreignid = bufptr.msg.ipcqmid;
-        else if (foreignid == bufptr.msg.ipcqmid) /* have we rotated to the top */
-          break;
-        continue;
-      }
+  /* There are 3 ways we know that we have completed looping through the list.
+   * 1. If the token returned is -1.
+   * 2. If the token returned is equal to 0. This means we have looped through
+        and are back to the first item which we skipped over.
+   * 3. If the new token is equal to the previous token. This means we removed all
+        items from the list.
+   */
+
+  token = __getipc(0, &bufptr, sizeof(bufptr), IPCQMSG);
+  while (token != -1 && token != 0) {
+    if (bufptr.msg.ipcqpcp.uid == getuid() && bufptr.msg.ipcqlspid == getpid())
       msgctl(bufptr.msg.ipcqmid, IPC_RMID, NULL);
-    }
-    else if (memcmp(bufptr.common.ipcqtype, "ISEM", 4) == 0) {
-      if (bufptr.sem.ipcqpcp.uid != getuid() || bufptr.sem.ipcqlopid != getpid()) {
-        if (foreignid == 0)
-          foreignid = bufptr.sem.ipcqmid;
-        else if (foreignid == bufptr.sem.ipcqmid) /* have we rotated to the top */
-          break;
-        continue;
-      }
+    token = __getipc(token, &bufptr, sizeof(bufptr), IPCQMSG);
+  }
+
+  token = __getipc(0, &bufptr, sizeof(bufptr), IPCQSEM);
+  while (token != -1 && token != 0) {
+    if (bufptr.sem.ipcqpcp.uid == getuid() && bufptr.sem.ipcqlopid == getpid())
       semctl(bufptr.sem.ipcqmid, 1, IPC_RMID);
-    }
+    token = __getipc(token, &bufptr, sizeof(bufptr), IPCQSEM);
   }
 }
 
