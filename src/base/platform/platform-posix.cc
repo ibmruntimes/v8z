@@ -58,8 +58,13 @@
 #include <sys/prctl.h>  // NOLINT, for prctl
 #endif
 
-#if !defined(_AIX) && !defined(V8_OS_FUCHSIA)
+#if !defined(_AIX) && !defined(V8_OS_FUCHSIA) && !defined(V8_OS_ZOS)
 #include <sys/syscall.h>
+#endif
+
+#if V8_OS_ZOS
+#include <sys/__getipc.h>
+#include <sys/msg.h>
 #endif
 
 namespace v8 {
@@ -68,7 +73,11 @@ namespace base {
 namespace {
 
 // 0 is never a valid thread id.
+#if V8_OS_ZOS
+const pthread_t kNoThread = {0};
+#else
 const pthread_t kNoThread = (pthread_t) 0;
+#endif
 
 bool g_hard_abort = false;
 
@@ -110,13 +119,14 @@ void* OS::Allocate(const size_t requested, size_t* allocated,
                       hint);
 }
 
+#ifndef V8_OS_ZOS
 void OS::Free(void* address, const size_t size) {
   // TODO(1240712): munmap has a return value which is ignored here.
   int result = munmap(address, size);
   USE(result);
   DCHECK(result == 0);
 }
-
+#endif
 
 // Get rid of writable permission on code allocations.
 void OS::ProtectCode(void* address, const size_t size) {
@@ -170,7 +180,7 @@ const char* OS::GetGCFakeMMapFile() {
 
 void* OS::GetRandomMmapAddr() {
 #if defined(ADDRESS_SANITIZER) || defined(MEMORY_SANITIZER) || \
-    defined(THREAD_SANITIZER)
+    defined(THREAD_SANITIZER) || defined(V8_OS_ZOS)
   // Dynamic tools do not support custom mmap addresses.
   return NULL;
 #endif
@@ -269,8 +279,12 @@ void OS::DebugBreak() {
 #elif V8_HOST_ARCH_X64
   asm("int $3");
 #elif V8_HOST_ARCH_S390
+#if V8_OS_ZOS
+  // TODO(mallick):
+#else
   // Software breakpoint instruction is 0x0001
   asm volatile(".word 0x0001");
+#endif
 #else
 #error Unsupported host architecture.
 #endif
@@ -301,9 +315,10 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::open(const char* name) {
         void* const memory =
             mmap(OS::GetRandomMmapAddr(), size, PROT_READ | PROT_WRITE,
                  MAP_SHARED, fileno(file), 0);
-        if (memory != MAP_FAILED) {
+#if !defined(V8_OS_ZOS)
+        if (memory != MAP_FAILED) 
+#endif
           return new PosixMemoryMappedFile(file, memory, size);
-        }
       }
     }
     fclose(file);
@@ -320,9 +335,10 @@ OS::MemoryMappedFile* OS::MemoryMappedFile::create(const char* name,
     if (result == size && !ferror(file)) {
       void* memory = mmap(OS::GetRandomMmapAddr(), result,
                           PROT_READ | PROT_WRITE, MAP_SHARED, fileno(file), 0);
-      if (memory != MAP_FAILED) {
+#if !defined(V8_OS_ZOS)
+      if (memory != MAP_FAILED)
+#endif
         return new PosixMemoryMappedFile(file, memory, result);
-      }
     }
     fclose(file);
   }
@@ -340,8 +356,12 @@ int OS::GetCurrentProcessId() {
   return static_cast<int>(getpid());
 }
 
-
+#if defined(V8_OS_ZOS)
+pthread_t OS::GetCurrentThreadId() {
+#else
 int OS::GetCurrentThreadId() {
+#endif
+
 #if V8_OS_MACOSX || (V8_OS_ANDROID && defined(__APPLE__))
   return static_cast<int>(pthread_mach_thread_np(pthread_self()));
 #elif V8_OS_LINUX
@@ -354,6 +374,8 @@ int OS::GetCurrentThreadId() {
   return static_cast<int>(pthread_self());
 #elif V8_OS_SOLARIS
   return static_cast<int>(pthread_self());
+#elif V8_OS_ZOS
+  return pthread_self();
 #else
   return static_cast<int>(reinterpret_cast<intptr_t>(pthread_self()));
 #endif
@@ -602,7 +624,10 @@ static void* ThreadEntry(void* arg) {
   // one).
   { LockGuard<Mutex> lock_guard(&thread->data()->thread_creation_mutex_); }
   SetThreadName(thread->name());
+#if !defined(V8_OS_ZOS)  
+  // TODO(muntasir): FIXME
   DCHECK(thread->data()->thread_ != kNoThread);
+#endif  
   thread->NotifyStartedAndRun();
   return NULL;
 }
@@ -628,6 +653,8 @@ void Thread::Start() {
 #elif V8_OS_AIX
     // Default on AIX is 96kB -- bump up to 2MB
     stack_size = 2 * 1024 * 1024;
+#elif V8_OS_ZOS
+    stack_size = 4 * 1024 * 1024;
 #endif
   }
   if (stack_size > 0) {
@@ -641,7 +668,9 @@ void Thread::Start() {
   DCHECK_EQ(0, result);
   result = pthread_attr_destroy(&attr);
   DCHECK_EQ(0, result);
+#if !defined(V8_OS_ZOS)  
   DCHECK(data_->thread_ != kNoThread);
+#endif 
   USE(result);
 }
 

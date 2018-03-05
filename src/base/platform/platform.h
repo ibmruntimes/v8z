@@ -130,6 +130,9 @@ class V8_BASE_EXPORT OS {
   static int GetLastError();
 
   static FILE* FOpen(const char* path, const char* mode);
+#if defined(V8_OS_ZOS)
+  static FILE* FOpenASCII(const char * path_a, const char * mode_a);
+#endif
   static bool Remove(const char* path);
 
   static char DirectorySeparator();
@@ -146,12 +149,19 @@ class V8_BASE_EXPORT OS {
   // should go to stdout.
   static PRINTF_FORMAT(1, 2) void Print(const char* format, ...);
   static PRINTF_FORMAT(1, 0) void VPrint(const char* format, va_list args);
-
+#if defined(V8_OS_ZOS)
+  static PRINTF_FORMAT(1,2) void PrintASCII(const char * format_a, ...);
+#endif
   // Print output to a file. This is mostly used for debugging output.
   static PRINTF_FORMAT(2, 3) void FPrint(FILE* out, const char* format, ...);
   static PRINTF_FORMAT(2, 0) void VFPrint(FILE* out, const char* format,
                                           va_list args);
-
+#if defined(V8_OS_ZOS)
+  static PRINTF_FORMAT(3,4) int SNPrintFASCII(char * str, int length, const char * format, ...);
+  static PRINTF_FORMAT(3,0) int VSNPrintFASCII(char * str, int length, const char * format, va_list args);
+  static PRINTF_FORMAT(2,3) void FPrintASCII(FILE * out, const char * format, ...);
+  static PRINTF_FORMAT(2,0) void VFPrintASCII(FILE * out, const char * format_a, va_list args);
+#endif
   // Print error output to console. This is mostly used for error message
   // output. On platforms that has standard terminal output, the output
   // should go to stderr.
@@ -272,13 +282,19 @@ class V8_BASE_EXPORT OS {
   static int ActivationFrameAlignment();
 
   static int GetCurrentProcessId();
-
+#if defined(V8_OS_ZOS)
+  static pthread_t GetCurrentThreadId();
+  
+  // On zOS the default character encoding is in EBCDIC, this utility funciton
+  // will convert strings to ASCII.
+  static void ConvertToASCII(char * str);
+#else
   static int GetCurrentThreadId();
-
+#endif
  private:
   static const int msPerSecond = 1000;
 
-#if V8_OS_POSIX
+#if V8_OS_POSIX || V8_OS_ZOS
   static const char* GetGCFakeMMapFile();
 #endif
 
@@ -431,7 +447,11 @@ class V8_BASE_EXPORT VirtualMemory {
 class V8_BASE_EXPORT Thread {
  public:
   // Opaque data type for thread-local storage keys.
+#if defined(V8_OS_ZOS)
+  typedef pthread_key_t LocalStorageKey;
+#else
   typedef int32_t LocalStorageKey;
+#endif
 
   class Options {
    public:

@@ -12,7 +12,7 @@
 #endif
 #include "src/base/logging.h"
 
-#if V8_OS_POSIX
+#if V8_OS_POSIX || V8_OS_ZOS
 #include <pthread.h>  // NOLINT
 #endif
 
@@ -54,7 +54,7 @@ class V8_BASE_EXPORT Mutex final {
   bool TryLock() WARN_UNUSED_RESULT;
 
   // The implementation-defined native handle type.
-#if V8_OS_POSIX
+#if V8_OS_POSIX || V8_OS_ZOS
   typedef pthread_mutex_t NativeHandle;
 #elif V8_OS_WIN
   typedef SRWLOCK NativeHandle;
