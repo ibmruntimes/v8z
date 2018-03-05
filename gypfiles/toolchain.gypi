@@ -301,7 +301,7 @@
               'V8_TARGET_ARCH_S390_LE_SIM',
             ],
           }, {
-            'cflags': [ '-march=z196' ],
+            'cflags': [ '-qarch=z196' ],
           }],
           ],
       }],  # s390
@@ -988,6 +988,33 @@
           },
         },
       }],
+      ['OS=="zos"', {
+        'defines': [
+          '_UNIX03_THREADS',
+          '_XOPEN_SOURCE=500',
+          '__IBMCPP_TR1__',
+          '_OPEN_SYS_TIMED_EXT',
+          '__BIG_ENDIAN=4321',
+          '__BYTE_ORDER=__BIG_ENDIAN',
+        ],
+        'cflags': [
+          '-q64',
+          '-qxplink',
+          '-qlonglong',
+          '-qenum=int',
+          '-qcsect=v8z',
+          '-qasmlib=sys1.maclib:sys1.modgen',
+          '-qasm',
+          '-qdebug=nohook',
+          '-qbitfield=signed',
+          '-qnortti',
+          '-Wc,expo',
+        ],
+        'ldflags': [
+          '-q64',
+          '-qxplink',
+        ],
+      }],
       ['(OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
          or OS=="netbsd" or OS=="mac" or OS=="android" or OS=="qnx") and \
         v8_target_arch=="ia32"', {
@@ -1076,6 +1103,13 @@
           }],
         ],  # conditions
       }],
+      ['OS=="zos"', {
+        'conditions': [
+          [ 'v8_no_strict_aliasing==1', {
+            'cflags': [ '-qnoansialias' ],
+          }],
+        ],  # conditions
+      }],
       ['OS=="solaris"', {
         'defines': [ '__C99FEATURES__=1' ],  # isinf() etc.
       }],
@@ -1126,13 +1160,15 @@
         },
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" or \
-            OS=="qnx" or OS=="aix"', {
-            'cflags!': [
-              '-O3',
-              '-O2',
-              '-O1',
-              '-Os',
-            ],
+            OS=="qnx" or OS=="aix" or OS=="zos"', {
+             'cflags!': [
+               '-O3',
+               '-O2',
+               '-O1',
+               '-Os',
+              ],
+            }],
+            ['OS!="zos"', {
             'cflags': [
               '-fdata-sections',
               '-ffunction-sections',
@@ -1247,6 +1283,11 @@
                 'cflags': [ '-maix64 -mcmodel=large' ],
               }],
             ],
+          }],
+          ['OS == "zos"', {
+             'cflags': [
+               '-qinline=:::300',
+              ],
           }],
           ['OS=="android"', {
             'variables': {
