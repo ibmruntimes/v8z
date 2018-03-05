@@ -7,6 +7,9 @@
 #if V8_OS_MACOSX
 #include <mach/mach_init.h>
 #include <mach/task.h>
+#elif V8_OS_ZOS
+#include <algorithm>
+#include <sched.h>
 #endif
 
 #include <errno.h>
@@ -108,9 +111,12 @@ void Semaphore::Wait() {
 
 bool Semaphore::WaitFor(const TimeDelta& rel_time) {
   // Compute the time for end of timeout.
+#if V8_OS_ZOS
+  struct timespec ts = rel_time.ToTimespec();
+#else  
   const Time time = Time::NowFromSystemTime() + rel_time;
   const struct timespec ts = time.ToTimespec();
-
+#endif
   // Wait for semaphore signalled or timeout.
   while (true) {
     int result = sem_timedwait(&native_handle_, &ts);
@@ -122,14 +128,23 @@ bool Semaphore::WaitFor(const TimeDelta& rel_time) {
       result = -1;
     }
 #endif
+#if V8_OS_ZOS
+    if (result == -1 && errno == EAGAIN) {
+#else
     if (result == -1 && errno == ETIMEDOUT) {
-      // Timed out while waiting for semaphore.
+#endif
+        // Timed out while waiting for semaphore.
       return false;
     }
     // Signal caused spurious wakeup.
     DCHECK_EQ(-1, result);
     DCHECK_EQ(EINTR, errno);
   }
+}
+void Semaphore::ReleaseSystemResources() {
+#if V8_OS_ZOS
+    sem_destroy_all();
+#endif
 }
 
 #elif V8_OS_WIN
