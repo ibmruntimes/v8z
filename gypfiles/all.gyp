@@ -19,12 +19,12 @@
           ],
         }],
         # These items don't compile for Android on Mac.
-        ['host_os!="mac" or OS!="android"', {
+        ['host_os!="mac" or OS!="android"' , {
           'dependencies': [
-            '../samples/samples.gyp:*',
+        #    '../samples/samples.gyp:*',
             '../test/cctest/cctest.gyp:*',
-            '../test/fuzzer/fuzzer.gyp:*',
-            '../test/unittests/unittests.gyp:*',
+        #    '../test/fuzzer/fuzzer.gyp:*',
+        #    '../test/unittests/unittests.gyp:*',
           ],
         }],
         ['test_isolation_mode != "noop"', {
