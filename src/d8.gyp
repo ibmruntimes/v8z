@@ -39,7 +39,6 @@
       'type': 'executable',
       'dependencies': [
         'v8.gyp:v8',
-        'v8.gyp:v8_libbase',
         'v8.gyp:v8_libplatform',
       ],
       # Generated source files need this explicitly:
@@ -67,7 +66,7 @@
         }],
         ['(OS=="linux" or OS=="mac" or OS=="freebsd" or OS=="netbsd" \
            or OS=="openbsd" or OS=="solaris" or OS=="android" \
-           or OS=="qnx" or OS=="aix")', {
+           or OS=="qnx" or OS=="aix" or OS=="zos")', {
              'sources': [ 'd8-posix.cc', ]
            }],
         [ 'OS=="win"', {

@@ -316,8 +316,10 @@
       'type': 'executable',
       'dependencies': [
         'resources',
-        '../../src/v8.gyp:v8_libbase',
         '../../src/v8.gyp:v8_libplatform',
+        '../../src/v8.gyp:v8_base',
+        '../../src/v8.gyp:v8_libbase',
+        '../../src/v8.gyp:v8',
       ],
       'include_dirs': [
         '../..',
@@ -415,7 +417,7 @@
           or v8_target_arch=="mipsel" or v8_target_arch=="mips64el"', {
           # disable fmadd/fmsub so that expected results match generated code in
           # RunFloat64MulAndFloat64Add1 and friends.
-          'cflags': ['-ffp-contract=off'],
+          #'cflags': ['-ffp-contract=off'],
         }],
         ['OS=="aix"', {
           'ldflags': [ '-Wl,-bbigtoc' ],
@@ -472,9 +474,10 @@
       'target_name': 'generate-bytecode-expectations',
       'type': 'executable',
       'dependencies': [
-        '../../src/v8.gyp:v8',
-        '../../src/v8.gyp:v8_libbase',
         '../../src/v8.gyp:v8_libplatform',
+        '../../src/v8.gyp:v8_base',
+        '../../src/v8.gyp:v8_libbase',
+        '../../src/v8.gyp:v8',
       ],
       'include_dirs+': [
         '../..',
