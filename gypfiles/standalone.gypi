@@ -450,11 +450,16 @@
     'default_configuration': 'Debug',
     'configurations': {
       'DebugBaseCommon': {
+        'cflags': [ '-g' ],
         'conditions': [
-          ['OS=="aix"', {
-            'cflags': [ '-g', '-Og', '-gxcoff' ],
-          }, {
-            'cflags': [ '-g', '-O0' ],
+          [ 'OS=="aix"', {
+            'cflags': [ '-gxcoff' ],
+          }], 
+          [ 'OS == "zos"', {
+            'cflags': [ '-o noopt' ],
+          }],
+          [ 'OS != "zos"', {
+            'cflags': [ '-O0' ],
           }],
         ],
       },

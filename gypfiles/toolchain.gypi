@@ -302,7 +302,7 @@
               'V8_TARGET_ARCH_S390_LE_SIM',
             ],
           }, {
-            'cflags': [ '-march=z196' ],
+            'cflags': [ '-qarch=z196' ],
           }],
           ],
       }],  # s390
@@ -1105,6 +1105,13 @@
           }],
         ],  # conditions
       }],
+      ['OS=="zos"', {
+        'conditions': [
+          [ 'v8_no_strict_aliasing==1', {
+            'cflags': [ '-qnoansialias' ],
+          }],
+        ],  # conditions
+      }],
       ['OS=="solaris"', {
         'defines': [ '__C99FEATURES__=1' ],  # isinf() etc.
       }],
@@ -1155,13 +1162,15 @@
         },
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" or \
-            OS=="qnx" or OS=="aix"', {
-            'cflags!': [
-              '-O3',
-              '-O2',
-              '-O1',
-              '-Os',
-            ],
+            OS=="qnx" or OS=="aix" or OS=="zos"', {
+             'cflags!': [
+               '-O3',
+               '-O2',
+               '-O1',
+               '-Os',
+              ],
+            }],
+            ['OS!="zos"', {
             'cflags': [
               '-fdata-sections',
               '-ffunction-sections',
@@ -1276,6 +1285,11 @@
                 'cflags': [ '-maix64 -mcmodel=large' ],
               }],
             ],
+          }],
+          ['OS == "zos"', {
+             'cflags': [
+               '-qinline=:::300',
+              ],
           }],
           ['OS=="android"', {
             'variables': {

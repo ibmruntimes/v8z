@@ -49,7 +49,7 @@
 
     # Enable the snapshot feature, for fast context creation.
     # http://v8project.blogspot.com/2015/09/custom-startup-snapshots.html
-    'v8_use_snapshot%': 'true',
+    'v8_use_snapshot%': 'false',
 
     'v8_enable_verify_predictable%': 0,
 
@@ -63,11 +63,11 @@
 
     # Interpreted regexp engine exists as platform-independent alternative
     # based where the regular expression is compiled to a bytecode.
-    'v8_interpreted_regexp%': 0,
+    'v8_interpreted_regexp%': 1,
 
     # Enable ECMAScript Internationalization API. Enabling this feature will
     # add a dependency on the ICU library.
-    'v8_enable_i18n_support%': 1,
+    'v8_enable_i18n_support%': 0,
 
     # Enable compiler warnings when using V8_DEPRECATED apis.
     'v8_deprecation_warnings%': 0,
