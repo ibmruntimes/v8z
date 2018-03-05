@@ -1388,10 +1388,10 @@
         'transitions-inl.h',
         'transitions.cc',
         'transitions.h',
-        'trap-handler/handler-outside.cc',
-        'trap-handler/handler-shared.cc',
         'trap-handler/trap-handler.h',
         'trap-handler/trap-handler-internal.h',
+        'trap-handler/handler-outside.cc',
+        'trap-handler/handler-shared.cc',
         'type-hints.cc',
         'type-hints.h',
         'unicode-inl.h',
@@ -2074,6 +2074,16 @@
             'base/platform/platform-posix.h',
             'base/platform/platform-posix.cc'
           ]},
+        ],
+        ['OS =="zos"', {
+            'sources' : [
+             'base/debug/stack_trace_posix.cc',
+             'base/platform/platform-zos.cc',
+             'base/platform/platform-posix.h',
+             'base/platform/platform-posix.cc',
+             's390/semaphore-zos.cc',
+             ],
+           }
         ],
         ['OS=="fuchsia"', {
           'sources': [

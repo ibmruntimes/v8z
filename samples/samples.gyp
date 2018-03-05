@@ -35,9 +35,10 @@
   'target_defaults': {
     'type': 'executable',
     'dependencies': [
-      '../src/v8.gyp:v8',
-      '../src/v8.gyp:v8_libbase',
       '../src/v8.gyp:v8_libplatform',
+      '../src/v8.gyp:v8_base',
+      '../src/v8.gyp:v8_libbase',
+      '../src/v8.gyp:v8',
     ],
     'include_dirs': [
       '..',
