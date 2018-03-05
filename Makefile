@@ -439,20 +439,24 @@ $(OUT_MAKEFILES): $(GYPFILES) $(ENVFILE)
 	$(eval V8_TARGET_ARCH:=$(subst .,,$(suffix $(basename $@))))
 	PYTHONPATH="$(shell pwd)/tools/generate_shim_headers:$(shell pwd)/gypfiles:$(PYTHONPATH):$(shell pwd)/tools/gyp/pylib:$(PYTHONPATH)" \
 	GYP_GENERATORS=make \
-	tools/gyp/gyp --generator-output="$(OUTDIR)" gypfiles/all.gyp \
+	tools/gyp/gyp $(if $(findstring OS=zos, $(GYP_DEFINES)), \
+                  --no-parallel) \
+                  --generator-output="$(OUTDIR)" gypfiles/all.gyp \
 	              -Igypfiles/standalone.gypi --depth=. \
 	              -Dv8_target_arch=$(V8_TARGET_ARCH) \
 	              $(if $(findstring $(CXX_TARGET_ARCH),$(V8_TARGET_ARCH)), \
 	              -Dtarget_arch=$(V8_TARGET_ARCH), \
-	                  $(if $(shell echo $(ARCHES32) | grep $(V8_TARGET_ARCH)), \
-	                  -Dtarget_arch=ia32,)) \
+	              $(if $(shell echo $(ARCHES32) | grep $(V8_TARGET_ARCH)), \
+	              -Dtarget_arch=ia32,)) \
 	              $(if $(findstring optdebug,$@),-Dv8_optimized_debug=1,) \
 	              -S$(suffix $(basename $@))$(suffix $@) $(GYPFLAGS)
 
 $(OUTDIR)/Makefile.native: $(GYPFILES) $(ENVFILE)
 	PYTHONPATH="$(shell pwd)/tools/generate_shim_headers:$(shell pwd)/gypfiles:$(PYTHONPATH):$(shell pwd)/tools/gyp/pylib:$(PYTHONPATH)" \
 	GYP_GENERATORS=make \
-	tools/gyp/gyp --generator-output="$(OUTDIR)" gypfiles/all.gyp \
+	tools/gyp/gyp $(if $(findstring OS=zos, $(GYP_DEFINES)), \
+                  --no-parallel) \
+                  --generator-output="$(OUTDIR)" gypfiles/all.gyp \
 	              -Igypfiles/standalone.gypi --depth=. -S.native $(GYPFLAGS)
 
 # Replaces the old with the new environment file if they're different, which
