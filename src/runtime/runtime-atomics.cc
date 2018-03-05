@@ -19,7 +19,7 @@ namespace internal {
 
 namespace {
 
-#if V8_CC_GNU
+#if V8_CC_GNU || V8_CC_CLANG
 
 template <typename T>
 inline T ExchangeSeqCst(T* p, T value) {
@@ -35,27 +35,37 @@ inline T CompareExchangeSeqCst(T* p, T oldval, T newval) {
 
 template <typename T>
 inline T AddSeqCst(T* p, T value) {
-  return __atomic_fetch_add(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+    return __atomic_fetch_add(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T SubSeqCst(T* p, T value) {
-  return __atomic_fetch_sub(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+   return __atomic_fetch_sub(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T AndSeqCst(T* p, T value) {
-  return __atomic_fetch_and(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS  
+   return __atomic_fetch_and(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T OrSeqCst(T* p, T value) {
-  return __atomic_fetch_or(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS  
+   return __atomic_fetch_or(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T XorSeqCst(T* p, T value) {
-  return __atomic_fetch_xor(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS  
+   return __atomic_fetch_xor(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 #elif V8_CC_MSVC
