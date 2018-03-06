@@ -28,7 +28,9 @@ UnaryMathFunctionWithIsolate CreateSqrtFunction(Isolate* isolate) {
 
   MacroAssembler masm(isolate, buffer, static_cast<int>(actual_size),
                       CodeObjectRequired::kNo);
-
+#if defined(V8_OS_ZOS)
+  __ function_descriptor();
+#endif
   __ MovFromFloatParameter(d0);
   __ sqdbr(d0, d0);
   __ MovToFloatResult(d0);
