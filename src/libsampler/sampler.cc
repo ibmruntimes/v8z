@@ -4,7 +4,7 @@
 
 #include "src/libsampler/sampler.h"
 
-#if V8_OS_POSIX && !V8_OS_CYGWIN
+#if (V8_OS_POSIX || V8_OS_ZOS)  && !V8_OS_CYGWIN
 
 #define USE_SIGNALS
 
@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <sys/time.h>
 
-#if !V8_OS_QNX && !V8_OS_FUCHSIA && !V8_OS_AIX
+#if !V8_OS_QNX && !V8_OS_FUCHSIA && !V8_OS_AIX && !V8_OS_ZOS
 #include <sys/syscall.h>  // NOLINT
 #endif
 
@@ -187,11 +187,28 @@ class AtomicGuard {
 };
 
 // Returns key for hash map.
-void* ThreadKey(pthread_t thread_id) {
-  return reinterpret_cast<void*>(thread_id);
+#ifdef V8_OS_ZOS
+void * ThreadKey(pthread_t &thread_id) {
+    return (void *)(&thread_id);
 }
+#else
+void* ThreadKey(pthread_t thread_id) {
+    return reinterpret_cast<void*>(thread_id);
+}
+#endif
 
 // Returns hash value for hash map.
+#ifdef V8_OS_ZOS
+uint32_t ThreadHash(pthread_t thread_id) {
+   unsigned char *ptc = (unsigned char*)(void*)(&thread_id);
+   uint32_t x =0;
+   for (int i =4 ; i < 8; i++) {
+     ptc = ptc+i;
+     x = (x << 8) | *ptc;
+   }
+   return x;
+}
+#else
 uint32_t ThreadHash(pthread_t thread_id) {
 #if V8_OS_BSD
   return static_cast<uint32_t>(reinterpret_cast<intptr_t>(thread_id));
@@ -199,6 +216,7 @@ uint32_t ThreadHash(pthread_t thread_id) {
   return static_cast<uint32_t>(thread_id);
 #endif
 }
+#endif
 
 #endif  // USE_SIGNALS
 
