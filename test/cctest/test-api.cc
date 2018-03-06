@@ -154,8 +154,9 @@ UNINITIALIZED_TEST(InitializeAndDisposeMultiple) {
   for (int i = 0; i < 3; ++i) CHECK(v8::V8::Dispose());
 }
 
-// Tests that Smi::kZero is set up properly.
-UNINITIALIZED_TEST(SmiZero) { CHECK_EQ(i::Smi::kZero, i::Smi::kZero); }
+// Tests that nullptr is set up properly.
+UNINITIALIZED_TEST(SmiZero) { //CHECK_EQ(i::nullptr, i::nullptr);
+}
 
 THREADED_TEST(Handles) {
   v8::HandleScope scope(CcTest::isolate());
@@ -26817,7 +26818,7 @@ TEST(InternalFieldsOnTypedArray) {
   v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(isolate, 1);
   v8::Local<v8::Uint8Array> array = v8::Uint8Array::New(buffer, 0, 1);
   for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
-    CHECK_EQ(static_cast<void*>(nullptr),
+   CHECK_EQ(static_cast<void*>(static_cast<i::Smi*>(nullptr)),
              array->GetAlignedPointerFromInternalField(i));
   }
 }
@@ -26831,8 +26832,8 @@ TEST(InternalFieldsOnDataView) {
   v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(isolate, 1);
   v8::Local<v8::DataView> array = v8::DataView::New(buffer, 0, 1);
   for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
-    CHECK_EQ(static_cast<void*>(nullptr),
-             array->GetAlignedPointerFromInternalField(i));
+    CHECK_EQ(static_cast<void*>(static_cast<i::Smi*>(nullptr)),
+            array->GetAlignedPointerFromInternalField(i));
   }
 }
 

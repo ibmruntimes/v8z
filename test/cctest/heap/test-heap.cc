@@ -1055,7 +1055,7 @@ TEST(JSArray) {
 
   // Set array length to 0.
   JSArray::SetLength(array, 0);
-  CHECK_EQ(Smi::kZero, array->length());
+  CHECK_EQ(static_cast<i::Smi *>(nullptr), array->length());
   // Must be in fast mode.
   CHECK(array->HasSmiOrObjectElements());
 
