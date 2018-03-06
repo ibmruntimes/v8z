@@ -2210,6 +2210,54 @@ void MacroAssembler::LoadAccessor(Register dst, Register holder,
   LoadP(dst, FieldMemOperand(dst, offset));
 }
 
+<<<<<<< HEAD
+=======
+void MacroAssembler::CheckEnumCache(Label* call_runtime) {
+  Register null_value = r7;
+  Register empty_fixed_array_value = r8;
+  LoadRoot(empty_fixed_array_value, Heap::kEmptyFixedArrayRootIndex);
+  Label next, start;
+  LoadRR(r4, r2);
+
+  // Check if the enum length field is properly initialized, indicating that
+  // there is an enum cache.
+  LoadP(r3, FieldMemOperand(r4, HeapObject::kMapOffset));
+
+  EnumLength(r5, r3);
+  CmpSmiLiteral(r5, Smi::FromInt(kInvalidEnumCacheSentinel), r0);
+  beq(call_runtime);
+
+  LoadRoot(null_value, Heap::kNullValueRootIndex);
+  b(&start, Label::kNear);
+
+  bind(&next);
+  LoadP(r3, FieldMemOperand(r4, HeapObject::kMapOffset));
+
+  // For all objects but the receiver, check that the cache is empty.
+  EnumLength(r5, r3);
+  CmpSmiLiteral(r5, nullptr, r0);
+  bne(call_runtime);
+
+  bind(&start);
+
+  // Check that there are no elements. Register r4 contains the current JS
+  // object we've reached through the prototype chain.
+  Label no_elements;
+  LoadP(r4, FieldMemOperand(r4, JSObject::kElementsOffset));
+  CmpP(r4, empty_fixed_array_value);
+  beq(&no_elements, Label::kNear);
+
+  // Second chance, the object may be using the empty slow element dictionary.
+  CompareRoot(r5, Heap::kEmptySlowElementDictionaryRootIndex);
+  bne(call_runtime);
+
+  bind(&no_elements);
+  LoadP(r4, FieldMemOperand(r3, Map::kPrototypeOffset));
+  CmpP(r4, null_value);
+  bne(&next);
+}
+
+>>>>>>> 23d6a4a... [z/OS] Replace Smi::kZero references with nullptr
 ////////////////////////////////////////////////////////////////////////////////
 //
 // New MacroAssembler Interfaces added for S390
