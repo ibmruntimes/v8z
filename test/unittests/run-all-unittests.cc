@@ -14,7 +14,7 @@ class DefaultPlatformEnvironment final : public ::testing::Environment {
   DefaultPlatformEnvironment() : platform_(NULL) {}
 
   void SetUp() override {
-    EXPECT_EQ(NULL, platform_);
+    EXPECT_EQ((v8::Platform *)NULL, platform_);
     platform_ = v8::platform::CreateDefaultPlatform(
         0, v8::platform::IdleTaskSupport::kEnabled);
     ASSERT_TRUE(platform_ != NULL);

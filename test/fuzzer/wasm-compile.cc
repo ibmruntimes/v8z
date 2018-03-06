@@ -304,6 +304,7 @@ class WasmCompileFuzzer : public WasmExecutionFuzzer {
       ZoneBuffer& buffer, int32_t& num_args,
       std::unique_ptr<WasmValue[]>& interpreter_args,
       std::unique_ptr<Handle<Object>[]>& compiler_args) override {
+#ifndef V8_OS_ZOS 
     TestSignatures sigs;
 
     WasmModuleBuilder builder(zone);
@@ -327,6 +328,7 @@ class WasmCompileFuzzer : public WasmExecutionFuzzer {
     compiler_args.reset(new Handle<Object>[3]{
         handle(Smi::FromInt(1), isolate), handle(Smi::FromInt(1), isolate),
         handle(Smi::FromInt(1), isolate)});
+#endif 
     return true;
   }
 };
