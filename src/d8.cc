@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,6 +68,7 @@ const int MB = 1024 * 1024;
 const int kMaxWorkers = 50;
 const int kMaxSerializerMemoryUsage = 1 * MB;  // Arbitrary maximum for testing.
 
+#define PATH_MAX 4096
 #define USE_VM 1
 #define VM_THRESHOLD 65536
 // TODO(titzer): allocations should fail if >= 2gb because of
