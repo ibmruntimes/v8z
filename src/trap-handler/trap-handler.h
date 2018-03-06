@@ -58,7 +58,7 @@ void ReleaseHandlerData(int index);
 // TODO(eholk): fix this before enabling for trap handlers for Android.
 #define THREAD_LOCAL
 #else
-#define THREAD_LOCAL __thread
+#define THREAD_LOCAL 
 #endif
 
 inline bool UseTrapHandler() {
