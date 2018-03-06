@@ -25,6 +25,10 @@
 #include "v8-version.h"  // NOLINT(build/include)
 #include "v8config.h"    // NOLINT(build/include)
 
+#ifdef V8_OS_ZOS
+#include <assert.h>
+#endif
+
 // We reserve the V8_* prefix for macros defined in V8 public API and
 // assume there are no name conflicts with the embedder's code.
 
@@ -962,6 +966,7 @@ class V8_EXPORT SealHandleScope {
   void operator delete[](void*, size_t);
 
   internal::Isolate* const isolate_;
+  int prev_level_;
   internal::Object** prev_limit_;
   int prev_sealed_level_;
 };
