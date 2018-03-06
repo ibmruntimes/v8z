@@ -60,7 +60,7 @@ class Decoder {
  private:
   // Bottleneck functions to print into the out_buffer.
   void PrintChar(const char ch);
-  void Print(const char* str);
+  void Print(const char* str, bool ebc=false);
 
   // Printing of common values.
   void PrintRegister(int reg);
@@ -97,9 +97,10 @@ class Decoder {
 void Decoder::PrintChar(const char ch) { out_buffer_[out_buffer_pos_++] = ch; }
 
 // Append the str to the output buffer.
-void Decoder::Print(const char* str) {
+void Decoder::Print(const char* str, bool ebc) {
   char cur = *str++;
   while (cur != '\0' && (out_buffer_pos_ < (out_buffer_.length() - 1))) {
+    if (ebc) cur = Ebcdic2Ascii(cur);
     PrintChar(cur);
     cur = *str++;
   }
@@ -108,7 +109,11 @@ void Decoder::Print(const char* str) {
 
 // Print the register name according to the active name converter.
 void Decoder::PrintRegister(int reg) {
-  Print(converter_.NameOfCPURegister(reg));
+#if defined(V8_OS_ZOS)
+   Print(converter_.NameOfCPURegister(reg), true);
+#else
+   Print(converter_.NameOfCPURegister(reg));
+#endif
 }
 
 // Print the double FP register name according to the active name converter.

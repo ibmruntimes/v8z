@@ -506,7 +506,7 @@ void CompareICStub::GenerateGeneric(MacroAssembler* masm) {
   // If either is a Smi (we know that not both are), then they can only
   // be strictly equal if the other is a HeapNumber.
   STATIC_ASSERT(kSmiTag == 0);
-  DCHECK_EQ(static_cast<Smi*>(0), Smi::kZero);
+  DCHECK_EQ(static_cast<Smi*>(0), static_cast<Smi *>(nullptr));
   __ AndP(r4, lhs, rhs);
   __ JumpIfNotSmi(r4, &not_smis);
   // One operand is a smi.  EmitSmiNonsmiComparison generates code that can:
@@ -838,6 +838,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Need at least one extra slot for return address location.
   int arg_stack_space = 1;
 
+#ifndef V8_OS_ZOS
   // Pass buffer for return value on stack if necessary
   bool needs_return_buffer =
       result_size() > 2 ||
@@ -845,6 +846,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   if (needs_return_buffer) {
     arg_stack_space += result_size();
   }
+#endif
 
 #if V8_TARGET_ARCH_S390X
   // 64-bit linux pass Argument object by reference not value
@@ -856,15 +858,24 @@ void CEntryStub::Generate(MacroAssembler* masm) {
                                            : StackFrame::EXIT);
 
   // Store a copy of argc, argv in callee-saved registers for later.
+#ifdef V8_OS_ZOS
+  __ LoadRR(r9, r2);
+  __ LoadRR(r10, r3);
+  // r2, r9: number of arguments including receiver  (C callee-saved)
+  // r3, r10: pointer to the first argument
+  // r7: pointer to builtin function descriptor (C callee-saved)
+  // r8: pointer to builtin function (C callee-saved)
+#else
   __ LoadRR(r6, r2);
   __ LoadRR(r8, r3);
   // r2, r6: number of arguments including receiver  (C callee-saved)
   // r3, r8: pointer to the first argument
   // r7: pointer to builtin function  (C callee-saved)
-
+#endif
   // Result returned in registers or stack, depending on result size and ABI.
 
   Register isolate_reg = r4;
+#ifndef V8_OS_ZOS  
   if (needs_return_buffer) {
     // The return value is 16-byte non-scalar value.
     // Use frame storage reserved by calling function to pass return
@@ -875,10 +886,30 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ la(r2, MemOperand(sp, (kStackFrameExtraParamSlot + 1) * kPointerSize));
     isolate_reg = r5;
   }
+#endif
+
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
 
+#if V8_OS_ZOS
+  // TODO(mcornac): Move params from r2-r6 to r1-r3.
+  __ LoadRR(r1, r2);
+  __ LoadRR(r2, r3);
+  __ LoadRR(r3, r4);
+
+  // TODO(mcornac): fn descriptor.
+  // Load environment from slot 0 of fn desc.
+  __ LoadP(r5, MemOperand(r7));
+#if !defined(USE_SIMULATOR)
+  // Load function pointer from slot 1 of fn desc.
+  __ LoadP(r8, MemOperand(r7, kPointerSize));
+#else
+  __ LoadRR(r8, r7);
+#endif  // USE_SIMULATOR
+  Register target = r8;
+#else
   Register target = r7;
+#endif
 
   // To let the GC traverse the return address of the exit frames, we need to
   // know where the return address is. The CEntryStub is unmovable, so
@@ -886,9 +917,25 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // we never have to restore it, because it will not change.
   {
     Label return_label;
-    __ larl(r14, &return_label);  // Generate the return addr of call later.
-    __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+#if V8_OS_ZOS
+    Register ra = r7;
+#else
+    Register ra = r14;
+#endif
+    __ larl(ra, &return_label);  // Generate the return addr of call later.
+#if V8_OS_ZOS
+    // TODO(mcornac): why do I have to -2?
+    __ lay(ra, MemOperand(ra, -2));
+#endif
+    __ StoreP(ra, MemOperand(sp, kStackFrameRASlot * kPointerSize));
 
+#if V8_OS_ZOS
+    // Load the biased stack pointer into r4 before calling native code
+    // Stack Pointer Bias = Xplink Bias(2048) + SaveArea(12 ptrs +
+    // Reserved(2ptrs) + Debug Area(1ptr) +
+    // Arg Area Prefix(1ptr) + Argument Area(3 ptrs).
+    __ lay(r4, MemOperand(sp, -(kStackPointerBias + 19 * kPointerSize)));
+#endif
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
     // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
@@ -897,12 +944,31 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     // __ la(sp, MemOperand(sp, +kCalleeRegisterSaveAreaSize));
   }
 
+#if V8_OS_ZOS
+  // TODO(mcornac): r9 and r10 are used to store argc and argv on z/OS instead
+  // of r6 and r8 since r6 is not callee saved.
+  __ LoadRR(r6, r9);
+  __ LoadRR(r8, r10);
+  __ InitializeRootRegister();  // Rematerializing the root address in r10
+
+  if (result_size() == 1) {
+    __ LoadRR(r2, r3);
+  } else if (result_size() == 2){
+    __ LoadRR(r3, r2);
+    __ LoadRR(r2, r1);
+  } else {
+    __ LoadRR(r4, r3);
+    __ LoadRR(r3, r2);
+    __ LoadRR(r2, r1);
+  }
+#else
   // If return value is on the stack, pop it to registers.
   if (needs_return_buffer) {
     if (result_size() > 2) __ LoadP(r4, MemOperand(r2, 2 * kPointerSize));
     __ LoadP(r3, MemOperand(r2, kPointerSize));
     __ LoadP(r2, MemOperand(r2));
   }
+#endif
 
   // Check result for exception sentinel.
   Label exception_returned;
@@ -1001,7 +1067,26 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
 
   Label invoke, handler_entry, exit;
 
+#ifdef V8_OS_ZOS
+  __ function_descriptor();
+#endif
+
   ProfileEntryHookStub::MaybeCallEntryHook(masm);
+
+#if V8_OS_ZOS
+  __ LoadRR(sp, r4);
+  __ lay(sp, MemOperand(sp, -12 * kPointerSize));
+  __ StoreMultipleP(r4, sp, MemOperand(sp, 0));
+  // Expecting paramters in r2-r6. XPLINK uses r1-r3 for the first three
+  // parameters and also places them starting at r4+2112 on the biased stack.
+  // Explicitly load argc and argv from stack back into r5/r6 respectively.
+  __ LoadP(r5, MemOperand(r4, 2048 + (19  * kPointerSize)));
+  __ LoadP(r6, MemOperand(r4, 2048 + (20  * kPointerSize)));
+
+  __ LoadRR(r4, r3);
+  __ LoadRR(r3, r2);
+  __ LoadRR(r2, r1);
+#endif  // V8_OS_ZOS
 
 // saving floating point registers
 #if V8_TARGET_ARCH_S390X
@@ -1023,6 +1108,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ std(d6, MemOperand(sp, kDoubleSize));
 #endif
 
+#if !defined(V8_OS_ZOS)
   // zLinux ABI
   //    Incoming parameters:
   //          r2: code entry
@@ -1035,6 +1121,7 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   //    sp/r15 as well in a single STM/STMG
   __ lay(sp, MemOperand(sp, -10 * kPointerSize));
   __ StoreMultipleP(r6, sp, MemOperand(sp, 0));
+#endif
 
   // Set up the reserved register for 0.0.
   // __ LoadDoubleLiteral(kDoubleRegZero, 0.0, r0);
@@ -1158,8 +1245,10 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ lay(sp, MemOperand(sp, -EntryFrameConstants::kCallerFPOffset));
 
   // Reload callee-saved preserved regs, return address reg (r14) and sp
+#if !defined(V8_OS_ZOS)  
   __ LoadMultipleP(r6, sp, MemOperand(sp, 0));
   __ la(sp, MemOperand(sp, 10 * kPointerSize));
+#endif
 
 // saving floating point registers
 #if V8_TARGET_ARCH_S390X
@@ -1181,7 +1270,14 @@ void JSEntryStub::Generate(MacroAssembler* masm) {
   __ la(sp, MemOperand(sp, 2 * kDoubleSize));
 #endif
 
+#ifdef V8_OS_ZOS
+  __ LoadRR(r3, r2);
+  __ LoadMultipleP(r4, sp, MemOperand(sp, 0));
+  __ lay(sp, MemOperand(sp, 12 * kPointerSize));
+  __ b(r7);
+#else
   __ b(r14);
+#endif
 }
 
 
@@ -1899,23 +1995,35 @@ void CompareICStub::GenerateMiss(MacroAssembler* masm) {
 
 // This stub is paired with DirectCEntryStub::GenerateCall
 void DirectCEntryStub::Generate(MacroAssembler* masm) {
+#if !defined(V8_OS_ZOS)  
   __ CleanseP(r14);
-
+#else
+  __ CleanseP(r7);
+  __ StoreP(r7, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+#endif
   __ b(ip);  // Callee will return to R14 directly
 }
 
 void DirectCEntryStub::GenerateCall(MacroAssembler* masm, Register target) {
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
   // Native AIX/S390X Linux use a function descriptor.
+#if !defined(V8_OS_ZOS)
   __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(target, kPointerSize));
   __ LoadP(target, MemOperand(target, 0));  // Instruction address
+#else
+  __ LoadP(ip, MemOperand(target, kPointerSize));
+  __ LoadP(r5, MemOperand(target, 0));
+#endif
 #else
   // ip needs to be set for DirectCEentryStub::Generate, and also
   // for ABI_CALL_VIA_IP.
   __ Move(ip, target);
 #endif
-
+#if defined(V8_OS_ZOS)
+  __ call(GetCode(), RelocInfo::CODE_TARGET, r7);
+#else
   __ call(GetCode(), RelocInfo::CODE_TARGET);  // Call the stub.
+#endif
 }
 
 void NameDictionaryLookupStub::GenerateNegativeLookup(
@@ -2334,8 +2442,7 @@ void ProfileEntryHookStub::Generate(MacroAssembler* masm) {
 
 #if ABI_USES_FUNCTION_DESCRIPTORS
   // Function descriptor
-  __ LoadP(ToRegister(ABI_TOC_REGISTER), MemOperand(ip, kPointerSize));
-  __ LoadP(ip, MemOperand(ip, 0));
+  __ LoadP(ip, MemOperand(ip, kPointerSize));
 // ip already set.
 #endif
 #endif
@@ -2680,8 +2787,13 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   // r6 - next_address->kNextOffset
   // r7 - next_address->kLimitOffset
   // r8 - next_address->kLevelOffset
+#ifdef V8_OS_ZOS
+  Register prev_next_ = r14;
+#else
+  Register prev_next_ = r6;
+#endif
   __ mov(r9, Operand(next_address));
-  __ LoadP(r6, MemOperand(r9, kNextOffset));
+  __ LoadP(prev_next_, MemOperand(r9, kNextOffset));
   __ LoadP(r7, MemOperand(r9, kLimitOffset));
   __ LoadlW(r8, MemOperand(r9, kLevelOffset));
   __ AddP(r8, Operand(1));
@@ -2700,8 +2812,25 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   // Native call returns to the DirectCEntry stub which redirects to the
   // return address pushed on stack (could have moved after GC).
   // DirectCEntry stub itself is generated early and never moves.
+#ifdef V8_OS_ZOS
+  //Shuffle the arguments from Linux arg register to XPLINK arg regs
+  __ LoadRR(r1 , r2);
+  if (function_address.is(r3)) {
+   __ LoadRR(r2, r3);
+  } else {
+   __ LoadRR(r2, r3);
+   __ LoadRR(r3, r4);
+  }
+  __ lay(r4, MemOperand(sp, -(kStackPointerBias + 18 * kPointerSize)));
+  __ LoadRR(r10, r7);
+#endif
+  
   DirectCEntryStub stub(isolate);
   stub.GenerateCall(masm, scratch);
+#ifdef V8_OS_ZOS
+  __ LoadRR(r7, r10);
+  __ InitializeRootRegister();
+#endif
 
   if (FLAG_log_timer_events) {
     FrameScope frame(masm, StackFrame::MANUAL);
@@ -2723,7 +2852,7 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
   __ bind(&return_value_loaded);
   // No more valid handles (the result handle was the last one). Restore
   // previous handle scope.
-  __ StoreP(r6, MemOperand(r9, kNextOffset));
+  __ StoreP(prev_next_, MemOperand(r9, kNextOffset));
   if (__ emit_debug_code()) {
     __ LoadlW(r3, MemOperand(r9, kLevelOffset));
     __ CmpP(r3, r8);
@@ -2918,7 +3047,7 @@ void CallApiGetterStub::Generate(MacroAssembler* masm) {
   __ Push(scratch, scratch);
   __ mov(scratch, Operand(ExternalReference::isolate_address(isolate())));
   __ Push(scratch, holder);
-  __ Push(Smi::kZero);  // should_throw_on_error -> false
+  __ Push(nullptr);  // should_throw_on_error -> false
   __ LoadP(scratch, FieldMemOperand(callback, AccessorInfo::kNameOffset));
   __ push(scratch);
 

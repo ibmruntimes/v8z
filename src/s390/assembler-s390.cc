@@ -35,13 +35,13 @@
 // Copyright 2014 the V8 project authors. All rights reserved.
 
 #include "src/s390/assembler-s390.h"
-#include <sys/auxv.h>
 #include <set>
 #include <string>
 
 #if V8_TARGET_ARCH_S390
 
-#if V8_HOST_ARCH_S390
+#if V8_HOST_ARCH_S390 && !V8_OS_ZOS
+#include <sys/auxv.h>
 #include <elf.h>  // Required for auxv checks for STFLE support
 #endif
 
@@ -61,6 +61,9 @@ static unsigned CpuFeaturesImpliedByCompiler() {
 }
 
 static bool supportsCPUFeature(const char* feature) {
+#if V8_OS_ZOS
+  return false;
+#else
   static std::set<std::string> features;
   static std::set<std::string> all_available_features = {
       "iesan3", "zarch",  "stfle",    "msa", "ldisp", "eimm",
@@ -95,12 +98,13 @@ static bool supportsCPUFeature(const char* feature) {
   }
   USE(all_available_features);
   return features.find(feature) != features.end();
+#endif
 }
 
 // Check whether Store Facility STFLE instruction is available on the platform.
 // Instruction returns a bit vector of the enabled hardware facilities.
 static bool supportsSTFLE() {
-#if V8_HOST_ARCH_S390
+#if V8_HOST_ARCH_S390 && !V8_OS_ZOS
   static bool read_tried = false;
   static uint32_t auxv_hwcap = 0;
 
@@ -169,7 +173,7 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
 
 // Need to define host, as we are generating inlined S390 assembly to test
 // for facilities.
-#if V8_HOST_ARCH_S390
+#if V8_HOST_ARCH_S390 && !V8_OS_ZOS
   if (performSTFLE) {
     // STFLE D(B) requires:
     //    GPR0 to specify # of double words to update minus 1.
@@ -1842,11 +1846,16 @@ void Assembler::srdl(Register r1, const Operand& opnd) {
   rs_form(SRDL, r1, r0, r0, opnd.immediate());
 }
 
-void Assembler::call(Handle<Code> target, RelocInfo::Mode rmode) {
+void Assembler::call(Handle<Code> target, RelocInfo::Mode rmode, Register link) {
   EnsureSpace ensure_space(this);
 
   int32_t target_index = emit_code_target(target, rmode);
-  brasl(r14, Operand(target_index));
+  brasl(link, Operand(target_index));
+#ifdef V8_OS_ZOS
+  if (link.code() == 7) {
+     nop(BRASL_CALL_TYPE_NOP);
+  }
+#endif
 }
 
 void Assembler::call(CodeStub* stub) {
@@ -2239,6 +2248,52 @@ void Assembler::EmitRelocations() {
     reloc_info_writer.Write(&rinfo);
   }
 }
+#ifdef V8_OS_ZOS
+
+void Assembler::function_descriptor() {
+#ifdef ABI_USES_FUNCTION_DESCRIPTORS  
+  DCHECK(pc_offset() == 0);
+  Label code_start;
+  dp(0);
+  emit_label_addr(&code_start);
+  bind(&code_start);
+#endif
+}
+
+void Assembler::RelocateInternalReference(Address pc,
+                                          intptr_t delta,
+                                          Address code_start,
+                                          ICacheFlushMode icache_flush_mode) {
+  DCHECK(delta || code_start);
+#if ABI_USES_FUNCTION_DESCRIPTORS
+  uintptr_t *fd = reinterpret_cast<uintptr_t*>(pc);
+  if (fd[0] == 0) {
+    // Function descriptor
+    if (delta) {
+      fd[1] += delta;
+    } else {
+      fd[1] = reinterpret_cast<uintptr_t>(code_start) + (2* kPointerSize);
+    }
+    return;
+  }
+#endif
+}
+
+
+int Assembler::DecodeInternalReference(Vector<char> buffer, Address pc) {
+#if ABI_USES_FUNCTION_DESCRIPTORS
+  uintptr_t *fd = reinterpret_cast<uintptr_t*>(pc);
+    // Function descriptor
+    SNPrintF(buffer,
+             "[%08" V8PRIxPTR ", %08" V8PRIxPTR "]"
+             "   function descriptor",
+             fd[0], fd[1]);
+  return kPointerSize * 2;
+#endif
+  return 0;
+}
+
+#endif
 
 }  // namespace internal
 }  // namespace v8

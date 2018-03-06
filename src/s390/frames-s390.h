@@ -104,8 +104,16 @@ const int kNumSafepointRegisters = 16;
 
 // The following constants describe the stack frame linkage area as
 // defined by the ABI.
-
-#if V8_TARGET_ARCH_S390X
+#if V8_OS_ZOS
+// [0] Return Address
+// [1] SP Slot
+// [2] Extra Param Slot
+const int kNumRequiredStackFrameSlots = 3;
+const int kStackFrameSPSlot = 1;
+const int kStackFrameRASlot = kStackFrameSPSlot-1;
+const int kStackFrameExtraParamSlot = 3;
+const int kStackPointerBias = 2048;
+#elif V8_TARGET_ARCH_S390X
 // [0] Back Chain
 // [1] Reserved for compiler use
 // [2] GPR 2
@@ -120,6 +128,7 @@ const int kNumRequiredStackFrameSlots = 20;
 const int kStackFrameRASlot = 14;
 const int kStackFrameSPSlot = 15;
 const int kStackFrameExtraParamSlot = 20;
+const int kStackPointerBias = 0;
 #else
 // [0] Back Chain
 // [1] Reserved for compiler use
@@ -135,6 +144,7 @@ const int kNumRequiredStackFrameSlots = 24;
 const int kStackFrameRASlot = 14;
 const int kStackFrameSPSlot = 15;
 const int kStackFrameExtraParamSlot = 24;
+const int kStackPointerBias = 0;
 #endif
 
 // zLinux ABI requires caller frames to include sufficient space for

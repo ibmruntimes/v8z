@@ -40,7 +40,7 @@
 #ifndef V8_S390_ASSEMBLER_S390_H_
 #define V8_S390_ASSEMBLER_S390_H_
 #include <stdio.h>
-#if V8_HOST_ARCH_S390
+#if V8_HOST_ARCH_S390 && V8_OS_LINUX
 // elf.h include is required for auxv check for STFLE facility used
 // for hardware detection, which is sensible only on s390 hosts.
 #include <elf.h>
@@ -48,13 +48,26 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#if V8_OS_ZOS
+// xlC defines cds instdlib.h
+#undef cds
+#endif
 #include "src/assembler.h"
 #include "src/s390/constants-s390.h"
 
-#define ABI_USES_FUNCTION_DESCRIPTORS 0
-
+#ifdef V8_OS_ZOS
+#define ABI_USES_FUNCTION_DESCRIPTORS 1
 #define ABI_PASSES_HANDLES_IN_REGS 1
-
+#define ABI_RETURNS_OBJECT_PAIRS_IN REGS 1
+#else
+#define ABI_USES_FUNCTION_DESCRIPTORS 0
+#define ABI_PASSES_HANDLES_IN_REGS 1
+#if V8_TARGET_ARCH_S390X
+#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 0
+#else
+#define ABI_RETURNS_OBJECT_PAIRS_IN_REGS 1
+#endif
+#endif
 // ObjectPair is defined under runtime/runtime-util.h.
 // On 31-bit, ObjectPair == uint64_t.  ABI dictates long long
 //            be returned with the lower addressed half in r2
@@ -64,11 +77,6 @@
 //            with the address of this buffer passed as a hidden
 //            argument in r2. (Does NOT return in Regs)
 // For x86 linux, ObjectPair is returned in registers.
-#if V8_TARGET_ARCH_S390X
-#define ABI_RETURNS_OBJECTPAIR_IN_REGS 0
-#else
-#define ABI_RETURNS_OBJECTPAIR_IN_REGS 1
-#endif
 
 #define ABI_CALL_VIA_IP 1
 
@@ -863,7 +871,7 @@ class Assembler : public AssemblerBase {
     basr(r14, r1);
   }
 
-  void call(Handle<Code> target, RelocInfo::Mode rmode);
+  void call(Handle<Code> target, RelocInfo::Mode rmode ,Register link = r14);
   void call(CodeStub* stub);
   void jump(Handle<Code> target, RelocInfo::Mode rmode, Condition cond);
 
@@ -1271,6 +1279,11 @@ class Assembler : public AssemblerBase {
     NON_MARKING_NOP = 0,
     GROUP_ENDING_NOP,
     DEBUG_BREAK_NOP,
+#ifdef V8_OS_ZOS
+    BASR_CALL_TYPE_NOP,
+    BRAS_CALL_TYPE_NOP,
+    BRASL_CALL_TYPE_NOP,
+#endif
     // IC markers.
     PROPERTY_ACCESS_INLINED,
     PROPERTY_ACCESS_INLINED_CONTEXT,
@@ -1357,6 +1370,18 @@ class Assembler : public AssemblerBase {
 
   void EmitRelocations();
   void emit_label_addr(Label* label);
+
+#ifdef V8_OS_ZOS
+  //Generate function descriptor for z/OS
+  void function_descriptor();
+
+  static void RelocateInternalReference(Address pc, intptr_t delta,
+                                        Address code_start,
+                                        ICacheFlushMode icache_flush_mode =
+                                            FLUSH_ICACHE_IF_NEEDED);
+  
+  static int DecodeInternalReference(Vector<char> buffer, Address pc);
+#endif
 
  public:
   byte* buffer_pos() const { return buffer_; }
