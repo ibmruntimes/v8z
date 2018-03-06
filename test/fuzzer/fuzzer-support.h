@@ -5,7 +5,7 @@
 #ifndef TEST_FUZZER_FUZZER_SUPPORT_H_
 #define TEST_FUZZER_FUZZER_SUPPORT_H_
 
-#include "include/libplatform/libplatform.h"
+///#include "include/libplatform/libplatform.h"
 #include "include/v8.h"
 
 namespace v8_fuzzer {
