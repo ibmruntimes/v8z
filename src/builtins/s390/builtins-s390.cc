@@ -187,7 +187,7 @@ void Builtins::Generate_NumberConstructor(MacroAssembler* masm) {
 
   // 2b. No arguments, return +0.
   __ bind(&no_arguments);
-  __ LoadSmiLiteral(r2, Smi::kZero);
+  __ LoadSmiLiteral(r2, nullptr);
   __ Ret(1);
 }
 
@@ -216,7 +216,7 @@ void Builtins::Generate_NumberConstructor_ConstructStub(MacroAssembler* masm) {
     __ LoadP(r4, MemOperand(sp, r4));
     __ b(&done);
     __ bind(&no_arguments);
-    __ LoadSmiLiteral(r4, Smi::kZero);
+    __ LoadSmiLiteral(r4, nullptr);
     __ bind(&done);
   }
 
@@ -757,7 +757,7 @@ void Builtins::Generate_ResumeGeneratorTrampoline(MacroAssembler* masm) {
       ExternalReference::debug_hook_on_function_call_address(masm->isolate());
   __ mov(ip, Operand(debug_hook));
   __ LoadB(ip, MemOperand(ip));
-  __ CmpSmiLiteral(ip, Smi::kZero, r0);
+  __ CmpSmiLiteral(ip, nullptr, r0);
   __ bne(&prepare_step_in_if_stepping);
 
   // Flood function if we need to continue stepping in the suspended generator.
@@ -1508,8 +1508,8 @@ static void Generate_InterpreterEnterBytecode(MacroAssembler* masm) {
   // trampoline.
   Smi* interpreter_entry_return_pc_offset(
       masm->isolate()->heap()->interpreter_entry_return_pc_offset());
-  DCHECK_NE(interpreter_entry_return_pc_offset, Smi::kZero);
-  __ Move(r4, BUILTIN_CODE(masm->isolate(), InterpreterEntryTrampoline));
+  DCHECK_NE(interpreter_entry_return_pc_offset, static_cast<Smi *>(nullptr));
+  __ Move(r4, masm->isolate()->builtins()->InterpreterEntryTrampoline());
   __ AddP(r14, r4, Operand(interpreter_entry_return_pc_offset->value() +
                            Code::kHeaderSize - kHeapObjectTag));
 
@@ -1845,7 +1845,7 @@ static void Generate_OnStackReplacementHelper(MacroAssembler* masm,
 
   // If the code object is null, just return to the caller.
   Label skip;
-  __ CmpSmiLiteral(r2, Smi::kZero, r0);
+  __ CmpSmiLiteral(r2, nullptr, r0);
   __ bne(&skip);
   __ Ret();
 
@@ -2641,7 +2641,7 @@ void Builtins::Generate_AllocateInNewSpace(MacroAssembler* masm) {
   // -----------------------------------
   __ SmiTag(r3);
   __ Push(r3);
-  __ LoadSmiLiteral(cp, Smi::kZero);
+  __ LoadSmiLiteral(cp, nullptr);
   __ TailCallRuntime(Runtime::kAllocateInNewSpace);
 }
 
@@ -2654,7 +2654,7 @@ void Builtins::Generate_AllocateInOldSpace(MacroAssembler* masm) {
   __ SmiTag(r3);
   __ LoadSmiLiteral(r4, Smi::FromInt(AllocateTargetSpace::encode(OLD_SPACE)));
   __ Push(r3, r4);
-  __ LoadSmiLiteral(cp, Smi::kZero);
+  __ LoadSmiLiteral(cp, nullptr);
   __ TailCallRuntime(Runtime::kAllocateInTargetSpace);
 }
 
@@ -2665,7 +2665,7 @@ void Builtins::Generate_Abort(MacroAssembler* masm) {
   //  -- lr : return address
   // -----------------------------------
   __ push(r3);
-  __ LoadSmiLiteral(cp, Smi::kZero);
+  __ LoadSmiLiteral(cp, nullptr);
   __ TailCallRuntime(Runtime::kAbort);
 }
 
@@ -2831,7 +2831,7 @@ void Builtins::Generate_WasmCompileLazy(MacroAssembler* masm) {
 
     // Initialize cp register with kZero, CEntryStub will use it to set the
     // current context on the isolate.
-    __ LoadSmiLiteral(cp, Smi::kZero);
+    __ LoadSmiLiteral(cp, nullptr);
     __ CallRuntime(Runtime::kWasmCompileLazy);
     // Store returned instruction start in ip.
     __ AddP(ip, r2, Operand(Code::kHeaderSize - kHeapObjectTag));
