@@ -124,13 +124,9 @@ bool Semaphore::WaitFor(const TimeDelta& rel_time) {
   } while (!timer.HasExpired(rel_time));
   return false;
 #else
-#if V8_OS_ZOS
-  struct timespec ts = rel_time.ToTimespec();
-#else
   // Compute the time for end of timeout.
   const Time time = Time::NowFromSystemTime() + rel_time;
   const struct timespec ts = time.ToTimespec();
-#endif
   // Wait for semaphore signalled or timeout.
   while (true) {
     int result = sem_timedwait(&native_handle_, &ts);
@@ -142,11 +138,7 @@ bool Semaphore::WaitFor(const TimeDelta& rel_time) {
       result = -1;
     }
 #endif
-#if V8_OS_ZOS
-    if (result == -1 && errno == EAGAIN) {
-#else
     if (result == -1 && errno == ETIMEDOUT) {
-#endif
       // Timed out while waiting for semaphore.
       return false;
     }
@@ -157,12 +149,6 @@ bool Semaphore::WaitFor(const TimeDelta& rel_time) {
 #endif
 }
 
-
-void Semaphore::ReleaseSystemResources() {
-#if V8_OS_ZOS
-  sem_destroy_all();
-#endif
-}
 
 #elif V8_OS_WIN
 

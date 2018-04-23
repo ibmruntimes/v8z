@@ -117,38 +117,6 @@ void OS::Free(void* address, const size_t size) {
   USE(result);
   DCHECK(result == 0);
 }
-
-#else
-
-static void ReleaseResourcesOnExit() {
-  /* TODO: This might make all other ReleaseSystem... functions redundant */
-  IPCQPROC bufptr;
-  int token;
-  int foreignid;
-
-  /* There are 3 ways we know that we have completed looping through the list.
-   * 1. If the token returned is -1.
-   * 2. If the token returned is equal to 0. This means we have looped through
-        and are back to the first item which we skipped over.
-   * 3. If the new token is equal to the previous token. This means we removed all
-        items from the list.
-   */
-
-  token = __getipc(0, &bufptr, sizeof(bufptr), IPCQMSG);
-  while (token != -1 && token != 0) {
-    if (bufptr.msg.ipcqpcp.uid == getuid() && bufptr.msg.ipcqlspid == getpid())
-      msgctl(bufptr.msg.ipcqmid, IPC_RMID, NULL);
-    token = __getipc(token, &bufptr, sizeof(bufptr), IPCQMSG);
-  }
-
-  token = __getipc(0, &bufptr, sizeof(bufptr), IPCQSEM);
-  while (token != -1 && token != 0) {
-    if (bufptr.sem.ipcqpcp.uid == getuid() && bufptr.sem.ipcqlopid == getpid())
-      semctl(bufptr.sem.ipcqmid, 1, IPC_RMID);
-    token = __getipc(token, &bufptr, sizeof(bufptr), IPCQSEM);
-  }
-}
-
 #endif
 
 // Get rid of writable permission on code allocations.
@@ -280,8 +248,6 @@ void OS::Sleep(TimeDelta interval) {
 
 void OS::Abort() {
   if (g_hard_abort) {
-    v8::base::Semaphore::ReleaseSystemResources();
-    ReleaseResourcesOnExit();
     V8_IMMEDIATE_CRASH();
   }
   // Redirect to std abort to signal abnormal program termination.

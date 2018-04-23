@@ -1297,7 +1297,6 @@ void Shell::Exit(int exit_code) {
   // threads and static destructors.
   fflush(stdout);
   fflush(stderr);
-  V8::ReleaseSystemResources();
   _exit(exit_code);
 }
 

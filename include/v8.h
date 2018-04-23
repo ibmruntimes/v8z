@@ -6662,11 +6662,6 @@ class V8_EXPORT V8 {
    */
   static void ShutdownPlatform();
 
-  /**
-   * Clears up any system resources that persist after the process has exited.
-   */
-  static void ReleaseSystemResources();
-
  private:
   V8();
 

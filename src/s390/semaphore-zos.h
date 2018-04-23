@@ -22,9 +22,10 @@
 
 #define SEM_FAILED ((sem_t *) 0)
 
-typedef struct{
-  int __semid;
-  bool __removed;
+typedef struct {
+  pthread_mutex_t mutex;
+  pthread_cond_t cond;
+  unsigned int value;
 } sem_t;
 
 int sem_init(sem_t *semid, int pshared, unsigned int value);
@@ -37,7 +38,7 @@ int sem_trywait(sem_t *semid);
 
 int sem_post(sem_t *semid);
 
-int sem_timedwait(sem_t *semid, struct timespec *timeout);
+int sem_timedwait(sem_t *semid, const struct timespec *timeout);
 
 void sem_destroy_all();
 
