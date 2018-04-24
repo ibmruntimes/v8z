@@ -64,6 +64,7 @@
 #if V8_OS_ZOS
 #include <sys/__getipc.h>
 #include <sys/msg.h>
+#include <signal.h>
 #endif
 
 namespace v8 {
@@ -250,6 +251,12 @@ void OS::Abort() {
   if (g_hard_abort) {
     V8_IMMEDIATE_CRASH();
   }
+
+#ifdef __MVS__
+  // Send SIGABRT to main thread to do cleanup.
+  raise(SIGABRT);
+#endif
+
   // Redirect to std abort to signal abnormal program termination.
   abort();
 }
