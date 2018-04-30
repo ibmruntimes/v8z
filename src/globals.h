@@ -152,7 +152,11 @@ const int kDoubleSizeLog2 = 3;
 const int kPointerSizeLog2 = 3;
 const intptr_t kIntptrSignBit = V8_INT64_C(0x8000000000000000);
 const uintptr_t kUintptrAllBitsSet = V8_UINT64_C(0xFFFFFFFFFFFFFFFF);
+#ifdef __MVS__
+const bool kRequiresCodeRange = false;
+#else
 const bool kRequiresCodeRange = true;
+#endif
 #if V8_TARGET_ARCH_MIPS64
 // To use pseudo-relative jumps such as j/jal instructions which have 28-bit
 // encoded immediate, the addresses have to be in range of 256MB aligned
