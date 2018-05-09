@@ -22,7 +22,11 @@ class Mutex;
 namespace platform {
 namespace tracing {
 
+#if defined(V8_OS_ZOS)
 typedef pthread_t ThreadId;
+#else
+typedef int ThreadId;
+#endif
 
 const int kTraceMaxNumArgs = 2;
 

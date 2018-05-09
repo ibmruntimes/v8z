@@ -965,7 +965,9 @@ class V8_EXPORT SealHandleScope {
   void operator delete[](void*, size_t);
 
   internal::Isolate* const isolate_;
+#if defined(V8_OS_ZOS)  
   int prev_level_;
+#endif
   internal::Object** prev_limit_;
   int prev_sealed_level_;
 };
