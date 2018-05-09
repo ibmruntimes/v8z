@@ -51,10 +51,19 @@
 #include "src/assembler.h"
 #include "src/s390/constants-s390.h"
 
-#define ABI_USES_FUNCTION_DESCRIPTORS 0
-
+#ifdef V8_OS_ZOS
+#define ABI_USES_FUNCTION_DESCRIPTORS 1
 #define ABI_PASSES_HANDLES_IN_REGS 1
-
+#define ABI_RETURNS_OBJECTPAIR_IN_REGS 1
+#else
+#define ABI_USES_FUNCTION_DESCRIPTORS 0
+#define ABI_PASSES_HANDLES_IN_REGS 1
+#if V8_TARGET_ARCH_S390X
+#define ABI_RETURNS_OBJECTPAIR_IN_REGS 0
+#else
+#define ABI_RETURNS_OBJECTPAIR_IN_REGS 1
+#endif
+#endif
 // ObjectPair is defined under runtime/runtime-util.h.
 // On 31-bit, ObjectPair == uint64_t.  ABI dictates long long
 //            be returned with the lower addressed half in r2
@@ -64,11 +73,6 @@
 //            with the address of this buffer passed as a hidden
 //            argument in r2. (Does NOT return in Regs)
 // For x86 linux, ObjectPair is returned in registers.
-#if V8_TARGET_ARCH_S390X
-#define ABI_RETURNS_OBJECTPAIR_IN_REGS 0
-#else
-#define ABI_RETURNS_OBJECTPAIR_IN_REGS 1
-#endif
 
 #define ABI_CALL_VIA_IP 1
 
