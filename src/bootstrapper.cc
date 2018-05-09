@@ -3502,6 +3502,14 @@ bool Bootstrapper::CompileNative(Isolate* isolate, Vector<const char> name,
 
   // For non-extension scripts, run script to get the function wrapper.
   Handle<Object> wrapper;
+  if (!Execution::Call(isolate, fun, receiver, 0, NULL).ToHandle(&wrapper)) {
+    return false;
+  }
+  // Then run the function wrapper.
+  return !Execution::Call(isolate, Handle<JSFunction>::cast(wrapper), receiver,
+                          argc, argv).is_null();
+
+/*
   if (!Execution::TryCall(isolate, fun, receiver, 0, nullptr,
                           Execution::MessageHandling::kKeepPending, nullptr)
            .ToHandle(&wrapper)) {
@@ -3512,6 +3520,7 @@ bool Bootstrapper::CompileNative(Isolate* isolate, Vector<const char> name,
                              receiver, argc, argv,
                              Execution::MessageHandling::kKeepPending, nullptr)
               .is_null();
+*/
 }
 
 
