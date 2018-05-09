@@ -445,7 +445,11 @@ class Scanner {
       // valid ASCII characters (0-127). Chars are unsigned on some
       // platforms which causes compiler warnings if the validity check
       // tests the lower bound >= 0 as it's always true.
-      return iscntrl(code_unit) || isprint(code_unit);
+#if defined(V8_OS_ZOS)
+        return (code_unit >= 0x0 && code_unit <= 0x7F);
+#else
+        return iscntrl_a(code_unit) || isprint(code_unit);
+#endif 
     }
 
     INLINE(void AddOneByteChar(byte one_byte_char)) {
