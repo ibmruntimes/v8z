@@ -10,7 +10,9 @@
 #include "src/base/functional.h"
 #include "src/base/logging.h"
 #include "src/base/platform/platform.h"
-
+#ifdef V8_OS_ZOS
+#include <unistd.h>
+#endif
 namespace v8 {
 namespace internal {
 
@@ -155,7 +157,7 @@ char* ReadLine(const char* prompt) {
   char line_buf[256];
   int offset = 0;
   bool keep_going = true;
-  fprintf(stdout, "%s", prompt);
+  PrintF( "%s", prompt);
   fflush(stdout);
   while (keep_going) {
     if (fgets(line_buf, sizeof(line_buf), stdin) == NULL) {
@@ -165,6 +167,9 @@ char* ReadLine(const char* prompt) {
       }
       return NULL;
     }
+#ifdef V8_OS_ZOS
+    __e2a_l(line_buf,256); 
+#endif
     int len = StrLength(line_buf);
     if (len > 1 &&
         line_buf[len - 2] == '\\' &&
