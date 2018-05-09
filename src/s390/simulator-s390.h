@@ -1275,6 +1275,7 @@ class SimulatorStack : public v8::internal::AllStatic {
   static inline uintptr_t RegisterCTryCatch(v8::internal::Isolate* isolate,
                                             uintptr_t try_catch_address) {
     Simulator* sim = Simulator::current(isolate);
+    PrintF("Try_Catch_Address:%p\n",try_catch_address);
     return sim->PushAddress(try_catch_address);
   }
 
