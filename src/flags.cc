@@ -28,6 +28,9 @@ namespace internal {
 #define FLAG_MODE_DEFINE_DEFAULTS
 #include "src/flag-definitions.h"  // NOLINT(build/include)
 
+#ifdef V8_OS_ZOS
+#include <unistd.h>
+#endif
 namespace {
 
 // This structure represents a single entry in the flag system, with a pointer
@@ -423,11 +426,23 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
           *flag->maybe_bool_variable() = MaybeBoolFlag::Create(true, !is_bool);
           break;
         case Flag::TYPE_INT:
+#ifdef V8_OS_ZOS 
+          __a2e_s(const_cast<char *>(value));
           *flag->int_variable() = static_cast<int>(strtol(value, &endp, 10));
+          __e2a_s(const_cast<char *>(value));
+#else
+          *flag->int_variable() = static_cast<int>(strtol(value, &endp, 10));
+#endif
           break;
         case Flag::TYPE_UINT: {
           // We do not use strtoul because it accepts negative numbers.
+#ifdef V8_OS_ZOS
+          __a2e_s(const_cast<char *>(value));
           int64_t val = static_cast<int64_t>(strtoll(value, &endp, 10));
+          __e2a_s(const_cast<char *>(value));
+#else
+          int64_t val = static_cast<int64_t>(strtoll(value, &endp, 10));
+#endif
           if (val < 0 || val > std::numeric_limits<unsigned int>::max()) {
             PrintF(stderr,
                    "Error: Value for flag %s of type %s is out of bounds "
@@ -444,7 +459,13 @@ int FlagList::SetFlagsFromCommandLine(int* argc,
           break;
         }
         case Flag::TYPE_FLOAT:
+#ifdef V8_OS_ZOS
+          __a2e_s(const_cast<char *>(value));
           *flag->float_variable() = strtod(value, &endp);
+           __e2a_s(const_cast<char *>(value));
+#else 
+          *flag->float_variable() = strtod(value, &endp);
+#endif     
           break;
         case Flag::TYPE_STRING:
           flag->set_string_value(value ? StrDup(value) : NULL, true);
