@@ -896,7 +896,11 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   __ LoadRR(r1, r2);
   __ LoadRR(r2, r3);
   __ LoadRR(r3, r4);
-
+  int stack_space = 16;
+  stack_space += 5;
+  __ lay(r4, MemOperand(sp, -((stack_space *kPointerSize) + kStackPointerBias)));
+  __ StoreMultipleP(r5, r7,
+                    MemOperand(r4, kStackPointerBias + 19*kPointerSize));
   // TODO(mcornac): fn descriptor.
   // Load environment from slot 0 of fn desc.
   __ LoadP(r5, MemOperand(r7));
@@ -934,7 +938,7 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     // Stack Pointer Bias = Xplink Bias(2048) + SaveArea(12 ptrs +
     // Reserved(2ptrs) + Debug Area(1ptr) +
     // Arg Area Prefix(1ptr) + Argument Area(3 ptrs).
-    __ lay(r4, MemOperand(sp, -(kStackPointerBias + 19 * kPointerSize)));
+    //__ lay(r4, MemOperand(sp, -(kStackPointerBias + 19 * kPointerSize)));
 #endif
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
