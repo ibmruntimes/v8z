@@ -394,6 +394,27 @@ void CEntryStub::Generate(MacroAssembler* masm) {
   // Call C built-in.
   __ mov(isolate_reg, Operand(ExternalReference::isolate_address(isolate())));
 
+#if V8_OS_ZOS
+  // TODO(mcornac): Move params from r2-r6 to r1-r3.
+  __ LoadRR(r1, r2);
+  __ LoadRR(r2, r3);
+  __ LoadRR(r3, r4);
+  int stack_space = 16;
+  stack_space += 5;
+  __ lay(r4, MemOperand(sp, -((stack_space *kPointerSize) + kStackPointerBias)));
+  __ StoreMultipleP(r5, r7,
+                    MemOperand(r4, kStackPointerBias + 19*kPointerSize));
+  // TODO(mcornac): fn descriptor.
+  // Load environment from slot 0 of fn desc.
+  __ LoadP(r5, MemOperand(r7));
+#if !defined(USE_SIMULATOR)
+  // Load function pointer from slot 1 of fn desc.
+  __ LoadP(r8, MemOperand(r7, kPointerSize));
+#else
+  __ LoadRR(r8, r7);
+#endif  // USE_SIMULATOR
+  Register target = r8;
+#else
   Register target = r7;
 
   // To let the GC traverse the return address of the exit frames, we need to
@@ -405,6 +426,25 @@ void CEntryStub::Generate(MacroAssembler* masm) {
     __ larl(r14, &return_label);  // Generate the return addr of call later.
     __ StoreP(r14, MemOperand(sp, kStackFrameRASlot * kPointerSize));
 
+#if V8_OS_ZOS
+    Register ra = r7;
+#else
+    Register ra = r14;
+#endif
+    __ larl(ra, &return_label);  // Generate the return addr of call later.
+#if V8_OS_ZOS
+    // TODO(mcornac): why do I have to -2?
+    __ lay(ra, MemOperand(ra, -2));
+#endif
+    __ StoreP(ra, MemOperand(sp, kStackFrameRASlot * kPointerSize));
+
+#if V8_OS_ZOS
+    // Load the biased stack pointer into r4 before calling native code
+    // Stack Pointer Bias = Xplink Bias(2048) + SaveArea(12 ptrs +
+    // Reserved(2ptrs) + Debug Area(1ptr) +
+    // Arg Area Prefix(1ptr) + Argument Area(3 ptrs).
+    //__ lay(r4, MemOperand(sp, -(kStackPointerBias + 19 * kPointerSize)));
+#endif
     // zLinux ABI requires caller's frame to have sufficient space for callee
     // preserved regsiter save area.
     // __ lay(sp, MemOperand(sp, -kCalleeRegisterSaveAreaSize));
