@@ -23,14 +23,18 @@ namespace {
 
 template <typename T>
 inline T ExchangeSeqCst(T* p, T value) {
-  return __atomic_exchange_n(p, value, __ATOMIC_SEQ_CST);
+#ifndef V8_OS_ZOS
+   return __atomic_exchange_n(p, value, __ATOMIC_SEQ_CST);
+#endif
 }
 
 template <typename T>
 inline T CompareExchangeSeqCst(T* p, T oldval, T newval) {
-  (void)__atomic_compare_exchange_n(p, &oldval, newval, 0, __ATOMIC_SEQ_CST,
+#ifndef V8_OS_ZOS
+    (void)__atomic_compare_exchange_n(p, &oldval, newval, 0, __ATOMIC_SEQ_CST,
                                     __ATOMIC_SEQ_CST);
-  return oldval;
+#endif  
+   return oldval;
 }
 
 template <typename T>
