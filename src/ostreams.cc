@@ -10,6 +10,8 @@
 #if _MSC_VER < 1900
 #define snprintf sprintf_s
 #endif
+#elif V8_OS_ZOS
+#include <unistd.h>
 #endif
 
 namespace v8 {
@@ -33,8 +35,18 @@ OFStreamBase::int_type OFStreamBase::overflow(int_type c) {
 
 
 std::streamsize OFStreamBase::xsputn(const char* s, std::streamsize n) {
-  return static_cast<std::streamsize>(
-      std::fwrite(s, 1, static_cast<size_t>(n), f_));
+   char * output = const_cast<char *>(s);
+#if V8_OS_ZOS
+   if (f_ == stdout || f_ == stderr) {
+      char str[n];
+      memcpy(str, s, n);
+      __a2e_l(&str[0], n);
+     output =str;
+   }
+#endif   
+   return static_cast<std::streamsize>(
+      std::fwrite(output, 1, static_cast<size_t>(n), f_));
+
 }
 
 
