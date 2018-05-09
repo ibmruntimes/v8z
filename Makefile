@@ -239,6 +239,9 @@ ifdef android_ndk_root
   export ANDROID_NDK_ROOT = $(android_ndk_root)
 endif
 
+ifeq ($(nativesim), true)
+  GYPFLAGS += -Dv8_native_sim=true
+endif
 # ----------------- available targets: --------------------
 # - any arch listed in ARCHES (see below)
 # - any mode listed in MODES

@@ -458,6 +458,8 @@ int Assembler::target_at(int pos) {
       imm32 <<= 1;  // BR* + LARL treat immediate in # of halfwords
     if (imm32 == 0) return kEndOfChain;
     return pos + imm32;
+  } else if (TRAP4 == opcode) {
+    return kEndOfChain;
   }
 
   // Unknown condition
@@ -495,6 +497,11 @@ void Assembler::target_at_put(int pos, int target_pos, bool* is_branch) {
     instr &= (~static_cast<uint64_t>(0xffffffff));
     instr_at_put<SixByteInstr>(pos, instr | imm32);
     return;
+  } else if (TRAP4 == opcode) {
+    CodePatcher patcher(((TurboAssembler *)(this))->isolate(), reinterpret_cast<byte *>(buffer_ + pos),
+                kPointerSize, CodePatcher:: DONT_FLUSH);
+    patcher.masm()->dp(target_pos);
+    return;
   }
   DCHECK(false);
 }
@@ -513,6 +520,9 @@ int Assembler::max_reach_from(int pos) {
                 // is_intn(x,32) doesn't work on 32-bit platforms.
                 // llilf: Emitted label constant, not part of
                 //        a branch (regexp PushBacktrack).
+  } else if (TRAP4 == opcode) {
+    return 0;   // we use a TRAP4 to indicate that a label address
+                // has been emitted here and there are no limits
   }
   DCHECK(false);
   return 16;
@@ -528,7 +538,11 @@ void Assembler::bind_to(Label* L, int pos) {
     int maxReach = max_reach_from(fixup_pos);
 #endif
     next(L);  // call next before overwriting link with target at fixup_pos
+#ifdef DEBUG
+    if (maxReach != 0) {
     DCHECK(is_intn(offset, maxReach));
+    }
+#endif
     target_at_put(fixup_pos, pos, &is_branch);
   }
   L->bind_to(pos);
@@ -662,6 +676,17 @@ void Assembler::nop(int type) {
       // TODO(john.yan): Use a better NOP break
       oill(r3, Operand::Zero());
       break;
+#ifdef V8_OS_ZOS
+    case BASR_CALL_TYPE_NOP:
+      emit2bytes(0x0000);
+      break;
+    case BRAS_CALL_TYPE_NOP:
+      emit2bytes(0x0001);
+      break;
+    case BRASL_CALL_TYPE_NOP:
+      emit2bytes(0x0011);
+      break;
+#endif
     default:
       UNIMPLEMENTED();
   }
@@ -2218,9 +2243,16 @@ void Assembler::emit_label_addr(Label* label) {
   CheckBuffer();
   RecordRelocInfo(RelocInfo::INTERNAL_REFERENCE);
   int position = link(label);
-  DCHECK(label->is_bound());
   // Keep internal references relative until EmitRelocations.
-  dp(position);
+  if (label->is_bound()) {
+      dp(position);
+  } else {
+      uintptr_t trap = TRAP4 << 16;
+#ifdef V8_TARGET_ARCH_S390X
+      trap = trap << 32;
+#endif
+      dp (trap);
+  }
 }
 
 void Assembler::EmitRelocations() {
