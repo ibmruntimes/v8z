@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifdef __MVS__ 
+#define _AE_BIMODAL
+#endif
 
 #include <errno.h>
 #include <stdlib.h>
@@ -69,11 +72,35 @@ const int kMaxWorkers = 50;
 const int kMaxSerializerMemoryUsage = 1 * MB;  // Arbitrary maximum for testing.
 
 #define PATH_MAX 4096
+
 #define USE_VM 1
 #define VM_THRESHOLD 65536
 // TODO(titzer): allocations should fail if >= 2gb because of
 // array buffers storing the lengths as a SMI internally.
 #define TWO_GB (2u * 1024u * 1024u * 1024u)
+
+#ifdef V8_OS_ZOS
+static void PrintF(const char* format, ...) {
+  char buf[2048];
+  int ret;
+  va_list args;
+
+  va_start(args, format);
+  ret = __vsnprintf_a(buf, sizeof(buf), format, args);
+  if (ret < sizeof(buf)) {
+    __a2e_s(buf);
+    fwrite(buf, 1, ret, stdout);
+  } else {
+    char big[ret+1];
+    __snprintf_a(big, ret+1, format, args);
+    __a2e_s(big);
+    fwrite(big, 1, ret, stdout);
+  }
+  va_end(args);
+}
+#else
+#define PrintF printf
+#endif
 
 // Forwards memory reservation and protection functions to the V8 default
 // allocator. Used by ShellArrayBufferAllocator and MockArrayBufferAllocator.
@@ -596,12 +623,12 @@ bool Shell::ExecuteString(Isolate* isolate, Local<String> source,
         // the returned value.
         v8::String::Utf8Value str(result);
         fwrite(*str, sizeof(**str), str.length(), stdout);
-        printf("\n");
+        PrintF("\n");
       }
     } else {
       v8::String::Utf8Value str(Stringify(isolate, result));
       fwrite(*str, sizeof(**str), str.length(), stdout);
-      printf("\n");
+      PrintF("\n");
     }
   }
   return true;
@@ -1179,9 +1206,12 @@ void WriteToFile(FILE* file, const v8::FunctionCallbackInfo<v8::Value>& args) {
     }
 
     v8::String::Utf8Value str(str_obj);
+#ifdef V8_OS_ZOS
+    __a2e_l(*str, str.length());
+#endif
     int n = static_cast<int>(fwrite(*str, sizeof(**str), str.length(), file));
     if (n != str.length()) {
-      printf("Error in fwrite\n");
+      PrintF("Error in fwrite\n");
       Shell::Exit(1);
     }
   }
@@ -1242,20 +1272,30 @@ Local<String> Shell::ReadFromStdin(Isolate* isolate) {
     input = fgets(buffer, kBufferSize, stdin);
     if (input == NULL) return Local<String>();
     length = static_cast<int>(strlen(buffer));
+    
     if (length == 0) {
       return accumulator;
     } else if (buffer[length-1] != '\n') {
+#ifdef V8_OS_ZOS
+     __e2a_l(buffer, length);
+#endif
       accumulator = String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal, length)
               .ToLocalChecked());
     } else if (length > 1 && buffer[length-2] == '\\') {
       buffer[length-2] = '\n';
+#ifdef V8_OS_ZOS
+      __e2a_l(buffer, length);
+#endif
       accumulator = String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal,
                               length - 1).ToLocalChecked());
     } else {
+#ifdef V8_OS_ZOS
+      __e2a_l(buffer, length);
+#endif
       return String::Concat(
           accumulator,
           String::NewFromUtf8(isolate, buffer, NewStringType::kNormal,
@@ -1436,44 +1476,44 @@ void Shell::ReportException(Isolate* isolate, v8::TryCatch* try_catch) {
   if (message.IsEmpty()) {
     // V8 didn't provide any extra information about this error; just
     // print the exception.
-    printf("%s\n", exception_string);
+    PrintF("%s\n", exception_string);
   } else if (message->GetScriptOrigin().Options().IsWasm()) {
     // Print wasm-function[(function index)]:(offset): (message).
     int function_index = message->GetLineNumber(context).FromJust() - 1;
     int offset = message->GetStartColumn(context).FromJust();
-    printf("wasm-function[%d]:%d: %s\n", function_index, offset,
+    PrintF("wasm-function[%d]:%d: %s\n", function_index, offset,
            exception_string);
   } else {
     // Print (filename):(line number): (message).
     v8::String::Utf8Value filename(message->GetScriptOrigin().ResourceName());
     const char* filename_string = ToCString(filename);
     int linenum = message->GetLineNumber(context).FromMaybe(-1);
-    printf("%s:%i: %s\n", filename_string, linenum, exception_string);
+    PrintF("%s:%i: %s\n", filename_string, linenum, exception_string);
     Local<String> sourceline;
     if (message->GetSourceLine(context).ToLocal(&sourceline)) {
       // Print line of source code.
       v8::String::Utf8Value sourcelinevalue(sourceline);
       const char* sourceline_string = ToCString(sourcelinevalue);
-      printf("%s\n", sourceline_string);
+      PrintF("%s\n", sourceline_string);
       // Print wavy underline (GetUnderline is deprecated).
       int start = message->GetStartColumn(context).FromJust();
       for (int i = 0; i < start; i++) {
-        printf(" ");
+        PrintF(" ");
       }
       int end = message->GetEndColumn(context).FromJust();
       for (int i = start; i < end; i++) {
-        printf("^");
+        PrintF("^");
       }
-      printf("\n");
+      PrintF("\n");
     }
   }
   Local<Value> stack_trace_string;
   if (try_catch->StackTrace(context).ToLocal(&stack_trace_string) &&
       stack_trace_string->IsString()) {
     v8::String::Utf8Value stack_trace(Local<String>::Cast(stack_trace_string));
-    printf("%s\n", ToCString(stack_trace));
+    PrintF("%s\n", ToCString(stack_trace));
   }
-  printf("\n");
+  PrintF("\n");
   if (enter_context) context->Exit();
 }
 
@@ -1514,7 +1554,7 @@ void Shell::MapCounters(v8::Isolate* isolate, const char* name) {
   void* memory = (counters_file_ == NULL) ?
       NULL : counters_file_->memory();
   if (memory == NULL) {
-    printf("Could not map counters file %s\n", name);
+    PrintF("Could not map counters file %s\n", name);
     Exit(1);
   }
   counters_ = static_cast<CounterCollection*>(memory);
@@ -1802,7 +1842,7 @@ static void PrintNonErrorsMessageCallback(Local<Message> message,
   const char* filename_string = ToCString(filename);
   Maybe<int> maybeline = message->GetLineNumber(isolate->GetCurrentContext());
   int linenum = maybeline.IsJust() ? maybeline.FromJust() : -1;
-  printf("%s:%i: %s\n", filename_string, linenum, msg_string);
+  PrintF("%s:%i: %s\n", filename_string, linenum, msg_string);
 }
 
 void Shell::Initialize(Isolate* isolate) {
@@ -1990,34 +2030,34 @@ void Shell::OnExit(v8::Isolate* isolate) {
         Counter* counter = counters[j].counter;
         const char* key = counters[j].key;
         if (counter->is_histogram()) {
-          printf("\"c:%s\"=%i\n", key, counter->count());
-          printf("\"t:%s\"=%i\n", key, counter->sample_total());
+          PrintF("\"c:%s\"=%i\n", key, counter->count());
+          PrintF("\"t:%s\"=%i\n", key, counter->sample_total());
         } else {
-          printf("\"%s\"=%i\n", key, counter->count());
+          PrintF("\"%s\"=%i\n", key, counter->count());
         }
       }
     } else {
       // Dump counters in formatted boxes.
-      printf(
+      PrintF(
           "+----------------------------------------------------------------+"
           "-------------+\n");
-      printf(
+      PrintF(
           "| Name                                                           |"
           " Value       |\n");
-      printf(
+      PrintF(
           "+----------------------------------------------------------------+"
           "-------------+\n");
       for (j = 0; j < number_of_counters; j++) {
         Counter* counter = counters[j].counter;
         const char* key = counters[j].key;
         if (counter->is_histogram()) {
-          printf("| c:%-60s | %11i |\n", key, counter->count());
-          printf("| t:%-60s | %11i |\n", key, counter->sample_total());
+          PrintF("| c:%-60s | %11i |\n", key, counter->count());
+          PrintF("| t:%-60s | %11i |\n", key, counter->sample_total());
         } else {
-          printf("| %-62s | %11i |\n", key, counter->count());
+          PrintF("| %-62s | %11i |\n", key, counter->count());
         }
       }
-      printf(
+      PrintF(
           "+----------------------------------------------------------------+"
           "-------------+\n");
     }
@@ -2050,7 +2090,11 @@ static FILE* FOpen(const char* path, const char* mode) {
 }
 
 static char* ReadChars(const char* name, int* size_out) {
+#ifdef V8_OS_ZOS
+  FILE * file = base::OS::FOpenASCII(name,"rb");
+#else
   FILE* file = FOpen(name, "rb");
+#endif
   if (file == NULL) return NULL;
 
   fseek(file, 0, SEEK_END);
@@ -2061,6 +2105,9 @@ static char* ReadChars(const char* name, int* size_out) {
   chars[size] = '\0';
   for (size_t i = 0; i < size;) {
     i += fread(&chars[i], 1, size - i, file);
+#ifdef V8_OS_ZOS
+    __e2a_s(chars);
+#endif
     if (ferror(file)) {
       fclose(file);
       delete[] chars;
@@ -2149,15 +2196,15 @@ void Shell::RunShell(Isolate* isolate) {
   Local<String> name =
       String::NewFromUtf8(isolate, "(d8)", NewStringType::kNormal)
           .ToLocalChecked();
-  printf("V8 version %s\n", V8::GetVersion());
+  PrintF("V8 version %s\n", V8::GetVersion());
   while (true) {
     HandleScope inner_scope(isolate);
-    printf("d8> ");
+    PrintF("d8> ");
     Local<String> input = Shell::ReadFromStdin(isolate);
     if (input.IsEmpty()) break;
     ExecuteString(isolate, input, name, true, true);
   }
-  printf("\n");
+  PrintF("\n");
   // We need to explicitly clean up the module embedder data for
   // the interative shell context.
   DisposeModuleEmbedderData(context);
@@ -2344,7 +2391,7 @@ void SourceGroup::Execute(Isolate* isolate) {
             .ToLocalChecked();
     Local<String> source = ReadFile(isolate, arg);
     if (source.IsEmpty()) {
-      printf("Error reading '%s'\n", arg);
+      PrintF("Error reading '%s'\n", arg);
       Shell::Exit(1);
     }
     Shell::options.script_executed = true;
@@ -2700,7 +2747,7 @@ bool Shell::SetOptions(int argc, char* argv[]) {
       } else if (strncmp(value, "=none", 6) == 0) {
         options.compile_options = v8::ScriptCompiler::kNoCompileOptions;
       } else {
-        printf("Unknown option to --cache.\n");
+        PrintF("Unknown option to --cache.\n");
         return false;
       }
       argv[i] = NULL;
@@ -2737,7 +2784,7 @@ bool Shell::SetOptions(int argc, char* argv[]) {
     } else if (strcmp(str, "--module") == 0) {
       // Pass on to SourceGroup, which understands this option.
     } else if (strncmp(argv[i], "--", 2) == 0) {
-      printf("Warning: unknown flag %s.\nTry --help for options\n", argv[i]);
+      PrintF("Warning: unknown flag %s.\nTry --help for options\n", argv[i]);
     } else if (strcmp(str, "-e") == 0 && i + 1 < argc) {
       options.script_executed = true;
     } else if (strncmp(str, "-", 1) != 0) {
@@ -3173,7 +3220,7 @@ int Shell::Main(int argc, char* argv[]) {
 
   if (i::trap_handler::UseTrapHandler()) {
     if (!v8::V8::RegisterDefaultSignalHandler()) {
-      fprintf(stderr, "Could not register signal handler");
+      PrintF("Could not register signal handler");
       exit(1);
     }
   }
@@ -3210,18 +3257,18 @@ int Shell::Main(int argc, char* argv[]) {
                                 : Testing::kStressTypeDeopt);
       options.stress_runs = Testing::GetStressRuns();
       for (int i = 0; i < options.stress_runs && result == 0; i++) {
-        printf("============ Stress %d/%d ============\n", i + 1,
+        PrintF("============ Stress %d/%d ============\n", i + 1,
                options.stress_runs);
         Testing::PrepareStressRun(i);
         bool last_run = i == options.stress_runs - 1;
         result = RunMain(isolate, argc, argv, last_run);
       }
-      printf("======== Full Deoptimization =======\n");
+      PrintF("======== Full Deoptimization =======\n");
       Testing::DeoptimizeAll(isolate);
     } else if (i::FLAG_stress_runs > 0) {
       options.stress_runs = i::FLAG_stress_runs;
       for (int i = 0; i < options.stress_runs && result == 0; i++) {
-        printf("============ Run %d/%d ============\n", i + 1,
+        PrintF("============ Run %d/%d ============\n", i + 1,
                options.stress_runs);
         bool last_run = i == options.stress_runs - 1;
         result = RunMain(isolate, argc, argv, last_run);
@@ -3260,6 +3307,12 @@ int Shell::Main(int argc, char* argv[]) {
 
 #ifndef GOOGLE3
 int main(int argc, char* argv[]) {
-  return v8::Shell::Main(argc, argv);
+#ifdef V8_OS_ZOS
+  for (unsigned int i = 0 ; i < argc; i++) {
+     __e2a_s(argv[i]);
+  }
+#endif
+   return v8::Shell::Main(argc, argv);
+
 }
 #endif
