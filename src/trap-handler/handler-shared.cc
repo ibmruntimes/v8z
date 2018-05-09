@@ -35,25 +35,30 @@ static_assert(sizeof(g_thread_in_wasm_code) > 1,
 size_t gNumCodeObjects = 0;
 CodeProtectionInfoListEntry* gCodeObjects = nullptr;
 
+#ifndef V8_OS_ZOS
 std::atomic_flag MetadataLock::spinlock_ = ATOMIC_FLAG_INIT;
+#endif
 
 MetadataLock::MetadataLock() {
+#ifndef V8_OS_ZOS
   if (g_thread_in_wasm_code) {
     abort();
   }
 
   while (spinlock_.test_and_set(std::memory_order::memory_order_acquire)) {
   }
+#endif
 }
 
 MetadataLock::~MetadataLock() {
+#ifndef V8_OS_ZOS
   if (g_thread_in_wasm_code) {
     abort();
   }
 
   spinlock_.clear(std::memory_order::memory_order_release);
+#endif
 }
-
 }  // namespace trap_handler
 }  // namespace internal
 }  // namespace v8
