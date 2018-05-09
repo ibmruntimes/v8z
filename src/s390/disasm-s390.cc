@@ -108,7 +108,7 @@ void Decoder::Print(const char* str) {
 
 // Print the register name according to the active name converter.
 void Decoder::PrintRegister(int reg) {
-  Print(converter_.NameOfCPURegister(reg));
+   Print(converter_.NameOfCPURegister(reg));
 }
 
 // Print the double FP register name according to the active name converter.
