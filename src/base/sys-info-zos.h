@@ -37,7 +37,10 @@ typedef struct ZOSCVT {
   ZOSRMCT* __ptr32 rmct;
   uint8_t filler1[560];
   ZOSRCE* __ptr32 rce;
+  uint8_t filler2[92];
+  uint8_t cvtoslvl[16];
 } ZOSCVT_t;
+
 
 
 // Prefixed Save Area (PSA).

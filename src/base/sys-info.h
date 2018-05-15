@@ -22,6 +22,10 @@ class SysInfo final {
   // Returns the number of bytes of virtual memory of this process. A return
   // value of zero means that there is no limit on the available virtual memory.
   static int64_t AmountOfVirtualMemory();
+
+  // For z/OS starting with version 2.3 code pages can be allocate above the 2GB
+  // virtual memory address space. For all other platforms this is true by default
+  static bool ExecutablePagesAbove2GB();
 };
 
 }  // namespace base

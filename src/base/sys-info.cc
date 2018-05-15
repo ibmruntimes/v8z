@@ -31,7 +31,19 @@
 namespace v8 {
 namespace base {
 
+
 // static
+bool SysInfo::ExecutablePagesAbove2GB() {
+#if V8_OS_ZOS
+   ZOSCVT * __ptr32 cvt = ((ZOSPSA* __ptr32)0)->cvt;
+   uint8_t oslvl = cvt->cvtoslvl[6];
+   uint8_t result = ((oslvl) & (0x10));
+   bool v2r3 = result != 0;
+   return v2r3;
+#else
+   return true;
+#endif
+}
 int SysInfo::NumberOfProcessors() {
 #if V8_OS_OPENBSD
   int mib[2] = {CTL_HW, HW_NCPU};
