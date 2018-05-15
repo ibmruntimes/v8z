@@ -44,6 +44,7 @@
 #include "src/base/macros.h"
 #include "src/base/platform/platform.h"
 #include "src/s390/semaphore-zos.h"
+#include "src/base/sys-info.h"
 
 #define MAP_FAILED ((void *)-1L)
 
@@ -96,12 +97,26 @@ bool OS::ArmUsingHardFloat() {
 
 #define asm __asm__ volatile
 
+static const int kMegaByte = 1024*1024;
+
 static void * anon_mmap(void * addr, size_t len) {
    int retcode;
-   char * p;
+   bool rmode64 = SysInfo::ExecutablePagesAbove2GB(); 
+   if (rmode64 && len % kMegaByte == 0) {
+     __mopl_t mopl_instance;
+     void * p = NULL;
+     size_t request_size = len / kMegaByte;
+     memset(&mopl_instance,0,sizeof(mopl_instance));
+     mopl_instance.__mopldumppriority = __MO_DUMP_PRIORITY_HEAP;
+     mopl_instance.__moplrequestsize = request_size;
+     retcode = __moservices(__MO_GETSTOR,sizeof(mopl_instance), &mopl_instance, &p);
+     return (retcode == 0) ? p : MAP_FAILED;
+   } else {
+     int retcode;
+     char * p;
 #pragma convert("ibm-1047")
 #if defined(__64BIT__)
-  __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
+     __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
         " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
         "LOC=(31,64)\n"
 # if defined(__clang__)
@@ -110,7 +125,7 @@ static void * anon_mmap(void * addr, size_t len) {
         :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
 # endif
 #else
-  __asm(" SYSSTATE ARCHLVL=2\n"
+     __asm(" SYSSTATE ARCHLVL=2\n"
         " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\n"
 # if defined(__clang__)
         :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
@@ -118,16 +133,20 @@ static void * anon_mmap(void * addr, size_t len) {
         :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
 # endif
 #endif
-#pragma convert(pop)
-   return (retcode == 0) ? p : MAP_FAILED;
+     return (retcode == 0) ? p : MAP_FAILED;
+   }
 }
 
 
 static int anon_munmap(void * addr, size_t len) {
    int retcode;
+   bool rmode64 = SysInfo::ExecutablePagesAbove2GB(); 
+   if (rmode64 && len % kMegaByte == 0) {
+     retcode = __moservices(__MO_DETACH,0,NULL,&addr);;
+   } else {
 #pragma convert("ibm-1047")
 #if defined (__64BIT__)
-  __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
+     __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\n"
           " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\n"
 # if defined(__clang__)
           :"=NR:r15"(retcode): "NR:r1"(addr), "NR:r0"(len) : "r0","r1","r14","r15");
@@ -135,7 +154,7 @@ static int anon_munmap(void * addr, size_t len) {
           :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
 # endif
 #else
-  __asm(" SYSSTATE ARCHLVL=2\n"
+    __asm(" SYSSTATE ARCHLVL=2\n"
           " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\n"
 # if defined(__clang__)
           :"=NR:r15"(retcode): "NR:r1"(addr), "NR:r0"(len) : "r0","r1","r14","r15");
@@ -144,6 +163,7 @@ static int anon_munmap(void * addr, size_t len) {
 # endif
 #endif
 #pragma convert(pop)
+   }
    return retcode;
 }
 
@@ -297,7 +317,6 @@ void OS::SignalCodeMovingGC() {
 static const int kMmapFd = -1;
 // Constants used for mmap.
 static const int kMmapFdOffset = 0;
-
 VirtualMemory::VirtualMemory() : address_(NULL), size_(0) { }
 
 
@@ -308,6 +327,16 @@ VirtualMemory::VirtualMemory(size_t size)
 VirtualMemory::VirtualMemory(size_t size, size_t alignment)
     : address_(NULL), size_(0) {
   DCHECK((alignment % OS::AllocateAlignment()) == 0);
+  //Memory pages with 1MB alignment will be allocated using __moservices
+  bool rmode64 = SysInfo::ExecutablePagesAbove2GB(); 
+  if (rmode64 && size % kMegaByte == 0) {
+     void * reservation = anon_mmap(OS::GetRandomMmapAddr(),
+                                    size);
+     if (reservation == MAP_FAILED) return;
+     address_ = reservation;
+     size_ = size;
+     return;
+  }
   size_t request_size = RoundUp(size + alignment,
                                 static_cast<intptr_t>(OS::AllocateAlignment()));
 
@@ -319,7 +348,6 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
   uint8_t* base = static_cast<uint8_t*>(reservation);
   uint8_t* aligned_base = RoundUp(base, alignment);
   DCHECK_LE(base, aligned_base);
-
   // Unmap extra memory reserved before and after the desired block.
   if (aligned_base != base) {
     size_t prefix_size = static_cast<size_t>(aligned_base - base);
