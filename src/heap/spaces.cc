@@ -104,7 +104,7 @@ bool CodeRange::SetUp(size_t requested) {
     // When a target requires the code range feature, we put all code objects
     // in a kMaximalCodeRangeSize range of virtual address space, so that
     // they can call each other with near calls.
-    if (kRequiresCodeRange) {
+    if (RequiresCodeRange()) {
       requested = kMaximalCodeRangeSize;
     } else {
       return true;
@@ -115,7 +115,7 @@ bool CodeRange::SetUp(size_t requested) {
     requested = kMinimumCodeRangeSize;
   }
 
-  DCHECK(!kRequiresCodeRange || requested <= kMaximalCodeRangeSize);
+  DCHECK(!RequiresCodeRange() || requested <= kMaximalCodeRangeSize);
 #ifdef V8_TARGET_ARCH_MIPS64
   // To use pseudo-relative jumps such as j/jal instructions which have 28-bit
   // encoded immediate, the addresses have to be in range of 256Mb aligned

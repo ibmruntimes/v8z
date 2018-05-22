@@ -11,6 +11,7 @@
 #include <ostream>
 
 #include "src/base/build_config.h"
+#include "src/base/sys-info.h"
 #include "src/base/logging.h"
 #include "src/base/macros.h"
 
@@ -1047,6 +1048,18 @@ inline uint32_t ObjectHash(Address address) {
   // zeros.
   return static_cast<uint32_t>(bit_cast<uintptr_t>(address) >>
                                kPointerSizeLog2);
+}
+
+inline bool RequiresCodeRange() {
+#if V8_HOST_ARCH_64_BIT
+  return v8::base::SysInfo::ExecutablePagesAbove2GB();
+#else
+# if V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT
+  return true;
+# else
+  return false;
+# endif
+#endif
 }
 
 }  // namespace internal

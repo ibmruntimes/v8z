@@ -635,7 +635,7 @@ void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
     set_max_executable_size(i::Heap::kMaxExecutableSizeHugeMemoryDevice);
   }
 
-  if (virtual_memory_limit > 0 && i::kRequiresCodeRange) {
+  if (virtual_memory_limit > 0 && i::RequiresCodeRange()) {
     // Reserve no more than 1/8 of the memory for the code range, but at most
     // kMaximalCodeRangeSize.
     set_code_range_size(
