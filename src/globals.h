@@ -193,7 +193,6 @@ const int kDoubleSizeLog2 = 3;
 const int kPointerSizeLog2 = 3;
 const intptr_t kIntptrSignBit = V8_INT64_C(0x8000000000000000);
 const uintptr_t kUintptrAllBitsSet = V8_UINT64_C(0xFFFFFFFFFFFFFFFF);
-const bool kRequiresCodeRange = true;
 #if V8_TARGET_ARCH_MIPS64
 // To use pseudo-relative jumps such as j/jal instructions which have 28-bit
 // encoded immediate, the addresses have to be in range of 256MB aligned
@@ -220,7 +219,6 @@ const intptr_t kIntptrSignBit = 0x80000000;
 const uintptr_t kUintptrAllBitsSet = 0xFFFFFFFFu;
 #if V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT
 // x32 port also requires code range.
-const bool kRequiresCodeRange = true;
 const size_t kMaximalCodeRangeSize = 256 * MB;
 const size_t kMinimumCodeRangeSize = 3 * MB;
 const size_t kCodeRangeAreaAlignment = 4 * KB;  // OS page.
@@ -230,7 +228,6 @@ const size_t kMaximalCodeRangeSize = 0 * MB;
 const size_t kMinimumCodeRangeSize = 0 * MB;
 const size_t kCodeRangeAreaAlignment = 64 * KB;  // OS page on PPC Linux
 #else
-const bool kRequiresCodeRange = false;
 const size_t kMaximalCodeRangeSize = 0 * MB;
 const size_t kMinimumCodeRangeSize = 0 * MB;
 const size_t kCodeRangeAreaAlignment = 4 * KB;  // OS page.
