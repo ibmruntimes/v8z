@@ -154,7 +154,6 @@ TEST(TestJSONTraceWriter) {
 #else
     int threadId1 = 22;
     int threadId2 = 66;
-#endif
     trace_object.InitializeForTesting(
         'X', tracing_controller.GetCategoryGroupEnabled("v8-cat"), "Test0",
         v8::internal::tracing::kGlobalScope, 42, 123, 0, nullptr, nullptr,
@@ -166,6 +165,8 @@ TEST(TestJSONTraceWriter) {
         nullptr, nullptr, 0, 55, threadId2, 110, 55, 77, 88);
     writer->AppendTraceEvent(&trace_object);
     tracing_controller.StopTracing();
+#endif
+  
   }
 
   std::string trace_str = stream.str();
