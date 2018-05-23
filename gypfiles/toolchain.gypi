@@ -999,6 +999,7 @@
         ],
         'cflags': [
           '-q64',
+          '-fexec-charset=ISO8859-1', 
           '-qxplink',
           '-qlonglong',
           '-qenum=int',

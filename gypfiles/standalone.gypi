@@ -754,6 +754,7 @@
       'target_defaults': {
         'cflags': [ '-qdebug=nohook','-g','-Wc,expo','-q64','-qnortti',
                     '-qbitfield=signed',
+                    '-fexec-charset=ISO8859-1',
                     '-qasm',
                     '-qasmlib=sys1.maclib:sys1.modgen',
                     '-D_ISOC99_SOURCE','-D_UNIX03_SOURCE',
