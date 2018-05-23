@@ -989,6 +989,34 @@
           },
         },
       }],
+      ['OS=="zos"', {
+        'defines': [
+          '_UNIX03_THREADS',
+          '_XOPEN_SOURCE=500',
+          '__IBMCPP_TR1__',
+          '_OPEN_SYS_TIMED_EXT',
+          '__BIG_ENDIAN=4321',
+          '__BYTE_ORDER=__BIG_ENDIAN',
+        ],
+        'cflags': [
+          '-q64',
+          '-fexec-charset=ISO8859-1', 
+          '-qxplink',
+          '-qlonglong',
+          '-qenum=int',
+          '-qcsect=v8z',
+          '-qasmlib=sys1.maclib:sys1.modgen',
+          '-qasm',
+          '-qdebug=nohook',
+          '-qbitfield=signed',
+          '-qnortti',
+          '-Wc,expo',
+        ],
+        'ldflags': [
+          '-q64',
+          '-qxplink',
+        ],
+      }],
       ['(OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
          or OS=="netbsd" or OS=="mac" or OS=="android" or OS=="qnx") and \
         v8_target_arch=="ia32"', {
