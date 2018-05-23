@@ -1,7 +1,7 @@
 // Copyright 2016 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-
+#define V8_OS_ZOS 1
 #include "include/libplatform/v8-tracing.h"
 
 #include "base/trace_event/common/trace_event_common.h"
