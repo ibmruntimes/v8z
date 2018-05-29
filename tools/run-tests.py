@@ -80,17 +80,17 @@ TEST_MAP = {
   ],
   # This needs to stay in sync with test/default.isolate.
   "default": [
-    "debugger",
+   # "debugger",
     "mjsunit",
     "cctest",
-    "wasm-spec-tests",
+   # "wasm-spec-tests",
     "inspector",
-    "mkgrokdump",
-    "fuzzer",
-    "message",
-    "preparser",
+   # "mkgrokdump",
+    #"fuzzer",
+    #"message",
+    #"preparser",
     "intl",
-    "unittests",
+    #"unittests",
   ],
   # This needs to stay in sync with test/optimize_for_size.isolate.
   "optimize_for_size": [
@@ -301,7 +301,7 @@ def BuildOptions():
                     " \"%s\"" % ",".join(EXHAUSTIVE_VARIANTS))
   result.add_option("--outdir", help="Base directory with compile output",
                     default="out")
-  result.add_option("--gn", help="Scan out.gn for the last built configuration",
+  result.add_option("--gn", help="Scan", 
                     default=False, action="store_true")
   result.add_option("--predictable",
                     help="Compare output of several reruns of each test",
@@ -936,6 +936,8 @@ def Execute(arch, mode, args, options, suites):
     runner = network_execution.NetworkedRunner(suites, progress_indicator,
                                                ctx, peers, BASE_DIR)
   else:
+    print("About to run ")
+    print(suites)
     runner = execution.Runner(suites, progress_indicator, ctx)
 
   exit_code = runner.Run(options.j)

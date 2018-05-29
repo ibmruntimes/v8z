@@ -62,7 +62,7 @@ for var in ["debug", "release", "big", "little",
             "android_arm", "android_arm64", "android_ia32", "android_x64",
             "arm", "arm64", "ia32", "mips", "mipsel", "mips64", "mips64el",
             "x64", "ppc", "ppc64", "s390", "s390x", "macos", "windows",
-            "linux", "aix"]:
+            "linux", "aix", "zos"]:
   VARIABLES[var] = var
 
 # Allow using variants as keywords.
