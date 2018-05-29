@@ -29,6 +29,7 @@
 import os
 import subprocess
 import sys
+import platform
 from threading import Timer
 
 from ..local import utils

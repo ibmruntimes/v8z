@@ -32,6 +32,7 @@ import re
 import shutil
 import sys
 import time
+import platform
 
 from pool import Pool
 from . import commands
@@ -174,9 +175,10 @@ class TestJob(Job):
     try:
       # Retrieve a new suite object on the worker-process side. The original
       # suite object isn't pickled.
-      self.test.SetSuiteObject(process_context.suites)
+      #self.test.SetSuiteObject(process_context.suites)
       instr = _GetInstructions(self.test, process_context.context)
     except Exception, e:
+      raise;
       return SetupProblem(e, self.test)
 
     start_time = time.time()
@@ -336,6 +338,21 @@ class Runner(object):
     return 0
 
   def _RunInternal(self, jobs):
+    if platform.system() == "OS/390":
+       pc = MakeProcessContext(self.context,self.suite_names)
+       for test in self.tests:
+         try:
+           result = RunTest(TestJob(test), pc)
+         except Exception, e:
+           print(e);
+         if self.context.predictable:
+           update_perf = self._ProcessTestPredictable(test, result, None)
+         else:
+           update_perf = self._ProcessTestNormal(test, result, None)
+         if update_perf:
+           self._RunPerfSafe(lambda: self.perfdata.UpdatePerfData(test))
+       return;
+    
     pool = Pool(jobs)
     test_map = {}
     queued_exception = [None]
