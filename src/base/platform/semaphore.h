@@ -54,8 +54,6 @@ class V8_BASE_EXPORT Semaphore final {
   // the semaphore counter is decremented and true is returned.
   bool WaitFor(const TimeDelta& rel_time) WARN_UNUSED_RESULT;
   
-  //Release all system semaphores
-  static void ReleaseSystemResources();
 
 #if V8_OS_MACOSX
   typedef semaphore_t NativeHandle;
