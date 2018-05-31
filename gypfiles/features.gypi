@@ -54,6 +54,9 @@
     # tools/gen-postmortem-metadata.py for details.
     'v8_postmortem_support%': 'false',
 
+    # Native simulator flag
+    'v8_native_sim%': 'false',
+
     # Interpreted regexp engine exists as platform-independent alternative
     # based where the regular expression is compiled to a bytecode.
     'v8_interpreted_regexp%': 1,
@@ -96,6 +99,9 @@
       }],
       ['v8_enable_verify_heap==1', {
         'defines': ['VERIFY_HEAP',],
+      }],
+      ['v8_native_sim=="true"', {
+        'defines': ['USE_SIMULATOR',],
       }],
       ['v8_trace_maps==1', {
         'defines': ['V8_TRACE_MAPS',],
