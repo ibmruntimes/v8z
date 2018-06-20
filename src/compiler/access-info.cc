@@ -46,7 +46,7 @@ bool CanInlinePropertyAccess(Handle<Map> map) {
 }  // namespace
 
 
-std::ostream& operator<<(std::ostream& os, AccessMode access_mode) {
+v8::base::OStream& operator<<(v8::base::OStream& os, AccessMode access_mode) {
   switch (access_mode) {
     case AccessMode::kLoad:
       return os << "Load";

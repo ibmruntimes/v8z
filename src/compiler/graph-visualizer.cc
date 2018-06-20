@@ -88,15 +88,15 @@ static const char* SafeMnemonic(Node* node) {
 
 class JSONEscaped {
  public:
-  explicit JSONEscaped(const std::ostringstream& os) : str_(os.str()) {}
+  explicit JSONEscaped(const v8::base::OStringStream& os) : str_(os.str()) {}
 
-  friend std::ostream& operator<<(std::ostream& os, const JSONEscaped& e) {
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, const JSONEscaped& e) {
     for (char c : e.str_) PipeCharacter(os, c);
     return os;
   }
 
  private:
-  static std::ostream& PipeCharacter(std::ostream& os, char c) {
+  static v8::base::OStream& PipeCharacter(v8::base::OStream& os, char c) {
     if (c == '"') return os << "\\\"";
     if (c == '\\') return os << "\\\\";
     if (c == '\b') return os << "\\b";
@@ -112,7 +112,7 @@ class JSONEscaped {
 
 class JSONGraphNodeWriter {
  public:
-  JSONGraphNodeWriter(std::ostream& os, Zone* zone, const Graph* graph,
+  JSONGraphNodeWriter(v8::base::OStream& os, Zone* zone, const Graph* graph,
                       const SourcePositionTable* positions)
       : os_(os),
         all_(zone, graph, false),
@@ -131,7 +131,7 @@ class JSONGraphNodeWriter {
     } else {
       os_ << ",\n";
     }
-    std::ostringstream label, title, properties;
+    v8::base::OStringStream label, title, properties;
     node->op()->PrintTo(label, Operator::PrintVerbosity::kSilent);
     node->op()->PrintTo(title, Operator::PrintVerbosity::kVerbose);
     node->op()->PrintPropsTo(properties);
@@ -169,7 +169,7 @@ class JSONGraphNodeWriter {
         << node->op()->ControlOutputCount() << " ctrl out\"";
     if (NodeProperties::IsTyped(node)) {
       Type* type = NodeProperties::GetType(node);
-      std::ostringstream type_out;
+      v8::base::OStringStream type_out;
       type->PrintTo(type_out);
       os_ << ",\"type\":\"" << JSONEscaped(type_out) << "\"";
     }
@@ -177,7 +177,7 @@ class JSONGraphNodeWriter {
   }
 
  private:
-  std::ostream& os_;
+  v8::base::OStream& os_;
   AllNodes all_;
   AllNodes live_;
   const SourcePositionTable* positions_;
@@ -189,7 +189,7 @@ class JSONGraphNodeWriter {
 
 class JSONGraphEdgeWriter {
  public:
-  JSONGraphEdgeWriter(std::ostream& os, Zone* zone, const Graph* graph)
+  JSONGraphEdgeWriter(v8::base::OStream& os, Zone* zone, const Graph* graph)
       : os_(os), all_(zone, graph, false), first_edge_(true) {}
 
   void Print() {
@@ -230,7 +230,7 @@ class JSONGraphEdgeWriter {
   }
 
  private:
-  std::ostream& os_;
+  v8::base::OStream& os_;
   AllNodes all_;
   bool first_edge_;
 
@@ -238,7 +238,7 @@ class JSONGraphEdgeWriter {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const AsJSON& ad) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsJSON& ad) {
   AccountingAllocator allocator;
   Zone tmp_zone(&allocator, ZONE_NAME);
   os << "{\n\"nodes\":[";
@@ -252,7 +252,7 @@ std::ostream& operator<<(std::ostream& os, const AsJSON& ad) {
 
 class GraphC1Visualizer {
  public:
-  GraphC1Visualizer(std::ostream& os, Zone* zone);  // NOLINT
+  GraphC1Visualizer(v8::base::OStream& os, Zone* zone);  // NOLINT
 
   void PrintCompilation(const CompilationInfo* info);
   void PrintSchedule(const char* phase, const Schedule* schedule,
@@ -299,7 +299,7 @@ class GraphC1Visualizer {
     const char* name_;
   };
 
-  std::ostream& os_;
+  v8::base::OStream& os_;
   int indent_;
   Zone* zone_;
 
@@ -314,7 +314,7 @@ void GraphC1Visualizer::PrintIndent() {
 }
 
 
-GraphC1Visualizer::GraphC1Visualizer(std::ostream& os, Zone* zone)
+GraphC1Visualizer::GraphC1Visualizer(v8::base::OStream& os, Zone* zone)
     : os_(os), indent_(0), zone_(zone) {}
 
 
@@ -632,7 +632,7 @@ void GraphC1Visualizer::PrintLiveRange(const LiveRange* range, const char* type,
 }
 
 
-std::ostream& operator<<(std::ostream& os, const AsC1VCompilation& ac) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsC1VCompilation& ac) {
   AccountingAllocator allocator;
   Zone tmp_zone(&allocator, ZONE_NAME);
   GraphC1Visualizer(os, &tmp_zone).PrintCompilation(ac.info_);
@@ -640,7 +640,7 @@ std::ostream& operator<<(std::ostream& os, const AsC1VCompilation& ac) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const AsC1V& ac) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsC1V& ac) {
   AccountingAllocator allocator;
   Zone tmp_zone(&allocator, ZONE_NAME);
   GraphC1Visualizer(os, &tmp_zone)
@@ -649,7 +649,7 @@ std::ostream& operator<<(std::ostream& os, const AsC1V& ac) {
 }
 
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const AsC1VRegisterAllocationData& ac) {
   AccountingAllocator allocator;
   Zone tmp_zone(&allocator, ZONE_NAME);
@@ -661,7 +661,7 @@ const int kUnvisited = 0;
 const int kOnStack = 1;
 const int kVisited = 2;
 
-std::ostream& operator<<(std::ostream& os, const AsRPO& ar) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsRPO& ar) {
   AccountingAllocator allocator;
   Zone local_zone(&allocator, ZONE_NAME);
 

@@ -3621,7 +3621,7 @@ BasicBlockProfiler* Isolate::GetOrCreateBasicBlockProfiler() {
 
 std::string Isolate::GetTurboCfgFileName() {
   if (FLAG_trace_turbo_cfg_file == NULL) {
-    std::ostringstream os;
+    v8::base::OStringStream os;
     os << "turbo-" << base::OS::GetCurrentProcessId() << "-" << id() << ".cfg";
     return os.str();
   } else {

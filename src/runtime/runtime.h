@@ -823,7 +823,7 @@ class RuntimeState {
   DISALLOW_COPY_AND_ASSIGN(RuntimeState);
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, Runtime::FunctionId);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&, Runtime::FunctionId);
 
 //---------------------------------------------------------------------------
 // Constants used by interface to runtime functions.

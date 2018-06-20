@@ -25,7 +25,7 @@ class OFStreamBase : public std::streambuf {
   virtual ~OFStreamBase();
 
  protected:
-  FILE* const f_;
+  FILE* f_;
 
   virtual int sync();
   virtual int_type overflow(int_type c);
@@ -34,8 +34,10 @@ class OFStreamBase : public std::streambuf {
 
 
 // An output stream writing to a file.
-class V8_EXPORT_PRIVATE OFStream : public std::ostream {
+class V8_EXPORT_PRIVATE OFStream : public v8::base::OStream {
  public:
+  explicit OFStream(const char * filename, ios_base::openmode mode = ios_base::out);
+  explicit OFStream(const std::string & filename, ios_base::openmode mode = ios_base::out);
   explicit OFStream(FILE* f);
   virtual ~OFStream();
 
@@ -95,19 +97,19 @@ struct AsHexBytes {
 // Writes the given character to the output escaping everything outside of
 // printable/space ASCII range. Additionally escapes '\' making escaping
 // reversible.
-std::ostream& operator<<(std::ostream& os, const AsReversiblyEscapedUC16& c);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsReversiblyEscapedUC16& c);
 
 // Same as AsReversiblyEscapedUC16 with additional escaping of \n, \r, " and '.
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const AsEscapedUC16ForJSON& c);
 
 // Writes the given character to the output escaping everything outside
 // of printable ASCII range.
-std::ostream& operator<<(std::ostream& os, const AsUC16& c);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsUC16& c);
 
 // Writes the given character to the output escaping everything outside
 // of printable ASCII range.
-std::ostream& operator<<(std::ostream& os, const AsUC32& c);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsUC32& c);
 
 V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os, const AsHex& v);
 V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,

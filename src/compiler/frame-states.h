@@ -48,7 +48,7 @@ class OutputFrameStateCombine {
   }
 
   friend size_t hash_value(OutputFrameStateCombine const&);
-  friend std::ostream& operator<<(std::ostream&,
+  friend v8::base::OStream& operator<<(v8::base::OStream&,
                                   OutputFrameStateCombine const&);
 
  private:
@@ -135,7 +135,7 @@ bool operator!=(FrameStateInfo const&, FrameStateInfo const&);
 
 size_t hash_value(FrameStateInfo const&);
 
-std::ostream& operator<<(std::ostream&, FrameStateInfo const&);
+v8::base::OStream& operator<<(v8::base::OStream&, FrameStateInfo const&);
 
 static const int kFrameStateParametersInput = 0;
 static const int kFrameStateLocalsInput = 1;

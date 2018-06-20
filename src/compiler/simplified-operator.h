@@ -32,7 +32,7 @@ enum BaseTaggedness : uint8_t { kUntaggedBase, kTaggedBase };
 
 size_t hash_value(BaseTaggedness);
 
-std::ostream& operator<<(std::ostream&, BaseTaggedness);
+v8::base::OStream& operator<<(v8::base::OStream&, BaseTaggedness);
 
 // An access descriptor for loads/stores of fixed structures like field
 // accesses of heap objects. Accesses from either tagged or untagged base
@@ -54,12 +54,12 @@ bool operator!=(FieldAccess const&, FieldAccess const&);
 
 size_t hash_value(FieldAccess const&);
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, FieldAccess const&);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&, FieldAccess const&);
 
 FieldAccess const& FieldAccessOf(const Operator* op) WARN_UNUSED_RESULT;
 
 template <>
-void Operator1<FieldAccess>::PrintParameter(std::ostream& os,
+void Operator1<FieldAccess>::PrintParameter(v8::base::OStream& os,
                                             PrintVerbosity verbose) const;
 
 // An access descriptor for loads/stores of indexed structures like characters
@@ -81,7 +81,7 @@ bool operator!=(ElementAccess const&, ElementAccess const&);
 
 size_t hash_value(ElementAccess const&);
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, ElementAccess const&);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&, ElementAccess const&);
 
 V8_EXPORT_PRIVATE ElementAccess const& ElementAccessOf(const Operator* op)
     WARN_UNUSED_RESULT;
@@ -95,7 +95,7 @@ enum class CheckFloat64HoleMode : uint8_t {
 
 size_t hash_value(CheckFloat64HoleMode);
 
-std::ostream& operator<<(std::ostream&, CheckFloat64HoleMode);
+v8::base::OStream& operator<<(v8::base::OStream&, CheckFloat64HoleMode);
 
 CheckFloat64HoleMode CheckFloat64HoleModeOf(const Operator*) WARN_UNUSED_RESULT;
 
@@ -106,7 +106,7 @@ enum class CheckTaggedInputMode : uint8_t {
 
 size_t hash_value(CheckTaggedInputMode);
 
-std::ostream& operator<<(std::ostream&, CheckTaggedInputMode);
+v8::base::OStream& operator<<(v8::base::OStream&, CheckTaggedInputMode);
 
 CheckTaggedInputMode CheckTaggedInputModeOf(const Operator*) WARN_UNUSED_RESULT;
 
@@ -117,7 +117,7 @@ enum class CheckForMinusZeroMode : uint8_t {
 
 size_t hash_value(CheckForMinusZeroMode);
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&,
                                            CheckForMinusZeroMode);
 
 CheckForMinusZeroMode CheckMinusZeroModeOf(const Operator*) WARN_UNUSED_RESULT;
@@ -131,7 +131,7 @@ typedef base::Flags<CheckMapsFlag> CheckMapsFlags;
 
 DEFINE_OPERATORS_FOR_FLAGS(CheckMapsFlags)
 
-std::ostream& operator<<(std::ostream&, CheckMapsFlags);
+v8::base::OStream& operator<<(v8::base::OStream&, CheckMapsFlags);
 
 // A descriptor for map checks.
 class CheckMapsParameters final {
@@ -152,7 +152,7 @@ bool operator!=(CheckMapsParameters const&, CheckMapsParameters const&);
 
 size_t hash_value(CheckMapsParameters const&);
 
-std::ostream& operator<<(std::ostream&, CheckMapsParameters const&);
+v8::base::OStream& operator<<(v8::base::OStream&, CheckMapsParameters const&);
 
 CheckMapsParameters const& CheckMapsParametersOf(Operator const*)
     WARN_UNUSED_RESULT;
@@ -172,7 +172,7 @@ typedef base::Flags<GrowFastElementsFlag> GrowFastElementsFlags;
 
 DEFINE_OPERATORS_FOR_FLAGS(GrowFastElementsFlags)
 
-std::ostream& operator<<(std::ostream&, GrowFastElementsFlags);
+v8::base::OStream& operator<<(v8::base::OStream&, GrowFastElementsFlags);
 
 GrowFastElementsFlags GrowFastElementsFlagsOf(const Operator*)
     WARN_UNUSED_RESULT;
@@ -203,7 +203,7 @@ bool operator!=(ElementsTransition const&, ElementsTransition const&);
 
 size_t hash_value(ElementsTransition);
 
-std::ostream& operator<<(std::ostream&, ElementsTransition);
+v8::base::OStream& operator<<(v8::base::OStream&, ElementsTransition);
 
 ElementsTransition const& ElementsTransitionOf(const Operator* op)
     WARN_UNUSED_RESULT;
@@ -223,7 +223,7 @@ enum class NumberOperationHint : uint8_t {
 
 size_t hash_value(NumberOperationHint);
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, NumberOperationHint);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&, NumberOperationHint);
 
 NumberOperationHint NumberOperationHintOf(const Operator* op)
     WARN_UNUSED_RESULT;
@@ -246,7 +246,7 @@ class AllocateParameters {
 
 size_t hash_value(AllocateParameters);
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, AllocateParameters);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&, AllocateParameters);
 
 bool operator==(AllocateParameters const&, AllocateParameters const&);
 bool operator!=(AllocateParameters const&, AllocateParameters const&);

@@ -14,12 +14,12 @@
 
 namespace v8 {
 namespace base {
-
+class OStream;
 namespace {
 
 void (*g_print_stack_trace)() = nullptr;
 
-void PrettyPrintChar(std::ostream& os, int ch) {
+void PrettyPrintChar(v8::base::OStream& os, int ch) {
   switch (ch) {
 #define CHAR_PRINT_CASE(ch) \
   case ch:                  \
@@ -49,6 +49,62 @@ void PrettyPrintChar(std::ostream& os, int ch) {
 }
 
 }  // namespace
+//std::transform(str.begin(), str.end(), str.begin(), Ebcdic2Ascii); \
+
+#ifdef V8_OS_ZOS
+#define OVERLOAD_OPERATOR_FOR(T) \
+    OStream& OStream::operator<<(T val) { \
+      std::ostringstream oss; \
+      oss << val; \
+      std::string str = oss.str(); \
+      std::transform(str.begin(), str.end(), str.begin(), Ebcdic2Ascii); \
+      std::operator<<(*this, str.c_str()); \
+      return *this; \
+    }
+#else
+#define OVERLOAD_OPERATOR_FOR(T) \
+    OStream& OStream::operator<<(T val) { \
+      std::ostream::operator<<(val); \
+      return *this; \
+    }
+#endif
+    OVERLOAD_OPERATOR_FOR(bool)
+    OVERLOAD_OPERATOR_FOR(short)
+    OVERLOAD_OPERATOR_FOR(unsigned short)
+    OVERLOAD_OPERATOR_FOR(int)
+    OVERLOAD_OPERATOR_FOR(unsigned int)
+    OVERLOAD_OPERATOR_FOR(long)
+    OVERLOAD_OPERATOR_FOR(unsigned long)
+    OVERLOAD_OPERATOR_FOR(long long)
+    OVERLOAD_OPERATOR_FOR(unsigned long long)
+    OVERLOAD_OPERATOR_FOR(float)
+    OVERLOAD_OPERATOR_FOR(double)
+    OVERLOAD_OPERATOR_FOR(long double)
+    OVERLOAD_OPERATOR_FOR(void*)
+    OVERLOAD_OPERATOR_FOR(const char)
+    OVERLOAD_OPERATOR_FOR(const unsigned char)
+    OVERLOAD_OPERATOR_FOR(const signed char)
+#undef OVERLOAD_OPERATOR_FOR
+
+#define OVERLOAD_OPERATOR_FOR_GENERAL_CASE(T) \
+    OStream& OStream::operator<< (T val) { \
+     std::ostream::operator<<(val); \
+      return *this; \
+    }
+    OVERLOAD_OPERATOR_FOR_GENERAL_CASE(OStream::pfostream)
+    OVERLOAD_OPERATOR_FOR_GENERAL_CASE(OStream::pfios_base)
+    OVERLOAD_OPERATOR_FOR_GENERAL_CASE(OStream::pfios)
+#undef OVERLOAD_OPERATOR_FOR_SPECIAL_CASE
+
+OStream& OStream::operator<< (const char* val) {
+  std::operator<<(*this, val);
+  return *this;
+}
+
+OStream& OStream::operator<< (const unsigned char *const val) {
+  std::operator<<(*this, val);
+  return *this;
+}
 
 void SetPrintStackTrace(void (*print_stack_trace)()) {
   g_print_stack_trace = print_stack_trace;
@@ -58,15 +114,15 @@ void SetPrintStackTrace(void (*print_stack_trace)()) {
 // characters) and to print c strings as pointers instead of strings.
 #define DEFINE_PRINT_CHECK_OPERAND_CHAR(type)                                \
   template <>                                                                \
-  void PrintCheckOperand<type>(std::ostream & os, type ch) {                 \
+  void PrintCheckOperand<type>(v8::base::OStream & os, type ch) {                 \
     PrettyPrintChar(os, ch);                                                 \
   }                                                                          \
   template <>                                                                \
-  void PrintCheckOperand<type*>(std::ostream & os, type * cstr) {            \
+  void PrintCheckOperand<type*>(v8::base::OStream & os, type * cstr) {            \
     os << static_cast<void*>(cstr);                                          \
   }                                                                          \
   template <>                                                                \
-  void PrintCheckOperand<const type*>(std::ostream & os, const type* cstr) { \
+  void PrintCheckOperand<const type*>(v8::base::OStream & os, const type* cstr) { \
     os << static_cast<const void*>(cstr);                                    \
   }
 
@@ -79,7 +135,7 @@ DEFINE_PRINT_CHECK_OPERAND_CHAR(unsigned char)
 #define DEFINE_MAKE_CHECK_OP_STRING(type)                           \
   template std::string* MakeCheckOpString<type, type>(type, type,   \
                                                       char const*); \
-  template void PrintCheckOperand<type>(std::ostream&, type);
+  template void PrintCheckOperand<type>(v8::base::OStream&, type);
 DEFINE_MAKE_CHECK_OP_STRING(int)
 DEFINE_MAKE_CHECK_OP_STRING(long)       // NOLINT(runtime/int)
 DEFINE_MAKE_CHECK_OP_STRING(long long)  // NOLINT(runtime/int)

@@ -100,7 +100,7 @@ class V8_EXPORT_PRIVATE BytecodeNode final {
 #undef DEFINE_BYTECODE_NODE_CREATOR
 
   // Print to stream |os|.
-  void Print(std::ostream& os) const;
+  void Print(v8::base::OStream& os) const;
 
   Bytecode bytecode() const { return bytecode_; }
 
@@ -265,7 +265,7 @@ class V8_EXPORT_PRIVATE BytecodeNode final {
   BytecodeSourceInfo source_info_;
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const BytecodeNode& node);
 
 }  // namespace interpreter

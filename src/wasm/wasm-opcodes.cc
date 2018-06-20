@@ -282,7 +282,7 @@ bool WasmOpcodes::IsUnconditionalJump(WasmOpcode opcode) {
   }
 }
 
-std::ostream& operator<<(std::ostream& os, const FunctionSig& sig) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const FunctionSig& sig) {
   if (sig.return_count() == 0) os << "v";
   for (auto ret : sig.returns()) {
     os << WasmOpcodes::ShortNameOf(ret);

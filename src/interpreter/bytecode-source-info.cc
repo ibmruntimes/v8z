@@ -11,7 +11,7 @@ namespace v8 {
 namespace internal {
 namespace interpreter {
 
-std::ostream& operator<<(std::ostream& os, const BytecodeSourceInfo& info) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const BytecodeSourceInfo& info) {
   if (info.is_valid()) {
     char description = info.is_statement() ? 'S' : 'E';
     os << info.source_position() << ' ' << description << '>';

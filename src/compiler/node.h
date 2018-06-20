@@ -303,7 +303,7 @@ class V8_EXPORT_PRIVATE Node final {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const Node& n);
+v8::base::OStream& operator<<(v8::base::OStream& os, const Node& n);
 
 
 // Typedefs to shorten commonly used Node containers.

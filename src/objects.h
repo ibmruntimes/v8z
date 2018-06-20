@@ -840,7 +840,7 @@ STATIC_ASSERT(FIRST_NONSTRING_TYPE == Internals::kFirstNonstringType);
 STATIC_ASSERT(ODDBALL_TYPE == Internals::kOddballType);
 STATIC_ASSERT(FOREIGN_TYPE == Internals::kForeignType);
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            InstanceType instance_type);
 
 #define FIXED_ARRAY_SUB_INSTANCE_TYPE_LIST(V)    \
@@ -952,7 +952,7 @@ class ZoneForwardList;
 template <class C> inline bool Is(Object* obj);
 
 #ifdef OBJECT_PRINT
-#define DECL_PRINTER(Name) void Name##Print(std::ostream& os);  // NOLINT
+#define DECL_PRINTER(Name) void Name##Print(v8::base::OStream& os);  // NOLINT
 #else
 #define DECL_PRINTER(Name)
 #endif
@@ -1496,7 +1496,7 @@ class Object {
   // Prints this object without details to a message accumulator.
   void ShortPrint(StringStream* accumulator);
 
-  void ShortPrint(std::ostream& os);  // NOLINT
+  void ShortPrint(v8::base::OStream& os);  // NOLINT
 
   DECL_CAST(Object)
 
@@ -1508,10 +1508,10 @@ class Object {
   void Print();
 
   // Prints this object with details.
-  void Print(std::ostream& os);  // NOLINT
+  void Print(v8::base::OStream& os);  // NOLINT
 #else
   void Print() { ShortPrint(); }
-  void Print(std::ostream& os) { ShortPrint(os); }  // NOLINT
+  void Print(v8::base::OStream& os) { ShortPrint(os); }  // NOLINT
 #endif
 
  private:
@@ -1563,7 +1563,7 @@ struct Brief {
   const Object* value;
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os, const Brief& v);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os, const Brief& v);
 
 // Smi represents integer Numbers that can be stored in 31 bits.
 // Smis are immediate which means they are NOT allocated in the heap.
@@ -1612,7 +1612,7 @@ class Smi: public Object {
   DECL_CAST(Smi)
 
   // Dispatched behavior.
-  V8_EXPORT_PRIVATE void SmiPrint(std::ostream& os) const;  // NOLINT
+  V8_EXPORT_PRIVATE void SmiPrint(v8::base::OStream& os) const;  // NOLINT
   DECL_VERIFIER(Smi)
 
   static constexpr Smi* const kZero = nullptr;
@@ -1799,9 +1799,9 @@ class HeapObject: public Object {
       const DisallowHeapAllocation& promise);
 
   // Dispatched behavior.
-  void HeapObjectShortPrint(std::ostream& os);  // NOLINT
+  void HeapObjectShortPrint(v8::base::OStream& os);  // NOLINT
 #ifdef OBJECT_PRINT
-  void PrintHeader(std::ostream& os, const char* id);  // NOLINT
+  void PrintHeader(v8::base::OStream& os, const char* id);  // NOLINT
 #endif
   DECL_PRINTER(HeapObject)
   DECL_VERIFIER(HeapObject)
@@ -1849,7 +1849,8 @@ class HeapNumber: public HeapObject {
 
   DECL_CAST(HeapNumber)
 
-  V8_EXPORT_PRIVATE void HeapNumberPrint(std::ostream& os);  // NOLINT
+  V8_EXPORT_PRIVATE void HeapNumberPrint(v8::base::OStream& os);  // NOLINT
+  
   DECL_VERIFIER(HeapNumber)
 
   inline int get_exponent();
@@ -2577,11 +2578,11 @@ class JSObject: public JSReceiver {
   DECL_PRINTER(JSObject)
   DECL_VERIFIER(JSObject)
 #ifdef OBJECT_PRINT
-  bool PrintProperties(std::ostream& os);  // NOLINT
-  void PrintElements(std::ostream& os);    // NOLINT
+  bool PrintProperties(v8::base::OStream& os);  // NOLINT
+  void PrintElements(v8::base::OStream& os);    // NOLINT
 #endif
 #if defined(DEBUG) || defined(OBJECT_PRINT)
-  void PrintTransitions(std::ostream& os);  // NOLINT
+  void PrintTransitions(v8::base::OStream& os);  // NOLINT
 #endif
 
   static void PrintElementsTransition(
@@ -3136,8 +3137,8 @@ class HandlerTable : public FixedArray {
   DECL_CAST(HandlerTable)
 
 #ifdef ENABLE_DISASSEMBLER
-  void HandlerTableRangePrint(std::ostream& os);   // NOLINT
-  void HandlerTableReturnPrint(std::ostream& os);  // NOLINT
+  void HandlerTableRangePrint(v8::base::OStream& os);   // NOLINT
+  void HandlerTableReturnPrint(v8::base::OStream& os);  // NOLINT
 #endif
 
  private:
@@ -3341,7 +3342,7 @@ class BytecodeArray : public FixedArrayBase {
   DECL_PRINTER(BytecodeArray)
   DECL_VERIFIER(BytecodeArray)
 
-  void Disassemble(std::ostream& os);
+  void Disassemble(v8::base::OStream& os);
 
   void CopyBytecodesTo(BytecodeArray* to);
 
@@ -3610,7 +3611,7 @@ class DeoptimizationInputData: public FixedArray {
   DECL_CAST(DeoptimizationInputData)
 
 #ifdef ENABLE_DISASSEMBLER
-  void DeoptimizationInputDataPrint(std::ostream& os);  // NOLINT
+  void DeoptimizationInputDataPrint(v8::base::OStream& os);  // NOLINT
 #endif
 
  private:
@@ -3684,12 +3685,12 @@ class Code: public HeapObject {
 #if defined(OBJECT_PRINT) || defined(ENABLE_DISASSEMBLER)
   // Printing
   static const char* ICState2String(InlineCacheState state);
-  static void PrintExtraICState(std::ostream& os,  // NOLINT
+  static void PrintExtraICState(v8::base::OStream& os,  // NOLINT
                                 Kind kind, ExtraICState extra);
 #endif  // defined(OBJECT_PRINT) || defined(ENABLE_DISASSEMBLER)
 
 #ifdef ENABLE_DISASSEMBLER
-  void Disassemble(const char* name, std::ostream& os);  // NOLINT
+  void Disassemble(const char* name, v8::base::OStream& os);  // NOLINT
 #endif  // ENABLE_DISASSEMBLER
 
   // [instruction_size]: Size of the native instructions

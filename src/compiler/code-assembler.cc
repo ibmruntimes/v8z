@@ -85,7 +85,7 @@ int CodeAssemblerState::parameter_count() const {
 CodeAssembler::~CodeAssembler() {}
 
 #if DEBUG
-void CodeAssemblerState::PrintCurrentBlock(std::ostream& os) {
+void CodeAssemblerState::PrintCurrentBlock(v8::base::OStream& os) {
   raw_assembler_->PrintCurrentBlock(os);
 }
 #endif
@@ -965,7 +965,7 @@ void CodeAssemblerVariable::Bind(Node* value) { impl_->value_ = value; }
 Node* CodeAssemblerVariable::value() const {
 #if DEBUG
   if (!IsBound()) {
-    std::stringstream str;
+    v8::base::OStringStream str;
     str << "#Use of unbound variable:"
         << "#\n    Variable:      " << *this;
     if (state_) {
@@ -982,7 +982,7 @@ MachineRepresentation CodeAssemblerVariable::rep() const { return impl_->rep_; }
 
 bool CodeAssemblerVariable::IsBound() const { return impl_->value_ != nullptr; }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const CodeAssemblerVariable::Impl& impl) {
 #if DEBUG
   AssemblerDebugInfo info = impl.debug_info();
@@ -991,7 +991,7 @@ std::ostream& operator<<(std::ostream& os,
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const CodeAssemblerVariable& variable) {
   os << *variable.impl_;
   return os;
@@ -1057,7 +1057,7 @@ void CodeAssemblerLabel::MergeVariables() {
           if (find_if(i->second.begin(), i->second.end(),
                       [node](Node* e) -> bool { return node != e; }) !=
               i->second.end()) {
-            std::stringstream str;
+            v8::base::OStringStream str;
             str << "Unmerged variable found when jumping to block. \n"
                 << "#    Variable:      " << *var;
             if (bound_) {
@@ -1077,7 +1077,7 @@ void CodeAssemblerLabel::MergeVariables() {
 #if DEBUG
 void CodeAssemblerLabel::Bind(AssemblerDebugInfo debug_info) {
   if (bound_) {
-    std::stringstream str;
+    v8::base::OStringStream str;
     str << "Cannot bind the same label twice:"
         << "\n#    current:  " << debug_info
         << "\n#    previous: " << *label_->block();
@@ -1120,7 +1120,7 @@ void CodeAssemblerLabel::UpdateVariablesAfterBind() {
 #if DEBUG
     bool not_found = i == variable_merges_.end();
     if (not_found || i->second.size() != merge_count_) {
-      std::stringstream str;
+      v8::base::OStringStream str;
       str << "A variable that has been marked as beeing merged at the label"
           << "\n# doesn't have a bound value along all of the paths that "
           << "\n# have been merged into the label up to this point."

@@ -678,7 +678,8 @@ const char* RelocInfo::RelocModeName(RelocInfo::Mode rmode) {
   return "unknown relocation type";
 }
 
-void RelocInfo::Print(Isolate* isolate, std::ostream& os) {  // NOLINT
+
+void RelocInfo::Print(Isolate* isolate, v8::base::OStream& os) {  // NOLINT
   os << static_cast<const void*>(pc_) << "  " << RelocModeName(rmode_);
   if (IsComment(rmode_)) {
     os << "  (" << reinterpret_cast<char*>(data_) << ")";
@@ -1582,7 +1583,8 @@ size_t hash_value(ExternalReference reference) {
   return base::hash<Address>()(reference.address());
 }
 
-std::ostream& operator<<(std::ostream& os, ExternalReference reference) {
+
+v8::base::OStream& operator<<(v8::base::OStream& os, ExternalReference reference) {
   os << static_cast<const void*>(reference.address());
   const Runtime::Function* fn = Runtime::FunctionForEntry(reference.address());
   if (fn) os << "<" << fn->name << ".entry>";

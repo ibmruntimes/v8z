@@ -203,7 +203,7 @@ class CodeStub : public ZoneObject {
 
   Code::Flags GetCodeFlags() const;
 
-  friend std::ostream& operator<<(std::ostream& os, const CodeStub& s) {
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, const CodeStub& s) {
     s.PrintName(os);
     return os;
   }
@@ -228,9 +228,9 @@ class CodeStub : public ZoneObject {
   // a fixed (non-moveable) code object.
   virtual bool NeedsImmovableCode() { return false; }
 
-  virtual void PrintName(std::ostream& os) const;        // NOLINT
-  virtual void PrintBaseName(std::ostream& os) const;    // NOLINT
-  virtual void PrintState(std::ostream& os) const { ; }  // NOLINT
+  virtual void PrintName(v8::base::OStream& os) const;        // NOLINT
+  virtual void PrintBaseName(v8::base::OStream& os) const;    // NOLINT
+  virtual void PrintState(v8::base::OStream& os) const { ; }  // NOLINT
 
   // Computes the key based on major and minor.
   uint32_t GetKey() {
@@ -749,7 +749,7 @@ class StringAddStub final : public TurboFanCodeStub {
   class StringAddFlagsBits : public BitField<StringAddFlags, 0, 3> {};
   class PretenureFlagBits : public BitField<PretenureFlag, 3, 1> {};
 
-  void PrintBaseName(std::ostream& os) const override;  // NOLINT
+  void PrintBaseName(v8::base::OStream& os) const override;  // NOLINT
 
   DEFINE_CALL_INTERFACE_DESCRIPTOR(StringAdd);
   DEFINE_TURBOFAN_CODE_STUB(StringAdd, TurboFanCodeStub);
@@ -804,7 +804,7 @@ class JSEntryStub : public PlatformCodeStub {
  private:
   void FinishCode(Handle<Code> code) override;
 
-  void PrintName(std::ostream& os) const override {  // NOLINT
+  void PrintName(v8::base::OStream& os) const override {  // NOLINT
     os << (type() == StackFrame::ENTRY ? "JSEntryStub"
                                        : "JSConstructEntryStub");
   }
@@ -1039,7 +1039,7 @@ class ArrayNoArgumentConstructorStub : public CommonArrayConstructorStub {
       : CommonArrayConstructorStub(isolate, kind, override_mode) {}
 
  private:
-  void PrintName(std::ostream& os) const override {  // NOLINT
+  void PrintName(v8::base::OStream& os) const override {  // NOLINT
     os << "ArrayNoArgumentConstructorStub";
   }
 
@@ -1055,7 +1055,7 @@ class InternalArrayNoArgumentConstructorStub
       : CommonArrayConstructorStub(isolate, kind, DONT_OVERRIDE) {}
 
  private:
-  void PrintName(std::ostream& os) const override {  // NOLINT
+  void PrintName(v8::base::OStream& os) const override {  // NOLINT
     os << "InternalArrayNoArgumentConstructorStub";
   }
 
@@ -1072,7 +1072,7 @@ class ArraySingleArgumentConstructorStub : public CommonArrayConstructorStub {
       : CommonArrayConstructorStub(isolate, kind, override_mode) {}
 
  private:
-  void PrintName(std::ostream& os) const override {  // NOLINT
+  void PrintName(v8::base::OStream& os) const override {  // NOLINT
     os << "ArraySingleArgumentConstructorStub";
   }
 
@@ -1089,7 +1089,7 @@ class InternalArraySingleArgumentConstructorStub
       : CommonArrayConstructorStub(isolate, kind, DONT_OVERRIDE) {}
 
  private:
-  void PrintName(std::ostream& os) const override {  // NOLINT
+  void PrintName(v8::base::OStream& os) const override {  // NOLINT
     os << "InternalArraySingleArgumentConstructorStub";
   }
 

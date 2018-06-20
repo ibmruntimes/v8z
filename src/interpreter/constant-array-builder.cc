@@ -74,7 +74,7 @@ void ConstantArrayBuilder::ConstantArraySlice::CheckAllElementsAreUnique(
     Handle<Object> handle = entry.ToHandle(isolate);
 
     if (elements.find(*handle) != elements.end()) {
-      std::ostringstream os;
+      v8::base::OStringStream os;
       os << "Duplicate constant found: " << Brief(*handle) << std::endl;
       // Print all the entries in the slice to help debug duplicates.
       size_t i = start_index();

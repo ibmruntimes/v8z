@@ -160,7 +160,7 @@ class Handle final : public HandleBase {
 };
 
 template <typename T>
-inline std::ostream& operator<<(std::ostream& os, Handle<T> handle);
+inline v8::base::OStream& operator<<(v8::base::OStream& os, Handle<T> handle);
 
 template <typename T>
 V8_INLINE Handle<T> handle(T* object, Isolate* isolate) {

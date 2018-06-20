@@ -145,7 +145,7 @@ struct PrintableInstructionOperand {
 };
 
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableInstructionOperand& op);
 
 
@@ -718,7 +718,7 @@ struct PrintableMoveOperands {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const PrintableMoveOperands& mo);
+v8::base::OStream& operator<<(v8::base::OStream& os, const PrintableMoveOperands& mo);
 
 class V8_EXPORT_PRIVATE ParallelMove final
     : public NON_EXPORTED_BASE(ZoneVector<MoveOperands *>),
@@ -761,7 +761,7 @@ struct PrintableParallelMove {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const PrintableParallelMove& pm);
+v8::base::OStream& operator<<(v8::base::OStream& os, const PrintableParallelMove& pm);
 
 
 class ReferenceMap final : public ZoneObject {
@@ -782,13 +782,13 @@ class ReferenceMap final : public ZoneObject {
   void RecordReference(const AllocatedOperand& op);
 
  private:
-  friend std::ostream& operator<<(std::ostream& os, const ReferenceMap& pm);
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, const ReferenceMap& pm);
 
   ZoneVector<InstructionOperand> reference_operands_;
   int instruction_position_;
 };
 
-std::ostream& operator<<(std::ostream& os, const ReferenceMap& pm);
+v8::base::OStream& operator<<(v8::base::OStream& os, const ReferenceMap& pm);
 
 class InstructionBlock;
 
@@ -982,7 +982,7 @@ struct PrintableInstruction {
   const RegisterConfiguration* register_configuration_;
   const Instruction* instr_;
 };
-std::ostream& operator<<(std::ostream& os, const PrintableInstruction& instr);
+v8::base::OStream& operator<<(v8::base::OStream& os, const PrintableInstruction& instr);
 
 
 class RpoNumber final {
@@ -1019,7 +1019,7 @@ class RpoNumber final {
 };
 
 
-std::ostream& operator<<(std::ostream&, const RpoNumber&);
+v8::base::OStream& operator<<(v8::base::OStream&, const RpoNumber&);
 
 class V8_EXPORT_PRIVATE Constant final {
  public:
@@ -1103,7 +1103,7 @@ class V8_EXPORT_PRIVATE Constant final {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const Constant& constant);
+v8::base::OStream& operator<<(v8::base::OStream& os, const Constant& constant);
 
 
 // Forward declarations.
@@ -1449,7 +1449,7 @@ struct PrintableInstructionBlock {
   const InstructionSequence* code_;
 };
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableInstructionBlock& printable_block);
 
 typedef ZoneDeque<Constant> ConstantDeque;
@@ -1623,8 +1623,8 @@ class V8_EXPORT_PRIVATE InstructionSequence final
   static void ClearRegisterConfigurationForTesting();
 
  private:
-  friend V8_EXPORT_PRIVATE std::ostream& operator<<(
-      std::ostream& os, const PrintableInstructionSequence& code);
+  friend V8_EXPORT_PRIVATE v8::base::OStream& operator<<(
+      v8::base::OStream& os, const PrintableInstructionSequence& code);
 
   typedef ZoneMap<const Instruction*, SourcePosition> SourcePositionMap;
 
@@ -1656,8 +1656,8 @@ struct PrintableInstructionSequence {
   const InstructionSequence* sequence_;
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(
-    std::ostream& os, const PrintableInstructionSequence& code);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(
+    v8::base::OStream& os, const PrintableInstructionSequence& code);
 
 }  // namespace compiler
 }  // namespace internal

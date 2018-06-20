@@ -38,6 +38,80 @@
 namespace v8 {
 namespace base {
 
+struct _SetW {
+  int n;
+};
+
+class OStream : public std::ostream {
+  public:
+    explicit OStream(std::streambuf* sb) : std::ostream(sb) {}
+
+    static struct _SetW setw(int n) {
+      return {n};
+    }
+
+    OStream& operator<< (const struct _SetW val) {
+      std::ostream::width(val.n);
+      return *this;
+    }
+
+    virtual OStream& operator<<(const std::string& val) {
+      *this << val.c_str();
+      return *this;
+    }
+
+#define OVERLOAD_OPERATOR_FOR(T) \
+    virtual OStream& operator<< (T val);
+
+    typedef std::ostream& (*pfostream)(std::ostream&);
+    typedef std::ios_base& (*pfios_base)(std::ios_base&);
+    typedef std::ios& (*pfios)(std::ios&);
+    OVERLOAD_OPERATOR_FOR(bool)
+    OVERLOAD_OPERATOR_FOR(short)
+    OVERLOAD_OPERATOR_FOR(unsigned short)
+    OVERLOAD_OPERATOR_FOR(int)
+    OVERLOAD_OPERATOR_FOR(unsigned int)
+    OVERLOAD_OPERATOR_FOR(long)
+    OVERLOAD_OPERATOR_FOR(unsigned long)
+    OVERLOAD_OPERATOR_FOR(long long)
+    OVERLOAD_OPERATOR_FOR(unsigned long long)
+    OVERLOAD_OPERATOR_FOR(float)
+    OVERLOAD_OPERATOR_FOR(double)
+    OVERLOAD_OPERATOR_FOR(long double)
+    OVERLOAD_OPERATOR_FOR(void*)
+    OVERLOAD_OPERATOR_FOR(const char)
+    OVERLOAD_OPERATOR_FOR(const unsigned char)
+    OVERLOAD_OPERATOR_FOR(const signed char)
+    OVERLOAD_OPERATOR_FOR(const char *)
+    OVERLOAD_OPERATOR_FOR(const unsigned char *const)
+    OVERLOAD_OPERATOR_FOR(pfostream)
+    OVERLOAD_OPERATOR_FOR(pfios_base)
+    OVERLOAD_OPERATOR_FOR(pfios)
+#undef OVERLOAD_OPERATOR_FOR
+
+};
+
+class OStringStream : public OStream {
+  private:
+    std::stringbuf _buf;
+  public:
+    OStringStream() : OStream(&_buf) {}
+    OStringStream(const std::string& s) : OStream(&_buf), _buf(s) {}
+    std::string str() const {
+      return _buf.str();
+    }
+};
+
+#define DEFINE_INSERT_OPERATOR_FOR_OSTREAM(T) \
+  inline v8::base::OStream& operator<<(v8::base::OStream& os, T val) { \
+    v8::base::OStringStream oss; \
+    oss << val; \
+    os << oss.str(); \
+    return os; \
+  }
+
+typedef OStringStream StringStream;
+
 // Overwrite the default function that prints a stack trace.
 V8_BASE_EXPORT void SetPrintStackTrace(void (*print_stack_trace_)());
 
@@ -108,19 +182,19 @@ V8_BASE_EXPORT void SetPrintStackTrace(void (*print_stack_trace_)());
 #endif
 
 template <typename Op>
-void PrintCheckOperand(std::ostream& os, Op op) {
+void PrintCheckOperand(v8::base::OStream& os, Op op) {
   os << op;
 }
 
 // Define specializations for character types, defined in logging.cc.
 #define DEFINE_PRINT_CHECK_OPERAND_CHAR(type)                              \
   template <>                                                              \
-  V8_BASE_EXPORT void PrintCheckOperand<type>(std::ostream & os, type ch); \
+  V8_BASE_EXPORT void PrintCheckOperand<type>(v8::base::OStream & os, type ch); \
   template <>                                                              \
-  V8_BASE_EXPORT void PrintCheckOperand<type*>(std::ostream & os,          \
+  V8_BASE_EXPORT void PrintCheckOperand<type*>(v8::base::OStream & os,          \
                                                type * cstr);               \
   template <>                                                              \
-  V8_BASE_EXPORT void PrintCheckOperand<const type*>(std::ostream & os,    \
+  V8_BASE_EXPORT void PrintCheckOperand<const type*>(v8::base::OStream & os,    \
                                                      const type* cstr);
 
 DEFINE_PRINT_CHECK_OPERAND_CHAR(char)
@@ -133,8 +207,15 @@ DEFINE_PRINT_CHECK_OPERAND_CHAR(unsigned char)
 // be out of line, while the "Impl" code should be inline. Caller
 // takes ownership of the returned string.
 template <typename Lhs, typename Rhs>
+<<<<<<< HEAD
 std::string* MakeCheckOpString(Lhs lhs, Rhs rhs, char const* msg) {
   std::ostringstream ss;
+=======
+std::string* MakeCheckOpString(typename PassType<Lhs>::type lhs,
+                               typename PassType<Rhs>::type rhs,
+                               char const* msg) {
+  v8::base::OStringStream ss;
+>>>>>>> f6d947e... [z/OS] Enable RAS features
   ss << msg << " (";
   PrintCheckOperand(ss, lhs);
   ss << " vs. ";
@@ -148,7 +229,7 @@ std::string* MakeCheckOpString(Lhs lhs, Rhs rhs, char const* msg) {
 #define EXPLICIT_CHECK_OP_INSTANTIATION(type)                                \
   extern template V8_BASE_EXPORT std::string* MakeCheckOpString<type, type>( \
       type, type, char const*);                                              \
-  extern template V8_BASE_EXPORT void PrintCheckOperand<type>(std::ostream&, \
+  extern template V8_BASE_EXPORT void PrintCheckOperand<type>(v8::base::OStream&, \
                                                               type);
 
 EXPLICIT_CHECK_OP_INSTANTIATION(int)

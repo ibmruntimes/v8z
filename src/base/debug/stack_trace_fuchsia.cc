@@ -30,7 +30,7 @@ void StackTrace::Print() const {
   OS::Print("%s\n", backtrace.c_str());
 }
 
-void StackTrace::OutputToStream(std::ostream* os) const {
+void StackTrace::OutputToStream(v8::base::OStream* os) const {
   for (size_t i = 0; i < count_; ++i) {
     *os << "#" << std::setw(2) << i << trace_[i] << "\n";
   }

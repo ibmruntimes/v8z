@@ -1048,12 +1048,12 @@ Node* RepresentationChanger::TypeError(Node* node,
                                        MachineRepresentation use) {
   type_error_ = true;
   if (!testing_type_errors_) {
-    std::ostringstream out_str;
+    v8::base::OStringStream out_str;
     out_str << output_rep << " (";
     output_type->PrintTo(out_str);
     out_str << ")";
 
-    std::ostringstream use_str;
+    v8::base::OStringStream use_str;
     use_str << use;
 
     V8_Fatal(__FILE__, __LINE__,

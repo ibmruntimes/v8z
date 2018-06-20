@@ -18,7 +18,7 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-std::ostream& operator<<(std::ostream& os, BranchHint hint) {
+v8::base::OStream& operator<<(v8::base::OStream& os, BranchHint hint) {
   switch (hint) {
     case BranchHint::kNone:
       return os << "None";
@@ -55,7 +55,7 @@ size_t hash_value(DeoptimizeParameters p) {
   return base::hash_combine(p.kind(), p.reason());
 }
 
-std::ostream& operator<<(std::ostream& os, DeoptimizeParameters p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, DeoptimizeParameters p) {
   return os << p.kind() << ":" << p.reason();
 }
 
@@ -83,7 +83,7 @@ size_t hash_value(SelectParameters const& p) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, SelectParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, SelectParameters const& p) {
   return os << p.representation() << "|" << p.hint();
 }
 
@@ -137,7 +137,7 @@ bool operator!=(ParameterInfo const& lhs, ParameterInfo const& rhs) {
 size_t hash_value(ParameterInfo const& p) { return p.index(); }
 
 
-std::ostream& operator<<(std::ostream& os, ParameterInfo const& i) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ParameterInfo const& i) {
   if (i.debug_name()) os << i.debug_name() << '#';
   os << i.index();
   return os;
@@ -174,7 +174,7 @@ size_t hash_value(RelocatablePtrConstantInfo const& p) {
   return base::hash_combine(p.value(), p.rmode(), p.type());
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          RelocatablePtrConstantInfo const& p) {
   return os << p.value() << "|" << p.rmode() << "|" << p.type();
 }
@@ -239,7 +239,7 @@ size_t hash_value(SparseInputMask const& p) {
   return base::hash_value(p.mask());
 }
 
-std::ostream& operator<<(std::ostream& os, SparseInputMask const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, SparseInputMask const& p) {
   if (p.IsDense()) {
     return os << "dense";
   } else {
@@ -275,7 +275,7 @@ size_t hash_value(TypedStateValueInfo const& p) {
   return base::hash_combine(p.machine_types(), p.sparse_input_mask());
 }
 
-std::ostream& operator<<(std::ostream& os, TypedStateValueInfo const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, TypedStateValueInfo const& p) {
   return os << p.machine_types() << "|" << p.sparse_input_mask();
 }
 
@@ -283,7 +283,7 @@ size_t hash_value(RegionObservability observability) {
   return static_cast<size_t>(observability);
 }
 
-std::ostream& operator<<(std::ostream& os, RegionObservability observability) {
+v8::base::OStream& operator<<(v8::base::OStream& os, RegionObservability observability) {
   switch (observability) {
     case RegionObservability::kObservable:
       return os << "observable";
@@ -308,7 +308,7 @@ Type* TypeGuardTypeOf(Operator const* op) {
   return OpParameter<Type*>(op);
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const ZoneVector<MachineType>* types) {
   // Print all the MachineTypes, separated by commas.
   bool first = true;
@@ -1311,7 +1311,7 @@ const Operator* CommonOperatorBuilder::Call(const CallDescriptor* descriptor) {
               Operator::ZeroIfPure(descriptor->properties()),
               Operator::ZeroIfNoThrow(descriptor->properties()), descriptor) {}
 
-    void PrintParameter(std::ostream& os, PrintVerbosity verbose) const {
+    void PrintParameter(v8::base::OStream& os, PrintVerbosity verbose) const {
       os << "[" << *parameter() << "]";
     }
   };
@@ -1351,7 +1351,7 @@ const Operator* CommonOperatorBuilder::TailCall(
               descriptor->InputCount() + descriptor->FrameStateCount(), 1, 1, 0,
               0, 1, descriptor) {}
 
-    void PrintParameter(std::ostream& os, PrintVerbosity verbose) const {
+    void PrintParameter(v8::base::OStream& os, PrintVerbosity verbose) const {
       os << "[" << *parameter() << "]";
     }
   };

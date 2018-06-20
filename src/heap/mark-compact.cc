@@ -2023,7 +2023,7 @@ void MarkCompactCollector::RecordObjectStats() {
     VisitAllObjects(&visitor);
     if (V8_UNLIKELY(FLAG_gc_stats &
                     v8::tracing::TracingCategoryObserver::ENABLED_BY_TRACING)) {
-      std::stringstream live, dead;
+      v8::base::OStringStream live, dead;
       heap()->live_object_stats_->Dump(live);
       heap()->dead_object_stats_->Dump(dead);
       TRACE_EVENT_INSTANT2(TRACE_DISABLED_BY_DEFAULT("v8.gc_stats"),

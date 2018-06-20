@@ -37,16 +37,16 @@ Operator::Operator(Opcode opcode, Properties properties, const char* mnemonic,
       effect_out_(CheckRange<uint8_t>(effect_out)),
       control_out_(CheckRange<uint32_t>(control_out)) {}
 
-std::ostream& operator<<(std::ostream& os, const Operator& op) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Operator& op) {
   op.PrintTo(os);
   return os;
 }
 
-void Operator::PrintToImpl(std::ostream& os, PrintVerbosity verbose) const {
+void Operator::PrintToImpl(v8::base::OStream& os, PrintVerbosity verbose) const {
   os << mnemonic();
 }
 
-void Operator::PrintPropsTo(std::ostream& os) const {
+void Operator::PrintPropsTo(v8::base::OStream& os) const {
   std::string separator = "";
 
 #define PRINT_PROP_IF_SET(name)         \

@@ -120,17 +120,17 @@ class V8_EXPORT_PRIVATE Operator : public NON_EXPORTED_BASE(ZoneObject) {
 
   // Print the full operator into the given stream, including any
   // static parameters. Useful for debugging and visualizing the IR.
-  void PrintTo(std::ostream& os,
+  void PrintTo(v8::base::OStream& os,
                PrintVerbosity verbose = PrintVerbosity::kVerbose) const {
     // We cannot make PrintTo virtual, because default arguments to virtual
     // methods are banned in the style guide.
     return PrintToImpl(os, verbose);
   }
 
-  void PrintPropsTo(std::ostream& os) const;
+  void PrintPropsTo(v8::base::OStream& os) const;
 
  protected:
-  virtual void PrintToImpl(std::ostream& os, PrintVerbosity verbose) const;
+  virtual void PrintToImpl(v8::base::OStream& os, PrintVerbosity verbose) const;
 
  private:
   const char* mnemonic_;
@@ -148,7 +148,7 @@ class V8_EXPORT_PRIVATE Operator : public NON_EXPORTED_BASE(ZoneObject) {
 
 DEFINE_OPERATORS_FOR_FLAGS(Operator::Properties)
 
-std::ostream& operator<<(std::ostream& os, const Operator& op);
+v8::base::OStream& operator<<(v8::base::OStream& os, const Operator& op);
 
 
 // Default equality function for below Operator1<*> class.
@@ -193,11 +193,11 @@ class Operator1 : public Operator {
   // following method can be overridden to provide a concise and a verbose
   // printing of a parameter.
 
-  virtual void PrintParameter(std::ostream& os, PrintVerbosity verbose) const {
+  virtual void PrintParameter(v8::base::OStream& os, PrintVerbosity verbose) const {
     os << "[" << parameter() << "]";
   }
 
-  virtual void PrintToImpl(std::ostream& os, PrintVerbosity verbose) const {
+  virtual void PrintToImpl(v8::base::OStream& os, PrintVerbosity verbose) const {
     os << mnemonic();
     PrintParameter(os, verbose);
   }

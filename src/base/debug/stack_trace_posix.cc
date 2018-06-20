@@ -281,12 +281,12 @@ class PrintBacktraceOutputHandler : public BacktraceOutputHandler {
 
 class StreamBacktraceOutputHandler : public BacktraceOutputHandler {
  public:
-  explicit StreamBacktraceOutputHandler(std::ostream* os) : os_(os) {}
+  explicit StreamBacktraceOutputHandler(v8::base::OStream* os) : os_(os) {}
 
   void HandleOutput(const char* output) override { (*os_) << output; }
 
  private:
-  std::ostream* os_;
+  v8::base::OStream* os_;
 
   DISALLOW_COPY_AND_ASSIGN(StreamBacktraceOutputHandler);
 };
@@ -384,7 +384,7 @@ void StackTrace::Print() const {
 #endif
 }
 
-void StackTrace::OutputToStream(std::ostream* os) const {
+void StackTrace::OutputToStream(v8::base::OStream* os) const {
 #if HAVE_EXECINFO_H
   StreamBacktraceOutputHandler handler(os);
   ProcessBacktrace(trace_, count_, &handler);

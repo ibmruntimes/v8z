@@ -1520,7 +1520,7 @@ uint32_t BytecodeArrayBuilder::GetOutputRegisterListOperand(
   return static_cast<uint32_t>(reg_list.first_register().ToOperand());
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const BytecodeArrayBuilder::ToBooleanMode& mode) {
   switch (mode) {
     case BytecodeArrayBuilder::ToBooleanMode::kAlreadyBoolean:

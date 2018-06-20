@@ -945,7 +945,7 @@ void InstructionSelector::VisitControl(BasicBlock* block) {
     for (BasicBlock* const successor : block->successors()) {
       for (Node* const node : *successor) {
         if (IrOpcode::IsPhiOpcode(node->opcode())) {
-          std::ostringstream str;
+          v8::base::OStringStream str;
           str << "You might have specified merged variables for a label with "
               << "only one predecessor." << std::endl
               << "# Current Block: " << *successor << std::endl

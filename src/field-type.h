@@ -42,7 +42,7 @@ class FieldType : public Object {
   bool NowIs(FieldType* other);
   bool NowIs(Handle<FieldType> other);
 
-  void PrintTo(std::ostream& os);
+  void PrintTo(v8::base::OStream& os);
 };
 
 }  // namespace internal

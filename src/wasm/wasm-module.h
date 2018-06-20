@@ -289,7 +289,7 @@ struct WasmFunctionName {
   WasmName name_;
 };
 
-std::ostream& operator<<(std::ostream& os, const WasmFunctionName& name);
+v8::base::OStream& operator<<(v8::base::OStream& os, const WasmFunctionName& name);
 
 // Get the debug info associated with the given wasm object.
 // If no debug info exists yet, it is created automatically.

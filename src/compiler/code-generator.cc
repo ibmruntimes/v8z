@@ -530,8 +530,8 @@ void CodeGenerator::AssembleSourcePosition(SourcePosition source_position) {
                                              source_position, false);
   if (FLAG_code_comments) {
     CompilationInfo* info = this->info();
-    if (info->IsStub()) return;
-    std::ostringstream buffer;
+    if (!info->parse_info()) return;
+    v8::base::OStringStream buffer;
     buffer << "-- ";
     if (FLAG_trace_turbo || FLAG_trace_turbo_graph ||
         tasm()->isolate()->concurrent_recompilation_enabled()) {

@@ -42,7 +42,7 @@ inline BranchHint NegateBranchHint(BranchHint hint) {
 
 inline size_t hash_value(BranchHint hint) { return static_cast<size_t>(hint); }
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, BranchHint);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&, BranchHint);
 
 V8_EXPORT_PRIVATE BranchHint BranchHintOf(const Operator* const);
 
@@ -68,7 +68,7 @@ bool operator!=(DeoptimizeParameters, DeoptimizeParameters);
 
 size_t hast_value(DeoptimizeParameters p);
 
-std::ostream& operator<<(std::ostream&, DeoptimizeParameters p);
+v8::base::OStream& operator<<(v8::base::OStream&, DeoptimizeParameters p);
 
 DeoptimizeParameters const& DeoptimizeParametersOf(Operator const* const);
 
@@ -92,7 +92,7 @@ bool operator!=(SelectParameters const&, SelectParameters const&);
 
 size_t hash_value(SelectParameters const& p);
 
-std::ostream& operator<<(std::ostream&, SelectParameters const& p);
+v8::base::OStream& operator<<(v8::base::OStream&, SelectParameters const& p);
 
 V8_EXPORT_PRIVATE SelectParameters const& SelectParametersOf(
     const Operator* const);
@@ -119,7 +119,7 @@ class ParameterInfo final {
   const char* debug_name_;
 };
 
-std::ostream& operator<<(std::ostream&, ParameterInfo const&);
+v8::base::OStream& operator<<(v8::base::OStream&, ParameterInfo const&);
 
 V8_EXPORT_PRIVATE int ParameterIndexOf(const Operator* const);
 const ParameterInfo& ParameterInfoOf(const Operator* const);
@@ -165,7 +165,7 @@ bool operator==(RelocatablePtrConstantInfo const& lhs,
 bool operator!=(RelocatablePtrConstantInfo const& lhs,
                 RelocatablePtrConstantInfo const& rhs);
 
-std::ostream& operator<<(std::ostream&, RelocatablePtrConstantInfo const&);
+v8::base::OStream& operator<<(v8::base::OStream&, RelocatablePtrConstantInfo const&);
 
 size_t hash_value(RelocatablePtrConstantInfo const& p);
 
@@ -282,7 +282,7 @@ class TypedStateValueInfo final {
 bool operator==(TypedStateValueInfo const& lhs, TypedStateValueInfo const& rhs);
 bool operator!=(TypedStateValueInfo const& lhs, TypedStateValueInfo const& rhs);
 
-std::ostream& operator<<(std::ostream&, TypedStateValueInfo const&);
+v8::base::OStream& operator<<(v8::base::OStream&, TypedStateValueInfo const&);
 
 size_t hash_value(TypedStateValueInfo const& p);
 
@@ -293,11 +293,11 @@ enum class RegionObservability : uint8_t { kObservable, kNotObservable };
 
 size_t hash_value(RegionObservability);
 
-std::ostream& operator<<(std::ostream&, RegionObservability);
+v8::base::OStream& operator<<(v8::base::OStream&, RegionObservability);
 
 RegionObservability RegionObservabilityOf(Operator const*) WARN_UNUSED_RESULT;
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const ZoneVector<MachineType>* types);
 
 ZoneHandleSet<Map> MapGuardMapsOf(Operator const*) WARN_UNUSED_RESULT;

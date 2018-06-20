@@ -85,8 +85,8 @@ class LayoutDescriptor : public ByteArray {
   // For our gdb macros, we should perhaps change these in the future.
   void Print();
 
-  void ShortPrint(std::ostream& os);
-  void Print(std::ostream& os);  // NOLINT
+  void ShortPrint(v8::base::OStream& os);
+  void Print(v8::base::OStream& os);  // NOLINT
 #endif
 
   // Capacity of layout descriptors in bits.

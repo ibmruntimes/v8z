@@ -861,15 +861,15 @@ class CodeAssemblerVariable {
   class Impl;
   friend class CodeAssemblerLabel;
   friend class CodeAssemblerState;
-  friend std::ostream& operator<<(std::ostream&, const Impl&);
-  friend std::ostream& operator<<(std::ostream&, const CodeAssemblerVariable&);
+  friend v8::base::OStream& operator<<(v8::base::OStream&, const Impl&);
+  friend v8::base::OStream& operator<<(v8::base::OStream&, const CodeAssemblerVariable&);
   Impl* impl_;
   CodeAssemblerState* state_;
   DISALLOW_COPY_AND_ASSIGN(CodeAssemblerVariable);
 };
 
-std::ostream& operator<<(std::ostream&, const CodeAssemblerVariable&);
-std::ostream& operator<<(std::ostream&, const CodeAssemblerVariable::Impl&);
+v8::base::OStream& operator<<(v8::base::OStream&, const CodeAssemblerVariable&);
+v8::base::OStream& operator<<(v8::base::OStream&, const CodeAssemblerVariable::Impl&);
 
 template <class T>
 class TypedCodeAssemblerVariable : public CodeAssemblerVariable {
@@ -983,7 +983,7 @@ class V8_EXPORT_PRIVATE CodeAssemblerState {
   int parameter_count() const;
 
 #if DEBUG
-  void PrintCurrentBlock(std::ostream& os);
+  void PrintCurrentBlock(v8::base::OStream& os);
 #endif  // DEBUG
   void SetInitialDebugInformation(const char* msg, const char* file, int line);
 

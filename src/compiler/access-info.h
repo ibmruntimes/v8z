@@ -30,7 +30,7 @@ class TypeCache;
 // For a store during literal creation, do not walk up the prototype chain.
 enum class AccessMode { kLoad, kStore, kStoreInLiteral };
 
-std::ostream& operator<<(std::ostream&, AccessMode);
+v8::base::OStream& operator<<(v8::base::OStream&, AccessMode);
 
 // Mapping of transition source to transition target.
 typedef std::vector<std::pair<Handle<Map>, Handle<Map>>> MapTransitionList;

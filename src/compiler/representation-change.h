@@ -116,7 +116,7 @@ enum class TypeCheckKind : uint8_t {
   kHeapObject
 };
 
-inline std::ostream& operator<<(std::ostream& os, TypeCheckKind type_check) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, TypeCheckKind type_check) {
   switch (type_check) {
     case TypeCheckKind::kNone:
       return os << "None";

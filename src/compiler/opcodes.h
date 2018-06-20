@@ -811,7 +811,7 @@ class V8_EXPORT_PRIVATE IrOpcode {
   }
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, IrOpcode::Value);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&, IrOpcode::Value);
 
 }  // namespace compiler
 }  // namespace internal

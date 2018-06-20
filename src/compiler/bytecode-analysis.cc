@@ -466,7 +466,7 @@ const BytecodeLivenessState* BytecodeAnalysis::GetOutLivenessFor(
   return liveness_map_.GetOutLiveness(offset);
 }
 
-std::ostream& BytecodeAnalysis::PrintLivenessTo(std::ostream& os) const {
+v8::base::OStream& BytecodeAnalysis::PrintLivenessTo(v8::base::OStream& os) const {
   interpreter::BytecodeArrayIterator iterator(bytecode_array());
 
   for (; !iterator.done(); iterator.Advance()) {

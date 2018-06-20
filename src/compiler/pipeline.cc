@@ -457,15 +457,15 @@ class PipelineImpl final {
 
 namespace {
 
-struct TurboCfgFile : public std::ofstream {
+struct TurboCfgFile : public v8::internal::OFStream {
   explicit TurboCfgFile(Isolate* isolate)
-      : std::ofstream(isolate->GetTurboCfgFileName().c_str(),
+      : v8::internal::OFStream(isolate->GetTurboCfgFileName().c_str(),
                       std::ios_base::app) {}
 };
 
-struct TurboJsonFile : public std::ofstream {
+struct TurboJsonFile : public v8::internal::OFStream {
   TurboJsonFile(CompilationInfo* info, std::ios_base::openmode mode)
-      : std::ofstream(GetVisualizerLogFileName(info, nullptr, "json").get(),
+      : v8::internal::OFStream(GetVisualizerLogFileName(info, nullptr, "json").get(),
                       mode) {}
 };
 
@@ -474,7 +474,7 @@ void TraceSchedule(CompilationInfo* info, Schedule* schedule) {
     AllowHandleDereference allow_deref;
     TurboJsonFile json_of(info, std::ios_base::app);
     json_of << "{\"name\":\"Schedule\",\"type\":\"schedule\",\"data\":\"";
-    std::stringstream schedule_stream;
+    v8::base::OStringStream schedule_stream;
     schedule_stream << *schedule;
     std::string schedule_string(schedule_stream.str());
     for (const auto& c : schedule_string) {
@@ -1960,7 +1960,7 @@ bool PipelineImpl::ScheduleAndSelectInstructions(Linkage* linkage,
   }
 
   if (FLAG_trace_turbo) {
-    std::ostringstream source_position_output;
+    v8::base::OStringStream source_position_output;
     // Output source position information before the graph is deleted.
     data_->source_positions()->Print(source_position_output);
     data_->set_source_position_output(source_position_output.str());
@@ -2019,7 +2019,7 @@ Handle<Code> PipelineImpl::FinalizeCode() {
   Handle<Code> code = data->code();
   if (data->profiler_data()) {
 #if ENABLE_DISASSEMBLER
-    std::ostringstream os;
+    v8::base::OStringStream os;
     code->Disassemble(nullptr, os);
     data->profiler_data()->SetCode(&os);
 #endif
@@ -2032,7 +2032,7 @@ Handle<Code> PipelineImpl::FinalizeCode() {
     TurboJsonFile json_of(info(), std::ios_base::app);
     json_of << "{\"name\":\"disassembly\",\"type\":\"disassembly\",\"data\":\"";
 #if ENABLE_DISASSEMBLER
-    std::stringstream disassembly_stream;
+    v8::base::OStringStream disassembly_stream;
     code->Disassemble(nullptr, disassembly_stream);
     std::string disassembly_string(disassembly_stream.str());
     for (const auto& c : disassembly_string) {

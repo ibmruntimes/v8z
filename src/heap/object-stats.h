@@ -35,7 +35,7 @@ class ObjectStats {
 
   void CheckpointObjectStats();
   void PrintJSON(const char* key);
-  void Dump(std::stringstream& stream);
+  void Dump(v8::base::OStringStream& stream);
 
   void RecordObjectStats(InstanceType type, size_t size) {
     DCHECK(type <= LAST_TYPE);
@@ -99,7 +99,7 @@ class ObjectStats {
   // binary size of VB. On x64 this save around 80KB.
   V8_NOINLINE void PrintInstanceTypeJSON(const char* key, int gc_count,
                                          const char* name, int index);
-  V8_NOINLINE void DumpInstanceTypeData(std::stringstream& stream,
+  V8_NOINLINE void DumpInstanceTypeData(v8::base::OStringStream& stream,
                                         const char* name, int index);
 
   int HistogramIndexFromSize(size_t size) {

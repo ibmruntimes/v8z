@@ -44,7 +44,7 @@ V8_NOINLINE static void PrintJSONArray(size_t* array, const int len) {
   PrintF(" ]");
 }
 
-V8_NOINLINE static void DumpJSONArray(std::stringstream& stream, size_t* array,
+V8_NOINLINE static void DumpJSONArray(v8::base::OStringStream& stream, size_t* array,
                                       const int len) {
   stream << "[";
   for (int i = 0; i < len; i++) {
@@ -115,7 +115,7 @@ void ObjectStats::PrintJSON(const char* key) {
 #undef PRINT_KEY_AND_ID
 }
 
-void ObjectStats::DumpInstanceTypeData(std::stringstream& stream,
+void ObjectStats::DumpInstanceTypeData(v8::base::OStringStream& stream,
                                        const char* name, int index) {
   stream << "\"" << name << "\":{";
   stream << "\"type\":" << static_cast<int>(index) << ",";
@@ -129,7 +129,7 @@ void ObjectStats::DumpInstanceTypeData(std::stringstream& stream,
   stream << "},";
 }
 
-void ObjectStats::Dump(std::stringstream& stream) {
+void ObjectStats::Dump(v8::base::OStringStream& stream) {
   double time = isolate()->time_millis_since_init();
   int gc_count = heap()->gc_count();
 

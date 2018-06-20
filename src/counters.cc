@@ -315,7 +315,7 @@ void Counters::ResetCreateHistogramFunction(CreateHistogramCallback f) {
 
 class RuntimeCallStatEntries {
  public:
-  void Print(std::ostream& os) {
+  void Print(v8::base::OStream& os) {
     if (total_call_count == 0) return;
     std::sort(entries.rbegin(), entries.rend());
     os << std::setw(50) << "Runtime Function/C++ Builtin" << std::setw(12)
@@ -356,7 +356,7 @@ class RuntimeCallStatEntries {
       return count_ < other.count_;
     }
 
-    V8_NOINLINE void Print(std::ostream& os) {
+    V8_NOINLINE void Print(v8::base::OStream& os) {
       os.precision(2);
       os << std::fixed << std::setprecision(2);
       os << std::setw(50) << name_;
@@ -514,7 +514,7 @@ void RuntimeCallStats::CorrectCurrentCounterId(RuntimeCallStats* stats,
   stats->current_counter_.SetValue(counter);
 }
 
-void RuntimeCallStats::Print(std::ostream& os) {
+void RuntimeCallStats::Print(v8::base::OStream& os) {
   RuntimeCallStatEntries entries;
   if (current_timer_.Value() != nullptr) {
     current_timer_.Value()->Snapshot();

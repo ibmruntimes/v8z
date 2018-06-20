@@ -238,11 +238,11 @@ class TransitionArray : public FixedArray {
 #if defined(DEBUG) || defined(OBJECT_PRINT)
   // For our gdb macros.
   void Print();
-  void Print(std::ostream& os);
+  void Print(v8::base::OStream& os);
 #endif
 
 #ifdef OBJECT_PRINT
-  void TransitionArrayPrint(std::ostream& os);  // NOLINT
+  void TransitionArrayPrint(v8::base::OStream& os);  // NOLINT
 #endif
 
 #ifdef VERIFY_HEAP

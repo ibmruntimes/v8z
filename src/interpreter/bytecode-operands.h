@@ -124,13 +124,13 @@ inline AccumulatorUse operator|(AccumulatorUse lhs, AccumulatorUse rhs) {
   return static_cast<AccumulatorUse>(result);
 }
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const AccumulatorUse& use);
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const OperandScale& operand_scale);
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const OperandSize& operand_size);
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const OperandType& operand_type);
 
 class BytecodeOperands {

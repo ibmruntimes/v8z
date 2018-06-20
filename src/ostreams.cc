@@ -1,7 +1,7 @@
 // Copyright 2014 the V8 project authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-
+#define _AE_BIMODAL
 #include "src/ostreams.h"
 #include "src/objects.h"
 #include "src/objects/string.h"
@@ -10,6 +10,9 @@
 #if _MSC_VER < 1900
 #define snprintf sprintf_s
 #endif
+#elif V8_OS_ZOS
+#include <unistd.h>
+#define snprintf __snprintf_a
 #endif
 
 namespace v8 {
@@ -33,12 +36,36 @@ OFStreamBase::int_type OFStreamBase::overflow(int_type c) {
 
 
 std::streamsize OFStreamBase::xsputn(const char* s, std::streamsize n) {
+#if V8_OS_ZOS
+  if (f_ == stdout || f_ == stderr) {
+    char str[n];
+    memcpy(str, s, n);
+    __a2e_l(&str[0], n);
+    return static_cast<std::streamsize>(
+        std::fwrite(str, 1, static_cast<size_t>(n), f_));
+  }
+  else
+    return static_cast<std::streamsize>(
+        std::fwrite(s, 1, static_cast<size_t>(n), f_));
+#else
   return static_cast<std::streamsize>(
       std::fwrite(s, 1, static_cast<size_t>(n), f_));
+#endif
 }
 
+OFStream::OFStream(const char * filename, std::ios_base::openmode mode) 
+    : v8::base::OStream(nullptr), 
+      buf_(mode == std::ios_base::app ? std::fopen(filename,"a")
+                                      : std::fopen(filename,"w")){
+ 
+  rdbuf(&buf_);
+}
 
-OFStream::OFStream(FILE* f) : std::ostream(nullptr), buf_(f) {
+OFStream::OFStream(const std::string &filename, ios_base::openmode mode) : OFStream(filename.c_str(),mode) {
+  
+}
+
+OFStream::OFStream(FILE* f) : v8::base::OStream(nullptr), buf_(f) {
   DCHECK_NOT_NULL(f);
   rdbuf(&buf_);
 }
@@ -55,14 +82,14 @@ bool IsSpace(uint16_t c) { return (0x9 <= c && c <= 0xd) || c == 0x20; }
 bool IsOK(uint16_t c) { return (IsPrint(c) || IsSpace(c)) && c != '\\'; }
 
 
-std::ostream& PrintUC16(std::ostream& os, uint16_t c, bool (*pred)(uint16_t)) {
+v8::base::OStream& PrintUC16(v8::base::OStream& os, uint16_t c, bool (*pred)(uint16_t)) {
   char buf[10];
   const char* format = pred(c) ? "%c" : (c <= 0xff) ? "\\x%02x" : "\\u%04x";
   snprintf(buf, sizeof(buf), format, c);
   return os << buf;
 }
 
-std::ostream& PrintUC16ForJSON(std::ostream& os, uint16_t c,
+v8::base::OStream& PrintUC16ForJSON(v8::base::OStream& os, uint16_t c,
                                bool (*pred)(uint16_t)) {
   // JSON does not allow \x99; must use \u0099.
   char buf[10];
@@ -71,7 +98,7 @@ std::ostream& PrintUC16ForJSON(std::ostream& os, uint16_t c,
   return os << buf;
 }
 
-std::ostream& PrintUC32(std::ostream& os, int32_t c, bool (*pred)(uint16_t)) {
+v8::base::OStream& PrintUC32(v8::base::OStream& os, int32_t c, bool (*pred)(uint16_t)) {
   if (c <= String::kMaxUtf16CodeUnit) {
     return PrintUC16(os, static_cast<uint16_t>(c), pred);
   }
@@ -83,12 +110,12 @@ std::ostream& PrintUC32(std::ostream& os, int32_t c, bool (*pred)(uint16_t)) {
 }  // namespace
 
 
-std::ostream& operator<<(std::ostream& os, const AsReversiblyEscapedUC16& c) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsReversiblyEscapedUC16& c) {
   return PrintUC16(os, c.value, IsOK);
 }
 
 
-std::ostream& operator<<(std::ostream& os, const AsEscapedUC16ForJSON& c) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsEscapedUC16ForJSON& c) {
   if (c.value == '\n') return os << "\\n";
   if (c.value == '\r') return os << "\\r";
   if (c.value == '\t') return os << "\\t";
@@ -97,16 +124,16 @@ std::ostream& operator<<(std::ostream& os, const AsEscapedUC16ForJSON& c) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const AsUC16& c) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsUC16& c) {
   return PrintUC16(os, c.value, IsPrint);
 }
 
 
-std::ostream& operator<<(std::ostream& os, const AsUC32& c) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsUC32& c) {
   return PrintUC32(os, c.value, IsPrint);
 }
 
-std::ostream& operator<<(std::ostream& os, const AsHex& hex) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsHex& hex) {
   // Each byte uses up to two characters. Plus two characters for the prefix,
   // plus null terminator.
   DCHECK_GE(sizeof(hex.value) * 2, hex.min_width);
@@ -117,7 +144,7 @@ std::ostream& operator<<(std::ostream& os, const AsHex& hex) {
   return os << buf;
 }
 
-std::ostream& operator<<(std::ostream& os, const AsHexBytes& hex) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsHexBytes& hex) {
   uint8_t bytes = hex.min_bytes;
   while (bytes < sizeof(hex.value) && (hex.value >> (bytes * 8) != 0)) ++bytes;
   for (uint8_t b = 0; b < bytes; ++b) {

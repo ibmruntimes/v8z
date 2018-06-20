@@ -380,7 +380,7 @@ void LifetimePosition::Print() const {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const LifetimePosition pos) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const LifetimePosition pos) {
   os << '@' << pos.ToInstructionIndex();
   if (pos.IsGapPosition()) {
     os << 'g';
@@ -1189,7 +1189,7 @@ static bool AreUseIntervalsIntersecting(UseInterval* interval1,
 }
 
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableLiveRange& printable_range) {
   const LiveRange* range = printable_range.range_;
   os << "Range: " << range->TopLevel()->vreg() << ":" << range->relative_id()

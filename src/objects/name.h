@@ -183,7 +183,7 @@ class Symbol : public Name {
   // No weak fields.
   typedef BodyDescriptor BodyDescriptorWeak;
 
-  void SymbolShortPrint(std::ostream& os);
+  void SymbolShortPrint(v8::base::OStream& os);
 
  private:
   const char* PrivateSymbolToName() const;

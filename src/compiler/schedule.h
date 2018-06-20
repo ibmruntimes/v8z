@@ -183,9 +183,9 @@ class V8_EXPORT_PRIVATE BasicBlock final
   DISALLOW_COPY_AND_ASSIGN(BasicBlock);
 };
 
-std::ostream& operator<<(std::ostream&, const BasicBlock&);
-std::ostream& operator<<(std::ostream&, const BasicBlock::Control&);
-std::ostream& operator<<(std::ostream&, const BasicBlock::Id&);
+v8::base::OStream& operator<<(v8::base::OStream&, const BasicBlock&);
+v8::base::OStream& operator<<(v8::base::OStream&, const BasicBlock::Control&);
+v8::base::OStream& operator<<(v8::base::OStream&, const BasicBlock::Id&);
 
 
 // A schedule represents the result of assigning nodes to basic blocks
@@ -299,7 +299,7 @@ class V8_EXPORT_PRIVATE Schedule final : public NON_EXPORTED_BASE(ZoneObject) {
   DISALLOW_COPY_AND_ASSIGN(Schedule);
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, const Schedule&);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&, const Schedule&);
 
 }  // namespace compiler
 }  // namespace internal

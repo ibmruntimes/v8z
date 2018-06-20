@@ -318,7 +318,7 @@ void Node::Print() const {
   }
 }
 
-std::ostream& operator<<(std::ostream& os, const Node& n) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Node& n) {
   os << n.id() << ": " << *n.op();
   if (n.InputCount() > 0) {
     os << "(";

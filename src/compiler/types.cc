@@ -941,7 +941,7 @@ const char* BitsetType::Name(bitset bits) {
   }
 }
 
-void BitsetType::Print(std::ostream& os,  // NOLINT
+void BitsetType::Print(v8::base::OStream& os,  // NOLINT
                        bitset bits) {
   DisallowHeapAllocation no_allocation;
   const char* name = Name(bits);
@@ -974,7 +974,7 @@ void BitsetType::Print(std::ostream& os,  // NOLINT
   os << ")";
 }
 
-void Type::PrintTo(std::ostream& os) {
+void Type::PrintTo(v8::base::OStream& os) {
   DisallowHeapAllocation no_allocation;
   if (this->IsBitset()) {
     BitsetType::Print(os, this->AsBitset());
@@ -984,7 +984,7 @@ void Type::PrintTo(std::ostream& os) {
     os << "OtherNumberConstant(" << this->AsOtherNumberConstant()->Value()
        << ")";
   } else if (this->IsRange()) {
-    std::ostream::fmtflags saved_flags = os.setf(std::ios::fixed);
+    v8::base::OStream::fmtflags saved_flags = os.setf(std::ios::fixed);
     std::streamsize saved_precision = os.precision(0);
     os << "Range(" << this->AsRange()->Min() << ", " << this->AsRange()->Max()
        << ")";

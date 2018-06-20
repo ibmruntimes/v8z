@@ -70,7 +70,7 @@ class CompilationStatistics final : public Malloced {
     std::string phase_kind_name_;
   };
 
-  friend std::ostream& operator<<(std::ostream& os,
+  friend v8::base::OStream& operator<<(v8::base::OStream& os,
                                   const AsPrintableStatistics& s);
 
   typedef OrderedStats PhaseKindStats;
@@ -85,7 +85,7 @@ class CompilationStatistics final : public Malloced {
   DISALLOW_COPY_AND_ASSIGN(CompilationStatistics);
 };
 
-std::ostream& operator<<(std::ostream& os, const AsPrintableStatistics& s);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsPrintableStatistics& s);
 
 }  // namespace internal
 }  // namespace v8

@@ -106,7 +106,7 @@ void InstructionOperand::Print(const RegisterConfiguration* config) const {
 
 void InstructionOperand::Print() const { Print(GetRegConfig()); }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableInstructionOperand& printable) {
   const InstructionOperand& op = printable.op_;
   const RegisterConfiguration* conf = printable.register_configuration_;
@@ -238,7 +238,7 @@ void MoveOperands::Print(const RegisterConfiguration* config) const {
 
 void MoveOperands::Print() const { Print(GetRegConfig()); }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableMoveOperands& printable) {
   const MoveOperands& mo = *printable.move_operands_;
   PrintableInstructionOperand printable_op = {printable.register_configuration_,
@@ -354,7 +354,7 @@ void Instruction::Print(const RegisterConfiguration* config) const {
 
 void Instruction::Print() const { Print(GetRegConfig()); }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableParallelMove& printable) {
   const ParallelMove& pm = *printable.parallel_move_;
   bool first = true;
@@ -377,7 +377,7 @@ void ReferenceMap::RecordReference(const AllocatedOperand& op) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const ReferenceMap& pm) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const ReferenceMap& pm) {
   os << "{";
   bool first = true;
   PrintableInstructionOperand poi = {GetRegConfig(), InstructionOperand()};
@@ -394,7 +394,7 @@ std::ostream& operator<<(std::ostream& os, const ReferenceMap& pm) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const ArchOpcode& ao) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const ArchOpcode& ao) {
   switch (ao) {
 #define CASE(Name) \
   case k##Name:    \
@@ -406,7 +406,7 @@ std::ostream& operator<<(std::ostream& os, const ArchOpcode& ao) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const AddressingMode& am) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AddressingMode& am) {
   switch (am) {
     case kMode_None:
       return os;
@@ -420,7 +420,7 @@ std::ostream& operator<<(std::ostream& os, const AddressingMode& am) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const FlagsMode& fm) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const FlagsMode& fm) {
   switch (fm) {
     case kFlags_none:
       return os;
@@ -437,7 +437,7 @@ std::ostream& operator<<(std::ostream& os, const FlagsMode& fm) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const FlagsCondition& fc) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const FlagsCondition& fc) {
   switch (fc) {
     case kEqual:
       return os << "equal";
@@ -492,7 +492,7 @@ std::ostream& operator<<(std::ostream& os, const FlagsCondition& fc) {
 }
 
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableInstruction& printable) {
   const Instruction& instr = *printable.instr_;
   PrintableInstructionOperand printable_op = {printable.register_configuration_,
@@ -566,7 +566,7 @@ Handle<Code> Constant::ToCode() const {
   return value;
 }
 
-std::ostream& operator<<(std::ostream& os, const Constant& constant) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Constant& constant) {
   switch (constant.type()) {
     case Constant::kInt32:
       return os << constant.ToInt32();
@@ -665,7 +665,7 @@ static InstructionBlock* InstructionBlockFor(Zone* zone,
   return instr_block;
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          PrintableInstructionBlock& printable_block) {
   const InstructionBlock* block = printable_block.block_;
   const RegisterConfiguration* config = printable_block.register_configuration_;
@@ -1057,12 +1057,12 @@ size_t FrameStateDescriptor::GetJSFrameCount() const {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const RpoNumber& rpo) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const RpoNumber& rpo) {
   return os << rpo.ToSize();
 }
 
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableInstructionSequence& printable) {
   const InstructionSequence& code = *printable.sequence_;
   for (size_t i = 0; i < code.immediates_.size(); ++i) {

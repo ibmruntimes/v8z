@@ -7,7 +7,7 @@
 namespace v8 {
 namespace internal {
 
-std::ostream& operator<<(std::ostream& os, BinaryOperationHint hint) {
+v8::base::OStream& operator<<(v8::base::OStream& os, BinaryOperationHint hint) {
   switch (hint) {
     case BinaryOperationHint::kNone:
       return os << "None";
@@ -29,7 +29,7 @@ std::ostream& operator<<(std::ostream& os, BinaryOperationHint hint) {
   UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& os, CompareOperationHint hint) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CompareOperationHint hint) {
   switch (hint) {
     case CompareOperationHint::kNone:
       return os << "None";
@@ -53,7 +53,7 @@ std::ostream& operator<<(std::ostream& os, CompareOperationHint hint) {
   UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& os, ToBooleanHint hint) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ToBooleanHint hint) {
   switch (hint) {
     case ToBooleanHint::kNone:
       return os << "None";
@@ -109,7 +109,7 @@ std::string ToString(ToBooleanHint hint) {
   UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& os, ToBooleanHints hints) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ToBooleanHints hints) {
   if (hints == ToBooleanHint::kAny) return os << "Any";
   if (hints == ToBooleanHint::kNone) return os << "None";
   bool first = true;
@@ -140,7 +140,7 @@ std::string ToString(ToBooleanHints hints) {
   return ret;
 }
 
-std::ostream& operator<<(std::ostream& os, const StringAddFlags& flags) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const StringAddFlags& flags) {
   switch (flags) {
     case STRING_ADD_CHECK_NONE:
       return os << "CheckNone";

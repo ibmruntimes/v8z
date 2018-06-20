@@ -346,7 +346,7 @@ void wasm::UnpackAndRegisterProtectedInstructions(
   }
 }
 
-std::ostream& wasm::operator<<(std::ostream& os, const WasmFunctionName& name) {
+v8::base::OStream& wasm::operator<<(v8::base::OStream& os, const WasmFunctionName& name) {
   os << "#" << name.function_->func_index;
   if (name.function_->name.is_set()) {
     if (name.name_.start()) {

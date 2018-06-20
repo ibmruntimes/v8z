@@ -21,7 +21,7 @@ size_t hash_value(BaseTaggedness base_taggedness) {
   return static_cast<uint8_t>(base_taggedness);
 }
 
-std::ostream& operator<<(std::ostream& os, BaseTaggedness base_taggedness) {
+v8::base::OStream& operator<<(v8::base::OStream& os, BaseTaggedness base_taggedness) {
   switch (base_taggedness) {
     case kUntaggedBase:
       return os << "untagged base";
@@ -55,7 +55,7 @@ size_t hash_value(FieldAccess const& access) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, FieldAccess const& access) {
+v8::base::OStream& operator<<(v8::base::OStream& os, FieldAccess const& access) {
   os << "[" << access.base_is_tagged << ", " << access.offset << ", ";
 #ifdef OBJECT_PRINT
   Handle<Name> name;
@@ -74,7 +74,7 @@ std::ostream& operator<<(std::ostream& os, FieldAccess const& access) {
 }
 
 template <>
-void Operator1<FieldAccess>::PrintParameter(std::ostream& os,
+void Operator1<FieldAccess>::PrintParameter(v8::base::OStream& os,
                                             PrintVerbosity verbose) const {
   if (verbose == PrintVerbosity::kVerbose) {
     os << parameter();
@@ -107,7 +107,7 @@ size_t hash_value(ElementAccess const& access) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, ElementAccess const& access) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ElementAccess const& access) {
   os << access.base_is_tagged << ", " << access.header_size << ", ";
   access.type->PrintTo(os);
   os << ", " << access.machine_type << ", " << access.write_barrier_kind;
@@ -140,7 +140,7 @@ size_t hash_value(CheckFloat64HoleMode mode) {
   return static_cast<size_t>(mode);
 }
 
-std::ostream& operator<<(std::ostream& os, CheckFloat64HoleMode mode) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CheckFloat64HoleMode mode) {
   switch (mode) {
     case CheckFloat64HoleMode::kAllowReturnHole:
       return os << "allow-return-hole";
@@ -167,7 +167,7 @@ size_t hash_value(CheckForMinusZeroMode mode) {
   return static_cast<size_t>(mode);
 }
 
-std::ostream& operator<<(std::ostream& os, CheckForMinusZeroMode mode) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CheckForMinusZeroMode mode) {
   switch (mode) {
     case CheckForMinusZeroMode::kCheckForMinusZero:
       return os << "check-for-minus-zero";
@@ -177,7 +177,7 @@ std::ostream& operator<<(std::ostream& os, CheckForMinusZeroMode mode) {
   UNREACHABLE();
 }
 
-std::ostream& operator<<(std::ostream& os, CheckMapsFlags flags) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CheckMapsFlags flags) {
   bool empty = true;
   if (flags & CheckMapsFlag::kTryMigrateInstance) {
     os << "TryMigrateInstance";
@@ -201,7 +201,7 @@ size_t hash_value(CheckMapsParameters const& p) {
   return base::hash_combine(p.flags(), p.maps());
 }
 
-std::ostream& operator<<(std::ostream& os, CheckMapsParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CheckMapsParameters const& p) {
   ZoneHandleSet<Map> const& maps = p.maps();
   os << p.flags();
   for (size_t i = 0; i < maps.size(); ++i) {
@@ -224,7 +224,7 @@ size_t hash_value(CheckTaggedInputMode mode) {
   return static_cast<size_t>(mode);
 }
 
-std::ostream& operator<<(std::ostream& os, CheckTaggedInputMode mode) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CheckTaggedInputMode mode) {
   switch (mode) {
     case CheckTaggedInputMode::kNumber:
       return os << "Number";
@@ -240,7 +240,7 @@ CheckTaggedInputMode CheckTaggedInputModeOf(const Operator* op) {
   return OpParameter<CheckTaggedInputMode>(op);
 }
 
-std::ostream& operator<<(std::ostream& os, GrowFastElementsFlags flags) {
+v8::base::OStream& operator<<(v8::base::OStream& os, GrowFastElementsFlags flags) {
   bool empty = true;
   if (flags & GrowFastElementsFlag::kArrayObject) {
     os << "ArrayObject";
@@ -281,7 +281,7 @@ size_t hash_value(ElementsTransition transition) {
                             transition.target().address());
 }
 
-std::ostream& operator<<(std::ostream& os, ElementsTransition transition) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ElementsTransition transition) {
   switch (transition.mode()) {
     case ElementsTransition::kFastTransition:
       return os << "fast-transition from " << Brief(*transition.source())
@@ -329,7 +329,7 @@ size_t hash_value(TransitionAndStoreElementParameters parameters) {
                             parameters.double_map().address());
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          TransitionAndStoreElementParameters parameters) {
   return os << "fast-map" << Brief(*parameters.fast_map()) << " double-map"
             << Brief(*parameters.double_map());
@@ -347,7 +347,7 @@ Handle<Map> FastMapParameterOf(const Operator* op) {
   return OpParameter<TransitionAndStoreElementParameters>(op).fast_map();
 }
 
-std::ostream& operator<<(std::ostream& os, NumberOperationHint hint) {
+v8::base::OStream& operator<<(v8::base::OStream& os, NumberOperationHint hint) {
   switch (hint) {
     case NumberOperationHint::kSignedSmall:
       return os << "SignedSmall";
@@ -392,7 +392,7 @@ size_t hash_value(AllocateParameters info) {
   return base::hash_combine(info.type(), info.pretenure());
 }
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            AllocateParameters info) {
   info.type()->PrintTo(os);
   return os << ", " << info.pretenure();
@@ -948,7 +948,7 @@ size_t hash_value(ArgumentsLengthParameters param) {
   return base::hash_combine(param.formal_parameter_count, param.is_rest_length);
 }
 
-std::ostream& operator<<(std::ostream& os, ArgumentsLengthParameters param) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ArgumentsLengthParameters param) {
   return os << param.formal_parameter_count << ", "
             << (param.is_rest_length ? "rest length" : "not rest length");
 }

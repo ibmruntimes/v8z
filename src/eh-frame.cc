@@ -52,7 +52,7 @@ STATIC_CONST_MEMBER_DEFINITION const int EhFrameConstants::kEhFrameHdrSize;
 STATIC_CONST_MEMBER_DEFINITION const uint32_t EhFrameWriter::kInt32Placeholder;
 
 // static
-void EhFrameWriter::WriteEmptyEhFrame(std::ostream& stream) {  // NOLINT
+void EhFrameWriter::WriteEmptyEhFrame(v8::base::OStream& stream) {  // NOLINT
   stream.put(EhFrameConstants::kEhFrameHdrVersion);
 
   // .eh_frame pointer encoding specifier.
@@ -453,19 +453,19 @@ namespace {
 
 class StreamModifiersScope final {
  public:
-  explicit StreamModifiersScope(std::ostream* stream)
+  explicit StreamModifiersScope(v8::base::OStream* stream)
       : stream_(stream), flags_(stream->flags()) {}
   ~StreamModifiersScope() { stream_->flags(flags_); }
 
  private:
-  std::ostream* stream_;
+  v8::base::OStream* stream_;
   std::ios::fmtflags flags_;
 };
 
 }  // namespace
 
 // static
-void EhFrameDisassembler::DumpDwarfDirectives(std::ostream& stream,  // NOLINT
+void EhFrameDisassembler::DumpDwarfDirectives(v8::base::OStream& stream,  // NOLINT
                                               const byte* start,
                                               const byte* end) {
   StreamModifiersScope modifiers_scope(&stream);
@@ -575,7 +575,7 @@ void EhFrameDisassembler::DumpDwarfDirectives(std::ostream& stream,  // NOLINT
   }
 }
 
-void EhFrameDisassembler::DisassembleToStream(std::ostream& stream) {  // NOLINT
+void EhFrameDisassembler::DisassembleToStream(v8::base::OStream& stream) {  // NOLINT
   // The encoded CIE size does not include the size field itself.
   const int cie_size = ReadUnalignedUInt32(start_) + kInt32Size;
   const int fde_offset = cie_size;

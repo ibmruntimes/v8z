@@ -65,8 +65,8 @@ const char* V8NameConverter::NameInCode(byte* addr) const {
 }
 
 
-static void DumpBuffer(std::ostream* os, StringBuilder* out) {
-  (*os) << out->Finalize() << std::endl;
+static void DumpBuffer(v8::base::OStream* os, StringBuilder* out) {
+  (*os) << out->Finalize() << "\n";
   out->Reset();
 }
 
@@ -76,7 +76,7 @@ static const int kRelocInfoPosition = 57;
 
 static void PrintRelocInfo(StringBuilder* out, Isolate* isolate,
                            const ExternalReferenceEncoder& ref_encoder,
-                           std::ostream* os, RelocInfo* relocinfo,
+                           v8::base::OStream* os, RelocInfo* relocinfo,
                            bool first_reloc_info = true) {
   // Indent the printing of the reloc info.
   if (first_reloc_info) {
@@ -156,7 +156,7 @@ static void PrintRelocInfo(StringBuilder* out, Isolate* isolate,
   }
 }
 
-static int DecodeIt(Isolate* isolate, std::ostream* os,
+static int DecodeIt(Isolate* isolate, v8::base::OStream* os,
                     const V8NameConverter& converter, byte* begin, byte* end) {
   SealHandleScope shs(isolate);
   DisallowHeapAllocation no_alloc;
@@ -289,7 +289,7 @@ static int DecodeIt(Isolate* isolate, std::ostream* os,
 }
 
 
-int Disassembler::Decode(Isolate* isolate, std::ostream* os, byte* begin,
+int Disassembler::Decode(Isolate* isolate, v8::base::OStream* os, byte* begin,
                          byte* end, Code* code) {
   V8NameConverter v8NameConverter(code);
   return DecodeIt(isolate, os, v8NameConverter, begin, end);
@@ -297,7 +297,7 @@ int Disassembler::Decode(Isolate* isolate, std::ostream* os, byte* begin,
 
 #else  // ENABLE_DISASSEMBLER
 
-int Disassembler::Decode(Isolate* isolate, std::ostream* os, byte* begin,
+int Disassembler::Decode(Isolate* isolate, v8::base::OStream* os, byte* begin,
                          byte* end, Code* code) {
   return 0;
 }

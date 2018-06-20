@@ -1374,7 +1374,7 @@ v8::debug::WasmDisassembly WasmCompiledModule::DisassembleFunction(
   Vector<const byte> module_bytes(module_bytes_str->GetChars(),
                                   module_bytes_str->length());
 
-  std::ostringstream disassembly_os;
+  v8::base::OStringStream disassembly_os;
   v8::debug::WasmDisassembly::OffsetTable offset_table;
 
   PrintWasmText(module(), module_bytes, static_cast<uint32_t>(func_index),

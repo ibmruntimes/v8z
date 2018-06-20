@@ -263,7 +263,7 @@ class V8_EXPORT_PRIVATE BitsetType {
   static bitset ExpandInternals(bitset bits);
 
   static const char* Name(bitset);
-  static void Print(std::ostream& os, bitset);  // NOLINT
+  static void Print(v8::base::OStream& os, bitset);  // NOLINT
 #ifdef DEBUG
   static void Print(bitset);
 #endif
@@ -620,7 +620,7 @@ class V8_EXPORT_PRIVATE Type {
 
   // Printing.
 
-  void PrintTo(std::ostream& os);
+  void PrintTo(v8::base::OStream& os);
 
 #ifdef DEBUG
   void Print();

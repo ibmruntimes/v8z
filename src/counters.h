@@ -932,7 +932,7 @@ class RuntimeCallStats final : public ZoneObject {
   V8_EXPORT_PRIVATE void Reset();
   // Add all entries from another stats object.
   void Add(RuntimeCallStats* other);
-  V8_EXPORT_PRIVATE void Print(std::ostream& os);
+  V8_EXPORT_PRIVATE void Print(v8::base::OStream& os);
   V8_NOINLINE void Dump(v8::tracing::TracedValue* value);
 
   ThreadId thread_id() const { return thread_id_; }

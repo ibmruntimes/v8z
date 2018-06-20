@@ -87,7 +87,7 @@ bool CodeStub::FindCodeInCache(Code** code_out) {
 
 
 void CodeStub::RecordCodeGeneration(Handle<Code> code) {
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << *this;
   PROFILE(isolate(),
           CodeCreateEvent(CodeEventListener::STUB_TAG,
@@ -178,7 +178,7 @@ Handle<Code> CodeStub::GetCode() {
     if (FLAG_print_code_stubs) {
       CodeTracer::Scope trace_scope(isolate()->GetCodeTracer());
       OFStream os(trace_scope.file());
-      std::ostringstream name;
+      v8::base::OStringStream name;
       name << *this;
       new_object->Disassemble(name.str().c_str(), os);
       os << "\n";
@@ -217,12 +217,12 @@ const char* CodeStub::MajorName(CodeStub::Major major_key) {
 }
 
 
-void CodeStub::PrintBaseName(std::ostream& os) const {  // NOLINT
+void CodeStub::PrintBaseName(v8::base::OStream& os) const {  // NOLINT
   os << MajorName(MajorKey());
 }
 
 
-void CodeStub::PrintName(std::ostream& os) const {  // NOLINT
+void CodeStub::PrintName(v8::base::OStream& os) const {  // NOLINT
   PrintBaseName(os);
   PrintState(os);
 }
@@ -280,7 +280,7 @@ MaybeHandle<Code> CodeStub::GetCode(Isolate* isolate, uint32_t key) {
 }
 
 
-void StringAddStub::PrintBaseName(std::ostream& os) const {  // NOLINT
+void StringAddStub::PrintBaseName(v8::base::OStream& os) const {  // NOLINT
   os << "StringAddStub_" << flags() << "_" << pretenure_flag();
 }
 
@@ -507,6 +507,180 @@ TF_STUB(LoadIndexedInterceptorStub, CodeStubAssembler) {
   BIND(&if_keyisinvalid);
   TailCallRuntime(Runtime::kKeyedLoadIC_Miss, context, receiver, key, slot,
                   vector);
+}
+
+void CallICStub::PrintState(v8::base::OStream& os) const {  // NOLINT
+  os << convert_mode();
+}
+
+// TODO(ishell): Move to CallICAssembler.
+TF_STUB(CallICStub, CodeStubAssembler) {
+  Node* context = Parameter(Descriptor::kContext);
+  Node* target = Parameter(Descriptor::kTarget);
+  Node* argc = Parameter(Descriptor::kActualArgumentsCount);
+  Node* slot = Parameter(Descriptor::kSlot);
+  Node* vector = Parameter(Descriptor::kVector);
+
+  // TODO(bmeurer): The slot should actually be an IntPtr, but TurboFan's
+  // SimplifiedLowering cannot deal with IntPtr machine type properly yet.
+  slot = ChangeInt32ToIntPtr(slot);
+
+  // Static checks to assert it is safe to examine the type feedback element.
+  // We don't know that we have a weak cell. We might have a private symbol
+  // or an AllocationSite, but the memory is safe to examine.
+  // AllocationSite::kTransitionInfoOrBoilerplateOffset - contains a Smi or
+  // pointer to FixedArray. WeakCell::kValueOffset - contains a JSFunction or
+  // Smi(0) Symbol::kHashFieldSlot - if the low bit is 1, then the hash is not
+  // computed, meaning that it can't appear to be a pointer. If the low bit is
+  // 0, then hash is computed, but the 0 bit prevents the field from appearing
+  // to be a pointer.
+  STATIC_ASSERT(WeakCell::kSize >= kPointerSize);
+  STATIC_ASSERT(AllocationSite::kTransitionInfoOrBoilerplateOffset ==
+                    WeakCell::kValueOffset &&
+                WeakCell::kValueOffset == Symbol::kHashFieldSlot);
+
+  // Increment the call count.
+  // TODO(bmeurer): Would it be beneficial to use Int32Add on 64-bit?
+  Comment("increment call count");
+  Node* call_count = LoadFixedArrayElement(vector, slot, 1 * kPointerSize);
+  Node* new_count = SmiAdd(call_count, SmiConstant(1));
+  // Count is Smi, so we don't need a write barrier.
+  StoreFixedArrayElement(vector, slot, new_count, SKIP_WRITE_BARRIER,
+                         1 * kPointerSize);
+
+  Label call_function(this), extra_checks(this), call(this);
+
+  // The checks. First, does function match the recorded monomorphic target?
+  Node* feedback_element = LoadFixedArrayElement(vector, slot);
+  Node* feedback_value = LoadWeakCellValueUnchecked(feedback_element);
+  Node* is_monomorphic = WordEqual(target, feedback_value);
+  GotoIfNot(is_monomorphic, &extra_checks);
+
+  // The compare above could have been a SMI/SMI comparison. Guard against
+  // this convincing us that we have a monomorphic JSFunction.
+  Node* is_smi = TaggedIsSmi(target);
+  Branch(is_smi, &extra_checks, &call_function);
+
+  BIND(&call_function);
+  {
+    // Call using CallFunction builtin.
+    Callable callable =
+        CodeFactory::CallFunction(isolate(), stub->convert_mode());
+    TailCallStub(callable, context, target, argc);
+  }
+
+  BIND(&extra_checks);
+  {
+    Label check_initialized(this), mark_megamorphic(this),
+        create_allocation_site(this, Label::kDeferred),
+        create_weak_cell(this, Label::kDeferred);
+
+    Comment("check if megamorphic");
+    // Check if it is a megamorphic target.
+    Node* is_megamorphic =
+        WordEqual(feedback_element,
+                  HeapConstant(FeedbackVector::MegamorphicSentinel(isolate())));
+    GotoIf(is_megamorphic, &call);
+
+    Comment("check if it is an allocation site");
+    GotoIfNot(IsAllocationSite(feedback_element), &check_initialized);
+
+    // If it is not the Array() function, mark megamorphic.
+    Node* context_slot = LoadContextElement(LoadNativeContext(context),
+                                            Context::ARRAY_FUNCTION_INDEX);
+    Node* is_array_function = WordEqual(context_slot, target);
+    GotoIfNot(is_array_function, &mark_megamorphic);
+
+    // Call ArrayConstructorStub.
+    Callable callable = CodeFactory::ArrayConstructor(isolate());
+    TailCallStub(callable, context, target, target, argc, feedback_element);
+
+    BIND(&check_initialized);
+    {
+      Comment("check if uninitialized");
+      // Check if it is uninitialized target first.
+      Node* is_uninitialized = WordEqual(
+          feedback_element,
+          HeapConstant(FeedbackVector::UninitializedSentinel(isolate())));
+      GotoIfNot(is_uninitialized, &mark_megamorphic);
+
+      Comment("handle unitinitialized");
+      // If it is not a JSFunction mark it as megamorphic.
+      Node* is_smi = TaggedIsSmi(target);
+      GotoIf(is_smi, &mark_megamorphic);
+
+      // Check if function is an object of JSFunction type.
+      Node* is_js_function = IsJSFunction(target);
+      GotoIfNot(is_js_function, &mark_megamorphic);
+
+      // Check if it is the Array() function.
+      Node* context_slot = LoadContextElement(LoadNativeContext(context),
+                                              Context::ARRAY_FUNCTION_INDEX);
+      Node* is_array_function = WordEqual(context_slot, target);
+      GotoIf(is_array_function, &create_allocation_site);
+
+      // Check if the function belongs to the same native context.
+      Node* native_context = LoadNativeContext(
+          LoadObjectField(target, JSFunction::kContextOffset));
+      Node* is_same_native_context =
+          WordEqual(native_context, LoadNativeContext(context));
+      Branch(is_same_native_context, &create_weak_cell, &mark_megamorphic);
+    }
+
+    BIND(&create_weak_cell);
+    {
+      // Wrap the {target} in a WeakCell and remember it.
+      Comment("create weak cell");
+      CreateWeakCellInFeedbackVector(vector, SmiTag(slot), target);
+
+      // Call using CallFunction builtin.
+      Goto(&call_function);
+    }
+
+    BIND(&create_allocation_site);
+    {
+      // Create an AllocationSite for the {target}.
+      Comment("create allocation site");
+      CreateAllocationSiteInFeedbackVector(vector, SmiTag(slot));
+
+      // Call using CallFunction builtin. CallICs have a PREMONOMORPHIC state.
+      // They start collecting feedback only when a call is executed the second
+      // time. So, do not pass any feedback here.
+      Goto(&call_function);
+    }
+
+    BIND(&mark_megamorphic);
+    {
+      // Mark it as a megamorphic.
+      // MegamorphicSentinel is created as a part of Heap::InitialObjects
+      // and will not move during a GC. So it is safe to skip write barrier.
+      DCHECK(Heap::RootIsImmortalImmovable(Heap::kmegamorphic_symbolRootIndex));
+      StoreFixedArrayElement(
+          vector, slot,
+          HeapConstant(FeedbackVector::MegamorphicSentinel(isolate())),
+          SKIP_WRITE_BARRIER);
+      Goto(&call);
+    }
+  }
+
+  BIND(&call);
+  {
+    // Call using call builtin.
+    Comment("call using Call builtin");
+    Callable callable_call = CodeFactory::Call(isolate(), stub->convert_mode());
+    TailCallStub(callable_call, context, target, argc);
+  }
+}
+
+TF_STUB(CallICTrampolineStub, CodeStubAssembler) {
+  Node* context = Parameter(Descriptor::kContext);
+  Node* target = Parameter(Descriptor::kTarget);
+  Node* argc = Parameter(Descriptor::kActualArgumentsCount);
+  Node* slot = Parameter(Descriptor::kSlot);
+  Node* vector = LoadFeedbackVectorForStub();
+
+  Callable callable = CodeFactory::CallIC(isolate(), stub->convert_mode());
+  TailCallStub(callable, context, target, argc, slot, vector);
 }
 
 void JSEntryStub::FinishCode(Handle<Code> code) {

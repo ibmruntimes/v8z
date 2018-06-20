@@ -86,7 +86,7 @@ enum class DeoptimizeReason : uint8_t {
 #undef DEOPTIMIZE_REASON
 };
 
-std::ostream& operator<<(std::ostream&, DeoptimizeReason);
+v8::base::OStream& operator<<(v8::base::OStream&, DeoptimizeReason);
 
 size_t hash_value(DeoptimizeReason reason);
 

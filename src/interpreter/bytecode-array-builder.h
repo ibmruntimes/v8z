@@ -571,8 +571,8 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final
   DISALLOW_COPY_AND_ASSIGN(BytecodeArrayBuilder);
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(
-    std::ostream& os, const BytecodeArrayBuilder::ToBooleanMode& mode);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(
+    v8::base::OStream& os, const BytecodeArrayBuilder::ToBooleanMode& mode);
 
 }  // namespace interpreter
 }  // namespace internal

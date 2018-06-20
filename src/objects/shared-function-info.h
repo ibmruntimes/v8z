@@ -532,7 +532,7 @@ struct SourceCodeOf {
   int max_length;
 };
 
-std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v);
+v8::base::OStream& operator<<(v8::base::OStream& os, const SourceCodeOf& v);
 
 }  // namespace internal
 }  // namespace v8
