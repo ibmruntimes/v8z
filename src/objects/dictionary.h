@@ -63,7 +63,7 @@ class Dictionary : public HashTable<Derived, Shape> {
   // For our gdb macros, we should perhaps change these in the future.
   void Print();
 
-  void Print(std::ostream& os);  // NOLINT
+  void Print(v8::base::OStream& os);  // NOLINT
 #endif
   // Returns the key (slow).
   Object* SlowReverseLookup(Object* value);

@@ -130,7 +130,7 @@ void ICInfo::AppendToTracedValue(v8::tracing::TracedValue* value) const {
   if (map) {
     // V8 cannot represent integer above 2^53 - 1 in JavaScript from JSON,
     // thus `map` should be converted to a string rather than an integer.
-    std::stringstream ss;
+    v8::base::OStringStream ss;
     ss << map;
     value->SetString("map", ss.str());
   }

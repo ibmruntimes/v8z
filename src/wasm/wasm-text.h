@@ -9,6 +9,7 @@
 #include <ostream>
 #include <tuple>
 #include <vector>
+#include "src/base/logging.h"
 
 namespace v8 {
 
@@ -28,7 +29,7 @@ struct ModuleWireBytes;
 // offset table of <byte offset, line, column> via the given pointer.
 void PrintWasmText(
     const WasmModule *module, const ModuleWireBytes &wire_bytes,
-    uint32_t func_index, std::ostream &os,
+    uint32_t func_index, v8::base::OStream &os,
     std::vector<debug::WasmDisassemblyOffsetTableEntry> *offset_table);
 
 }  // namespace wasm

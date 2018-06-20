@@ -104,7 +104,7 @@ inline LanguageMode GetLanguageModeFromSlotKind(FeedbackSlotKind kind) {
              : STRICT;
 }
 
-std::ostream& operator<<(std::ostream& os, FeedbackSlotKind kind);
+v8::base::OStream& operator<<(v8::base::OStream& os, FeedbackSlotKind kind);
 
 template <typename Derived>
 class FeedbackVectorSpecBase {

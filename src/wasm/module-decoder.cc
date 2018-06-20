@@ -983,7 +983,7 @@ class ModuleDecoder : public Decoder {
         allocator, menv == nullptr ? nullptr : menv->module_env.module, body);
     if (result.failed()) {
       // Wrap the error message from the function decoder.
-      std::ostringstream wrapped;
+      v8::base::OStringStream wrapped;
       wrapped << "in function " << func_name << ": " << result.error_msg();
       result.error(result.error_offset(), wrapped.str());
 

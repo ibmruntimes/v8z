@@ -88,7 +88,7 @@ class BytecodeSourceInfo final {
   int source_position_;
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const BytecodeSourceInfo& info);
 
 }  // namespace interpreter

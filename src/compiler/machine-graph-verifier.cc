@@ -552,7 +552,7 @@ class MachineRepresentationChecker {
             break;
           default:
             if (node->op()->ValueInputCount() != 0) {
-              std::stringstream str;
+              v8::base::OStringStream str;
               str << "Node #" << node->id() << ":" << *node->op()
                   << " in the machine graph is not being checked.";
               PrintDebugHelp(str, node);
@@ -580,7 +580,7 @@ class MachineRepresentationChecker {
     MachineRepresentation input_representation =
         inferrer_->GetRepresentation(input);
     if (input_representation != representation) {
-      std::stringstream str;
+      v8::base::OStringStream str;
       str << "TypeError: node #" << node->id() << ":" << *node->op()
           << " uses node #" << input->id() << ":" << *input->op() << ":"
           << input_representation << " which doesn't have a " << representation
@@ -600,7 +600,7 @@ class MachineRepresentationChecker {
       default:
         break;
     }
-    std::ostringstream str;
+    v8::base::OStringStream str;
     str << "TypeError: node #" << node->id() << ":" << *node->op()
         << " uses node #" << input->id() << ":" << *input->op()
         << " which doesn't have a tagged representation.";
@@ -633,7 +633,7 @@ class MachineRepresentationChecker {
     }
     if (inferrer_->GetRepresentation(input) !=
         MachineType::PointerRepresentation()) {
-      std::ostringstream str;
+      v8::base::OStringStream str;
       str << "TypeError: node #" << node->id() << ":" << *node->op()
           << " uses node #" << input->id() << ":" << *input->op()
           << " which doesn't have a tagged or pointer representation.";
@@ -651,7 +651,7 @@ class MachineRepresentationChecker {
       case MachineRepresentation::kWord32:
         return;
       case MachineRepresentation::kNone: {
-        std::ostringstream str;
+        v8::base::OStringStream str;
         str << "TypeError: node #" << input->id() << ":" << *input->op()
             << " is untyped.";
         PrintDebugHelp(str, node);
@@ -661,7 +661,7 @@ class MachineRepresentationChecker {
       default:
         break;
     }
-    std::ostringstream str;
+    v8::base::OStringStream str;
     str << "TypeError: node #" << node->id() << ":" << *node->op()
         << " uses node #" << input->id() << ":" << *input->op()
         << " which doesn't have an int32-compatible representation.";
@@ -677,7 +677,7 @@ class MachineRepresentationChecker {
       case MachineRepresentation::kWord64:
         return;
       case MachineRepresentation::kNone: {
-        std::ostringstream str;
+        v8::base::OStringStream str;
         str << "TypeError: node #" << input->id() << ":" << *input->op()
             << " is untyped.";
         PrintDebugHelp(str, node);
@@ -688,7 +688,7 @@ class MachineRepresentationChecker {
       default:
         break;
     }
-    std::ostringstream str;
+    v8::base::OStringStream str;
     str << "TypeError: node #" << node->id() << ":" << *node->op()
         << " uses node #" << input->id() << ":" << *input->op() << ":"
         << input_representation
@@ -703,7 +703,7 @@ class MachineRepresentationChecker {
         inferrer_->GetRepresentation(input)) {
       return;
     }
-    std::ostringstream str;
+    v8::base::OStringStream str;
     str << "TypeError: node #" << node->id() << ":" << *node->op()
         << " uses node #" << input->id() << ":" << *input->op()
         << " which doesn't have a kFloat32 representation.";
@@ -717,7 +717,7 @@ class MachineRepresentationChecker {
         inferrer_->GetRepresentation(input)) {
       return;
     }
-    std::ostringstream str;
+    v8::base::OStringStream str;
     str << "TypeError: node #" << node->id() << ":" << *node->op()
         << " uses node #" << input->id() << ":" << *input->op()
         << " which doesn't have a kFloat64 representation.";
@@ -727,7 +727,7 @@ class MachineRepresentationChecker {
 
   void CheckCallInputs(Node const* node) {
     CallDescriptor const* desc = CallDescriptorOf(node->op());
-    std::ostringstream str;
+    v8::base::OStringStream str;
     bool should_log_error = false;
     for (size_t i = 0; i < desc->InputCount(); ++i) {
       Node const* input = node->InputAt(static_cast<int>(i));
@@ -811,7 +811,7 @@ class MachineRepresentationChecker {
     return false;
   }
 
-  void PrintDebugHelp(std::ostream& out, Node const* node) {
+  void PrintDebugHelp(v8::base::OStream& out, Node const* node) {
     if (DEBUG_BOOL) {
       out << "\n#     Current block: " << *current_block_;
       out << "\n#\n#     Specify option --csa-trap-on-node=" << name_ << ","

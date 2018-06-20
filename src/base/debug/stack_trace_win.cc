@@ -102,7 +102,7 @@ bool InitializeSymbols() {
 // LOG(FATAL) itself. Also, it should not be calling complex code that is
 // extensible like PathService since that can in turn fire CHECKs.
 void OutputTraceToStream(const void* const* trace, size_t count,
-                         std::ostream* os) {
+                         v8::base::OStream* os) {
   for (size_t i = 0; (i < count) && os->good(); ++i) {
     const int kMaxNameLength = 256;
     DWORD_PTR frame = reinterpret_cast<DWORD_PTR>(trace[i]);
@@ -227,7 +227,7 @@ void StackTrace::InitTrace(const CONTEXT* context_record) {
 
 void StackTrace::Print() const { OutputToStream(&std::cerr); }
 
-void StackTrace::OutputToStream(std::ostream* os) const {
+void StackTrace::OutputToStream(v8::base::OStream* os) const {
   InitializeSymbols();
   if (g_init_error != ERROR_SUCCESS) {
     (*os) << "Error initializing symbols (" << g_init_error

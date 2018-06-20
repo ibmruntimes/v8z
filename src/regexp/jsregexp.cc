@@ -4410,7 +4410,7 @@ void BackReferenceNode::Emit(RegExpCompiler* compiler, Trace* trace) {
 
 class DotPrinter: public NodeVisitor {
  public:
-  DotPrinter(std::ostream& os, bool ignore_case)  // NOLINT
+  DotPrinter(v8::base::OStream& os, bool ignore_case)  // NOLINT
       : os_(os),
         ignore_case_(ignore_case) {}
   void PrintNode(const char* label, RegExpNode* node);
@@ -4422,7 +4422,7 @@ class DotPrinter: public NodeVisitor {
 FOR_EACH_NODE_TYPE(DECLARE_VISIT)
 #undef DECLARE_VISIT
  private:
-  std::ostream& os_;
+  v8::base::OStream& os_;
   bool ignore_case_;
 };
 
@@ -4463,7 +4463,7 @@ void DotPrinter::PrintOnFailure(RegExpNode* from, RegExpNode* on_failure) {
 
 class TableEntryBodyPrinter {
  public:
-  TableEntryBodyPrinter(std::ostream& os, ChoiceNode* choice)  // NOLINT
+  TableEntryBodyPrinter(v8::base::OStream& os, ChoiceNode* choice)  // NOLINT
       : os_(os),
         choice_(choice) {}
   void Call(uc16 from, DispatchTable::Entry entry) {
@@ -4477,14 +4477,14 @@ class TableEntryBodyPrinter {
   }
  private:
   ChoiceNode* choice() { return choice_; }
-  std::ostream& os_;
+  v8::base::OStream& os_;
   ChoiceNode* choice_;
 };
 
 
 class TableEntryHeaderPrinter {
  public:
-  explicit TableEntryHeaderPrinter(std::ostream& os)  // NOLINT
+  explicit TableEntryHeaderPrinter(v8::base::OStream& os)  // NOLINT
       : first_(true),
         os_(os) {}
   void Call(uc16 from, DispatchTable::Entry entry) {
@@ -4508,13 +4508,13 @@ class TableEntryHeaderPrinter {
 
  private:
   bool first_;
-  std::ostream& os_;
+  v8::base::OStream& os_;
 };
 
 
 class AttributePrinter {
  public:
-  explicit AttributePrinter(std::ostream& os)  // NOLINT
+  explicit AttributePrinter(v8::base::OStream& os)  // NOLINT
       : os_(os),
         first_(true) {}
   void PrintSeparator() {
@@ -4536,7 +4536,7 @@ class AttributePrinter {
   }
 
  private:
-  std::ostream& os_;
+  v8::base::OStream& os_;
   bool first_;
 };
 
@@ -4705,10 +4705,10 @@ void DotPrinter::VisitAction(ActionNode* that) {
 
 class DispatchTableDumper {
  public:
-  explicit DispatchTableDumper(std::ostream& os) : os_(os) {}
+  explicit DispatchTableDumper(v8::base::OStream& os) : os_(os) {}
   void Call(uc16 key, DispatchTable::Entry entry);
  private:
-  std::ostream& os_;
+  v8::base::OStream& os_;
 };
 
 

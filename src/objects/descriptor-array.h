@@ -151,9 +151,9 @@ class DescriptorArray : public FixedArray {
   void Print();
 
   // Print all the descriptors.
-  void PrintDescriptors(std::ostream& os);  // NOLINT
+  void PrintDescriptors(v8::base::OStream& os);  // NOLINT
 
-  void PrintDescriptorDetails(std::ostream& os, int descriptor,
+  void PrintDescriptorDetails(v8::base::OStream& os, int descriptor,
                               PropertyDetails::PrintMode mode);
 #endif
 

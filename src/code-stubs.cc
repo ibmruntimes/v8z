@@ -87,7 +87,7 @@ bool CodeStub::FindCodeInCache(Code** code_out) {
 
 
 void CodeStub::RecordCodeGeneration(Handle<Code> code) {
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << *this;
   PROFILE(isolate(),
           CodeCreateEvent(CodeEventListener::STUB_TAG,
@@ -178,7 +178,7 @@ Handle<Code> CodeStub::GetCode() {
     if (FLAG_print_code_stubs) {
       CodeTracer::Scope trace_scope(isolate()->GetCodeTracer());
       OFStream os(trace_scope.file());
-      std::ostringstream name;
+      v8::base::OStringStream name;
       name << *this;
       new_object->Disassemble(name.str().c_str(), os);
       os << "\n";
@@ -217,12 +217,12 @@ const char* CodeStub::MajorName(CodeStub::Major major_key) {
 }
 
 
-void CodeStub::PrintBaseName(std::ostream& os) const {  // NOLINT
+void CodeStub::PrintBaseName(v8::base::OStream& os) const {  // NOLINT
   os << MajorName(MajorKey());
 }
 
 
-void CodeStub::PrintName(std::ostream& os) const {  // NOLINT
+void CodeStub::PrintName(v8::base::OStream& os) const {  // NOLINT
   PrintBaseName(os);
   PrintState(os);
 }
@@ -280,7 +280,7 @@ MaybeHandle<Code> CodeStub::GetCode(Isolate* isolate, uint32_t key) {
 }
 
 
-void StringAddStub::PrintBaseName(std::ostream& os) const {  // NOLINT
+void StringAddStub::PrintBaseName(v8::base::OStream& os) const {  // NOLINT
   os << "StringAddStub_" << flags() << "_" << pretenure_flag();
 }
 
@@ -571,7 +571,7 @@ TF_STUB(LoadIndexedInterceptorStub, CodeStubAssembler) {
                   vector);
 }
 
-void CallICStub::PrintState(std::ostream& os) const {  // NOLINT
+void CallICStub::PrintState(v8::base::OStream& os) const {  // NOLINT
   os << convert_mode();
 }
 

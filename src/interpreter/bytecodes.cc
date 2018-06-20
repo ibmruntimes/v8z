@@ -293,7 +293,7 @@ bool Bytecodes::BytecodeHasHandler(Bytecode bytecode,
          Bytecodes::IsBytecodeWithScalableOperands(bytecode);
 }
 
-std::ostream& operator<<(std::ostream& os, const Bytecode& bytecode) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Bytecode& bytecode) {
   return os << Bytecodes::ToString(bytecode);
 }
 

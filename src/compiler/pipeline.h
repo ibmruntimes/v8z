@@ -26,7 +26,12 @@ namespace wasm {
 enum ModuleOrigin : uint8_t;
 }  // namespace wasm
 
+inline v8::base::OStream & operator<<(v8::base::OStream & os, v8::internal::wasm::ModuleOrigin origin) {
+  return os;
+}
+
 namespace compiler {
+
 
 class CallDescriptor;
 class JSGraph;

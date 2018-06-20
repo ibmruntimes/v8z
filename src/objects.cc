@@ -85,7 +85,7 @@
 namespace v8 {
 namespace internal {
 
-std::ostream& operator<<(std::ostream& os, InstanceType instance_type) {
+v8::base::OStream& operator<<(v8::base::OStream& os, InstanceType instance_type) {
   switch (instance_type) {
 #define WRITE_TYPE(TYPE) \
   case TYPE:             \
@@ -2486,16 +2486,16 @@ void Object::ShortPrint(FILE* out) {
 
 
 void Object::ShortPrint(StringStream* accumulator) {
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << Brief(this);
   accumulator->Add(os.str().c_str());
 }
 
 
-void Object::ShortPrint(std::ostream& os) { os << Brief(this); }
+void Object::ShortPrint(v8::base::OStream& os) { os << Brief(this); }
 
 
-std::ostream& operator<<(std::ostream& os, const Brief& v) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Brief& v) {
   if (v.value->IsSmi()) {
     Smi::cast(v.value)->SmiPrint(os);
   } else {
@@ -2506,7 +2506,7 @@ std::ostream& operator<<(std::ostream& os, const Brief& v) {
   return os;
 }
 
-void Smi::SmiPrint(std::ostream& os) const {  // NOLINT
+void Smi::SmiPrint(v8::base::OStream& os) const {  // NOLINT
   os << value();
 }
 
@@ -2757,7 +2757,7 @@ void String::StringShortPrint(StringStream* accumulator, bool show_details) {
 }
 
 
-void String::PrintUC16(std::ostream& os, int start, int end) {  // NOLINT
+void String::PrintUC16(v8::base::OStream& os, int start, int end) {  // NOLINT
   if (end < 0) end = length();
   StringCharacterStream stream(this, start);
   for (int i = start; i < end && stream.HasMore(); i++) {
@@ -3241,7 +3241,7 @@ bool JSObject::IsUnmodifiedApiObject(Object** o) {
   return constructor->initial_map() == heap_object->map();
 }
 
-void HeapObject::HeapObjectShortPrint(std::ostream& os) {  // NOLINT
+void HeapObject::HeapObjectShortPrint(v8::base::OStream& os) {  // NOLINT
   Heap* heap = GetHeap();
   Isolate* isolate = heap->isolate();
   if (!heap->Contains(this)) {
@@ -3443,7 +3443,7 @@ bool HeapNumber::HeapNumberBooleanValue() {
 }
 
 
-void HeapNumber::HeapNumberPrint(std::ostream& os) {  // NOLINT
+void HeapNumber::HeapNumberPrint(v8::base::OStream& os) {  // NOLINT
   os << value();
 }
 
@@ -13660,7 +13660,7 @@ void JSFunction::CalculateInstanceSizeForDerivedClass(
 
 
 // Output the source code without any allocation in the heap.
-std::ostream& operator<<(std::ostream& os, const SourceCodeOf& v) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const SourceCodeOf& v) {
   const SharedFunctionInfo* s = v.value;
   // For some native functions there is no source.
   if (!s->HasSourceCode()) return os << "<No Source>";
@@ -14364,7 +14364,7 @@ const char* Code::ICState2String(InlineCacheState state) {
   UNREACHABLE();
 }
 
-void Code::PrintExtraICState(std::ostream& os,  // NOLINT
+void Code::PrintExtraICState(v8::base::OStream& os,  // NOLINT
                              Kind kind, ExtraICState extra) {
   os << "extra_ic_state = ";
   if ((kind == STORE_IC || kind == KEYED_STORE_IC) &&
@@ -14380,7 +14380,7 @@ void Code::PrintExtraICState(std::ostream& os,  // NOLINT
 #ifdef ENABLE_DISASSEMBLER
 
 namespace {
-void print_pc(std::ostream& os, int pc) {
+void print_pc(v8::base::OStream& os, int pc) {
   if (pc == -1) {
     os << "NA";
   } else {
@@ -14390,7 +14390,7 @@ void print_pc(std::ostream& os, int pc) {
 }  // anonymous namespace
 
 void DeoptimizationInputData::DeoptimizationInputDataPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   disasm::NameConverter converter;
   int const inlined_function_count = InlinedFunctionCount()->value();
   os << "Inlined functions (count = " << inlined_function_count << ")\n";
@@ -14407,13 +14407,13 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
     os << "\n";
   }
   for (int i = 0; i < deopt_count; i++) {
-    os << std::setw(6) << i << "  " << std::setw(15)
-       << BytecodeOffset(i).ToInt() << "  " << std::setw(13);
+    os << v8::base::OStream::setw(6) << i << "  " << v8::base::OStream::setw(15)
+       << BytecodeOffset(i).ToInt() << "  " << v8::base::OStream::setw(13);
 
     print_pc(os, TrampolinePc(i)->value());
-    os << std::setw(7);
+    os << v8::base::OStream::setw(7);
     print_pc(os, Pc(i)->value());
-    os << std::setw(2);
+    os << v8::base::OStream::setw(2);
 
     if (!FLAG_print_code_verbose) {
       os << "\n";
@@ -14435,7 +14435,7 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
     while (iterator.HasNext() &&
            Translation::BEGIN !=
            (opcode = static_cast<Translation::Opcode>(iterator.Next()))) {
-      os << std::setw(47) << "    " << Translation::StringFor(opcode) << " ";
+      os << v8::base::OStream::setw(47) << "    " << Translation::StringFor(opcode) << " ";
 
       switch (opcode) {
         case Translation::BEGIN:
@@ -14603,7 +14603,7 @@ void DeoptimizationInputData::DeoptimizationInputDataPrint(
 }
 
 
-void HandlerTable::HandlerTableRangePrint(std::ostream& os) {
+void HandlerTable::HandlerTableRangePrint(v8::base::OStream& os) {
   os << "   from   to       hdlr\n";
   for (int i = 0; i < length(); i += kRangeEntrySize) {
     int pc_start = Smi::ToInt(get(i + kRangeStartIndex));
@@ -14612,27 +14612,27 @@ void HandlerTable::HandlerTableRangePrint(std::ostream& os) {
     int handler_offset = HandlerOffsetField::decode(handler_field);
     CatchPrediction prediction = HandlerPredictionField::decode(handler_field);
     int data = Smi::ToInt(get(i + kRangeDataIndex));
-    os << "  (" << std::setw(4) << pc_start << "," << std::setw(4) << pc_end
-       << ")  ->  " << std::setw(4) << handler_offset
+    os << "  (" << v8::base::OStream::setw(4) << pc_start << "," << v8::base::OStream::setw(4) << pc_end
+       << ")  ->  " << v8::base::OStream::setw(4) << handler_offset
        << " (prediction=" << prediction << ", data=" << data << ")\n";
   }
 }
 
 
-void HandlerTable::HandlerTableReturnPrint(std::ostream& os) {
+void HandlerTable::HandlerTableReturnPrint(v8::base::OStream& os) {
   os << "   off      hdlr (c)\n";
   for (int i = 0; i < length(); i += kReturnEntrySize) {
     int pc_offset = Smi::ToInt(get(i + kReturnOffsetIndex));
     int handler_field = Smi::ToInt(get(i + kReturnHandlerIndex));
     int handler_offset = HandlerOffsetField::decode(handler_field);
     CatchPrediction prediction = HandlerPredictionField::decode(handler_field);
-    os << "  " << std::setw(4) << pc_offset << "  ->  " << std::setw(4)
+    os << "  " << v8::base::OStream::setw(4) << pc_offset << "  ->  " << v8::base::OStream::setw(4)
        << handler_offset << " (prediction=" << prediction << ")\n";
   }
 }
 
 
-void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
+void Code::Disassemble(const char* name, v8::base::OStream& os) {  // NOLINT
   os << "kind = " << Kind2String(kind()) << "\n";
   if (IsCodeStubOrIC()) {
     const char* n = CodeStub::MajorName(CodeStub::GetMajorKey(this));
@@ -14716,8 +14716,8 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
   if (!it.done()) {
     os << "Source positions:\n pc offset  position\n";
     for (; !it.done(); it.Advance()) {
-      os << std::setw(10) << std::hex << it.code_offset() << std::dec
-         << std::setw(10) << it.source_position().ScriptOffset()
+      os << v8::base::OStream::setw(10) << std::hex << it.code_offset() << std::dec
+         << v8::base::OStream::setw(10) << it.source_position().ScriptOffset()
          << (it.is_statement() ? "  statement" : "") << "\n";
     }
     os << "\n";
@@ -14736,12 +14736,12 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
     for (unsigned i = 0; i < table.length(); i++) {
       unsigned pc_offset = table.GetPcOffset(i);
       os << static_cast<const void*>(instruction_start() + pc_offset) << "  ";
-      os << std::setw(4) << std::hex << pc_offset << std::dec << "  ";
+      os << v8::base::OStream::setw(4) << std::hex << pc_offset << std::dec << "  ";
       table.PrintEntry(i, os);
       os << " (sp -> fp)  ";
       SafepointEntry entry = table.GetEntry(i);
       if (entry.deoptimization_index() != Safepoint::kNoDeoptimizationIndex) {
-        os << std::setw(6) << entry.deoptimization_index();
+        os << v8::base::OStream::setw(6) << entry.deoptimization_index();
       } else {
         os << "<none>";
       }
@@ -14763,9 +14763,9 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
       os << "ast_id  pc_offset  loop_depth\n";
 
       for (uint32_t i = 0; i < back_edges.length(); i++) {
-        os << std::setw(6) << back_edges.ast_id(i).ToInt() << "  "
-           << std::setw(9) << std::hex << back_edges.pc_offset(i) << std::dec
-           << "  " << std::setw(10) << back_edges.loop_depth(i) << "\n";
+        os << v8::base::OStream::setw(6) << back_edges.ast_id(i).ToInt() << "  "
+           << v8::base::OStream::setw(9) << std::hex << back_edges.pc_offset(i) << std::dec
+           << "  " << v8::base::OStream::setw(10) << back_edges.loop_depth(i) << "\n";
       }
 
       os << "\n";
@@ -14809,7 +14809,7 @@ void Code::Disassemble(const char* name, std::ostream& os) {  // NOLINT
 #endif  // ENABLE_DISASSEMBLER
 
 
-void BytecodeArray::Disassemble(std::ostream& os) {
+void BytecodeArray::Disassemble(v8::base::OStream& os) {
   os << "Parameter count " << parameter_count() << "\n";
   os << "Frame size " << frame_size() << "\n";
 
@@ -14820,7 +14820,7 @@ void BytecodeArray::Disassemble(std::ostream& os) {
   while (!iterator.done()) {
     if (!source_positions.done() &&
         iterator.current_offset() == source_positions.code_offset()) {
-      os << std::setw(5) << source_positions.source_position().ScriptOffset();
+      os << v8::base::OStream::setw(5) << source_positions.source_position().ScriptOffset();
       os << (source_positions.is_statement() ? " S> " : " E> ");
       source_positions.Advance();
     } else {
@@ -14828,7 +14828,7 @@ void BytecodeArray::Disassemble(std::ostream& os) {
     }
     const uint8_t* current_address = base_address + iterator.current_offset();
     os << reinterpret_cast<const void*>(current_address) << " @ "
-       << std::setw(4) << iterator.current_offset() << " : ";
+       << v8::base::OStream::setw(4) << iterator.current_offset() << " : ";
     interpreter::BytecodeDecoder::Decode(os, current_address,
                                          parameter_count());
     if (interpreter::Bytecodes::IsJump(iterator.current_bytecode())) {
@@ -15862,7 +15862,7 @@ int JSObject::GetFastElementsUsage() {
 // we keep it here instead to satisfy certain compilers.
 #ifdef OBJECT_PRINT
 template <typename Derived, typename Shape>
-void Dictionary<Derived, Shape>::Print(std::ostream& os) {
+void Dictionary<Derived, Shape>::Print(v8::base::OStream& os) {
   DisallowHeapAllocation no_gc;
   Isolate* isolate = this->GetIsolate();
   Derived* dictionary = Derived::cast(this);
@@ -15969,7 +15969,7 @@ const char* Symbol::PrivateSymbolToName() const {
 }
 
 
-void Symbol::SymbolShortPrint(std::ostream& os) {
+void Symbol::SymbolShortPrint(v8::base::OStream& os) {
   os << "<Symbol:";
   if (!name()->IsUndefined(GetIsolate())) {
     os << " ";

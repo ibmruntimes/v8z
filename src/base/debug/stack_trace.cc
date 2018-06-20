@@ -30,7 +30,7 @@ const void* const* StackTrace::Addresses(size_t* count) const {
 }
 
 std::string StackTrace::ToString() const {
-  std::stringstream stream;
+  v8::base::OStringStream stream;
   OutputToStream(&stream);
   return stream.str();
 }

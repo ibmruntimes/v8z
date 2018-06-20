@@ -2101,7 +2101,7 @@ class ThreadImpl {
     }
 
 #if DEBUG
-    std::ostringstream oss;
+    v8::base::OStringStream oss;
     target->HeapObjectShortPrint(oss);
     TRACE("  => Calling imported function %s\n", oss.str().c_str());
 #endif

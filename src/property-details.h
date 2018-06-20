@@ -380,8 +380,8 @@ class PropertyDetails BASE_EMBEDDED {
     kForTransitions = kPrintAttributes,
     kPrintFull = -1,
   };
-  void PrintAsSlowTo(std::ostream& out);
-  void PrintAsFastTo(std::ostream& out, PrintMode mode = kPrintFull);
+  void PrintAsSlowTo(v8::base::OStream& out);
+  void PrintAsFastTo(v8::base::OStream& out, PrintMode mode = kPrintFull);
 
  private:
   PropertyDetails(int value, int pointer) {
@@ -418,7 +418,7 @@ inline PropertyConstness GeneralizeConstness(PropertyConstness a,
   return a == kMutable ? kMutable : b;
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PropertyAttributes& attributes);
 }  // namespace internal
 }  // namespace v8

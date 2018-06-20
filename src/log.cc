@@ -853,7 +853,7 @@ void Logger::CodeDeoptEvent(Code* code, DeoptKind kind, Address pc,
   msg.AppendAddress(code->address());
 
   // Deoptimization position.
-  std::ostringstream deopt_location;
+  v8::base::OStringStream deopt_location;
   int inlining_id = -1;
   int script_offset = -1;
   if (info.position.IsKnown()) {
@@ -1694,13 +1694,13 @@ void Logger::LogAccessorCallbacks() {
 }
 
 
-static void AddIsolateIdIfNeeded(std::ostream& os,  // NOLINT
+static void AddIsolateIdIfNeeded(v8::base::OStream& os,  // NOLINT
                                  Isolate* isolate) {
   if (FLAG_logfile_per_isolate) os << "isolate-" << isolate << "-";
 }
 
 
-static void PrepareLogFileName(std::ostream& os,  // NOLINT
+static void PrepareLogFileName(v8::base::OStream& os,  // NOLINT
                                Isolate* isolate, const char* file_name) {
   int dir_separator_count = 0;
   for (const char* p = file_name; *p; p++) {
@@ -1749,7 +1749,7 @@ bool Logger::SetUp(Isolate* isolate) {
   if (is_initialized_) return true;
   is_initialized_ = true;
 
-  std::ostringstream log_file_name;
+  v8::base::OStringStream log_file_name;
   PrepareLogFileName(log_file_name, isolate, FLAG_logfile);
   log_->Initialize(log_file_name.str().c_str());
 

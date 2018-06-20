@@ -27,7 +27,7 @@ inline size_t hash_value(BinaryOperationHint hint) {
   return static_cast<unsigned>(hint);
 }
 
-std::ostream& operator<<(std::ostream&, BinaryOperationHint);
+v8::base::OStream& operator<<(v8::base::OStream&, BinaryOperationHint);
 
 // Type hints for an compare operation.
 enum class CompareOperationHint : uint8_t {
@@ -46,7 +46,7 @@ inline size_t hash_value(CompareOperationHint hint) {
   return static_cast<unsigned>(hint);
 }
 
-std::ostream& operator<<(std::ostream&, CompareOperationHint);
+v8::base::OStream& operator<<(v8::base::OStream&, CompareOperationHint);
 
 // Type hints for the ToBoolean type conversion.
 enum class ToBooleanHint : uint16_t {
@@ -65,12 +65,12 @@ enum class ToBooleanHint : uint16_t {
   kCanBeUndetectable = kReceiver,
 };
 
-std::ostream& operator<<(std::ostream&, ToBooleanHint);
+v8::base::OStream& operator<<(v8::base::OStream&, ToBooleanHint);
 std::string ToString(ToBooleanHint);
 
 typedef base::Flags<ToBooleanHint, uint16_t> ToBooleanHints;
 
-std::ostream& operator<<(std::ostream&, ToBooleanHints);
+v8::base::OStream& operator<<(v8::base::OStream&, ToBooleanHints);
 std::string ToString(ToBooleanHints);
 
 DEFINE_OPERATORS_FOR_FLAGS(ToBooleanHints)
@@ -90,7 +90,7 @@ enum StringAddFlags {
   STRING_ADD_CONVERT_RIGHT = STRING_ADD_CHECK_RIGHT | STRING_ADD_CONVERT
 };
 
-std::ostream& operator<<(std::ostream& os, const StringAddFlags& flags);
+v8::base::OStream& operator<<(v8::base::OStream& os, const StringAddFlags& flags);
 
 }  // namespace internal
 }  // namespace v8

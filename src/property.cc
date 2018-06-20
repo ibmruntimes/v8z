@@ -12,7 +12,7 @@
 namespace v8 {
 namespace internal {
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PropertyAttributes& attributes) {
   os << "[";
   os << (((attributes & READ_ONLY) == 0) ? "W" : "_");    // writable
@@ -55,7 +55,7 @@ Descriptor Descriptor::DataConstant(Handle<Name> key, int field_index,
 }
 
 // Outputs PropertyDetails as a dictionary details.
-void PropertyDetails::PrintAsSlowTo(std::ostream& os) {
+void PropertyDetails::PrintAsSlowTo(v8::base::OStream& os) {
   os << "(";
   if (constness() == kConst) os << "const ";
   os << (kind() == kData ? "data" : "accessor");
@@ -64,7 +64,7 @@ void PropertyDetails::PrintAsSlowTo(std::ostream& os) {
 }
 
 // Outputs PropertyDetails as a descriptor array details.
-void PropertyDetails::PrintAsFastTo(std::ostream& os, PrintMode mode) {
+void PropertyDetails::PrintAsFastTo(v8::base::OStream& os, PrintMode mode) {
   os << "(";
   if (constness() == kConst) os << "const ";
   os << (kind() == kData ? "data" : "accessor");

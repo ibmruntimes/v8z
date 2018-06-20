@@ -323,7 +323,7 @@ class V8_BASE_EXPORT Time final : public time_internal::TimeBase<Time> {
   explicit Time(int64_t us) : TimeBase(us) {}
 };
 
-V8_BASE_EXPORT std::ostream& operator<<(std::ostream&, const Time&);
+V8_BASE_EXPORT v8::base::OStream& operator<<(v8::base::OStream&, const Time&);
 
 inline Time operator+(const TimeDelta& delta, const Time& time) {
   return time + delta;

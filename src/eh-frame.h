@@ -74,7 +74,7 @@ class V8_EXPORT_PRIVATE EhFrameWriter {
   //
   // It is effectively a valid eh_frame_hdr with an empty look up table.
   //
-  static void WriteEmptyEhFrame(std::ostream& stream);  // NOLINT
+  static void WriteEmptyEhFrame(v8::base::OStream& stream);  // NOLINT
 
   // Write the CIE and FDE header. Call it before any other method.
   void Initialize();
@@ -279,10 +279,10 @@ class EhFrameDisassembler final {
     DCHECK_LT(start, end);
   }
 
-  void DisassembleToStream(std::ostream& stream);  // NOLINT
+  void DisassembleToStream(v8::base::OStream& stream);  // NOLINT
 
  private:
-  static void DumpDwarfDirectives(std::ostream& stream,  // NOLINT
+  static void DumpDwarfDirectives(v8::base::OStream& stream,  // NOLINT
                                   const byte* start, const byte* end);
 
   static const char* DwarfRegisterCodeToString(int code);

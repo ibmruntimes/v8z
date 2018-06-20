@@ -66,7 +66,7 @@ SafepointEntry SafepointTable::FindEntry(Address pc) const {
 
 
 void SafepointTable::PrintEntry(unsigned index,
-                                std::ostream& os) const {  // NOLINT
+                                v8::base::OStream& os) const {  // NOLINT
   disasm::NameConverter converter;
   SafepointEntry entry = GetEntry(index);
   uint8_t* bits = entry.bits();
@@ -91,7 +91,7 @@ void SafepointTable::PrintEntry(unsigned index,
 }
 
 
-void SafepointTable::PrintBits(std::ostream& os,  // NOLINT
+void SafepointTable::PrintBits(v8::base::OStream& os,  // NOLINT
                                uint8_t byte, int digits) {
   DCHECK(digits >= 0 && digits <= kBitsPerByte);
   for (int i = 0; i < digits; i++) {

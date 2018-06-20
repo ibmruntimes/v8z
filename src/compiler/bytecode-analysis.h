@@ -90,7 +90,7 @@ class V8_EXPORT_PRIVATE BytecodeAnalysis BASE_EMBEDDED {
   // Gets the out-liveness for the bytecode at {offset}.
   const BytecodeLivenessState* GetOutLivenessFor(int offset) const;
 
-  std::ostream& PrintLivenessTo(std::ostream& os) const;
+  v8::base::OStream& PrintLivenessTo(v8::base::OStream& os) const;
 
  private:
   struct LoopStackEntry {

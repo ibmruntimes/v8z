@@ -44,7 +44,7 @@ class Verifier::Visitor {
  private:
   void CheckNotTyped(Node* node) {
     if (NodeProperties::IsTyped(node)) {
-      std::ostringstream str;
+      v8::base::OStringStream str;
       str << "TypeError: node #" << node->id() << ":" << *node->op()
           << " should never have a type";
       FATAL(str.str().c_str());
@@ -52,7 +52,7 @@ class Verifier::Visitor {
   }
   void CheckTypeIs(Node* node, Type* type) {
     if (typing == TYPED && !NodeProperties::GetType(node)->Is(type)) {
-      std::ostringstream str;
+      v8::base::OStringStream str;
       str << "TypeError: node #" << node->id() << ":" << *node->op()
           << " type ";
       NodeProperties::GetType(node)->PrintTo(str);
@@ -63,7 +63,7 @@ class Verifier::Visitor {
   }
   void CheckTypeMaybe(Node* node, Type* type) {
     if (typing == TYPED && !NodeProperties::GetType(node)->Maybe(type)) {
-      std::ostringstream str;
+      v8::base::OStringStream str;
       str << "TypeError: node #" << node->id() << ":" << *node->op()
           << " type ";
       NodeProperties::GetType(node)->PrintTo(str);
@@ -75,7 +75,7 @@ class Verifier::Visitor {
   void CheckValueInputIs(Node* node, int i, Type* type) {
     Node* input = NodeProperties::GetValueInput(node, i);
     if (typing == TYPED && !NodeProperties::GetType(input)->Is(type)) {
-      std::ostringstream str;
+      v8::base::OStringStream str;
       str << "TypeError: node #" << node->id() << ":" << *node->op()
           << "(input @" << i << " = " << input->opcode() << ":"
           << input->op()->mnemonic() << ") type ";
@@ -87,7 +87,7 @@ class Verifier::Visitor {
   }
   void CheckOutput(Node* node, Node* use, int count, const char* kind) {
     if (count <= 0) {
-      std::ostringstream str;
+      v8::base::OStringStream str;
       str << "GraphError: node #" << node->id() << ":" << *node->op()
           << " does not produce " << kind << " output used by node #"
           << use->id() << ":" << *use->op();

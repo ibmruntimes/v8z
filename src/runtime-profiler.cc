@@ -88,7 +88,7 @@ char const* OptimizationReasonToString(OptimizationReason reason) {
   return reasons[index];
 }
 
-std::ostream& operator<<(std::ostream& os, OptimizationReason reason) {
+v8::base::OStream& operator<<(v8::base::OStream& os, OptimizationReason reason) {
   return os << OptimizationReasonToString(reason);
 }
 

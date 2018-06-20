@@ -320,8 +320,8 @@ class V8_EXPORT_PRIVATE CallDescriptor final
 
 DEFINE_OPERATORS_FOR_FLAGS(CallDescriptor::Flags)
 
-std::ostream& operator<<(std::ostream& os, const CallDescriptor& d);
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os, const CallDescriptor& d);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const CallDescriptor::Kind& k);
 
 // Defines the linkage for a compilation, including the calling conventions

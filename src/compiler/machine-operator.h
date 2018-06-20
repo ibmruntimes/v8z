@@ -68,7 +68,7 @@ bool operator!=(StoreRepresentation, StoreRepresentation);
 
 size_t hash_value(StoreRepresentation);
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&, StoreRepresentation);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&, StoreRepresentation);
 
 StoreRepresentation const& StoreRepresentationOf(Operator const*);
 
@@ -112,7 +112,7 @@ bool operator!=(StackSlotRepresentation, StackSlotRepresentation);
 
 size_t hash_value(StackSlotRepresentation);
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream&,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream&,
                                            StackSlotRepresentation);
 
 StackSlotRepresentation const& StackSlotRepresentationOf(Operator const* op);

@@ -504,7 +504,7 @@ void CodeGenerator::AssembleSourcePosition(SourcePosition source_position) {
   if (FLAG_code_comments) {
     CompilationInfo* info = this->info();
     if (!info->parse_info()) return;
-    std::ostringstream buffer;
+    v8::base::OStringStream buffer;
     buffer << "-- ";
     if (FLAG_trace_turbo ||
         tasm()->isolate()->concurrent_recompilation_enabled()) {

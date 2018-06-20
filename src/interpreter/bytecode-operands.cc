@@ -64,19 +64,19 @@ const char* OperandSizeToString(OperandSize operand_size) {
 
 }  // namespace
 
-std::ostream& operator<<(std::ostream& os, const AccumulatorUse& use) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AccumulatorUse& use) {
   return os << AccumulatorUseToString(use);
 }
 
-std::ostream& operator<<(std::ostream& os, const OperandSize& operand_size) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const OperandSize& operand_size) {
   return os << OperandSizeToString(operand_size);
 }
 
-std::ostream& operator<<(std::ostream& os, const OperandScale& operand_scale) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const OperandScale& operand_scale) {
   return os << OperandScaleToString(operand_scale);
 }
 
-std::ostream& operator<<(std::ostream& os, const OperandType& operand_type) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const OperandType& operand_type) {
   return os << OperandTypeToString(operand_type);
 }
 

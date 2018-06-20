@@ -16,22 +16,22 @@ BasicBlockProfiler::Data::Data(size_t n_blocks)
 BasicBlockProfiler::Data::~Data() {}
 
 
-static void InsertIntoString(std::ostringstream* os, std::string* string) {
+static void InsertIntoString(v8::base::OStringStream* os, std::string* string) {
   string->insert(0, os->str());
 }
 
 
-void BasicBlockProfiler::Data::SetCode(std::ostringstream* os) {
+void BasicBlockProfiler::Data::SetCode(v8::base::OStringStream* os) {
   InsertIntoString(os, &code_);
 }
 
 
-void BasicBlockProfiler::Data::SetFunctionName(std::ostringstream* os) {
+void BasicBlockProfiler::Data::SetFunctionName(v8::base::OStringStream* os) {
   InsertIntoString(os, &function_name_);
 }
 
 
-void BasicBlockProfiler::Data::SetSchedule(std::ostringstream* os) {
+void BasicBlockProfiler::Data::SetSchedule(v8::base::OStringStream* os) {
   InsertIntoString(os, &schedule_);
 }
 
@@ -79,7 +79,7 @@ void BasicBlockProfiler::ResetCounts() {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const BasicBlockProfiler& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const BasicBlockProfiler& p) {
   os << "---- Start Profiling Data ----" << std::endl;
   typedef BasicBlockProfiler::DataList::const_iterator iterator;
   for (iterator i = p.data_list_.begin(); i != p.data_list_.end(); ++i) {
@@ -90,7 +90,7 @@ std::ostream& operator<<(std::ostream& os, const BasicBlockProfiler& p) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const BasicBlockProfiler::Data& d) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const BasicBlockProfiler::Data& d) {
   const char* name = "unknown function";
   if (!d.function_name_.empty()) {
     name = d.function_name_.c_str();

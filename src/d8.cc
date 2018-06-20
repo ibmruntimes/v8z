@@ -1907,7 +1907,7 @@ void Shell::WriteIgnitionDispatchCountersFile(v8::Isolate* isolate) {
   Local<Object> dispatch_counters = reinterpret_cast<i::Isolate*>(isolate)
                                         ->interpreter()
                                         ->GetDispatchCountersObject();
-  std::ofstream dispatch_counters_stream(
+  v8::internal::OFStream dispatch_counters_stream(
       i::FLAG_trace_ignition_dispatches_output_file);
   dispatch_counters_stream << *String::Utf8Value(
       JSON::Stringify(context, dispatch_counters).ToLocalChecked());
@@ -1931,7 +1931,7 @@ void WriteLcovDataForRange(std::vector<uint32_t>& lines, int start_line,
   for (int k = start_line + 1; k < end_line; k++) lines[k] = count;
 }
 
-void WriteLcovDataForNamedRange(std::ostream& sink,
+void WriteLcovDataForNamedRange(v8::base::OStream& sink,
                                 std::vector<uint32_t>& lines, std::string name,
                                 int start_line, int end_line, uint32_t count) {
   WriteLcovDataForRange(lines, start_line, end_line, count);
@@ -1945,7 +1945,7 @@ void Shell::WriteLcovData(v8::Isolate* isolate, const char* file) {
   if (!file) return;
   HandleScope handle_scope(isolate);
   debug::Coverage coverage = debug::Coverage::CollectPrecise(isolate);
-  std::ofstream sink(file, std::ofstream::app);
+  v8::internal::OFStream sink(file, std::ios_base::app);
   for (size_t i = 0; i < coverage.ScriptCount(); i++) {
     debug::Coverage::ScriptData script_data = coverage.GetScriptData(i);
     Local<debug::Script> script = script_data.GetScript();
@@ -1973,7 +1973,7 @@ void Shell::WriteLcovData(v8::Isolate* isolate, const char* file) {
         uint32_t count = function_data.Count();
 
         Local<String> name;
-        std::stringstream name_stream;
+        v8::base::OStringStream name_stream;
         if (function_data.Name().ToLocal(&name)) {
           name_stream << ToSTLString(name);
         } else {
@@ -3141,7 +3141,7 @@ void Shell::CleanupWorkers() {
 }
 
 int Shell::Main(int argc, char* argv[]) {
-  std::ofstream trace_file;
+    std::ofstream trace_file;
 #if (defined(_WIN32) || defined(_WIN64))
   UINT new_flags =
       SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX;

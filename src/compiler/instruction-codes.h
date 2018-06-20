@@ -157,7 +157,7 @@ enum ArchOpcode {
 #undef COUNT_ARCH_OPCODE
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const ArchOpcode& ao);
 
 // Addressing modes represent the "shape" of inputs to an instruction.
@@ -177,7 +177,7 @@ enum AddressingMode {
 #undef COUNT_ADDRESSING_MODE
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const AddressingMode& am);
 
 // The mode of the flags continuation (see below).
@@ -189,7 +189,7 @@ enum FlagsMode {
   kFlags_trap = 4
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const FlagsMode& fm);
 
 // The condition of flags continuation (see below).
@@ -226,7 +226,7 @@ inline FlagsCondition NegateFlagsCondition(FlagsCondition condition) {
 
 FlagsCondition CommuteFlagsCondition(FlagsCondition condition);
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const FlagsCondition& fc);
 
 // The InstructionCode is an opaque, target-specific integer that encodes

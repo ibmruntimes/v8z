@@ -17,7 +17,7 @@ namespace v8 {
 namespace internal {
 namespace compiler {
 
-std::ostream& operator<<(std::ostream& os, CallFrequency f) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CallFrequency f) {
   if (f.IsUnknown()) return os << "unknown";
   return os << f.value();
 }
@@ -63,7 +63,7 @@ ToBooleanHints ToBooleanHintsOf(Operator const* op) {
   return OpParameter<ToBooleanHints>(op);
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          ConstructForwardVarargsParameters const& p) {
   return os << p.arity() << ", " << p.start_index();
 }
@@ -89,7 +89,7 @@ size_t hash_value(ConstructParameters const& p) {
   return base::hash_combine(p.arity(), p.frequency(), p.feedback());
 }
 
-std::ostream& operator<<(std::ostream& os, ConstructParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ConstructParameters const& p) {
   return os << p.arity() << ", " << p.frequency();
 }
 
@@ -112,7 +112,7 @@ size_t hash_value(SpreadWithArityParameter const& p) {
   return base::hash_combine(p.arity());
 }
 
-std::ostream& operator<<(std::ostream& os, SpreadWithArityParameter const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, SpreadWithArityParameter const& p) {
   return os << p.arity();
 }
 
@@ -136,7 +136,7 @@ size_t hash_value(StringConcatParameter const& p) {
   return base::hash_combine(p.operand_count());
 }
 
-std::ostream& operator<<(std::ostream& os, StringConcatParameter const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, StringConcatParameter const& p) {
   return os << p.operand_count();
 }
 
@@ -145,7 +145,7 @@ StringConcatParameter const& StringConcatParameterOf(Operator const* op) {
   return OpParameter<StringConcatParameter>(op);
 }
 
-std::ostream& operator<<(std::ostream& os, CallParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CallParameters const& p) {
   return os << p.arity() << ", " << p.frequency() << ", " << p.convert_mode();
 }
 
@@ -154,7 +154,7 @@ const CallParameters& CallParametersOf(const Operator* op) {
   return OpParameter<CallParameters>(op);
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          CallForwardVarargsParameters const& p) {
   return os << p.arity() << ", " << p.start_index();
 }
@@ -183,7 +183,7 @@ size_t hash_value(CallRuntimeParameters const& p) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, CallRuntimeParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CallRuntimeParameters const& p) {
   return os << p.id() << ", " << p.arity();
 }
 
@@ -219,7 +219,7 @@ size_t hash_value(ContextAccess const& access) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, ContextAccess const& access) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ContextAccess const& access) {
   return os << access.depth() << ", " << access.index() << ", "
             << access.immutable();
 }
@@ -251,7 +251,7 @@ size_t hash_value(CreateCatchContextParameters const& parameters) {
                             parameters.scope_info().location());
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          CreateCatchContextParameters const& parameters) {
   return os << Brief(*parameters.catch_name()) << ", "
             << Brief(*parameters.scope_info());
@@ -283,7 +283,7 @@ size_t hash_value(CreateFunctionContextParameters const& parameters) {
                             static_cast<int>(parameters.scope_type()));
 }
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          CreateFunctionContextParameters const& parameters) {
   return os << parameters.slot_count() << ", " << parameters.scope_type();
 }
@@ -309,7 +309,7 @@ size_t hash_value(StoreNamedOwnParameters const& p) {
   return base::hash_combine(p.name().location(), p.feedback());
 }
 
-std::ostream& operator<<(std::ostream& os, StoreNamedOwnParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, StoreNamedOwnParameters const& p) {
   return os << Brief(*p.name());
 }
 
@@ -330,7 +330,7 @@ size_t hash_value(FeedbackParameter const& p) {
   return base::hash_combine(p.feedback());
 }
 
-std::ostream& operator<<(std::ostream& os, FeedbackParameter const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, FeedbackParameter const& p) {
   return os;
 }
 
@@ -357,7 +357,7 @@ size_t hash_value(NamedAccess const& p) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, NamedAccess const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, NamedAccess const& p) {
   return os << Brief(*p.name()) << ", " << p.language_mode();
 }
 
@@ -369,7 +369,7 @@ NamedAccess const& NamedAccessOf(const Operator* op) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, PropertyAccess const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, PropertyAccess const& p) {
   return os << p.language_mode();
 }
 
@@ -416,7 +416,7 @@ size_t hash_value(LoadGlobalParameters const& p) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, LoadGlobalParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, LoadGlobalParameters const& p) {
   return os << Brief(*p.name()) << ", " << p.typeof_mode();
 }
 
@@ -447,7 +447,7 @@ size_t hash_value(StoreGlobalParameters const& p) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, StoreGlobalParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, StoreGlobalParameters const& p) {
   return os << p.language_mode() << ", " << Brief(*p.name());
 }
 
@@ -482,7 +482,7 @@ size_t hash_value(CreateArrayParameters const& p) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, CreateArrayParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CreateArrayParameters const& p) {
   os << p.arity();
   if (!p.site().is_null()) os << ", " << Brief(*p.site());
   return os;
@@ -515,7 +515,7 @@ size_t hash_value(CreateClosureParameters const& p) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, CreateClosureParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CreateClosureParameters const& p) {
   return os << p.pretenure() << ", " << Brief(*p.shared_info());
 }
 
@@ -546,7 +546,7 @@ size_t hash_value(CreateLiteralParameters const& p) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, CreateLiteralParameters const& p) {
+v8::base::OStream& operator<<(v8::base::OStream& os, CreateLiteralParameters const& p) {
   return os << Brief(*p.constant()) << ", " << p.length() << ", " << p.flags()
             << ", " << p.index();
 }

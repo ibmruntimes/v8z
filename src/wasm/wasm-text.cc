@@ -34,7 +34,7 @@ bool IsValidFunctionName(const Vector<const char> &name) {
 
 void wasm::PrintWasmText(const WasmModule *module,
                          const ModuleWireBytes &wire_bytes, uint32_t func_index,
-                         std::ostream &os,
+                         v8::base::OStream &os,
                          debug::WasmDisassembly::OffsetTable *offset_table) {
   DCHECK_NOT_NULL(module);
   DCHECK_GT(module->functions.size(), func_index);

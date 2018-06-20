@@ -39,7 +39,7 @@ class V8_EXPORT_PRIVATE BytecodeDecoder final {
                                         OperandScale operand_scale);
 
   // Decode a single bytecode and operands to |os|.
-  static std::ostream& Decode(std::ostream& os, const uint8_t* bytecode_start,
+  static v8::base::OStream& Decode(v8::base::OStream& os, const uint8_t* bytecode_start,
                               int number_of_parameters);
 };
 

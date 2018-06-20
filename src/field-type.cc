@@ -71,7 +71,7 @@ bool FieldType::NowIs(FieldType* other) {
 
 bool FieldType::NowIs(Handle<FieldType> other) { return NowIs(*other); }
 
-void FieldType::PrintTo(std::ostream& os) {
+void FieldType::PrintTo(v8::base::OStream& os) {
   if (IsAny()) {
     os << "Any";
   } else if (IsNone()) {

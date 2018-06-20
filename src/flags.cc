@@ -212,7 +212,7 @@ static const char* Type2String(Flag::FlagType type) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const Flag& flag) {  // NOLINT
+v8::base::OStream& operator<<(v8::base::OStream& os, const Flag& flag) {  // NOLINT
   switch (flag.type()) {
     case Flag::TYPE_BOOL:
       os << (*flag.bool_variable() ? "true" : "false");
@@ -265,19 +265,19 @@ List<const char*>* FlagList::argv() {
       }
       {
         bool disabled = f->type() == Flag::TYPE_BOOL && !*f->bool_variable();
-        std::ostringstream os;
+        v8::base::OStringStream os;
         os << (disabled ? "--no" : "--") << f->name();
         args->Add(StrDup(os.str().c_str()));
       }
       if (f->type() != Flag::TYPE_BOOL) {
-        std::ostringstream os;
+        v8::base::OStringStream os;
         os << *f;
         args->Add(StrDup(os.str().c_str()));
       }
     }
   }
   if (args_flag != NULL) {
-    std::ostringstream os;
+    v8::base::OStringStream os;
     os << "--" << args_flag->name();
     args->Add(StrDup(os.str().c_str()));
     JSArguments jsargs = *args_flag->args_variable();
@@ -620,7 +620,7 @@ static uint32_t flag_hash = 0;
 
 
 void ComputeFlagListHash() {
-  std::ostringstream modified_args_as_string;
+  v8::base::OStringStream modified_args_as_string;
 #ifdef DEBUG
   modified_args_as_string << "debug";
 #endif  // DEBUG

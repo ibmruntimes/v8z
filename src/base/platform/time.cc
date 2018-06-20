@@ -441,7 +441,7 @@ double Time::ToJsTime() const {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const Time& time) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Time& time) {
   return os << time.ToJsTime();
 }
 

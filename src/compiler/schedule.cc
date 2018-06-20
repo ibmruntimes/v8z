@@ -98,7 +98,7 @@ BasicBlock* BasicBlock::GetCommonDominator(BasicBlock* b1, BasicBlock* b2) {
 
 void BasicBlock::Print() { OFStream(stdout) << this; }
 
-std::ostream& operator<<(std::ostream& os, const BasicBlock& block) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const BasicBlock& block) {
   os << "B" << block.id();
 #if DEBUG
   AssemblerDebugInfo info = block.debug_info();
@@ -117,7 +117,7 @@ std::ostream& operator<<(std::ostream& os, const BasicBlock& block) {
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const BasicBlock::Control& c) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const BasicBlock::Control& c) {
   switch (c) {
     case BasicBlock::kNone:
       return os << "none";
@@ -142,7 +142,7 @@ std::ostream& operator<<(std::ostream& os, const BasicBlock::Control& c) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const BasicBlock::Id& id) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const BasicBlock::Id& id) {
   return os << id.ToSize();
 }
 
@@ -488,7 +488,7 @@ void Schedule::SetBlockForNode(BasicBlock* block, Node* node) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, const Schedule& s) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const Schedule& s) {
   for (BasicBlock* block :
        ((s.RpoBlockCount() == 0) ? *s.all_blocks() : *s.rpo_order())) {
     if (block->rpo_number() == -1) {

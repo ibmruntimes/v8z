@@ -133,12 +133,12 @@ std::string Register::ToString(int parameter_count) const {
     if (parameter_index == 0) {
       return std::string("<this>");
     } else {
-      std::ostringstream s;
+      v8::base::OStringStream s;
       s << "a" << parameter_index - 1;
       return s.str();
     }
   } else {
-    std::ostringstream s;
+    v8::base::OStringStream s;
     s << "r" << index();
     return s.str();
   }

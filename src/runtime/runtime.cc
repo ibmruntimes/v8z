@@ -159,7 +159,7 @@ const Runtime::Function* Runtime::RuntimeFunctionTable(Isolate* isolate) {
 }
 
 
-std::ostream& operator<<(std::ostream& os, Runtime::FunctionId id) {
+v8::base::OStream& operator<<(v8::base::OStream& os, Runtime::FunctionId id) {
   return os << Runtime::FunctionForId(id)->name;
 }
 

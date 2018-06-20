@@ -9,7 +9,7 @@
 namespace v8 {
 namespace internal {
 
-std::ostream& operator<<(std::ostream& out, const SourcePositionInfo& pos) {
+v8::base::OStream& operator<<(v8::base::OStream& out, const SourcePositionInfo& pos) {
   Handle<SharedFunctionInfo> function(pos.function);
   String* name = nullptr;
   if (function->script()->IsScript()) {
@@ -28,7 +28,7 @@ std::ostream& operator<<(std::ostream& out, const SourcePositionInfo& pos) {
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out,
+v8::base::OStream& operator<<(v8::base::OStream& out,
                          const std::vector<SourcePositionInfo>& stack) {
   bool first = true;
   for (const SourcePositionInfo& pos : stack) {
@@ -39,7 +39,7 @@ std::ostream& operator<<(std::ostream& out,
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const SourcePosition& pos) {
+v8::base::OStream& operator<<(v8::base::OStream& out, const SourcePosition& pos) {
   if (pos.isInlined()) {
     out << "<inlined(" << pos.InliningId() << "):";
   } else {
@@ -82,7 +82,7 @@ std::vector<SourcePositionInfo> SourcePosition::InliningStack(
   return stack;
 }
 
-void SourcePosition::Print(std::ostream& out,
+void SourcePosition::Print(v8::base::OStream& out,
                            SharedFunctionInfo* function) const {
   Script::PositionInfo pos;
   Object* source_name = nullptr;
@@ -102,7 +102,7 @@ void SourcePosition::Print(std::ostream& out,
   out << ":" << pos.line + 1 << ":" << pos.column + 1 << ">";
 }
 
-void SourcePosition::Print(std::ostream& out, Code* code) const {
+void SourcePosition::Print(v8::base::OStream& out, Code* code) const {
   DeoptimizationInputData* deopt_data =
       DeoptimizationInputData::cast(code->deoptimization_data());
   if (!isInlined()) {

@@ -28,7 +28,7 @@ void Object::Print() {
 }
 
 
-void Object::Print(std::ostream& os) {  // NOLINT
+void Object::Print(v8::base::OStream& os) {  // NOLINT
   if (IsSmi()) {
     os << "Smi: " << std::hex << "0x" << Smi::ToInt(this);
     os << std::dec << " (" << Smi::ToInt(this) << ")\n";
@@ -38,7 +38,7 @@ void Object::Print(std::ostream& os) {  // NOLINT
 }
 
 
-void HeapObject::PrintHeader(std::ostream& os, const char* id) {  // NOLINT
+void HeapObject::PrintHeader(v8::base::OStream& os, const char* id) {  // NOLINT
   os << reinterpret_cast<void*>(this) << ": [";
   if (id != nullptr) {
     os << id;
@@ -50,7 +50,7 @@ void HeapObject::PrintHeader(std::ostream& os, const char* id) {  // NOLINT
 }
 
 
-void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
+void HeapObject::HeapObjectPrint(v8::base::OStream& os) {  // NOLINT
   InstanceType instance_type = map()->instance_type();
 
   HandleScope scope(GetIsolate());
@@ -263,28 +263,28 @@ void HeapObject::HeapObjectPrint(std::ostream& os) {  // NOLINT
   }
 }
 
-void ByteArray::ByteArrayPrint(std::ostream& os) {  // NOLINT
+void ByteArray::ByteArrayPrint(v8::base::OStream& os) {  // NOLINT
   os << "byte array, data starts at " << GetDataStartAddress();
 }
 
 
-void BytecodeArray::BytecodeArrayPrint(std::ostream& os) {  // NOLINT
+void BytecodeArray::BytecodeArrayPrint(v8::base::OStream& os) {  // NOLINT
   Disassemble(os);
 }
 
 
-void FreeSpace::FreeSpacePrint(std::ostream& os) {  // NOLINT
+void FreeSpace::FreeSpacePrint(v8::base::OStream& os) {  // NOLINT
   os << "free space, size " << Size();
 }
 
 
 template <class Traits>
 void FixedTypedArray<Traits>::FixedTypedArrayPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   os << "fixed " << Traits::Designator();
 }
 
-bool JSObject::PrintProperties(std::ostream& os) {  // NOLINT
+bool JSObject::PrintProperties(v8::base::OStream& os) {  // NOLINT
   if (HasFastProperties()) {
     DescriptorArray* descs = map()->instance_descriptors();
     int nof_inobject_properties = map()->GetInObjectProperties();
@@ -347,7 +347,7 @@ double GetScalarElement(T* array, int index) {
 }
 
 template <class T>
-void DoPrintElements(std::ostream& os, Object* object) {  // NOLINT
+void DoPrintElements(v8::base::OStream& os, Object* object) {  // NOLINT
   const bool print_the_hole = std::is_same<T, FixedDoubleArray>::value;
   T* array = T::cast(object);
   if (array->length() == 0) return;
@@ -363,12 +363,12 @@ void DoPrintElements(std::ostream& os, Object* object) {  // NOLINT
       continue;
     }
     os << "\n";
-    std::stringstream ss;
+    v8::base::OStringStream ss;
     ss << previous_index;
     if (previous_index != i - 1) {
       ss << '-' << (i - 1);
     }
-    os << std::setw(12) << ss.str() << ": ";
+    os << v8::base::OStream::setw(12) << ss.str() << ": ";
     if (print_the_hole && IsTheHoleAt(array, i - 1)) {
       os << "<the_hole>";
     } else {
@@ -379,7 +379,7 @@ void DoPrintElements(std::ostream& os, Object* object) {  // NOLINT
   }
 }
 
-void PrintFixedArrayElements(std::ostream& os, FixedArray* array) {
+void PrintFixedArrayElements(v8::base::OStream& os, FixedArray* array) {
   // Print in array notation for non-sparse arrays.
   Object* previous_value = array->length() > 0 ? array->get(0) : nullptr;
   Object* value = nullptr;
@@ -391,18 +391,18 @@ void PrintFixedArrayElements(std::ostream& os, FixedArray* array) {
       continue;
     }
     os << "\n";
-    std::stringstream ss;
+    v8::base::OStringStream ss;
     ss << previous_index;
     if (previous_index != i - 1) {
       ss << '-' << (i - 1);
     }
-    os << std::setw(12) << ss.str() << ": " << Brief(previous_value);
+    os << v8::base::OStream::setw(12) << ss.str() << ": " << Brief(previous_value);
     previous_index = i;
     previous_value = value;
   }
 }
 
-void PrintDictionaryElements(std::ostream& os, FixedArrayBase* elements) {
+void PrintDictionaryElements(v8::base::OStream& os, FixedArrayBase* elements) {
   // Print some internal fields
   SeededNumberDictionary* dict = SeededNumberDictionary::cast(elements);
   if (dict->requires_slow_elements()) {
@@ -413,7 +413,7 @@ void PrintDictionaryElements(std::ostream& os, FixedArrayBase* elements) {
   dict->Print(os);
 }
 
-void PrintSloppyArgumentElements(std::ostream& os, ElementsKind kind,
+void PrintSloppyArgumentElements(v8::base::OStream& os, ElementsKind kind,
                                  SloppyArgumentsElements* elements) {
   Isolate* isolate = elements->GetIsolate();
   FixedArray* arguments_store = elements->arguments();
@@ -446,7 +446,7 @@ void PrintSloppyArgumentElements(std::ostream& os, ElementsKind kind,
 
 }  // namespace
 
-void JSObject::PrintElements(std::ostream& os) {  // NOLINT
+void JSObject::PrintElements(v8::base::OStream& os) {  // NOLINT
   // Don't call GetElementsKind, its validation code can cause the printer to
   // fail when debugging.
   os << " - elements= " << Brief(elements()) << " {";
@@ -493,7 +493,7 @@ void JSObject::PrintElements(std::ostream& os) {  // NOLINT
 }
 
 
-static void JSObjectPrintHeader(std::ostream& os, JSObject* obj,
+static void JSObjectPrintHeader(v8::base::OStream& os, JSObject* obj,
                                 const char* id) {  // NOLINT
   obj->PrintHeader(os, id);
   // Don't call GetElementsKind, its validation code can cause the printer to
@@ -516,7 +516,7 @@ static void JSObjectPrintHeader(std::ostream& os, JSObject* obj,
 }
 
 
-static void JSObjectPrintBody(std::ostream& os, JSObject* obj,  // NOLINT
+static void JSObjectPrintBody(v8::base::OStream& os, JSObject* obj,  // NOLINT
                               bool print_elements = true) {
   os << "\n - properties = " << Brief(obj->raw_properties_or_hash()) << " {";
   if (obj->PrintProperties(os)) os << "\n ";
@@ -535,18 +535,18 @@ static void JSObjectPrintBody(std::ostream& os, JSObject* obj,  // NOLINT
 }
 
 
-void JSObject::JSObjectPrint(std::ostream& os) {  // NOLINT
+void JSObject::JSObjectPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, nullptr);
   JSObjectPrintBody(os, this);
 }
 
-void JSArray::JSArrayPrint(std::ostream& os) {  // NOLINT
+void JSArray::JSArrayPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSArray");
   os << "\n - length = " << Brief(this->length());
   JSObjectPrintBody(os, this);
 }
 
-void JSPromise::JSPromisePrint(std::ostream& os) {  // NOLINT
+void JSPromise::JSPromisePrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSPromise");
   os << "\n - status = " << JSPromise::Status(status());
   os << "\n - result = " << Brief(result());
@@ -559,7 +559,7 @@ void JSPromise::JSPromisePrint(std::ostream& os) {  // NOLINT
   os << "\n ";
 }
 
-void JSRegExp::JSRegExpPrint(std::ostream& os) {  // NOLINT
+void JSRegExp::JSRegExpPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSRegExp");
   os << "\n - data = " << Brief(data());
   os << "\n - source = " << Brief(source());
@@ -567,7 +567,7 @@ void JSRegExp::JSRegExpPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void Symbol::SymbolPrint(std::ostream& os) {  // NOLINT
+void Symbol::SymbolPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Symbol");
   os << "\n - hash: " << Hash();
   os << "\n - name: " << Brief(name());
@@ -579,7 +579,7 @@ void Symbol::SymbolPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void Map::MapPrint(std::ostream& os) {  // NOLINT
+void Map::MapPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Map");
   os << "\n - type: " << instance_type();
   os << "\n - instance size: " << instance_size();
@@ -635,13 +635,13 @@ void Map::MapPrint(std::ostream& os) {  // NOLINT
 
 
 void AliasedArgumentsEntry::AliasedArgumentsEntryPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "AliasedArgumentsEntry");
   os << "\n - aliased_context_slot: " << aliased_context_slot();
 }
 
 
-void FixedArray::FixedArrayPrint(std::ostream& os) {  // NOLINT
+void FixedArray::FixedArrayPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "FixedArray");
   os << "\n - map = " << Brief(map());
   os << "\n - length: " << length();
@@ -651,18 +651,18 @@ void FixedArray::FixedArrayPrint(std::ostream& os) {  // NOLINT
 
 // TODO(gsathya): Templatize PrintFixedArrayElements to print this as
 // well.
-void PropertyArray::PropertyArrayPrint(std::ostream& os) {  // NOLINT
+void PropertyArray::PropertyArrayPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "PropertyArray");
   os << "\n - map = " << Brief(map());
   os << "\n - length: " << length();
   for (int i = 0; i < length(); i++) {
-    os << "\n" << i << " : " << std::setw(8) << Brief(get(i));
+    os << "\n" << i << " : " << v8::base::OStream::setw(8) << Brief(get(i));
   }
 
   os << "\n";
 }
 
-void FixedDoubleArray::FixedDoubleArrayPrint(std::ostream& os) {  // NOLINT
+void FixedDoubleArray::FixedDoubleArrayPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "FixedDoubleArray");
   os << "\n - map = " << Brief(map());
   os << "\n - length: " << length();
@@ -671,7 +671,7 @@ void FixedDoubleArray::FixedDoubleArrayPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void TransitionArray::TransitionArrayPrint(std::ostream& os) {  // NOLINT
+void TransitionArray::TransitionArrayPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "TransitionArray");
   os << "\n - capacity: " << length();
   for (int i = 0; i < length(); i++) {
@@ -695,7 +695,7 @@ void FeedbackVectorSpecBase<Derived>::Print() {
 
 template <typename Derived>
 void FeedbackVectorSpecBase<Derived>::FeedbackVectorSpecPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   int slot_count = This()->slots();
   os << " - slot_count: " << slot_count;
   if (slot_count == 0) {
@@ -719,7 +719,7 @@ void FeedbackMetadata::Print() {
   os << std::flush;
 }
 
-void FeedbackMetadata::FeedbackMetadataPrint(std::ostream& os) {  // NOLINT
+void FeedbackMetadata::FeedbackMetadataPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "FeedbackMetadata");
   os << "\n - length: " << length();
   if (length() == 0) {
@@ -743,7 +743,7 @@ void FeedbackVector::Print() {
   os << std::flush;
 }
 
-void FeedbackVector::FeedbackVectorPrint(std::ostream& os) {  // NOLINT
+void FeedbackVector::FeedbackVectorPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "FeedbackVector");
   os << "\n - length: " << length();
   if (length() == 0) {
@@ -833,14 +833,14 @@ void FeedbackVector::FeedbackVectorPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void JSValue::JSValuePrint(std::ostream& os) {  // NOLINT
+void JSValue::JSValuePrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSValue");
   os << "\n - value = " << Brief(value());
   JSObjectPrintBody(os, this);
 }
 
 
-void JSMessageObject::JSMessageObjectPrint(std::ostream& os) {  // NOLINT
+void JSMessageObject::JSMessageObjectPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSMessageObject");
   os << "\n - type: " << type();
   os << "\n - arguments: " << Brief(argument());
@@ -852,7 +852,7 @@ void JSMessageObject::JSMessageObjectPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void String::StringPrint(std::ostream& os) {  // NOLINT
+void String::StringPrint(v8::base::OStream& os) {  // NOLINT
   if (!HasOnlyOneByteChars()) {
     os << "u";
   }
@@ -884,7 +884,7 @@ void String::StringPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void Name::NamePrint(std::ostream& os) {  // NOLINT
+void Name::NamePrint(v8::base::OStream& os) {  // NOLINT
   if (IsString()) {
     String::cast(this)->StringPrint(os);
   } else {
@@ -898,7 +898,7 @@ static const char* const weekdays[] = {
 };
 
 
-void JSDate::JSDatePrint(std::ostream& os) {  // NOLINT
+void JSDate::JSDatePrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSDate");
   os << "\n - value = " << Brief(value());
   if (!year()->IsSmi()) {
@@ -920,7 +920,7 @@ void JSDate::JSDatePrint(std::ostream& os) {  // NOLINT
 }
 
 
-void JSProxy::JSProxyPrint(std::ostream& os) {  // NOLINT
+void JSProxy::JSProxyPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "JSProxy");
   os << "\n - map = " << reinterpret_cast<void*>(map());
   os << "\n - target = ";
@@ -933,54 +933,54 @@ void JSProxy::JSProxyPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void JSSet::JSSetPrint(std::ostream& os) {  // NOLINT
+void JSSet::JSSetPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSSet");
   os << " - table = " << Brief(table());
   JSObjectPrintBody(os, this);
 }
 
 
-void JSMap::JSMapPrint(std::ostream& os) {  // NOLINT
+void JSMap::JSMapPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSMap");
   os << " - table = " << Brief(table());
   JSObjectPrintBody(os, this);
 }
 
 void JSCollectionIterator::JSCollectionIteratorPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   os << "\n - table = " << Brief(table());
   os << "\n - index = " << Brief(index());
   os << "\n";
 }
 
 
-void JSSetIterator::JSSetIteratorPrint(std::ostream& os) {  // NOLINT
+void JSSetIterator::JSSetIteratorPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSSetIterator");
   JSCollectionIteratorPrint(os);
 }
 
 
-void JSMapIterator::JSMapIteratorPrint(std::ostream& os) {  // NOLINT
+void JSMapIterator::JSMapIteratorPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSMapIterator");
   JSCollectionIteratorPrint(os);
 }
 
 
-void JSWeakMap::JSWeakMapPrint(std::ostream& os) {  // NOLINT
+void JSWeakMap::JSWeakMapPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSWeakMap");
   os << "\n - table = " << Brief(table());
   JSObjectPrintBody(os, this);
 }
 
 
-void JSWeakSet::JSWeakSetPrint(std::ostream& os) {  // NOLINT
+void JSWeakSet::JSWeakSetPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSWeakSet");
   os << "\n - table = " << Brief(table());
   JSObjectPrintBody(os, this);
 }
 
 
-void JSArrayBuffer::JSArrayBufferPrint(std::ostream& os) {  // NOLINT
+void JSArrayBuffer::JSArrayBufferPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSArrayBuffer");
   os << "\n - backing_store = " << backing_store();
   os << "\n - byte_length = " << Brief(byte_length());
@@ -994,7 +994,7 @@ void JSArrayBuffer::JSArrayBufferPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void JSTypedArray::JSTypedArrayPrint(std::ostream& os) {  // NOLINT
+void JSTypedArray::JSTypedArrayPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSTypedArray");
   os << "\n - buffer = " << Brief(buffer());
   os << "\n - byte_offset = " << Brief(byte_offset());
@@ -1004,7 +1004,7 @@ void JSTypedArray::JSTypedArrayPrint(std::ostream& os) {  // NOLINT
   JSObjectPrintBody(os, this, !WasNeutered());
 }
 
-void JSArrayIterator::JSArrayIteratorPrint(std::ostream& os) {  // NOLING
+void JSArrayIterator::JSArrayIteratorPrint(v8::base::OStream& os) {  // NOLING
   JSObjectPrintHeader(os, this, "JSArrayIterator");
 
   InstanceType instance_type = map()->instance_type();
@@ -1024,7 +1024,7 @@ void JSArrayIterator::JSArrayIteratorPrint(std::ostream& os) {  // NOLING
   JSObjectPrintBody(os, this);
 }
 
-void JSDataView::JSDataViewPrint(std::ostream& os) {  // NOLINT
+void JSDataView::JSDataViewPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSDataView");
   os << "\n - buffer =" << Brief(buffer());
   os << "\n - byte_offset = " << Brief(byte_offset());
@@ -1034,7 +1034,7 @@ void JSDataView::JSDataViewPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void JSBoundFunction::JSBoundFunctionPrint(std::ostream& os) {  // NOLINT
+void JSBoundFunction::JSBoundFunctionPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSBoundFunction");
   os << "\n - bound_target_function = " << Brief(bound_target_function());
   os << "\n - bound_this = " << Brief(bound_this());
@@ -1045,7 +1045,7 @@ void JSBoundFunction::JSBoundFunctionPrint(std::ostream& os) {  // NOLINT
 
 namespace {
 
-std::ostream& operator<<(std::ostream& os, FunctionKind kind) {
+v8::base::OStream& operator<<(v8::base::OStream& os, FunctionKind kind) {
   os << "[";
   if (kind == FunctionKind::kNormalFunction) {
     os << " NormalFunction";
@@ -1072,7 +1072,7 @@ std::ostream& operator<<(std::ostream& os, FunctionKind kind) {
 
 }  // namespace
 
-void JSFunction::JSFunctionPrint(std::ostream& os) {  // NOLINT
+void JSFunction::JSFunctionPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "Function");
   os << "\n - initial_map = ";
   if (has_initial_map()) os << Brief(initial_map());
@@ -1093,7 +1093,7 @@ void JSFunction::JSFunctionPrint(std::ostream& os) {  // NOLINT
   JSObjectPrintBody(os, this);
 }
 
-void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
+void SharedFunctionInfo::SharedFunctionInfoPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "SharedFunctionInfo");
   os << "\n - name = ";
   if (has_shared_name()) {
@@ -1152,7 +1152,7 @@ void SharedFunctionInfo::SharedFunctionInfoPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void JSGlobalProxy::JSGlobalProxyPrint(std::ostream& os) {  // NOLINT
+void JSGlobalProxy::JSGlobalProxyPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSGlobalProxy");
   if (!GetIsolate()->bootstrapper()->IsActive()) {
     os << "\n - native context = " << Brief(native_context());
@@ -1162,7 +1162,7 @@ void JSGlobalProxy::JSGlobalProxyPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void JSGlobalObject::JSGlobalObjectPrint(std::ostream& os) {  // NOLINT
+void JSGlobalObject::JSGlobalObjectPrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSGlobalObject");
   if (!GetIsolate()->bootstrapper()->IsActive()) {
     os << "\n - native context = " << Brief(native_context());
@@ -1172,14 +1172,14 @@ void JSGlobalObject::JSGlobalObjectPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void Cell::CellPrint(std::ostream& os) {  // NOLINT
+void Cell::CellPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Cell");
   os << "\n - value: " << Brief(value());
   os << "\n";
 }
 
 
-void PropertyCell::PropertyCellPrint(std::ostream& os) {  // NOLINT
+void PropertyCell::PropertyCellPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "PropertyCell");
   os << "\n - name: ";
   name()->NamePrint(os);
@@ -1230,7 +1230,7 @@ void PropertyCell::PropertyCellPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void WeakCell::WeakCellPrint(std::ostream& os) {  // NOLINT
+void WeakCell::WeakCellPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "WeakCell");
   if (cleared()) {
     os << "\n - cleared";
@@ -1241,7 +1241,7 @@ void WeakCell::WeakCellPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void Code::CodePrint(std::ostream& os) {  // NOLINT
+void Code::CodePrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Code");
   os << "\n";
 #ifdef ENABLE_DISASSEMBLER
@@ -1252,13 +1252,13 @@ void Code::CodePrint(std::ostream& os) {  // NOLINT
 }
 
 
-void Foreign::ForeignPrint(std::ostream& os) {  // NOLINT
+void Foreign::ForeignPrint(v8::base::OStream& os) {  // NOLINT
   os << "foreign address : " << reinterpret_cast<void*>(foreign_address());
   os << "\n";
 }
 
 
-void AccessorInfo::AccessorInfoPrint(std::ostream& os) {  // NOLINT
+void AccessorInfo::AccessorInfoPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "AccessorInfo");
   os << "\n - name: " << Brief(name());
   os << "\n - flag: " << flag();
@@ -1271,7 +1271,7 @@ void AccessorInfo::AccessorInfoPrint(std::ostream& os) {  // NOLINT
 
 
 void PromiseResolveThenableJobInfo::PromiseResolveThenableJobInfoPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "PromiseResolveThenableJobInfo");
   os << "\n - thenable: " << Brief(thenable());
   os << "\n - then: " << Brief(then());
@@ -1282,7 +1282,7 @@ void PromiseResolveThenableJobInfo::PromiseResolveThenableJobInfoPrint(
 }
 
 void PromiseReactionJobInfo::PromiseReactionJobInfoPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "PromiseReactionJobInfo");
   os << "\n - value: " << Brief(value());
   os << "\n - tasks: " << Brief(tasks());
@@ -1294,7 +1294,7 @@ void PromiseReactionJobInfo::PromiseReactionJobInfoPrint(
 }
 
 void AsyncGeneratorRequest::AsyncGeneratorRequestPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "AsyncGeneratorRequest");
   const char* mode = "Invalid!";
   switch (resume_mode()) {
@@ -1314,7 +1314,7 @@ void AsyncGeneratorRequest::AsyncGeneratorRequestPrint(
   os << "\n";
 }
 
-void ModuleInfoEntry::ModuleInfoEntryPrint(std::ostream& os) {  // NOLINT
+void ModuleInfoEntry::ModuleInfoEntryPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "ModuleInfoEntry");
   os << "\n - export_name: " << Brief(export_name());
   os << "\n - local_name: " << Brief(local_name());
@@ -1326,7 +1326,7 @@ void ModuleInfoEntry::ModuleInfoEntryPrint(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
-void Module::ModulePrint(std::ostream& os) {  // NOLINT
+void Module::ModulePrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Module");
   os << "\n - origin: " << Brief(script()->GetNameOrSourceURL());
   os << "\n - code: " << Brief(code());
@@ -1338,13 +1338,13 @@ void Module::ModulePrint(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
-void JSModuleNamespace::JSModuleNamespacePrint(std::ostream& os) {  // NOLINT
+void JSModuleNamespace::JSModuleNamespacePrint(v8::base::OStream& os) {  // NOLINT
   JSObjectPrintHeader(os, this, "JSModuleNamespace");
   os << "\n - module: " << Brief(module());
   JSObjectPrintBody(os, this);
 }
 
-void PrototypeInfo::PrototypeInfoPrint(std::ostream& os) {  // NOLINT
+void PrototypeInfo::PrototypeInfoPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "PrototypeInfo");
   os << "\n - weak cell: " << Brief(weak_cell());
   os << "\n - prototype users: " << Brief(prototype_users());
@@ -1354,14 +1354,14 @@ void PrototypeInfo::PrototypeInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
-void Tuple2::Tuple2Print(std::ostream& os) {  // NOLINT
+void Tuple2::Tuple2Print(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Tuple2");
   os << "\n - value1: " << Brief(value1());
   os << "\n - value2: " << Brief(value2());
   os << "\n";
 }
 
-void Tuple3::Tuple3Print(std::ostream& os) {  // NOLINT
+void Tuple3::Tuple3Print(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Tuple3");
   os << "\n - value1: " << Brief(value1());
   os << "\n - value2: " << Brief(value2());
@@ -1369,14 +1369,14 @@ void Tuple3::Tuple3Print(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
-void ContextExtension::ContextExtensionPrint(std::ostream& os) {  // NOLINT
+void ContextExtension::ContextExtensionPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "ContextExtension");
   os << "\n - scope_info: " << Brief(scope_info());
   os << "\n - extension: " << Brief(extension());
   os << "\n";
 }
 
-void AccessorPair::AccessorPairPrint(std::ostream& os) {  // NOLINT
+void AccessorPair::AccessorPairPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "AccessorPair");
   os << "\n - getter: " << Brief(getter());
   os << "\n - setter: " << Brief(setter());
@@ -1384,7 +1384,7 @@ void AccessorPair::AccessorPairPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void AccessCheckInfo::AccessCheckInfoPrint(std::ostream& os) {  // NOLINT
+void AccessCheckInfo::AccessCheckInfoPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "AccessCheckInfo");
   os << "\n - callback: " << Brief(callback());
   os << "\n - named_interceptor: " << Brief(named_interceptor());
@@ -1394,7 +1394,7 @@ void AccessCheckInfo::AccessCheckInfoPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void InterceptorInfo::InterceptorInfoPrint(std::ostream& os) {  // NOLINT
+void InterceptorInfo::InterceptorInfoPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "InterceptorInfo");
   os << "\n - getter: " << Brief(getter());
   os << "\n - setter: " << Brief(setter());
@@ -1407,7 +1407,7 @@ void InterceptorInfo::InterceptorInfoPrint(std::ostream& os) {  // NOLINT
 
 
 void FunctionTemplateInfo::FunctionTemplateInfoPrint(
-    std::ostream& os) {  // NOLINT
+    v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "FunctionTemplateInfo");
   os << "\n - class name: " << Brief(class_name());
   os << "\n - tag: " << Brief(tag());
@@ -1431,7 +1431,7 @@ void FunctionTemplateInfo::FunctionTemplateInfoPrint(
 }
 
 
-void ObjectTemplateInfo::ObjectTemplateInfoPrint(std::ostream& os) {  // NOLINT
+void ObjectTemplateInfo::ObjectTemplateInfoPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "ObjectTemplateInfo");
   os << "\n - tag: " << Brief(tag());
   os << "\n - serial_number: " << Brief(serial_number());
@@ -1444,7 +1444,7 @@ void ObjectTemplateInfo::ObjectTemplateInfoPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void AllocationSite::AllocationSitePrint(std::ostream& os) {  // NOLINT
+void AllocationSite::AllocationSitePrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "AllocationSite");
   os << "\n - weak_next: " << Brief(weak_next());
   os << "\n - dependent code: " << Brief(dependent_code());
@@ -1468,7 +1468,7 @@ void AllocationSite::AllocationSitePrint(std::ostream& os) {  // NOLINT
 }
 
 
-void AllocationMemento::AllocationMementoPrint(std::ostream& os) {  // NOLINT
+void AllocationMemento::AllocationMementoPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "AllocationMemento");
   os << "\n - allocation site: ";
   if (IsValid()) {
@@ -1479,7 +1479,7 @@ void AllocationMemento::AllocationMementoPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void Script::ScriptPrint(std::ostream& os) {  // NOLINT
+void Script::ScriptPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "Script");
   os << "\n - source: " << Brief(source());
   os << "\n - name: " << Brief(name());
@@ -1498,7 +1498,7 @@ void Script::ScriptPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void DebugInfo::DebugInfoPrint(std::ostream& os) {  // NOLINT
+void DebugInfo::DebugInfoPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "DebugInfo");
   os << "\n - flags: " << flags();
   os << "\n - debugger_hints: " << debugger_hints();
@@ -1510,7 +1510,7 @@ void DebugInfo::DebugInfoPrint(std::ostream& os) {  // NOLINT
 }
 
 
-void StackFrameInfo::StackFrameInfoPrint(std::ostream& os) {  // NOLINT
+void StackFrameInfo::StackFrameInfoPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "StackFrame");
   os << "\n - line_number: " << line_number();
   os << "\n - column_number: " << column_number();
@@ -1524,7 +1524,7 @@ void StackFrameInfo::StackFrameInfoPrint(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
-static void PrintBitMask(std::ostream& os, uint32_t value) {  // NOLINT
+static void PrintBitMask(v8::base::OStream& os, uint32_t value) {  // NOLINT
   for (int i = 0; i < 32; i++) {
     if ((i & 7) == 0) os << " ";
     os << (((value & 1) == 0) ? "_" : "x");
@@ -1539,7 +1539,7 @@ void LayoutDescriptor::Print() {
   os << std::flush;
 }
 
-void LayoutDescriptor::ShortPrint(std::ostream& os) {
+void LayoutDescriptor::ShortPrint(v8::base::OStream& os) {
   if (IsSmi()) {
     os << this;  // Print tagged value for easy use with "jld" gdb macro.
   } else {
@@ -1547,7 +1547,7 @@ void LayoutDescriptor::ShortPrint(std::ostream& os) {
   }
 }
 
-void LayoutDescriptor::Print(std::ostream& os) {  // NOLINT
+void LayoutDescriptor::Print(v8::base::OStream& os) {  // NOLINT
   os << "Layout descriptor: ";
   if (IsFastPointerLayout()) {
     os << "<all tagged>";
@@ -1568,7 +1568,7 @@ void LayoutDescriptor::Print(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
-void PreParsedScopeData::PreParsedScopeDataPrint(std::ostream& os) {  // NOLINT
+void PreParsedScopeData::PreParsedScopeDataPrint(v8::base::OStream& os) {  // NOLINT
   HeapObject::PrintHeader(os, "PreParsedScopeData");
   os << "\n - scope_data: " << Brief(scope_data());
   os << "\n - child_data: " << Brief(child_data());
@@ -1633,7 +1633,7 @@ void DescriptorArray::Print() {
 }
 
 
-void DescriptorArray::PrintDescriptors(std::ostream& os) {  // NOLINT
+void DescriptorArray::PrintDescriptors(v8::base::OStream& os) {  // NOLINT
   HandleScope scope(GetIsolate());
   os << "Descriptor array #" << number_of_descriptors() << ":";
   for (int i = 0; i < number_of_descriptors(); i++) {
@@ -1650,7 +1650,7 @@ void DescriptorArray::PrintDescriptors(std::ostream& os) {  // NOLINT
   os << "\n";
 }
 
-void DescriptorArray::PrintDescriptorDetails(std::ostream& os, int descriptor,
+void DescriptorArray::PrintDescriptorDetails(v8::base::OStream& os, int descriptor,
                                              PropertyDetails::PrintMode mode) {
   PropertyDetails details = GetDetails(descriptor);
   details.PrintAsFastTo(os, mode);
@@ -1680,7 +1680,7 @@ void TransitionArray::Print() {
 }
 
 
-void TransitionArray::PrintTransitions(std::ostream& os, Object* transitions,
+void TransitionArray::PrintTransitions(v8::base::OStream& os, Object* transitions,
                                        bool print_header) {  // NOLINT
   int num_transitions = NumberOfTransitions(transitions);
   if (print_header) {
@@ -1729,7 +1729,7 @@ void TransitionArray::PrintTransitionTree(Map* map) {
 }
 
 // static
-void TransitionArray::PrintTransitionTree(std::ostream& os, Map* map,
+void TransitionArray::PrintTransitionTree(v8::base::OStream& os, Map* map,
                                           int level) {
   Object* transitions = map->raw_transitions();
   int num_transitions = NumberOfTransitions(transitions);
@@ -1738,10 +1738,10 @@ void TransitionArray::PrintTransitionTree(std::ostream& os, Map* map,
     Name* key = GetKey(transitions, i);
     Map* target = GetTarget(transitions, i);
     os << std::endl
-       << "  " << level << "/" << i << ":" << std::setw(level * 2 + 2) << " ";
-    std::stringstream ss;
+       << "  " << level << "/" << i << ":" << v8::base::OStream::setw(level * 2 + 2) << " ";
+    v8::base::OStringStream ss;
     ss << Brief(target);
-    os << std::left << std::setw(50) << ss.str() << ": ";
+    os << std::left << v8::base::OStream::setw(50) << ss.str() << ": ";
 
     Heap* heap = key->GetHeap();
     if (key == heap->nonextensible_symbol()) {
@@ -1772,7 +1772,7 @@ void TransitionArray::PrintTransitionTree(std::ostream& os, Map* map,
   }
 }
 
-void JSObject::PrintTransitions(std::ostream& os) {  // NOLINT
+void JSObject::PrintTransitions(v8::base::OStream& os) {  // NOLINT
   Object* transitions = map()->raw_transitions();
   int num_transitions = TransitionArray::NumberOfTransitions(transitions);
   if (num_transitions == 0) return;

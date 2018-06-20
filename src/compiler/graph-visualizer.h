@@ -34,14 +34,14 @@ struct AsJSON {
   const SourcePositionTable* positions;
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os, const AsJSON& ad);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os, const AsJSON& ad);
 
 struct AsRPO {
   explicit AsRPO(const Graph& g) : graph(g) {}
   const Graph& graph;
 };
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os, const AsRPO& ad);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os, const AsRPO& ad);
 
 struct AsC1VCompilation {
   explicit AsC1VCompilation(const CompilationInfo* info) : info_(info) {}
@@ -71,9 +71,9 @@ struct AsC1VRegisterAllocationData {
   const RegisterAllocationData* data_;
 };
 
-std::ostream& operator<<(std::ostream& os, const AsC1VCompilation& ac);
-std::ostream& operator<<(std::ostream& os, const AsC1V& ac);
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsC1VCompilation& ac);
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsC1V& ac);
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const AsC1VRegisterAllocationData& ac);
 
 }  // namespace compiler

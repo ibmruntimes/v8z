@@ -347,7 +347,7 @@ void RawMachineAssembler::Bind(RawMachineLabel* label) {
 void RawMachineAssembler::Bind(RawMachineLabel* label,
                                AssemblerDebugInfo info) {
   if (current_block_ != nullptr) {
-    std::stringstream str;
+    v8::base::StringStream str;
     str << "Binding label without closing previous block:"
         << "\n#    label:          " << info
         << "\n#    previous block: " << *current_block_;
@@ -357,7 +357,7 @@ void RawMachineAssembler::Bind(RawMachineLabel* label,
   current_block_->set_debug_info(info);
 }
 
-void RawMachineAssembler::PrintCurrentBlock(std::ostream& os) {
+void RawMachineAssembler::PrintCurrentBlock(v8::base::OStream& os) {
   os << CurrentBlock();
 }
 
@@ -407,7 +407,7 @@ Node* RawMachineAssembler::MakeNode(const Operator* op, int input_count,
 RawMachineLabel::~RawMachineLabel() {
 #if DEBUG
   if (bound_ == used_) return;
-  std::stringstream str;
+  v8::base::StringStream str;
   if (bound_) {
     str << "A label has been bound but it's not used."
         << "\n#    label: " << *block_;

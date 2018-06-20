@@ -210,7 +210,7 @@ class RegExpTree : public ZoneObject {
   // expression.
   virtual Interval CaptureRegisters() { return Interval::Empty(); }
   virtual void AppendToText(RegExpText* text, Zone* zone);
-  std::ostream& Print(std::ostream& os, Zone* zone);  // NOLINT
+  v8::base::OStream& Print(v8::base::OStream& os, Zone* zone);  // NOLINT
 #define MAKE_ASTYPE(Name)           \
   virtual RegExp##Name* As##Name(); \
   virtual bool Is##Name();

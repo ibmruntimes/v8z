@@ -824,7 +824,7 @@ class V8_EXPORT_PRIVATE RawMachineAssembler {
 #if DEBUG
   void Bind(RawMachineLabel* label, AssemblerDebugInfo info);
   void SetInitialDebugInformation(AssemblerDebugInfo info);
-  void PrintCurrentBlock(std::ostream& os);
+  void PrintCurrentBlock(v8::base::OStream& os);
 #endif  // DEBUG
 
   // Add success / exception successor blocks and ends the current block ending

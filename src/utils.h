@@ -881,7 +881,7 @@ class FeedbackSlot {
   bool operator!=(FeedbackSlot that) const { return !(*this == that); }
 
   friend size_t hash_value(FeedbackSlot slot) { return slot.ToInt(); }
-  friend std::ostream& operator<<(std::ostream& os, FeedbackSlot);
+  friend v8::base::OStream& operator<<(v8::base::OStream& os, FeedbackSlot);
 
  private:
   static const int kInvalidSlot = -1;
@@ -918,7 +918,7 @@ class BailoutId {
   bool operator==(const BailoutId& other) const { return id_ == other.id_; }
   bool operator!=(const BailoutId& other) const { return id_ != other.id_; }
   friend size_t hash_value(BailoutId);
-  V8_EXPORT_PRIVATE friend std::ostream& operator<<(std::ostream&, BailoutId);
+  V8_EXPORT_PRIVATE friend v8::base::OStream& operator<<(v8::base::OStream&, BailoutId);
 
  private:
   friend class Builtins;

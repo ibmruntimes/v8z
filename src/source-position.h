@@ -47,7 +47,7 @@ class SourcePosition final {
   std::vector<SourcePositionInfo> InliningStack(Handle<Code> code) const;
   std::vector<SourcePositionInfo> InliningStack(CompilationInfo* cinfo) const;
 
-  void Print(std::ostream& out, Code* code) const;
+  void Print(v8::base::OStream& out, Code* code) const;
 
   int ScriptOffset() const { return ScriptOffsetField::decode(value_) - 1; }
   int InliningId() const { return InliningIdField::decode(value_) - 1; }
@@ -75,7 +75,7 @@ class SourcePosition final {
   }
 
  private:
-  void Print(std::ostream& out, SharedFunctionInfo* function) const;
+  void Print(v8::base::OStream& out, SharedFunctionInfo* function) const;
 
   // InliningId is in the high bits for better compression in
   // SourcePositionTable.
@@ -110,10 +110,10 @@ struct SourcePositionInfo {
   int column = -1;
 };
 
-std::ostream& operator<<(std::ostream& out, const SourcePosition& pos);
+v8::base::OStream& operator<<(v8::base::OStream& out, const SourcePosition& pos);
 
-std::ostream& operator<<(std::ostream& out, const SourcePositionInfo& pos);
-std::ostream& operator<<(std::ostream& out,
+v8::base::OStream& operator<<(v8::base::OStream& out, const SourcePositionInfo& pos);
+v8::base::OStream& operator<<(v8::base::OStream& out,
                          const std::vector<SourcePositionInfo>& stack);
 
 }  // namespace internal

@@ -60,7 +60,7 @@ void CompilationStatistics::BasicStats::Accumulate(const BasicStats& stats) {
   }
 }
 
-static void WriteLine(std::ostream& os, bool machine_format, const char* name,
+static void WriteLine(v8::base::OStream& os, bool machine_format, const char* name,
                       const CompilationStatistics::BasicStats& stats,
                       const CompilationStatistics::BasicStats& total_stats) {
   const size_t kBufferSize = 128;
@@ -92,13 +92,13 @@ static void WriteLine(std::ostream& os, bool machine_format, const char* name,
 }
 
 
-static void WriteFullLine(std::ostream& os) {
+static void WriteFullLine(v8::base::OStream& os) {
   os << "--------------------------------------------------------"
         "--------------------------------------------------------\n";
 }
 
 
-static void WriteHeader(std::ostream& os) {
+static void WriteHeader(v8::base::OStream& os) {
   WriteFullLine(os);
   os << "             Turbonfan phase        Time (ms)             "
      << "          Space (bytes)             Function\n"
@@ -108,12 +108,12 @@ static void WriteHeader(std::ostream& os) {
 }
 
 
-static void WritePhaseKindBreak(std::ostream& os) {
+static void WritePhaseKindBreak(v8::base::OStream& os) {
   os << "                             ---------------------------"
         "--------------------------------------------------------\n";
 }
 
-std::ostream& operator<<(std::ostream& os, const AsPrintableStatistics& ps) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const AsPrintableStatistics& ps) {
   // phase_kind_map_ and phase_map_ don't get mutated, so store a bunch of
   // pointers into them.
   const CompilationStatistics& s = ps.s;

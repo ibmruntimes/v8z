@@ -7,7 +7,7 @@
 namespace v8 {
 namespace internal {
 
-std::ostream& operator<<(std::ostream& os, DeoptimizeReason reason) {
+v8::base::OStream& operator<<(v8::base::OStream& os, DeoptimizeReason reason) {
   switch (reason) {
 #define DEOPTIMIZE_REASON(Name, message) \
   case DeoptimizeReason::k##Name:        \

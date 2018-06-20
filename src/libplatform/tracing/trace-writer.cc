@@ -9,6 +9,7 @@
 #include "base/trace_event/common/trace_event_common.h"
 #include "include/v8-platform.h"
 #include "src/base/platform/platform.h"
+#include "src/base/logging.h"
 
 namespace v8 {
 namespace platform {
@@ -71,7 +72,7 @@ void JSONTraceWriter::AppendArgValue(uint8_t type,
       std::string real;
       double val = value.as_double;
       if (std::isfinite(val)) {
-        std::ostringstream convert_stream;
+        v8::base::OStringStream convert_stream;
         convert_stream << val;
         real = convert_stream.str();
         // Ensure that the number has a .0 if there's no decimal or 'e'.  This

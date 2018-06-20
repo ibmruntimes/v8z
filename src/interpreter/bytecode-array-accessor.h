@@ -103,7 +103,7 @@ class V8_EXPORT_PRIVATE BytecodeArrayAccessor {
 
   bool OffsetWithinBytecode(int offset) const;
 
-  std::ostream& PrintTo(std::ostream& os) const;
+  v8::base::OStream& PrintTo(v8::base::OStream& os) const;
 
  private:
   bool OffsetInBounds() const;

@@ -169,7 +169,7 @@ class LifetimePosition final {
 };
 
 
-std::ostream& operator<<(std::ostream& os, const LifetimePosition pos);
+v8::base::OStream& operator<<(v8::base::OStream& os, const LifetimePosition pos);
 
 
 // Representation of the non-empty interval [start,end[.
@@ -681,7 +681,7 @@ struct PrintableLiveRange {
 };
 
 
-std::ostream& operator<<(std::ostream& os,
+v8::base::OStream& operator<<(v8::base::OStream& os,
                          const PrintableLiveRange& printable_range);
 
 

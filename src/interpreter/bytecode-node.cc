@@ -11,7 +11,7 @@ namespace v8 {
 namespace internal {
 namespace interpreter {
 
-void BytecodeNode::Print(std::ostream& os) const {
+void BytecodeNode::Print(v8::base::OStream& os) const {
 #ifdef DEBUG
   std::ios saved_state(nullptr);
   saved_state.copyfmt(os);
@@ -47,7 +47,7 @@ bool BytecodeNode::operator==(const BytecodeNode& other) const {
   return true;
 }
 
-std::ostream& operator<<(std::ostream& os, const BytecodeNode& node) {
+v8::base::OStream& operator<<(v8::base::OStream& os, const BytecodeNode& node) {
   node.Print(os);
   return os;
 }

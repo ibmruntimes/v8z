@@ -15,6 +15,7 @@
 
 #include "src/base/base-export.h"
 #include "src/base/build_config.h"
+#include "src/base/logging.h"
 
 #if V8_OS_POSIX
 #include <unistd.h>
@@ -68,7 +69,7 @@ class V8_BASE_EXPORT StackTrace {
   void Print() const;
 
   // Resolves backtrace to symbols and write to stream.
-  void OutputToStream(std::ostream* os) const;
+  void OutputToStream(v8::base::OStream* os) const;
 
   // Resolves backtrace to symbols and returns as string.
   std::string ToString() const;

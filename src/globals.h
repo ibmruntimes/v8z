@@ -313,7 +313,7 @@ template <typename T, class P = FreeStoreAllocationPolicy> class List;
 
 enum LanguageMode : uint32_t { SLOPPY, STRICT, LANGUAGE_END };
 
-inline std::ostream& operator<<(std::ostream& os, const LanguageMode& mode) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, const LanguageMode& mode) {
   switch (mode) {
     case SLOPPY: return os << "sloppy";
     case STRICT: return os << "strict";
@@ -352,7 +352,7 @@ enum class DeoptimizeKind : uint8_t { kEager, kSoft };
 inline size_t hash_value(DeoptimizeKind kind) {
   return static_cast<size_t>(kind);
 }
-inline std::ostream& operator<<(std::ostream& os, DeoptimizeKind kind) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, DeoptimizeKind kind) {
   switch (kind) {
     case DeoptimizeKind::kEager:
       return os << "Eager";
@@ -366,7 +366,7 @@ inline std::ostream& operator<<(std::ostream& os, DeoptimizeKind kind) {
 // function hoisting, and is a synthetic assignment for that.
 enum class LookupHoistingMode { kNormal, kLegacySloppy };
 
-inline std::ostream& operator<<(std::ostream& os,
+inline v8::base::OStream& operator<<(v8::base::OStream& os,
                                 const LookupHoistingMode& mode) {
   switch (mode) {
     case LookupHoistingMode::kNormal:
@@ -545,7 +545,7 @@ inline size_t hash_value(Decision decision) {
   return static_cast<uint8_t>(decision);
 }
 
-inline std::ostream& operator<<(std::ostream& os, Decision decision) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, Decision decision) {
   switch (decision) {
     case Decision::kUnknown:
       return os << "Unknown";
@@ -569,7 +569,7 @@ inline size_t hash_value(WriteBarrierKind kind) {
   return static_cast<uint8_t>(kind);
 }
 
-inline std::ostream& operator<<(std::ostream& os, WriteBarrierKind kind) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, WriteBarrierKind kind) {
   switch (kind) {
     case kNoWriteBarrier:
       return os << "NoWriteBarrier";
@@ -589,7 +589,7 @@ inline std::ostream& operator<<(std::ostream& os, WriteBarrierKind kind) {
 // allows).
 enum PretenureFlag { NOT_TENURED, TENURED };
 
-inline std::ostream& operator<<(std::ostream& os, const PretenureFlag& flag) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, const PretenureFlag& flag) {
   switch (flag) {
     case NOT_TENURED:
       return os << "NotTenured";
@@ -843,7 +843,7 @@ inline size_t hash_value(ConvertReceiverMode mode) {
   return bit_cast<unsigned>(mode);
 }
 
-inline std::ostream& operator<<(std::ostream& os, ConvertReceiverMode mode) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, ConvertReceiverMode mode) {
   switch (mode) {
     case ConvertReceiverMode::kNullOrUndefined:
       return os << "NULL_OR_UNDEFINED";
@@ -874,7 +874,7 @@ inline size_t hash_value(CreateArgumentsType type) {
   return bit_cast<uint8_t>(type);
 }
 
-inline std::ostream& operator<<(std::ostream& os, CreateArgumentsType type) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, CreateArgumentsType type) {
   switch (type) {
     case CreateArgumentsType::kMappedArguments:
       return os << "MAPPED_ARGUMENTS";
@@ -902,6 +902,27 @@ enum ScopeType : uint8_t {
   BLOCK_SCOPE,     // The scope introduced by a new block.
   WITH_SCOPE       // The scope introduced by with.
 };
+
+inline v8::base::OStream & operator << (v8::base::OStream &os, ScopeType type) {
+  switch(type) {
+    case EVAL_SCOPE:
+       return os << "Scope::Eval";
+    case FUNCTION_SCOPE:
+       return os << "Scope::Function";
+    case MODULE_SCOPE:
+       return os << "Scope::Module";
+    case CATCH_SCOPE:
+       return os << "Scope::Catch";
+    case BLOCK_SCOPE:
+       return os << "Scope::Block";
+    case WITH_SCOPE:
+       return os << "Scope::With";
+    case SCRIPT_SCOPE:
+       return os << "Scope::Script";
+  }
+  UNREACHABLE();
+}
+
 
 // AllocationSiteMode controls whether allocations are tracked by an allocation
 // site.
@@ -957,6 +978,10 @@ enum VariableMode : uint8_t {
                  // variable
 };
 
+inline v8::base::OStream& operator << (v8::base::OStream& os, VariableMode mode) {
+    os << "VariableMode"; 
+    return os;
+}
 // Printing support
 #ifdef DEBUG
 inline const char* VariableMode2String(VariableMode mode) {
@@ -986,6 +1011,11 @@ enum VariableKind : uint8_t {
   THIS_VARIABLE,
   SLOPPY_FUNCTION_NAME_VARIABLE
 };
+
+inline v8::base::OStream& operator << (v8::base::OStream& os, VariableKind kind) {
+    os << "VariableMode"; 
+    return os;
+}
 
 inline bool IsDynamicVariableMode(VariableMode mode) {
   return mode >= DYNAMIC && mode <= DYNAMIC_LOCAL;
@@ -1035,6 +1065,24 @@ enum VariableLocation : uint8_t {
   kLastVariableLocation = MODULE
 };
 
+inline v8::base::OStream& operator << (v8::base::OStream & os, VariableLocation loc) {
+  switch(loc) {
+    case UNALLOCATED:
+        return os << "Unallocated";
+    case PARAMETER:
+        return os << "Parameter";
+    case LOCAL:
+        return os << "Local";
+    case CONTEXT:
+        return os << "Context";
+    case LOOKUP:
+        return os << "Lookup";
+    case MODULE:
+        return os << "Module";
+  }
+  UNREACHABLE();
+}
+
 // ES6 specifies declarative environment records with mutable and immutable
 // bindings that can be in two states: initialized and uninitialized.
 // When accessing a binding, it needs to be checked for initialization.
@@ -1059,10 +1107,30 @@ enum VariableLocation : uint8_t {
 // immediately initialized upon creation (kCreatedInitialized).
 enum InitializationFlag : uint8_t { kNeedsInitialization, kCreatedInitialized };
 
+inline v8::base::OStream& operator<<(v8::base::OStream & os, 
+                                     InitializationFlag flag) {
+    switch(flag) {
+       case kNeedsInitialization:
+           return os << "Uninitialized";
+       case kCreatedInitialized:
+           return os << "Initialized";
+    }
+   UNREACHABLE();
+}
 enum class HoleCheckMode { kRequired, kElided };
 
 enum MaybeAssignedFlag : uint8_t { kNotAssigned, kMaybeAssigned };
 
+inline v8::base::OStream & operator << (v8::base::OStream & os,
+                                        MaybeAssignedFlag flag){
+   switch(flag) {
+       case kNotAssigned:
+         return os << "Not Assigned";
+     case kMaybeAssigned:
+         return os << "Maybe Assigned";
+   }
+   UNREACHABLE();
+}
 // Serialized in PreparseData, so numeric values should not be changed.
 enum ParseErrorType { kSyntaxError = 0, kReferenceError = 1 };
 
@@ -1216,7 +1284,7 @@ inline size_t hash_value(InterpreterPushArgsMode mode) {
   return bit_cast<unsigned>(mode);
 }
 
-inline std::ostream& operator<<(std::ostream& os,
+inline v8::base::OStream& operator<<(v8::base::OStream& os,
                                 InterpreterPushArgsMode mode) {
   switch (mode) {
     case InterpreterPushArgsMode::kJSFunction:
@@ -1292,7 +1360,7 @@ inline size_t hash_value(UnicodeEncoding encoding) {
   return static_cast<uint8_t>(encoding);
 }
 
-inline std::ostream& operator<<(std::ostream& os, UnicodeEncoding encoding) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, UnicodeEncoding encoding) {
   switch (encoding) {
     case UnicodeEncoding::UTF16:
       return os << "UTF16";
@@ -1304,7 +1372,7 @@ inline std::ostream& operator<<(std::ostream& os, UnicodeEncoding encoding) {
 
 enum class IterationKind { kKeys, kValues, kEntries };
 
-inline std::ostream& operator<<(std::ostream& os, IterationKind kind) {
+inline v8::base::OStream& operator<<(v8::base::OStream& os, IterationKind kind) {
   switch (kind) {
     case IterationKind::kKeys:
       return os << "IterationKind::kKeys";
@@ -1347,7 +1415,7 @@ struct AssemblerDebugInfo {
   int line;
 };
 
-inline std::ostream& operator<<(std::ostream& os,
+inline v8::base::OStream& operator<<(v8::base::OStream& os,
                                 const AssemblerDebugInfo& info) {
   os << "(" << info.name << ":" << info.file << ":" << info.line << ")";
   return os;
@@ -1360,7 +1428,7 @@ enum class OptimizationMarker {
   kInOptimizationQueue
 };
 
-inline std::ostream& operator<<(std::ostream& os,
+inline v8::base::OStream& operator<<(v8::base::OStream& os,
                                 const OptimizationMarker& marker) {
   switch (marker) {
     case OptimizationMarker::kNone:

@@ -39,7 +39,7 @@ constexpr ValueType kWasmS128 = MachineRepresentation::kSimd128;
 constexpr ValueType kWasmVar = MachineRepresentation::kTagged;
 
 using FunctionSig = Signature<ValueType>;
-std::ostream& operator<<(std::ostream& os, const FunctionSig& function);
+v8::base::OStream& operator<<(v8::base::OStream& os, const FunctionSig& function);
 bool IsJSCompatibleSignature(const FunctionSig* sig);
 
 using WasmName = Vector<const char>;

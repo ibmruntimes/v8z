@@ -85,7 +85,7 @@ const char* NameForRuntimeId(uint32_t idx) {
 }  // anonymous namespace
 
 // static
-std::ostream& BytecodeDecoder::Decode(std::ostream& os,
+v8::base::OStream& BytecodeDecoder::Decode(v8::base::OStream& os,
                                       const uint8_t* bytecode_start,
                                       int parameter_count) {
   Bytecode bytecode = Bytecodes::FromByte(bytecode_start[0]);

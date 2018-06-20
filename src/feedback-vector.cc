@@ -31,7 +31,7 @@ static bool IsPropertyNameFeedback(Object* feedback) {
          symbol != heap->megamorphic_symbol();
 }
 
-std::ostream& operator<<(std::ostream& os, FeedbackSlotKind kind) {
+v8::base::OStream& operator<<(v8::base::OStream& os, FeedbackSlotKind kind) {
   return os << FeedbackMetadata::Kind2String(kind);
 }
 

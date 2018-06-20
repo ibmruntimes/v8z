@@ -178,14 +178,14 @@ class TransitionArray: public FixedArray {
   void Print();
 
   // Print all the transitions.
-  static void PrintTransitions(std::ostream& os, Object* transitions,
+  static void PrintTransitions(v8::base::OStream& os, Object* transitions,
                                bool print_header = true);  // NOLINT
   static void PrintTransitionTree(Map* map);
-  static void PrintTransitionTree(std::ostream& os, Map* map, int level = 0);
+  static void PrintTransitionTree(v8::base::OStream& os, Map* map, int level = 0);
 #endif
 
 #ifdef OBJECT_PRINT
-  void TransitionArrayPrint(std::ostream& os);  // NOLINT
+  void TransitionArrayPrint(v8::base::OStream& os);  // NOLINT
 #endif
 
 #ifdef VERIFY_HEAP

@@ -520,7 +520,7 @@ RUNTIME_FUNCTION(Runtime_GetAndResetRuntimeCallStats) {
   if (args.length() == 0) {
     // Without arguments, the result is returned as a string.
     DCHECK_EQ(0, args.length());
-    std::stringstream stats_stream;
+    v8::base::OStringStream stats_stream;
     isolate->counters()->runtime_call_stats()->Print(stats_stream);
     Handle<String> result = isolate->factory()->NewStringFromAsciiChecked(
         stats_stream.str().c_str());
