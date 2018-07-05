@@ -102,6 +102,20 @@ void TurboAssembler::Jump(Handle<Code> code, RelocInfo::Mode rmode,
 
 int TurboAssembler::CallSize(Register target) { return 2; }  // BASR
 
+void TurboAssembler::CallC(Register target) {
+   Label start;
+   bind(&start);
+#ifdef V8_OS_ZOS
+   //Branch to target via indirect branch
+   basr(r7, target);
+   nop(BASR_CALL_TYPE_NOP);
+   DCHECK_EQ(CallSize(target) + 2, SizeOfCodeGeneratedSince(&start));
+#else
+   basr (r14, target);
+   DCHECK_EQ(CallSize(target), SizeOfCodeGeneratedSince(&start));
+#endif
+}
+
 void TurboAssembler::Call(Register target) {
   Label start;
   bind(&start);
@@ -1980,6 +1994,11 @@ static const int kRegisterPassedArguments = 5;
 int TurboAssembler::CalculateStackPassedWords(int num_reg_arguments,
                                               int num_double_arguments) {
   int stack_passed_words = 0;
+#ifdef V8_OS_ZOS
+  // XPLINK Linkage reserves space for arguments on the stack
+  // even when passing them via registers.
+  stack_passed_words = num_reg_arguments + num_double_arguments;
+#else
   if (num_double_arguments > DoubleRegister::kNumRegisters) {
     stack_passed_words +=
         2 * (num_double_arguments - DoubleRegister::kNumRegisters);
@@ -1988,6 +2007,7 @@ int TurboAssembler::CalculateStackPassedWords(int num_reg_arguments,
   if (num_reg_arguments > kRegisterPassedArguments) {
     stack_passed_words += num_reg_arguments - kRegisterPassedArguments;
   }
+#endif
   return stack_passed_words;
 }
 
@@ -2054,33 +2074,6 @@ void TurboAssembler::CallCFunction(Register function, int num_arguments) {
   CallCFunction(function, num_arguments, 0);
 }
 
-void TurboAssembler::CallCFunctionHelper(Register function,
-                                         int num_reg_arguments,
-                                         int num_double_arguments) {
-  DCHECK_LE(num_reg_arguments + num_double_arguments, kMaxCParameters);
-  DCHECK(has_frame());
-
-  // Just call directly. The function called cannot cause a GC, or
-  // allow preemption, so the return address in the link register
-  // stays correct.
-  Register dest = function;
-  if (ABI_CALL_VIA_IP) {
-    Move(ip, function);
-    dest = ip;
-  }
-
-  Call(dest);
-
-  int stack_passed_arguments =
-      CalculateStackPassedWords(num_reg_arguments, num_double_arguments);
-  int stack_space = kNumRequiredStackFrameSlots + stack_passed_arguments;
-  if (ActivationFrameAlignment() > kPointerSize) {
-    // Load the original stack pointer (pre-alignment) from the stack
-    LoadP(sp, MemOperand(sp, stack_space * kPointerSize));
-  } else {
-    la(sp, MemOperand(sp, stack_space * kPointerSize));
-  }
-}
 
 void TurboAssembler::CheckPageFlag(
     Register object,
@@ -4470,6 +4463,62 @@ void TurboAssembler::Popcnt32(Register dst, Register src) {
   ShiftRight(r0, dst, Operand(8));
   ar(dst, r0);
   llgcr(dst, dst);
+}
+
+void TurboAssembler::CallCFunctionHelper(Register function,
+                                         int num_reg_arguments,
+                                         int num_double_arguments) {
+  DCHECK_LE(num_reg_arguments + num_double_arguments, kMaxCParameters);
+  DCHECK(has_frame());
+  int stack_space;
+
+#if V8_OS_ZOS
+  LoadRR(r1, r2);
+  LoadRR(r2, r3);
+  LoadRR(r3, r4);
+
+  //Set up stack.
+  stack_space = 16;
+  stack_space += 5;
+  lay(r4, MemOperand(sp, -((stack_space * kPointerSize) + kStackPointerBias)));
+  // XPLINK linkage requires args in r5-r7 to be passed on the stack
+  StoreMultipleP(r5, r7, 
+          MemOperand(r4, kStackPointerBias + 19 * kPointerSize));
+#endif
+
+#if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
+  LoadMultipleP(r5, r6, MemOperand(function, 0));
+  Register dest = r6;
+#else
+  // Just call directly. The function called cannot cause a GC, or
+  // allow preemption, so the return address in the link register
+  // stays correct.
+  Register dest = function;
+  if (ABI_CALL_VIA_IP) {
+    Move(ip, function);
+    dest = ip;
+  }
+#endif
+
+#ifdef V8_OS_ZOS
+  CallC(dest);
+  //Restore r5-r7
+  LoadMultipleP(r5, r7,
+               MemOperand(r4, kStackPointerBias + 19*kPointerSize));
+  //Shuffle the result
+  LoadRR (r2,r3);
+#else
+  Call(dest);
+#endif
+  int stack_passed_arguments =
+      CalculateStackPassedWords(num_reg_arguments, num_double_arguments);
+  stack_space = kNumRequiredStackFrameSlots + stack_passed_arguments;
+  if (ActivationFrameAlignment() > kPointerSize) {
+    // Load the original stack pointer (pre-alignment) from the stack
+    LoadP(sp, MemOperand(sp, stack_space * kPointerSize));
+  } else {
+    la(sp, MemOperand(sp, stack_space * kPointerSize));
+  }
 }
 
 #ifdef V8_TARGET_ARCH_S390X

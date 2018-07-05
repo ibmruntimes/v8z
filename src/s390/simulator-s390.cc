@@ -29,7 +29,8 @@ const auto GetRegConfig = RegisterConfiguration::Default;
 // SScanF not being implemented in a platform independent way through
 // ::v8::internal::OS in the same way as SNPrintF is that the
 // Windows C Run-Time Library does not provide vsscanf.
-#define SScanF sscanf  // NOLINT
+#define SScanF __sscanf_a  // NOLINT
+
 
 // The S390Debugger class is used by the simulator while debugging simulated
 // z/Architecture code.
@@ -1984,8 +1985,10 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           (redirection->type() == ExternalReference::BUILTIN_CALL_PAIR &&
            !ABI_RETURNS_OBJECTPAIR_IN_REGS);
       if (uses_result_buffer) {
+#ifndef V8_OS_ZOS
         result_buffer = get_register(r2);
         arg0_regnum++;
+#endif        
       }
       intptr_t arg[kArgCount];
       // First 5 arguments in registers r2-r6.
@@ -2193,16 +2196,23 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
               reinterpret_cast<SimulatorRuntimeTripleCall>(external);
           ObjectTriple result =
               target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
+          intptr_t x = reinterpret_cast<intptr_t>(result.x);
+          intptr_t y = reinterpret_cast<intptr_t>(result.y);
+          intptr_t z = reinterpret_cast<intptr_t>(result.z);
           if (::v8::internal::FLAG_trace_sim) {
             PrintF("Returned {%08" V8PRIxPTR ", %08" V8PRIxPTR ", %08" V8PRIxPTR
                    "}\n",
-                   reinterpret_cast<intptr_t>(result.x),
-                   reinterpret_cast<intptr_t>(result.y),
-                   reinterpret_cast<intptr_t>(result.z));
+                   x,y,z);
           }
+#ifdef V8_OS_ZOS
+          set_register(r1, x);
+          set_register(r2, y);
+          set_register(r3, z);
+#else
           memcpy(reinterpret_cast<void*>(result_buffer), &result,
                  sizeof(ObjectTriple));
           set_register(r2, result_buffer);
+#endif        
         } else {
           if (redirection->type() == ExternalReference::BUILTIN_CALL_PAIR) {
             SimulatorRuntimePairCall target =

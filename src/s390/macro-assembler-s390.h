@@ -194,6 +194,7 @@ class TurboAssembler : public Assembler {
     beq(smi_label /*, cr0*/);  // branch if SMI
   }
   void Call(Register target);
+  void CallC(Register target);
   void Call(Address target, RelocInfo::Mode rmode, Condition cond = al);
   int CallSize(Handle<Code> code,
                RelocInfo::Mode rmode = RelocInfo::CODE_TARGET,
