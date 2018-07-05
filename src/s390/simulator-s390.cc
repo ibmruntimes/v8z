@@ -31,23 +31,6 @@ const auto GetRegConfig = RegisterConfiguration::Crankshaft;
 // Windows C Run-Time Library does not provide vsscanf.
 #define SScanF __sscanf_a  // NOLINT
 
-/*static bool SScanF(const char * str_a, const char * format_a, ... ){
-  int format_len = strlen(format_a);
-  int str_len = strlen(str_a);
-  char * format = new char[format_len + 1];
-  char * str = new char[str_len + 1];
-  memmove(format,format_a, format_len + 1); 
-  memmove(str, str_a, str_len + 1);
-  __a2e_s(format);
-  __a2e_s(str);
-  va_list argptr;
-  va_start(argptr,format);
-  PrintF("Scanning line:%s format:%s\n",str,format);
-  PrintF("Scanning line:%s format:%s\n",str_a,format_a);
-  vsscanf(str,format,argptr);
-  va_end(argptr);
-  delete[] format,str;
-}*/
 
 // The S390Debugger class is used by the simulator while debugging simulated
 // z/Architecture code.
@@ -2024,12 +2007,10 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
           (redirection->type() == ExternalReference::BUILTIN_CALL_PAIR &&
            !ABI_RETURNS_OBJECTPAIR_IN_REGS);
       if (uses_result_buffer) {
-#ifdef V8_OS_ZOS
-        result_buffer = get_register(r1);
-#else
+#ifndef V8_OS_ZOS
         result_buffer = get_register(r2);
-#endif        
         arg0_regnum++;
+#endif        
       }
       intptr_t arg[kArgCount];
       // First 5 arguments in registers r2-r6.
@@ -2252,16 +2233,23 @@ void Simulator::SoftwareInterrupt(Instruction* instr) {
               reinterpret_cast<SimulatorRuntimeTripleCall>(external);
           ObjectTriple result =
               target(arg[0], arg[1], arg[2], arg[3], arg[4], arg[5]);
+          intptr_t x = reinterpret_cast<intptr_t>(result.x);
+          intptr_t y = reinterpret_cast<intptr_t>(result.y);
+          intptr_t z = reinterpret_cast<intptr_t>(result.z);
           if (::v8::internal::FLAG_trace_sim) {
             PrintF("Returned {%08" V8PRIxPTR ", %08" V8PRIxPTR ", %08" V8PRIxPTR
                    "}\n",
-                   reinterpret_cast<intptr_t>(result.x),
-                   reinterpret_cast<intptr_t>(result.y),
-                   reinterpret_cast<intptr_t>(result.z));
+                   x,y,z);
           }
+#ifdef V8_OS_ZOS
+          set_register(r1, x);
+          set_register(r2, y);
+          set_register(r3, z);
+#else
           memcpy(reinterpret_cast<void*>(result_buffer), &result,
                  sizeof(ObjectTriple));
           set_register(r2, result_buffer);
+#endif        
         } else {
           if (redirection->type() == ExternalReference::BUILTIN_CALL_PAIR) {
             SimulatorRuntimePairCall target =
