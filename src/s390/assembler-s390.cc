@@ -167,9 +167,10 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
 
   static bool performSTFLE = supportsSTFLE();
 
+#if !V8_OS_ZOS
 // Need to define host, as we are generating inlined S390 assembly to test
 // for facilities.
-#if V8_HOST_ARCH_S390
+#if V8_HOST_ARCH_S390 
   if (performSTFLE) {
     // STFLE D(B) requires:
     //    GPR0 to specify # of double words to update minus 1.
@@ -222,6 +223,7 @@ void CpuFeatures::ProbeImpl(bool cross_compile) {
   USE(performSTFLE);  // To avoid assert
   USE(supportsCPUFeature);
   supported_ |= (1u << VECTOR_FACILITY);
+#endif
 #endif
   supported_ |= (1u << FPU);
 }
