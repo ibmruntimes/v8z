@@ -91,7 +91,7 @@ std::string LoadGolden(const std::string& golden_filename) {
   std::ifstream expected_file((kGoldenFileDirectory + golden_filename).c_str());
   CHECK(expected_file.is_open());
   SkipGoldenFileHeader(expected_file);
-  std::ostringstream expected_stream;
+  v8::base::OStringStream expected_stream;
   // Restore the first separator, which was consumed by SkipGoldenFileHeader
   expected_stream << "---\n" << expected_file.rdbuf();
   return expected_stream.str();
@@ -102,7 +102,7 @@ std::string BuildActual(const BytecodeExpectationsPrinter& printer,
                         const char* (&snippet_list)[N],
                         const char* prologue = nullptr,
                         const char* epilogue = nullptr) {
-  std::ostringstream actual_stream;
+  v8::base::OStringStream actual_stream;
   for (const char* snippet : snippet_list) {
     std::string source_code;
     if (prologue) source_code += prologue;
@@ -2083,7 +2083,7 @@ TEST(DeleteLookupSlotInEval) {
 
 TEST(WideRegisters) {
   // Prepare prologue that creates frame for lots of registers.
-  std::ostringstream os;
+  v8::base::OStringStream os;
   for (size_t i = 0; i < 157; ++i) {
     os << "var x" << i << ";\n";
   }

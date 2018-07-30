@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 [
-[ALWAYS, {
+[SKIP, {
     # BUG(5677): Real timers are flaky
     'RuntimeCallStatsTest.*': [SKIP],
 }], # ALWAYS

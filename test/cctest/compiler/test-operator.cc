@@ -69,7 +69,7 @@ TEST(TestOperator_Equals) {
 }
 
 static std::unique_ptr<char[]> OperatorToString(Operator* op) {
-  std::ostringstream os;
+  v8::base::OStringStream os;
   os << *op;
   return std::unique_ptr<char[]>(StrDup(os.str().c_str()));
 }
