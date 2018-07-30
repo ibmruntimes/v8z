@@ -114,7 +114,7 @@ static void CheckParseEq(const char* input, const char* expected,
                                                 &reader, flags, &result));
   CHECK(result.tree != NULL);
   CHECK(result.error.is_null());
-  std::ostringstream os;
+  v8::base::OStringStream os;
   result.tree->Print(os, &zone);
   if (strcmp(expected, os.str().c_str()) != 0) {
     printf("%s | %s\n", expected, os.str().c_str());
@@ -511,7 +511,7 @@ TEST(Errors) {
   // Check that we don't allow more than kMaxCapture captures
   const int kMaxCaptures = 1 << 16;  // Must match RegExpParser::kMaxCaptures.
   const char* kTooManyCaptures = "Too many captures";
-  std::ostringstream os;
+  v8::base::OStringStream os;
   for (int i = 0; i <= kMaxCaptures; i++) {
     os << "()";
   }
