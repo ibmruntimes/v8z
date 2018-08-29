@@ -207,15 +207,10 @@ DEFINE_PRINT_CHECK_OPERAND_CHAR(unsigned char)
 // be out of line, while the "Impl" code should be inline. Caller
 // takes ownership of the returned string.
 template <typename Lhs, typename Rhs>
-<<<<<<< HEAD
-std::string* MakeCheckOpString(Lhs lhs, Rhs rhs, char const* msg) {
-  std::ostringstream ss;
-=======
-std::string* MakeCheckOpString(typename PassType<Lhs>::type lhs,
-                               typename PassType<Rhs>::type rhs,
+std::string* MakeCheckOpString(Lhs lhs,
+                               Rhs rhs,
                                char const* msg) {
   v8::base::OStringStream ss;
->>>>>>> f6d947e... [z/OS] Enable RAS features
   ss << msg << " (";
   PrintCheckOperand(ss, lhs);
   ss << " vs. ";

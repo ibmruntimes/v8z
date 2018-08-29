@@ -1509,7 +1509,7 @@ static void Generate_InterpreterEnterBytecode(MacroAssembler* masm) {
   Smi* interpreter_entry_return_pc_offset(
       masm->isolate()->heap()->interpreter_entry_return_pc_offset());
   DCHECK_NE(interpreter_entry_return_pc_offset, static_cast<Smi *>(nullptr));
-  __ Move(r4, masm->isolate()->builtins()->InterpreterEntryTrampoline());
+  __ Move(r4, BUILTIN_CODE(masm->isolate(), InterpreterEntryTrampoline));
   __ AddP(r14, r4, Operand(interpreter_entry_return_pc_offset->value() +
                            Code::kHeaderSize - kHeapObjectTag));
 

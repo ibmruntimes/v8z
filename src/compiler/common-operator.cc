@@ -1333,7 +1333,7 @@ const Operator* CommonOperatorBuilder::CallWithCallerSavedRegisters(
               Operator::ZeroIfPure(descriptor->properties()),
               Operator::ZeroIfNoThrow(descriptor->properties()), descriptor) {}
 
-    void PrintParameter(std::ostream& os, PrintVerbosity verbose) const {
+    void PrintParameter(v8::base::OStream& os, PrintVerbosity verbose) const {
       os << "[" << *parameter() << "]";
     }
   };

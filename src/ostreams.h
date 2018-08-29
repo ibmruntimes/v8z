@@ -111,8 +111,8 @@ v8::base::OStream& operator<<(v8::base::OStream& os, const AsUC16& c);
 // of printable ASCII range.
 v8::base::OStream& operator<<(v8::base::OStream& os, const AsUC32& c);
 
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os, const AsHex& v);
-V8_EXPORT_PRIVATE std::ostream& operator<<(std::ostream& os,
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os, const AsHex& v);
+V8_EXPORT_PRIVATE v8::base::OStream& operator<<(v8::base::OStream& os,
                                            const AsHexBytes& v);
 
 }  // namespace internal

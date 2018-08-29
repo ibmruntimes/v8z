@@ -3425,13 +3425,13 @@ void HeapObject::HeapObjectShortPrint(v8::base::OStream& os) {  // NOLINT
   }
 }
 
-void Struct::BriefPrintDetails(std::ostream& os) {}
+void Struct::BriefPrintDetails(v8::base::OStream& os) {}
 
-void Tuple2::BriefPrintDetails(std::ostream& os) {
+void Tuple2::BriefPrintDetails(v8::base::OStream& os) {
   os << " " << Brief(value1()) << ", " << Brief(value2());
 }
 
-void Tuple3::BriefPrintDetails(std::ostream& os) {
+void Tuple3::BriefPrintDetails(v8::base::OStream& os) {
   os << " " << Brief(value1()) << ", " << Brief(value2()) << ", "
      << Brief(value3());
 }

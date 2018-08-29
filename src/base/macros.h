@@ -328,6 +328,7 @@ inline void* AlignedAddress(void* address, size_t alignment) {
   DCHECK_EQ(alignment & (alignment - 1), 0u);
   return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(address) &
                                  ~static_cast<uintptr_t>(alignment - 1));
+}
 #ifdef V8_OS_ZOS
 inline const uint8_t& Ascii2Ebcdic(const char letter) {
   static unsigned char a2e[256] = {

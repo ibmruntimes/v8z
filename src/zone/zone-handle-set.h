@@ -164,7 +164,7 @@ class ZoneHandleSet final {
 };
 
 template <typename T>
-std::ostream& operator<<(std::ostream& os, ZoneHandleSet<T> set) {
+v8::base::OStream& operator<<(v8::base::OStream& os, ZoneHandleSet<T> set) {
   for (size_t i = 0; i < set.size(); ++i) {
     if (i > 0) os << ", ";
     os << set.at(i);

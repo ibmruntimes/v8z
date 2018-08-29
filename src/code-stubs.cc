@@ -508,7 +508,7 @@ TF_STUB(LoadIndexedInterceptorStub, CodeStubAssembler) {
   TailCallRuntime(Runtime::kKeyedLoadIC_Miss, context, receiver, key, slot,
                   vector);
 }
-
+/*
 void CallICStub::PrintState(v8::base::OStream& os) const {  // NOLINT
   os << convert_mode();
 }
@@ -682,6 +682,7 @@ TF_STUB(CallICTrampolineStub, CodeStubAssembler) {
   Callable callable = CodeFactory::CallIC(isolate(), stub->convert_mode());
   TailCallStub(callable, context, target, argc, slot, vector);
 }
+*/
 
 void JSEntryStub::FinishCode(Handle<Code> code) {
   Handle<FixedArray> handler_table =
