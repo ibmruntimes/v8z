@@ -1,0 +1,12 @@
+solutions = [
+  { "name"        : "v8",
+    "url"         : "https://github.com/ibmruntimes/v8z",
+    "deps_file"   : "DEPS",
+    "managed"     : False,
+    "custom_deps" : {
+      'v8/build/gyp': 'https://chromium.googlesource.com/external/gyp@f72586209ecbf70b71ce690f2182ebe51669cbb3',
+      'v8/tools/gyp': 'https://chromium.googlesource.com/external/gyp@f72586209ecbf70b71ce690f2182ebe51669cbb3',
+      'v8/testing/gtest': 'https://github.com/jBarz/googletest@13226df8def4c4ab4ace94c429a9864272884b34',
+    },
+  },
+]
