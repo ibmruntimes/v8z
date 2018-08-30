@@ -1340,14 +1340,9 @@
         },
         'conditions': [
           ['OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="netbsd" \
-            or OS=="aix"', {
+            or OS=="aix" or OS=="zos"', {
             'cflags!': [
               '-Os',
-            ],
-            'cflags': [
-              '-fdata-sections',
-              '-ffunction-sections',
-              '<(wno_array_bounds)',
             ],
             'conditions': [
               # Don't use -O3 with sanitizers.
@@ -1359,6 +1354,13 @@
                 'cflags': ['-O2'],
                 'cflags!': ['-O3'],
               }],
+            ],
+          }],
+          ['OS!="zos"', {
+            'cflags': [
+              '-fdata-sections',
+              '-ffunction-sections',
+              '<(wno_array_bounds)',
             ],
           }],
           ['OS=="android"', {
