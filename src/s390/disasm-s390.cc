@@ -109,11 +109,7 @@ void Decoder::Print(const char* str, bool ebc) {
 
 // Print the register name according to the active name converter.
 void Decoder::PrintRegister(int reg) {
-#if defined(V8_OS_ZOS)
-   Print(converter_.NameOfCPURegister(reg), true);
-#else
    Print(converter_.NameOfCPURegister(reg));
-#endif
 }
 
 // Print the double FP register name according to the active name converter.
