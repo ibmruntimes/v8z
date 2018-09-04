@@ -1103,6 +1103,9 @@ bool Decoder::DecodeSixByte(Instruction* instr) {
     case AFI:
       Format(instr, "afi\t'r1,'i7");
       break;
+    case AGFI:
+      Format(instr, "agfi\t'r1,'i7");
+      break;
     case AIH:
       Format(instr, "aih\t'r1,'i7");
       break;
