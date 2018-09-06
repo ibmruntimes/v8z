@@ -583,11 +583,9 @@ class Heap {
   static const int kPointerMultiplier = i::kPointerSize / 4;
 #endif
 
-  // Semi-space size needs to be a multiple of page size.
-  static const int kMinSemiSpaceSizeInKB =
-      1 * kPointerMultiplier * ((1 << kPageSizeBits) / KB);
-  static const int kMaxSemiSpaceSizeInKB =
-      16 * kPointerMultiplier * ((1 << kPageSizeBits) / KB);
+  // The new space size has to be a power of 2. Sizes are in MB.
+  static const int kMinSemiSpaceSize = 1 * kPointerMultiplier;
+  static const int kMaxSemiSpaceSize = 8 * kPointerMultiplier;
 
   // The old space size has to be a multiple of Page::kPageSize.
   // Sizes are in MB.
@@ -916,14 +914,10 @@ class Heap {
   // Initialization. ===========================================================
   // ===========================================================================
 
-  // Configure heap sizes
-  // max_semi_space_size_in_kb: maximum semi-space size in KB
-  // max_old_generation_size_in_mb: maximum old generation size in MB
-  // code_range_size_in_mb: code range size in MB
-  // Return false if the heap has been set up already.
-  bool ConfigureHeap(size_t max_semi_space_size_in_kb,
-                     size_t max_old_generation_size_in_mb,
-                     size_t code_range_size_in_mb);
+  // Configure heap size in MB before setup. Return false if the heap has been
+  // set up already.
+  bool ConfigureHeap(size_t max_semi_space_size, size_t max_old_space_size,
+                     size_t code_range_size);
   bool ConfigureHeapDefault();
 
   // Prepares the heap, setting up memory areas that are needed in the isolate
@@ -1303,17 +1297,15 @@ class Heap {
 
   static size_t ComputeMaxSemiSpaceSize(uint64_t physical_memory) {
     const uint64_t min_physical_memory = 512 * MB;
-    const uint64_t max_physical_memory = 3 * static_cast<uint64_t>(GB);
+    const uint64_t max_physical_memory = 2 * static_cast<uint64_t>(GB);
 
     uint64_t capped_physical_memory =
         Max(Min(physical_memory, max_physical_memory), min_physical_memory);
     // linearly scale max semi-space size: (X-A)/(B-A)*(D-C)+C
-    int semi_space_size_in_kb =
-        static_cast<int>(((capped_physical_memory - min_physical_memory) *
-                          (kMaxSemiSpaceSizeInKB - kMinSemiSpaceSizeInKB)) /
-                             (max_physical_memory - min_physical_memory) +
-                         kMinSemiSpaceSizeInKB);
-    return RoundUp(semi_space_size_in_kb, (1 << kPageSizeBits) / KB);
+    return static_cast<int>(((capped_physical_memory - min_physical_memory) *
+                             (kMaxSemiSpaceSize - kMinSemiSpaceSize)) /
+                                (max_physical_memory - min_physical_memory) +
+                            kMinSemiSpaceSize);
   }
 
   // Returns the capacity of the heap in bytes w/o growing. Heap grows when
@@ -1435,13 +1427,15 @@ class Heap {
   // Prologue/epilogue callback methods.========================================
   // ===========================================================================
 
-  void AddGCPrologueCallback(v8::Isolate::GCCallback callback,
-                             GCType gc_type_filter, bool pass_isolate = true);
-  void RemoveGCPrologueCallback(v8::Isolate::GCCallback callback);
+  void AddGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
+                             GCType gc_type_filter, void* data);
+  void RemoveGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
+                                void* data);
 
-  void AddGCEpilogueCallback(v8::Isolate::GCCallback callback,
-                             GCType gc_type_filter, bool pass_isolate = true);
-  void RemoveGCEpilogueCallback(v8::Isolate::GCCallback callback);
+  void AddGCEpilogueCallback(v8::Isolate::GCCallbackWithData callback,
+                             GCType gc_type_filter, void* data);
+  void RemoveGCEpilogueCallback(v8::Isolate::GCCallbackWithData callback,
+                                void* data);
 
   void CallGCPrologueCallbacks(GCType gc_type, GCCallbackFlags flags);
   void CallGCEpilogueCallbacks(GCType gc_type, GCCallbackFlags flags);
@@ -1612,17 +1606,17 @@ class Heap {
     RootListIndex index;
   };
 
-  struct GCCallbackPair {
-    GCCallbackPair(v8::Isolate::GCCallback callback, GCType gc_type,
-                   bool pass_isolate)
-        : callback(callback), gc_type(gc_type), pass_isolate(pass_isolate) {}
+  struct GCCallbackTuple {
+    GCCallbackTuple(v8::Isolate::GCCallbackWithData callback, GCType gc_type,
+                    void* data)
+        : callback(callback), gc_type(gc_type), data(data) {}
 
-    bool operator==(const GCCallbackPair& other) const;
-    GCCallbackPair& operator=(const GCCallbackPair& other);
+    bool operator==(const GCCallbackTuple& other) const;
+    GCCallbackTuple& operator=(const GCCallbackTuple& other);
 
-    v8::Isolate::GCCallback callback;
+    v8::Isolate::GCCallbackWithData callback;
     GCType gc_type;
-    bool pass_isolate;
+    void* data;
   };
 
   static const int kInitialStringTableSize = 2048;
@@ -2302,8 +2296,8 @@ class Heap {
   // contains Smi(0) while marking is not active.
   Object* encountered_weak_collections_;
 
-  std::vector<GCCallbackPair> gc_epilogue_callbacks_;
-  std::vector<GCCallbackPair> gc_prologue_callbacks_;
+  std::vector<GCCallbackTuple> gc_epilogue_callbacks_;
+  std::vector<GCCallbackTuple> gc_prologue_callbacks_;
 
   GetExternallyAllocatedMemoryInBytesCallback external_memory_callback_;
 

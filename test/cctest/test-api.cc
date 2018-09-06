@@ -3488,15 +3488,9 @@ class ScopedArrayBufferContents {
  public:
   explicit ScopedArrayBufferContents(const v8::ArrayBuffer::Contents& contents)
       : contents_(contents) {}
-  ~ScopedArrayBufferContents() { free(contents_.AllocationBase()); }
+  ~ScopedArrayBufferContents() { free(contents_.Data()); }
   void* Data() const { return contents_.Data(); }
   size_t ByteLength() const { return contents_.ByteLength(); }
-
-  void* AllocationBase() const { return contents_.AllocationBase(); }
-  size_t AllocationLength() const { return contents_.AllocationLength(); }
-  v8::ArrayBuffer::Allocator::AllocationMode AllocationMode() const {
-    return contents_.AllocationMode();
-  }
 
  private:
   const v8::ArrayBuffer::Contents contents_;
@@ -3773,42 +3767,14 @@ THREADED_TEST(ArrayBuffer_NeuteringScript) {
   CheckDataViewIsNeutered(dv);
 }
 
-THREADED_TEST(ArrayBuffer_AllocationInformation) {
-  LocalContext env;
-  v8::Isolate* isolate = env->GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-
-  const size_t ab_size = 1024;
-  Local<v8::ArrayBuffer> ab = v8::ArrayBuffer::New(isolate, ab_size);
-  ScopedArrayBufferContents contents(ab->Externalize());
-
-  // Array buffers should have normal allocation mode.
-  CHECK(contents.AllocationMode() ==
-        v8::ArrayBuffer::Allocator::AllocationMode::kNormal);
-  // The allocation must contain the buffer (normally they will be equal, but
-  // this is not required by the contract).
-  CHECK_NOT_NULL(contents.AllocationBase());
-  const uintptr_t alloc =
-      reinterpret_cast<uintptr_t>(contents.AllocationBase());
-  const uintptr_t data = reinterpret_cast<uintptr_t>(contents.Data());
-  CHECK_LE(alloc, data);
-  CHECK_LE(data + contents.ByteLength(), alloc + contents.AllocationLength());
-}
-
 class ScopedSharedArrayBufferContents {
  public:
   explicit ScopedSharedArrayBufferContents(
       const v8::SharedArrayBuffer::Contents& contents)
       : contents_(contents) {}
-  ~ScopedSharedArrayBufferContents() { free(contents_.AllocationBase()); }
+  ~ScopedSharedArrayBufferContents() { free(contents_.Data()); }
   void* Data() const { return contents_.Data(); }
   size_t ByteLength() const { return contents_.ByteLength(); }
-
-  void* AllocationBase() const { return contents_.AllocationBase(); }
-  size_t AllocationLength() const { return contents_.AllocationLength(); }
-  v8::ArrayBuffer::Allocator::AllocationMode AllocationMode() const {
-    return contents_.AllocationMode();
-  }
 
  private:
   const v8::SharedArrayBuffer::Contents contents_;
@@ -19687,6 +19653,19 @@ void EpilogueCallbackSecond(v8::Isolate* isolate,
   ++epilogue_call_count_second;
 }
 
+void PrologueCallbackNew(v8::Isolate* isolate, v8::GCType,
+                         v8::GCCallbackFlags flags, void* data) {
+  CHECK_EQ(flags, v8::kNoGCCallbackFlags);
+  CHECK_EQ(gc_callbacks_isolate, isolate);
+  ++*static_cast<int*>(data);
+}
+
+void EpilogueCallbackNew(v8::Isolate* isolate, v8::GCType,
+                         v8::GCCallbackFlags flags, void* data) {
+  CHECK_EQ(flags, v8::kNoGCCallbackFlags);
+  CHECK_EQ(gc_callbacks_isolate, isolate);
+  ++*static_cast<int*>(data);
+}
 
 void PrologueCallbackAlloc(v8::Isolate* isolate,
                            v8::GCType,
@@ -19761,6 +19740,52 @@ TEST(GCCallbacksOld) {
   CHECK_EQ(2, epilogue_call_count_second);
 }
 
+TEST(GCCallbacksWithData) {
+  LocalContext context;
+
+  gc_callbacks_isolate = context->GetIsolate();
+  int prologue1 = 0;
+  int epilogue1 = 0;
+  int prologue2 = 0;
+  int epilogue2 = 0;
+
+  context->GetIsolate()->AddGCPrologueCallback(PrologueCallbackNew, &prologue1);
+  context->GetIsolate()->AddGCEpilogueCallback(EpilogueCallbackNew, &epilogue1);
+  CHECK_EQ(0, prologue1);
+  CHECK_EQ(0, epilogue1);
+  CHECK_EQ(0, prologue2);
+  CHECK_EQ(0, epilogue2);
+  CcTest::CollectAllGarbage();
+  CHECK_EQ(1, prologue1);
+  CHECK_EQ(1, epilogue1);
+  CHECK_EQ(0, prologue2);
+  CHECK_EQ(0, epilogue2);
+  context->GetIsolate()->AddGCPrologueCallback(PrologueCallbackNew, &prologue2);
+  context->GetIsolate()->AddGCEpilogueCallback(EpilogueCallbackNew, &epilogue2);
+  CcTest::CollectAllGarbage();
+  CHECK_EQ(2, prologue1);
+  CHECK_EQ(2, epilogue1);
+  CHECK_EQ(1, prologue2);
+  CHECK_EQ(1, epilogue2);
+  context->GetIsolate()->RemoveGCPrologueCallback(PrologueCallbackNew,
+                                                  &prologue1);
+  context->GetIsolate()->RemoveGCEpilogueCallback(EpilogueCallbackNew,
+                                                  &epilogue1);
+  CcTest::CollectAllGarbage();
+  CHECK_EQ(2, prologue1);
+  CHECK_EQ(2, epilogue1);
+  CHECK_EQ(2, prologue2);
+  CHECK_EQ(2, epilogue2);
+  context->GetIsolate()->RemoveGCPrologueCallback(PrologueCallbackNew,
+                                                  &prologue2);
+  context->GetIsolate()->RemoveGCEpilogueCallback(EpilogueCallbackNew,
+                                                  &epilogue2);
+  CcTest::CollectAllGarbage();
+  CHECK_EQ(2, prologue1);
+  CHECK_EQ(2, epilogue1);
+  CHECK_EQ(2, prologue2);
+  CHECK_EQ(2, epilogue2);
+}
 
 TEST(GCCallbacks) {
   LocalContext context;
@@ -20422,7 +20447,7 @@ class InitDefaultIsolateThread : public v8::base::Thread {
     create_params.array_buffer_allocator = CcTest::array_buffer_allocator();
     switch (testCase_) {
       case SetResourceConstraints: {
-        create_params.constraints.set_max_semi_space_size_in_kb(1024);
+        create_params.constraints.set_max_semi_space_size(1);
         create_params.constraints.set_max_old_space_size(6);
         break;
       }
@@ -26134,29 +26159,6 @@ TEST(FutexInterruption) {
   timeout_thread.Join();
 }
 
-THREADED_TEST(SharedArrayBuffer_AllocationInformation) {
-  i::FLAG_harmony_sharedarraybuffer = true;
-  LocalContext env;
-  v8::Isolate* isolate = env->GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-
-  const size_t ab_size = 1024;
-  Local<v8::SharedArrayBuffer> ab =
-      v8::SharedArrayBuffer::New(isolate, ab_size);
-  ScopedSharedArrayBufferContents contents(ab->Externalize());
-
-  // Array buffers should have normal allocation mode.
-  CHECK(contents.AllocationMode() ==
-        v8::ArrayBuffer::Allocator::AllocationMode::kNormal);
-  // The allocation must contain the buffer (normally they will be equal, but
-  // this is not required by the contract).
-  CHECK_NOT_NULL(contents.AllocationBase());
-  const uintptr_t alloc =
-      reinterpret_cast<uintptr_t>(contents.AllocationBase());
-  const uintptr_t data = reinterpret_cast<uintptr_t>(contents.Data());
-  CHECK_LE(alloc, data);
-  CHECK_LE(data + contents.ByteLength(), alloc + contents.AllocationLength());
-}
 
 static int nb_uncaught_exception_callback_calls = 0;
 
@@ -26818,7 +26820,7 @@ TEST(InternalFieldsOnTypedArray) {
   v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(isolate, 1);
   v8::Local<v8::Uint8Array> array = v8::Uint8Array::New(buffer, 0, 1);
   for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
-   CHECK_EQ(static_cast<void*>(static_cast<i::Smi*>(nullptr)),
+    CHECK_EQ(static_cast<void*>(nullptr),
              array->GetAlignedPointerFromInternalField(i));
   }
 }
@@ -26832,8 +26834,8 @@ TEST(InternalFieldsOnDataView) {
   v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(isolate, 1);
   v8::Local<v8::DataView> array = v8::DataView::New(buffer, 0, 1);
   for (int i = 0; i < v8::ArrayBufferView::kInternalFieldCount; i++) {
-    CHECK_EQ(static_cast<void*>(static_cast<i::Smi*>(nullptr)),
-            array->GetAlignedPointerFromInternalField(i));
+    CHECK_EQ(static_cast<void*>(nullptr),
+             array->GetAlignedPointerFromInternalField(i));
   }
 }
 

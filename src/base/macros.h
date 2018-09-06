@@ -317,7 +317,6 @@ template <typename T>
 inline T RoundUp(T x, intptr_t m) {
   return RoundDown<T>(static_cast<T>(x + m - 1), m);
 }
-
 template <intptr_t m, typename T>
 constexpr inline T RoundUp(T x) {
   return RoundDown<m, T>(static_cast<T>(x + m - 1));

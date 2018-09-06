@@ -58,15 +58,16 @@
 namespace v8 {
 namespace internal {
 
-bool Heap::GCCallbackPair::operator==(const Heap::GCCallbackPair& other) const {
-  return other.callback == callback;
+bool Heap::GCCallbackTuple::operator==(
+    const Heap::GCCallbackTuple& other) const {
+  return other.callback == callback && other.data == data;
 }
 
-Heap::GCCallbackPair& Heap::GCCallbackPair::operator=(
-    const Heap::GCCallbackPair& other) {
+Heap::GCCallbackTuple& Heap::GCCallbackTuple::operator=(
+    const Heap::GCCallbackTuple& other) {
   callback = other.callback;
   gc_type = other.gc_type;
-  pass_isolate = other.pass_isolate;
+  data = other.data;
   return *this;
 }
 
@@ -98,7 +99,7 @@ Heap::Heap()
       // semispace_size_ should be a power of 2 and old_generation_size_ should
       // be a multiple of Page::kPageSize.
       max_semi_space_size_(8 * (kPointerSize / 4) * MB),
-      initial_semispace_size_(kMinSemiSpaceSizeInKB * KB),
+      initial_semispace_size_(MB),
       max_old_generation_size_(700ul * (kPointerSize / 4) * MB),
       initial_max_old_generation_size_(max_old_generation_size_),
       initial_old_generation_size_(max_old_generation_size_ /
@@ -1592,35 +1593,21 @@ bool Heap::PerformGarbageCollection(
 void Heap::CallGCPrologueCallbacks(GCType gc_type, GCCallbackFlags flags) {
   RuntimeCallTimerScope runtime_timer(isolate(),
                                       &RuntimeCallStats::GCPrologueCallback);
-  for (const GCCallbackPair& info : gc_prologue_callbacks_) {
+  for (const GCCallbackTuple& info : gc_prologue_callbacks_) {
     if (gc_type & info.gc_type) {
-      if (!info.pass_isolate) {
-        v8::GCCallback callback =
-            reinterpret_cast<v8::GCCallback>(info.callback);
-        callback(gc_type, flags);
-      } else {
-        v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(this->isolate());
-        info.callback(isolate, gc_type, flags);
-      }
+      v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(this->isolate());
+      info.callback(isolate, gc_type, flags, info.data);
     }
   }
 }
 
-
-void Heap::CallGCEpilogueCallbacks(GCType gc_type,
-                                   GCCallbackFlags gc_callback_flags) {
+void Heap::CallGCEpilogueCallbacks(GCType gc_type, GCCallbackFlags flags) {
   RuntimeCallTimerScope runtime_timer(isolate(),
                                       &RuntimeCallStats::GCEpilogueCallback);
-  for (const GCCallbackPair& info : gc_epilogue_callbacks_) {
+  for (const GCCallbackTuple& info : gc_epilogue_callbacks_) {
     if (gc_type & info.gc_type) {
-      if (!info.pass_isolate) {
-        v8::GCCallback callback =
-            reinterpret_cast<v8::GCCallback>(info.callback);
-        callback(gc_type, gc_callback_flags);
-      } else {
-        v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(this->isolate());
-        info.callback(isolate, gc_type, gc_callback_flags);
-      }
+      v8::Isolate* isolate = reinterpret_cast<v8::Isolate*>(this->isolate());
+      info.callback(isolate, gc_type, flags, info.data);
     }
   }
 }
@@ -1897,6 +1884,12 @@ void Heap::Scavenge() {
 
   IncrementalMarking::PauseBlackAllocationScope pause_black_allocation(
       incremental_marking());
+
+  if (mark_compact_collector()->sweeper().sweeping_in_progress() &&
+      memory_allocator_->unmapper()->NumberOfDelayedChunks() >
+          static_cast<int>(new_space_->MaximumCapacity() / Page::kPageSize)) {
+    mark_compact_collector()->EnsureSweepingCompleted();
+  }
 
   mark_compact_collector()->sweeper().EnsureNewSpaceCompleted();
 
@@ -4823,12 +4816,10 @@ void Heap::CheckMemoryPressure() {
                               GarbageCollectionReason::kMemoryPressure);
     }
   }
-  if (memory_reducer_) {
-    MemoryReducer::Event event;
-    event.type = MemoryReducer::kPossibleGarbage;
-    event.time_ms = MonotonicallyIncreasingTimeInMs();
-    memory_reducer_->NotifyPossibleGarbage(event);
-  }
+  MemoryReducer::Event event;
+  event.type = MemoryReducer::kPossibleGarbage;
+  event.time_ms = MonotonicallyIncreasingTimeInMs();
+  memory_reducer_->NotifyPossibleGarbage(event);
 }
 
 void Heap::CollectGarbageOnMemoryPressure() {
@@ -5434,18 +5425,16 @@ void Heap::IterateStrongRoots(RootVisitor* v, VisitMode mode) {
 // TODO(1236194): Since the heap size is configurable on the command line
 // and through the API, we should gracefully handle the case that the heap
 // size is not big enough to fit all the initial objects.
-bool Heap::ConfigureHeap(size_t max_semi_space_size_in_kb,
-                         size_t max_old_generation_size_in_mb,
-                         size_t code_range_size_in_mb) {
+bool Heap::ConfigureHeap(size_t max_semi_space_size, size_t max_old_space_size,
+                         size_t code_range_size) {
   if (HasBeenSetUp()) return false;
 
   // Overwrite default configuration.
-  if (max_semi_space_size_in_kb != 0) {
-    max_semi_space_size_ =
-        ROUND_UP(max_semi_space_size_in_kb * KB, Page::kPageSize);
+  if (max_semi_space_size != 0) {
+    max_semi_space_size_ = max_semi_space_size * MB;
   }
-  if (max_old_generation_size_in_mb != 0) {
-    max_old_generation_size_ = max_old_generation_size_in_mb * MB;
+  if (max_old_space_size != 0) {
+    max_old_generation_size_ = max_old_space_size * MB;
   }
 
   // If max space size flags are specified overwrite the configuration.
@@ -5472,12 +5461,6 @@ bool Heap::ConfigureHeap(size_t max_semi_space_size_in_kb,
   // for containment.
   max_semi_space_size_ = base::bits::RoundUpToPowerOfTwo32(
       static_cast<uint32_t>(max_semi_space_size_));
-
-  if (max_semi_space_size_ == kMaxSemiSpaceSizeInKB * KB) {
-    // Start with at least 1*MB semi-space on machines with a lot of memory.
-    initial_semispace_size_ =
-        Max(initial_semispace_size_, static_cast<size_t>(1 * MB));
-  }
 
   if (FLAG_min_semi_space_size > 0) {
     size_t initial_semispace_size =
@@ -5522,7 +5505,7 @@ bool Heap::ConfigureHeap(size_t max_semi_space_size_in_kb,
           FixedArray::SizeFor(JSArray::kInitialMaxFastElementArray) +
           AllocationMemento::kSize));
 
-  code_range_size_ = code_range_size_in_mb * MB;
+  code_range_size_ = code_range_size * MB;
 
   configured_ = true;
   return true;
@@ -6192,21 +6175,21 @@ void Heap::TearDown() {
   memory_allocator_ = nullptr;
 }
 
-
-void Heap::AddGCPrologueCallback(v8::Isolate::GCCallback callback,
-                                 GCType gc_type, bool pass_isolate) {
+void Heap::AddGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
+                                 GCType gc_type, void* data) {
   DCHECK_NOT_NULL(callback);
   DCHECK(gc_prologue_callbacks_.end() ==
          std::find(gc_prologue_callbacks_.begin(), gc_prologue_callbacks_.end(),
-                   GCCallbackPair(callback, gc_type, pass_isolate)));
-  gc_prologue_callbacks_.emplace_back(callback, gc_type, pass_isolate);
+                   GCCallbackTuple(callback, gc_type, data)));
+  gc_prologue_callbacks_.emplace_back(callback, gc_type, data);
 }
 
-
-void Heap::RemoveGCPrologueCallback(v8::Isolate::GCCallback callback) {
+void Heap::RemoveGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
+                                    void* data) {
   DCHECK_NOT_NULL(callback);
   for (size_t i = 0; i < gc_prologue_callbacks_.size(); i++) {
-    if (gc_prologue_callbacks_[i].callback == callback) {
+    if (gc_prologue_callbacks_[i].callback == callback &&
+        gc_prologue_callbacks_[i].data == data) {
       gc_prologue_callbacks_[i] = gc_prologue_callbacks_.back();
       gc_prologue_callbacks_.pop_back();
       return;
@@ -6215,21 +6198,21 @@ void Heap::RemoveGCPrologueCallback(v8::Isolate::GCCallback callback) {
   UNREACHABLE();
 }
 
-
-void Heap::AddGCEpilogueCallback(v8::Isolate::GCCallback callback,
-                                 GCType gc_type, bool pass_isolate) {
+void Heap::AddGCEpilogueCallback(v8::Isolate::GCCallbackWithData callback,
+                                 GCType gc_type, void* data) {
   DCHECK_NOT_NULL(callback);
   DCHECK(gc_epilogue_callbacks_.end() ==
          std::find(gc_epilogue_callbacks_.begin(), gc_epilogue_callbacks_.end(),
-                   GCCallbackPair(callback, gc_type, pass_isolate)));
-  gc_epilogue_callbacks_.emplace_back(callback, gc_type, pass_isolate);
+                   GCCallbackTuple(callback, gc_type, data)));
+  gc_epilogue_callbacks_.emplace_back(callback, gc_type, data);
 }
 
-
-void Heap::RemoveGCEpilogueCallback(v8::Isolate::GCCallback callback) {
+void Heap::RemoveGCEpilogueCallback(v8::Isolate::GCCallbackWithData callback,
+                                    void* data) {
   DCHECK_NOT_NULL(callback);
   for (size_t i = 0; i < gc_epilogue_callbacks_.size(); i++) {
-    if (gc_epilogue_callbacks_[i].callback == callback) {
+    if (gc_epilogue_callbacks_[i].callback == callback &&
+        gc_epilogue_callbacks_[i].data == data) {
       gc_epilogue_callbacks_[i] = gc_epilogue_callbacks_.back();
       gc_epilogue_callbacks_.pop_back();
       return;

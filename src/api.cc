@@ -597,8 +597,7 @@ Isolate* SnapshotCreator::GetIsolate() {
   return SnapshotCreatorData::cast(data_)->isolate_;
 }
 
-void SnapshotCreator::SetDefaultContext(
-    Local<Context> context, SerializeInternalFieldsCallback callback) {
+void SnapshotCreator::SetDefaultContext(Local<Context> context) {
   DCHECK(!context.IsEmpty());
   SnapshotCreatorData* data = SnapshotCreatorData::cast(data_);
   DCHECK(!data->created_);
@@ -606,7 +605,8 @@ void SnapshotCreator::SetDefaultContext(
   Isolate* isolate = data->isolate_;
   CHECK_EQ(isolate, context->GetIsolate());
   data->default_context_.Reset(isolate, context);
-  data->default_embedder_fields_serializer_ = callback;
+  data->default_embedder_fields_serializer_ =
+      v8::SerializeInternalFieldsCallback();
 }
 
 size_t SnapshotCreator::AddContext(Local<Context> context,
@@ -874,7 +874,7 @@ Extension::Extension(const char* name,
 }
 
 ResourceConstraints::ResourceConstraints()
-    : max_semi_space_size_in_kb_(0),
+    : max_semi_space_size_(0),
       max_old_space_size_(0),
       stack_limit_(NULL),
       code_range_size_(0),
@@ -882,8 +882,8 @@ ResourceConstraints::ResourceConstraints()
 
 void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
                                             uint64_t virtual_memory_limit) {
-  set_max_semi_space_size_in_kb(
-      i::Heap::ComputeMaxSemiSpaceSize(physical_memory));
+  set_max_semi_space_size(
+      static_cast<int>(i::Heap::ComputeMaxSemiSpaceSize(physical_memory)));
   set_max_old_space_size(
       static_cast<int>(i::Heap::ComputeMaxOldGenerationSize(physical_memory)));
   set_max_zone_pool_size(i::AccountingAllocator::kMaxPoolSize);
@@ -899,7 +899,7 @@ void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
 
 void SetResourceConstraints(i::Isolate* isolate,
                             const ResourceConstraints& constraints) {
-  size_t semi_space_size = constraints.max_semi_space_size_in_kb();
+  int semi_space_size = constraints.max_semi_space_size();
   int old_space_size = constraints.max_old_space_size();
   size_t code_range_size = constraints.code_range_size();
   size_t max_pool_size = constraints.max_zone_pool_size();
@@ -4492,6 +4492,24 @@ Maybe<bool> v8::Object::ForceSet(v8::Local<v8::Context> context,
 }
 
 
+bool v8::Object::ForceSet(v8::Local<Value> key, v8::Local<Value> value,
+                          v8::PropertyAttribute attribs) {
+  i::Isolate* isolate = Utils::OpenHandle(this)->GetIsolate();
+  ENTER_V8_HELPER_DO_NOT_USE(isolate, Local<Context>(), Object, ForceSet,
+                             false, i::HandleScope, false);
+  i::Handle<i::JSObject> self =
+      i::Handle<i::JSObject>::cast(Utils::OpenHandle(this));
+  i::Handle<i::Object> key_obj = Utils::OpenHandle(*key);
+  i::Handle<i::Object> value_obj = Utils::OpenHandle(*value);
+  has_pending_exception =
+      DefineObjectProperty(self, key_obj, value_obj,
+                           static_cast<i::PropertyAttributes>(attribs))
+          .is_null();
+  EXCEPTION_BAILOUT_CHECK_SCOPED_DO_NOT_USE(isolate, false);
+  return true;
+}
+
+
 Maybe<bool> v8::Object::SetPrivate(Local<Context> context, Local<Private> key,
                                    Local<Value> value) {
   auto isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
@@ -5172,6 +5190,7 @@ Local<v8::Context> v8::Object::CreationContext() {
 
 
 int v8::Object::GetIdentityHash() {
+  i::DisallowHeapAllocation no_gc;
   auto isolate = Utils::OpenHandle(this)->GetIsolate();
   i::HandleScope scope(isolate);
   auto self = Utils::OpenHandle(this);
@@ -6318,16 +6337,11 @@ bool v8::V8::Initialize() {
   return true;
 }
 
-#if V8_OS_POSIX
-bool V8::TryHandleSignal(int signum, void* info, void* context) {
 #if V8_OS_LINUX && V8_TARGET_ARCH_X64 && !V8_OS_ANDROID
-  return v8::internal::trap_handler::TryHandleSignal(
-      signum, static_cast<siginfo_t*>(info), static_cast<ucontext_t*>(context));
-#else  // V8_OS_LINUX && V8_TARGET_ARCH_X64 && !V8_OS_ANDROID
+bool V8::TryHandleSignal(int signum, void* info, void* context) {
   return false;
-#endif
 }
-#endif
+#endif  // V8_OS_LINUX && V8_TARGET_ARCH_X64 && !V8_OS_ANDROID
 
 bool V8::RegisterDefaultSignalHandler() {
   return v8::internal::trap_handler::RegisterDefaultSignalHandler();
@@ -6559,10 +6573,9 @@ Local<Context> NewContext(
 Local<Context> v8::Context::New(
     v8::Isolate* external_isolate, v8::ExtensionConfiguration* extensions,
     v8::MaybeLocal<ObjectTemplate> global_template,
-    v8::MaybeLocal<Value> global_object,
-    DeserializeInternalFieldsCallback internal_fields_deserializer) {
+    v8::MaybeLocal<Value> global_object) {
   return NewContext(external_isolate, extensions, global_template,
-                    global_object, 0, internal_fields_deserializer);
+                    global_object, 0, v8::DeserializeInternalFieldsCallback());
 }
 
 MaybeLocal<Context> v8::Context::FromSnapshot(
@@ -7702,6 +7715,18 @@ MaybeLocal<Proxy> Proxy::New(Local<Context> context, Local<Object> local_target,
   RETURN_ESCAPED(result);
 }
 
+WasmCompiledModule::TransferrableModule::TransferrableModule(
+    TransferrableModule&& src)
+    : compiled_code(std::move(src.compiled_code))
+    , wire_bytes(std::move(src.wire_bytes)) {}
+
+WasmCompiledModule::TransferrableModule&
+WasmCompiledModule::TransferrableModule::operator=(TransferrableModule&& src) {
+  compiled_code = std::move(src.compiled_code);
+  wire_bytes = std::move(src.wire_bytes);
+  return *this;
+}
+
 Local<String> WasmCompiledModule::GetWasmWireBytes() {
   i::Handle<i::WasmModuleObject> obj =
       i::Handle<i::WasmModuleObject>::cast(Utils::OpenHandle(this));
@@ -7814,6 +7839,22 @@ WasmModuleObjectBuilderStreaming::WasmModuleObjectBuilderStreaming(
   }
 }
 
+WasmModuleObjectBuilderStreaming::WasmModuleObjectBuilderStreaming(
+    WasmModuleObjectBuilderStreaming&& src)
+    : isolate_(std::move(src.isolate_))
+    , promise_(std::move(src.promise_))
+    , received_buffers_(std::move(src.received_buffers_))
+    , total_size_(std::move(src.total_size_)) {}
+
+WasmModuleObjectBuilderStreaming& WasmModuleObjectBuilderStreaming::operator=(
+    WasmModuleObjectBuilderStreaming&& src) {
+  isolate_ = std::move(src.isolate_);
+  promise_ = std::move(src.promise_);
+  received_buffers_ = std::move(src.received_buffers_);
+  total_size_ = std::move(src.total_size_);
+  return *this;
+}
+
 Local<Promise> WasmModuleObjectBuilderStreaming::GetPromise() {
   return promise_.Get(isolate_);
 }
@@ -7857,6 +7898,17 @@ void WasmModuleObjectBuilderStreaming::Abort(Local<Value> exception) {
 
 WasmModuleObjectBuilderStreaming::~WasmModuleObjectBuilderStreaming() {
   promise_.Reset();
+}
+
+WasmModuleObjectBuilder::WasmModuleObjectBuilder(WasmModuleObjectBuilder&& src)
+    : received_buffers_(std::move(src.received_buffers_))
+    , total_size_(std::move(src.total_size_)) {}
+
+WasmModuleObjectBuilder&
+WasmModuleObjectBuilder::operator=(WasmModuleObjectBuilder&& src) {
+  received_buffers_ = std::move(src.received_buffers_);
+  total_size_ = std::move(src.total_size_);
+  return *this;
 }
 
 void WasmModuleObjectBuilder::OnBytesReceived(const uint8_t* bytes,
@@ -7913,11 +7965,6 @@ v8::ArrayBuffer::Contents v8::ArrayBuffer::GetContents() {
   i::Handle<i::JSArrayBuffer> self = Utils::OpenHandle(this);
   size_t byte_length = static_cast<size_t>(self->byte_length()->Number());
   Contents contents;
-  contents.allocation_base_ = self->allocation_base();
-  contents.allocation_length_ = self->allocation_length();
-  contents.allocation_mode_ = self->has_guard_region()
-                                  ? Allocator::AllocationMode::kReservation
-                                  : Allocator::AllocationMode::kNormal;
   contents.data_ = self->backing_store();
   contents.byte_length_ = byte_length;
   return contents;
@@ -8129,12 +8176,6 @@ v8::SharedArrayBuffer::Contents v8::SharedArrayBuffer::GetContents() {
   Contents contents;
   contents.data_ = self->backing_store();
   contents.byte_length_ = byte_length;
-  // SharedArrayBuffers never have guard regions, so their allocation and data
-  // are equivalent.
-  contents.allocation_base_ = self->backing_store();
-  contents.allocation_length_ = byte_length;
-  contents.allocation_mode_ =
-      ArrayBufferAllocator::Allocator::AllocationMode::kNormal;
   return contents;
 }
 
@@ -8291,11 +8332,6 @@ void Isolate::ReportExternalAllocationLimitReached() {
   heap->ReportExternalMemoryPressure();
 }
 
-void Isolate::CheckMemoryPressure() {
-  i::Heap* heap = reinterpret_cast<i::Isolate*>(this)->heap();
-  if (heap->gc_state() != i::Heap::NOT_IN_GC) return;
-  heap->CheckMemoryPressure();
-}
 
 HeapProfiler* Isolate::GetHeapProfiler() {
   i::HeapProfiler* heap_profiler =
@@ -8375,41 +8411,70 @@ v8::Local<Value> Isolate::ThrowException(v8::Local<v8::Value> value) {
   return v8::Undefined(reinterpret_cast<v8::Isolate*>(isolate));
 }
 
-void Isolate::AddGCPrologueCallback(GCCallback callback, GCType gc_type) {
+void Isolate::AddGCPrologueCallback(GCCallbackWithData callback, void* data,
+                                    GCType gc_type) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
-  isolate->heap()->AddGCPrologueCallback(callback, gc_type);
+  isolate->heap()->AddGCPrologueCallback(callback, gc_type, data);
 }
 
+void Isolate::RemoveGCPrologueCallback(GCCallbackWithData callback,
+                                       void* data) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  isolate->heap()->RemoveGCPrologueCallback(callback, data);
+}
+
+void Isolate::AddGCEpilogueCallback(GCCallbackWithData callback, void* data,
+                                    GCType gc_type) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  isolate->heap()->AddGCEpilogueCallback(callback, gc_type, data);
+}
+
+void Isolate::RemoveGCEpilogueCallback(GCCallbackWithData callback,
+                                       void* data) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  isolate->heap()->RemoveGCEpilogueCallback(callback, data);
+}
+
+static void CallGCCallbackWithoutData(Isolate* isolate, GCType type,
+                                      GCCallbackFlags flags, void* data) {
+  reinterpret_cast<Isolate::GCCallback>(data)(isolate, type, flags);
+}
+
+void Isolate::AddGCPrologueCallback(GCCallback callback, GCType gc_type) {
+  void* data = reinterpret_cast<void*>(callback);
+  AddGCPrologueCallback(CallGCCallbackWithoutData, data, gc_type);
+}
 
 void Isolate::RemoveGCPrologueCallback(GCCallback callback) {
-  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
-  isolate->heap()->RemoveGCPrologueCallback(callback);
+  void* data = reinterpret_cast<void*>(callback);
+  RemoveGCPrologueCallback(CallGCCallbackWithoutData, data);
 }
-
 
 void Isolate::AddGCEpilogueCallback(GCCallback callback, GCType gc_type) {
-  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
-  isolate->heap()->AddGCEpilogueCallback(callback, gc_type);
+  void* data = reinterpret_cast<void*>(callback);
+  AddGCEpilogueCallback(CallGCCallbackWithoutData, data, gc_type);
 }
-
 
 void Isolate::RemoveGCEpilogueCallback(GCCallback callback) {
-  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
-  isolate->heap()->RemoveGCEpilogueCallback(callback);
+  void* data = reinterpret_cast<void*>(callback);
+  RemoveGCEpilogueCallback(CallGCCallbackWithoutData, data);
 }
 
-
-void V8::AddGCPrologueCallback(GCCallback callback, GCType gc_type) {
-  i::Isolate* isolate = i::Isolate::Current();
-  isolate->heap()->AddGCPrologueCallback(
-      reinterpret_cast<v8::Isolate::GCCallback>(callback), gc_type, false);
+static void CallGCCallbackWithoutIsolate(Isolate* isolate, GCType type,
+                                         GCCallbackFlags flags, void* data) {
+  reinterpret_cast<v8::GCCallback>(data)(type, flags);
 }
 
+void V8::AddGCPrologueCallback(v8::GCCallback callback, GCType gc_type) {
+  void* data = reinterpret_cast<void*>(callback);
+  Isolate::GetCurrent()->AddGCPrologueCallback(CallGCCallbackWithoutIsolate,
+                                               data, gc_type);
+}
 
-void V8::AddGCEpilogueCallback(GCCallback callback, GCType gc_type) {
-  i::Isolate* isolate = i::Isolate::Current();
-  isolate->heap()->AddGCEpilogueCallback(
-      reinterpret_cast<v8::Isolate::GCCallback>(callback), gc_type, false);
+void V8::AddGCEpilogueCallback(v8::GCCallback callback, GCType gc_type) {
+  void* data = reinterpret_cast<void*>(callback);
+  Isolate::GetCurrent()->AddGCEpilogueCallback(CallGCCallbackWithoutIsolate,
+                                               data, gc_type);
 }
 
 void Isolate::SetEmbedderHeapTracer(EmbedderHeapTracer* tracer) {
@@ -9021,6 +9086,13 @@ void Isolate::SetAllowCodeGenerationFromStringsCallback(
     AllowCodeGenerationFromStringsCallback callback) {
   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
   isolate->set_allow_code_gen_callback(callback);
+}
+
+void Isolate::SetAllowCodeGenerationFromStringsCallback(
+    DeprecatedAllowCodeGenerationFromStringsCallback callback) {
+  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+  isolate->set_allow_code_gen_callback(
+      reinterpret_cast<AllowCodeGenerationFromStringsCallback>(callback));
 }
 
 #define CALLBACK_SETTER(ExternalName, Type, InternalName)      \
@@ -10478,6 +10550,10 @@ void HeapProfiler::SetGetRetainerInfosCallback(
     GetRetainerInfosCallback callback) {
   reinterpret_cast<i::HeapProfiler*>(this)->SetGetRetainerInfosCallback(
       callback);
+}
+
+size_t HeapProfiler::GetProfilerMemorySize() {
+  return 0;
 }
 
 v8::Testing::StressType internal::Testing::stress_type_ =
