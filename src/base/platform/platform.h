@@ -318,8 +318,11 @@ class VirtualMemory {
 
   // Construct a virtual memory by assigning it some already mapped address
   // and size.
+#ifdef V8_OS_ZOS
+  VirtualMemory(void* address, size_t size) : address_(address), size_(size), reservation_(address) {}
+#else
   VirtualMemory(void* address, size_t size) : address_(address), size_(size) {}
-
+#endif
   // Releases the reserved memory, if any, controlled by this VirtualMemory
   // object.
   ~VirtualMemory();
@@ -362,6 +365,9 @@ class VirtualMemory {
     size_t size = size_;
     CHECK(InVM(address, size));
     Reset();
+#ifdef V8_OS_ZOS
+    address = reservation_;
+#endif
     bool result = ReleaseRegion(address, size);
     USE(result);
     DCHECK(result);
@@ -373,6 +379,9 @@ class VirtualMemory {
     DCHECK(!IsReserved());
     address_ = from->address_;
     size_ = from->size_;
+#ifdef V8_OS_ZOS
+    reservation_ = from->reservation_;
+#endif
     from->Reset();
   }
 
@@ -401,6 +410,10 @@ class VirtualMemory {
 
   void* address_;  // Start address of the virtual memory.
   size_t size_;  // Size of the virtual memory.
+#if defined(V8_OS_ZOS)
+  void* reservation_;
+#endif
+
 };
 
 

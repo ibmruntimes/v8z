@@ -317,15 +317,15 @@ void OS::SignalCodeMovingGC() {
 static const int kMmapFd = -1;
 // Constants used for mmap.
 static const int kMmapFdOffset = 0;
-VirtualMemory::VirtualMemory() : address_(NULL), size_(0) { }
+VirtualMemory::VirtualMemory() : address_(NULL), size_(0), reservation_(NULL) { }
 
 
 VirtualMemory::VirtualMemory(size_t size)
-    : address_(ReserveRegion(size)), size_(size) { }
+    : address_(ReserveRegion(size)), size_(size), reservation_(address_) { }
 
 
 VirtualMemory::VirtualMemory(size_t size, size_t alignment)
-    : address_(NULL), size_(0) {
+    : address_(NULL), size_(0), reservation_(NULL) {
   DCHECK((alignment % OS::AllocateAlignment()) == 0);
   //Memory pages with 1MB alignment will be allocated using __moservices
   bool rmode64 = SysInfo::ExecutablePagesAbove2GB(); 
@@ -335,6 +335,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
      if (reservation == MAP_FAILED) return;
      address_ = reservation;
      size_ = size;
+     reservation_ = address_;
      return;
   }
   size_t request_size = RoundUp(size + alignment,
@@ -343,7 +344,24 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
   void* reservation = anon_mmap(OS::GetRandomMmapAddr(),
                            request_size);
 
-  if (reservation == MAP_FAILED) return;
+  //Try allocating from 64-bit address space, this is a last ditch effort
+  //to allocate memory with requested size and alignment, since there will
+  //be some fragmentation by going down this path
+  if (reservation == MAP_FAILED) {
+     request_size = RoundUp(size + alignment,
+                            static_cast<intptr_t>(kMegaByte));
+     reservation = anon_mmap(OS::GetRandomMmapAddr(),
+                        request_size);
+     if (reservation == MAP_FAILED) return;
+     reservation_ = reservation;
+     
+     uint8_t * base = static_cast<uint8_t *>(reservation_);
+     uint8_t * aligned_base = RoundUp(base, alignment);
+     DCHECK_LE(base, aligned_base);
+     address_ = aligned_base;
+     size = request_size;
+     return;
+  }
 
   uint8_t* base = static_cast<uint8_t*>(reservation);
   uint8_t* aligned_base = RoundUp(base, alignment);
@@ -376,7 +394,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
 
 VirtualMemory::~VirtualMemory() {
   if (IsReserved()) {
-    bool result = ReleaseRegion(address(), size());
+    bool result = ReleaseRegion(reservation_, size());
     DCHECK(result);
     USE(result);
   }

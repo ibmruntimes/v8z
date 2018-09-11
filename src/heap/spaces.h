@@ -486,7 +486,11 @@ class MemoryChunk {
       + kIntptrSize               // intptr_t flags_
       + kPointerSize              // Address area_start_
       + kPointerSize              // Address area_end_
+#ifdef V8_OS_ZOS
+      + 3 * kPointerSize
+#else
       + 2 * kPointerSize          // base::VirtualMemory reservation_
+#endif 
       + kPointerSize              // Address owner_
       + kPointerSize              // Heap* heap_
       + kIntSize;                 // int progress_bar_

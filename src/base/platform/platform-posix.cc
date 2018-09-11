@@ -238,7 +238,7 @@ void* OS::GetRandomMmapAddr() {
 
 
 size_t OS::AllocateAlignment() {
-  //return 1048576;
+  //return static_cast<size_t>(1048576);
     return static_cast<size_t>(sysconf(_SC_PAGESIZE));
 }
 
