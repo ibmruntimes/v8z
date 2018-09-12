@@ -2485,8 +2485,8 @@
       'dependencies': [
         'v8_base',
         'v8_builtins_setup',
-        'v8_libbase',
         'v8_libplatform',
+        'v8_libbase',
         'v8_nosnapshot',
       ],
       'include_dirs+': [

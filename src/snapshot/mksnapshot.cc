@@ -5,6 +5,10 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
+#ifdef V8_OS_ZOS
+#include <unistd.h>
+#endif
+
 
 #include "include/libplatform/libplatform.h"
 #include "src/assembler.h"
@@ -103,7 +107,11 @@ class SnapshotWriter {
   }
 
   static FILE* GetFileDescriptorOrDie(const char* filename) {
+#ifdef V8_OS_ZOS
+    FILE* fp = base::OS::FOpenASCII(filename, "wb");
+#else
     FILE* fp = base::OS::FOpen(filename, "wb");
+#endif
     if (fp == NULL) {
       i::PrintF("Unable to open file \"%s\" for writing.\n", filename);
       exit(1);
@@ -118,7 +126,11 @@ class SnapshotWriter {
 char* GetExtraCode(char* filename, const char* description) {
   if (filename == NULL || strlen(filename) == 0) return NULL;
   ::printf("Loading script for %s: %s\n", description, filename);
+#ifdef V8_OS_ZOS
+  FILE* file = base::OS::FOpenASCII(filename, "rb");
+#else
   FILE* file = base::OS::FOpen(filename, "rb");
+#endif
   if (file == NULL) {
     fprintf(stderr, "Failed to open '%s': errno %d\n", filename, errno);
     exit(1);
@@ -144,6 +156,13 @@ char* GetExtraCode(char* filename, const char* description) {
 int main(int argc, char** argv) {
   // Make mksnapshot runs predictable to create reproducible snapshots.
   i::FLAG_predictable = true;
+
+#ifdef V8_OS_ZOS
+  // Convert the input arguments to ASCII before flags processing
+  for (unsigned int i = 0 ; i < argc; i++) {
+     __e2a_s(argv[i]);
+  }
+#endif
 
   // Print the usage if an error occurs when parsing the command line
   // flags or if the help flag is set.

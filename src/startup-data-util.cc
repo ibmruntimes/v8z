@@ -48,7 +48,11 @@ void Load(const char* blob_file, v8::StartupData* startup_data,
 
   CHECK(blob_file);
 
+#ifdef V8_OS_ZOS
+  FILE* file = base::OS::FOpenASCII(blob_file, "rb");
+#else
   FILE* file = fopen(blob_file, "rb");
+#endif
   if (!file) {
     PrintF(stderr, "Failed to open startup resource '%s'.\n", blob_file);
     return;
