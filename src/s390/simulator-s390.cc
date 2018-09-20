@@ -6980,7 +6980,7 @@ EVALUATE(LCGR) {
   isOF = __builtin_ssubl_overflow(0L, r2_val, &result);
 #else
   r2_val = ~r2_val;
-  r2_val = r2_val + 1;
+  result = r2_val + 1;
   isOF = (r2_val < 0 && (r2_val +1) > 0);
 #endif
 #else
