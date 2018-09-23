@@ -1717,7 +1717,9 @@ static void CallApiFunctionAndReturn(MacroAssembler* masm,
    __ LoadRR(r2, r3);
    __ LoadRR(r3, r4);
   }
-  __ lay(r4, MemOperand(sp, -(kStackPointerBias + 18 * kPointerSize)));
+
+  // Update System Stack Pointer with the appropriate XPLINK stack bias.
+  __ lay(r4, MemOperand(sp, -kStackPointerBias));
   __ LoadRR(r10, r7);
 #endif
   

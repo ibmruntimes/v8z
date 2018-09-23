@@ -1994,11 +1994,6 @@ static const int kRegisterPassedArguments = 5;
 int TurboAssembler::CalculateStackPassedWords(int num_reg_arguments,
                                               int num_double_arguments) {
   int stack_passed_words = 0;
-#ifdef V8_OS_ZOS
-  // XPLINK Linkage reserves space for arguments on the stack
-  // even when passing them via registers.
-  stack_passed_words = num_reg_arguments + num_double_arguments;
-#else
   if (num_double_arguments > DoubleRegister::kNumRegisters) {
     stack_passed_words +=
         2 * (num_double_arguments - DoubleRegister::kNumRegisters);
@@ -2007,7 +2002,6 @@ int TurboAssembler::CalculateStackPassedWords(int num_reg_arguments,
   if (num_reg_arguments > kRegisterPassedArguments) {
     stack_passed_words += num_reg_arguments - kRegisterPassedArguments;
   }
-#endif
   return stack_passed_words;
 }
 
@@ -4478,13 +4472,27 @@ void TurboAssembler::CallCFunctionHelper(Register function,
   LoadRR(r2, r3);
   LoadRR(r3, r4);
 
-  //Set up stack.
-  stack_space = 16;
-  stack_space += 5;
-  lay(r4, MemOperand(sp, -((stack_space * kPointerSize) + kStackPointerBias)));
-  // XPLINK linkage requires args in r5-r7 to be passed on the stack
-  StoreMultipleP(r5, r7, 
-          MemOperand(r4, kStackPointerBias + 19 * kPointerSize));
+  // XPLINK linkage requires args in r5,r6 to be passed on the stack.
+  // However, for DirectAPI C calls, there may not be stack slots
+  // for these 4th and 5th parameters if num_reg_arguments are less
+  // than 3.  In that case, we need to still preserve r5/r6 into
+  // register save area, as they are considered volatile in XPLINK.
+  if (num_reg_arguments == 4) {
+     StoreP(r5, MemOperand(sp, 19 * kPointerSize));
+     StoreP(r6, MemOperand(sp, 6 * kPointerSize));
+  } else if (num_reg_arguments >= 5) {
+     StoreMultipleP(r5, r6, MemOperand(sp, 19 * kPointerSize));
+  } else {
+     StoreMultipleP(r5, r6, MemOperand(sp, 5 * kPointerSize));
+  }
+
+  // XPLINK treats r7 as voliatile return register, but r14 as preserved
+  // Since Linux is the other way around, perserve r7 value in r14 across
+  // the call.
+  LoadRR(r14, r7);
+
+  // Set up the system stack pointer with the XPLINK bias.
+  lay(r4, MemOperand(sp, -kStackPointerBias));
 #endif
 
 #if ABI_USES_FUNCTION_DESCRIPTORS && !defined(USE_SIMULATOR)
@@ -4503,9 +4511,19 @@ void TurboAssembler::CallCFunctionHelper(Register function,
 
 #ifdef V8_OS_ZOS
   CallC(dest);
-  //Restore r5-r7
-  LoadMultipleP(r5, r7,
-               MemOperand(r4, kStackPointerBias + 19*kPointerSize));
+
+  // Restore r5-r7 from the appropriate stack locations (see notes above).
+  if (num_reg_arguments == 4) {
+     LoadP(r5, MemOperand(sp, 19 * kPointerSize));
+     LoadP(r6, MemOperand(sp, 6 * kPointerSize));
+  } else if (num_reg_arguments >= 5) {
+     LoadMultipleP(r5, r6, MemOperand(sp, 19 * kPointerSize));
+  } else {
+     LoadMultipleP(r5, r6, MemOperand(sp, 5 * kPointerSize));
+  }
+
+  LoadRR(r7, r14);
+
   //Shuffle the result
   LoadRR (r2,r3);
 #else
