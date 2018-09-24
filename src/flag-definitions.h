@@ -799,7 +799,14 @@ DEFINE_BOOL(enable_liveedit, true, "enable liveedit experimental feature")
 DEFINE_BOOL(
     trace_side_effect_free_debug_evaluate, false,
     "print debug messages for side-effect-free debug-evaluate for testing")
+
+#if V8_OS_ZOS
+// Do not force crash on abort on zOS, as it may cause further LE ABENDS
+// during their error handling / stack walking.
+DEFINE_BOOL(hard_abort, false, "abort by crashing")
+#else
 DEFINE_BOOL(hard_abort, true, "abort by crashing")
+#endif
 
 // inspector
 DEFINE_BOOL(expose_inspector_scripts, false,
