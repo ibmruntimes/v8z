@@ -187,6 +187,12 @@ void PrintToStderr(const char* output) {
   USE(return_val);
 }
 
+#if V8_OS_ZOS
+// To ensure these routines are async-signal safe, we cannot invoke a2e
+// conversions before writing to STDERR.  As a result, we will use
+// pragma convert to ensure the literals are in EBCDIC already on zOS.
+#pragma convert("IBM-1047")
+#endif
 void StackDumpSignalHandler(int signal, siginfo_t* info, void* void_context) {
   // NOTE: This code MUST be async-signal safe.
   // NO malloc or stdio is allowed here.
@@ -194,6 +200,7 @@ void StackDumpSignalHandler(int signal, siginfo_t* info, void* void_context) {
   // Record the fact that we are in the signal handler now, so that the rest
   // of StackTrace can behave in an async-signal-safe manner.
   in_signal_handler = 1;
+
 
   PrintToStderr("Received signal ");
   char buf[1024] = {0};
@@ -266,6 +273,9 @@ void StackDumpSignalHandler(int signal, siginfo_t* info, void* void_context) {
 
   if (::signal(signal, SIG_DFL) == SIG_ERR) _exit(1);
 }
+#if V8_OS_ZOS
+#pragma convert(pop)
+#endif
 
 class PrintBacktraceOutputHandler : public BacktraceOutputHandler {
  public:
@@ -395,6 +405,12 @@ void StackTrace::OutputToStream(v8::base::OStream* os) const {
 
 namespace internal {
 
+#if V8_OS_ZOS
+// To ensure these routines are async-signal safe, we cannot invoke a2e
+// conversions before writing to STDERR.  As a result, we will use
+// pragma convert to ensure the literals are in EBCDIC already on zOS.
+#pragma convert("IBM-1047")
+#endif
 // NOTE: code from sandbox/linux/seccomp-bpf/demo.cc.
 char* itoa_r(intptr_t i, char* buf, size_t sz, int base, size_t padding) {
   // Make sure we can write at least one NUL byte.
@@ -454,7 +470,9 @@ char* itoa_r(intptr_t i, char* buf, size_t sz, int base, size_t padding) {
   }
   return buf;
 }
-
+#if V8_OS_ZOS
+#pragma convert(pop)
+#endif
 }  // namespace internal
 
 }  // namespace debug
