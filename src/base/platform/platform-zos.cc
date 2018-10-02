@@ -328,7 +328,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
     : address_(NULL), size_(0), reservation_(NULL) {
   DCHECK((alignment % OS::AllocateAlignment()) == 0);
   //Memory pages with 1MB alignment will be allocated using __moservices
-  bool rmode64 = SysInfo::ExecutablePagesAbove2GB(); 
+  bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
   if (rmode64 && size % kMegaByte == 0) {
      void * reservation = anon_mmap(OS::GetRandomMmapAddr(),
                                     size);
@@ -348,19 +348,21 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
   //to allocate memory with requested size and alignment, since there will
   //be some fragmentation by going down this path
   if (reservation == MAP_FAILED) {
-     request_size = RoundUp(size + alignment,
-                            static_cast<intptr_t>(kMegaByte));
-     reservation = anon_mmap(OS::GetRandomMmapAddr(),
-                        request_size);
-     if (reservation == MAP_FAILED) return;
-     reservation_ = reservation;
-     
-     uint8_t * base = static_cast<uint8_t *>(reservation_);
-     uint8_t * aligned_base = RoundUp(base, alignment);
-     DCHECK_LE(base, aligned_base);
-     address_ = aligned_base;
-     size = request_size;
-     return;
+    request_size = RoundUp(size + alignment,
+                           static_cast<intptr_t>(kMegaByte));
+    reservation = anon_mmap(OS::GetRandomMmapAddr(),
+                            request_size);
+
+    if (reservation == MAP_FAILED)
+       return;
+
+    uint8_t * base = static_cast<uint8_t *>(reservation);
+    uint8_t * aligned_base = RoundUp(base, alignment);
+    DCHECK_LE(base, aligned_base);
+    address_ = aligned_base;
+    size = request_size;
+    reservation_ = reservation;
+    return;
   }
 
   uint8_t* base = static_cast<uint8_t*>(reservation);
@@ -386,6 +388,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment)
 
   address_ = static_cast<void*>(aligned_base);
   size_ = aligned_size;
+  reservation_ = reservation;
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(address_, size_);
 #endif
