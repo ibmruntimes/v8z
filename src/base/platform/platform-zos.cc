@@ -99,33 +99,49 @@ bool OS::ArmUsingHardFloat() {
 
 static void * anon_mmap(void * addr, size_t len) {
    int retcode;
-   char * p;
+   bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
+   if (rmode64 && len % kMegaByte == 0) {
+     __mopl_t mopl_instance;
+     void * p = NULL;
+     size_t request_size = len / kMegaByte;
+     memset(&mopl_instance,0,sizeof(mopl_instance));
+     mopl_instance.__mopldumppriority = __MO_DUMP_PRIORITY_HEAP;
+     mopl_instance.__moplrequestsize = request_size;
+     retcode = __moservices(__MO_GETSTOR,sizeof(mopl_instance), &mopl_instance, &p);
+   } else {
+     int retcode;
+     char * p;
 #pragma convert("ibm-1047")
 #if defined(__64BIT__)
-  __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
-        " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
-        "LOC=(31,64)\x15"
+      __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
+            " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
+            "LOC=(31,64)\x15"
 # if defined(__clang__)
-        :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
+            :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
 # else
-        :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
+            :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
 # endif
 #else
-  __asm(" SYSSTATE ARCHLVL=2\x15"
-        " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\x15"
+      __asm(" SYSSTATE ARCHLVL=2\x15"
+            " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\x15"
 # if defined(__clang__)
-        :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
+            :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
 # else
-        :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
+            :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
 # endif
 #endif
 #pragma convert(pop)
    return (retcode == 0) ? p : MAP_FAILED;
+   }
 }
 
 
 static int anon_munmap(void * addr, size_t len) {
    int retcode;
+   bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
+   if (rmode64 && len % kMegaByte == 0) {
+     retcode == __moservices(__MO_DETACH,0,NULL, &addr);
+   } else {
 #pragma convert("ibm-1047")
 #if defined (__64BIT__)
   __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
@@ -145,6 +161,7 @@ static int anon_munmap(void * addr, size_t len) {
 # endif
 #endif
 #pragma convert(pop)
+   }
    return retcode;
 }
 
@@ -311,24 +328,46 @@ static const int kMmapFd = -1;
 // Constants used for mmap.
 static const int kMmapFdOffset = 0;
 
-VirtualMemory::VirtualMemory() : address_(NULL), size_(0) { }
+VirtualMemory::VirtualMemory() : address_(NULL), size_(0), reservation_(NULL) { }
 
 
 VirtualMemory::VirtualMemory(size_t size, void * hint)
-    : address_(ReserveRegion(size, hint)), size_(size) { }
+    : address_(ReserveRegion(size, hint)), size_(size), reservation_(address_) { }
 
 
 VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
-    : address_(NULL), size_(0) {
+    : address_(NULL), size_(0), reservation_(NULL) {
   DCHECK((alignment % OS::AllocateAlignment()) == 0);
+  bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
+  if (rmode64 && size % kMegaByte == 0) {
+     void * reservation = anon_mmap(OS::GetRandomMmapAddr(),
+                                    size);
+     if (reservation == MAP_FAILED) return;
+     address_ = reservation;
+     size_ = size;
+     reservation_ = address_;
+     return;
+  }
+
   size_t request_size = RoundUp(size + alignment,
                                 static_cast<intptr_t>(OS::AllocateAlignment()));
 
   void* reservation = anon_mmap(hint,
                            request_size);
-
-  if (reservation == MAP_FAILED) return;
-
+  if (reservation == MAP_FAILED) {
+      request_size = RoundUp(size + alignment,
+                             static_cast<intptr_t>(kMegaByte));
+      reservaton = anon_mmap(hint, request_size);
+      if (reservation == MAP_FAILED) 
+         return;
+    uint8_t * base = static_cast<uint8_t *>(reservation);
+    uint8_t * aligned_base = RoundUp(base, alignment);
+    DCHECK_LE(base, aligned_base);
+    address_ = aligned_base;
+    size = request_size;
+    reservation_ = reservation;
+    return;
+  }
   uint8_t* base = static_cast<uint8_t*>(reservation);
   uint8_t* aligned_base = RoundUp(base, alignment);
   DCHECK_LE(base, aligned_base);
@@ -361,7 +400,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
 
 VirtualMemory::~VirtualMemory() {
   if (IsReserved()) {
-    bool result = ReleaseRegion(address(), size());
+    bool result = ReleaseRegion(reservation_, size());
     DCHECK(result);
     USE(result);
   }
