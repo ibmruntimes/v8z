@@ -45,6 +45,7 @@
 #include "src/base/platform/platform.h"
 #include "src/base/platform/platform-posix.h"
 #include "src/s390/semaphore-zos.h"
+#include "src/base/sys-info.h"
 
 #define MAP_FAILED ((void *)-1L)
 
@@ -96,6 +97,8 @@ bool OS::ArmUsingHardFloat() {
 
 
 #define asm __asm__ volatile
+
+static const int kMegaByte = 1024*1024;
 
 static void * anon_mmap(void * addr, size_t len) {
    int retcode;
