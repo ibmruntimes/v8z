@@ -395,6 +395,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
 
   address_ = static_cast<void*>(aligned_base);
   size_ = aligned_size;
+  reservation_ = reservation;
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(address_, size_);
 #endif
