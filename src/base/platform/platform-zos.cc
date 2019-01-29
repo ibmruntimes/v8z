@@ -360,7 +360,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
   if (reservation == MAP_FAILED) {
       request_size = RoundUp(size + alignment,
                              static_cast<intptr_t>(kMegaByte));
-      reservaton = anon_mmap(hint, request_size);
+      reservation = anon_mmap(hint, request_size);
       if (reservation == MAP_FAILED) 
          return;
     uint8_t * base = static_cast<uint8_t *>(reservation);
