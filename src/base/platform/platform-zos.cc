@@ -111,6 +111,7 @@ static void * anon_mmap(void * addr, size_t len) {
      mopl_instance.__mopldumppriority = __MO_DUMP_PRIORITY_HEAP;
      mopl_instance.__moplrequestsize = request_size;
      retcode = __moservices(__MO_GETSTOR,sizeof(mopl_instance), &mopl_instance, &p);
+     return (retcode == 0) ? p : MAP_FAILED;
    } else {
      int retcode;
      char * p;
@@ -134,7 +135,7 @@ static void * anon_mmap(void * addr, size_t len) {
 # endif
 #endif
 #pragma convert(pop)
-   return (retcode == 0) ? p : MAP_FAILED;
+    return (retcode == 0) ? p : MAP_FAILED;
    }
 }
 
