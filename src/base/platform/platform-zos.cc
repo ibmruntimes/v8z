@@ -198,8 +198,17 @@ const char* ZOSTimezoneCache::LocalTimezone(double time) {
   time_t tv = static_cast<time_t>(std::floor(time/msPerSecond));
   struct tm tm;
   struct tm* t= localtime_r(&tv, &tm);
-  if (NULL == t) return "";
-  return tzname[0]; //The location of the timezone string on zOS
+  if (NULL == t) 
+    return "";
+
+#ifdef __MVS__
+  char *tz = new char[strlen(tzname[0]) + 1];
+  memcpy(tz, tzname[0], strlen(tzname[0]) + 1);
+  __e2a_s(tz);
+  return tz; // The location of the timezone string on zOS
+#else
+  return tzname[0];
+#endif
   /*
   double offset_secs = LocalTimeOffset(cache) / msPerSecond;
   int offset_hrs  = (int)offset_secs/3600;
