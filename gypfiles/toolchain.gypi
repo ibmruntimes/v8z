@@ -1009,7 +1009,6 @@
           '-qasm',
           '-qdebug=nohook',
           '-qbitfield=signed',
-          '-qnortti',
           '-Wc,expo',
         ],
         'ldflags': [
