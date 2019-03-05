@@ -245,7 +245,7 @@ class PerfBasicLogger : public CodeEventLogger {
   FILE* perf_output_handle_;
 };
 
-const char PerfBasicLogger::kFilenameFormatString[] = "/tmp/perf-%d.map";
+const char PerfBasicLogger::kFilenameFormatString[] = u8"/tmp/perf-%d.map";
 // Extra space for the PID in the filename
 const int PerfBasicLogger::kFilenameBufferPadding = 16;
 
@@ -259,8 +259,16 @@ PerfBasicLogger::PerfBasicLogger()
       kFilenameFormatString,
       base::OS::GetCurrentProcessId());
   CHECK_NE(size, -1);
+#ifdef __MVS__
+  char *ebcdic_perf_path = new char[strlen(perf_dump_name.start()) + 1];
+  memmove(ebcdic_perf_path, perf_dump_name.start(), strlen(perf_dump_name.start()) + 1);
+  __a2e_s(ebcdic_perf_path);
+  perf_output_handle_ =
+      base::OS::FOpen(ebcdic_perf_path, base::OS::LogFileOpenMode);
+#else
   perf_output_handle_ =
       base::OS::FOpen(perf_dump_name.start(), base::OS::LogFileOpenMode);
+#endif
   CHECK_NOT_NULL(perf_output_handle_);
   setvbuf(perf_output_handle_, NULL, _IOLBF, 0);
 }
@@ -280,7 +288,7 @@ void PerfBasicLogger::LogRecordedBuffer(AbstractCode* code, SharedFunctionInfo*,
     return;
   }
 
-  base::OS::FPrint(perf_output_handle_, "%llx %x %.*s\n",
+  base::OS::FPrint(perf_output_handle_, u8"%llx %x %.*s\n",
                    reinterpret_cast<uint64_t>(code->instruction_start()),
                    code->instruction_size(), length, name);
 }
