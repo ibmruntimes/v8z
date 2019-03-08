@@ -19514,7 +19514,8 @@ MaybeHandle<JSDate> JSDate::New(Handle<JSFunction> constructor,
   Handle<JSObject> result;
   ASSIGN_RETURN_ON_EXCEPTION(isolate, result,
                              JSObject::New(constructor, new_target), JSDate);
-  if (-DateCache::kMaxTimeInMs <= tv && tv <= DateCache::kMaxTimeInMs) {
+  if (!std::isnan(tv)
+      && -DateCache::kMaxTimeInMs <= tv && tv <= DateCache::kMaxTimeInMs) {
     tv = DoubleToInteger(tv) + 0.0;
   } else {
     tv = std::numeric_limits<double>::quiet_NaN();
