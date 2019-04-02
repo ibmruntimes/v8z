@@ -21,6 +21,7 @@
 #include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <signal.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #if defined(__APPLE__) || defined(__DragonFly__) || defined(__FreeBSD__) || \
@@ -258,6 +259,12 @@ void OS::Abort() {
   if (g_hard_abort) {
     V8_IMMEDIATE_CRASH();
   }
+
+#ifdef __MVS__
+  // Send SIGABRT to main thread to do cleanup.
+  raise(SIGABRT);
+#endif
+
   // Redirect to std abort to signal abnormal program termination.
   abort();
 }

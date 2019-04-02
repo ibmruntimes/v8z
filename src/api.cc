@@ -891,7 +891,7 @@ void ResourceConstraints::ConfigureDefaults(uint64_t physical_memory,
       static_cast<int>(i::Heap::ComputeMaxOldGenerationSize(physical_memory)));
   set_max_zone_pool_size(i::AccountingAllocator::kMaxPoolSize);
 
-  if (virtual_memory_limit > 0 && i::kRequiresCodeRange) {
+  if (virtual_memory_limit > 0 && i::RequiresCodeRange()) {
     // Reserve no more than 1/8 of the memory for the code range, but at most
     // kMaximalCodeRangeSize.
     set_code_range_size(

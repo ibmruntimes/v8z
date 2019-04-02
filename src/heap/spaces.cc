@@ -100,7 +100,7 @@ bool CodeRange::SetUp(size_t requested) {
     // When a target requires the code range feature, we put all code objects
     // in a kMaximalCodeRangeSize range of virtual address space, so that
     // they can call each other with near calls.
-    if (kRequiresCodeRange) {
+    if (RequiresCodeRange()) {
       requested = kMaximalCodeRangeSize;
     } else {
       return true;
@@ -116,7 +116,7 @@ bool CodeRange::SetUp(size_t requested) {
   if (requested < (kMaximalCodeRangeSize - reserved_area))
     requested += reserved_area;
 
-  DCHECK(!kRequiresCodeRange || requested <= kMaximalCodeRangeSize);
+  DCHECK(!RequiresCodeRange() || requested <= kMaximalCodeRangeSize);
 
   base::VirtualMemory reservation;
   if (!AlignedAllocVirtualMemory(

@@ -13,6 +13,7 @@
 #include "src/base/build_config.h"
 #include "src/base/flags.h"
 #include "src/base/logging.h"
+#include "src/base/sys-info.h"
 #include "src/base/macros.h"
 
 #ifdef V8_OS_WIN
@@ -223,7 +224,6 @@ const size_t kMaximalCodeRangeSize = 256 * MB;
 const size_t kMinimumCodeRangeSize = 3 * MB;
 const size_t kCodeRangeAreaAlignment = 4 * KB;  // OS page.
 #elif V8_HOST_ARCH_PPC && V8_TARGET_ARCH_PPC && V8_OS_LINUX
-const bool kRequiresCodeRange = false;
 const size_t kMaximalCodeRangeSize = 0 * MB;
 const size_t kMinimumCodeRangeSize = 0 * MB;
 const size_t kCodeRangeAreaAlignment = 64 * KB;  // OS page on PPC Linux
@@ -1478,6 +1478,19 @@ enum IsolateAddressId {
 #undef DECLARE_ENUM
       kIsolateAddressCount
 };
+
+inline bool RequiresCodeRange() {
+#if V8_HOST_ARCH_64_BIT
+  return v8::base::SysInfo::ExecutablePagesAbove2GB();
+#else
+# if V8_TARGET_ARCH_X64 && V8_TARGET_ARCH_32_BIT
+  return true;
+# else
+  return false;
+# endif
+#endif
+}
+
 
 }  // namespace internal
 }  // namespace v8

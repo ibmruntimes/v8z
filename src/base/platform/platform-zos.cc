@@ -113,7 +113,6 @@ static void * anon_mmap(void * addr, size_t len) {
      retcode = __moservices(__MO_GETSTOR,sizeof(mopl_instance), &mopl_instance, &p);
      return (retcode == 0) ? p : MAP_FAILED;
    } else {
-     int retcode;
      char * p;
 #pragma convert("ibm-1047")
 #if defined(__64BIT__)
@@ -351,9 +350,10 @@ VirtualMemory::VirtualMemory(size_t size, void * hint)
 VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
     : address_(NULL), size_(0), reservation_(NULL) {
   DCHECK((alignment % OS::AllocateAlignment()) == 0);
+  // Memory pages with 1MB alignment will be allocated using __moservices
   bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
   if (rmode64 && size % kMegaByte == 0) {
-     void * reservation = anon_mmap(OS::GetRandomMmapAddr(),
+     void * reservation = anon_mmap(hint,
                                     size);
      if (reservation == MAP_FAILED) return;
      address_ = reservation;

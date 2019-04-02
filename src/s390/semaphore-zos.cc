@@ -102,6 +102,7 @@ int sem_init(sem_t *sem, int pshared, unsigned int value) {
 
   if ((err = pthread_mutex_init(&sem->mutex, NULL)) != 0) {
      errno = err;   
+     return -1;
   }
   
   if ((err = pthread_cond_init(&sem->cond, NULL)) != 0) {
