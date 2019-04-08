@@ -1007,7 +1007,6 @@
           '-qasmlib=sys1.maclib:sys1.modgen',
           '-qasm',
           '-qdebug=nohook',
-          '-qbitfield=signed',
           '-Wc,expo',
         ],
         'ldflags': [

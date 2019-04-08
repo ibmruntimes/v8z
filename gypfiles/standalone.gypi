@@ -753,7 +753,6 @@
     ['OS=="zos"', {
       'target_defaults': {
         'cflags': [ '-qdebug=nohook','-g','-Wc,expo','-q64',
-                    '-qbitfield=signed',
                     '-fexec-charset=ISO8859-1',
                     '-qasm',
                     '-qasmlib=sys1.maclib:sys1.modgen',
