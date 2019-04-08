@@ -1001,7 +1001,6 @@
         'cflags': [
           '-q64',
           '-fexec-charset=ISO8859-1', 
-          '-qxplink',
           '-qlonglong',
           '-qenum=int',
           '-qcsect=v8z',
@@ -1013,7 +1012,6 @@
         ],
         'ldflags': [
           '-q64',
-          '-qxplink',
         ],
       }],
       ['(OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
