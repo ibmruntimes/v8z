@@ -1001,19 +1001,16 @@
         'cflags': [
           '-q64',
           '-fexec-charset=ISO8859-1', 
-          '-qxplink',
           '-qlonglong',
           '-qenum=int',
           '-qcsect=v8z',
           '-qasmlib=sys1.maclib:sys1.modgen',
           '-qasm',
           '-qdebug=nohook',
-          '-qbitfield=signed',
           '-Wc,expo',
         ],
         'ldflags': [
           '-q64',
-          '-qxplink',
         ],
       }],
       ['(OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris" \
