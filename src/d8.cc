@@ -1191,7 +1191,9 @@ void WriteToFile(FILE* file, const v8::FunctionCallbackInfo<v8::Value>& args) {
   for (int i = 0; i < args.Length(); i++) {
     HandleScope handle_scope(args.GetIsolate());
     if (i != 0) {
+#pragma convert("IBM-1047")
       fprintf(file, " ");
+#pragma convert(pop)
     }
 
     // Explicitly catch potential exceptions in toString().
@@ -1223,7 +1225,9 @@ void WriteToFile(FILE* file, const v8::FunctionCallbackInfo<v8::Value>& args) {
 void WriteAndFlush(FILE* file,
                    const v8::FunctionCallbackInfo<v8::Value>& args) {
   WriteToFile(file, args);
+#pragma convert("IBM-1047")
   fprintf(file, "\n");
+#pragma convert(pop)
   fflush(file);
 }
 
@@ -1516,7 +1520,7 @@ void Shell::ReportException(Isolate* isolate, v8::TryCatch* try_catch) {
       stack_trace_string->IsString()) {
     v8::String::Utf8Value stack_trace(isolate,
                                       Local<String>::Cast(stack_trace_string));
-    printf("%s\n", ToCString(stack_trace));
+    PrintF("%s\n", ToCString(stack_trace));
   }
   PrintF("\n");
   if (enter_context) context->Exit();
