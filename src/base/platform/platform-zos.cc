@@ -143,7 +143,7 @@ static int anon_munmap(void * addr, size_t len) {
    int retcode;
    bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
    if (rmode64 && len % kMegaByte == 0) {
-     retcode == __moservices(__MO_DETACH,0,NULL, &addr);
+     retcode = __moservices(__MO_DETACH,0,NULL,&addr);
    } else {
 #pragma convert("ibm-1047")
 #if defined (__64BIT__)
