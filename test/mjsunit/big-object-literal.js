@@ -25,6 +25,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// On z/OS, this test needs a stack size of at least 7 mBytes.
+// Flags: --stack-size=7000
+
 // Test that we can make large object literals that work.
 // Also test that we can attempt to make even larger object literals without
 // crashing.
