@@ -475,10 +475,12 @@ Address MemoryAllocator::ReserveAlignedMemory(size_t size, size_t alignment,
 
   const Address base =
       ::RoundUp(static_cast<Address>(reservation.address()), alignment);
+  #if !defined(__MVS__)
   if (base + size != reservation.end()) {
     const Address unused_start = ::RoundUp(base + size, GetCommitPageSize());
     reservation.ReleasePartial(unused_start);
   }
+  #endif
   size_.Increment(reservation.size());
   controller->TakeControl(&reservation);
   return base;
@@ -909,6 +911,10 @@ size_t Page::ShrinkToHighWaterMark() {
   DCHECK_EQ(filler->address(), filler2->address());
 #endif  // DEBUG
 
+#if defined(__MVS__)
+  return 0;
+#else
+
   size_t unused = RoundDown(
       static_cast<size_t>(area_end() - filler->address() - FreeSpace::kSize),
       MemoryAllocator::GetCommitPageSize());
@@ -930,6 +936,7 @@ size_t Page::ShrinkToHighWaterMark() {
     CHECK_EQ(filler->address() + filler->Size(), area_end());
   }
   return unused;
+#endif
 }
 
 void Page::CreateBlackArea(Address start, Address end) {
@@ -3449,6 +3456,7 @@ void LargeObjectSpace::FreeUnmarkedObjects() {
       Address free_start;
       size_t size = static_cast<size_t>(object->Size());
       objects_size_ += size;
+#if !defined(__MVS__)
       if ((free_start = current->GetAddressToShrink(object->address(), size)) !=
           0) {
         DCHECK(!current->IsFlagSet(Page::IS_EXECUTABLE));
@@ -3462,6 +3470,7 @@ void LargeObjectSpace::FreeUnmarkedObjects() {
         size_ -= bytes_to_free;
         AccountUncommitted(bytes_to_free);
       }
+#endif
       previous = current;
       current = current->next_page();
     } else {

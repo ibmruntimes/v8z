@@ -325,6 +325,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
     reservation_ = reservation;
     return;
   }
+  #if !defined(__MVS__)
   uint8_t* base = static_cast<uint8_t*>(reservation);
   uint8_t* aligned_base = RoundUp(base, alignment);
   DCHECK_LE(base, aligned_base);
@@ -346,9 +347,13 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
   }
 
   DCHECK(aligned_size == request_size);
-
   address_ = static_cast<void*>(aligned_base);
   size_ = aligned_size;
+  #else
+  address_ = static_cast<void*>(reservation);
+  size_ = request_size;
+  #endif
+
   reservation_ = reservation;
 #if defined(LEAK_SANITIZER)
   __lsan_register_root_region(address_, size_);
