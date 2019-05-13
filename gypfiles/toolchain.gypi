@@ -1000,6 +1000,7 @@
         ],
         'cflags': [
           '-q64',
+          '-qARCH=9',
           '-fexec-charset=ISO8859-1', 
           '-qlonglong',
           '-qenum=int',
