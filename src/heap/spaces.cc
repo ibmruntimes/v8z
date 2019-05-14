@@ -554,7 +554,11 @@ MemoryChunk* MemoryChunk::Initialize(Heap* heap, Address base, size_t size,
   DCHECK(base == chunk->address());
 
   chunk->heap_ = heap;
+#if __MVS__
+  chunk->size_ = reservation->size() > size ? reservation->size() : size;
+#else
   chunk->size_ = size;
+#endif
   chunk->area_start_ = area_start;
   chunk->area_end_ = area_end;
   chunk->flags_ = Flags(NO_FLAGS);
