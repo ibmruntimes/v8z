@@ -752,13 +752,12 @@
     }],  # OS=="mac"
     ['OS=="zos"', {
       'target_defaults': {
-        'cflags': [ '-qdebug=nohook','-Wc,expo','-q64',
+        'cflags': [ '-qgonumber','-Wc,expo','-q64',
                     '-fexec-charset=ISO8859-1',
                     '-qasm',
                     '-qasmlib=sys1.maclib:sys1.modgen',
                     '-D_ISOC99_SOURCE','-D_UNIX03_SOURCE',
                     '-D_XOPEN_SOURCE_EXTENDED=1',
-                    '-D_XOPEN_SOURCE=500',
                     '-D__IBMCPP_TR1__',   # To support PRIx64
                     '-D_OPEN_SYS_SOCK_IPV6',
                     '-D_UNIX03_THREADS',
