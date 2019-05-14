@@ -4,6 +4,9 @@
 
 // Platform-specific code for zOS/Unix goes here. For the POSIX-compatible
 // parts, the implementation is in platform-posix.cc.
+#if !defined(_AE_BIMODAL)
+#define _AE_BIMODAL 1
+#endif
 
 #include <pthread.h>
 #include <signal.h>
@@ -46,6 +49,9 @@
 #include "src/base/platform/platform-posix.h"
 #include "src/s390/semaphore-zos.h"
 #include "src/base/sys-info.h"
+
+#include <mutex>
+#include <unordered_map>
 
 #define MAP_FAILED ((void *)-1L)
 
@@ -100,7 +106,7 @@ bool OS::ArmUsingHardFloat() {
 
 static const int kMegaByte = 1024*1024;
 
-static void * anon_mmap(void * addr, size_t len) {
+static void * anon_mmap_inner(void * addr, size_t len) {
    int retcode;
    bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
    if (rmode64 && len % kMegaByte == 0) {
@@ -139,7 +145,7 @@ static void * anon_mmap(void * addr, size_t len) {
 }
 
 
-static int anon_munmap(void * addr, size_t len) {
+static int anon_munmap_inner(void * addr, size_t len) {
    int retcode;
    bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
    if (rmode64 && len % kMegaByte == 0) {
@@ -168,6 +174,121 @@ static int anon_munmap(void * addr, size_t len) {
    return retcode;
 }
 
+//------------------------------------------accounting for memory allocation
+extern "C" int dprintf(int, const char*, ...);
+
+static int mem_account(void) {
+  static int res = -1;
+  if (-1 == res) {
+    res = 0;
+    char* ma = __getenv_a("__MEM_ACCOUNT");
+    if (ma && 0 == strcmp("1", ma)) {
+      res = 1;
+    }
+  }
+  return res;
+}
+
+typedef unsigned long value_type;
+typedef unsigned long key_type;
+
+struct __hash_func {
+  size_t operator()(const key_type& k) const {
+    int s = 0;
+    key_type n = k;
+    while (0 == (n & 1) && s < (sizeof(key_type) - 1)) {
+      n = n >> 1;
+      ++s;
+    }
+    return s + (n * 0x744dcf5364d7d667UL);
+  }
+};
+
+typedef std::unordered_map<key_type, value_type, __hash_func>::const_iterator
+    cursor_t;
+
+class __Cache {
+  std::unordered_map<key_type, value_type, __hash_func> cache;
+  std::mutex access_lock;
+
+ public:
+  void addptr(const void* ptr, size_t v) {
+    unsigned long k = (unsigned long)ptr;
+    std::lock_guard<std::mutex> guard(access_lock);
+    value_type a = {v};
+    cache[k] = v;
+    if (mem_account()) dprintf(2, "ADDED: @%lx size %lu\n", k, v);
+  }
+  int is_exist_ptr(const void* ptr) {
+    unsigned long k = (unsigned long)ptr;
+    std::lock_guard<std::mutex> guard(access_lock);
+    cursor_t c = cache.find(k);
+    if (c != cache.end()) {
+      return 1;
+    }
+    return 0;
+  }
+  void show(void) {
+    std::lock_guard<std::mutex> guard(access_lock);
+    if (mem_account())
+      for (cursor_t it = cache.begin(); it != cache.end(); ++it) {
+        dprintf(2, "LIST: @%lx size %lu\n", it->first, it->second);
+      }
+  }
+  void freeptr(const void* ptr) {
+    unsigned long k = (unsigned long)ptr;
+    std::lock_guard<std::mutex> guard(access_lock);
+    cursor_t c = cache.find(k);
+    if (c != cache.end()) {
+      cache.erase(c);
+    }
+  }
+  ~__Cache() {
+    std::lock_guard<std::mutex> guard(access_lock);
+    if (mem_account())
+      for (cursor_t it = cache.begin(); it != cache.end(); ++it) {
+        dprintf(2,
+                "Error: DEBRIS (allocated but never free'd): @%lx size %lu\n",
+                it->first, it->second);
+      }
+  }
+};
+
+static __Cache alloc_info;
+
+static void* anon_mmap(void* _, size_t len) {
+  void* ret = anon_mmap_inner(_, len);
+  if (ret == MAP_FAILED) {
+    if (mem_account())
+      dprintf(2, "Error: anon_mmap request size $d failed\n", len);
+    return ret;
+  }
+  alloc_info.addptr(ret, (int)len);
+  if (mem_account()) dprintf(2, "Allocated @%p size %d\n", ret, (int)len);
+  return ret;
+}
+
+static int anon_munmap(void* addr, size_t len) {
+  if (alloc_info.is_exist_ptr(addr)) {
+    if (mem_account())
+      dprintf(2, "Address found, attempt to free @%p size %d\n", addr,
+              (int)len);
+    int rc = anon_munmap_inner(addr, len);
+    if (rc != 0) {
+      if (mem_account())
+        dprintf(2, "Error: anon_munmap @%p size %d failed\n", addr, len);
+      return rc;
+    }
+    alloc_info.freeptr(addr);
+    return 0;
+  } else {
+    if (mem_account())
+      dprintf(2, "Error: attempt to free %p size %d (not allocated)\n", addr,
+              (int)len);
+    return 0;
+  }
+}
+//----------------------------------------------------------------------------------------------
 
 void OS::Free(void* address, const size_t size) {
   // TODO(1240712): munmap has a return value which is ignored here.
