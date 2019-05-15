@@ -175,13 +175,13 @@ static int anon_munmap_inner(void * addr, size_t len) {
 }
 
 //------------------------------------------accounting for memory allocation
-extern "C" int dprintf(int, const char*, ...);
 
+#pragma convert("IBM-1047")
 static int mem_account(void) {
   static int res = -1;
   if (-1 == res) {
     res = 0;
-    char* ma = __getenv_a("__MEM_ACCOUNT");
+    char* ma = getenv("__MEM_ACCOUNT");
     if (ma && 0 == strcmp("1", ma)) {
       res = 1;
     }
@@ -217,7 +217,7 @@ class __Cache {
     std::lock_guard<std::mutex> guard(access_lock);
     value_type a = {v};
     cache[k] = v;
-    if (mem_account()) dprintf(2, "ADDED: @%lx size %lu\n", k, v);
+    if (mem_account()) fprintf(stderr, "ADDED: @%lx size %lu\n", k, v);
   }
   int is_exist_ptr(const void* ptr) {
     unsigned long k = (unsigned long)ptr;
@@ -232,7 +232,7 @@ class __Cache {
     std::lock_guard<std::mutex> guard(access_lock);
     if (mem_account())
       for (cursor_t it = cache.begin(); it != cache.end(); ++it) {
-        dprintf(2, "LIST: @%lx size %lu\n", it->first, it->second);
+        fprintf(stderr, "LIST: @%lx size %lu\n", it->first, it->second);
       }
   }
   void freeptr(const void* ptr) {
@@ -247,7 +247,7 @@ class __Cache {
     std::lock_guard<std::mutex> guard(access_lock);
     if (mem_account())
       for (cursor_t it = cache.begin(); it != cache.end(); ++it) {
-        dprintf(2,
+        fprintf(stderr,
                 "Error: DEBRIS (allocated but never free'd): @%lx size %lu\n",
                 it->first, it->second);
       }
@@ -260,34 +260,35 @@ static void* anon_mmap(void* _, size_t len) {
   void* ret = anon_mmap_inner(_, len);
   if (ret == MAP_FAILED) {
     if (mem_account())
-      dprintf(2, "Error: anon_mmap request size $d failed\n", len);
+      fprintf(stderr, "Error: anon_mmap request size $d failed\n", len);
     return ret;
   }
   alloc_info.addptr(ret, (int)len);
-  if (mem_account()) dprintf(2, "Allocated @%p size %d\n", ret, (int)len);
+  if (mem_account()) fprintf(stderr, "Allocated @%p size %d\n", ret, (int)len);
   return ret;
 }
 
 static int anon_munmap(void* addr, size_t len) {
   if (alloc_info.is_exist_ptr(addr)) {
     if (mem_account())
-      dprintf(2, "Address found, attempt to free @%p size %d\n", addr,
+      fprintf(stderr, "Address found, attempt to free @%p size %d\n", addr,
               (int)len);
     int rc = anon_munmap_inner(addr, len);
     if (rc != 0) {
       if (mem_account())
-        dprintf(2, "Error: anon_munmap @%p size %d failed\n", addr, len);
+        fprintf(stderr, "Error: anon_munmap @%p size %d failed\n", addr, len);
       return rc;
     }
     alloc_info.freeptr(addr);
     return 0;
   } else {
     if (mem_account())
-      dprintf(2, "Error: attempt to free %p size %d (not allocated)\n", addr,
+      fprintf(stderr, "Error: attempt to free %p size %d (not allocated)\n", addr,
               (int)len);
     return 0;
   }
 }
+#pragma convert(pop)
 //----------------------------------------------------------------------------------------------
 
 void OS::Free(void* address, const size_t size) {
