@@ -752,8 +752,9 @@
     }],  # OS=="mac"
     ['OS=="zos"', {
       'target_defaults': {
-        'cflags': [ '-qgonumber','-Wc,expo','-q64',
+        'cflags': [ '-qdebug=nohook','-Wc,expo','-q64',
                     '-fexec-charset=ISO8859-1',
+                    '-D_XOPEN_SOURCE=500',
                     '-qasm',
                     '-qasmlib=sys1.maclib:sys1.modgen',
                     '-D_ISOC99_SOURCE','-D_UNIX03_SOURCE',
