@@ -752,7 +752,7 @@
     }],  # OS=="mac"
     ['OS=="zos"', {
       'target_defaults': {
-        'cflags': [ '-qdebug=nohook','-Wc,expo','-q64',
+        'cflags': [ '-qdebug=nohook','-g','-Wc,expo','-q64',
                     '-fexec-charset=ISO8859-1',
                     '-D_XOPEN_SOURCE=500',
                     '-qasm',
