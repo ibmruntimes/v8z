@@ -106,74 +106,6 @@ bool OS::ArmUsingHardFloat() {
 
 static const int kMegaByte = 1024*1024;
 
-static void * anon_mmap_inner(void * addr, size_t len) {
-   int retcode;
-   bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
-   if (rmode64 && len % kMegaByte == 0) {
-     __mopl_t mopl_instance;
-     void * p = NULL;
-     size_t request_size = len / kMegaByte;
-     memset(&mopl_instance,0,sizeof(mopl_instance));
-     mopl_instance.__mopldumppriority = __MO_DUMP_PRIORITY_HEAP;
-     mopl_instance.__moplrequestsize = request_size;
-     retcode = __moservices(__MO_GETSTOR,sizeof(mopl_instance), &mopl_instance, &p);
-     return (retcode == 0) ? p : MAP_FAILED;
-   } else {
-     char * p;
-#pragma convert("ibm-1047")
-#if defined(__64BIT__)
-      __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
-            " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
-            "LOC=(31,64)\x15"
-# if defined(__clang__)
-            :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
-# else
-            :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
-# endif
-#else
-      __asm(" SYSSTATE ARCHLVL=2\x15"
-            " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\x15"
-# if defined(__clang__)
-            :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
-# else
-            :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
-# endif
-#endif
-#pragma convert(pop)
-    return (retcode == 0) ? p : MAP_FAILED;
-   }
-}
-
-
-static int anon_munmap_inner(void * addr, size_t len) {
-   int retcode;
-   bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
-   if (rmode64 && len % kMegaByte == 0) {
-     retcode = __moservices(__MO_DETACH,0,NULL,&addr);
-   } else {
-#pragma convert("ibm-1047")
-#if defined (__64BIT__)
-  __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
-          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
-# if defined(__clang__)
-          :"=NR:r15"(retcode): "NR:r1"(addr), "NR:r0"(len) : "r0","r1","r14","r15");
-# else
-          :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
-# endif
-#else
-  __asm(" SYSSTATE ARCHLVL=2\x15"
-          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
-# if defined(__clang__)
-          :"=NR:r15"(retcode): "NR:r1"(addr), "NR:r0"(len) : "r0","r1","r14","r15");
-# else
-          :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
-# endif
-#endif
-#pragma convert(pop)
-   }
-   return retcode;
-}
-
 //------------------------------------------accounting for memory allocation
 
 #pragma convert("IBM-1047")
@@ -206,24 +138,41 @@ struct __hash_func {
 
 typedef std::unordered_map<key_type, value_type, __hash_func>::const_iterator
     cursor_t;
+typedef std::unordered_map<key_type, bool, __hash_func>::const_iterator
+    rmode_cursor_t;
 
 class __Cache {
   std::unordered_map<key_type, value_type, __hash_func> cache;
+  std::unordered_map<key_type, bool, __hash_func> rmode_cache;
   std::mutex access_lock;
 
  public:
   void addptr(const void* ptr, size_t v) {
     unsigned long k = (unsigned long)ptr;
     std::lock_guard<std::mutex> guard(access_lock);
-    value_type a = {v};
     cache[k] = v;
     if (mem_account()) fprintf(stderr, "ADDED: @%lx size %lu\n", k, v);
+  }
+  void addptr_rmode64(const void* ptr, bool rmode64) {
+    unsigned long k = (unsigned long)ptr;
+    std::lock_guard<std::mutex> guard(access_lock);
+    rmode_cache[k] = rmode64;
+    if (mem_account()) fprintf(stderr, "ADDED: RMODE64\n");
   }
   int is_exist_ptr(const void* ptr) {
     unsigned long k = (unsigned long)ptr;
     std::lock_guard<std::mutex> guard(access_lock);
     cursor_t c = cache.find(k);
     if (c != cache.end()) {
+      return 1;
+    }
+    return 0;
+  }
+  int is_rmode64(const void* ptr) {
+    unsigned long k = (unsigned long)ptr;
+    std::lock_guard<std::mutex> guard(access_lock);
+    rmode_cursor_t c = rmode_cache.find(k);
+    if (c != rmode_cache.end()) {
       return 1;
     }
     return 0;
@@ -256,11 +205,82 @@ class __Cache {
 
 static __Cache alloc_info;
 
-static void* anon_mmap(void* _, size_t len) {
-  void* ret = anon_mmap_inner(_, len);
+static void * anon_mmap_inner(void * addr, size_t len, bool * is_above_bar) {
+   int retcode;
+   bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
+   if (rmode64 && len % kMegaByte == 0) {
+     __mopl_t mopl_instance;
+     void * p = NULL;
+     size_t request_size = len / kMegaByte;
+     memset(&mopl_instance,0,sizeof(mopl_instance));
+     mopl_instance.__mopldumppriority = __MO_DUMP_PRIORITY_HEAP;
+     mopl_instance.__moplrequestsize = request_size;
+     retcode = __moservices(__MO_GETSTOR,sizeof(mopl_instance), &mopl_instance, &p);
+     *is_above_bar = true;
+     alloc_info.addptr_rmode64(p, *is_above_bar);
+     return (retcode == 0) ? p : MAP_FAILED;
+   } else {
+     char * p;
+#pragma convert("ibm-1047")
+#if defined(__64BIT__)
+      __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
+            " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
+            "LOC=(31,64)\x15"
+# if defined(__clang__)
+            :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
+# else
+            :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
+# endif
+#else
+      __asm(" SYSSTATE ARCHLVL=2\x15"
+            " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\x15"
+# if defined(__clang__)
+            :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
+# else
+            :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
+# endif
+#endif
+#pragma convert(pop)
+    *is_above_bar = false;
+    return (retcode == 0) ? p : MAP_FAILED;
+   }
+}
+
+
+static int anon_munmap_inner(void * addr, size_t len, bool is_above_bar) {
+   int retcode;
+   if (is_above_bar) {
+     retcode = __moservices(__MO_DETACH,0,NULL,&addr);
+   } else {
+#pragma convert("ibm-1047")
+#if defined (__64BIT__)
+  __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
+          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
+# if defined(__clang__)
+          :"=NR:r15"(retcode): "NR:r1"(addr), "NR:r0"(len) : "r0","r1","r14","r15");
+# else
+          :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
+# endif
+#else
+  __asm(" SYSSTATE ARCHLVL=2\x15"
+          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
+# if defined(__clang__)
+          :"=NR:r15"(retcode): "NR:r1"(addr), "NR:r0"(len) : "r0","r1","r14","r15");
+# else
+          :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
+# endif
+#endif
+#pragma convert(pop)
+   }
+   return retcode;
+}
+
+
+static void* anon_mmap(void* _, size_t len, bool* is_above_bar) {
+  void* ret = anon_mmap_inner(_, len, is_above_bar);
   if (ret == MAP_FAILED) {
     if (mem_account())
-      fprintf(stderr, "Error: anon_mmap request size $d failed\n", len);
+      fprintf(stderr, "Error: anon_mmap request size %zu failed\n", len);
     return ret;
   }
   alloc_info.addptr(ret, (int)len);
@@ -273,10 +293,10 @@ static int anon_munmap(void* addr, size_t len) {
     if (mem_account())
       fprintf(stderr, "Address found, attempt to free @%p size %d\n", addr,
               (int)len);
-    int rc = anon_munmap_inner(addr, len);
+    int rc = anon_munmap_inner(addr, len, alloc_info.is_rmode64(addr));
     if (rc != 0) {
       if (mem_account())
-        fprintf(stderr, "Error: anon_munmap @%p size %d failed\n", addr, len);
+        fprintf(stderr, "Error: anon_munmap @%p size %zu failed\n", addr, len);
       return rc;
     }
     alloc_info.freeptr(addr);
@@ -358,8 +378,9 @@ void* OS::Allocate(const size_t requested, size_t* allocated,
                    OS::MemoryPermission access, void * hint) {
   const size_t msize = RoundUp(requested, AllocateAlignment());
   int prot = GetProtectionFromMemoryPermission(access);
+  bool rmode;
   void * mbase = static_cast<void*>(anon_mmap(OS::GetRandomMmapAddr(),
-                                    sizeof(char) * msize));
+                                    sizeof(char) * msize, &rmode));
   if (mbase == MAP_FAILED) return NULL;
   *allocated = msize;
   return mbase;
@@ -398,7 +419,7 @@ void OS::SignalCodeMovingGC() {
                     MAP_PRIVATE,
                     fileno(f),
                     0);
-  OS::Free(addr, size);
+  munmap(addr, size);
   fclose(f);
 }
 
@@ -416,11 +437,14 @@ VirtualMemory::VirtualMemory(size_t size, void * hint)
 VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
     : address_(NULL), size_(0), reservation_(NULL) {
   DCHECK((alignment % OS::AllocateAlignment()) == 0);
+
+  bool is_above_bar = false;
+
   // Memory pages with 1MB alignment will be allocated using __moservices
   bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
   if (rmode64 && size % kMegaByte == 0) {
      void * reservation = anon_mmap(hint,
-                                    size);
+                                    size, &is_above_bar);
      if (reservation == MAP_FAILED) return;
      address_ = reservation;
      size_ = size;
@@ -432,11 +456,11 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
                                 static_cast<intptr_t>(OS::AllocateAlignment()));
 
   void* reservation = anon_mmap(hint,
-                           request_size);
+                           request_size, &is_above_bar);
   if (reservation == MAP_FAILED) {
       request_size = RoundUp(size + alignment,
                              static_cast<intptr_t>(kMegaByte));
-      reservation = anon_mmap(hint, request_size);
+      reservation = anon_mmap(hint, request_size, &is_above_bar);
       if (reservation == MAP_FAILED) 
          return;
     uint8_t * base = static_cast<uint8_t *>(reservation);
@@ -447,34 +471,36 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
     reservation_ = reservation;
     return;
   }
-  #if !defined(__MVS__)
-  uint8_t* base = static_cast<uint8_t*>(reservation);
-  uint8_t* aligned_base = RoundUp(base, alignment);
-  DCHECK_LE(base, aligned_base);
 
-  // Unmap extra memory reserved before and after the desired block.
-  if (aligned_base != base) {
-    size_t prefix_size = static_cast<size_t>(aligned_base - base);
-    OS::Free(base, prefix_size);
-    request_size -= prefix_size;
+  if (is_above_bar) {
+	uint8_t* base = static_cast<uint8_t*>(reservation);
+	uint8_t* aligned_base = RoundUp(base, alignment);
+	DCHECK_LE(base, aligned_base);
+
+	// Unmap extra memory reserved before and after the desired block.
+	/*if (aligned_base != base) {
+		size_t prefix_size = static_cast<size_t>(aligned_base - base);
+		OS::Free(base, prefix_size);
+		request_size -= prefix_size;
+	}*/
+
+	size_t aligned_size = RoundUp(size, OS::AllocateAlignment());
+	DCHECK_LE(aligned_size, request_size);
+
+	if (aligned_size != request_size) {
+		size_t suffix_size = request_size - aligned_size;
+		if ((aligned_base + aligned_size) == reservation)
+			OS::Free(aligned_base + aligned_size, suffix_size);
+		request_size -= suffix_size;
+	}
+
+	DCHECK(aligned_size == request_size);
+	address_ = static_cast<void*>(aligned_base);
+	size_ = aligned_size;
+  } else {
+	address_ = static_cast<void*>(reservation);
+	size_ = request_size;
   }
-
-  size_t aligned_size = RoundUp(size, OS::AllocateAlignment());
-  DCHECK_LE(aligned_size, request_size);
-
-  if (aligned_size != request_size) {
-    size_t suffix_size = request_size - aligned_size;
-    OS::Free(aligned_base + aligned_size, suffix_size);
-    request_size -= suffix_size;
-  }
-
-  DCHECK(aligned_size == request_size);
-  address_ = static_cast<void*>(aligned_base);
-  size_ = aligned_size;
-  #else
-  address_ = static_cast<void*>(reservation);
-  size_ = request_size;
-  #endif
 
   reservation_ = reservation;
 #if defined(LEAK_SANITIZER)
@@ -491,11 +517,11 @@ VirtualMemory::~VirtualMemory() {
   }
 }
 
-/*
-bool VirtualMemory::IsReserved() {
-  return address_ != NULL;
-}
-*/
+
+//bool VirtualMemory::IsReserved() {
+//  return reservation_ != NULL;
+//}
+
 
 void VirtualMemory::Reset() {
   address_ = NULL;
@@ -520,8 +546,9 @@ bool VirtualMemory::Guard(void* address) {
 
 
 void* VirtualMemory::ReserveRegion(size_t size, void * hint) {
+  bool is_above_bar;
   void* result = anon_mmap(hint,
-                      size);
+                      size, &is_above_bar);
 
   if (result == MAP_FAILED) return NULL;
 #if defined(LEAK_SANITIZER)
@@ -557,7 +584,14 @@ bool VirtualMemory::ReleaseRegion(void* base, size_t size) {
 
 bool VirtualMemory::ReleasePartialRegion(void * base, size_t size,
                                          void * free_start, size_t free_size) {
-  return anon_munmap(free_start, free_size) == 0;
+  //On z/OS we cannot release a partial region, unless it is from the start and using rmode32
+  if (alloc_info.is_rmode64(base) && base == free_start && size == free_size)  {
+  	return anon_munmap(base, size) == 0;
+  }
+  else if (!alloc_info.is_rmode64(base) && base == free_start) {
+  	return anon_munmap(base, free_size) == 0;
+  }
+  return true;
 }
 
 bool VirtualMemory::HasLazyCommits() {

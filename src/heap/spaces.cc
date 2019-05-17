@@ -21,6 +21,7 @@
 #include "src/snapshot/snapshot.h"
 #include "src/v8.h"
 #include "src/vm-state-inl.h"
+#include "src/base/sys-info.h"
 
 namespace v8 {
 namespace internal {
@@ -475,12 +476,10 @@ Address MemoryAllocator::ReserveAlignedMemory(size_t size, size_t alignment,
 
   const Address base =
       ::RoundUp(static_cast<Address>(reservation.address()), alignment);
-  #if !defined(__MVS__)
   if (base + size != reservation.end()) {
     const Address unused_start = ::RoundUp(base + size, GetCommitPageSize());
     reservation.ReleasePartial(unused_start);
   }
-  #endif
   size_.Increment(reservation.size());
   controller->TakeControl(&reservation);
   return base;
@@ -554,11 +553,7 @@ MemoryChunk* MemoryChunk::Initialize(Heap* heap, Address base, size_t size,
   DCHECK(base == chunk->address());
 
   chunk->heap_ = heap;
-#if __MVS__
-  chunk->size_ = reservation->size() > size ? reservation->size() : size;
-#else
   chunk->size_ = size;
-#endif
   chunk->area_start_ = area_start;
   chunk->area_end_ = area_end;
   chunk->flags_ = Flags(NO_FLAGS);
@@ -914,10 +909,11 @@ size_t Page::ShrinkToHighWaterMark() {
   }
   DCHECK_EQ(filler->address(), filler2->address());
 #endif  // DEBUG
-
-#if defined(__MVS__)
-  return 0;
-#else
+ 
+#ifdef __MVS__
+  if (base::SysInfo::ExecutablePagesAbove2GB())
+  	return 0;
+#endif
 
   size_t unused = RoundDown(
       static_cast<size_t>(area_end() - filler->address() - FreeSpace::kSize),
@@ -940,7 +936,6 @@ size_t Page::ShrinkToHighWaterMark() {
     CHECK_EQ(filler->address() + filler->Size(), area_end());
   }
   return unused;
-#endif
 }
 
 void Page::CreateBlackArea(Address start, Address end) {
@@ -3460,8 +3455,7 @@ void LargeObjectSpace::FreeUnmarkedObjects() {
       Address free_start;
       size_t size = static_cast<size_t>(object->Size());
       objects_size_ += size;
-#if !defined(__MVS__)
-      if ((free_start = current->GetAddressToShrink(object->address(), size)) !=
+      if (!base::SysInfo::ExecutablePagesAbove2GB() && (free_start = current->GetAddressToShrink(object->address(), size)) !=
           0) {
         DCHECK(!current->IsFlagSet(Page::IS_EXECUTABLE));
         current->ClearOutOfLiveRangeSlots(free_start);
@@ -3474,7 +3468,6 @@ void LargeObjectSpace::FreeUnmarkedObjects() {
         size_ -= bytes_to_free;
         AccountUncommitted(bytes_to_free);
       }
-#endif
       previous = current;
       current = current->next_page();
     } else {
