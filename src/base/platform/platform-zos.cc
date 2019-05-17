@@ -472,7 +472,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
     return;
   }
 
-  if (is_above_bar) {
+  if (!is_above_bar) {
 	uint8_t* base = static_cast<uint8_t*>(reservation);
 	uint8_t* aligned_base = RoundUp(base, alignment);
 	DCHECK_LE(base, aligned_base);
