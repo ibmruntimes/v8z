@@ -109,11 +109,12 @@ static const int kMegaByte = 1024*1024;
 //------------------------------------------accounting for memory allocation
 
 #pragma convert("IBM-1047")
+
 static int mem_account(void) {
   static int res = -1;
   if (-1 == res) {
     res = 0;
-    char* ma = getenv("__MEM_ACCOUNT");
+    char *ma = getenv("__MEM_ACCOUNT");
     if (ma && 0 == strcmp("1", ma)) {
       res = 1;
     }
@@ -121,11 +122,212 @@ static int mem_account(void) {
   return res;
 }
 
+static int gettcbtoken(char *out, int type) {
+  typedef struct token_parm {
+    char token[16];
+    char *__ptr32 ascb;
+    char type;
+    char reserved[3];
+  } token_parm_t;
+  token_parm_t *tt = (token_parm_t *)__malloc31(sizeof(token_parm_t));
+  memset(tt, 0, sizeof(token_parm_t));
+  tt->type = type;
+  long workreg;
+  __asm(" L %0,16(0,0) \n"
+        " L %0,772(%0,0) \n"
+        " L %0,212(%0,0) \n"
+        " PC 0(%0) \n"
+        : "=NR:r15"(workreg) // also return code
+        : "NR:r1"(tt)
+        : );
+  memcpy(out, (char *)tt, 16);
+  free(tt);
+  return workreg;
+}
+
+struct iarv64parm {
+  unsigned char xversion __attribute__((__aligned__(16))); //    0
+  unsigned char xrequest;                                  //    1
+  unsigned xmotknsource_system : 1;                        //    2
+  unsigned xmotkncreator_system : 1;                       //    2(1)
+  unsigned xmatch_motoken : 1;                             //    2(2)
+  unsigned xflags0_rsvd1 : 5;                              //    2(3)
+  unsigned char xkey;                                      //    3
+  unsigned keyused_key : 1;                                //    4
+  unsigned keyused_usertkn : 1;                            //    4(1)
+  unsigned keyused_ttoken : 1;                             //    4(2)
+  unsigned keyused_convertstart : 1;                       //    4(3)
+  unsigned keyused_guardsize64 : 1;                        //    4(4)
+  unsigned keyused_convertsize64 : 1;                      //    4(5)
+  unsigned keyused_motkn : 1;                              //    4(6)
+  unsigned keyused_ownerjobname : 1;                       //    4(7)
+  unsigned xcond_yes : 1;                                  //    5
+  unsigned xfprot_no : 1;                                  //    5(1)
+  unsigned xcontrol_auth : 1;                              //    5(2)
+  unsigned xguardloc_high : 1;                             //    5(3)
+  unsigned xchangeaccess_global : 1;                       //    5(4)
+  unsigned xpageframesize_1meg : 1;                        //    5(5)
+  unsigned xpageframesize_max : 1;                         //    5(6)
+  unsigned xpageframesize_all : 1;                         //    5(7)
+  unsigned xmatch_usertoken : 1;                           //    6
+  unsigned xaffinity_system : 1;                           //    6(1)
+  unsigned xuse2gto32g_yes : 1;                            //    6(2)
+  unsigned xowner_no : 1;                                  //    6(3)
+  unsigned xv64select_no : 1;                              //    6(4)
+  unsigned xsvcdumprgn_no : 1;                             //    6(5)
+  unsigned xv64shared_no : 1;                              //    6(6)
+  unsigned xsvcdumprgn_all : 1;                            //    6(7)
+  unsigned xlong_no : 1;                                   //    7
+  unsigned xclear_no : 1;                                  //    7(1)
+  unsigned xview_readonly : 1;                             //    7(2)
+  unsigned xview_sharedwrite : 1;                          //    7(3)
+  unsigned xview_hidden : 1;                               //    7(4)
+  unsigned xconvert_toguard : 1;                           //    7(5)
+  unsigned xconvert_fromguard : 1;                         //    7(6)
+  unsigned xkeepreal_no : 1;                               //    7(7)
+  unsigned long long xsegments;                            //    8
+  unsigned char xttoken[16];                               //   16
+  unsigned long long xusertkn;                             //   32
+  void *xorigin;                                           //   40
+  void *xranglist;                                         //   48
+  void *xmemobjstart;                                      //   56
+  unsigned xguardsize;                                     //   64
+  unsigned xconvertsize;                                   //   68
+  unsigned xaletvalue;                                     //   72
+  int xnumrange;                                           //   76
+  void *__ptr32 xv64listptr;                               //   80
+  unsigned xv64listlength;                                 //   84
+  unsigned long long xconvertstart;                        //   88
+  unsigned long long xconvertsize64;                       //   96
+  unsigned long long xguardsize64;                         //  104
+  char xusertoken[8];                                      //  112
+  unsigned char xdumppriority;                             //  120
+  unsigned xdumpprotocol_yes : 1;                          //  121
+  unsigned xorder_dumppriority : 1;                        //  121(1)
+  unsigned xtype_pageable : 1;                             //  121(2)
+  unsigned xtype_dref : 1;                                 //  121(3)
+  unsigned xownercom_home : 1;                             //  121(4)
+  unsigned xownercom_primary : 1;                          //  121(5)
+  unsigned xownercom_system : 1;                           //  121(6)
+  unsigned xownercom_byasid : 1;                           //  121(7)
+  unsigned xv64common_no : 1;                              //  122
+  unsigned xmemlimit_no : 1;                               //  122(1)
+  unsigned xdetachfixed_yes : 1;                           //  122(2)
+  unsigned xdoauthchecks_yes : 1;                          //  122(3)
+  unsigned xlocalsysarea_yes : 1;                          //  122(4)
+  unsigned xamountsize_4k : 1;                             //  122(5)
+  unsigned xamountsize_1meg : 1;                           //  122(6)
+  unsigned xmemlimit_cond : 1;                             //  122(7)
+  unsigned keyused_dump : 1;                               //  123
+  unsigned keyused_optionvalue : 1;                        //  123(1)
+  unsigned keyused_svcdumprgn : 1;                         //  123(2)
+  unsigned xattribute_defs : 1;                            //  123(3)
+  unsigned xattribute_ownergone : 1;                       //  123(4)
+  unsigned xattribute_notownergone : 1;                    //  123(5)
+  unsigned xtrackinfo_yes : 1;                             //  123(6)
+  unsigned xunlocked_yes : 1;                              //  123(7)
+  unsigned char xdump;                                     //  124
+  unsigned xpageframesize_pageable1meg : 1;                //  125
+  unsigned xpageframesize_dref1meg : 1;                    //  125(1)
+  unsigned xsadmp_yes : 1;                                 //  125(2)
+  unsigned xsadmp_no : 1;                                  //  125(3)
+  unsigned xuse2gto64g_yes : 1;                            //  125(4)
+  unsigned xdiscardpages_yes : 1;                          //  125(5)
+  unsigned xexecutable_yes : 1;                            //  125(6)
+  unsigned xexecutable_no : 1;                             //  125(7)
+  unsigned short xownerasid;                               //  126
+  unsigned char xoptionvalue;                              //  128
+  unsigned char xrsv0001[8];                               //  129
+  unsigned char xownerjobname[8];                          //  137
+  unsigned char xrsv0004[7];                               //  145
+  void *xdmapagetable;                                     //  152
+  unsigned long long xunits;                               //  160
+  unsigned keyused_units : 1;                              //  168
+  unsigned xunitsize_1m : 1;                               //  168(1)
+  unsigned xunitsize_2g : 1;                               //  168(2)
+  unsigned xpageframesize_1m : 1;                          //  168(3)
+  unsigned xpageframesize_2g : 1;                          //  168(4)
+  unsigned xtype_fixed : 1;                                //  168(5)
+  unsigned xflags9_rsvd1 : 2;                              //  168(6)
+  unsigned char xrsv0005[7];                               //  169
+};
+static long long __iarv64(void *parm, void **ptr, long long *reason_code_ptr) {
+  long long rc;
+  long long reason;
+  __asm volatile(" lgr 1,%3 \n"
+                 " llgtr 14,14 \n"
+                 " l 14,16(0,0) \n"
+                 " l 14,772(14,0) \n"
+                 " l 14,208(14,0) \n"
+                 " la 15,14 \n"
+                 " or 14,15 \n"
+                 " pc 0(14) \n"
+                 " stg 1,%0 \n"
+                 " stg 15,%1 \n"
+                 " stg 0,%2 \n"
+                 : "=m"(*ptr), "=m"(rc), "=m"(reason)
+                 : "r"(parm)
+                 : "r0", "r1", "r14", "r15");
+  if (rc != 0 && reason_code_ptr != 0) {
+    *reason_code_ptr = reason;
+  }
+  return rc;
+}
+
+static void *__iarv64_alloc(int segs, const char *token) {
+  void *ptr = 0;
+  long long rc, reason;
+  struct iarv64parm parm __attribute__((__aligned__(16)));
+  memset(&parm, 0, sizeof(parm));
+  parm.xversion = 5;
+  parm.xrequest = 1;
+  parm.xcond_yes = 1;
+  parm.xsegments = segs;
+  parm.xorigin = 0;
+  parm.xdumppriority = 99;
+  parm.xtype_pageable = 1;
+  parm.xdump = 32;
+  parm.xsadmp_no = 1;
+  parm.xpageframesize_pageable1meg = 1;
+  parm.xuse2gto64g_yes = 1;
+  parm.xexecutable_yes = 1;
+  parm.keyused_ttoken = 1;
+  memcpy(&parm.xttoken, token, 16);
+  rc = __iarv64(&parm, &ptr, &reason);
+  if (mem_account())
+    fprintf(stderr, "__iav64_alloc: pid %d tid %d ptr=%p size=%lu rc=%lld\n",
+            getpid(), (int)(pthread_self().__ & 0x7fffffff), parm.xorigin,
+            (unsigned long)(segs * 1024 * 1024), rc);
+  if (rc == 0) {
+    ptr = parm.xorigin;
+  }
+  return ptr;
+}
+
+static int __iarv64_free(void *ptr, const char *token) {
+  long long rc, reason;
+  void *org = ptr;
+  struct iarv64parm parm __attribute__((__aligned__(16)));
+  memset(&parm, 0, sizeof(parm));
+  parm.xversion = 5;
+  parm.xrequest = 3;
+  parm.xcond_yes = 1;
+  parm.xsadmp_no = 1;
+  parm.xmemobjstart = ptr;
+  parm.keyused_ttoken = 1;
+  memcpy(&parm.xttoken, token, 16);
+  rc = __iarv64(&parm, &ptr, &reason);
+  if (mem_account())
+    fprintf(stderr, "__iarv64_free pid %d tid %d ptr=%p rc=%lld\n", getpid(),
+            (int)(pthread_self().__ & 0x7fffffff), org, rc);
+  return rc;
+}
+
 typedef unsigned long value_type;
 typedef unsigned long key_type;
 
 struct __hash_func {
-  size_t operator()(const key_type& k) const {
+  size_t operator()(const key_type &k) const {
     int s = 0;
     key_type n = k;
     while (0 == (n & 1) && s < (sizeof(key_type) - 1)) {
@@ -143,23 +345,41 @@ typedef std::unordered_map<key_type, bool, __hash_func>::const_iterator
 
 class __Cache {
   std::unordered_map<key_type, value_type, __hash_func> cache;
-  std::unordered_map<key_type, bool, __hash_func> rmode_cache;
   std::mutex access_lock;
+  char tcbtoken[16];
 
- public:
-  void addptr(const void* ptr, size_t v) {
+public:
+  __Cache() { gettcbtoken(tcbtoken, 5); }
+  void addptr(const void *ptr, size_t v) {
     unsigned long k = (unsigned long)ptr;
     std::lock_guard<std::mutex> guard(access_lock);
     cache[k] = v;
-    if (mem_account()) fprintf(stderr, "ADDED: @%lx size %lu\n", k, v);
+    if (mem_account())
+      fprintf(stderr, "ADDED: @%lx size %lu\n", k, v);
   }
-  void addptr_rmode64(const void* ptr, bool rmode64) {
-    unsigned long k = (unsigned long)ptr;
+  void *alloc_seg(int segs) {
+    void *p = __iarv64_alloc(segs, tcbtoken);
     std::lock_guard<std::mutex> guard(access_lock);
-    rmode_cache[k] = rmode64;
-    if (mem_account()) fprintf(stderr, "ADDED: RMODE64\n");
+    if (p) {
+      unsigned long k = (unsigned long)p;
+      cache[k] = segs * 1024 * 1024;
+      if (mem_account())
+        fprintf(stderr, "ADDED:@%lx size %lu RMODE64\n", k,
+                (size_t)(segs * 1024 * 1024));
+    }
+    return p;
   }
-  int is_exist_ptr(const void* ptr) {
+  int free_seg(void *ptr) {
+    unsigned long k = (unsigned long)ptr;
+    int rc = __iarv64_free(ptr, tcbtoken);
+    std::lock_guard<std::mutex> guard(access_lock);
+    cursor_t c = cache.find(k);
+    if (c != cache.end()) {
+      cache.erase(c);
+    }
+    return rc;
+  }
+  int is_exist_ptr(const void *ptr) {
     unsigned long k = (unsigned long)ptr;
     std::lock_guard<std::mutex> guard(access_lock);
     cursor_t c = cache.find(k);
@@ -168,12 +388,15 @@ class __Cache {
     }
     return 0;
   }
-  int is_rmode64(const void* ptr) {
+  int is_rmode64(const void *ptr) {
     unsigned long k = (unsigned long)ptr;
     std::lock_guard<std::mutex> guard(access_lock);
-    rmode_cursor_t c = rmode_cache.find(k);
-    if (c != rmode_cache.end()) {
-      return 1;
+    cursor_t c = cache.find(k);
+    if (c != cache.end()) {
+      if (0 != (k & 0xffffffff80000000UL))
+        return 1;
+      else
+        return 0;
     }
     return 0;
   }
@@ -184,7 +407,7 @@ class __Cache {
         fprintf(stderr, "LIST: @%lx size %lu\n", it->first, it->second);
       }
   }
-  void freeptr(const void* ptr) {
+  void freeptr(const void *ptr) {
     unsigned long k = (unsigned long)ptr;
     std::lock_guard<std::mutex> guard(access_lock);
     cursor_t c = cache.find(k);
@@ -205,90 +428,102 @@ class __Cache {
 
 static __Cache alloc_info;
 
-static void * anon_mmap_inner(void * addr, size_t len, bool * is_above_bar) {
-   int retcode;
-   bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
-   if (rmode64 && len % kMegaByte == 0) {
-     __mopl_t mopl_instance;
-     void * p = NULL;
-     size_t request_size = len / kMegaByte;
-     memset(&mopl_instance,0,sizeof(mopl_instance));
-     mopl_instance.__mopldumppriority = __MO_DUMP_PRIORITY_HEAP;
-     mopl_instance.__moplrequestsize = request_size;
-     retcode = __moservices(__MO_GETSTOR,sizeof(mopl_instance), &mopl_instance, &p);
-     *is_above_bar = true;
-     alloc_info.addptr_rmode64(p, *is_above_bar);
-     return (retcode == 0) ? p : MAP_FAILED;
-   } else {
-     char * p;
-#pragma convert("ibm-1047")
+static void *anon_mmap_inner(void *addr, size_t len, bool *is_above_bar) {
+  int retcode;
+  // bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
+  if (len % kMegaByte == 0) {
+    size_t request_size = len / kMegaByte;
+    *is_above_bar = true;
+    void *p = alloc_info.alloc_seg(request_size);
+    if (p)
+      return p;
+    else
+      return MAP_FAILED;
+  } else {
+    char *p;
 #if defined(__64BIT__)
-      __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
-            " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
-            "LOC=(31,64)\x15"
-# if defined(__clang__)
-            :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
-# else
-            :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
-# endif
+    __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
+          " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
+          "LOC=(31,64)\x15"
+#if defined(__clang__)
+          : "=NR:r1"(p), "=NR:r15"(retcode)
+          : "NR:r0"(len)
+          : "r0", "r1", "r14", "r15");
 #else
-      __asm(" SYSSTATE ARCHLVL=2\x15"
-            " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\x15"
-# if defined(__clang__)
-            :"=NR:r1"(p),"=NR:r15"(retcode): "NR:r0"(len): "r0","r1","r14","r15");
-# else
-            :"=r"(p),"=r"(retcode): "r"(len): "r0","r1","r14","r15");
-# endif
+          : "=r"(p), "=r"(retcode)
+          : "r"(len)
+          : "r0", "r1", "r14", "r15");
 #endif
-#pragma convert(pop)
+#else
+    __asm(" SYSSTATE ARCHLVL=2\x15"
+          " STORAGE "
+          "OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\x15"
+#if defined(__clang__)
+          : "=NR:r1"(p), "=NR:r15"(retcode)
+          : "NR:r0"(len)
+          : "r0", "r1", "r14", "r15");
+#else
+          : "=r"(p), "=r"(retcode)
+          : "r"(len)
+          : "r0", "r1", "r14", "r15");
+#endif
+#endif
     *is_above_bar = false;
-    return (retcode == 0) ? p : MAP_FAILED;
-   }
+    if (retcode == 0) {
+      alloc_info.addptr(p, len);
+      return p;
+    }
+    return MAP_FAILED;
+  }
 }
 
-
-static int anon_munmap_inner(void * addr, size_t len, bool is_above_bar) {
-   int retcode;
-   if (is_above_bar) {
-     retcode = __moservices(__MO_DETACH,0,NULL,&addr);
-   } else {
-#pragma convert("ibm-1047")
-#if defined (__64BIT__)
-  __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
+static int anon_munmap_inner(void *addr, size_t len, bool is_above_bar) {
+  int retcode;
+  if (is_above_bar) {
+    return alloc_info.free_seg(addr);
+  } else {
+#if defined(__64BIT__)
+    __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
           " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
-# if defined(__clang__)
-          :"=NR:r15"(retcode): "NR:r1"(addr), "NR:r0"(len) : "r0","r1","r14","r15");
-# else
-          :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
-# endif
+#if defined(__clang__)
+          : "=NR:r15"(retcode)
+          : "NR:r1"(addr), "NR:r0"(len)
+          : "r0", "r1", "r14", "r15");
 #else
-  __asm(" SYSSTATE ARCHLVL=2\x15"
-          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
-# if defined(__clang__)
-          :"=NR:r15"(retcode): "NR:r1"(addr), "NR:r0"(len) : "r0","r1","r14","r15");
-# else
-          :"=r"(retcode): "r"(addr), "r"(len) : "r0","r1","r14","r15");
-# endif
+          : "=r"(retcode)
+          : "r"(addr), "r"(len)
+          : "r0", "r1", "r14", "r15");
 #endif
-#pragma convert(pop)
-   }
-   return retcode;
+#else
+    __asm(" SYSSTATE ARCHLVL=2\x15"
+          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
+#if defined(__clang__)
+          : "=NR:r15"(retcode)
+          : "NR:r1"(addr), "NR:r0"(len)
+          : "r0", "r1", "r14", "r15");
+#else
+          : "=r"(retcode)
+          : "r"(addr), "r"(len)
+          : "r0", "r1", "r14", "r15");
+#endif
+#endif
+    if (0 == retcode)
+      alloc_info.freeptr(addr);
+  }
+  return retcode;
 }
 
-
-static void* anon_mmap(void* _, size_t len, bool* is_above_bar) {
-  void* ret = anon_mmap_inner(_, len, is_above_bar);
+static void *anon_mmap(void *_, size_t len, bool *is_above_bar) {
+  void *ret = anon_mmap_inner(_, len, is_above_bar);
   if (ret == MAP_FAILED) {
     if (mem_account())
       fprintf(stderr, "Error: anon_mmap request size %zu failed\n", len);
     return ret;
   }
-  alloc_info.addptr(ret, (int)len);
-  if (mem_account()) fprintf(stderr, "Allocated @%p size %d\n", ret, (int)len);
   return ret;
 }
 
-static int anon_munmap(void* addr, size_t len) {
+static int anon_munmap(void *addr, size_t len) {
   if (alloc_info.is_exist_ptr(addr)) {
     if (mem_account())
       fprintf(stderr, "Address found, attempt to free @%p size %d\n", addr,
@@ -299,12 +534,11 @@ static int anon_munmap(void* addr, size_t len) {
         fprintf(stderr, "Error: anon_munmap @%p size %zu failed\n", addr, len);
       return rc;
     }
-    alloc_info.freeptr(addr);
     return 0;
   } else {
     if (mem_account())
-      fprintf(stderr, "Error: attempt to free %p size %d (not allocated)\n", addr,
-              (int)len);
+      fprintf(stderr, "Error: attempt to free %p size %d (not allocated)\n",
+              addr, (int)len);
     return 0;
   }
 }
