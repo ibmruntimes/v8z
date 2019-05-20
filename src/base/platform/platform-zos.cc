@@ -430,7 +430,6 @@ static __Cache alloc_info;
 
 static void *anon_mmap_inner(void *addr, size_t len, bool *is_above_bar) {
   int retcode;
-  // bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
   if (len % kMegaByte == 0) {
     size_t request_size = len / kMegaByte;
     *is_above_bar = true;
@@ -674,9 +673,7 @@ VirtualMemory::VirtualMemory(size_t size, size_t alignment, void * hint)
 
   bool is_above_bar = false;
 
-  // Memory pages with 1MB alignment will be allocated using __moservices
-  bool rmode64 = SysInfo::ExecutablePagesAbove2GB();
-  if (rmode64 && size % kMegaByte == 0) {
+  if (size % kMegaByte == 0) {
      void * reservation = anon_mmap(hint,
                                     size, &is_above_bar);
      if (reservation == MAP_FAILED) return;
