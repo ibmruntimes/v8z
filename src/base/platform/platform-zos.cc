@@ -347,19 +347,29 @@ class __Cache {
   std::unordered_map<key_type, value_type, __hash_func> cache;
   std::mutex access_lock;
   char tcbtoken[16];
+  unsigned short asid;
 
-public:
-  __Cache() { gettcbtoken(tcbtoken, 5); }
-  void addptr(const void *ptr, size_t v) {
+ public:
+  __Cache() {
+    gettcbtoken(tcbtoken, 3);
+    asid = ((unsigned short*)(*(char* __ptr32*)(0x224)))[18];
+  }
+  void addptr(const void* ptr, size_t v) {
     unsigned long k = (unsigned long)ptr;
     std::lock_guard<std::mutex> guard(access_lock);
     cache[k] = v;
-    if (mem_account())
-      fprintf(stderr, "ADDED: @%lx size %lu\n", k, v);
+    if (mem_account()) fprintf(stderr, "ADDED: @%lx size %lu\n", k, v);
   }
-  void *alloc_seg(int segs) {
-    void *p = __iarv64_alloc(segs, tcbtoken);
+  void* alloc_seg(int segs) {
     std::lock_guard<std::mutex> guard(access_lock);
+    unsigned short this_asid =
+        ((unsigned short*)(*(char* __ptr32*)(0x224)))[18];
+    if (asid != this_asid) {
+      // a fork occurred
+      asid = this_asid;
+      gettcbtoken(tcbtoken, 3);
+    }
+    void* p = __iarv64_alloc(segs, tcbtoken);
     if (p) {
       unsigned long k = (unsigned long)p;
       cache[k] = segs * 1024 * 1024;
@@ -369,17 +379,24 @@ public:
     }
     return p;
   }
-  int free_seg(void *ptr) {
+  int free_seg(void* ptr) {
     unsigned long k = (unsigned long)ptr;
-    int rc = __iarv64_free(ptr, tcbtoken);
     std::lock_guard<std::mutex> guard(access_lock);
+    unsigned short this_asid =
+        ((unsigned short*)(*(char* __ptr32*)(0x224)))[18];
+    if (asid != this_asid) {
+      // a fork occurred
+      asid = this_asid;
+      gettcbtoken(tcbtoken, 3);
+    }
+    int rc = __iarv64_free(ptr, tcbtoken);
     cursor_t c = cache.find(k);
     if (c != cache.end()) {
       cache.erase(c);
     }
     return rc;
   }
-  int is_exist_ptr(const void *ptr) {
+  int is_exist_ptr(const void* ptr) {
     unsigned long k = (unsigned long)ptr;
     std::lock_guard<std::mutex> guard(access_lock);
     cursor_t c = cache.find(k);
@@ -388,7 +405,7 @@ public:
     }
     return 0;
   }
-  int is_rmode64(const void *ptr) {
+  int is_rmode64(const void* ptr) {
     unsigned long k = (unsigned long)ptr;
     std::lock_guard<std::mutex> guard(access_lock);
     cursor_t c = cache.find(k);
@@ -407,7 +424,7 @@ public:
         fprintf(stderr, "LIST: @%lx size %lu\n", it->first, it->second);
       }
   }
-  void freeptr(const void *ptr) {
+  void freeptr(const void* ptr) {
     unsigned long k = (unsigned long)ptr;
     std::lock_guard<std::mutex> guard(access_lock);
     cursor_t c = cache.find(k);
