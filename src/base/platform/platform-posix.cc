@@ -28,6 +28,9 @@
     defined(__NetBSD__) || defined(__OpenBSD__)
 #include <sys/sysctl.h>  // NOLINT, for sysctl
 #endif
+#if defined(__MVS__)
+extern "C" int vdprintf(int fd, const char *fmt, va_list ap);
+#endif
 
 #undef MAP_TYPE
 
@@ -472,10 +475,7 @@ void OS::VPrint(const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_INFO, LOG_TAG, format, args);
 #elif defined(__MVS__)
-  char buf[512];
-  int len = __vsprintf_a(buf, format, args);
-  __a2e_l(buf, len);
-  printf(buf);
+  vdprintf(fileno(stdout), format, args);
 #else
   vprintf(format, args);
 #endif
@@ -494,10 +494,7 @@ void OS::VFPrint(FILE* out, const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_INFO, LOG_TAG, format, args);
 #elif defined(__MVS__)
-  char buf[512];
-  int len = __vsprintf_a(buf, format, args);
-  __a2e_l(buf, len);
-  fprintf(out, buf);
+  vdprintf(fileno(out), format, args);
 #else
   vfprintf(out, format, args);
 #endif
@@ -516,10 +513,7 @@ void OS::VPrintError(const char* format, va_list args) {
 #if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
   __android_log_vprint(ANDROID_LOG_ERROR, LOG_TAG, format, args);
 #elif defined(__MVS__)
-  char buf[512];
-  int len = __vsprintf_a(buf, format, args);
-  __a2e_l(buf, len);
-  fprintf(stderr, buf);
+  vdprintf(fileno(stderr), format, args);
 #else
   vfprintf(stderr, format, args);
 #endif
