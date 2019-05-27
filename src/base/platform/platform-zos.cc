@@ -114,7 +114,7 @@ static int mem_account(void) {
   static int res = -1;
   if (-1 == res) {
     res = 0;
-    char *ma = getenv("__MEM_ACCOUNT");
+    char* ma = getenv("__MEM_ACCOUNT");
     if (ma && 0 == strcmp("1", ma)) {
       res = 1;
     }
@@ -122,160 +122,162 @@ static int mem_account(void) {
   return res;
 }
 
-static int gettcbtoken(char *out, int type) {
+static int gettcbtoken(char* out, int type) {
   typedef struct token_parm {
     char token[16];
-    char *__ptr32 ascb;
+    char* __ptr32 ascb;
     char type;
     char reserved[3];
   } token_parm_t;
-  token_parm_t *tt = (token_parm_t *)__malloc31(sizeof(token_parm_t));
+  token_parm_t* tt = (token_parm_t*)__malloc31(sizeof(token_parm_t));
   memset(tt, 0, sizeof(token_parm_t));
   tt->type = type;
   long workreg;
-  __asm(" L %0,16(0,0) \n"
-        " L %0,772(%0,0) \n"
-        " L %0,212(%0,0) \n"
-        " PC 0(%0) \n"
-        : "=NR:r15"(workreg) // also return code
-        : "NR:r1"(tt)
-        : );
-  memcpy(out, (char *)tt, 16);
+  __asm(
+      " L %0,16(0,0) \n"
+      " L %0,772(%0,0) \n"
+      " L %0,212(%0,0) \n"
+      " PC 0(%0) \n"
+      : "=NR:r15"(workreg)  // also return code
+      : "NR:r1"(tt)
+      :);
+  memcpy(out, (char*)tt, 16);
   free(tt);
   return workreg;
 }
 
 struct iarv64parm {
-  unsigned char xversion __attribute__((__aligned__(16))); //    0
-  unsigned char xrequest;                                  //    1
-  unsigned xmotknsource_system : 1;                        //    2
-  unsigned xmotkncreator_system : 1;                       //    2(1)
-  unsigned xmatch_motoken : 1;                             //    2(2)
-  unsigned xflags0_rsvd1 : 5;                              //    2(3)
-  unsigned char xkey;                                      //    3
-  unsigned keyused_key : 1;                                //    4
-  unsigned keyused_usertkn : 1;                            //    4(1)
-  unsigned keyused_ttoken : 1;                             //    4(2)
-  unsigned keyused_convertstart : 1;                       //    4(3)
-  unsigned keyused_guardsize64 : 1;                        //    4(4)
-  unsigned keyused_convertsize64 : 1;                      //    4(5)
-  unsigned keyused_motkn : 1;                              //    4(6)
-  unsigned keyused_ownerjobname : 1;                       //    4(7)
-  unsigned xcond_yes : 1;                                  //    5
-  unsigned xfprot_no : 1;                                  //    5(1)
-  unsigned xcontrol_auth : 1;                              //    5(2)
-  unsigned xguardloc_high : 1;                             //    5(3)
-  unsigned xchangeaccess_global : 1;                       //    5(4)
-  unsigned xpageframesize_1meg : 1;                        //    5(5)
-  unsigned xpageframesize_max : 1;                         //    5(6)
-  unsigned xpageframesize_all : 1;                         //    5(7)
-  unsigned xmatch_usertoken : 1;                           //    6
-  unsigned xaffinity_system : 1;                           //    6(1)
-  unsigned xuse2gto32g_yes : 1;                            //    6(2)
-  unsigned xowner_no : 1;                                  //    6(3)
-  unsigned xv64select_no : 1;                              //    6(4)
-  unsigned xsvcdumprgn_no : 1;                             //    6(5)
-  unsigned xv64shared_no : 1;                              //    6(6)
-  unsigned xsvcdumprgn_all : 1;                            //    6(7)
-  unsigned xlong_no : 1;                                   //    7
-  unsigned xclear_no : 1;                                  //    7(1)
-  unsigned xview_readonly : 1;                             //    7(2)
-  unsigned xview_sharedwrite : 1;                          //    7(3)
-  unsigned xview_hidden : 1;                               //    7(4)
-  unsigned xconvert_toguard : 1;                           //    7(5)
-  unsigned xconvert_fromguard : 1;                         //    7(6)
-  unsigned xkeepreal_no : 1;                               //    7(7)
-  unsigned long long xsegments;                            //    8
-  unsigned char xttoken[16];                               //   16
-  unsigned long long xusertkn;                             //   32
-  void *xorigin;                                           //   40
-  void *xranglist;                                         //   48
-  void *xmemobjstart;                                      //   56
-  unsigned xguardsize;                                     //   64
-  unsigned xconvertsize;                                   //   68
-  unsigned xaletvalue;                                     //   72
-  int xnumrange;                                           //   76
-  void *__ptr32 xv64listptr;                               //   80
-  unsigned xv64listlength;                                 //   84
-  unsigned long long xconvertstart;                        //   88
-  unsigned long long xconvertsize64;                       //   96
-  unsigned long long xguardsize64;                         //  104
-  char xusertoken[8];                                      //  112
-  unsigned char xdumppriority;                             //  120
-  unsigned xdumpprotocol_yes : 1;                          //  121
-  unsigned xorder_dumppriority : 1;                        //  121(1)
-  unsigned xtype_pageable : 1;                             //  121(2)
-  unsigned xtype_dref : 1;                                 //  121(3)
-  unsigned xownercom_home : 1;                             //  121(4)
-  unsigned xownercom_primary : 1;                          //  121(5)
-  unsigned xownercom_system : 1;                           //  121(6)
-  unsigned xownercom_byasid : 1;                           //  121(7)
-  unsigned xv64common_no : 1;                              //  122
-  unsigned xmemlimit_no : 1;                               //  122(1)
-  unsigned xdetachfixed_yes : 1;                           //  122(2)
-  unsigned xdoauthchecks_yes : 1;                          //  122(3)
-  unsigned xlocalsysarea_yes : 1;                          //  122(4)
-  unsigned xamountsize_4k : 1;                             //  122(5)
-  unsigned xamountsize_1meg : 1;                           //  122(6)
-  unsigned xmemlimit_cond : 1;                             //  122(7)
-  unsigned keyused_dump : 1;                               //  123
-  unsigned keyused_optionvalue : 1;                        //  123(1)
-  unsigned keyused_svcdumprgn : 1;                         //  123(2)
-  unsigned xattribute_defs : 1;                            //  123(3)
-  unsigned xattribute_ownergone : 1;                       //  123(4)
-  unsigned xattribute_notownergone : 1;                    //  123(5)
-  unsigned xtrackinfo_yes : 1;                             //  123(6)
-  unsigned xunlocked_yes : 1;                              //  123(7)
-  unsigned char xdump;                                     //  124
-  unsigned xpageframesize_pageable1meg : 1;                //  125
-  unsigned xpageframesize_dref1meg : 1;                    //  125(1)
-  unsigned xsadmp_yes : 1;                                 //  125(2)
-  unsigned xsadmp_no : 1;                                  //  125(3)
-  unsigned xuse2gto64g_yes : 1;                            //  125(4)
-  unsigned xdiscardpages_yes : 1;                          //  125(5)
-  unsigned xexecutable_yes : 1;                            //  125(6)
-  unsigned xexecutable_no : 1;                             //  125(7)
-  unsigned short xownerasid;                               //  126
-  unsigned char xoptionvalue;                              //  128
-  unsigned char xrsv0001[8];                               //  129
-  unsigned char xownerjobname[8];                          //  137
-  unsigned char xrsv0004[7];                               //  145
-  void *xdmapagetable;                                     //  152
-  unsigned long long xunits;                               //  160
-  unsigned keyused_units : 1;                              //  168
-  unsigned xunitsize_1m : 1;                               //  168(1)
-  unsigned xunitsize_2g : 1;                               //  168(2)
-  unsigned xpageframesize_1m : 1;                          //  168(3)
-  unsigned xpageframesize_2g : 1;                          //  168(4)
-  unsigned xtype_fixed : 1;                                //  168(5)
-  unsigned xflags9_rsvd1 : 2;                              //  168(6)
-  unsigned char xrsv0005[7];                               //  169
+  unsigned char xversion __attribute__((__aligned__(16)));  //    0
+  unsigned char xrequest;                                   //    1
+  unsigned xmotknsource_system : 1;                         //    2
+  unsigned xmotkncreator_system : 1;                        //    2(1)
+  unsigned xmatch_motoken : 1;                              //    2(2)
+  unsigned xflags0_rsvd1 : 5;                               //    2(3)
+  unsigned char xkey;                                       //    3
+  unsigned keyused_key : 1;                                 //    4
+  unsigned keyused_usertkn : 1;                             //    4(1)
+  unsigned keyused_ttoken : 1;                              //    4(2)
+  unsigned keyused_convertstart : 1;                        //    4(3)
+  unsigned keyused_guardsize64 : 1;                         //    4(4)
+  unsigned keyused_convertsize64 : 1;                       //    4(5)
+  unsigned keyused_motkn : 1;                               //    4(6)
+  unsigned keyused_ownerjobname : 1;                        //    4(7)
+  unsigned xcond_yes : 1;                                   //    5
+  unsigned xfprot_no : 1;                                   //    5(1)
+  unsigned xcontrol_auth : 1;                               //    5(2)
+  unsigned xguardloc_high : 1;                              //    5(3)
+  unsigned xchangeaccess_global : 1;                        //    5(4)
+  unsigned xpageframesize_1meg : 1;                         //    5(5)
+  unsigned xpageframesize_max : 1;                          //    5(6)
+  unsigned xpageframesize_all : 1;                          //    5(7)
+  unsigned xmatch_usertoken : 1;                            //    6
+  unsigned xaffinity_system : 1;                            //    6(1)
+  unsigned xuse2gto32g_yes : 1;                             //    6(2)
+  unsigned xowner_no : 1;                                   //    6(3)
+  unsigned xv64select_no : 1;                               //    6(4)
+  unsigned xsvcdumprgn_no : 1;                              //    6(5)
+  unsigned xv64shared_no : 1;                               //    6(6)
+  unsigned xsvcdumprgn_all : 1;                             //    6(7)
+  unsigned xlong_no : 1;                                    //    7
+  unsigned xclear_no : 1;                                   //    7(1)
+  unsigned xview_readonly : 1;                              //    7(2)
+  unsigned xview_sharedwrite : 1;                           //    7(3)
+  unsigned xview_hidden : 1;                                //    7(4)
+  unsigned xconvert_toguard : 1;                            //    7(5)
+  unsigned xconvert_fromguard : 1;                          //    7(6)
+  unsigned xkeepreal_no : 1;                                //    7(7)
+  unsigned long long xsegments;                             //    8
+  unsigned char xttoken[16];                                //   16
+  unsigned long long xusertkn;                              //   32
+  void* xorigin;                                            //   40
+  void* xranglist;                                          //   48
+  void* xmemobjstart;                                       //   56
+  unsigned xguardsize;                                      //   64
+  unsigned xconvertsize;                                    //   68
+  unsigned xaletvalue;                                      //   72
+  int xnumrange;                                            //   76
+  void* __ptr32 xv64listptr;                                //   80
+  unsigned xv64listlength;                                  //   84
+  unsigned long long xconvertstart;                         //   88
+  unsigned long long xconvertsize64;                        //   96
+  unsigned long long xguardsize64;                          //  104
+  char xusertoken[8];                                       //  112
+  unsigned char xdumppriority;                              //  120
+  unsigned xdumpprotocol_yes : 1;                           //  121
+  unsigned xorder_dumppriority : 1;                         //  121(1)
+  unsigned xtype_pageable : 1;                              //  121(2)
+  unsigned xtype_dref : 1;                                  //  121(3)
+  unsigned xownercom_home : 1;                              //  121(4)
+  unsigned xownercom_primary : 1;                           //  121(5)
+  unsigned xownercom_system : 1;                            //  121(6)
+  unsigned xownercom_byasid : 1;                            //  121(7)
+  unsigned xv64common_no : 1;                               //  122
+  unsigned xmemlimit_no : 1;                                //  122(1)
+  unsigned xdetachfixed_yes : 1;                            //  122(2)
+  unsigned xdoauthchecks_yes : 1;                           //  122(3)
+  unsigned xlocalsysarea_yes : 1;                           //  122(4)
+  unsigned xamountsize_4k : 1;                              //  122(5)
+  unsigned xamountsize_1meg : 1;                            //  122(6)
+  unsigned xmemlimit_cond : 1;                              //  122(7)
+  unsigned keyused_dump : 1;                                //  123
+  unsigned keyused_optionvalue : 1;                         //  123(1)
+  unsigned keyused_svcdumprgn : 1;                          //  123(2)
+  unsigned xattribute_defs : 1;                             //  123(3)
+  unsigned xattribute_ownergone : 1;                        //  123(4)
+  unsigned xattribute_notownergone : 1;                     //  123(5)
+  unsigned xtrackinfo_yes : 1;                              //  123(6)
+  unsigned xunlocked_yes : 1;                               //  123(7)
+  unsigned char xdump;                                      //  124
+  unsigned xpageframesize_pageable1meg : 1;                 //  125
+  unsigned xpageframesize_dref1meg : 1;                     //  125(1)
+  unsigned xsadmp_yes : 1;                                  //  125(2)
+  unsigned xsadmp_no : 1;                                   //  125(3)
+  unsigned xuse2gto64g_yes : 1;                             //  125(4)
+  unsigned xdiscardpages_yes : 1;                           //  125(5)
+  unsigned xexecutable_yes : 1;                             //  125(6)
+  unsigned xexecutable_no : 1;                              //  125(7)
+  unsigned short xownerasid;                                //  126
+  unsigned char xoptionvalue;                               //  128
+  unsigned char xrsv0001[8];                                //  129
+  unsigned char xownerjobname[8];                           //  137
+  unsigned char xrsv0004[7];                                //  145
+  void* xdmapagetable;                                      //  152
+  unsigned long long xunits;                                //  160
+  unsigned keyused_units : 1;                               //  168
+  unsigned xunitsize_1m : 1;                                //  168(1)
+  unsigned xunitsize_2g : 1;                                //  168(2)
+  unsigned xpageframesize_1m : 1;                           //  168(3)
+  unsigned xpageframesize_2g : 1;                           //  168(4)
+  unsigned xtype_fixed : 1;                                 //  168(5)
+  unsigned xflags9_rsvd1 : 2;                               //  168(6)
+  unsigned char xrsv0005[7];                                //  169
 };
-static long long __iarv64(void *parm, void **ptr, long long *reason_code_ptr) {
+static long long __iarv64(void* parm, void** ptr, long long* reason_code_ptr) {
   long long rc;
   long long reason;
-  __asm volatile(" lgr 1,%3 \n"
-                 " llgtr 14,14 \n"
-                 " l 14,16(0,0) \n"
-                 " l 14,772(14,0) \n"
-                 " l 14,208(14,0) \n"
-                 " la 15,14 \n"
-                 " or 14,15 \n"
-                 " pc 0(14) \n"
-                 " stg 1,%0 \n"
-                 " stg 15,%1 \n"
-                 " stg 0,%2 \n"
-                 : "=m"(*ptr), "=m"(rc), "=m"(reason)
-                 : "r"(parm)
-                 : "r0", "r1", "r14", "r15");
+  __asm volatile(
+      " lgr 1,%3 \n"
+      " llgtr 14,14 \n"
+      " l 14,16(0,0) \n"
+      " l 14,772(14,0) \n"
+      " l 14,208(14,0) \n"
+      " la 15,14 \n"
+      " or 14,15 \n"
+      " pc 0(14) \n"
+      " stg 1,%0 \n"
+      " stg 15,%1 \n"
+      " stg 0,%2 \n"
+      : "=m"(*ptr), "=m"(rc), "=m"(reason)
+      : "r"(parm)
+      : "r0", "r1", "r14", "r15");
   if (rc != 0 && reason_code_ptr != 0) {
     *reason_code_ptr = reason;
   }
   return rc;
 }
 
-static void *__iarv64_alloc(int segs, const char *token) {
-  void *ptr = 0;
+static void* __iarv64_alloc(int segs, const char* token) {
+  void* ptr = 0;
   long long rc, reason;
   struct iarv64parm parm __attribute__((__aligned__(16)));
   memset(&parm, 0, sizeof(parm));
@@ -295,7 +297,7 @@ static void *__iarv64_alloc(int segs, const char *token) {
   memcpy(&parm.xttoken, token, 16);
   rc = __iarv64(&parm, &ptr, &reason);
   if (mem_account())
-    fprintf(stderr, "__iav64_alloc: pid %d tid %d ptr=%p size=%lu rc=%lld\n",
+    fprintf(stderr, "__iarv64_alloc: pid %d tid %d ptr=%p size=%lu rc=%lld\n",
             getpid(), (int)(pthread_self().__ & 0x7fffffff), parm.xorigin,
             (unsigned long)(segs * 1024 * 1024), rc);
   if (rc == 0) {
@@ -304,9 +306,10 @@ static void *__iarv64_alloc(int segs, const char *token) {
   return ptr;
 }
 
-static int __iarv64_free(void *ptr, const char *token) {
+#define __USE_IARV64 1
+static int __iarv64_free(void* ptr, const char* token) {
   long long rc, reason;
-  void *org = ptr;
+  void* org = ptr;
   struct iarv64parm parm __attribute__((__aligned__(16)));
   memset(&parm, 0, sizeof(parm));
   parm.xversion = 5;
@@ -350,7 +353,7 @@ typedef unsigned long value_type;
 typedef unsigned long key_type;
 
 struct __hash_func {
-  size_t operator()(const key_type &k) const {
+  size_t operator()(const key_type& k) const {
     int s = 0;
     key_type n = k;
     while (0 == (n & 1) && s < (sizeof(key_type) - 1)) {
@@ -371,11 +374,15 @@ class __Cache {
   std::mutex access_lock;
   char tcbtoken[16];
   unsigned short asid;
+  int oktouse;
 
  public:
   __Cache() {
     gettcbtoken(tcbtoken, 3);
     asid = ((unsigned short*)(*(char* __ptr32*)(0x224)))[18];
+    oktouse =
+        (*(int*)(80 + ((char**** __ptr32*)1208)[0][11][1][123]) > 0x040202FF);
+    // LE level is 230 or above
   }
   void addptr(const void* ptr, size_t v) {
     unsigned long k = (unsigned long)ptr;
@@ -383,6 +390,8 @@ class __Cache {
     cache[k] = v;
     if (mem_account()) fprintf(stderr, "ADDED: @%lx size %lu\n", k, v);
   }
+  // normal case:  bool elligible() { return oktouse; }
+  bool elligible() { return true; }  // always true for now
 #if defined(__USE_IARV64)
   void* alloc_seg(int segs) {
     std::lock_guard<std::mutex> guard(access_lock);
@@ -497,44 +506,47 @@ class __Cache {
 
 static __Cache alloc_info;
 
-static void *anon_mmap_inner(void *addr, size_t len, bool *is_above_bar) {
+static void* anon_mmap_inner(void* addr, size_t len, bool* is_above_bar) {
   int retcode;
-  if (len % kMegaByte == 0) {
+  if (alloc_info.elligible() && len % kMegaByte == 0) {
     size_t request_size = len / kMegaByte;
     *is_above_bar = true;
-    void *p = alloc_info.alloc_seg(request_size);
+    void* p = alloc_info.alloc_seg(request_size);
     if (p)
       return p;
     else
       return MAP_FAILED;
   } else {
-    char *p;
+    char* p;
 #if defined(__64BIT__)
-    __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
-          " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
-          "LOC=(31,64)\x15"
+    __asm(
+        " SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
+        " STORAGE OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1),"
+        "LOC=(31,64)\x15"
 #if defined(__clang__)
-          : "=NR:r1"(p), "=NR:r15"(retcode)
-          : "NR:r0"(len)
-          : "r0", "r1", "r14", "r15");
+        : "=NR:r1"(p), "=NR:r15"(retcode)
+        : "NR:r0"(len)
+        : "r0", "r1", "r14", "r15");
 #else
-          : "=r"(p), "=r"(retcode)
-          : "r"(len)
-          : "r0", "r1", "r14", "r15");
+        : "=r"(p), "=r"(retcode)
+        : "r"(len)
+        : "r0", "r1", "r14", "r15");
 #endif
 #else
-    __asm(" SYSSTATE ARCHLVL=2\x15"
-          " STORAGE "
-          "OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\x15"
+    __asm(
+        " SYSSTATE ARCHLVL=2\x15"
+        " STORAGE "
+        "OBTAIN,LENGTH=(%2),BNDRY=PAGE,COND=YES,ADDR=(%0),RTCD=(%1)\x15"
 #if defined(__clang__)
-          : "=NR:r1"(p), "=NR:r15"(retcode)
-          : "NR:r0"(len)
-          : "r0", "r1", "r14", "r15");
+        : "=NR:r1"(p), "=NR:r15"(retcode)
+        : "NR:r0"(len)
+        : "r0", "r1", "r14", "r15");
 #else
-          : "=r"(p), "=r"(retcode)
-          : "r"(len)
-          : "r0", "r1", "r14", "r15");
+        : "=r"(p), "=r"(retcode)
+        : "r"(len)
+        : "r0", "r1", "r14", "r15");
 #endif
+
 #endif
     *is_above_bar = false;
     if (retcode == 0) {
@@ -545,44 +557,46 @@ static void *anon_mmap_inner(void *addr, size_t len, bool *is_above_bar) {
   }
 }
 
-static int anon_munmap_inner(void *addr, size_t len, bool is_above_bar) {
+static int anon_munmap_inner(void* addr, size_t len, bool is_above_bar) {
   int retcode;
   if (is_above_bar) {
     return alloc_info.free_seg(addr);
   } else {
 #if defined(__64BIT__)
-    __asm(" SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
-          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
+    __asm(
+        " SYSSTATE ARCHLVL=2,AMODE64=YES\x15"
+        " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
 #if defined(__clang__)
-          : "=NR:r15"(retcode)
-          : "NR:r1"(addr), "NR:r0"(len)
-          : "r0", "r1", "r14", "r15");
+        : "=NR:r15"(retcode)
+        : "NR:r1"(addr), "NR:r0"(len)
+        : "r0", "r1", "r14", "r15");
 #else
-          : "=r"(retcode)
-          : "r"(addr), "r"(len)
-          : "r0", "r1", "r14", "r15");
+        : "=r"(retcode)
+        : "r"(addr), "r"(len)
+        : "r0", "r1", "r14", "r15");
 #endif
 #else
-    __asm(" SYSSTATE ARCHLVL=2\x15"
-          " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
+    __asm(
+        " SYSSTATE ARCHLVL=2\x15"
+        " STORAGE RELEASE,LENGTH=(%2),ADDR=(%1),RTCD=(%0),COND=YES\x15"
 #if defined(__clang__)
-          : "=NR:r15"(retcode)
-          : "NR:r1"(addr), "NR:r0"(len)
-          : "r0", "r1", "r14", "r15");
+        : "=NR:r15"(retcode)
+        : "NR:r1"(addr), "NR:r0"(len)
+        : "r0", "r1", "r14", "r15");
 #else
-          : "=r"(retcode)
-          : "r"(addr), "r"(len)
-          : "r0", "r1", "r14", "r15");
+        : "=r"(retcode)
+        : "r"(addr), "r"(len)
+        : "r0", "r1", "r14", "r15");
 #endif
+
 #endif
-    if (0 == retcode)
-      alloc_info.freeptr(addr);
+    if (0 == retcode) alloc_info.freeptr(addr);
   }
   return retcode;
 }
 
-static void *anon_mmap(void *_, size_t len, bool *is_above_bar) {
-  void *ret = anon_mmap_inner(_, len, is_above_bar);
+static void* anon_mmap(void* _, size_t len, bool* is_above_bar) {
+  void* ret = anon_mmap_inner(_, len, is_above_bar);
   if (ret == MAP_FAILED) {
     if (mem_account())
       fprintf(stderr, "Error: anon_mmap request size %zu failed\n", len);
@@ -591,7 +605,7 @@ static void *anon_mmap(void *_, size_t len, bool *is_above_bar) {
   return ret;
 }
 
-static int anon_munmap(void *addr, size_t len) {
+static int anon_munmap(void* addr, size_t len) {
   if (alloc_info.is_exist_ptr(addr)) {
     if (mem_account())
       fprintf(stderr, "Address found, attempt to free @%p size %d\n", addr,
