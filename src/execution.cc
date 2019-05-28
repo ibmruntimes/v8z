@@ -156,7 +156,7 @@ MUST_USE_RESULT MaybeHandle<Object> Invoke(
     }
     RuntimeCallTimerScope timer(isolate, &RuntimeCallStats::JS_Execution);
 #if __MVS__
-    __StateSave _a;
+    // __StateSave _a;
 #endif
     value = CALL_GENERATED_CODE(isolate, stub_entry, orig_func, func, recv,
                                 argc, argv);
