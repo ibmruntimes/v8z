@@ -134,7 +134,7 @@ static int gettcbtoken(char* out, int type) {
   tt->type = type;
   long workreg;
   __asm(
-      " L %0,16(0,0) \n"
+      " LLGF %0,16(0,0) \n"
       " L %0,772(%0,0) \n"
       " L %0,212(%0,0) \n"
       " PC 0(%0) \n"
