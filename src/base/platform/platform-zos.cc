@@ -378,8 +378,10 @@ class __Cache {
 
  public:
   __Cache() {
+#if defined(__USE_IARV64)
     gettcbtoken(tcbtoken, 3);
     asid = ((unsigned short*)(*(char* __ptr32*)(0x224)))[18];
+#endif
     oktouse =
         (*(int*)(80 + ((char**** __ptr32*)1208)[0][11][1][123]) > 0x040202FF);
     // LE level is 230 or above

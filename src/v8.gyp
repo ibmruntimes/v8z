@@ -43,6 +43,9 @@
       'target_name': 'v8',
       'dependencies_traverse': 1,
       'dependencies': ['v8_maybe_snapshot', 'v8_dump_build_config#target'],
+	  'include_dirs': [
+		'deps/zoslib/include'
+	   ],
       'conditions': [
         ['want_separate_host_toolset==1', {
           'toolsets': ['host', 'target'],
@@ -168,6 +171,7 @@
       'include_dirs+': [
         '..',
         '../include',
+        'deps/zoslib/include',
       ],
       'sources': [  ### gcmole(all) ###
         'builtins/builtins-arguments-gen.cc',
@@ -1833,7 +1837,11 @@
       },
       'include_dirs+': [
         '..',
+        'deps/zoslib/include',
       ],
+      'dependencies': [
+        'deps/zoslib/zoslib.gyp:zoslib'
+       ],
       'sources': [
         'base/adapters.h',
         'base/atomic-utils.h',

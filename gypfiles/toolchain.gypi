@@ -1108,7 +1108,6 @@
             'cflags': [ '-qnoansialias' ],
           }],
         ],  # conditions
-        'dependencies': [ 'deps/zoslib/zoslib.gyp:zoslib' ],
       }],
       ['OS=="solaris"', {
         'defines': [ '__C99FEATURES__=1' ],  # isinf() etc.
