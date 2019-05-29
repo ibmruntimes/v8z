@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#if !defined(_AE_BIMODAL)
+#define _AE_BIMODAL 1
+#endif
 #include "src/execution.h"
 
 #include "src/bootstrapper.h"
@@ -52,20 +55,6 @@ static void PrintDeserializedCodeInfo(Handle<JSFunction> function) {
   }
 }
 
-#ifdef __MVS__
-// only one thread should be doing this, we'll drop all safeguards
-class __StateSave {
-  void* save_frame_ptr;
-  char** __le_savstack_async_addr;
- public:
-  __StateSave()
-      : __le_savstack_async_addr(42 + ((char*** __ptr32*)1208)[0][11]) {
-    __asm(" lgr %0,4 \n" : "=r"(save_frame_ptr) : :);
-    *__le_savstack_async_addr = (char*)&save_frame_ptr;
-  }
-  ~__StateSave() { *__le_savstack_async_addr = 0; }
-};
-#endif
 namespace {
 
 MUST_USE_RESULT MaybeHandle<Object> Invoke(
@@ -156,10 +145,18 @@ MUST_USE_RESULT MaybeHandle<Object> Invoke(
     }
     RuntimeCallTimerScope timer(isolate, &RuntimeCallStats::JS_Execution);
 #if __MVS__
-    // __StateSave _a;
+    char *__new[1];
+    char **__old;
+    char ***__le_savstack_async_addr = (42 + ((char ****__ptr32 *)1208)[0][11]);
+    __old = *__le_savstack_async_addr;
+    *__le_savstack_async_addr = __new;
+    __asm(" lgr %0,4\n" : "=r"(__new[0])::);
 #endif
     value = CALL_GENERATED_CODE(isolate, stub_entry, orig_func, func, recv,
                                 argc, argv);
+#if __MVS__
+    *__le_savstack_async_addr = __old;
+#endif
   }
 
 #ifdef VERIFY_HEAP
