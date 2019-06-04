@@ -5,14 +5,15 @@
 #define _OPEN_SYS_FILE_EXT 1
 #define __ZOS_CC
 #include "zos.h"
-#include <__le_api.h>
 #include <_Ccsid.h>
 #include <_Nascii.h>
+#include <__le_api.h>
 #include <ctest.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <iconv.h>
+#include <mutex>
 #include <pthread.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -23,6 +24,8 @@
 #include <sys/msg.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <unordered_map>
+#include <vector>
 static int __debug_mode = 0;
 #if ' ' != 0x20
 #error not build with correct codeset
@@ -1183,4 +1186,119 @@ extern "C" int kill(int pid, int sig) {
   if (rv != 0)
     errno = rc;
   return rv;
+}
+
+struct IntHash {
+  size_t operator()(const int &n) const { return n * 0x54edcfac64d7d667L; }
+};
+
+typedef unsigned long fd_attribute;
+
+typedef std::unordered_map<int, fd_attribute, IntHash>::const_iterator cursor_t;
+
+class fdAttributeCache {
+  std::unordered_map<int, fd_attribute, IntHash> cache;
+  std::mutex access_lock;
+
+public:
+  fd_attribute get_attribute(int fd) {
+    std::lock_guard<std::mutex> guard(access_lock);
+    cursor_t c = cache.find(fd);
+    if (c != cache.end()) {
+      return c->second;
+    }
+    return 0;
+  }
+  void set_attribute(int fd, fd_attribute attr) {
+    std::lock_guard<std::mutex> guard(access_lock);
+    cache[fd] = attr;
+  }
+  void unset_attribute(int fd) {
+    std::lock_guard<std::mutex> guard(access_lock);
+    cache.erase(fd);
+  }
+  void clear(void) {
+    std::lock_guard<std::mutex> guard(access_lock);
+    cache.clear();
+  }
+};
+
+fdAttributeCache fdcache;
+
+enum notagread {
+  __NO_TAG_READ_DEFAULT = 0,
+  __NO_TAG_READ_DEFAULT_WITHWARNING = 1,
+  __NO_TAG_READ_V6 = 2,
+  __NO_TAG_READ_STRICT = 3
+} notagread;
+
+static enum notagread get_no_tag_read_behaviour(void) {
+  char *ntr = __getenv_a("__UNTAGGED_FILE_READ");
+  if (ntr && !strcmp(ntr, "DEFAULT")) {
+    return __NO_TAG_READ_DEFAULT;
+  } else if (ntr && !strcmp(ntr, "WARN")) {
+    return __NO_TAG_READ_DEFAULT_WITHWARNING;
+  } else if (ntr && !strcmp(ntr, "V6")) {
+    return __NO_TAG_READ_V6;
+  } else if (ntr && !strcmp(ntr, "STRICT")) {
+    return __NO_TAG_READ_STRICT;
+  }
+  return __NO_TAG_READ_DEFAULT; // defualt
+}
+static int no_tag_read_behaviour = get_no_tag_read_behaviour();
+
+extern "C" void __fd_close(int fd) { fdcache.unset_attribute(fd); }
+extern "C" int __file_needs_conversion(int fd) {
+  if (no_tag_read_behaviour == __NO_TAG_READ_STRICT)
+    return 0;
+  if (no_tag_read_behaviour == __NO_TAG_READ_V6)
+    return 1;
+  unsigned long attr = fdcache.get_attribute(fd);
+  if (attr == 0x0000000000020000UL) {
+    return 1;
+  }
+  return 0;
+}
+extern "C" int __file_needs_conversion_init(const char *name, int fd) {
+  char buf[4096];
+  off_t off;
+  int cnt;
+  if (no_tag_read_behaviour == __NO_TAG_READ_STRICT)
+    return 0;
+  if (no_tag_read_behaviour == __NO_TAG_READ_V6) {
+    fdcache.set_attribute(fd, 0x0000000000020000UL);
+    return 1;
+  }
+  if (lseek(fd, 1, SEEK_SET) == 1 && lseek(fd, 0, SEEK_SET) == 0) {
+    // seekable file (real file)
+    cnt = read(fd, buf, 4096);
+    off = lseek(fd, 0, SEEK_SET);
+    if (off != 0) {
+      // introduce an error, because of the offset is no longer valide
+      close(fd);
+      return 0;
+    }
+    if (cnt > 8) {
+      int ccsid;
+      int am;
+      unsigned len = strlen_ae((unsigned char *)buf, &ccsid, cnt, &am);
+      if (ccsid == 1047) {
+        if (no_tag_read_behaviour == __NO_TAG_READ_DEFAULT_WITHWARNING) {
+          const char *filename = "(null)";
+          if (name) {
+            int len = strlen(name);
+            filename =
+                (const char *)_convert_e2a(alloca(len + 1), name, len + 1);
+          }
+          dprintf(2,
+                  "Warning: File \"%s\"is untagged and seems to contain EBCDIC "
+                  "characters\n",
+                  filename);
+        }
+        fdcache.set_attribute(fd, 0x0000000000020000UL);
+        return 1;
+      }
+    }       // seekable files
+  }         // seekable files
+  return 0; // not seekable
 }

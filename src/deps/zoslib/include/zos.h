@@ -54,6 +54,9 @@ extern void *__dlcb_entry_addr(void *dlcb);
 extern int __find_file_in_path(char *out, int size, const char *envvar,
                                const char *file);
 extern void __listdll(int fd);
+extern int __file_needs_conversion(int fd);
+extern int __file_needs_conversion_init(const char *name, int fd);
+extern void __fd_close(int fd);
 
 #ifdef __cplusplus
 }
