@@ -1233,7 +1233,7 @@ enum notagread {
 } notagread;
 
 static enum notagread get_no_tag_read_behaviour(void) {
-  char *ntr = __getenv_a("__UNTAGGED_FILE_READ");
+  char *ntr = __getenv_a("__UNTAGGED_READ_MODE");
   if (ntr && !strcmp(ntr, "DEFAULT")) {
     return __NO_TAG_READ_DEFAULT;
   } else if (ntr && !strcmp(ntr, "WARN")) {
