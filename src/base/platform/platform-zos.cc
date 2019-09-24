@@ -255,8 +255,8 @@ struct iarv64parm {
 static long long __iarv64(void* parm, void** ptr, long long* reason_code_ptr) {
   long long rc;
   long long reason;
+  void* out = 0;
   __asm volatile(
-      " lgr 1,%3 \n"
       " llgtr 14,14 \n"
       " l 14,16(0,0) \n"
       " l 14,772(14,0) \n"
@@ -264,15 +264,15 @@ static long long __iarv64(void* parm, void** ptr, long long* reason_code_ptr) {
       " la 15,14 \n"
       " or 14,15 \n"
       " pc 0(14) \n"
-      " stg 1,%0 \n"
-      " stg 15,%1 \n"
-      " stg 0,%2 \n"
-      : "=m"(*ptr), "=m"(rc), "=m"(reason)
-      : "r"(parm)
-      : "r0", "r1", "r14", "r15");
+      " lgr %0,1 \n"
+      " lgr %1,15 \n"
+      " lgr %2,0 \n"
+      : "=r"(out), "=r"(rc), "=r"(reason), "+NR:r1"(parm)::"r0", "r14", "r15");
+  rc = (rc & 0x0ffff);
   if (rc != 0 && reason_code_ptr != 0) {
-    *reason_code_ptr = reason;
+    *reason_code_ptr = (0x0ffff & reason);
   }
+  if (out) *ptr = out;
   return rc;
 }
 
@@ -297,13 +297,20 @@ static void* __iarv64_alloc(int segs, const char* token) {
   memcpy(&parm.xttoken, token, 16);
   rc = __iarv64(&parm, &ptr, &reason);
   if (mem_account())
-    fprintf(stderr, "__iarv64_alloc: pid %d tid %d ptr=%p size=%lu rc=%lld\n",
-            getpid(), (int)(pthread_self().__ & 0x7fffffff), parm.xorigin,
-            (unsigned long)(segs * 1024 * 1024), rc);
+    fprintf(stderr,
+            "__iarv64_alloc: pid %d tid %d ptr=%p size=%lu(0x%lx) rc=%lx, "
+            "reason=%lx\n",
+            getpid(),
+            (int)(pthread_self().__ & 0x7fffffff),
+            parm.xorigin,
+            (unsigned long)(segs * 1024 * 1024),
+            (unsigned long)(segs * 1024 * 1024),
+            rc,
+            reason);
   if (rc == 0) {
-    ptr = parm.xorigin;
+    return parm.xorigin;
   }
-  return ptr;
+  return 0;
 }
 
 #define __USE_IARV64 1
