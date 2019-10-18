@@ -189,7 +189,7 @@ class AtomicGuard {
 // Returns key for hash map.
 #ifdef V8_OS_ZOS
 void * ThreadKey(pthread_t &thread_id) {
-    return (void *)(&thread_id);
+    return reinterpret_cast<void*>(thread_id.__);
 }
 #else
 void* ThreadKey(pthread_t thread_id) {
@@ -200,13 +200,7 @@ void* ThreadKey(pthread_t thread_id) {
 // Returns hash value for hash map.
 #ifdef V8_OS_ZOS
 uint32_t ThreadHash(pthread_t thread_id) {
-   unsigned char *ptc = (unsigned char*)(void*)(&thread_id);
-   uint32_t x =0;
-   for (int i =4 ; i < 8; i++) {
-     ptc = ptc+i;
-     x = (x << 8) | *ptc;
-   }
-   return x;
+  return static_cast<uint32_t>(thread_id.__);
 }
 #else
 uint32_t ThreadHash(pthread_t thread_id) {

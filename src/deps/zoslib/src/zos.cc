@@ -31,6 +31,10 @@ static int __debug_mode = 0;
 #error not build with correct codeset
 #endif
 
+#if defined(BUILD_VERSION)
+const char * __version = BUILD_VERSION ;
+#endif
+
 int __argc = 1;
 char **__argv;
 char **__argv_a;
@@ -277,6 +281,14 @@ static void ledump(const char *title) {
   __auto_ascii _a;
   __cdump_a((char *)title);
 }
+
+extern "C" void __build_version(void) {
+    char* V = __getenv_a("V");
+    if (V && !memcmp(V, "1", 2)) {
+      printf("%s\n", __version);
+    }
+}
+
 #if DEBUG_ONLY
 extern "C" size_t __e2a_l(char *bufptr, size_t szLen) {
   int ccsid;
@@ -1243,7 +1255,7 @@ static enum notagread get_no_tag_read_behaviour(void) {
   } else if (ntr && !strcmp(ntr, "STRICT")) {
     return __NO_TAG_READ_STRICT;
   }
-  return __NO_TAG_READ_DEFAULT; // defualt
+  return __NO_TAG_READ_V6; // defualt
 }
 static int no_tag_read_behaviour = get_no_tag_read_behaviour();
 
@@ -1251,8 +1263,6 @@ extern "C" void __fd_close(int fd) { fdcache.unset_attribute(fd); }
 extern "C" int __file_needs_conversion(int fd) {
   if (no_tag_read_behaviour == __NO_TAG_READ_STRICT)
     return 0;
-  if (no_tag_read_behaviour == __NO_TAG_READ_V6)
-    return 1;
   unsigned long attr = fdcache.get_attribute(fd);
   if (attr == 0x0000000000020000UL) {
     return 1;

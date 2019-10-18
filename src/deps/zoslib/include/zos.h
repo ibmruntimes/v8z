@@ -58,6 +58,8 @@ extern int __file_needs_conversion(int fd);
 extern int __file_needs_conversion_init(const char *name, int fd);
 extern void __fd_close(int fd);
 
+extern void __build_version(void);
+
 #ifdef __cplusplus
 }
 #endif
