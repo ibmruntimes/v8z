@@ -1238,18 +1238,18 @@ public:
 fdAttributeCache fdcache;
 
 enum notagread {
-  __NO_TAG_READ_DEFAULT = 0,
-  __NO_TAG_READ_DEFAULT_WITHWARNING = 1,
+  __NO_TAG_READ_AUTO = 0,
+  __NO_TAG_READ_AUTO_WITHWARNING = 1,
   __NO_TAG_READ_V6 = 2,
   __NO_TAG_READ_STRICT = 3
 } notagread;
 
 static enum notagread get_no_tag_read_behaviour(void) {
   char *ntr = __getenv_a("__UNTAGGED_READ_MODE");
-  if (ntr && !strcmp(ntr, "DEFAULT")) {
-    return __NO_TAG_READ_DEFAULT;
+  if (ntr && !strcmp(ntr, "AUTO")) {
+    return __NO_TAG_READ_AUTO;
   } else if (ntr && !strcmp(ntr, "WARN")) {
-    return __NO_TAG_READ_DEFAULT_WITHWARNING;
+    return __NO_TAG_READ_AUTO_WITHWARNING;
   } else if (ntr && !strcmp(ntr, "V6")) {
     return __NO_TAG_READ_V6;
   } else if (ntr && !strcmp(ntr, "STRICT")) {
@@ -1293,7 +1293,7 @@ extern "C" int __file_needs_conversion_init(const char *name, int fd) {
       int am;
       unsigned len = strlen_ae((unsigned char *)buf, &ccsid, cnt, &am);
       if (ccsid == 1047) {
-        if (no_tag_read_behaviour == __NO_TAG_READ_DEFAULT_WITHWARNING) {
+        if (no_tag_read_behaviour == __NO_TAG_READ_AUTO_WITHWARNING) {
           const char *filename = "(null)";
           if (name) {
             int len = strlen(name);
