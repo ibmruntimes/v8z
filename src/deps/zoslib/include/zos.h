@@ -47,7 +47,11 @@ extern void __setdebug(int);
 extern char **__getargv(void);
 extern char **__getargv_a(void);
 extern int __getargc(void);
-
+extern unsigned long long __registerProduct(int node_major_version,
+                                     const char *product_owner,
+                                     const char *feature_name,
+                                     const char *product_name,
+                                     const char *pid);
 extern void *__dlcb_next(void *last);
 extern int __dlcb_entry_name(char *buf, int size, void *dlcb);
 extern void *__dlcb_entry_addr(void *dlcb);
