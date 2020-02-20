@@ -47,7 +47,7 @@ extern void __setdebug(int);
 extern char **__getargv(void);
 extern char **__getargv_a(void);
 extern int __getargc(void);
-extern unsigned long long __registerProduct(int node_major_version,
+extern unsigned long long __registerProduct(const char *major_version,
                                      const char *product_owner,
                                      const char *feature_name,
                                      const char *product_name,
